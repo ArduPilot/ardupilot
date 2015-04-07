@@ -20,6 +20,7 @@
  */
 #include <AP_HAL.h>
 #include <AP_AHRS.h>
+#include <AP_Vehicle.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
@@ -311,7 +312,25 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 
 bool AP_AHRS_NavEKF::using_EKF(void) const
 {
-    return ekf_started && _ekf_use && EKF.healthy();
+    bool ret = ekf_started && _ekf_use && EKF.healthy();
+    if (!ret) {
+        return false;
+    }
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    nav_filter_status filt_state;
+    EKF.getFilterStatus(filt_state);
+    if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+        return false;
+    }
+    if (!filt_state.flags.attitude ||
+        !filt_state.flags.horiz_vel ||
+        !filt_state.flags.vert_vel ||
+        !filt_state.flags.horiz_pos_abs ||
+        !filt_state.flags.vert_pos) {
+        return false;
+    }
+#endif
+    return ret;
 }
 
 /*
