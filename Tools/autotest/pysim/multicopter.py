@@ -86,7 +86,7 @@ def build_motors(frame):
 class MultiCopter(Aircraft):
     '''a MultiCopter'''
     def __init__(self, frame='+',
-                 hover_throttle=0.45,
+                 hover_throttle=0.51,
                  terminal_velocity=15.0,
                  frame_height=0.1,
                  mass=1.5):
