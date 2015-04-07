@@ -20,6 +20,14 @@
 #include "polygon.h"
 #include "edc.h"
 
+#ifdef __AVR__
+//do not inline functions on avr hardware
+//since this increases code size
+#define INLINE static inline __attribute((noinline))
+#else
+#define INLINE static inline
+#endif
+
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
 #endif
@@ -167,7 +175,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 
 // constrain a value
 // constrain a value
-inline float constrain_float(float amt, float low, float high)
+INLINE float constrain_float(float amt, float low, float high)
 {
 	// the check for NaN as a float prevents propogation of
 	// floating point errors through any function that uses
@@ -179,37 +187,37 @@ inline float constrain_float(float amt, float low, float high)
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 // constrain a int16_t value
-inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
+INLINE int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 
 // constrain a int32_t value
-inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
+INLINE int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 
 // degrees -> radians
-inline float radians(float deg) {
+INLINE float radians(float deg) {
 	return deg * DEG_TO_RAD;
 }
 
 // radians -> degrees
-inline float degrees(float rad) {
+INLINE float degrees(float rad) {
 	return rad * RAD_TO_DEG;
 }
 
 // square
-inline float sq(float v) {
+INLINE float sq(float v) {
 	return v*v;
 }
 
 // 2D vector length
-inline float pythagorous2(float a, float b) {
+INLINE float pythagorous2(float a, float b) {
 	return sqrtf(sq(a)+sq(b));
 }
 
 // 3D vector length
-inline float pythagorous3(float a, float b, float c) {
+INLINE float pythagorous3(float a, float b, float c) {
 	return sqrtf(sq(a)+sq(b)+sq(c));
 }
 
@@ -221,6 +229,6 @@ inline float pythagorous3(float a, float b, float c) {
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
 
-
+#undef INLINE
 #endif // AP_MATH_H
 
