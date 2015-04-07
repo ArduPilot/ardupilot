@@ -45,7 +45,16 @@ include_directories(include ${catkin_INCLUDE_DIRS}
 	../../libraries/AP_Airspeed
 	../../libraries/AP_Baro
 	../../libraries/AP_NavEKF
-	../../libraries/AP_SerialManager)
+	../../libraries/AP_SerialManager
+	../../libraries/AP_ADC_AnalogSource
+	../../libraries/Dataflash
+	../../libraries/GCS_MAVLink
+	../../libraries/GCS_MAVLink/include/mavlink/v1.0
+	../../libraries/GCS_MAVLink/include/mavlink/v1.0/common
+	../../libraries/GCS_MAVLink/include/mavlink/v1.0/ardupilotmega
+	../../libraries/GCS_MAVLink/include/mavlink/v0.9
+	../../libraries/GCS_MAVLink/include/mavlink/v0.9/common
+	../../libraries/GCS_MAVLink/include/mavlink/v0.9/ardupilotmega)
 
 #SET(CMAKE_CXX_FLAGS "fpermissive")
 add_definitions ( -fpermissive)
@@ -93,8 +102,35 @@ add_executable(apm_ahrs_main src/apm_ahrs_main.cpp
 	../../libraries/AP_AHRS/AP_AHRS_DCM.cpp
 	../../libraries/AP_AHRS/AP_AHRS_NavEKF.cpp
 	../../libraries/AP_Compass/Compass.cpp
+	../../libraries/AP_Compass/AP_Compass_AK8963.cpp
+	../../libraries/AP_Compass/AP_Compass_Backend.cpp
+	../../libraries/AP_Compass/AP_Compass_HIL.cpp
+	../../libraries/AP_Compass/AP_Compass_HMC5843.cpp
 	../../libraries/AP_Declination/AP_Declination.cpp
-	../../libraries/AP_Airspeed/AP_Airspeed.cpp)
+	../../libraries/AP_Airspeed/AP_Airspeed.cpp
+	../../libraries/AP_Baro/AP_Baro.cpp
+	../../libraries/AP_Baro/AP_Baro_MS5611.cpp
+	../../libraries/AP_Baro/AP_Baro_Backend.cpp
+	../../libraries/AP_Baro/AP_Baro_HIL.cpp
+	../../libraries/AP_SerialManager/AP_SerialManager.cpp
+	../../libraries/AP_GPS/AP_GPS.cpp
+	../../libraries/AP_GPS/AP_GPS_UBLOX.cpp
+	../../libraries/AP_GPS/AP_GPS_SIRF.cpp
+	../../libraries/AP_GPS/AP_GPS_MTK.cpp	
+	../../libraries/AP_GPS/AP_GPS_SBP.cpp		
+	../../libraries/AP_GPS/GPS_Backend.cpp
+	../../libraries/AP_GPS/AP_GPS_NMEA.cpp
+	../../libraries/AP_GPS/AP_GPS_MTK19.cpp
+	../../libraries/AP_Math/vector2.cpp
+	../../libraries/AP_Math/matrix3.cpp
+	../../libraries/AP_Math/location.cpp
+	../../libraries/AP_Math/quaternion.cpp
+	../../libraries/AP_Airspeed/AP_Airspeed_analog.cpp
+	../../libraries/AP_Airspeed/AP_Airspeed_I2C.cpp
+	../../libraries/AP_Airspeed/Airspeed_Calibration.cpp
+	../../libraries/AP_NavEKF/AP_NavEKF.cpp
+	../../libraries/Filter/DerivativeFilter.cpp
+	../../libraries/AP_Math/edc.cpp)
 
 target_link_libraries(apm_ahrs_main ${catkin_LIBRARIES})
 add_dependencies(apm_ahrs_main apm_ahrs_generate_messages_cpp)
