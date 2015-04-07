@@ -92,19 +92,19 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     start = mav.location()
-    tstart = time.time()
-    tholdstart = time.time()
+    tstart = get_sim_time(mav)
+    tholdstart = get_sim_time(mav)
     print("Holding loiter at %u meters for %u seconds" % (start_altitude, holdtime))
-    while time.time() < tstart + holdtime:
+    while get_sim_time(mav) < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         delta = get_distance(start, pos)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
         if math.fabs(m.alt - start_altitude) > maxaltchange:
-            tholdstart = time.time()    # this will cause this test to timeout and fails
+            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
         if delta > maxdistchange:
-            tholdstart = time.time()    # this will cause this test to timeout and fails
-        if time.time() - tholdstart > holdtime:
+            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
+        if get_sim_time(mav) - tholdstart > holdtime:
             print("Loiter OK for %u seconds" % holdtime)
             return True
     print("Loiter FAILED")
@@ -127,7 +127,7 @@ def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=108
 # fly a square in stabilize mode
 def fly_square(mavproxy, mav, side=50, timeout=120):
     '''fly a square, flying N then E'''
-    tstart = time.time()
+    tstart = get_sim_time(mav)
     failed = False
 
     # ensure all sticks in the middle
@@ -207,8 +207,8 @@ def fly_RTL(mavproxy, mav, side=60, timeout=250):
     '''Return, land'''
     print("# Enter RTL")
     mavproxy.send('switch 3\n')
-    tstart = time.time()
-    while time.time() < tstart + timeout:
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         home_distance = get_distance(HOME, pos)
@@ -248,8 +248,8 @@ def fly_throttle_failsafe(mavproxy, mav, side=60, timeout=180):
     print("# Enter Failsafe")
     mavproxy.send('rc 3 900\n')
 
-    tstart = time.time()
-    while time.time() < tstart + timeout:
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         home_distance = get_distance(HOME, pos)
@@ -332,24 +332,24 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     start = mav.location()
-    tstart = time.time()
-    tholdstart = time.time()
+    tstart = get_sim_time(mav)
+    tholdstart = get_sim_time(mav)
     print("Holding loiter at %u meters for %u seconds" % (start_altitude, holdtime))
 
     # cut motor 1 to 55% efficiency
     print("Cutting motor 1 to 55% efficiency")
     mavproxy.send('param set SIM_ENGINE_MUL 0.55\n')
 
-    while time.time() < tstart + holdtime:
+    while get_sim_time(mav) < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         delta = get_distance(start, pos)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
         if math.fabs(m.alt - start_altitude) > maxaltchange:
-            tholdstart = time.time()    # this will cause this test to timeout and fails
+            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
         if delta > maxdistchange:
-            tholdstart = time.time()    # this will cause this test to timeout and fails
-        if time.time() - tholdstart > holdtime:
+            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
+        if get_sim_time(mav) - tholdstart > holdtime:
             print("Stability patch and Loiter OK for %u seconds" % holdtime)
             # restore motor 1 to 100% efficiency
             mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
@@ -382,8 +382,8 @@ def fly_fence_test(mavproxy, mav, timeout=180):
         return False
 
     # start timer
-    tstart = time.time()
-    while time.time() < tstart + timeout:
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         home_distance = get_distance(HOME, pos)
@@ -464,7 +464,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
         return False
 
     # record time and position
-    tstart = time.time()
+    tstart = get_sim_time(mav)
     start_pos = sim_location(mav)
 
     # initialise current glitch
@@ -474,9 +474,9 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
     mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
 
     # record position for 30 seconds
-    while time.time() < tstart + timeout:
+    while get_sim_time(mav) < tstart + timeout:
 
-        time_in_sec = int(time.time() - tstart);
+        time_in_sec = int(get_sim_time(mav) - tstart);
         if time_in_sec > glitch_current and glitch_current != -1:
             glitch_current = time_in_sec
             # turn off glitching if we've reached the end of the glitch list
@@ -549,7 +549,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
         return False
 
     # record time and position
-    tstart = time.time()
+    tstart = get_sim_time(mav)
     start_pos = sim_location(mav)
 
     # initialise current glitch
@@ -560,7 +560,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 
     # record position for 30 seconds
     while glitch_current < glitch_num:
-        time_in_sec = int(time.time() - tstart);
+        time_in_sec = int(get_sim_time(mav) - tstart);
         if (time_in_sec * 2) > glitch_current and glitch_current != -1:
             glitch_current = (time_in_sec * 2)
             # apply next glitch
@@ -620,10 +620,10 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # fly west 8 seconds
     print("# Flying west for 8 seconds")
     mavproxy.send('rc 2 1300\n')
-    tstart = time.time()
-    while time.time() < (tstart + 8):
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        delta = (time.time() - tstart)
+        delta = (get_sim_time(mav) - tstart)
         #print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
@@ -637,10 +637,10 @@ def fly_simple(mavproxy, mav, side=50, timeout=120):
     # fly east 8 seconds
     print("# Flying east for 8 seconds")
     mavproxy.send('rc 2 1700\n')
-    tstart = time.time()
-    while time.time() < (tstart + 8):
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < (tstart + 8):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        delta = (time.time() - tstart)
+        delta = (get_sim_time(mav) - tstart)
         #print("%u" % delta)
     mavproxy.send('rc 2 1500\n')
 
@@ -681,10 +681,10 @@ def fly_super_simple(mavproxy, mav, timeout=45):
     # roll left for timeout seconds
     print("# rolling left from pilot's point of view for %u seconds" % timeout)
     mavproxy.send('rc 1 1300\n')
-    tstart = time.time()
-    while time.time() < (tstart + timeout):
+    tstart = get_sim_time(mav)
+    while get_sim_time(mav) < (tstart + timeout):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
-        delta = (time.time() - tstart)
+        delta = (get_sim_time(mav) - tstart)
 
     # stop rolling and yawing
     mavproxy.send('rc 1 1500\n')
@@ -729,10 +729,10 @@ def fly_circle(mavproxy, mav, maxaltchange=10, holdtime=36):
     # wait 
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
-    tstart = time.time()
-    tholdstart = time.time()
+    tstart = get_sim_time(mav)
+    tholdstart = get_sim_time(mav)
     print("Circle at %u meters for %u seconds" % (start_altitude, holdtime))
-    while time.time() < tstart + holdtime:
+    while get_sim_time(mav) < tstart + holdtime:
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         print("heading %u" % m.heading)
 
@@ -864,11 +864,6 @@ def setup_rc(mavproxy):
     # zero throttle
     mavproxy.send('rc 3 1000\n')
 
-def wait_seconds(mav, wait_time_sec):
-    tstart = time.time()
-    while time.time() < tstart + wait_time_sec:
-        m = mav.recv_match(type='VFR_HUD', blocking=True)
-
 def fly_ArduCopter(viewerip=None, map=False):
     '''fly ArduCopter in SIL
 
@@ -956,7 +951,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         homeloc = mav.location()
 
         # wait 10sec to allow EKF to settle
-        wait_seconds(mav, 10)
+        wait_sim_seconds(mav, 10)
 
         # Arm
         print("# Arm motors")
