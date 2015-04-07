@@ -55,6 +55,18 @@ def wait_seconds(seconds_to_wait):
     while tstart + seconds_to_wait > tnow:
         tnow = time.time()
 
+def wait_sim_seconds(mav, seconds_to_wait):
+    m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
+    tstart = m.time_boot_ms / 1000;
+    tnow = tstart
+    while tstart + seconds_to_wait > tnow:
+        m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        tnow = m.time_boot_ms / 1000;
+
+def get_sim_time(mav):
+    m = mav.recv_match(type='SYSTEM_TIME', blocking=True)
+    return m.time_boot_ms / 1000;
+
 def wait_altitude(mav, alt_min, alt_max, timeout=30):
     climb_rate = 0
     previous_alt = 0
