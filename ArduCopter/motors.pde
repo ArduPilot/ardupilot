@@ -231,7 +231,6 @@ static bool pre_arm_checks(bool display_failure)
         }
         return false;
     }
-
     // check Baro
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
@@ -241,7 +240,7 @@ static bool pre_arm_checks(bool display_failure)
             }
             return false;
         }
-        // check Baro & inav alt are within 1m
+        // check Baro & inav alt are within limits
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
@@ -487,6 +486,14 @@ static void pre_arm_rc_checks()
 // performs pre_arm gps related checks and returns true if passed
 static bool pre_arm_gps_checks(bool display_failure)
 {
+    // always check if inertial nav has started and is ready
+    if(!ahrs.healthy()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Waiting for Nav Checks"));
+        }
+        return false;
+    }
+
     // return true immediately if gps check is disabled
     if (!(g.arming_check == ARMING_CHECK_ALL || g.arming_check & ARMING_CHECK_GPS)) {
         AP_Notify::flags.pre_arm_gps_check = true;
@@ -551,6 +558,14 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     start_logging();
 #endif
 
+    // always check if inertial nav has started and is ready
+    if(!ahrs.healthy()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Waiting for Nav Checks"));
+        }
+        return false;
+    }
+
     // always check if the current mode allows arming
     if (!mode_allows_arming(control_mode, arming_from_gcs)) {
         if (display_failure) {
@@ -575,13 +590,17 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         return true;
     }
 
-    // check Baro & inav alt are within 1m
-    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
+    // Check Baro & inav alt are within 1m if EKF is operating in an absolute position mode.
+    // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
+    // that may differ from the baro height due to baro drift.
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+    bool usingBaroRef = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+    if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) && usingBaroRef) {
         if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Altitude disparity"));
             }
-            return false;
+        return false;
         }
     }
 
