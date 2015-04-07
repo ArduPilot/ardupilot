@@ -81,9 +81,8 @@ void AP_AHRS_NavEKF::update(void)
         if (start_time_ms == 0) {
             start_time_ms = hal.scheduler->millis();
         }
-        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms &&
-            EKF.InitialiseFilterDynamic()) {
-            ekf_started = true;
+        if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
+            ekf_started = EKF.InitialiseFilterDynamic();
         }
     }
     if (ekf_started) {
