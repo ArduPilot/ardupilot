@@ -48,6 +48,7 @@ public:
 #if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
+    typedef VectorN<ftype,4> Vector4;
     typedef VectorN<ftype,5> Vector5;
     typedef VectorN<ftype,6> Vector6;
     typedef VectorN<ftype,8> Vector8;
@@ -67,6 +68,7 @@ public:
 #else
     typedef ftype Vector2[2];
     typedef ftype Vector3[3];
+    typedef ftype Vector4[4];
     typedef ftype Vector5[5];
     typedef ftype Vector6[6];
     typedef ftype Vector8[8];
@@ -700,8 +702,8 @@ private:
     // to level computational load as this can be an expensive operation
     struct {
         uint8_t obsIndex;
-        Vector5 SH_LOS;
-        Vector9 SK_LOS;
+        Vector4 SH_LOS;
+        Vector10 SK_LOS;
         ftype q0;
         ftype q1;
         ftype q2;
