@@ -120,6 +120,7 @@ void Quaternion::from_axis_angle(Vector3f v) {
     if(theta == 0.0f) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
+        return;
     }
     v /= theta;
     from_axis_angle(v,theta);
