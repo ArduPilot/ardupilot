@@ -91,7 +91,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
-    if (((((imuSampleTime_ms - StartTime_ms) > 5000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    if (((((imuSampleTime_ms - StartTime_ms) > 25000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
@@ -937,7 +937,7 @@ void SmallEKF::getQuat(Quaternion &quat) const
 bool SmallEKF::getStatus() const
 {
     float run_time = hal.scheduler->millis() - StartTime_ms;
-    return  YawAligned && (run_time > 10000);
+    return  YawAligned && (run_time > 30000);
 }
 
 #endif // HAL_CPU_CLASS
