@@ -193,9 +193,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
 		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
-
-        _prevent_indecision(Nu);
-
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 
 	} else { //Calc Nu to fly along AB line
@@ -214,6 +211,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
 	}	
 
+    _prevent_indecision(Nu);
     _last_Nu = Nu;
 			
 	//Limit Nu to +-pi
