@@ -3700,7 +3700,8 @@ bool NavEKF::getLLH(struct Location &loc) const
 bool NavEKF::getHAGL(float &HAGL) const
 {
     HAGL = terrainState - state.position.z;
-    return !inhibitGndState;
+    // If we know the terrain offset and altitude, then we have a valid height above ground estimate
+    return !hgtTimeout && gndOffsetValid && healthy();
 }
 
 // return data for debugging optical flow fusion
