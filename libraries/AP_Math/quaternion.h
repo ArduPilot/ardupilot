@@ -104,8 +104,8 @@ public:
         return _v[i];
     }
 
-    Quaternion operator*(const Quaternion &v);
+    Quaternion operator*(const Quaternion &v) const;
     Quaternion &operator*=(const Quaternion &v);
-    Quaternion operator/(const Quaternion &v);
+    Quaternion operator/(const Quaternion &v) const;
 };
 #endif // QUATERNION_H
