@@ -46,8 +46,8 @@
 #define GLITCH_ACCEL_DEFAULT    150
 #define GLITCH_RADIUS_DEFAULT   15
 #define FLOW_MEAS_DELAY         10
-#define FLOW_NOISE_DEFAULT      0.15f
-#define FLOW_GATE_DEFAULT       5
+#define FLOW_NOISE_DEFAULT      0.25f
+#define FLOW_GATE_DEFAULT       3
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
