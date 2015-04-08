@@ -233,12 +233,12 @@ void Quaternion::normalize(void)
     }    
 }
 
-Quaternion Quaternion::operator*(const Quaternion &v) {
+Quaternion Quaternion::operator*(const Quaternion &v) const {
     Quaternion ret;
-    float &w1 = q1;
-    float &x1 = q2;
-    float &y1 = q3;
-    float &z1 = q4;
+    const float &w1 = q1;
+    const float &x1 = q2;
+    const float &y1 = q3;
+    const float &z1 = q4;
 
     float w2 = v.q1;
     float x2 = v.q2;
@@ -272,12 +272,12 @@ Quaternion &Quaternion::operator*=(const Quaternion &v) {
     return *this;
 }
 
-Quaternion Quaternion::operator/(const Quaternion &v) {
+Quaternion Quaternion::operator/(const Quaternion &v) const {
     Quaternion ret;
-    float &quat0 = q1;
-    float &quat1 = q2;
-    float &quat2 = q3;
-    float &quat3 = q4;
+    const float &quat0 = q1;
+    const float &quat1 = q2;
+    const float &quat2 = q3;
+    const float &quat3 = q4;
 
     float rquat0 = v.q1;
     float rquat1 = v.q2;
