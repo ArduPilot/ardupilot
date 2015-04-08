@@ -180,7 +180,7 @@ void AP_Gimbal::update_target(Vector3f newTarget)
 
 Vector3f AP_Gimbal::getGimbalEstimateEF()
 {
-    Quaternion quatEst;_ekf.getQuat(quatEst);Vector3f eulerEst;quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+    Quaternion quatEst;_ekf.getQuat(quatEst);Vector3f eulerEst;quatEst.to_vector312(eulerEst.x, eulerEst.y, eulerEst.z);
     return eulerEst;
 }
 
