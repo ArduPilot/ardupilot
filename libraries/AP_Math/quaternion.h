@@ -64,6 +64,8 @@ public:
     // create a quaternion from Euler angles
     void        from_euler(float roll, float pitch, float yaw);
 
+    void        from_vector312(float roll ,float pitch, float yaw);
+
     void to_axis_angle(Vector3f &v);
 
     void from_axis_angle(Vector3f v);
@@ -81,6 +83,8 @@ public:
 
     // create eulers from a quaternion
     void        to_euler(float &roll, float &pitch, float &yaw) const;
+
+    void        to_vector312(float &roll, float &pitch, float &yaw) const;
 
     float length(void) const;
     void normalize();
