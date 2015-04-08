@@ -89,6 +89,7 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
     if not wait_groundspeed(mav, 0, 2):
         return False
 
+    success = True
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     start = mav.location()
@@ -99,16 +100,19 @@ def loiter(mavproxy, mav, holdtime=10, maxaltchange=5, maxdistchange=5):
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         delta = get_distance(start, pos)
+        alt_delta = math.fabs(m.alt - start_altitude)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
-        if math.fabs(m.alt - start_altitude) > maxaltchange:
-            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
+        if alt_delta > maxaltchange:
+            print("Loiter alt shifted %u meters (> limit of %u)" % (alt_delta, maxaltchange))
+            success = False
         if delta > maxdistchange:
-            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
-        if get_sim_time(mav) - tholdstart > holdtime:
-            print("Loiter OK for %u seconds" % holdtime)
-            return True
-    print("Loiter FAILED")
-    return False
+            print("Loiter shifted %u meters (> limit of %u)" % (delta, maxdistchange))
+            success = False
+    if success:
+        print("Loiter OK for %u seconds" % holdtime)
+    else:
+        print("Loiter FAILED")
+    return success
 
 def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=1080):
     '''change altitude'''
@@ -125,10 +129,10 @@ def change_alt(mavproxy, mav, alt_min, climb_throttle=1920, descend_throttle=108
     return True
 
 # fly a square in stabilize mode
-def fly_square(mavproxy, mav, side=50, timeout=120):
+def fly_square(mavproxy, mav, side=50, timeout=300):
     '''fly a square, flying N then E'''
     tstart = get_sim_time(mav)
-    failed = False
+    success = True
 
     # ensure all sticks in the middle
     mavproxy.send('rc 1 1500\n')
@@ -144,7 +148,8 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     print("turn right towards north")
     mavproxy.send('rc 4 1580\n')
     if not wait_heading(mav, 10):
-        return False
+        print("Failed to reach heading")
+        success = False
     mavproxy.send('rc 4 1500\n')
     mav.recv_match(condition='RC_CHANNELS_RAW.chan4_raw==1500', blocking=True)
 
@@ -161,7 +166,8 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     print("Going north %u meters" % side)
     mavproxy.send('rc 2 1300\n')
     if not wait_distance(mav, side):
-        failed = True
+        print("Failed to reach distance of %u") % side
+        success = False
     mavproxy.send('rc 2 1500\n')
 
     # save top left corner of square as waypoint
@@ -172,7 +178,8 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     print("Going east %u meters" % side)
     mavproxy.send('rc 1 1700\n')
     if not wait_distance(mav, side):
-        failed = True
+        print("Failed to reach distance of %u") % side
+        success = False
     mavproxy.send('rc 1 1500\n')
 
     # save top right corner of square as waypoint
@@ -183,7 +190,8 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     print("Going south %u meters" % side)
     mavproxy.send('rc 2 1700\n')
     if not wait_distance(mav, side):
-        failed = True
+        print("Failed to reach distance of %u") % side
+        success = False
     mavproxy.send('rc 2 1500\n')
 
     # save bottom right corner of square as waypoint
@@ -194,14 +202,29 @@ def fly_square(mavproxy, mav, side=50, timeout=120):
     print("Going west %u meters" % side)
     mavproxy.send('rc 1 1300\n')
     if not wait_distance(mav, side):
-        failed = True
+        print("Failed to reach distance of %u") % side
+        success = False
     mavproxy.send('rc 1 1500\n')
 
     # save bottom left corner of square (should be near home) as waypoint
     print("Save WP 6")
     save_wp(mavproxy, mav)
 
-    return not failed
+    # descend to 10m
+    print("Descend to 10m in Loiter")
+    mavproxy.send('switch 5\n') # loiter mode
+    wait_mode(mav, 'LOITER')
+    mavproxy.send('rc 3 1300\n')
+    time_left = timeout - (get_sim_time(mav) - tstart)
+    print("timeleft = %u" % time_left)
+    if time_left < 20:
+        time_left = 20
+    if not wait_altitude(mav, -10, 10, time_left):
+        print("Failed to reach alt of 10m")
+        success = False
+    save_wp(mavproxy, mav)
+
+    return success
 
 def fly_RTL(mavproxy, mav, side=60, timeout=250):
     '''Return, land'''
@@ -329,6 +352,7 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
     if not wait_groundspeed(mav, 0, 2):
         return False
 
+    success = True
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     start_altitude = m.alt
     start = mav.location()
@@ -344,20 +368,24 @@ def fly_stability_patch(mavproxy, mav, holdtime=30, maxaltchange=5, maxdistchang
         m = mav.recv_match(type='VFR_HUD', blocking=True)
         pos = mav.location()
         delta = get_distance(start, pos)
+        alt_delta = math.fabs(m.alt - start_altitude)
         print("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
-        if math.fabs(m.alt - start_altitude) > maxaltchange:
-            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
+        if alt_delta > maxaltchange:
+            print("Loiter alt shifted %u meters (> limit of %u)" % (alt_delta, maxaltchange))
+            success = False
         if delta > maxdistchange:
-            tholdstart = get_sim_time(mav)    # this will cause this test to timeout and fails
-        if get_sim_time(mav) - tholdstart > holdtime:
-            print("Stability patch and Loiter OK for %u seconds" % holdtime)
-            # restore motor 1 to 100% efficiency
-            mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
-            return True
-    print("Stability Patch FAILED")
+            print("Loiter shifted %u meters (> limit of %u)" % (delta, maxdistchange))
+            success = False
+
     # restore motor 1 to 100% efficiency
     mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
-    return False
+
+    if success:
+        print("Stability patch and Loiter OK for %u seconds" % holdtime)            
+    else:
+        print("Stability Patch FAILED")
+
+    return success
 
 # fly_fence_test - fly east until you hit the horizontal circular fence
 def fly_fence_test(mavproxy, mav, timeout=180):
@@ -427,7 +455,7 @@ def show_gps_and_sim_positions(mavproxy, on_off):
         mavproxy.send('map set showsimpos 0\n')
     
 # fly_gps_glitch_loiter_test - fly south east in loiter and test reaction to gps glitch
-def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
+def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     '''hold loiter position'''
     mavproxy.send('switch 5\n') # loiter mode
     wait_mode(mav, 'LOITER')
@@ -466,6 +494,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
     # record time and position
     tstart = get_sim_time(mav)
     start_pos = sim_location(mav)
+    success = True
 
     # initialise current glitch
     glitch_current = 0;
@@ -495,11 +524,7 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
         print("Alt: %u  Moved: %.0f" % (m.alt, moved_distance))
         if moved_distance > max_distance:
             print("Moved over %u meters, Failed!" % max_distance)
-            # disable gps glitch
-            mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
-            mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
-            show_gps_and_sim_positions(mavproxy, False)
-            return False
+            success = False
 
     # disable gps glitch
     if glitch_current != -1:
@@ -508,9 +533,11 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=10):
         mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
     show_gps_and_sim_positions(mavproxy, False)
 
-    # if we've gotten this far then we've succeeded
-    print("GPS glitch test passed!  stayed within %u meters for %u seconds" % (max_distance, timeout))
-    return True
+    if success:
+        print("GPS glitch test passed!  stayed within %u meters for %u seconds" % (max_distance, timeout))
+    else:
+        print("GPS glitch test FAILED!")
+    return success
 
 # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
 def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
@@ -975,15 +1002,6 @@ def fly_ArduCopter(viewerip=None, map=False):
             print(failed_test_msg)
             failed = True
 
-        print("# Land")
-        if not land(mavproxy, mav):
-            failed_test_msg = "land failed"
-            print(failed_test_msg)
-            failed = True
-
-        print("Save landing WP")
-        save_wp(mavproxy, mav)
-
         # save the stored mission to file
         print("# Save out the CH7 mission to file")
         if not save_mission_to_file(mavproxy, mav, os.path.join(testdir, "ch7_mission.txt")):
@@ -1121,6 +1139,7 @@ def fly_ArduCopter(viewerip=None, map=False):
             print(failed_test_msg)
             failed = True
 
+        # takeoff
         if not takeoff(mavproxy, mav, 10):
             failed_test_msg = "takeoff failed"
             print(failed_test_msg)
