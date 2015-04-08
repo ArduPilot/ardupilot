@@ -4185,8 +4185,9 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // calculate bias errors on flow sensor gyro rates, but protect against spikes in data
     flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - omegaAcrossFlowTime.x),-0.1f,0.1f);
     flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - omegaAcrossFlowTime.y),-0.1f,0.1f);
-    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sesnor data)
-    if (rawFlowQuality > 50 && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
+    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
+    // accept low flow quality data when very close to the ground as the lens will be out of focus
+    if (((rawFlowQuality > 0) || (rawSonarRange < (2.0f * RNG_MEAS_ON_GND))) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // recall vehicle states at mid sample time for flow observations allowing for delays
         RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
         // calculate rotation matrices at mid sample time for flow observations
