@@ -456,6 +456,10 @@ bool NavEKF::healthy(void) const
     if (!vehicleArmed && (fabsf(innovVelPos[5]) > 1.0f)) {
         return false;
     }
+    // check range sensor has passed its checks if we are relying on it for flight
+    if (!rngSensorHealthy && (_fusionModeGPS == 3) && (_altSource == 1)) {
+        return false;
+    }
 
     // all OK
     return true;
@@ -4211,20 +4215,17 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         newDataFlow = false;
     }
     // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
-    if (rangeHealth >= 3) {
+    if ((rangeHealth >= 3) || !vehicleArmed) {
         statesAtRngTime = statesAtFlowTime;
-        rngMea = rawSonarRange;
-        newDataRng = true;
-        rngValidMeaTime_ms = imuSampleTime_ms;
-    } else if (!vehicleArmed) {
-        statesAtRngTime = statesAtFlowTime;
-        rngMea = RNG_MEAS_ON_GND;
+        rngMea = max(rawSonarRange,RNG_MEAS_ON_GND);
         newDataRng = true;
         rngValidMeaTime_ms = imuSampleTime_ms;
     } else {
         // set flag that will trigger fusion of height data
         newDataRng = false;
     }
+    // perform a health test of the range finder
+    checkRngHealth(rawSonarRange);
 }
 
 // calculate the NED earth spin vector in rad/sec
@@ -4515,6 +4516,10 @@ void NavEKF::InitialiseVariables()
     gndEffectMode = false;
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
+    rngSensorHealthy = false;
+    minHgtPreFlight = 0.0f;
+    maxHgtPreFlight = 0.0f;
+
 }
 
 // return true if we should use the airspeed sensor
@@ -4663,12 +4668,12 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.attitude = !state.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
-    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
+    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy && rngSensorHealthy; // we should be able to estimate a relative position when we enter flight mode
     status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
 }
 
@@ -4744,6 +4749,8 @@ void NavEKF::performArmingChecks()
                 constPosMode = true;
                 constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
+            // this avoids issues casued by the time delay associated with arming that can trigger short timeouts
+            rngValidMeaTime_ms = imuSampleTime_ms;
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
@@ -4887,6 +4894,23 @@ bool NavEKF::calcGpsGoodToAlign(void)
         return true;
     } else {
         return false;
+    }
+}
+
+// checks the health of the range finder preflight by requiring the user to lift up the copter and place it down again
+// check in flight by declaring failed if timed out
+void NavEKF::checkRngHealth(float rawRange)
+{
+    // run the test before arming
+    if (!vehicleArmed) {
+        minHgtPreFlight = min(rawRange * Tnb_flow.c.z, minHgtPreFlight);
+        maxHgtPreFlight = max(rawRange * Tnb_flow.c.z, maxHgtPreFlight);
+        // Check that the range sensor has been exercised through a realistic range of movement
+        bool rangeExtentPassed = ((maxHgtPreFlight - minHgtPreFlight) > 0.5f) && (maxHgtPreFlight < 2.0f) && (minHgtPreFlight < 2.0f * RNG_MEAS_ON_GND);
+        // latch to a passed condition (it can be failed later in flight)
+        rngSensorHealthy = rngSensorHealthy || rangeExtentPassed;
+    } else if (vehicleArmed && ((imuSampleTime_ms - rngValidMeaTime_ms) > 5000)) {
+        rngSensorHealthy = false;
     }
 }
 

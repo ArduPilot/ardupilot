@@ -424,6 +424,9 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
+    // checks the health of the range finder
+    void checkRngHealth(float rawRange);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -695,7 +698,12 @@ private:
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
+
+    // Range finder fault handling
     float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
+    bool rngSensorHealthy;          // Boolean true when the range finder has passed the pre-flight tests
+    float minHgtPreFlight;          // minimum reading returned by the range sensor during pre-arm checks
+    float maxHgtPreFlight;          // maximum reading returned by the range sensor during pre-arm checks
 
     bool haveDeltaAngles;
 
