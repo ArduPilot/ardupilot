@@ -587,7 +587,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
-    // @Range: 0.08 0.25
+    // @Range: 0.08 0.30
     // @Increment: 0.005
     // @User: Standard
 
@@ -621,7 +621,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: RATE_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
-    // @Range: 0.08 0.25
+    // @Range: 0.08 0.30
     // @Increment: 0.005
     // @User: Standard
 
