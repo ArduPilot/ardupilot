@@ -47,7 +47,7 @@ private:
     int16_t mpu_reset_fifo(uint8_t sensors);
     int16_t mpu_set_sensors(uint8_t sensors);
     int16_t mpu_set_int_latched(uint8_t enable);
-    int16_t mpu_read_fifo(int16_t *gyro, int16_t *accel, uint32_t timestamp, uint8_t *sensors, uint8_t *more);
+    int16_t mpu_read_fifo(int16_t *gyro, int16_t *accel, uint32_t *timestamp, uint8_t *sensors, uint8_t *more);
 
     void _set_accel_filter_frequency(uint8_t filter_hz);
     void _set_gyro_filter_frequency(uint8_t filter_hz);

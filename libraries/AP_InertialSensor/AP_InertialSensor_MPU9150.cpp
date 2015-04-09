@@ -400,9 +400,9 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
         hal.console->printf("AP_InertialSensor_MPU9150: couldn't read the registers to determine revision");
         goto failed;
     }    
-    uint8_t rev;
-    rev = ((buff[5] & 0x01) << 2) | ((buff[3] & 0x01) << 1) |
-        (buff[1] & 0x01);
+    // uint8_t rev;
+    // rev = ((buff[5] & 0x01) << 2) | ((buff[3] & 0x01) << 1) |
+    //     (buff[1] & 0x01);
 
     // Do not do the checking, for some reason the MPU-9150 returns 0
     // if (rev) {        
@@ -954,7 +954,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_int_latched(uint8_t enable)
  *  @param[out] more        Number of remaining packets.
  *  @return     0 if successful.
  */
-int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, uint32_t timestamp,
+int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, uint32_t *timestamp,
         uint8_t *sensors, uint8_t *more)
 {
     /* Assumes maximum packet size is gyro (6) + accel (6). */
@@ -984,7 +984,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
         }
     }
 
-    timestamp = hal.scheduler->millis();    
+    *timestamp = hal.scheduler->millis();    
     // read the data
     hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
     more[0] = fifo_count / packet_size - 1;
