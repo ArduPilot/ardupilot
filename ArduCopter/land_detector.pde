@@ -13,13 +13,12 @@ static bool land_complete_maybe()
 // called at 50hz
 static void update_land_detector()
 {
-    bool climb_rate_low = (abs(climb_rate) < LAND_DETECTOR_CLIMBRATE_MAX);
-    bool target_climb_rate_low = !pos_control.is_active_z() || (pos_control.get_desired_velocity().z <= LAND_DETECTOR_DESIRED_CLIMBRATE_MAX);
     bool motor_at_lower_limit = motors.limit.throttle_lower;
-    bool throttle_low = (FRAME_CONFIG == HELI_FRAME) || (motors.get_throttle_out() < get_non_takeoff_throttle());
-    bool not_rotating_fast = (ahrs.get_gyro().length() < LAND_DETECTOR_ROTATION_MAX);
+    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    accel_ef.z += GRAVITY_MSS;
+    bool accel_stationary = (accel_ef.length() < 1.0f);
 
-    if (climb_rate_low && target_climb_rate_low && motor_at_lower_limit && throttle_low && not_rotating_fast) {
+    if ( motor_at_lower_limit && accel_stationary) {
         if (!ap.land_complete) {
             // increase counter until we hit the trigger then set land complete flag
             if( land_detector < LAND_DETECTOR_TRIGGER) {

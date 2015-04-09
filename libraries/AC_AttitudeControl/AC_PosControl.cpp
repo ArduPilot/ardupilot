@@ -284,7 +284,6 @@ void AC_PosControl::rate_to_accel_z()
 {
     const Vector3f& curr_vel = _inav.get_velocity();
     float p;                                // used to capture pid values for logging
-    float desired_accel;                    // the target acceleration if the accel based throttle is enabled, otherwise the output to be sent to the motors
 
     // check speed limits
     // To-Do: check these speed limits here or in the pos->rate controller
@@ -334,11 +333,11 @@ void AC_PosControl::rate_to_accel_z()
     p = _p_vel_z.kP() * _vel_error.z;
 
     // consolidate and constrain target acceleration
-    desired_accel = _accel_feedforward.z + p;
-    desired_accel = constrain_int32(desired_accel, -32000, 32000);
+    _accel_target.z = _accel_feedforward.z + p;
+    _accel_target.z = constrain_int32(_accel_target.z, -32000, 32000);
 
     // set target for accel based throttle controller
-    accel_to_throttle(desired_accel);
+    accel_to_throttle(_accel_target.z);
 }
 
 // accel_to_throttle - alt hold's acceleration controller
