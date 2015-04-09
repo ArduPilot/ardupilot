@@ -139,10 +139,18 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_FENCE_ENABLE:
 #if GEOFENCE_ENABLED == ENABLED
-        if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
-            gcs_send_text_fmt(PSTR("Unable to set fence enabled state to %u"), cmd.p1);
-        } else {
-            gcs_send_text_fmt(PSTR("Set fence enabled state to %u"), cmd.p1);
+        if (cmd.p1 != 2) {
+            if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
+                gcs_send_text_fmt(PSTR("Unable to set fence enabled state to %u"), cmd.p1);
+            } else {
+                gcs_send_text_fmt(PSTR("Set fence enabled state to %u"), cmd.p1);
+            }
+        } else { //commanding to only disable floor
+            if (! geofence_set_floor_enabled(false)) {
+                gcs_send_text_fmt(PSTR("Unabled to disable fence floor.\n"));
+            } else {
+                gcs_send_text_fmt(PSTR("Fence floor disabled.\n"));
+            }
         }    
 #endif
         break;
@@ -407,7 +415,7 @@ static bool verify_takeoff()
         next_WP_loc = prev_WP_loc = current_loc;
 
 #if GEOFENCE_ENABLED == ENABLED
-        if (g.fence_autoenable == 1) {
+        if (g.fence_autoenable > 0) {
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
                 gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence failed (cannot autoenable"));
             } else {
