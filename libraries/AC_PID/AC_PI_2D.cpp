@@ -72,6 +72,11 @@ void AC_PI_2D::filt_hz(float hz)
 //  this should be called before any other calls to get_p, get_i or get_d
 void AC_PI_2D::set_input(const Vector2f &input)
 {
+    // don't process inf or NaN
+    if (!isfinite(input.x) || !isfinite(input.y)) {
+        return;
+    }
+
     // reset input filter to value received
     if (_flags._reset_filter) {
         _flags._reset_filter = false;
