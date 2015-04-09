@@ -2,7 +2,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include "NavioAnalogIn.h"
+#include "AnalogIn_Navio.h"
 
 #define NAVIO_ANALOGIN_DEBUG 0
 #if NAVIO_ANALOGIN_DEBUG
