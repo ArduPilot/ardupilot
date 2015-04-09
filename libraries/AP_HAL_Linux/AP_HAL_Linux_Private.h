@@ -11,7 +11,7 @@
 #include "I2CDriver.h"
 #include "SPIDriver.h"
 #include "AnalogIn.h"
-#include "NavioAnalogIn.h"
+#include "AnalogIn_Navio.h"
 #include "Storage.h"
 #include "GPIO.h"
 #include "RCInput.h"
