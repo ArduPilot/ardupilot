@@ -513,7 +513,7 @@
  # define RATE_ROLL_D        		0.004f
 #endif
 #ifndef RATE_ROLL_IMAX
- # define RATE_ROLL_IMAX         	1000
+ # define RATE_ROLL_IMAX         	2000
 #endif
 #ifndef RATE_ROLL_FILT_HZ
  # define RATE_ROLL_FILT_HZ         20.0f
@@ -529,7 +529,7 @@
  # define RATE_PITCH_D       		0.004f
 #endif
 #ifndef RATE_PITCH_IMAX
- # define RATE_PITCH_IMAX        	1000
+ # define RATE_PITCH_IMAX        	2000
 #endif
 #ifndef RATE_PITCH_FILT_HZ
  # define RATE_PITCH_FILT_HZ        20.0f
