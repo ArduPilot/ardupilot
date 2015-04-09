@@ -29,11 +29,16 @@ public:
     // Constructor
     AP_BattMonitor_SMBus_PX4(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state);
 
+    /// init
+    void init();
+
     /// read - read the battery voltage and current
     void read();
 
 private:
     int         _batt_sub;          // orb subscription description
+    int         _batt_fd;           // file descriptor
+    bool        _capacity_updated;  // capacity info read
 };
 
 #endif // AP_BATTMONITOR_SMBUS_PX4_H
