@@ -31,14 +31,21 @@ public:
     // override with a custom destructor if need be
     virtual ~AP_BattMonitor_Backend(void) {}
 
+    // initialise
+    virtual void init() {}
+
     // read the latest battery voltage
     virtual void read() = 0;
 
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
+    /// set capacity for this instance
+    void set_capacity(uint32_t capacity);
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
+    uint8_t                              _instance; // this instance
 };
 #endif // __AP_BATTMONITOR_BACKEND_H__

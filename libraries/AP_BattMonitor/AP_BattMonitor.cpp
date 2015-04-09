@@ -152,6 +152,11 @@ AP_BattMonitor::init()
 #endif
             _num_instances++;
         }
+
+        // call init function for each backend
+        if (drivers[instance] != NULL) {
+            drivers[instance]->init();
+        }
     }
 }
 

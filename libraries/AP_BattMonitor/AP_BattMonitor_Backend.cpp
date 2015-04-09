@@ -25,7 +25,8 @@
 */
 AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, uint8_t instance, AP_BattMonitor::BattMonitor_State &mon_state) :
         _mon(mon),
-        _state(mon_state)
+        _state(mon_state),
+        _instance(instance)
 {
 }
 
@@ -33,4 +34,10 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, uint8_t inst
 uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
     return (100.0f * (_mon._pack_capacity[_state.instance] - _state.current_total_mah) / _mon._pack_capacity[_state.instance]);
+}
+
+/// set capacity for this instance
+void AP_BattMonitor_Backend::set_capacity(uint32_t capacity)
+{
+    _mon._pack_capacity[_instance] = capacity;
 }
