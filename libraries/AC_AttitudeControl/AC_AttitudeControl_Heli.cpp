@@ -6,23 +6,7 @@
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
 
-    // @Param: RATE_RP_MAX
-    // @DisplayName: Angle Rate Roll-Pitch max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
-    // @Range: 9000 36000
-    // @Increment: 500
-    // @User: Advanced
-    AP_GROUPINFO("RATE_RP_MAX", 0, AC_AttitudeControl_Heli, _angle_rate_rp_max, AC_ATTITUDE_CONTROL_RATE_RP_MAX_DEFAULT),
-
-    // @Param: RATE_Y_MAX
-    // @DisplayName: Angle Rate Yaw max
-    // @Description: maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-    // @Units: Centi-Degrees/Sec
-    // @Range: 4500 18000
-    // @Increment: 500
-    // @User: Advanced
-    AP_GROUPINFO("RATE_Y_MAX",  1, AC_AttitudeControl_Heli, _angle_rate_y_max, AC_ATTITUDE_CONTROL_RATE_Y_MAX_DEFAULT),
+    // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
