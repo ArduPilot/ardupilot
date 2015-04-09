@@ -1496,6 +1496,12 @@ static void set_flight_stage(AP_SpdHgtControl::FlightStage fs)
             } else {
                 gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence disabled (autodisable)"));
             }
+        } else if (g.fence_autoenable == 2) {
+            if (! geofence_set_floor_enabled(false)) {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence floor failed (autodisable)"));
+            } else {
+                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence floor disabled (auto disable)"));
+            }
         }
 #endif
     }

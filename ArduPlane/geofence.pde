@@ -28,6 +28,7 @@ static struct GeofenceState {
                                   // last time we checked
     bool is_enabled;
     GeofenceEnableReason enable_reason;
+    bool floor_enabled;          //typically used for landing
     uint16_t breach_count;
     uint8_t breach_type;
     uint32_t breach_time;
@@ -197,6 +198,10 @@ static bool geofence_set_enabled(bool enable, GeofenceEnableReason r)
     }
 
     geofence_state->is_enabled = enable;
+    if (enable == true) {
+        //turn the floor back on if it had been off
+        geofence_set_floor_enabled(true);
+    }
     geofence_state->enable_reason = r;
     
     return true;
@@ -225,6 +230,18 @@ static bool geofence_enabled(void)
     return true;
 }
 
+/*
+ * Set floor state IF the fence is present.
+ * Return false on failure to set floor state.
+ */
+static bool geofence_set_floor_enabled(bool floor_enable) {
+    if (geofence_state == NULL) {
+        return false;
+    }
+    
+    geofence_state->floor_enabled = floor_enable;
+    return true;
+}
 
 /*
  *  return true if we have breached the geo-fence minimum altiude
@@ -295,7 +312,7 @@ static void geofence_check(bool altitude_check_only)
         return;
     }
 
-    if (geofence_check_minalt()) {
+    if (geofence_state->floor_enabled && geofence_check_minalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MINALT;
     } else if (geofence_check_maxalt()) {
@@ -454,6 +471,10 @@ static bool geofence_present(void) {
 }
 
 static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) {
+    return false;
+}
+
+static bool geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 
