@@ -84,6 +84,7 @@ private:
     AP_Int8  _enabled;              // enabled/disabled flag
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
+    AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
 
 
     // state filled in by backend
