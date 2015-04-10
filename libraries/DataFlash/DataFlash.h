@@ -501,6 +501,13 @@ struct PACKED log_AIRSPEED {
     float   offset;
 };
 
+struct PACKED log_Status {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t is_flying;
+    float is_flying_probability;
+};
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -606,6 +613,8 @@ Format characters in the format string for binary log messages
       "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
       "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+    { LOG_STATUS_MSG, sizeof(log_Status), \
+      "STAT", "IBf",  "TimeMS,isFlying,isFlyProb" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
@@ -663,6 +672,7 @@ Format characters in the format string for binary log messages
 #define LOG_COMPASS2_MSG  168
 #define LOG_COMPASS3_MSG  169
 #define LOG_MODE_MSG      170
+#define LOG_STATUS_MSG    171
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

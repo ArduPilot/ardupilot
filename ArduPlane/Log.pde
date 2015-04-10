@@ -320,6 +320,18 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+static void Log_Write_Status()
+{
+    struct log_Status pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG)
+        ,timestamp   : hal.scheduler->millis()
+        ,is_flying   : is_flying()
+        ,is_flying_probability : isFlyingProbability
+    };
+
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Sonar {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
@@ -506,6 +518,7 @@ static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
+static void Log_Write_Status() {}
 static void Log_Write_Sonar() {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
