@@ -4343,7 +4343,9 @@ void NavEKF::alignYawGPS()
         }
         // Update magnetic field states if the magnetometer is bad
         if (badMag) {
-            calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+            Vector3f eulerAngles;
+            getEulerAngles(eulerAngles);
+            calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         }
     }
 }
@@ -4714,7 +4716,9 @@ void NavEKF::performArmingChecks()
         // only reset the magnetic field and heading on the first arm. This prevents in-flight learning being forgotten for vehicles that do multiple short flights and disarm in-between.
         if (vehicleArmed && !firstArmComplete) {
             firstArmComplete = true;
-            state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+            Vector3f eulerAngles;
+            getEulerAngles(eulerAngles);
+            state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
@@ -4774,12 +4778,16 @@ void NavEKF::performArmingChecks()
     } else if (vehicleArmed && !firstMagYawInit && state.position.z < -1.5f && !assume_zero_sideslip()) {
         // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-        state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        Vector3f eulerAngles;
+        getEulerAngles(eulerAngles);
+        state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         firstMagYawInit = true;
     } else if (vehicleArmed && !secondMagYawInit && state.position.z < -5.0f && !assume_zero_sideslip()) {
         // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
-        state.quat = calcQuatAndFieldStates(_ahrs->roll, _ahrs->pitch);
+        Vector3f eulerAngles;
+        getEulerAngles(eulerAngles);
+        state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         secondMagYawInit = true;
     }
 
