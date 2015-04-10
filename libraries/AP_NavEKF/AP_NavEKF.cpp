@@ -2630,9 +2630,12 @@ void NavEKF::EstimateTerrainOffset()
     // start performance timer
     perf_begin(_perf_OpticalFlowEKF);
 
+    // constrain height above ground to be above range measured on ground
+    float heightAboveGndEst = max((terrainState - state.position.z), RNG_MEAS_ON_GND);
+
     // calculate a predicted LOS rate squared
     float velHorizSq = sq(state.velocity.x) + sq(state.velocity.y);
-    float losRateSq = velHorizSq / sq(terrainState - state.position[2]);
+    float losRateSq = velHorizSq / sq(heightAboveGndEst);
 
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
     if (!fuseRngData && (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f || onGround)) {
@@ -2854,7 +2857,7 @@ void NavEKF::FuseOptFlow()
         SH_LOS[0] = sq(q0) - sq(q1) - sq(q2) + sq(q3);
         SH_LOS[1] = vn*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + ve*(2*q0*q3 + 2*q1*q2);
         SH_LOS[2] = ve*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd*(2*q0*q1 + 2*q2*q3) - vn*(2*q0*q3 - 2*q1*q2);
-        SH_LOS[3] = 1/(pd - terrainState);
+        SH_LOS[3] = -1.0f/heightAboveGndEst;
 
         // Calculate common expressions for Kalman gains
         // calculate innovation variance for Y axis observation
@@ -2876,7 +2879,7 @@ void NavEKF::FuseOptFlow()
         SK_LOS[4] = SH_LOS[0]*SH_LOS[3]*(2*q1*vd + 2*q0*ve - 2*q3*vn);
         SK_LOS[5] = SH_LOS[0]*SH_LOS[3]*(2*q3*vd + 2*q2*ve + 2*q1*vn);
         SK_LOS[6] = sq(q0) - sq(q1) + sq(q2) - sq(q3);
-        SK_LOS[7] = 1/sq(pd - terrainState);
+        SK_LOS[7] = 1.0f/sq(heightAboveGndEst);
         SK_LOS[8] = sq(q0) + sq(q1) - sq(q2) - sq(q3);
         SK_LOS[9] = SH_LOS[3];
 
@@ -2899,7 +2902,7 @@ void NavEKF::FuseOptFlow()
         H_LOS[4] = SH_LOS[0]*SH_LOS[3]*(2*q0*q3 - 2*q1*q2);
         H_LOS[5] = -SH_LOS[0]*SH_LOS[3]*(sq(q0) - sq(q1) + sq(q2) - sq(q3));
         H_LOS[6] = -SH_LOS[0]*SH_LOS[3]*(2*q0*q1 + 2*q2*q3);
-        H_LOS[9] = (SH_LOS[0]*SH_LOS[2])/sq(pd - terrainState);
+        H_LOS[9] = (SH_LOS[0]*SH_LOS[2])/sq(heightAboveGndEst);
 
         // calculate Kalman gains for X LOS rate
         Kfusion[0] = -SK_LOS[1]*(P[0][0]*tempVar[0] + P[0][1]*tempVar[1] - P[0][3]*tempVar[2] + P[0][2]*tempVar[7] - P[0][4]*tempVar[3] + P[0][6]*tempVar[4] - P[0][9]*tempVar[5] + P[0][5]*tempVar[6]);
@@ -2962,7 +2965,7 @@ void NavEKF::FuseOptFlow()
         H_LOS[4] = SH_LOS[0]*SH_LOS[3]*(sq(q0) + sq(q1) - sq(q2) - sq(q3));
         H_LOS[5] = SH_LOS[0]*SH_LOS[3]*(2*q0*q3 + 2*q1*q2);
         H_LOS[6] = -SH_LOS[0]*SH_LOS[3]*(2*q0*q2 - 2*q1*q3);
-        H_LOS[9] = -(SH_LOS[0]*SH_LOS[1])/sq(pd - terrainState);
+        H_LOS[9] = -(SH_LOS[0]*SH_LOS[1])/sq(heightAboveGndEst);
 
         // Calculate Kalman gains for Y LOS rate
         Kfusion[0] = SK_LOS[0]*(P[0][0]*tempVar[0] + P[0][1]*tempVar[1] - P[0][2]*tempVar[2] + P[0][3]*tempVar[3] + P[0][5]*tempVar[4] - P[0][6]*tempVar[5] - P[0][9]*tempVar[6] + P[0][4]*tempVar[7]);
