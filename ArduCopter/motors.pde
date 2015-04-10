@@ -240,12 +240,18 @@ static bool pre_arm_checks(bool display_failure)
             }
             return false;
         }
-        // check Baro & inav alt are within limits
-        if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
+        // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
+        // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
+        // that may differ from the baro height due to baro drift.
+        nav_filter_status filt_status = inertial_nav.get_filter_status();
+        bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+        if (using_baro_ref) {
+            if (fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
+                }
+                return false;
             }
-            return false;
         }
     }
 
@@ -590,17 +596,17 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         return true;
     }
 
-    // Check Baro & inav alt are within 1m if EKF is operating in an absolute position mode.
+    // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
     // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
     // that may differ from the baro height due to baro drift.
     nav_filter_status filt_status = inertial_nav.get_filter_status();
-    bool usingBaroRef = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
-    if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) && usingBaroRef) {
-        if(fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+    bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+    if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) && using_baro_ref) {
+        if (fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Altitude disparity"));
             }
-        return false;
+            return false;
         }
     }
 
