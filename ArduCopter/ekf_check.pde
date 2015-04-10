@@ -90,7 +90,7 @@ static bool ekf_over_threshold()
     }
 
     // return true immediately if position is bad
-    if (!position_ok()) {
+    if (!position_ok() && !optflow_position_ok()) {
         return true;
     }
 
