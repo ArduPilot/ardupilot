@@ -31,8 +31,8 @@ int8_t AP_Scheduler::current_task = -1;
 const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
-    // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.
-    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns
+    // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table. The option ShowAll makes all executions be logged as well as slips.
+    // @Values: 0:Disabled,2:ShowSlips,3:ShowOverruns,4:ShowAll
     // @User: Advanced
     AP_GROUPINFO("DEBUG",    0, AP_Scheduler, _debug, 0),
     AP_GROUPEND
@@ -97,16 +97,20 @@ void AP_Scheduler::run(uint16_t time_available)
                 // work out how long the event actually took
                 now = hal.scheduler->micros();
                 uint32_t time_taken = now - _task_time_started;
-                
-                if (time_taken > _task_time_allowed) {
+
+                if (time_taken > _task_time_allowed && _debug == 3) {
                     // the event overran!
-                    if (_debug > 2) {
-                        hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"),
-                                              (unsigned)i, 
-                                              (unsigned)time_taken,
-                                              (unsigned)_task_time_allowed);
-                    }
+                    hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"),
+                                          (unsigned)i,
+                                          (unsigned)time_taken,
+                                          (unsigned)_task_time_allowed);
+                } else if (_debug > 3) {
+                    hal.console->printf_P(PSTR("Scheduler task[%u] (%u/%u)\n"),
+                                          (unsigned)i,
+                                          (unsigned)time_taken,
+                                          (unsigned)_task_time_allowed);
                 }
+
                 if (time_taken >= time_available) {
                     goto update_spare_ticks;
                 }
