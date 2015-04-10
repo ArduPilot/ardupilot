@@ -50,45 +50,6 @@ public:
 private:
     // internal variables
     bool _initialised;              // true once the driver has been initialised
-
-    // state of small EKF for gimbal
-    SmallEKF _ekf;
-
-    // keep last gimbal report
-    mavlink_gimbal_report_t _gimbal_report;
-
-    float vehicleYawRateFilt;
-    const float K_gimbalRate;
-    const float angRateLimit;
-
-    // circular frequency (rad/sec) constant of filter applied to forward path vehicle yaw rate
-    // this frequency must not be larger than the update rate (Hz).
-    // reducing it makes the gimbal yaw less responsive to vehicle yaw
-    // increasing it makes the gimbal yawe more responsive to vehicle yaw
-    const float yawRateFiltPole;
-
-    // amount of yaw angle that we permit the gimbal to lag the vehicle when operating in slave mode
-    // reducing this makes the gimbal respond more to vehicle yaw disturbances
-    const float yawErrorLimit;
-
-    // quaternion demanded at the previous time step
-    Quaternion lastQuatDem;
-
-    Vector3f quaternion_to_vector(const Quaternion &quat);
-    Matrix3f vector312_to_rotation_matrix(const Vector3f &vector);
-    Vector3f gimbal_update_control1(const Vector3f &ef_target_euler_rad,
-                                    float delta_time, 
-                                    const Vector3f &delta_angles,
-                                    const Vector3f &delta_velocity,
-                                    const Vector3f &joint_angles);
-    Vector3f gimbal_update_control2(const Vector3f &ef_target_euler_rad,
-                                    float delta_time, 
-                                    const Vector3f &delta_angles,
-                                    const Vector3f &delta_velocity,
-                                    const Vector3f &joint_angles);
-    Vector3f getGimbalRateDemVecYaw(const Vector3f &ef_target_euler_rad, float delta_time, const Quaternion &quatEst, const Vector3f &joint_angles);
-    Vector3f getGimbalRateDemVecTilt(const Vector3f &ef_target_euler_rad, const Quaternion &quatEst);
-    Vector3f getGimbalRateDemVecForward(const Vector3f &ef_target_euler_rad, float delta_time, const Quaternion &quatEst);
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
