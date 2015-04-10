@@ -81,3 +81,4 @@ status.txt
 tags
 test.ArduCopter/*
 Thumbs.db
+!mk/PX4/ROMFS/firmware/*.bin
