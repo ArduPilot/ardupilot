@@ -82,7 +82,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 	// @Param: AUTO_TRIGGER_PIN
 	// @DisplayName: Auto mode trigger pin
 	// @Description: pin number to use to enable the throttle in auto mode. If set to -1 then don't use a trigger, otherwise this is a pin number which if held low in auto mode will enable the motor to run. If the switch is released while in AUTO then the motor will stop again. This can be used in combination with INITIAL_MODE to give a 'press button to start' rover with no receiver.
-	// @Values: -1:Disabled,0-8:TiggerPin
+	// @Values: -1:Disabled, 0-8:APM TriggerPin, 50-55: Pixhawk TriggerPin
 	// @User: standard
 	GSCALAR(auto_trigger_pin,        "AUTO_TRIGGER_PIN", -1),
 
