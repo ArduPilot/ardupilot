@@ -203,10 +203,7 @@ void OreoLED_PX4::update()
     // send colours (later we will set macro if required)
     if (last_stage < 10) {
         if (initialization_done) {
-            set_macro(OREOLED_FRONTLEFT, OREOLED_PARAM_MACRO_WHITE); // white
-            set_macro(OREOLED_FRONTRIGHT, OREOLED_PARAM_MACRO_WHITE); // white
-            set_macro(OREOLED_BACKLEFT, OREOLED_PARAM_MACRO_RED);    // red
-            set_macro(OREOLED_BACKRIGHT, OREOLED_PARAM_MACRO_RED);   // red
+            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
         }
         last_stage = 10;
     } else if (last_stage >= 10) {
@@ -215,15 +212,11 @@ void OreoLED_PX4::update()
 
             if (AP_Notify::flags.autopilot_mode) {
                 // autopilot flight modes start breathing macro
+                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
                 set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_BREATH);
             } else {
                 // manual flight modes stop breathing -- solid color
-                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_RESET);
-                uint8_t oreoled_pattern_solid = OREOLED_PATTERN_SOLID;
-                send_bytes(0, (uint8_t) 1, &oreoled_pattern_solid);
-                send_bytes(1, (uint8_t) 1, &oreoled_pattern_solid);
-                send_bytes(2, (uint8_t) 1, &oreoled_pattern_solid);
-                send_bytes(3, (uint8_t) 1, &oreoled_pattern_solid);
+                set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
             }
 
             // record we have processed this change
