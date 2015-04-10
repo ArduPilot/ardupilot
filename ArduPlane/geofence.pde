@@ -290,6 +290,11 @@ static void geofence_check(bool altitude_check_only)
     uint8_t breach_type = FENCE_BREACH_NONE;
     struct Location loc;
 
+    // Never trigger a fence breach in the final stage of landing
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        return;
+    }
+
     if (geofence_check_minalt()) {
         outside = true;
         breach_type = FENCE_BREACH_MINALT;
