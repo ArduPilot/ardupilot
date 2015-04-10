@@ -320,6 +320,25 @@ static void Log_Write_Nav_Tuning()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_Status {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint8_t is_flying;
+    float is_flying_probability;
+};
+
+static void Log_Write_Status()
+{
+    struct log_Status pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG)
+        ,timestamp   : hal.scheduler->millis()
+        ,is_flying   : is_flying()
+        ,is_flying_probability : isFlyingProbability
+    };
+
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Sonar {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
@@ -450,6 +469,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "IBBcfff",  "TimeMS,Type,State,Servo,Demanded,Achieved,P" },
+    { LOG_STATUS_MSG, sizeof(log_Status),
+      "STAT", "IBf",  "TimeMS,isFlying,isFlyProb" },
 #if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
@@ -505,6 +526,7 @@ static void Log_Write_IMU() {}
 static void Log_Write_RC() {}
 static void Log_Write_Airspeed(void) {}
 static void Log_Write_Baro(void) {}
+static void Log_Write_Status() {}
 static void Log_Write_Sonar() {}
 #if OPTFLOW == ENABLED
 static void Log_Write_Optflow() {}
