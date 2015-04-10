@@ -418,7 +418,7 @@ then
 fi
 
 # optional oreo leds
-if oreoled start
+if oreoled start alwaysupdate
 then
     echo "oreoled started OK"
 fi
