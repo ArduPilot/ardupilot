@@ -170,44 +170,69 @@
 		</entry>
 	</enum>
 	
-    <!-- GoPro command result enumeration -->
-    <enum name="GOPRO_CMD_RESULT">
-        <entry name="GOPRO_CMD_RESULT_UNKNOWN" value="0">
-            <description>The result of the command is unknown</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_SUCCESSFUL" value="1">
-            <description>The command was successfully sent, and a response was successfully received</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_SEND_CMD_START_TIMEOUT" value="2">
-            <description>Timed out waiting for the GoPro to acknowledge our request to send a command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_SEND_CMD_COMPLETE_TIMEOUT" value="3">
-            <description>Timed out waiting for the GoPro to read the command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_GET_RESPONSE_START_TIMEOUT" value="4">
-            <description>Timed out waiting for the GoPro to begin transmitting a response to the command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_GET_RESPONSE_COMPLETE_TIMEOUT" value="5">
-            <description>Timed out waiting for the GoPro to finish transmitting a response to the command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_GET_CMD_COMPLETE_TIMEOUT" value="6">
-            <description>Timed out waiting for the GoPro to finish transmitting its own command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_SEND_RESPONSE_START_TIMEOUT" value="7">
-            <description>Timed out waiting for the GoPro to start reading a response to its own command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_SEND_RESPONSE_COMPLETE_TIMEOUT" value="8">
-            <description>Timed out waiting for the GoPro to finish reading a response to its own command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RESULT_PREEMPTED" value="9">
-            <description>Command to the GoPro was preempted by the GoPro sending its own command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RECEIVED_DATA_OVERFLOW" value="10">
-            <description>More data than expected received in response to the command</description>
-        </entry>
-        <entry name="GOPRO_CMD_RECEIVED_DATA_UNDERFLOW" value="11">
-            <description>Less data than expected received in response to the command</description>
-        </entry>
+	<enum name="GIMBAL_AXIS_CALIBRATION_REQUIRED">
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_UNKNOWN" value="0">
+			<description>Whether or not this axis requires calibration is unknown at this time</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_TRUE" value="1">
+			<description>This axis requires calibration</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_FALSE" value="2">
+			<description>This axis does not require calibration</description>
+		</entry>
+	</enum>
+	
+    <!-- GoPro System Enumerations -->
+    <enum name="GOPRO_HEARTBEAT_STATUS">
+      <entry name="GOPRO_HEARTBEAT_STATUS_DISCONNECTED" value="0">
+        <description>No GoPro connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_INCOMPATIBLE" value="1">
+        <description>The detected GoPro is not HeroBus compatible</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_OFF" value="2">
+        <description>A HeroBus compatible GoPro is connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_ON" value="3">
+        <description>A HeroBus compatible GoPro is connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_RECORDING" value="4">
+        <description>A HeroBus compatible GoPro is connected and recording</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_OVERTEMP" value="5">
+        <description>A HeroBus compatible GoPro is connected and overtemperature</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_STORAGE" value="6">
+        <description>A HeroBus compatible GoPro is connected and storage is missing or full</description>
+      </entry>
+    </enum>
+    <enum name="GOPRO_SET_RESPONSE_RESULT">
+      <entry name="GOPRO_SET_RESPONSE_RESULT_FAILURE" value="0">
+        <description>The write message with ID indicated failed</description>
+      </entry>
+      <entry name="GOPRO_SET_RESPONSE_RESULT_SUCCESS" value="1">
+        <description>The write message with ID indicated succeeded</description>
+      </entry>
+    </enum>
+    <enum name="GOPRO_COMMAND">
+      <entry name="GOPRO_COMMAND_POWER" value="0">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_CAPTURE_MODE" value="1">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_SHUTTER" value="2">
+        <description>(___/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_BATTERY" value="3">
+        <description>(Get/___)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_MODEL" value="4">
+        <description>(Get/___)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_REQUEST_FAILED" value="254">
+        <description>(Get/___)</description>
+      </entry>
     </enum>
 
     <!-- led control pattern enums (enumeration of specific patterns) -->
@@ -742,39 +767,61 @@
         <field name="test_section_progress" type="uint8_t">The progress of the current test section, 0x64=100%</field>
         <field name="test_status" type="uint8_t">The status of the currently executing test section.  The meaning of this is test and section-dependent</field>
     </message>
-
-    <!-- 211 to 214 RESERVED for more GIMBAL -->
-
-    <message name="GOPRO_POWER_ON" id="215">
-        <description>Instruct a HeroBus attached GoPro to power on</description>
-        <field name="target_system" type="uint8_t">System ID</field>
+    
+    <message name="GIMBAL_REQUEST_AXIS_CALIBRATION_STATUS" id="211">
+    	<description>
+    		Requests the calibration status for all gimbal axes.  Should result in a GIMBAL_REPORT_AXIS_CALIBRATION_STATUS message being generated by the gimbal
+    	</description>
+    	<field name="target_system" type="uint8_t">System ID</field>
         <field name="target_component" type="uint8_t">Component ID</field>
     </message>
-
-    <message name="GOPRO_POWER_OFF" id="216">
-        <description>Instruct a HeroBus attached GoPro to power off</description>
-        <field name="target_system" type="uint8_t">System ID</field>
-        <field name="target_component" type="uint8_t">Component ID</field>
+    
+    <message name="GIMBAL_REPORT_AXIS_CALIBRATION_STATUS" id="212">
+    	<description>
+    		Reports the calibration status for each gimbal axis (whether the axis requires calibration or not)
+    	</description>
+    	<field name="yaw_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the yaw axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field>
+    	<field name="pitch_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the pitch axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field>
+    	<field name="roll_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the roll axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field> 
     </message>
 
-    <message name="GOPRO_COMMAND" id="217">
-        <description>Send a command to a HeroBus attached GoPro.  Will generate a GOPRO_RESPONSE message with results of the command</description>
-        <field name="target_system" type="uint8_t">System ID</field>
+	<message name="GIMBAL_REQUEST_AXIS_CALIBRATION" id="213">
+		<description>
+			Requests any currently uncalibrated gimbal axes to run the axis calibration procedure.  An axis is considered uncalibrated if its commutation calibration
+			slope and intercept are 0
+		</description>
+		<field name="target_system" type="uint8_t">System ID</field>
         <field name="target_component" type="uint8_t">Component ID</field>
-        <field name="gp_cmd_name_1" type="uint8_t">First character of the 2 character GoPro command</field>
-        <field name="gp_cmd_name_2" type="uint8_t">Second character of the 2 character GoPro command</field>
-        <field name="gp_cmd_parm" type="uint8_t">Parameter for the command</field>
-    </message>
+	</message>
+    <!-- 214 RESERVED for more GIMBAL -->
 
-    <message name="GOPRO_RESPONSE" id="218">
-        <description>
-            Response to a command sent to a HeroBus attached GoPro with a GOPRO_COMMAND message.  Contains response from the camera as well as information about any errors encountered while attempting to communicate with the camera
-        </description>
-        <field name="gp_cmd_name_1" type="uint8_t">First character of the 2 character GoPro command that generated this response</field>
-        <field name="gp_cmd_name_2" type="uint8_t">Second character of the 2 character GoPro command that generated this response</field>
-        <field name="gp_cmd_response_status" type="uint8_t">Response byte from the GoPro's response to the command.  0 = Success, 1 = Failure</field>
-        <field name="gp_cmd_response_argument" type="uint8_t">Response argument from the GoPro's response to the command</field>
-        <field name="gp_cmd_result" type="uint16_t" enum="GOPRO_CMD_RESULT">Result of the command attempt to the GoPro, as defined by GOPRO_CMD_RESULT enum.</field>
+    <!-- GoPro Messages -->
+    <message name="GOPRO_HEARTBEAT" id="215">
+      <description>Heartbeat from a HeroBus attached GoPro</description>
+      <field name="status" type="uint8_t" enum="GOPRO_HEARTBEAT_STATUS">Status</field>
+    </message>
+    <message name="GOPRO_GET_REQUEST" id="216">
+      <description>Request a GOPRO_COMMAND response from the GoPro</description>
+      <field name="target_system" type="uint8_t">System ID</field>
+      <field name="target_component" type="uint8_t">Component ID</field>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+    </message>
+    <message name="GOPRO_GET_RESPONSE" id="217">
+      <description>Response from a GOPRO_COMMAND get request</description>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="value" type="uint8_t">Value</field>
+    </message>
+    <message name="GOPRO_SET_REQUEST" id="218">
+      <description>Request to set a GOPRO_COMMAND with a desired</description>
+      <field name="target_system" type="uint8_t">System ID</field>
+      <field name="target_component" type="uint8_t">Component ID</field>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="value" type="uint8_t">Value</field>
+    </message>
+    <message name="GOPRO_SET_RESPONSE" id="219">
+      <description>Response from a GOPRO_COMMAND set request</description>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="result" type="uint8_t" enum="GOPRO_SET_RESPONSE_RESULT">Result</field>
     </message>
 
     <!-- 219 to 225 RESERVED for more GOPRO-->
