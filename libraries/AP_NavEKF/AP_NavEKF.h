@@ -427,6 +427,9 @@ private:
     // checks the health of the range finder
     void checkRngHealth(float rawRange);
 
+    // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
+    void detectOptFlowTakeoff(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -709,6 +712,10 @@ private:
     float minHgtPreFlight;          // minimum reading returned by the range sensor during pre-arm checks
     float maxHgtPreFlight;          // maximum reading returned by the range sensor during pre-arm checks
 
+    // Movement detector
+    bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
+    float rangeAtArming;            // range finder measurement when armed
+    uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     bool haveDeltaAngles;
 

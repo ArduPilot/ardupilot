@@ -4122,15 +4122,23 @@ void NavEKF::readHgtData()
                 // calculate offset to baro data that enables baro to be used as a backup
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
                 baroHgtOffset = 0.2f * (_baro.get_altitude() + state.position.z) + 0.8f * baroHgtOffset;
-            } else {
+            } else if (vehicleArmed && takeOffDetected) {
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
                 hgtMea = max(_baro.get_altitude() - baroHgtOffset, (_rngOnGnd_cm * 0.01f));
                 // get states that were stored at the time closest to the measurement time, taking measurement delay into account
                 RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
+            } else {
+                // If we are on ground and have no range finder reading, assume the nominal on-ground height
+                hgtMea = _rngOnGnd_cm * 0.01f;
+                // get states that were stored at the time closest to the measurement time, taking measurement delay into account
+                statesAtHgtTime = state;
+                // calculate offset to baro data that enables baro to be used as a backup
+                // filter offset to reduce effect of baro noise and other transient errors on estimate
+                baroHgtOffset = 0.2f * (_baro.get_altitude() + state.position.z) + 0.8f * baroHgtOffset;
             }
         } else {
             // use baro measurement and correct for baro offset
-            hgtMea = _baro.get_altitude() - baroHgtOffset;
+            hgtMea = _baro.get_altitude();
             // get states that were stored at the time closest to the measurement time, taking measurement delay into account
             RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
         }
@@ -4216,15 +4224,18 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // perform a health test of the range finder
     checkRngHealth(rawSonarRange);
     // check for takeoff if relying on optical flow and zero measurements until takeoff detected
-    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sesnor data)
-    if (rawFlowQuality > 50 && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
-        // recall vehicle states at mid sample time for flow observations allowing for delays
-        RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
-        // calculate rotation matrices at mid sample time for flow observations
-        statesAtFlowTime.quat.rotation_matrix(Tbn_flow);
-        Tnb_flow = Tbn_flow.transposed();
+    // if we haven't taken off - constrain position and velocity states
+    if (_fusionModeGPS == 3) {
+        detectOptFlowTakeoff();
+    }
+    // recall vehicle states at mid sample time for flow observations allowing for delays
+    RecallStates(statesAtFlowTime, imuSampleTime_ms - _msecFLowDelay - flowTimeDeltaAvg_ms/2);
+    // calculate rotation matrices at mid sample time for flow observations
+    statesAtFlowTime.quat.rotation_matrix(Tbn_flow);
+    Tnb_flow = Tbn_flow.transposed();
+    // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
+    if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor rates for bias
-        
         omegaAcrossFlowTime.x = rawGyroRates.x - flowGyroBias.x;
         omegaAcrossFlowTime.y = rawGyroRates.y - flowGyroBias.y;
         // write uncorrected flow rate measurements that will be used by the focal length scale factor estimator
@@ -4243,12 +4254,13 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
     if (rangeHealth >= 3) {
         statesAtRngTime = statesAtFlowTime;
-        rngMea = rawSonarRange;
+        rngMea = max(rawSonarRange,(_rngOnGnd_cm * 0.01f));
         newDataRng = true;
         rngValidMeaTime_ms = imuSampleTime_ms;
     } else if (!vehicleArmed) {
+        // if not armed we assume
         statesAtRngTime = statesAtFlowTime;
-        rngMea = max(rawSonarRange,(_rngOnGnd_cm * 0.01f));
+        rngMea = _rngOnGnd_cm * 0.01f;
         newDataRng = true;
         rngValidMeaTime_ms = imuSampleTime_ms;
     } else {
@@ -4701,13 +4713,14 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.attitude = !state.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
-    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
+    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy && optFlowRngHealthy; // we should be able to estimate a relative position when we enter flight mode
     status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
+    status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
 }
 
 // send an EKF_STATUS message to GCS
@@ -4759,6 +4772,8 @@ void NavEKF::performArmingChecks()
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
+        // reset the flag that indicates takeoff for use by optical flow navigation
+        takeOffDetected = false;
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
         if (!vehicleArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
@@ -4788,6 +4803,12 @@ void NavEKF::performArmingChecks()
             flowValidMeaTime_ms = imuSampleTime_ms;
             // Reset the last valid flow fusion time
             prevFlowFuseTime_ms = imuSampleTime_ms;
+            // this avoids issues casued by the time delay associated with arming that can trigger short timeouts
+            rngValidMeaTime_ms = imuSampleTime_ms;
+            // store the range finder measurement which will be used as a reference to detect when we have taken off
+            rangeAtArming = rngMea;
+            // set the time at which we arm to assist with takeoff detection
+            timeAtArming_ms =  imuSampleTime_ms;
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
@@ -4956,4 +4977,22 @@ void NavEKF::checkRngHealth(float rawRange)
 }
 
 // Detect takeoff for optical flow navigation
+void NavEKF::detectOptFlowTakeoff(void)
+{
+    if (vehicleArmed && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        Vector3f angRateVec;
+        Vector3f gyroBias;
+        getGyroBias(gyroBias);
+        bool dual_ins = ins.get_gyro_health(0) && ins.get_gyro_health(1);
+        if (dual_ins) {
+                angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
+        } else {
+                angRateVec = ins.get_gyro() - gyroBias;
+        }
+
+        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rangeAtArming + 0.1f)));
+    }
+}
+
 #endif // HAL_CPU_CLASS
