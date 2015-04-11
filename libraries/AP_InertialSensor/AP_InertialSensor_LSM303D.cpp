@@ -826,6 +826,6 @@ void AP_InertialSensor_LSM303D::_dump_registers(void)
 float AP_InertialSensor_LSM303D::get_delta_time() const
 {
     // the sensor runs at 200Hz
-    return 0.005 * _num_samples;
+    return 0.005f * _num_samples;
 }
 #endif

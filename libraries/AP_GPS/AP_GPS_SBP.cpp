@@ -126,9 +126,9 @@ AP_GPS_SBP::calculate_base_pos(void)
 
     wgsllh2ecef(current_llh, current_ecef);
 
-    current_baseline_ecef[0] = ((double)last_sbp_baseline_ecef_msg.x) / 1000.0;
-    current_baseline_ecef[1] = ((double)last_sbp_baseline_ecef_msg.y) / 1000.0;
-    current_baseline_ecef[2] = ((double)last_sbp_baseline_ecef_msg.z) / 1000.0;
+    current_baseline_ecef[0] = ((double)last_sbp_baseline_ecef_msg.x) / 1000.0f;
+    current_baseline_ecef[1] = ((double)last_sbp_baseline_ecef_msg.y) / 1000.0f;
+    current_baseline_ecef[2] = ((double)last_sbp_baseline_ecef_msg.z) / 1000.0f;
 
     base_pos_ecef = current_ecef - current_baseline_ecef;
     has_rtk_base_pos = true;
@@ -275,9 +275,9 @@ AP_GPS_SBP::update_state(bool has_new_message)
 
         //Grab the current baseline
         Vector3d current_baseline_ecef; //units are currently in mm
-        current_baseline_ecef[0] = ((double)last_sbp_baseline_ecef_msg.x) / 1000.0;
-        current_baseline_ecef[1] = ((double)last_sbp_baseline_ecef_msg.y) / 1000.0;
-        current_baseline_ecef[2] = ((double)last_sbp_baseline_ecef_msg.z) / 1000.0;
+        current_baseline_ecef[0] = ((double)last_sbp_baseline_ecef_msg.x) / 1000.0f;
+        current_baseline_ecef[1] = ((double)last_sbp_baseline_ecef_msg.y) / 1000.0f;
+        current_baseline_ecef[2] = ((double)last_sbp_baseline_ecef_msg.z) / 1000.0f;
 
         //Offset the reference point from that
         Vector3d current_pos_ecef;
@@ -335,9 +335,9 @@ AP_GPS_SBP::update_state_velocity(void)
 {
 
     state.time_week_ms      = last_sbp_vel_ned_msg.tow;
-    state.velocity[0]       = (float)(last_sbp_vel_ned_msg.n / 1000.0);
-    state.velocity[1]       = (float)(last_sbp_vel_ned_msg.e / 1000.0);
-    state.velocity[2]       = (float)(last_sbp_vel_ned_msg.d / 1000.0);
+    state.velocity[0]       = (float)(last_sbp_vel_ned_msg.n / 1000.0f);
+    state.velocity[1]       = (float)(last_sbp_vel_ned_msg.e / 1000.0f);
+    state.velocity[2]       = (float)(last_sbp_vel_ned_msg.d / 1000.0f);
 
     float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
     state.ground_speed = safe_sqrt(ground_vector_sq);
@@ -888,9 +888,9 @@ AP_GPS_SBP::logging_log_baseline_ecef(struct sbp_baseline_ecef_t* b)
 
     logging_write_headers();
 
-    float x = b->x / 1000.0;
-    float y = b->y / 1000.0;
-    float z = b->z / 1000.0;
+    float x = b->x / 1000.0f;
+    float y = b->y / 1000.0f;
+    float z = b->z / 1000.0f;
     int32_t len = (int32_t) (safe_sqrt(x*x+y*y+z*z) * 1000.0f);
 
     struct log_SbpBaseline pkt = {

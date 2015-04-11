@@ -27,7 +27,7 @@ const int8_t AP_ADC_HIL::sensorSign[6]  = { 1, -1, -1,-1,  1,  1};
 const float AP_ADC_HIL::gyroBias[3]     = {1665,1665,1665};
 const float AP_ADC_HIL::accelBias[3]    = {2025,2025,2025};
 // gyroScale = 1/[GyroGain*pi/180]   GyroGains (0.4,0.41,0.41)
-const float AP_ADC_HIL::gyroScale[3] = {143.239, 139.746, 139.746};
+const float AP_ADC_HIL::gyroScale[3] = {143.239f, 139.746f, 139.746f};
 const float AP_ADC_HIL::accelScale[3] = {418,418,418}; // adcPerG
     
 AP_ADC_HIL::AP_ADC_HIL()

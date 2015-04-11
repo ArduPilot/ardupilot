@@ -43,7 +43,7 @@ static const struct {
 } pin_scaling[] = {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     // PX4 has 4 FMU analog input pins
-    { 10, (5.7*3.3)/4096 }, // FMU battery on multi-connector pin 5,
+    { 10, (5.7f*3.3f)/4096 }, // FMU battery on multi-connector pin 5,
                             // 5.7:1 scaling
     { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
     { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
@@ -379,7 +379,7 @@ AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new PX4AnalogSource(pin, 0.0);
+            _channels[j] = new PX4AnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }

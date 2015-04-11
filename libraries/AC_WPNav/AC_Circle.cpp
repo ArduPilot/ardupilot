@@ -101,7 +101,7 @@ void AC_Circle::update()
 
         // double check dt is reasonable
         if (dt >= 0.2f) {
-            dt = 0.0;
+            dt = 0.0f;
         }
 
         // ramp up angular velocity to maximum

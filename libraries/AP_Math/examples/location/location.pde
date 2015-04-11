@@ -40,12 +40,12 @@ static const struct {
     Vector2f wp1, wp2, location;
     bool passed;
 } test_points[] = {
-    { Vector2f(-35.3647759314918, 149.16265692810987),
-      Vector2f(-35.36279922658029, 149.16352169591426),
-      Vector2f(-35.36214956969903, 149.16461410046492), true },
-    { Vector2f(-35.36438601157189, 149.16613916088568),
-      Vector2f(-35.364432558610254, 149.16287313113048),
-      Vector2f(-35.36491510034746, 149.16365837225004), false },
+    { Vector2f(-35.3647759314918f, 149.16265692810987f),
+      Vector2f(-35.36279922658029f, 149.16352169591426f),
+      Vector2f(-35.36214956969903f, 149.16461410046492f), true },
+    { Vector2f(-35.36438601157189f, 149.16613916088568f),
+      Vector2f(-35.364432558610254f, 149.16287313113048f),
+      Vector2f(-35.36491510034746f, 149.16365837225004f), false },
     { Vector2f(0, 0),
       Vector2f(0, 1),
       Vector2f(0, 2), true },
@@ -101,7 +101,7 @@ static void test_one_offset(const struct Location &loc,
     hal.console->printf("location_offset took %u usec\n",
                         (unsigned)(hal.scheduler->micros() - t1));
     dist2 = get_distance(loc, loc2);
-    bearing2 = get_bearing_cd(loc, loc2) * 0.01;
+    bearing2 = get_bearing_cd(loc, loc2) * 0.01f;
     float brg_error = bearing2-bearing;
     if (brg_error > 180) {
         brg_error -= 360;
@@ -109,8 +109,8 @@ static void test_one_offset(const struct Location &loc,
         brg_error += 360;
     }
 
-    if (fabsf(dist - dist2) > 1.0 ||
-        brg_error > 1.0) {
+    if (fabsf(dist - dist2) > 1.0f ||
+        brg_error > 1.0f) {
         hal.console->printf("Failed offset test brg_error=%f dist_error=%f\n",
                       brg_error, dist-dist2);
     }
@@ -119,8 +119,8 @@ static void test_one_offset(const struct Location &loc,
 static const struct {
     float ofs_north, ofs_east, distance, bearing;
 } test_offsets[] = {
-    { 1000, 1000,  sqrt(2.0)*1000, 45 },
-    { 1000, -1000, sqrt(2.0)*1000, -45 },
+    { 1000, 1000,  sqrt(2.0f)*1000, 45 },
+    { 1000, -1000, sqrt(2.0f)*1000, -45 },
     { 1000, 0,     1000, 0 },
     { 0, 1000,     1000, 90 },
 };

@@ -71,9 +71,9 @@ void loop()
         hal.console->print(" Temperature:");
         hal.console->print( bmp085.get_temperature());
         hal.console->print(" Altitude:");
-        tmp_float = ( bmp085.get_pressure() / 101325.0);
-        tmp_float = pow(tmp_float, 0.190295);
-        float alt = 44330.0 * (1.0 - tmp_float);
+        tmp_float = ( bmp085.get_pressure() / 101325.0f);
+        tmp_float = pow(tmp_float, 0.190295f);
+        float alt = 44330.0f * (1.0f - tmp_float);
         hal.console->print(alt);
         hal.console->printf(" t=%lu", 
 			    read_time);

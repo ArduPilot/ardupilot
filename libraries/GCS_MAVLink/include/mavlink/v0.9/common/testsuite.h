@@ -673,7 +673,7 @@ static void mavlink_test_param_value(uint8_t system_id, uint8_t component_id, ma
         uint16_t i;
 	mavlink_param_value_t packet_in = {
 		{ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 },
-	122.0,
+	122.0f,
 	18223,
 	18327,
 	};
@@ -724,7 +724,7 @@ static void mavlink_test_param_set(uint8_t system_id, uint8_t component_id, mavl
 		5,
 	72,
 	{ 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153 },
-	136.0,
+	136.0f,
 	};
 	mavlink_param_set_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
@@ -775,10 +775,10 @@ static void mavlink_test_gps_raw_int(uint8_t system_id, uint8_t component_id, ma
 	963497932,
 	963498140,
 	963498348,
-	164.0,
-	192.0,
-	220.0,
-	248.0,
+	164.0f,
+	192.0f,
+	220.0f,
+	248.0f,
 	};
 	mavlink_gps_raw_int_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));

@@ -494,12 +494,12 @@ void AP_Frsky_Telem::calc_gps_position()
     if (_pos_gps_ok) {
         Location loc = gps.location();//get gps instance 0
     
-        lat = frsky_format_gps(fabsf(loc.lat/10000000.0));
+        lat = frsky_format_gps(fabsf(loc.lat/10000000.0f));
         _latdddmm = lat;
         _latmmmm = (lat - _latdddmm) * 10000;
         _lat_ns = (loc.lat < 0) ? 'S' : 'N';
         
-        lon = frsky_format_gps(fabsf(loc.lng/10000000.0));
+        lon = frsky_format_gps(fabsf(loc.lng/10000000.0f));
         _londddmm = lon;
         _lonmmmm = (lon - _londddmm) * 10000;
         _lon_ew = (loc.lng < 0) ? 'W' : 'E';

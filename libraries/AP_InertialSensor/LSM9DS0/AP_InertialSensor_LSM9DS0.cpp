@@ -266,14 +266,14 @@ bool AP_InertialSensor_LSM9DS0::update( void )
 float AP_InertialSensor_LSM9DS0::get_gyro_drift_rate(void)
 {
     // 0.5 degrees/second/minute
-    return ToRad(0.5/60);
+    return ToRad(0.5f/60);
 }
 
 // get_delta_time returns the time period in seconds overwhich the sensor data was collected
 float AP_InertialSensor_LSM9DS0::get_delta_time() const
 {
     // the sensor runs at 200Hz
-    return (1./700) * _num_samples_g;
+    return (1.0f/700) * _num_samples_g;
 }
 
 
@@ -753,13 +753,13 @@ void AP_InertialSensor_LSM9DS0::_calcgRes(gyro_scale_lsm9ds0 gScl)
     switch (gScl)
     {
     case G_SCALE_245DPS:
-        _gRes = 245.0 / 32768.0;
+        _gRes = 245.0f / 32768.0f;
         break;
     case G_SCALE_500DPS:
-        _gRes = 500.0 / 32768.0;
+        _gRes = 500.0f / 32768.0f;
         break;
     case G_SCALE_2000DPS:
-        _gRes = 2000.0 / 32768.0;
+        _gRes = 2000.0f / 32768.0f;
         break;
     }
 }
@@ -769,8 +769,8 @@ void AP_InertialSensor_LSM9DS0::_calcaRes(accel_scale aScl)
     // Possible accelerometer scales (and their register bit settings) are:
     // 2 g (000), 4g (001), 6g (010) 8g (011), 16g (100). Here's a bit of an 
     // algorithm to calculate g/(ADC tick) based on that 3-bit value:
-    _aRes = aScl == A_SCALE_16G ? 16.0 / 32768.0 : 
-           (((float) aScl + 1.0) * 2.0) / 32768.0;
+    _aRes = aScl == A_SCALE_16G ? 16.0f / 32768.0f :
+           (((float) aScl + 1.0f) * 2.0f) / 32768.0f;
 }
 
 void AP_InertialSensor_LSM9DS0::_calcmRes(mag_scale mScl)
@@ -778,8 +778,8 @@ void AP_InertialSensor_LSM9DS0::_calcmRes(mag_scale mScl)
     // Possible magnetometer scales (and their register bit settings) are:
     // 2 Gs (00), 4 Gs (01), 8 Gs (10) 12 Gs (11). Here's a bit of an algorithm
     // to calculate Gs/(ADC tick) based on that 2-bit value:
-    _mRes = mScl == M_SCALE_2GS ? 2.0 / 32768.0 : 
-           (float) (mScl << 2) / 32768.0;
+    _mRes = mScl == M_SCALE_2GS ? 2.0f / 32768.0f :
+           (float) (mScl << 2) / 32768.0f;
 }
 
 // TODO check the registers, dump first the Gyro registers and then the Mag registers

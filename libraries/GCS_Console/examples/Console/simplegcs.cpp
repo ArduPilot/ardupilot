@@ -81,7 +81,7 @@ void handle_message(mavlink_channel_t chan, mavlink_message_t* msg) {
             mavlink_msg_param_value_send(
                     chan,
                     param_name,
-                    0.0,                /* param value */
+                    0.0f,                /* param value */
                     MAVLINK_TYPE_FLOAT, /* param type */
                     1,                  /* _queued_parameter_count */
                     0);                 /* _queued_parameter_index */

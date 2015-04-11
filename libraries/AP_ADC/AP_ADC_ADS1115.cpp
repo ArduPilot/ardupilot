@@ -37,14 +37,14 @@
 #define ADS1115_PGA_0P256B          0x06 << ADS1115_PGA_SHIFT
 #define ADS1115_PGA_0P256C          0x07 << ADS1115_PGA_SHIFT
 
-#define ADS1115_MV_6P144            0.187500
-#define ADS1115_MV_4P096            0.125000
-#define ADS1115_MV_2P048            0.062500 // default
-#define ADS1115_MV_1P024            0.031250
-#define ADS1115_MV_0P512            0.015625
-#define ADS1115_MV_0P256            0.007813
-#define ADS1115_MV_0P256B           0.007813
-#define ADS1115_MV_0P256C           0.007813
+#define ADS1115_MV_6P144            0.187500f
+#define ADS1115_MV_4P096            0.125000f
+#define ADS1115_MV_2P048            0.062500f // default
+#define ADS1115_MV_1P024            0.031250f
+#define ADS1115_MV_0P512            0.015625f
+#define ADS1115_MV_0P256            0.007813f
+#define ADS1115_MV_0P256B           0.007813f
+#define ADS1115_MV_0P256C           0.007813f
 
 #define ADS1115_MODE_SHIFT          8
 #define ADS1115_MODE_CONTINUOUS     0x00 << ADS1115_MODE_SHIFT

@@ -876,8 +876,8 @@ bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
 {
     int16_t i;
     int16_t num_iterations = 0;
-    float eps = 0.000000001;
-    float change = 100.0;
+    float eps = 0.000000001f;
+    float change = 100.0f;
     float data[3];
     float beta[6];
     float delta[6];
@@ -942,7 +942,7 @@ void AP_InertialSensor::_calibrate_update_matrices(float dS[6], float JS[6][6],
 {
     int16_t j, k;
     float dx, b;
-    float residual = 1.0;
+    float residual = 1.0f;
     float jacobian[6];
     
     for( j=0; j<3; j++ ) {

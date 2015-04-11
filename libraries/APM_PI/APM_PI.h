@@ -23,9 +23,9 @@ public:
     /// @param  initial_i       Initial value for the I term.
     /// @param  initial_imax    Initial value for the imax term.4
     ///
-    APM_PI(const float &    initial_p = 0.0,
-           const float &    initial_i = 0.0,
-           const int16_t &  initial_imax = 0.0)
+    APM_PI(const float &    initial_p = 0.0f,
+           const float &    initial_i = 0.0f,
+           const int16_t &  initial_imax = 0.0f)
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;

@@ -32,7 +32,7 @@ void setup()
 
     pid.kP(1);
     pid.kI(0);
-    pid.kD(0.5);
+    pid.kD(0.5f);
     pid.imax(50);
     pid.save_gains();
     pid.kP(0);

@@ -386,7 +386,7 @@ static bool verify_takeoff()
             // course. This keeps wings level until we are ready to
             // rotate, and also allows us to cope with arbitary
             // compass errors for auto takeoff
-            float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01)) - steer_state.locked_course_err;
+            float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01f)) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
             gcs_send_text_fmt(PSTR("Holding course %ld at %.1fm/s (%.1f)"), 
@@ -531,10 +531,10 @@ static bool verify_continue_and_change_alt()
     }
    
     // Is the next_WP less than 200 m away?
-    if (get_distance(current_loc, next_WP_loc) < 200.f) {
+    if (get_distance(current_loc, next_WP_loc) < 200.0f) {
         //push another 300 m down the line
         int32_t next_wp_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-        location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.f);
+        location_update(next_WP_loc, next_wp_bearing_cd * 0.01f, 300.0f);
     }
 
     //keep flying the same course

@@ -34,9 +34,9 @@ Compass::learn_offsets(void)
 
     // this gain is set so we converge on the offsets in about 5
     // minutes with a 10Hz compass
-    const float gain = 0.01;
-    const float max_change = 10.0;
-    const float min_diff = 50.0;
+    const float gain = 0.01f;
+    const float max_change = 10.0f;
+    const float min_diff = 50.0f;
 
     if (!_null_init_done) {
         // first time through
