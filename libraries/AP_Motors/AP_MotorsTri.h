@@ -12,7 +12,7 @@
 #include "AP_Motors.h"
 
 // tail servo uses channel 7
-#define AP_MOTORS_CH_TRI_YAW    CH_7
+#define AP_MOTORS_CH_TRI_YAW    6
 
 /// @class      AP_MotorsTri
 class AP_MotorsTri : public AP_Motors {

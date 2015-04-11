@@ -23,14 +23,6 @@
 #include "AP_Motors_Class.h"
 #include <AP_HAL.h>
 
-// initialise motor map
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM1_MOTOR_TO_CHANNEL_MAP};
-#else
-    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM2_MOTOR_TO_CHANNEL_MAP};
-#endif
-
-
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // 0 was used by TB_RATIO
@@ -157,7 +149,7 @@ void AP_Motors::throttle_pass_through(int16_t pwm)
         // send the pilot's input directly to each enabled motor
         for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                _rc_out[pgm_read_byte(&_motor_to_channel_map[i])]->write(pwm);
+                _rc_out[i]->write(pwm);
             }
         }
     }

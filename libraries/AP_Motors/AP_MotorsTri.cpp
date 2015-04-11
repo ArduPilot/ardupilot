@@ -50,18 +50,18 @@ void AP_MotorsTri::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // set update rate for the 3 motors (but not the servo on channel 7)
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->set_freq(_speed_hz);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->set_freq(_speed_hz);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->set_freq(_speed_hz);
+    _rc_out[AP_MOTORS_MOT_1]->set_freq(_speed_hz);
+    _rc_out[AP_MOTORS_MOT_2]->set_freq(_speed_hz);
+    _rc_out[AP_MOTORS_MOT_4]->set_freq(_speed_hz);
 }
 
 // enable - starts allowing signals to be sent to motors
 void AP_MotorsTri::enable()
 {
     // enable output channels
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->enable_ch();
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->enable_ch();
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->enable_ch();
+    _rc_out[AP_MOTORS_MOT_1]->enable_ch();
+    _rc_out[AP_MOTORS_MOT_2]->enable_ch();
+    _rc_out[AP_MOTORS_MOT_4]->enable_ch();
     _rc_out[AP_MOTORS_CH_TRI_YAW]->enable_ch();
 }
 
@@ -72,9 +72,9 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(_rc_throttle.radio_min);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(_rc_throttle.radio_min);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(_rc_throttle.radio_min);
+    _rc_out[AP_MOTORS_MOT_1]->write(_rc_throttle.radio_min);
+    _rc_out[AP_MOTORS_MOT_2]->write(_rc_throttle.radio_min);
+    _rc_out[AP_MOTORS_MOT_4]->write(_rc_throttle.radio_min);
     _rc_out[AP_MOTORS_CH_TRI_YAW]->write(_rc_yaw.radio_trim);
 }
 
@@ -83,9 +83,9 @@ void AP_MotorsTri::output_min()
 uint16_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    return (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])) |
-        (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])) |
-        (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])) |
+    return (1U << AP_MOTORS_MOT_1) |
+        (1U << AP_MOTORS_MOT_2) |
+        (1U << AP_MOTORS_MOT_4) |
         (1U << AP_MOTORS_CH_TRI_YAW);
 }
 
@@ -183,9 +183,9 @@ void AP_MotorsTri::output_armed()
     }
 
     // send output to each motor
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(motor_out[AP_MOTORS_MOT_1]);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(motor_out[AP_MOTORS_MOT_2]);
-    _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(motor_out[AP_MOTORS_MOT_4]);
+    _rc_out[AP_MOTORS_MOT_1]->write(motor_out[AP_MOTORS_MOT_1]);
+    _rc_out[AP_MOTORS_MOT_2]->write(motor_out[AP_MOTORS_MOT_2]);
+    _rc_out[AP_MOTORS_MOT_4]->write(motor_out[AP_MOTORS_MOT_4]);
 
     // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
     // note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
@@ -219,11 +219,11 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // front right motor
-            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])]->write(pwm);
+            _rc_out[AP_MOTORS_MOT_1]->write(pwm);
             break;
         case 2:
             // back motor
-            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])]->write(pwm);
+            _rc_out[AP_MOTORS_MOT_4]->write(pwm);
             break;
         case 3:
             // back servo
@@ -231,7 +231,7 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
             break;
         case 4:
             // front left motor
-            _rc_out[pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])]->write(pwm);
+            _rc_out[AP_MOTORS_MOT_2]->write(pwm);
             break;
         default:
             // do nothing

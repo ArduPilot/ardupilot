@@ -21,8 +21,8 @@
 #define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS      125     // update rate for analog servos
 
 // TradHeli Aux Function Output Channels
-#define AP_MOTORS_HELI_AUX                      CH_7
-#define AP_MOTORS_HELI_RSC                      CH_8
+#define AP_MOTORS_HELI_AUX                      6
+#define AP_MOTORS_HELI_RSC                      7
 
 // servo position defaults
 #define AP_MOTORS_HELI_SERVO1_POS               -60
