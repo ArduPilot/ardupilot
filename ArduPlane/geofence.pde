@@ -237,7 +237,7 @@ static bool geofence_check_minalt(void)
     if (g.fence_minalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() < (g.fence_minalt*100.0) + home.alt);
+    return (adjusted_altitude_cm() < (g.fence_minalt*100.0f) + home.alt);
 }
 
 /*
@@ -251,7 +251,7 @@ static bool geofence_check_maxalt(void)
     if (g.fence_maxalt == 0) {
         return false;
     }
-    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0) + home.alt);
+    return (adjusted_altitude_cm() > (g.fence_maxalt*100.0f) + home.alt);
 }
 
 
@@ -361,14 +361,14 @@ static void geofence_check(bool altitude_check_only)
         } else { //return to fence return point, not a rally point
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
-                guided_WP_loc.alt = home.alt + 100.0*g.fence_retalt;
+                guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
             } else if (g.fence_minalt >= g.fence_maxalt) {
                 // invalid min/max, use RTL_altitude
                 guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
             } else {
                 // fly to the return point, with an altitude half way between
                 // min and max
-                guided_WP_loc.alt = home.alt + 100.0*(g.fence_minalt + g.fence_maxalt)/2;
+                guided_WP_loc.alt = home.alt + 100.0f*(g.fence_minalt + g.fence_maxalt)/2;
             }
             guided_WP_loc.options = 0;
             guided_WP_loc.lat = geofence_state->boundary[0].x;

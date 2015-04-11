@@ -442,7 +442,7 @@ static float height_above_target(void)
 {
     float target_alt = next_WP_loc.alt*0.01;
     if (!next_WP_loc.flags.relative_alt) {
-        target_alt -= ahrs.get_home().alt*0.01;
+        target_alt -= ahrs.get_home().alt*0.01f;
     }
 
 #if AP_TERRAIN_AVAILABLE

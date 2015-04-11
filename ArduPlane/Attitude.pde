@@ -22,7 +22,7 @@ static float get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain_float(speed_scaler, 0.5, 2.0);
+        speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
     } else {
         if (channel_throttle->servo_out > 0) {
             speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / channel_throttle->servo_out / 2.0f);                 // First order taylor expansion of square root
@@ -31,7 +31,7 @@ static float get_speed_scaler(void)
             speed_scaler = 1.67f;
         }
         // This case is constrained tighter as we don't have real speed info
-        speed_scaler = constrain_float(speed_scaler, 0.6, 1.67);
+        speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
     }
     return speed_scaler;
 }
@@ -588,7 +588,7 @@ static bool suppress_throttle(void)
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
         gcs_send_text_fmt(PSTR("Throttle unsuppressed - altitude %.2f"), 
-                          relative_altitude_abs_cm()*0.01f);
+                          (float)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
 

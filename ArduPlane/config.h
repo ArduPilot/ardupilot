@@ -323,7 +323,7 @@
 #define PITCH_MIN_CENTIDEGREE PITCH_MIN * 100
 
 #ifndef RUDDER_MIX
- # define RUDDER_MIX           0.5
+ # define RUDDER_MIX           0.5f
 #endif
 
 
