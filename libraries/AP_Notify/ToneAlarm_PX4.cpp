@@ -235,7 +235,6 @@ void ToneAlarm_PX4::update()
     if (flags.lost_copter != AP_Notify::flags.lost_copter) {
         flags.lost_copter = AP_Notify::flags.lost_copter;
         if(flags.lost_copter) {
-            ::printf("AP_Notify Flag: %d\n", AP_Notify::flags.lost_copter);
             play_tone(AP_NOTIFY_PX4_TONE_LOUD_LOST_COPTER_CTS);
         }else{
             stop_cont_tone();
