@@ -535,6 +535,19 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
         }
         break;    
 
+    case AUXSW_LOST_COPTER_SOUND:
+        ::printf("Lost Copter Sound Case\n");
+        switch (ch_flag) {
+            case AUX_SWITCH_HIGH:
+                ::printf("SW High\n");
+                AP_Notify::flags.lost_copter = TRUE;
+                break;
+            case AUX_SWITCH_LOW:
+                ::printf("SW Low\n");
+                AP_Notify::flags.lost_copter = FALSE;
+                break;
+        }
+        break;
     }
 }
 
