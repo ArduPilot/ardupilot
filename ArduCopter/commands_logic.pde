@@ -133,6 +133,7 @@ static bool start_command(const AP_Mission::Mission_Command& cmd)
                                          cmd.content.repeat_relay.cycle_time * 1000.0f);
         break;
 
+    case MAV_CMD_NAV_ROI:                   // 80
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the copter and camera at a region of interest (ROI)
         do_roi(cmd);
