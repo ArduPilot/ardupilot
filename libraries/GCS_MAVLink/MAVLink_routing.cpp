@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define ROUTING_DEBUG 0
+#define ROUTING_DEBUG 1
 
 // constructor
 MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}

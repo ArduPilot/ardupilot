@@ -1,5 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <stdio.h>
 #include <AP_Camera.h>
 #include <AP_Relay.h>
 #include <AP_Math.h>
@@ -160,7 +161,7 @@ AP_Camera::control_msg(mavlink_message_t* msg)
 }
 
 // Mission command processing
-void AP_Camera::configure_cmd(AP_Mission::Mission_Command& cmd)
+void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
 
@@ -169,13 +170,13 @@ void AP_Camera::configure_cmd(AP_Mission::Mission_Command& cmd)
         // convert mission item to mavlink message
         // convert mission item to mavlink message
         mavlink_message_t msg;
-        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
+        mavlink_msg_mission_item_encode(1, 0, &msg, &mav_cmd);
         // send to all components
         GCS_MAVLINK::send_to_components(&msg);
     }
 }
 
-void AP_Camera::control_cmd(AP_Mission::Mission_Command& cmd)
+void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
 
@@ -183,7 +184,17 @@ void AP_Camera::control_cmd(AP_Mission::Mission_Command& cmd)
     if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
         // convert mission item to mavlink message
         mavlink_message_t msg;
-        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
+
+        ::printf("cmd:%f\n",(float)mav_cmd.command);
+        ::printf("param1:%f\n",(float)mav_cmd.param1);
+        ::printf("param2:%f\n",(float)mav_cmd.param2);
+        ::printf("param3:%f\n",(float)mav_cmd.param3);
+        ::printf("param4:%f\n",(float)mav_cmd.param4);
+        ::printf("param5:%f\n",(float)mav_cmd.x);
+        ::printf("param6:%f\n",(float)mav_cmd.y);
+        ::printf("param7:%f\n",(float)mav_cmd.z);
+
+        mavlink_msg_mission_item_encode(1, 0, &msg, &mav_cmd);
         // send to all components
         GCS_MAVLINK::send_to_components(&msg);
     }
