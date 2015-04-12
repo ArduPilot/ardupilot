@@ -434,7 +434,7 @@ def fly_ArduPlane(viewerip=None, map=False):
         options += ' --map'
 
     cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
-    cmd += " --home=%s --wind=%s" % (HOME_LOCATION, WIND)
+    cmd += " --speedup=100 --home=%s --wind=%s" % (HOME_LOCATION, WIND)
     if viewerip:
         cmd += " --fgout=%s:5503" % viewerip
 
