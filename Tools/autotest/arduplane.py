@@ -16,6 +16,13 @@ homeloc = None
 
 def takeoff(mavproxy, mav):
     '''takeoff get to 30m altitude'''
+
+    # wait for EKF to settle
+    wait_seconds(mav, 15)
+
+    mavproxy.send('arm throttle\n')
+    mavproxy.expect('ARMED')
+    
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
 
@@ -150,12 +157,12 @@ def fly_CIRCLE(mavproxy, mav, num_circles=1):
 
 def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
     '''wait for level flight'''
-    tstart = time.time()
+    tstart = get_sim_time(mav)
     print("Waiting for level flight")
     mavproxy.send('rc 1 1500\n')
     mavproxy.send('rc 2 1500\n')
     mavproxy.send('rc 4 1500\n')
-    while time.time() < tstart + timeout:
+    while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         roll = math.degrees(m.roll)
         pitch = math.degrees(m.pitch)
