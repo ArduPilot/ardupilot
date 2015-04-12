@@ -17,7 +17,10 @@ Changes from 3.2.1
     a) SToRM32 gimbal support (using MAVLink)
     b) AlexMos gimbal support (using AlexMos serial interface)
     c) do-mount-control commands supported in missions (allows controlling gimbal angle in missions)
-9) Other:
+9) Battery related features:
+    a) PID scaling for battery voltage (disabled by default, see MOT_THST_BAT_ parameters)
+    b) smart battery support
+10) Other:
     a) support do-set-home command (allows return-to-me and locked home position once GCS enhancements are completed)
     b) performance improvements for Pixhawk reduce CPU load from 80% to 15%
     c) firmware string name changed from ArduCopter to APM:Copter
