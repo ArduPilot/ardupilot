@@ -331,7 +331,6 @@ elif [ $USE_GDB == 1 ]; then
     echo "Using gdb"
     tfile=$(mktemp)
     [ $USE_GDB_STOPPED == 0 ] && {
-        echo "handle SIGCONT nostop noprint" > $tfile
         echo r >> $tfile
     }
     $autotest/run_in_terminal_window.sh "ardupilot (gdb)" gdb -x $tfile --args $cmd || exit 1
