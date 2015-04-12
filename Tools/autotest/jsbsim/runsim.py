@@ -99,19 +99,23 @@ def process_sitl_input(buf):
         # this matches VTAIL_OUTPUT==2
         elevator = (ch2-ch1)/2.0
         rudder   = (ch2+ch1)/2.0
-        
+
+    buf = ''
     if aileron != sitl_state.aileron:
-        jsb_set('fcs/aileron-cmd-norm', aileron)
+        buf += 'set fcs/aileron-cmd-norm %s\n' % aileron
         sitl_state.aileron = aileron
     if elevator != sitl_state.elevator:
-        jsb_set('fcs/elevator-cmd-norm', elevator)
+        buf += 'set fcs/elevator-cmd-norm %s\n' % elevator
         sitl_state.elevator = elevator
     if rudder != sitl_state.rudder:
-        jsb_set('fcs/rudder-cmd-norm', rudder)
+        buf += 'set fcs/rudder-cmd-norm %s\n' % rudder
         sitl_state.rudder = rudder
     if throttle != sitl_state.throttle:
-        jsb_set('fcs/throttle-cmd-norm', throttle)
+        buf += 'set fcs/throttle-cmd-norm %s\n' % throttle
         sitl_state.throttle = throttle
+    buf += 'step\n'
+    global jsb_console
+    jsb_console.send(buf)
 
 def update_wind(wind):
     '''update wind simulation'''
@@ -119,11 +123,9 @@ def update_wind(wind):
     jsb_set('atmosphere/psiw-rad', math.radians(direction))
     jsb_set('atmosphere/wind-mag-fps', speed/0.3048)
 
-first_timestamp = None
-
-def process_jsb_input(buf):
+def process_jsb_input(buf, simtime):
     '''process FG FDM input from JSBSim'''
-    global fdm, fg_out, sim_out, first_timestamp
+    global fdm, fg_out, sim_out
     fdm.parse(buf)
     if fg_out:
         try:
@@ -135,11 +137,8 @@ def process_jsb_input(buf):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    cur_time = fdm.get('cur_time', units='seconds')
-    if first_timestamp is None:
-        first_timestamp = cur_time
-    timestamp = int((cur_time - first_timestamp)*1.0e6)
-        
+    timestamp = int(simtime*1.0e6)
+
     simbuf = struct.pack('<Q17dI',
                          timestamp,
                          fdm.get('latitude', units='degrees'),
@@ -182,6 +181,8 @@ parser.add_option("--elevon", action='store_true', default=False, help='assume e
 parser.add_option("--revthr", action='store_true', default=False, help='reverse throttle')
 parser.add_option("--vtail", action='store_true', default=False, help='assume vtail input')
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
+parser.add_option("--rate", type='int', help="Simulation rate (Hz)", default=1000)
+parser.add_option("--speedup", type='float', default=1.0, help="speedup from realtime")
 
 (opts, args) = parser.parse_args()
 
@@ -199,7 +200,7 @@ atexit.register(util.pexpect_close_all)
 setup_template(opts.home)
 
 # start child
-cmd = "JSBSim --realtime --suspend --nice --simulation-rate=1000 --logdirectivefile=jsbsim/fgout.xml --script=%s" % opts.script
+cmd = "JSBSim --realtime --suspend --nice --simulation-rate=%u --logdirectivefile=jsbsim/fgout.xml --script=%s" % (opts.rate, opts.script)
 if opts.options:
     cmd += ' %s' % opts.options
 
@@ -260,6 +261,7 @@ jsb_console.send('info\n')
 jsb_console.send('resume\n')
 jsb.expect(["trim computation time","Trim Results"])
 time.sleep(1.5)
+jsb_console.send('step\n')
 jsb_console.logfile = None
 
 print("Simulator ready to fly")
@@ -272,8 +274,15 @@ def main_loop():
     last_wind_update = tnow
     frame_count = 0
     paused = False
+    simstep = 1.0/opts.rate
+    simtime = simstep
+    frame_time = 1.0/opts.rate
+    scaled_frame_time = frame_time/opts.speedup
+    last_wall_time = time.time()
+    achieved_rate = opts.speedup
 
     while True:
+        new_frame = False
         rin = [jsb_in.fileno(), sim_in.fileno(), jsb_console.fileno(), jsb.fileno()]
         try:
             (rin, win, xin) = select.select(rin, [], [], 1.0)
@@ -285,12 +294,14 @@ def main_loop():
 
         if jsb_in.fileno() in rin:
             buf = jsb_in.recv(fdm.packet_size())
-            process_jsb_input(buf)
+            process_jsb_input(buf, simtime)
             frame_count += 1
+            new_frame = True
 
         if sim_in.fileno() in rin:
             simbuf = sim_in.recv(28)
             process_sitl_input(simbuf)
+            simtime += simstep
             last_sim_input = tnow
 
         # show any jsbsim console output
@@ -299,17 +310,6 @@ def main_loop():
         if jsb.fileno() in rin:
             util.pexpect_drain(jsb)
 
-        if tnow - last_sim_input > 0.2:
-            if not paused:
-                print("PAUSING SIMULATION")
-                paused = True
-                jsb_console.send('hold\n')
-        else:
-            if paused:
-                print("RESUMING SIMULATION")
-                paused = False
-                jsb_console.send('resume\n')
-
         # only simulate wind above 5 meters, to prevent crashes while
         # waiting for takeoff
         if tnow - last_wind_update > 0.1:
@@ -317,7 +317,7 @@ def main_loop():
             last_wind_update = tnow
 
         if tnow - last_report > 3:
-            print("FPS %u asl=%.1f agl=%.1f roll=%.1f pitch=%.1f a=(%.2f %.2f %.2f)" % (
+            print("FPS %u asl=%.1f agl=%.1f roll=%.1f pitch=%.1f a=(%.2f %.2f %.2f) AR=%.1f" % (
                 frame_count / (time.time() - last_report),
                 fdm.get('altitude', units='meters'),
                 fdm.get('agl', units='meters'),
@@ -325,13 +325,32 @@ def main_loop():
                 fdm.get('theta', units='degrees'),
                 fdm.get('A_X_pilot', units='mpss'),
                 fdm.get('A_Y_pilot', units='mpss'),
-                fdm.get('A_Z_pilot', units='mpss')))
+                fdm.get('A_Z_pilot', units='mpss'),
+                achieved_rate))
 
             frame_count = 0
             last_report = time.time()
 
+        if new_frame:
+            now = time.time()
+            if now < last_wall_time + scaled_frame_time:
+                dt = last_wall_time+scaled_frame_time - now
+                time.sleep(last_wall_time+scaled_frame_time - now)
+                now = time.time()
+
+            if now > last_wall_time and now - last_wall_time < 0.1:
+                rate = 1.0/(now - last_wall_time)
+                achieved_rate = (0.98*achieved_rate) + (0.02*rate)
+                if achieved_rate < opts.rate*opts.speedup:
+                    scaled_frame_time *= 0.999
+                else:
+                    scaled_frame_time *= 1.001
+
+            last_wall_time = now
+
 def exit_handler():
     '''exit the sim'''
+    print("running exit handler")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     # JSBSim really doesn't like to die ...
@@ -347,6 +366,7 @@ signal.signal(signal.SIGTERM, exit_handler)
 
 try:
     main_loop()
-except:
+except Exception as ex:
+    print(ex)
     exit_handler()
     raise
