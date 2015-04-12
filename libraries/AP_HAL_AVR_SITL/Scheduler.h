@@ -77,7 +77,7 @@ private:
 
     bool _initialized;
     volatile uint64_t stopped_clock_usec;
-    volatile uint64_t wait_time_usec;
+    pthread_barrier_t clock_barrier;
 };
 #endif
 #endif // __AP_HAL_SITL_SCHEDULER_H__

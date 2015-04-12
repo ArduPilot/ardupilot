@@ -55,6 +55,7 @@ SITLScheduler::SITLScheduler(SITL_State *sitlState) :
     stopped_clock_usec(0)
 {
     signal(SIGCONT, sigcont_handler);
+    pthread_barrier_init(&clock_barrier, NULL, 2);
 }
 
 void SITLScheduler::init(void *unused) 
@@ -140,9 +141,11 @@ void SITLScheduler::delay_microseconds(uint16_t usec)
     uint64_t dtime;
 	while ((dtime=(micros64() - start) < usec)) {
         if (stopped_clock_usec) {
-            wait_time_usec = start + usec;
-            pause();
-            wait_time_usec = 0;
+            /*
+              we are using a synthetic clock. We want to wait until
+              the stop_clock() call advances the clock
+             */
+            pthread_barrier_wait(&clock_barrier);
         } else {
             usleep(usec - dtime);
         }
@@ -319,23 +322,18 @@ void SITLScheduler::panic(const prog_char_t *errormsg) {
  */
 void SITLScheduler::stop_clock(uint64_t time_usec)
 {
-    stopped_clock_usec = time_usec;
-    if (system_initializing()) {
-        kill(0, SIGCONT);
-    } else {
+    if (stopped_clock_usec != 0) {
         /*
-          we want to ensure the main thread gets a chance to run on
-          each tick from the FDM
-        */
-        while (wait_time_usec == 0) {
-            pthread_yield();
-        }
-        kill(0, SIGCONT);
-        while (wait_time_usec != 0 && wait_time_usec <= time_usec) {
-            kill(0, SIGCONT);
-            pthread_yield();
-        }
+          wait until the main thread is waiting for us. This ensures
+          that any processing is complete before we advance the clock
+         */
+        pthread_barrier_wait(&clock_barrier);
     }
+    stopped_clock_usec = time_usec;
+    /*
+      wait again to ensure the main thread can't get behind the FDM
+     */
+    pthread_barrier_wait(&clock_barrier);
     _run_io_procs(false);
 }
 
