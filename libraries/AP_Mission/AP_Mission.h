@@ -359,6 +359,10 @@ public:
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
 
+    // mission_cmd_to_mavlinkcmdlong - converts an AP_Mission::Mission_Command object to a mavlink command long message which can be sent to other components
+    //  return true on success, false on failure
+    static bool mission_cmd_to_mavlink_cmdlng(const AP_Mission::Mission_Command& cmd, mavlink_command_long_t& packet);
+
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
 

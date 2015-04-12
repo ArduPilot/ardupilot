@@ -6,7 +6,6 @@
 #ifndef AP_CAMERA_H
 #define AP_CAMERA_H
 
-#include <AP_Param.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
 #include <GCS.h>
@@ -22,6 +21,8 @@
 
 #define AP_CAMERA_TRIGGER_DEFAULT_DURATION  10      // default duration servo or relay is held open in 10ths of a second (i.e. 10 = 1 second)
 
+#define AP_CAMERA_TYPE_DEFAULT              Camera_Type_Standard
+
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
 #define AP_CAMERA_SERVO_OFF_PWM             1100    // default PWM value to move servo to when shutter is deactivated
 
@@ -30,6 +31,14 @@
 class AP_Camera {
 
 public:
+
+    // Enums
+     enum CameraType {
+         Camera_Type_None = 0,          // no camera
+         Camera_Type_Standard,          // Legacy Standard Camera
+         Camera_Type_SmartCamera        // Mavlink Compatible Smart Camera Board
+     };
+
     /// Constructor
     ///
     AP_Camera(AP_Relay *obj_relay) :
@@ -62,6 +71,9 @@ public:
 
     // Update location of vehicle and return true if a picture should be taken
     bool update_location(const struct Location &loc);
+
+    // Configuration Parameters
+    AP_Int8         _camera_type;       // camera type (none, standard, smart_camera, etc...)
 
     static const struct AP_Param::GroupInfo        var_info[];
 

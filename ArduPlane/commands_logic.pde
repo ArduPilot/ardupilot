@@ -160,9 +160,12 @@ start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
-        // do_digicam_control Send Digicam Control message with the camera library
-        do_digicam_control(cmd);
-        //do_take_picture();
+        // Check camera type first to decide what is needed. This is to support legacy missions.
+        if (camera._camera_type == AP_Camera::Camera_Type_Standard) {
+            do_take_picture();
+        } else {
+            do_digicam_control(cmd);
+        }
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:

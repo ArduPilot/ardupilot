@@ -993,6 +993,55 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
     return true;
 }
 
+// mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
+//  return true on success, false on failure
+bool AP_Mission::mission_cmd_to_mavlink_cmdlng(const AP_Mission::Mission_Command& cmd, mavlink_command_long_t& packet)
+{
+    // command's position in mission list and mavlink id
+    packet.target_system = 1;
+    packet.target_component = 0;
+    packet.command = cmd.id;
+    packet.confirmation = 0;
+    // set defaults
+
+    packet.param1 = 0;
+    packet.param2 = 0;
+    packet.param3 = 0;
+    packet.param4 = 0;
+    packet.param5 = 0;
+    packet.param6 = 0;
+    packet.param7 = 0;
+
+    // command specific conversions from mission command to mavlink packet
+    switch (cmd.id) {
+
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:                          // MAV ID: 202
+        packet.param1 = cmd.content.digicam_configure.shooting_mode;
+        packet.param2 = cmd.content.digicam_configure.shutter_speed;
+        packet.param3 = cmd.content.digicam_configure.aperture;
+        packet.param4 = cmd.content.digicam_configure.ISO;
+        packet.param5 = cmd.content.digicam_configure.exposure_type;
+        packet.param6 = cmd.content.digicam_configure.cmd_id;
+        packet.param7 = cmd.content.digicam_configure.engine_cutoff_time;
+        break;
+
+    case MAV_CMD_DO_DIGICAM_CONTROL:                          // MAV ID: 203
+        packet.param1 = cmd.content.digicam_control.session;
+        packet.param2 = cmd.content.digicam_control.zoom_pos;
+        packet.param3 = cmd.content.digicam_control.zoom_step;
+        packet.param4 = cmd.content.digicam_control.focus_lock;
+        packet.param5 = cmd.content.digicam_control.shooting_cmd;
+        packet.param6 = cmd.content.digicam_control.cmd_id;
+        break;
+
+
+    default:
+        // unrecognised command
+        return false;
+    }
+    return true;
+}
+
 ///
 /// private methods
 ///

@@ -1,11 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+
+
 #include <stdio.h>
+#include <AP_Param.h>
 #include <AP_Camera.h>
 #include <AP_Relay.h>
 #include <AP_Math.h>
 #include <RC_Channel.h>
 #include <AP_HAL.h>
+
+
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -49,6 +54,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Units: meters
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
+
+    // @Param: CAM_TYPE
+    // @DisplayName: Camera type
+    // @Description: Defines the type of camera in the vehicle
+    // @Values: 0:None,1:Standard 2:SmartCamera
+    // @User: Standard
+    AP_GROUPINFO("CAM_TYPE",  5, AP_Camera, _camera_type, AP_CAMERA_TYPE_DEFAULT),
 
     AP_GROUPEND
 };
@@ -95,7 +107,7 @@ AP_Camera::trigger_pic(bool send_mavlink_msg)
         mavlink_command_long_t cmd_msg;
         memset(&cmd_msg, 0, sizeof(cmd_msg));
         cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
-
+        cmd_msg.param5 = 1;
         // create message
         mavlink_message_t msg;
         mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
@@ -178,23 +190,26 @@ void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
 
 void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
 {
-    mavlink_mission_item_t mav_cmd = {};
+    mavlink_command_long_t mav_cmd = {};
 
     // convert command to mavlink mission item
-    if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
+    if (AP_Mission::mission_cmd_to_mavlink_cmdlng(cmd, mav_cmd)) {
         // convert mission item to mavlink message
+        //mavlink_command_long_t cmd_msg;
+
+        //memset(&cmd_msg, 0, sizeof(cmd_msg));
+        //cmd_msg.command = mav_cmd.command;
+        //cmd_msg.param1 = mav_cmd.param1;
+        //cmd_msg.param2 = mav_cmd.param2;
+        //cmd_msg.param3 = mav_cmd.param3;
+        //cmd_msg.param4 = mav_cmd.param4;
+        //cmd_msg.x = mav_cmd.x;
+        //cmd_msg.y = mav_cmd.y;
+        //cmd_msg.z = mav_cmd.z;
+
         mavlink_message_t msg;
 
-        ::printf("cmd:%f\n",(float)mav_cmd.command);
-        ::printf("param1:%f\n",(float)mav_cmd.param1);
-        ::printf("param2:%f\n",(float)mav_cmd.param2);
-        ::printf("param3:%f\n",(float)mav_cmd.param3);
-        ::printf("param4:%f\n",(float)mav_cmd.param4);
-        ::printf("param5:%f\n",(float)mav_cmd.x);
-        ::printf("param6:%f\n",(float)mav_cmd.y);
-        ::printf("param7:%f\n",(float)mav_cmd.z);
-
-        mavlink_msg_mission_item_encode(1, 0, &msg, &mav_cmd);
+        mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd);
         // send to all components
         GCS_MAVLINK::send_to_components(&msg);
     }
