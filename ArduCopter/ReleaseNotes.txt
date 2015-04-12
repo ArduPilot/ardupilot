@@ -1,4 +1,26 @@
-ArduCopter Release Notes:
+APM:Copter Release Notes:
+------------------------------------------------------------------
+Copter 3.3-rc1 11-Apr-2015
+Changes from 3.2.1
+1) Only support fast CPUs boards (Pixhawk, VRBrain, etc) and drop support for APM1, APM2 (sorry!)
+2) AutoTune for yaw
+3) Smooth throttle curve which should reduce wobbles during fast climbs and descents
+4) ch7/ch8 aux switches expanded to ch9 ~ ch12 (see CH9_OPT ~ CH12_OPT params)
+5) PX4Flow support in Loiter mode (still somewhat experimental)
+6) Safety features:
+    a) EKF on by default replacing DCM/InertialNav which should improve robustness
+    b) increased accelerometer range from 8G to 16G to reduce chance of climb due to high vibrations (requires accel calibration)
+7) Landing features:
+    a) improved landing on slopes
+    b) retractable landing gear (see LGR_ parameters)
+8) Camera Gimbal features:
+    a) SToRM32 gimbal support (using MAVLink)
+    b) AlexMos gimbal support (using AlexMos serial interface)
+    c) do-mount-control commands supported in missions (allows controlling gimbal angle in missions)
+9) Other:
+    a) support do-set-home command (allows return-to-me and locked home position once GCS enhancements are completed)
+    b) performance improvements for Pixhawk reduce CPU load from 80% to 15%
+    c) firmware string name changed from ArduCopter to APM:Copter
 ------------------------------------------------------------------
 ArduCopter 3.2.1 11-Feb-2015 / 3.2.1-rc2 30-Jan-2015
 Changes from 3.2.1-rc1
