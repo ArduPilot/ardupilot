@@ -16,7 +16,7 @@ class AP_MotorsOctaQuad : public AP_MotorsMatrix {
 public:
 
     /// Constructor
-    AP_MotorsOctaQuad(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) : AP_MotorsMatrix(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz) {
+    AP_MotorsOctaQuad(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, AP_Actuator_Channel* rc_out[], uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) : AP_MotorsMatrix(rc_roll, rc_pitch, rc_throttle, rc_yaw, rc_out, loop_rate, speed_hz) {
     };
 
     // setup_motors - configures the motors for a quad

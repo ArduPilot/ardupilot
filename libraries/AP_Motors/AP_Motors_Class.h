@@ -9,8 +9,9 @@
 #include <AP_Notify.h>      // Notify library
 #include <RC_Channel.h>     // RC Channel Library
 #include <Filter.h>         // filter library
+#include "AP_Actuator_Channel.h"
 
-// offsets for motors in motor_out, _motor_filtered and _motor_to_channel_map arrays
+// offsets for motors in motor_out, motor_enabled and _rc_out arrays
 #define AP_MOTORS_MOT_1 0
 #define AP_MOTORS_MOT_2 1
 #define AP_MOTORS_MOT_3 2
@@ -20,18 +21,11 @@
 #define AP_MOTORS_MOT_7 6
 #define AP_MOTORS_MOT_8 7
 
-#define APM1_MOTOR_TO_CHANNEL_MAP CH_1,CH_2,CH_3,CH_4,CH_7,CH_8,CH_10,CH_11
-#define APM2_MOTOR_TO_CHANNEL_MAP CH_1,CH_2,CH_3,CH_4,CH_5,CH_6,CH_7,CH_8
-
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
 #define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
 #define AP_MOTORS_DEFAULT_MID_THROTTLE  500
 #define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
-
-// APM board definitions
-#define AP_MOTORS_APM1  1
-#define AP_MOTORS_APM2  2
 
 // frame definitions
 #define AP_MOTORS_PLUS_FRAME        0
@@ -86,7 +80,7 @@ class AP_Motors {
 public:
 
     // Constructor
-    AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, AP_Actuator_Channel* rc_out[], uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
     virtual void        Init() {}
@@ -227,9 +221,6 @@ protected:
         uint8_t slow_start_low_end  : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
     } _flags;
 
-    // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
-    static const uint8_t _motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM;
-
     // parameters
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
@@ -245,6 +236,7 @@ protected:
     RC_Channel&         _rc_pitch;              // pitch input in from users is held in servo_out
     RC_Channel&         _rc_throttle;           // throttle input in from users is held in servo_out
     RC_Channel&         _rc_yaw;                // yaw input in from users is held in servo_out
+    AP_Actuator_Channel **_rc_out;              // output channels to write to
     uint16_t            _loop_rate;             // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;              // speed in hz to send updates to motors
     int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)

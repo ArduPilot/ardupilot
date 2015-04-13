@@ -12,15 +12,15 @@
 #include "AP_Motors.h"
 
 // tail servo uses channel 7
-#define AP_MOTORS_CH_TRI_YAW    CH_7
+#define AP_MOTORS_CH_TRI_YAW    6
 
 /// @class      AP_MotorsTri
 class AP_MotorsTri : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsTri(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& rc_tail, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz),
+    AP_MotorsTri(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& rc_tail, AP_Actuator_Channel* rc_out[], uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, rc_out, loop_rate, speed_hz),
         _rc_tail(rc_tail) {
     };
 

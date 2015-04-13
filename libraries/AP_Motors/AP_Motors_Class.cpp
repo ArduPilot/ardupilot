@@ -22,16 +22,6 @@
 
 #include "AP_Motors_Class.h"
 #include <AP_HAL.h>
-extern const AP_HAL::HAL& hal;
-
-
-// initialise motor map
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM1_MOTOR_TO_CHANNEL_MAP};
-#else
-    const uint8_t AP_Motors::_motor_to_channel_map[AP_MOTORS_MAX_NUM_MOTORS] PROGMEM = {APM2_MOTOR_TO_CHANNEL_MAP};
-#endif
-
 
 // parameters for the motor class
 const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
@@ -97,11 +87,12 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz) :
+AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, AP_Actuator_Channel* rc_out[], uint16_t loop_rate, uint16_t speed_hz) :
     _rc_roll(rc_roll),
     _rc_pitch(rc_pitch),
     _rc_throttle(rc_throttle),
     _rc_yaw(rc_yaw),
+    _rc_out(rc_out),
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
@@ -158,7 +149,7 @@ void AP_Motors::throttle_pass_through(int16_t pwm)
         // send the pilot's input directly to each enabled motor
         for (int16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), pwm);
+                _rc_out[i]->write(pwm);
             }
         }
     }
