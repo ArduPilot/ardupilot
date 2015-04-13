@@ -171,9 +171,6 @@ print("Starting at lat=%f lon=%f alt=%.1f heading=%.1f" % (
     a.home_altitude,
     a.yaw))
 
-frame_time = 1.0/opts.rate
-scaled_frame_time = frame_time/opts.speedup
-
 if opts.gimbal:
     from gimbal import Gimbal3Axis
     gimbal = Gimbal3Axis(a)
@@ -181,7 +178,8 @@ if opts.gimbal:
 else:
     gimbal = None
 
-last_wall_time = time.time()
+a.setup_frame_time(opts.rate, opts.speedup)
+counter = 0
 
 while True:
     frame_start = a.time_now
@@ -195,11 +193,13 @@ while True:
         gimbal.update()
     sim_send(m, a)
 
-    now = time.time()
-    if now < last_wall_time + scaled_frame_time:
-        time.sleep(last_wall_time+scaled_frame_time - now)
-    last_wall_time = time.time()
+    a.sync_frame_time()
 
     if frame_start == a.time_now:
         # time has not been advanced by a.update()
-        a.time_advance(frame_time)
+        a.time_advance(a.frame_time)
+
+    counter += 1
+    if counter == 1000:
+        print("t=%f speedup=%.1f" % ((a.time_now - a.time_base), a.achieved_rate/a.rate))
+        counter = 0

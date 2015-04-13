@@ -60,4 +60,30 @@ class Aircraft(object):
     def time_advance(self, deltat):
         '''advance time by deltat in seconds'''
         self.time_now += deltat
-        
+
+    def setup_frame_time(self, rate, speedup):
+        '''setup frame_time calculation'''
+        self.rate = rate
+        self.speedup = speedup
+        self.frame_time = 1.0/rate
+        self.scaled_frame_time = self.frame_time/speedup
+        self.last_wall_time = time.time()
+        self.achieved_rate = rate
+
+    def sync_frame_time(self):
+        '''try to synchronise simulation time with wall clock time, taking
+        into account desired speedup'''
+        now = time.time()
+        if now < self.last_wall_time + self.scaled_frame_time:
+            time.sleep(self.last_wall_time+self.scaled_frame_time - now)
+            now = time.time()
+
+        if now > self.last_wall_time and now - self.last_wall_time < 0.1:
+            rate = 1.0/(now - self.last_wall_time)
+            self.achieved_rate = (0.98*self.achieved_rate) + (0.02*rate)
+            if self.achieved_rate < self.rate*self.speedup:
+                self.scaled_frame_time *= 0.999
+            else:
+                self.scaled_frame_time *= 1.001
+
+        self.last_wall_time = now

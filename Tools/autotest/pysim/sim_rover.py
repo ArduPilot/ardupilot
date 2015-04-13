@@ -126,22 +126,18 @@ a.longitude = a.home_longitude
 
 a.set_yaw_degrees(a.yaw)
 
-print("Starting at lat=%f lon=%f alt=%f heading=%.1f" % (
+print("Starting at lat=%f lon=%f alt=%f heading=%.1f rate=%.1f" % (
     a.home_latitude,
     a.home_longitude,
     a.altitude,
-    a.yaw))
+    a.yaw,
+    opts.rate))
 
-frame_time = 1.0/opts.rate
-scaled_frame_time = frame_time/opts.speedup
-
-last_wall_time = time.time()
+a.setup_frame_time(opts.rate, opts.speedup)
 
 counter = 0
 
 while True:
-    frame_start = a.time_now
-
     # receive control input from SITL
     sim_recv(state)
 
@@ -151,14 +147,10 @@ while True:
     # send model state to SITL
     sim_send(a)
 
-    now = time.time()
-    if now < last_wall_time + scaled_frame_time:
-        time.sleep(last_wall_time+scaled_frame_time - now)
-    last_wall_time = time.time()
-
-    a.time_advance(frame_time)
+    a.sync_frame_time()
+    a.time_advance(a.frame_time)
 
     counter += 1
     if counter == 1000:
-        #print("t=%f %s %f" % ((a.time_now - a.time_base), time.ctime(), frame_time))
+        print("t=%f speedup=%.1f" % ((a.time_now - a.time_base), a.achieved_rate/a.rate))
         counter = 0
