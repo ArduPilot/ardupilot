@@ -25,6 +25,7 @@
 #include <SITL_State.h>
 #include <fenv.h>
 
+extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
 
@@ -42,6 +43,37 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
         if (airspeed_raw/4 > 0xFFFF) {
             return 0xFFFF;
         }
+    // add delay
+    uint32_t now = hal.scheduler->millis();
+    uint32_t best_time_delta_wind = 200; // initialise large time representing buffer entry closest to current time - delay.
+    uint8_t best_index_wind = 0; // initialise number representing the index of the entry in buffer closest to delay.
+
+    // storing data from sensor to buffer
+    if (now - last_store_time_wind >= 10) { // store data every 10 ms.
+        last_store_time_wind = now;
+        if (store_index_wind > wind_buffer_length-1) { // reset buffer index if index greater than size of buffer
+            store_index_wind = 0;
+        }
+        buffer_wind[store_index_wind].data = airspeed_raw; // add data to current index
+        buffer_wind[store_index_wind].time = last_store_time_wind; // add time to current index
+        store_index_wind = store_index_wind + 1; // increment index
+    }
+
+    // return delayed measurement
+    delayed_time_wind = now - _sitl->wind_delay; // get time corresponding to delay
+    // find data corresponding to delayed time in buffer
+    for (uint8_t i=0; i<=wind_buffer_length-1; i++) {
+        time_delta_wind = abs(delayed_time_wind - buffer_wind[i].time); // find difference between delayed time and time stamp in buffer
+        // if this difference is smaller than last delta, store this time
+        if (time_delta_wind < best_time_delta_wind) {
+            best_index_wind = i;
+            best_time_delta_wind = time_delta_wind;
+        }
+    }
+    if (best_time_delta_wind < 200) { // only output stored state if < 200 msec retrieval error
+        airspeed_raw = buffer_wind[best_index_wind].data;
+    }
+
 	return airspeed_raw/4;
 }
 

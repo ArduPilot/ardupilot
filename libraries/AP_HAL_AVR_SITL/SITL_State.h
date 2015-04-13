@@ -138,6 +138,46 @@ private:
     float _current;
 
     bool _synthetic_clock_mode;
+
+    // delay buffer variables
+    static const uint8_t mag_buffer_length = 250;
+    static const uint8_t wind_buffer_length = 50;
+    static const uint8_t baro_buffer_length = 50;
+
+    // magnetometer delay buffer variables
+    struct readings_mag {
+        uint32_t time;
+        Vector3f data;
+    };
+    uint8_t store_index_mag;
+    uint32_t last_store_time_mag;
+    VectorN<readings_mag,mag_buffer_length> buffer_mag;
+    uint32_t time_delta_mag;
+    uint32_t delayed_time_mag;
+    Vector3f mag_data;
+    Vector3f new_mag_data;
+
+    // airspeed sensor delay buffer variables
+    struct readings_wind {
+        uint32_t time;
+        float data;
+    };
+    uint8_t store_index_wind;
+    uint32_t last_store_time_wind;
+    VectorN<readings_wind,wind_buffer_length> buffer_wind;
+    uint32_t time_delta_wind;
+    uint32_t delayed_time_wind;
+
+    // barometer delay buffer variables
+    struct readings_baro {
+        uint32_t time;
+        float data;
+    };
+    uint8_t store_index_baro;
+    uint32_t last_store_time_baro;
+    VectorN<readings_baro,baro_buffer_length> buffer_baro;
+    uint32_t time_delta_baro;
+    uint32_t delayed_time_baro;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
