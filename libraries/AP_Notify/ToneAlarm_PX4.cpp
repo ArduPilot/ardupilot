@@ -105,7 +105,7 @@ void ToneAlarm_PX4::play_string(const char *str) {
 
 void ToneAlarm_PX4::stop_cont_tone() {
     if(_cont_tone_playing == _tone_playing) {
-        play_string("stop");
+        play_string("");
         _tone_playing = -1;
     }
     _cont_tone_playing = -1;
