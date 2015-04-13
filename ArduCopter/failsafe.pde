@@ -6,7 +6,7 @@
 //  our failsafe strategy is to detect main loop lockup and disarm the motors
 //
 
-static bool failsafe_enabled = true;
+static bool failsafe_enabled = false;
 static uint16_t failsafe_last_mainLoop_count;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
