@@ -47,19 +47,22 @@ AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t ins
     _good_sample_count(0),
     _last_sample_distance_cm(0)
 {
-    state.healthy = false;
-
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         hal.console->printf("Unable to open PX4 PWM rangefinder\n");
+        set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
 
     // keep a queue of 20 samples
     if (ioctl(_fd, SENSORIOCSQUEUEDEPTH, 20) != 0) {
         hal.console->printf("Failed to setup range finder queue\n");
+        set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
+
+    // initialise to connected but no data
+    set_status(RangeFinder::RangeFinder_NoData);
 }
 
 /* 
@@ -70,6 +73,7 @@ AP_RangeFinder_PX4_PWM::~AP_RangeFinder_PX4_PWM()
     if (_fd != -1) {
         close(_fd);
     }
+    set_status(RangeFinder::RangeFinder_NotConnected);
 }
 
 /* 
@@ -88,6 +92,7 @@ bool AP_RangeFinder_PX4_PWM::detect(RangeFinder &_ranger, uint8_t instance)
 void AP_RangeFinder_PX4_PWM::update(void)
 {
     if (_fd == -1) {
+        set_status(RangeFinder::RangeFinder_NotConnected);
         return;
     }
 
@@ -107,12 +112,6 @@ void AP_RangeFinder_PX4_PWM::update(void)
         // setup for scaling in meters per millisecond
         float distance_cm = pwm.pulse_width * 0.1f * scaling + ranger._offset[state.instance];
 
-        if (distance_cm > ranger._max_distance_cm[state.instance] ||
-            distance_cm < ranger._min_distance_cm[state.instance]) {
-            _good_sample_count = 0;
-            continue;
-        }
-        
         float distance_delta_cm = fabsf(distance_cm - _last_sample_distance_cm);
         _last_sample_distance_cm = distance_cm;
 
@@ -141,14 +140,16 @@ void AP_RangeFinder_PX4_PWM::update(void)
         // we are above the power saving range. Disable the sensor
         hal.gpio->pinMode(stop_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(stop_pin, false);
-        state.healthy = false;
+        set_status(RangeFinder::RangeFinder_NoData);
         state.distance_cm = 0;
         state.voltage_mv = 0;
         return;
     }
 
-    // consider the range finder healthy if we got a reading in the last 0.2s
-    state.healthy = (hal.scheduler->micros64() - _last_timestamp < 200000);
+    // if we have not taken a reading in the last 0.2s set status to No Data
+    if (hal.scheduler->micros64() - _last_timestamp >= 200000) {
+        set_status(RangeFinder::RangeFinder_NoData);
+    }
 
     /* if we haven't seen any pulses for 0.5s then the sensor is
        probably dead. Try resetting it. Tests show the sensor takes
@@ -182,6 +183,9 @@ void AP_RangeFinder_PX4_PWM::update(void)
 
     if (count != 0) {
         state.distance_cm = sum_cm / count;
+
+        // update range_valid state based on distance measured
+        update_status();
     }
 }
 
