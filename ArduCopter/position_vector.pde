@@ -11,9 +11,8 @@
 Vector3f pv_location_to_vector(const Location& loc)
 {
     const struct Location &origin = inertial_nav.get_origin();
-    float alt_above_origin = loc.alt + (ahrs.get_home().alt - origin.alt);  // convert alt-relative-to-home to alt-relative-to-origin
-    Vector3f tmp((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
-    return tmp;
+    float alt_above_origin = pv_alt_above_origin(loc.alt);  // convert alt-relative-to-home to alt-relative-to-origin
+    return Vector3f((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
 }
 
 // pv_location_to_vector_with_default - convert lat/lon coordinates to a position vector,
