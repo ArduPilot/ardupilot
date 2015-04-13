@@ -300,7 +300,7 @@ static void rtl_descent_run()
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
-    rtl_state_complete = fabs(g.rtl_alt_final - inertial_nav.get_altitude()) < 20.0f;
+    rtl_state_complete = fabs(pv_alt_above_origin(g.rtl_alt_final) - inertial_nav.get_altitude()) < 20.0f;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
