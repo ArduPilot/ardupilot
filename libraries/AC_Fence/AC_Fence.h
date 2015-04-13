@@ -52,7 +52,7 @@ public:
     ///
 
     /// check_fence - returns the fence type that has been breached (if any)
-    uint8_t check_fence();
+    uint8_t check_fence(float curr_alt);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }

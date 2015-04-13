@@ -111,7 +111,7 @@ bool AC_Fence::pre_arm_check() const
 }
 
 /// check_fence - returns the fence type that has been breached (if any)
-uint8_t AC_Fence::check_fence()
+uint8_t AC_Fence::check_fence(float curr_alt)
 {
     uint8_t ret = AC_FENCE_TYPE_NONE;
 
@@ -130,9 +130,6 @@ uint8_t AC_Fence::check_fence()
             _manual_recovery_start_ms = 0;
         }
     }
-
-    // get current altitude in meters
-    float curr_alt = _inav.get_altitude() * 0.01f;
 
     // altitude fence check
     if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
