@@ -119,7 +119,7 @@ public:
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd_old, // deprecated
-        k_param_glide_slope_threshold,
+        k_param_glide_slope_min,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan,
@@ -135,6 +135,7 @@ public:
         k_param_trim_rc_at_start,
         k_param_hil_mode,
         k_param_land_disarm_delay,
+        k_param_glide_slope_threshold,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -471,7 +472,8 @@ public:
     AP_Int8 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
-    AP_Int16 glide_slope_threshold;
+    AP_Int16 glide_slope_min;
+    AP_Float glide_slope_threshold;
     AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
