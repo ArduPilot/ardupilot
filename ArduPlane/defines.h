@@ -195,4 +195,12 @@ enum {
     ATT_CONTROL_APMCONTROL = 1
 };
 
+enum {
+    LAND_BEEP_OFF = 0,
+    LAND_BEEP_ON = 1, // always on, useful for testing or just to know what it sounds like
+    LAND_BEEP_ON_AFTER_LAND = 2,
+    LAND_BEEP_ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE = 3,
+};
+
+
 #endif // _DEFINES_H

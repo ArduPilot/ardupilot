@@ -62,6 +62,12 @@ static bool verify_land()
                 gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
                                   height, auto_state.land_sink_rate, gps.ground_speed());
             }
+
+            // start beeping/chirping so it's easier to find the aircraft in tall grass
+            if ((g.land_beep == LAND_BEEP_ON_AFTER_LAND) ||
+                (g.land_beep == LAND_BEEP_ON_AFTER_LAND_MUTE_VIA_MODE_CHANGE)) {
+                AP_Notify::flags.landed = 1;
+            }
         }
         auto_state.land_complete = true;
 
