@@ -439,6 +439,16 @@ static bool pre_arm_checks(bool display_failure)
             }
             return false;
         }
+
+#if CONFIG_SONAR == ENABLED
+        // check range finder
+        if (!sonar.pre_arm_check()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check range finder"));
+            }
+            return false;
+        }
+#endif
     }
 
     // if we've gotten this far then pre arm checks have completed
