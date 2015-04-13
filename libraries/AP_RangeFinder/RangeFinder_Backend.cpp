@@ -28,3 +28,31 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t ins
         state(_state) 
 {
 }
+
+// update status based on distance measurement
+void AP_RangeFinder_Backend::update_status()
+{
+    // check distance
+    if (state.distance_cm > ranger._max_distance_cm[state.instance]) {
+        set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
+    } else if (state.distance_cm < ranger._min_distance_cm[state.instance]) {
+        set_status(RangeFinder::RangeFinder_OutOfRangeLow);
+    } else {
+        set_status(RangeFinder::RangeFinder_Good);
+    }
+}
+
+// set status and update valid count
+void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
+{
+    state.status = status;
+
+    // update valid count
+    if (status == RangeFinder::RangeFinder_Good) {
+        if (state.range_valid_count < 10) {
+            state.range_valid_count++;
+        }
+    } else {
+        state.range_valid_count = 0;
+    }
+}

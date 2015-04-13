@@ -38,8 +38,15 @@ public:
     bool out_of_range(void) const {
         return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
     }
-    
+
 protected:
+
+    // update status based on distance measurement
+    void update_status();
+
+    // set status and update valid_count
+    void set_status(RangeFinder::RangeFinder_Status status);
+
     RangeFinder &ranger;
     RangeFinder::RangeFinder_State &state;
 };

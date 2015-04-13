@@ -207,6 +207,10 @@ void RangeFinder::init(void)
         state[i].pre_arm_check = false;
         state[i].pre_arm_distance_min = 9999;  // initialise to an arbitrary large value
         state[i].pre_arm_distance_max = 0;
+
+        // initialise status
+        state[i].status = RangeFinder_NotConnected;
+        state[i].range_valid_count = 0;
     }
 }
 
@@ -220,7 +224,8 @@ void RangeFinder::update(void)
         if (drivers[i] != NULL) {
             if (_type[i] == RangeFinder_TYPE_NONE) {
                 // allow user to disable a rangefinder at runtime
-                state[i].healthy = false;
+                state[i].status = RangeFinder_NotConnected;
+                state[i].range_valid_count = 0;
                 continue;
             }
             drivers[i]->update();
@@ -228,9 +233,9 @@ void RangeFinder::update(void)
         }
     }
 
-    // work out primary instance - first healthy sensor
+    // work out primary instance - first sensor returning good data
     for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != NULL && state[i].healthy) {
+        if (drivers[i] != NULL && (state[i].status == RangeFinder_Good)) {
             primary_instance = i;
         }
     }
@@ -290,6 +295,31 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 }
 
+// query status
+RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
+{
+    // sanity check instance
+    if (instance > RANGEFINDER_MAX_INSTANCES) {
+        return RangeFinder_NotConnected;
+    }
+
+    if (drivers[instance] == NULL || _type[instance] == RangeFinder_TYPE_NONE) {
+        return RangeFinder_NotConnected;
+    }
+
+    return state[instance].status;
+}
+
+// true if sensor is returning data
+bool RangeFinder::has_data(uint8_t instance) const
+{
+    // sanity check instance
+    if (instance > RANGEFINDER_MAX_INSTANCES) {
+        return RangeFinder_NotConnected;
+    }
+    return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));
+}
+
 /*
   returns true if pre-arm checks have passed for all range finders
   these checks involve the user lifting or rotating the vehicle so that sensor readings between
@@ -314,8 +344,8 @@ bool RangeFinder::pre_arm_check() const
  */
 void RangeFinder::update_pre_arm_check(uint8_t instance)
 {
-    // return immediately if already passed or unhealty
-    if (state[instance].pre_arm_check || !state[instance].healthy) {
+    // return immediately if already passed or no sensor data
+    if (state[instance].pre_arm_check || state[instance].status == RangeFinder_NotConnected || state[instance].status == RangeFinder_NoData) {
         return;
     }
 
