@@ -39,9 +39,16 @@ void LinuxScheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     int r;
 
     pthread_attr_init(&attr);
-    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
-    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-    pthread_attr_setschedparam(&attr, &param);
+    /*
+      we need to run as root to get realtime scheduling. Allow it to
+      run as non-root for debugging purposes, plus to allow the Replay
+      tool to run
+     */
+    if (geteuid() == 0) {
+        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+        pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+        pthread_attr_setschedparam(&attr, &param);
+    }
     r = pthread_create(ctx, &attr, start_routine, this);
     if (r != 0) {
         hal.console->printf("Error creating thread '%s': %s\n",
@@ -97,6 +104,10 @@ void LinuxScheduler::init(void* machtnichts)
         },
         { }
     };
+
+    if (geteuid() != 0) {
+        printf("WARNING: running as non-root. Will not use realtime scheduling\n");
+    }
 
     for (iter = table; iter->ctx; iter++)
         _create_realtime_thread(iter->ctx, iter->rtprio, iter->name,
