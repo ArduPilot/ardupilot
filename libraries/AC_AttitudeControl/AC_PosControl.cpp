@@ -116,7 +116,7 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 {
     float alt_change = alt_cm-_pos_target.z;
     
-    _vel_desired.z = constrain_float(alt_change * dt, _speed_down_cms, _speed_up_cms);
+    _vel_desired.z = 0.0f;
 
     // adjust desired alt if motors have not hit their limits
     if ((alt_change<0 && !_motors.limit.throttle_lower) || (alt_change>0 && !_motors.limit.throttle_upper)) {
@@ -134,19 +134,30 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
 void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
 {
+    // jurk is calculated to reach full acceleration in 500ms.
+    float jurk_z = _accel_z_cms * 2.0f;
+
+    float accel_z_max = min(_accel_z_cms, safe_sqrt(2.0f*fabs(_vel_desired.z - climb_rate_cms)*jurk_z));
+
+    _accel_last_z_cms += jurk_z * dt;
+    _accel_last_z_cms = min(accel_z_max, _accel_last_z_cms);
+
+    float vel_change_limit = _accel_last_z_cms * dt;
+    _vel_desired.z = constrain_float(climb_rate_cms, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+
     // adjust desired alt if motors have not hit their limits
     // To-Do: add check of _limit.pos_down?
-    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
-        _pos_target.z += climb_rate_cms * dt;
+    if ((_vel_desired.z<0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
+        _pos_target.z += _vel_desired.z * dt;
     }
 
     // do not let target alt get above limit
     if (_alt_max > 0 && _pos_target.z > _alt_max) {
         _pos_target.z = _alt_max;
         _limit.pos_up = true;
+        // decelerate feed forward to zero
+        _vel_desired.z = constrain_float(0.0f, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
     }
-
-    _vel_desired.z = climb_rate_cms;
 }
 
 // get_alt_error - returns altitude error in cm
@@ -272,6 +283,9 @@ void AC_PosControl::pos_to_rate_z()
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
     _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms);
+
+    // add feed forward component
+    _vel_target.z += _vel_desired.z;
 
     // call rate based throttle controller which will update accel based throttle controller targets
     rate_to_accel_z();
@@ -412,6 +426,7 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
 {
     _pos_target = position;
 
+    _vel_desired.z = 0.0f;
     // initialise roll and pitch to current roll and pitch.  This avoids a twitch between when the target is set and the pos controller is first run
     // To-Do: this initialisation of roll and pitch targets needs to go somewhere between when pos-control is initialised and when it completes it's first cycle
     //_roll_target = constrain_int32(_ahrs.roll_sensor,-_attitude_control.lean_angle_max(),_attitude_control.lean_angle_max());
