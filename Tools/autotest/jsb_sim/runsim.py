@@ -53,14 +53,14 @@ def setup_template(home):
 
     baseport = int(opts.simout.split(':')[1])
 
-    template = os.path.join('jsbsim', 'fgout_template.xml')
-    out      = os.path.join('jsbsim', 'fgout.xml')
+    template = os.path.join('jsb_sim', 'fgout_template.xml')
+    out      = os.path.join('jsb_sim', 'fgout.xml')
     xml = open(template).read() % { 'FGOUTPORT'  : str(baseport+3) }
     open(out, mode='w').write(xml)
     print("Wrote %s" % out)
 
-    template = os.path.join('jsbsim', 'rascal_test_template.xml')
-    out      = os.path.join('jsbsim', 'rascal_test.xml')
+    template = os.path.join('jsb_sim', 'rascal_test_template.xml')
+    out      = os.path.join('jsb_sim', 'rascal_test.xml')
     xml = open(template).read() % { 'JSBCONSOLEPORT'  : str(baseport+4) }
     open(out, mode='w').write(xml)
     print("Wrote %s" % out)
@@ -175,7 +175,7 @@ parser.add_option("--simin",   help="SITL input (IP:port)",          default="12
 parser.add_option("--simout",  help="SITL output (IP:port)",         default="127.0.0.1:5501")
 parser.add_option("--fgout",   help="FG display output (IP:port)",   default="127.0.0.1:5503")
 parser.add_option("--home",    type='string', help="home lat,lng,alt,hdg (required)")
-parser.add_option("--script",  type='string', help='jsbsim model script', default='jsbsim/rascal_test.xml')
+parser.add_option("--script",  type='string', help='jsbsim model script', default='jsb_sim/rascal_test.xml')
 parser.add_option("--options", type='string', help='jsbsim startup options')
 parser.add_option("--elevon", action='store_true', default=False, help='assume elevon input')
 parser.add_option("--revthr", action='store_true', default=False, help='reverse throttle')
@@ -200,7 +200,7 @@ atexit.register(util.pexpect_close_all)
 setup_template(opts.home)
 
 # start child
-cmd = "JSBSim --realtime --suspend --nice --simulation-rate=%u --logdirectivefile=jsbsim/fgout.xml --script=%s" % (opts.rate, opts.script)
+cmd = "JSBSim --realtime --suspend --nice --simulation-rate=%u --logdirectivefile=jsb_sim/fgout.xml --script=%s" % (opts.rate, opts.script)
 if opts.options:
     cmd += ' %s' % opts.options
 
