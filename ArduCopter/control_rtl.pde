@@ -401,7 +401,7 @@ static float get_RTL_alt()
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        rtl_alt = min(rtl_alt, fence.get_safe_alt()*100.0f);
+        rtl_alt = min(rtl_alt, pv_alt_above_origin(fence.get_safe_alt()*100.0f));
     }
 #endif
 
