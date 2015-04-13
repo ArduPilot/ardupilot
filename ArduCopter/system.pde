@@ -258,6 +258,9 @@ static void init_ardupilot()
     // ready to fly
     serial_manager.set_blocking_writes_all(false);
 
+    // enable CPU failsafe
+    failsafe_enable();
+
     cliSerial->print_P(PSTR("\nReady to FLY "));
 
     // flag that initialisation has completed
