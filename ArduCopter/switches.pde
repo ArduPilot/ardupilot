@@ -538,10 +538,10 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
     case AUXSW_LOST_COPTER_SOUND:
         switch (ch_flag) {
             case AUX_SWITCH_HIGH:
-                AP_Notify::flags.lost_copter = TRUE;
+                AP_Notify::flags.vehicle_lost = true;
                 break;
             case AUX_SWITCH_LOW:
-                AP_Notify::flags.lost_copter = FALSE;
+                AP_Notify::flags.vehicle_lost = false;
                 break;
         }
         break;
