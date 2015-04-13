@@ -256,6 +256,17 @@ static void set_target_altitude_proportion(const Location &loc, float proportion
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
     change_target_altitude(-target_altitude.offset_cm*proportion);
+    //rebuild the glide slope if we are above it and supposed to be climbing
+    if(g.glide_slope_threshold > 0) {
+        if(target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.glide_slope_threshold) {
+            set_target_altitude_location(loc);
+            set_offset_altitude_location(loc);
+            change_target_altitude(-target_altitude.offset_cm*proportion);
+            //adjust the new target offset altitude to reflect that we are partially already done
+            if(proportion > 0.0f)
+                target_altitude.offset_cm = ((float)target_altitude.offset_cm)/proportion;
+        }
+    }
 }
 
 /*
@@ -350,8 +361,8 @@ static void set_offset_altitude_location(const Location &loc)
         // more accurate flight of missions where the aircraft may lose or
         // gain a bit of altitude near waypoint turn points due to local
         // terrain changes
-        if (g.glide_slope_threshold <= 0 ||
-            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_threshold) {
+        if (g.glide_slope_min <= 0 ||
+            labs(target_altitude.offset_cm)*0.01f < g.glide_slope_min) {
             target_altitude.offset_cm = 0;
         }
     }
