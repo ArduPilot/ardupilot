@@ -95,6 +95,15 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Range: 0 32767
     AP_GROUPINFO("_PWRRNG", 10, RangeFinder, _powersave_range, 0),
 
+    // @Param: _GNDCLEAR
+    // @DisplayName: Distance (in cm) from the range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
+    // @Units: centimeters
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+
     // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
@@ -162,6 +171,15 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
+
+    // @Param: 2_GNDCLEAR
+    // @DisplayName: Distance (in cm) from the second range finder to the ground
+    // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
+    // @Units: centimeters
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 #endif
 
     AP_GROUPEND

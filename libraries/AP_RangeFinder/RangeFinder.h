@@ -23,6 +23,7 @@
 
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
+#define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
 
 class AP_RangeFinder_Backend; 
  
@@ -75,6 +76,7 @@ public:
     AP_Int8  _function[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -120,7 +122,13 @@ public:
     int16_t min_distance_cm() const {
         return min_distance_cm(primary_instance);
     }
-    
+    int16_t ground_clearance_cm(uint8_t instance) const {
+        return _ground_clearance_cm[instance];
+    }
+    int16_t ground_clearance_cm() const {
+        return _ground_clearance_cm[primary_instance];
+    }
+
     bool healthy(uint8_t instance) const {
         return instance < num_instances && _RangeFinder_STATE(instance).healthy;
     }
