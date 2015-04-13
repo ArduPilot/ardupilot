@@ -66,6 +66,9 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("FLOW_RATE",     35, SITL,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SITL,  flow_delay, 0),
     AP_GROUPINFO("GPS_DRIFTALT",  37, SITL,  gps_drift_alt, 0),
+    AP_GROUPINFO("BARO_DELAY",    38, SITL,  baro_delay, 0),
+    AP_GROUPINFO("MAG_DELAY",     39, SITL,  mag_delay, 0),
+    AP_GROUPINFO("WIND_DELAY",    40, SITL,  wind_delay, 0),
     AP_GROUPEND
 };
 
