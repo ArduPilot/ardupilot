@@ -105,13 +105,6 @@ extern const AP_HAL::HAL& hal;
 
 AK8963_MPU9250_SPI_Backend::AK8963_MPU9250_SPI_Backend()
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
-
-    if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("Cannot get SPIDevice_MPU9250"));
-    }
-
-    _spi_sem = _spi->get_semaphore();
 }
 
 bool AK8963_MPU9250_SPI_Backend::sem_take_blocking()
@@ -146,6 +139,19 @@ bool AK8963_MPU9250_SPI_Backend::sem_take_nonblocking()
         _sem_failure_count = 0;
     }
     return got;
+}
+
+bool AK8963_MPU9250_SPI_Backend::init()
+{
+    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
+
+    if (_spi == NULL) {
+        hal.console->println_P(PSTR("Cannot get SPIDevice_MPU9250"));
+        return false;
+    }
+
+    _spi_sem = _spi->get_semaphore();
+    return true;
 }
 
 void AK8963_MPU9250_SPI_Backend::read(uint8_t address, uint8_t *buf, uint32_t count)
@@ -225,6 +231,11 @@ bool AP_Compass_AK8963_MPU9250::init()
     _backend = new AK8963_MPU9250_SPI_Backend();
     if (_backend == NULL) {
         hal.scheduler->panic(PSTR("_backend coudln't be allocated"));
+    }
+    if (!_backend->init()) {
+        delete _backend;
+        _backend = NULL;
+        return false;
     }
     return AP_Compass_AK8963::init();
 #else
