@@ -20,10 +20,13 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <AP_Math.h>
 
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
+#define RANGEFINDER_PREARM_ALT_MAX_CM           200
+#define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 
 class AP_RangeFinder_Backend; 
  
@@ -63,6 +66,9 @@ public:
         uint16_t               voltage_mv;  // voltage in millivolts,
                                             // if applicable, otherwise 0
         bool                   healthy;     // sensor is communicating correctly
+        bool                   pre_arm_check;   // true if sensor has passed pre-arm checks
+        uint16_t               pre_arm_distance_min;    // min distance captured during pre-arm checks
+        uint16_t               pre_arm_distance_max;    // max distance captured during pre-arm checks
     };
 
     // parameters for each instance
@@ -143,7 +149,14 @@ public:
     void set_estimated_terrain_height(float height) {
         estimated_terrain_height = height;
     }
-    
+
+    /*
+      returns true if pre-arm checks have passed for all range finders
+      these checks involve the user lifting or rotating the vehicle so that sensor readings between
+      the min and 2m can be captured
+     */
+    bool pre_arm_check() const;
+
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
@@ -153,5 +166,7 @@ private:
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
+
+    void update_pre_arm_check(uint8_t instance);
 };
 #endif // __RANGEFINDER_H__

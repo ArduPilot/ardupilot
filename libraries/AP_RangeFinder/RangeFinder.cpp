@@ -203,6 +203,10 @@ void RangeFinder::init(void)
             // present (although it may not be healthy)
             num_instances = i+1;
         }
+        // initialise pre-arm check variables
+        state[i].pre_arm_check = false;
+        state[i].pre_arm_distance_min = 9999;  // initialise to an arbitrary large value
+        state[i].pre_arm_distance_max = 0;
     }
 }
 
@@ -220,6 +224,7 @@ void RangeFinder::update(void)
                 continue;
             }
             drivers[i]->update();
+            update_pre_arm_check(i);
         }
     }
 
@@ -285,3 +290,44 @@ void RangeFinder::detect_instance(uint8_t instance)
     }
 }
 
+/*
+  returns true if pre-arm checks have passed for all range finders
+  these checks involve the user lifting or rotating the vehicle so that sensor readings between
+  the min and 2m can be captured
+ */
+bool RangeFinder::pre_arm_check() const
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        // if driver is valid but pre_arm_check is false, return false
+        if ((drivers[i] != NULL) && (_type[i] != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+  set pre-arm checks to passed if the range finder has been exercised through a reasonable range of movement
+      max distance sensed is at least 50cm > min distance sensed
+      max distance < 200cm
+      min distance sensed is within 10cm of ground clearance or sensor's minimum distance
+ */
+void RangeFinder::update_pre_arm_check(uint8_t instance)
+{
+    // return immediately if already passed or unhealty
+    if (state[instance].pre_arm_check || !state[instance].healthy) {
+        return;
+    }
+
+    // update min, max captured distances
+    state[instance].pre_arm_distance_min = min(state[instance].distance_cm, state[instance].pre_arm_distance_min);
+    state[instance].pre_arm_distance_max = max(state[instance].distance_cm, state[instance].pre_arm_distance_max);
+
+    // Check that the range finder has been exercised through a realistic range of movement
+    if (((state[instance].pre_arm_distance_max - state[instance].pre_arm_distance_min) > RANGEFINDER_PREARM_REQUIRED_CHANGE_CM) &&
+         (state[instance].pre_arm_distance_max < RANGEFINDER_PREARM_ALT_MAX_CM) &&
+         (state[instance].pre_arm_distance_min < (max(_ground_clearance_cm[instance],min_distance_cm(instance)) + 10)) &&
+         (state[instance].pre_arm_distance_min > (min(_ground_clearance_cm[instance],min_distance_cm(instance)) - 10))) {
+        state[instance].pre_arm_check = true;
+    }
+}
