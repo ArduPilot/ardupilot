@@ -27,7 +27,7 @@ static void sport_run()
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;
     }
 
@@ -77,7 +77,7 @@ static void sport_run()
     if (ap.land_complete) {
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
     }else{
 
         // call attitude controller

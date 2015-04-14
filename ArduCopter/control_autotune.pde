@@ -264,7 +264,7 @@ static void autotune_run()
     // this should not actually be possible because of the autotune_init() checks
     if (!ap.auto_armed) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;
     }
 

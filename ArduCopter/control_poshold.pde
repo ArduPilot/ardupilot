@@ -157,7 +157,7 @@ static void poshold_run()
     if(!ap.auto_armed) {
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;
     }
 
@@ -191,7 +191,7 @@ static void poshold_run()
         wp_nav.init_loiter_target();
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;
     }else{
         // convert pilot input to lean angles
