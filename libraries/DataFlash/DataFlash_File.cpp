@@ -31,6 +31,11 @@ extern const AP_HAL::HAL& hal;
 #define MAX_LOG_FILES 500U
 #define DATAFLASH_PAGE_SIZE 1024UL
 
+#ifdef __MINGW32__
+  #include <io.h>
+  #define fsync _commit
+#endif
+
 /*
   constructor
  */
@@ -99,7 +104,11 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
 
     ret = stat(_log_directory, &st);
     if (ret == -1) {
-        ret = mkdir(_log_directory, 0777);
+		#ifdef __MINGW32__
+			ret = mkdir(_log_directory);
+		#else
+			ret = mkdir(_log_directory, 0777);
+		#endif
     }
     if (ret == -1) {
         hal.console->printf("Failed to create log directory %s", _log_directory);
@@ -142,12 +151,12 @@ bool DataFlash_File::NeedErase(void)
     return false;
 }
 
+#if defined(__unix__) || defined(__unix)
 /*
   construct a log file name given a log number. 
   Note: Caller must free.
  */
-char *DataFlash_File::_log_file_name(uint16_t log_num)
-{
+char *DataFlash_File::_log_file_name(uint16_t log_num) {
     char *buf = NULL;
     asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num);
     return buf;
@@ -157,13 +166,31 @@ char *DataFlash_File::_log_file_name(uint16_t log_num)
   return path name of the lastlog.txt marker file
   Note: Caller must free.
  */
-char *DataFlash_File::_lastlog_file_name(void)
-{
+char *DataFlash_File::_lastlog_file_name(void) {
     char *buf = NULL;
     asprintf(&buf, "%s/LASTLOG.TXT", _log_directory);
     return buf;
 }
+#else
+/*
+ * Note that asprintf is not really portable,
+ * for systems which do not have asprintf() use sprintf()
+ */	
+char *DataFlash_File::_log_file_name(uint16_t log_num) {
+    char log_num_buf[33];
+    itoa (log_num, log_num_buf, 10);
+  
+    char* buf = (char*)malloc(strlen(_log_directory) + strlen(log_num_buf) + strlen(".BIN") + 1);
+    sprintf(buf, "%s/%u.BIN", _log_directory, (unsigned)log_num);
+    return &buf[0];
+}
 
+char *DataFlash_File::_lastlog_file_name(void) {
+    char* buf = (char*)malloc(strlen(_log_directory) + strlen("/LASTLOG.TXT") + 1);
+    sprintf(buf, "%s/LASTLOG.TXT", _log_directory);
+    return &buf[0];
+}
+#endif
 
 // remove all log files
 void DataFlash_File::EraseAll()
