@@ -127,24 +127,30 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 
     // forward on any channels matching the targets
     bool forwarded = false;
-    for (uint8_t i=0; i<num_routes; i++) {
-        if (broadcast_system || (target_system == routes[i].sysid &&
-                                 (broadcast_component || 
-                                  target_component == routes[i].compid))) {
-            if (in_channel != routes[i].channel) {
-                if (comm_get_txspace(routes[i].channel) >= 
-                    ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-#if ROUTING_DEBUG
-                    ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
-                             msg->msgid,
-                             (unsigned)in_channel,
-                             (unsigned)routes[i].channel,
-                             (unsigned)target_system,
-                             (unsigned)target_component);
-#endif
-                    _mavlink_resend_uart(routes[i].channel, msg);
+    for (int8_t interface = MAVLINK_COMM_0; interface <= MAVLINK_COMM_3; ++interface){
+        if (interface == in_channel){
+            continue; // skip the receiving interface
+        }
+
+        for (uint8_t i=0; i<num_routes; i++) {
+            if (interface == routes[i].channel) {
+                if(broadcast_system || (target_system == routes[i].sysid && 
+                        (broadcast_component || target_component == routes[i].compid))){
+                    if (comm_get_txspace(routes[i].channel) >=
+                            ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                        _mavlink_resend_uart(routes[i].channel, msg);
+                        #if ROUTING_DEBUG
+                        ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
+                                 msg->msgid,
+                                 (unsigned)in_channel,
+                                 (unsigned)routes[i].channel,
+                                 (unsigned)target_system,
+                                 (unsigned)target_component);
+                        #endif
+                    }
+                    forwarded = true;
+                    break; // only forward msg once per interface
                 }
-                forwarded = true;
             }
         }
     }
