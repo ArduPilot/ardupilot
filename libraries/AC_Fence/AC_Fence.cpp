@@ -111,6 +111,7 @@ bool AC_Fence::pre_arm_check() const
 }
 
 /// check_fence - returns the fence type that has been breached (if any)
+///     curr_alt is the altitude above home in meters
 uint8_t AC_Fence::check_fence(float curr_alt)
 {
     uint8_t ret = AC_FENCE_TYPE_NONE;

@@ -52,6 +52,7 @@ public:
     ///
 
     /// check_fence - returns the fence type that has been breached (if any)
+    ///     curr_alt is the altitude above home in meters
     uint8_t check_fence(float curr_alt);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
