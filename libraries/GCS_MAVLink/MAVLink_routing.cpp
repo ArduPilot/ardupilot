@@ -156,6 +156,34 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 }
 
 /*
+  send a MAVLink message to all components with this vehicle's system id
+
+  This is a no-op if no routes to components have been learned
+*/
+void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
+{
+    bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
+    memset(sent_to_chan, 0, sizeof(sent_to_chan));
+
+    // check learned routes
+    for (uint8_t i=0; i<num_routes; i++) {
+        if ((routes[i].sysid == mavlink_system.sysid) && !sent_to_chan[routes[i].channel]) {
+            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+#if ROUTING_DEBUG
+                ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
+                         msg->msgid,
+                         (unsigned)routes[i].channel,
+                         (unsigned)routes[i].sysid,
+                         (unsigned)routes[i].compid);
+#endif
+                _mavlink_resend_uart(routes[i].channel, msg);
+                sent_to_chan[routes[i].channel] = true;
+            }
+        }
+    }
+}
+
+/*
   see if the message is for a new route and learn it
 */
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg)
