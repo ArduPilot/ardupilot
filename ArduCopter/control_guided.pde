@@ -271,8 +271,19 @@ static void guided_vel_control_run()
         }
     }
 
-    // call velocity controller which includes z axis controller
-    pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
+    // calculate dt
+    float dt = pos_control.time_since_last_xy_update();
+
+    // update at poscontrol update rate
+    if (dt >= pos_control.get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
+        }
+
+        // call velocity controller which includes z axis controller
+        pos_control.update_vel_controller_xyz(ekfNavVelGainScaler);
+    }
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
@@ -305,16 +316,27 @@ static void guided_posvel_control_run()
         posvel_vel_target_cms.zero();
     }
 
-    // advance position target using velocity target
-    posvel_pos_target_cm += posvel_vel_target_cms * G_Dt;
+    // calculate dt
+    float dt = pos_control.time_since_last_xy_update();
 
-    // send position and velocity targets to position controller
-    pos_control.set_pos_target(posvel_pos_target_cm);
-    pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
+    // update at poscontrol update rate
+    if (dt >= pos_control.get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
+        }
 
-    // run position controller
-    pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler);
-    pos_control.update_z_controller();
+        // advance position target using velocity target
+        posvel_pos_target_cm += posvel_vel_target_cms * dt;
+
+        // send position and velocity targets to position controller
+        pos_control.set_pos_target(posvel_pos_target_cm);
+        pos_control.set_desired_velocity_xy(posvel_vel_target_cms.x, posvel_vel_target_cms.y);
+
+        // run position controller
+        pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler);
+        pos_control.update_z_controller();
+    }
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
