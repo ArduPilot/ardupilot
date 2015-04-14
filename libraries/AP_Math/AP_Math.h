@@ -20,14 +20,6 @@
 #include "polygon.h"
 #include "edc.h"
 
-#ifdef __AVR__
-//do not inline functions on avr hardware
-//since this increases code size
-#define INLINE static inline __attribute((noinline))
-#else
-#define INLINE static inline
-#endif
-
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
 #endif
@@ -173,9 +165,20 @@ void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
 void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 #endif
 
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
+float constrain_float(float amt, float low, float high);
+int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
+int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
+int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+float radians(float deg);
+float degrees(float rad);
+float sq(float v);
+float pythagorous2(float a, float b);
+float pythagorous3(float a, float b, float c);
+#else
 // constrain a value
 // constrain a value
-INLINE float constrain_float(float amt, float low, float high)
+inline float constrain_float(float amt, float low, float high)
 {
 	// the check for NaN as a float prevents propogation of
 	// floating point errors through any function that uses
@@ -187,39 +190,41 @@ INLINE float constrain_float(float amt, float low, float high)
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 // constrain a int16_t value
-INLINE int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
+inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 
 // constrain a int32_t value
-INLINE int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
+inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
 	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
 
 // degrees -> radians
-INLINE float radians(float deg) {
+inline float radians(float deg) {
 	return deg * DEG_TO_RAD;
 }
 
 // radians -> degrees
-INLINE float degrees(float rad) {
+inline float degrees(float rad) {
 	return rad * RAD_TO_DEG;
 }
 
 // square
-INLINE float sq(float v) {
+inline float sq(float v) {
 	return v*v;
 }
 
 // 2D vector length
-INLINE float pythagorous2(float a, float b) {
+inline float pythagorous2(float a, float b) {
 	return sqrtf(sq(a)+sq(b));
 }
 
 // 3D vector length
-INLINE float pythagorous3(float a, float b, float c) {
+inline float pythagorous3(float a, float b, float c) {
 	return sqrtf(sq(a)+sq(b)+sq(c));
 }
+
+#endif
 
 #ifdef radians
 #error "Build is including Arduino base headers"
