@@ -581,10 +581,10 @@ private:
     bool newDataHgt;                // true when new height data has arrived
     uint32_t lastHgtMeasTime;       // time of last height measurement used to determine if new data has arrived
     uint16_t hgtRetryTime;          // time allowed without use of height measurements before a height timeout is declared
-    uint32_t velFailTime;           // time stamp when GPS velocity measurement last failed covaraiance consistency check (msec)
-    uint32_t posFailTime;           // time stamp when GPS position measurement last failed covaraiance consistency check (msec)
-    uint32_t hgtFailTime;           // time stamp when height measurement last failed covaraiance consistency check (msec)
-    uint32_t tasFailTime;           // time stamp when airspeed measurement last failed covaraiance consistency check (msec)
+    uint32_t lastVelPassTime;       // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
+    uint32_t lastPosPassTime;       // time stamp when GPS position measurement last passed innovation consistency check (msec)
+    uint32_t lastHgtPassTime;       // time stamp when height measurement last passed innovation consistency check (msec)
+    uint32_t lastTasPassTime;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
     uint32_t lastFixTime_ms;        // time of last GPS fix used to determine if new data has arrived
