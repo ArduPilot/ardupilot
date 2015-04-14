@@ -9,9 +9,9 @@
  */
 inline Vector3i round_vector3f(const Vector3f &v3f) {
   Vector3i v3i;
-  v3i.x = v3f.x == 0.f ? 0 : v3f.x > 0.f ? v3f.x + 0.5f : v3f.x - 0.5f;
-  v3i.y = v3f.y == 0.f ? 0 : v3f.y > 0.f ? v3f.y + 0.5f : v3f.y - 0.5f;
-  v3i.z = v3f.z == 0.f ? 0 : v3f.z > 0.f ? v3f.z + 0.5f : v3f.z - 0.5f;
+  v3i.x = fabs(v3f.x) < 0.5f ? 0 : v3f.x > 0.f ? v3f.x + 0.5f : v3f.x - 0.5f;
+  v3i.y = fabs(v3f.y) < 0.5f ? 0 : v3f.y > 0.f ? v3f.y + 0.5f : v3f.y - 0.5f;
+  v3i.z = fabs(v3f.z) < 0.5f ? 0 : v3f.z > 0.f ? v3f.z + 0.5f : v3f.z - 0.5f;
   return v3i;
 }
 
