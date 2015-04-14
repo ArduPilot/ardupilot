@@ -962,38 +962,34 @@ void NavEKF::SelectFlowFusion()
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
+    // Check if the optical flow sensor has timed out
+    bool flowSensorTimeout = ((imuSampleTime_ms - flowValidMeaTime_ms) > 5000);
     // Check if the fusion has timed out (flow measurements have been rejected for too long)
     bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
     // check is the terrain offset estimate is still valid
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
     bool tiltOK = (Tnb_flow.c.z > DCM33FlowMin);
-
-    // if we don't have valid flow measurements and are relying on them, dead reckon using current velocity vector
-    // If the flow measurements have been rejected for too long and we are relying on them, then reset the velocities to an estimate based on the flow and range data
-    if (!flowDataValid && PV_AidingMode == AID_RELATIVE) {
-        constVelMode = true;
-        constPosMode = false; // always clear constant position mode if constant velocity mode is active
-    } else if (flowDataValid && flowFusionTimeout && PV_AidingMode == AID_RELATIVE) {
-        // we need to reset the velocities to a value estimated from the flow data
-        // estimate the range
-        float initPredRng = max((terrainState - state.position[2]),(_rngOnGnd_cm * 0.01f)) / Tnb_flow.c.z;
-        // multiply the range by the LOS rates to get an estimated XY velocity in body frame
-        Vector3f initVel;
-        initVel.x = -flowRadXYcomp[1]*initPredRng;
-        initVel.y =  flowRadXYcomp[0]*initPredRng;
-        // rotate into earth frame
-        initVel = Tbn_flow*initVel;
-        // set horizontal velocity states
-        state.velocity.x = initVel.x;
-        state.velocity.y = initVel.y;
-        // clear any hold modes
-        constVelMode = false;
-        lastConstVelMode = false;
-    } else if (flowDataValid) {
-        // clear the constant velocity mode now we have good data
-        constVelMode = false;
-        lastConstVelMode = false;
+    // Constrain measurements to zero if we are using optical flow and are on the ground
+    if (_fusionModeGPS == 3 && !takeOffDetected && vehicleArmed) {
+        flowRadXYcomp[0]    = 0.0f;
+        flowRadXYcomp[1]    = 0.0f;
+        flowRadXY[0]        = 0.0f;
+        flowRadXY[1]        = 0.0f;
+        omegaAcrossFlowTime.zero();
+    }
+    // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
+    if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
+            constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
+            constPosMode = true;
+            PV_AidingMode = AID_NONE;
+            // reset the velocity
+            ResetVelocity();
+            // store the current position to be used to keep reporting the last known position
+            lastKnownPositionNE.x = state.position.x;
+            lastKnownPositionNE.y = state.position.y;
+            // reset the position
+            ResetPosition();
     }
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
     // we don't do terrain height estimation in optical flow only mode as the ground becomes our zero height reference
@@ -4778,6 +4774,10 @@ void NavEKF::performArmingChecks()
                 constPosMode = true;
                 constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
+            // Reset the last valid flow measurement time
+            flowValidMeaTime_ms = imuSampleTime_ms;
+            // Reset the last valid flow fusion time
+            prevFlowFuseTime_ms = imuSampleTime_ms;
         } else { // arming when GPS useage is allowed
             if (gpsNotAvailable) {
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
