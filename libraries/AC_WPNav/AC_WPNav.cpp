@@ -78,19 +78,19 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LOIT_JERK",   7, AC_WPNav, _loiter_jerk_max_cmsss, WPNAV_LOITER_JERK_MAX_DEFAULT),
-    
+
     // @Param: LOIT_MAXA
     // @DisplayName: Loiter maximum acceleration
-    // @Description: Loiter maximum acceleration in cm/s/s
+    // @Description: Loiter maximum acceleration in cm/s/s.  Higher values cause the copter to accelerate and stop more quickly.
     // @Units: cm/s/s
     // @Range: 100 981
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LOIT_MAXA",   8, AC_WPNav, _loiter_accel_cmss, WPNAV_LOITER_ACCEL),
-    
+
     // @Param: LOIT_MINA
     // @DisplayName: Loiter minimum acceleration
-    // @Description: Loiter minimum acceleration in cm/s/s
+    // @Description: Loiter minimum acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered, but cause a larger jerk when the copter stops.
     // @Units: cm/s/s
     // @Range: 100 981
     // @Increment: 1
@@ -239,7 +239,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
     if( _loiter_speed_cms < WPNAV_LOITER_SPEED_MIN) {
         _loiter_speed_cms = WPNAV_LOITER_SPEED_MIN;
     }
-    
+
     _pos_control.set_speed_xy(_loiter_speed_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
 

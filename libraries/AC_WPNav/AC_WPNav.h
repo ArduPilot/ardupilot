@@ -277,8 +277,8 @@ protected:
     // parameters
     AP_Float    _loiter_speed_cms;      // maximum horizontal speed in cm/s while in loiter
     AP_Float    _loiter_jerk_max_cmsss; // maximum jerk in cm/s/s/s while in loiter
-    AP_Float    _loiter_accel_cmss;      // loiter's acceleration in cm/s/s
-    AP_Float    _loiter_accel_min_cmss;      // loiter's acceleration in cm/s/s
+    AP_Float    _loiter_accel_cmss;     // loiter's max acceleration in cm/s/s
+    AP_Float    _loiter_accel_min_cmss; // loiter's min acceleration in cm/s/s
     AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
