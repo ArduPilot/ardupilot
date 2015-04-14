@@ -46,7 +46,9 @@
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS    500     // timeout for tuning mode's testing step
 #define AUTOTUNE_LEVEL_ANGLE_CD             300     // angle which qualifies as level
-#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250     // time we require the copter to be level
+#define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
+#define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
+#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the copter to be level
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -57,16 +59,16 @@
 #define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
 #define AUTOTUNE_PI_RATIO_FINAL            2.5f     // I is set 1x P after testing
 #define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
-#define AUTOTUNE_RD_MIN                  0.002f     // minimum Rate D value
+#define AUTOTUNE_RD_MIN                  0.004f     // minimum Rate D value
 #define AUTOTUNE_RD_MAX                  0.050f     // maximum Rate D value
 #define AUTOTUNE_RLPF_MIN                  1.0f     // minimum Rate Yaw filter value
 #define AUTOTUNE_RLPF_MAX                 10.0f     // maximum Rate Yaw filter value
 #define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    5.0f     // maximum Rate P value
+#define AUTOTUNE_RP_MAX                    1.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
-#define AUTOTUNE_SP_MIN                    1.0f     // maximum Stab P value
+#define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF           0.75f    // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF          0.75f     // back off from maximum acceleration
 #define AUTOTUNE_RP_ACCEL_MIN          75000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_SUCCESS_COUNT                4     // how many successful iterations we need to freeze at current gains
@@ -130,6 +132,7 @@ struct autotune_state_struct {
     uint8_t             positive_direction  : 1;    // 0 = tuning in negative direction (i.e. left for roll), 1 = positive direction (i.e. right for roll)
     AutoTuneStepType    step                : 2;    // see AutoTuneStepType for what steps are performed
     AutoTuneTuneType    tune_type           : 3;    // see AutoTuneTuneType
+    uint8_t             ignore_next         : 1;    // 1 = ignore the next test
 } autotune_state;
 
 // variables
@@ -141,7 +144,10 @@ static uint32_t autotune_step_stop_time;                        // start time of
 static int8_t   autotune_counter;                               // counter for tuning gains
 static float    autotune_target_rate, autotune_start_rate;      // target and start rate
 static float    autotune_target_angle, autotune_start_angle;    // target and start angles
+static float    autotune_desired_yaw;                           // yaw heading during tune
 static float    rate_max, autotune_test_accel_max;              // maximum acceleration variables
+
+LowPassFilterFloat  rotation_rate_filt;                         // filtered rotation rate in radians/second
 
 // backup of currently being tuned parameter values
 static float    orig_roll_rp = 0, orig_roll_ri, orig_roll_rd, orig_roll_sp;
@@ -308,6 +314,7 @@ static void autotune_run()
                 // set gains to their intra-test values (which are very close to the original gains)
                 // autotune_load_intra_test_gains(); //I think we should be keeping the originals here to let the I term settle quickly
                 autotune_state.step = AUTOTUNE_STEP_WAITING_FOR_LEVEL; // set tuning step back from beginning
+                autotune_desired_yaw = ahrs.yaw_sensor;
             }
         }
 
@@ -341,15 +348,20 @@ static void autotune_attitude_control()
         attitude_control.limit_angle_to_rate_request(true);
 
         // hold level attitude
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw( 0.0f, 0.0f, 0.0f);
+        attitude_control.angle_ef_roll_pitch_yaw( 0.0f, 0.0f, autotune_desired_yaw, true);
 
-        // hold the copter level for 0.25 seconds before we begin a twitch
+        // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
-        if ((labs(ahrs.roll_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) || (labs(ahrs.pitch_sensor) > AUTOTUNE_LEVEL_ANGLE_CD)) {
+        if ((labs(ahrs.roll_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+                (labs(ahrs.pitch_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+                (labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)) > AUTOTUNE_LEVEL_ANGLE_CD) ||
+                ((ToDeg(ahrs.get_gyro().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                ((ToDeg(ahrs.get_gyro().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                ((ToDeg(ahrs.get_gyro().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
             autotune_step_start_time = millis();
         }
 
-        // if we have been level for a sufficient amount of time (0.25 seconds) move onto tuning step
+        // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (millis() - autotune_step_start_time >= AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
             // initiate variables for next step
             autotune_state.step = AUTOTUNE_STEP_TWITCHING;
@@ -357,7 +369,7 @@ static void autotune_attitude_control()
             autotune_step_stop_time = autotune_step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
             autotune_test_max = 0.0f;
             autotune_test_min = 0.0f;
-            rotation_rate = 0.0f;
+            rotation_rate_filt.reset(0.0f);
             rate_max = 0.0f;
             // set gains to their to-be-tested values
             autotune_load_twitch_gains();
@@ -369,18 +381,36 @@ static void autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_roll(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
             autotune_start_angle = ahrs.roll_sensor;
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_roll.filt_hz()*4.0f);
+            if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
+                rotation_rate_filt.reset(autotune_start_rate);
+            } else {
+                rotation_rate_filt.reset(0);
+            }
         break;
         case AUTOTUNE_AXIS_PITCH:
             autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_pitch(), AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_pitch(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
             autotune_start_angle = ahrs.pitch_sensor;
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_pitch.filt_hz()*4.0f);
+            if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
+                rotation_rate_filt.reset(autotune_start_rate);
+            } else {
+                rotation_rate_filt.reset(0);
+            }
             break;
         case AUTOTUNE_AXIS_YAW:
             autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_yaw()/1.5f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_yaw(), AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().z) * 100.0f;
             autotune_start_angle = ahrs.yaw_sensor;
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,orig_yaw_rLPF*4.0f);
+            if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
+                rotation_rate_filt.reset(autotune_start_rate);
+            } else {
+                rotation_rate_filt.reset(0);
+            }
             break;
         }
         break;
@@ -434,25 +464,25 @@ static void autotune_attitude_control()
         switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f));
             } else {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f - autotune_start_rate);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f - autotune_start_rate));
             }
             lean_angle = direction_sign * (ahrs.roll_sensor - (int32_t)autotune_start_angle);
             break;
         case AUTOTUNE_AXIS_PITCH:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f));
             } else {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f - autotune_start_rate);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f - autotune_start_rate));
             }
             lean_angle = direction_sign * (ahrs.pitch_sensor - (int32_t)autotune_start_angle);
             break;
         case AUTOTUNE_AXIS_YAW:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f));
             } else {
-                rotation_rate = direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f - autotune_start_rate);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f - autotune_start_rate));
             }
             lean_angle = direction_sign * wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_start_angle);
             break;
@@ -717,7 +747,10 @@ static void autotune_backup_gains_and_initialise()
     autotune_state.step = AUTOTUNE_STEP_WAITING_FOR_LEVEL;
     autotune_step_start_time = millis();
     autotune_state.tune_type = AUTOTUNE_TYPE_RD_UP;
-    autotune_start_angle = ahrs.yaw_sensor;
+
+    autotune_desired_yaw = ahrs.yaw_sensor;
+
+    g.autotune_aggressiveness = constrain_float(g.autotune_aggressiveness, 0.05, 0.1);
 
     // backup original pids and initialise tuned pid values
     if (autotune_roll_enabled()) {
@@ -1090,22 +1123,26 @@ void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, f
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) {
+            // ignore the next result unless it is the same as this one
+            autotune_state.ignore_next = 1;
             // bounce back is bigger than our threshold so increment the success counter
             autotune_counter++;
-            // cancel change in direction
-            autotune_state.positive_direction = !autotune_state.positive_direction;
         }else{
-            // bounce back is smaller than our threshold so decrement the success counter
-            if (autotune_counter > 0 ) {
-                autotune_counter--;
-            }
-            // increase D gain (which should increase bounce back)
-            tune_d += tune_d*tune_d_step_ratio*2.0f;
-            // stop tuning if we hit maximum D
-            if (tune_d >= tune_d_max) {
-                tune_d = tune_d_max;
-                autotune_counter = AUTOTUNE_SUCCESS_COUNT;
-                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+            if (autotune_state.ignore_next == 0){
+                // bounce back is smaller than our threshold so decrement the success counter
+                if (autotune_counter > 0 ) {
+                    autotune_counter--;
+                }
+                // increase D gain (which should increase bounce back)
+                tune_d += tune_d*tune_d_step_ratio*2.0f;
+                // stop tuning if we hit maximum D
+                if (tune_d >= tune_d_max) {
+                    tune_d = tune_d_max;
+                    autotune_counter = AUTOTUNE_SUCCESS_COUNT;
+                    Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+                }
+            } else {
+                autotune_state.ignore_next = 0;
             }
         }
     }
@@ -1137,15 +1174,19 @@ void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min < measurement_max*g.autotune_aggressiveness) {
-            // bounce back is less than our threshold so increment the success counter
-            autotune_counter++;
+            if (autotune_state.ignore_next == 0){
+                // bounce back is less than our threshold so increment the success counter
+                autotune_counter++;
+            } else {
+                autotune_state.ignore_next = 0;
+            }
         }else{
+            // ignore the next result unless it is the same as this one
+            autotune_state.ignore_next = 1;
             // bounce back is larger than our threshold so decrement the success counter
             if (autotune_counter > 0 ) {
                 autotune_counter--;
             }
-            // cancel change in direction
-            autotune_state.positive_direction = !autotune_state.positive_direction;
             // decrease D gain (which should decrease bounce back)
             tune_d -= tune_d*tune_d_step_ratio;
             // stop tuning if we hit minimum D
@@ -1163,15 +1204,19 @@ void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step
 void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max < target) {
-        // if maximum measurement was lower than target so increment the success counter
-        autotune_counter++;
+        if (autotune_state.ignore_next == 0){
+            // if maximum measurement was lower than target so increment the success counter
+            autotune_counter++;
+        } else {
+            autotune_state.ignore_next = 0;
+        }
     }else{
+        // ignore the next result unless it is the same as this one
+        autotune_state.ignore_next = 1;
         // if maximum measurement was higher than target so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;
         }
-        // cancel change in direction
-        autotune_state.positive_direction = !autotune_state.positive_direction;
         // decrease P gain (which should decrease the maximum)
         tune_p -= tune_p*tune_p_step_ratio;
         // stop tuning if we hit maximum P
@@ -1188,22 +1233,26 @@ void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step
 void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max > target) {
+        // ignore the next result unless it is the same as this one
+        autotune_state.ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
-        // cancel change in direction
-        autotune_state.positive_direction = !autotune_state.positive_direction;
     }else{
-        // if maximum measurement was lower than target so decrement the success counter
-        if (autotune_counter > 0 ) {
-            autotune_counter--;
-        }
-        // increase P gain (which should increase the maximum)
-        tune_p += tune_p*tune_p_step_ratio;
-        // stop tuning if we hit maximum P
-        if (tune_p >= tune_p_max) {
-            tune_p = tune_p_max;
-            autotune_counter = AUTOTUNE_SUCCESS_COUNT;
-            Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+        if (autotune_state.ignore_next == 0){
+            // if maximum measurement was lower than target so decrement the success counter
+            if (autotune_counter > 0 ) {
+                autotune_counter--;
+            }
+            // increase P gain (which should increase the maximum)
+            tune_p += tune_p*tune_p_step_ratio;
+            // stop tuning if we hit maximum P
+            if (tune_p >= tune_p_max) {
+                tune_p = tune_p_max;
+                autotune_counter = AUTOTUNE_SUCCESS_COUNT;
+                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+            }
+        } else {
+            autotune_state.ignore_next = 0;
         }
     }
 }
@@ -1213,17 +1262,15 @@ void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_r
 void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
 {
     if (measurement_max > target) {
+        // ignore the next result unless it is the same as this one
+        autotune_state.ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
-        // cancel change in direction
-        autotune_state.positive_direction = !autotune_state.positive_direction;
     }else if ((measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
         // if bounce back was larger than the threshold so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;
         }
-        // cancel change in direction
-        autotune_state.positive_direction = !autotune_state.positive_direction;
         // decrease D gain (which should decrease bounce back)
         tune_d -= tune_d*tune_d_step_ratio;
         // stop tuning if we hit minimum D
@@ -1238,18 +1285,24 @@ void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d
             tune_p = tune_p_min;
             Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
         }
+        // cancel change in direction
+        autotune_state.positive_direction = !autotune_state.positive_direction;
     }else{
-        // if maximum measurement was lower than target so decrement the success counter
-        if (autotune_counter > 0 ) {
-            autotune_counter--;
-        }
-        // increase P gain (which should increase the maximum)
-        tune_p += tune_p*tune_p_step_ratio;
-        // stop tuning if we hit maximum P
-        if (tune_p >= tune_p_max) {
-            tune_p = tune_p_max;
-            autotune_counter = AUTOTUNE_SUCCESS_COUNT;
-            Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+        if (autotune_state.ignore_next == 0){
+            // if maximum measurement was lower than target so decrement the success counter
+            if (autotune_counter > 0 ) {
+                autotune_counter--;
+            }
+            // increase P gain (which should increase the maximum)
+            tune_p += tune_p*tune_p_step_ratio;
+            // stop tuning if we hit maximum P
+            if (tune_p >= tune_p_max) {
+                tune_p = tune_p_max;
+                autotune_counter = AUTOTUNE_SUCCESS_COUNT;
+                Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+            }
+        } else {
+            autotune_state.ignore_next = 0;
         }
     }
 }
