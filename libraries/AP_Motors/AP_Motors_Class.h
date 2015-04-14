@@ -158,6 +158,9 @@ public:
     //  has no effect when throttle is above hover throttle
     void                set_throttle_low_comp(float throttle_low_comp) { _throttle_low_comp_desired = throttle_low_comp; }
 
+    // get_throttle_low_comp - get low throttle compensation value
+    float               get_throttle_low_comp() { return _throttle_low_comp; }
+
     // get_lift_max - get maximum lift ratio
     float               get_lift_max() { return _lift_max; }
 
