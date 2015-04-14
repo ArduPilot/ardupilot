@@ -438,13 +438,9 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF::healthy(void) const
 {
-    if (!statesInitialised) {
-        return false;
-    }
-    if (state.quat.is_nan()) {
-        return false;
-    }
-    if (state.velocity.is_nan()) {
+    uint8_t faultInt;
+    getFilterFaults(faultInt);
+    if (faultInt > 0) {
         return false;
     }
     if (_fallback && velTestRatio > 1 && posTestRatio > 1 && hgtTestRatio > 1) {
