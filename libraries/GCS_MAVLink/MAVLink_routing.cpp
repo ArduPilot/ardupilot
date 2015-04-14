@@ -140,12 +140,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                             ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
                         _mavlink_resend_uart(routes[i].channel, msg);
                         #if ROUTING_DEBUG
-                        ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
+                        ::printf("fwd msg %u from chan %u on chan %u sysid=%i compid=%i\n",
                                  msg->msgid,
                                  (unsigned)in_channel,
                                  (unsigned)routes[i].channel,
-                                 (unsigned)target_system,
-                                 (unsigned)target_component);
+                                 target_system,
+                                 target_component);
                         #endif
                     }
                     forwarded = true;
