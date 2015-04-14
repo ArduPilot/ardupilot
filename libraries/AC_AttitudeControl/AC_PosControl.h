@@ -126,6 +126,9 @@ public:
     /// set_alt_target_to_current_alt - set altitude target to current altitude
     void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
 
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    void relax_alt_hold_controllers(float throttle_setting);
+
     /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     /// To-Do: remove one of the two functions below
     float get_alt_target() const { return _pos_target.z; }
