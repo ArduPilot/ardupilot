@@ -37,7 +37,7 @@ void print_trace() {
     char name_buf[512];
     name_buf[readlink("/proc/self/exe", name_buf, 511)]=0;
     int child_pid = fork();
-    if (!child_pid) {           
+    if (!child_pid) {
         dup2(2,1); // redirect output to stderr
         fprintf(stdout,"stack trace for %s pid=%s\n",name_buf,pid_buf);
         execlp("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, NULL);
@@ -160,7 +160,7 @@ void SITL_State::_set_param_default(char *parm)
     AP_Param *vp = AP_Param::find(parm, &var_type);
     if (vp == NULL) {
         printf("Unknown parameter %s\n", parm);
-        exit(1);        
+        exit(1);
     }
     if (var_type == AP_PARAM_FLOAT) {
         ((AP_Float *)vp)->set_and_save(value);
@@ -231,7 +231,7 @@ void SITL_State::_sitl_setup(void)
     pthread_attr_t thread_attr;
     pthread_attr_init(&thread_attr);
 
-    pthread_create(&_fdm_thread_ctx, &thread_attr, 
+    pthread_create(&_fdm_thread_ctx, &thread_attr,
                    (pthread_startroutine_t)&AVR_SITL::SITL_State::_fdm_thread, this);
 
 }
@@ -352,7 +352,7 @@ void SITL_State::_fdm_thread(void)
             _update_flow();
         }
 
-        // trigger all APM timers. 
+        // trigger all APM timers.
         _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
 
@@ -666,7 +666,7 @@ void SITL_State::loop_hook(void)
     fflush(stdout);
     fflush(stderr);
     select(max_fd+1, &fds, NULL, NULL, &tv);
-    
+
     if (FD_ISSET(_fdm_pipe[0], &fds)) {
         char b;
         read(_fdm_pipe[0], &b, 1);

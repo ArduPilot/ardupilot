@@ -104,18 +104,18 @@ uint16_t SITL_State::_ground_sonar(void)
         fabsf(_sitl->state.pitchDeg) < 90) {
         // adjust for apparent altitude with roll
         altitude /= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
-        
+
         altitude += _sitl->sonar_noise * _rand_float();
 
         // Altitude in in m, scaler in meters/volt
         voltage = altitude / _sitl->sonar_scale;
         voltage = constrain_float(voltage, 0, 5.0f);
-        
+
         if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
             voltage = 5.0f;
         }
     }
-    
+
     return 1023*(voltage / 5.0f);
 }
 

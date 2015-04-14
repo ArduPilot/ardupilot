@@ -28,12 +28,12 @@ struct PACKED sitl_fdm {
 class SITL
 {
 public:
-    
+
     SITL() {
-        AP_Param::setup_object_defaults(this, var_info);        
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
-    enum GPSType { 
+    enum GPSType {
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_UBLOX = 1,
         GPS_TYPE_MTK   = 2,
