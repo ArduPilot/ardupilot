@@ -552,6 +552,7 @@ void AC_AttitudeControl::update_rate_bf_targets()
         _rate_bf_target.z = _p_angle_yaw.kP() * _angle_bf_error.z;
     }
 
+    // include roll and pitch rate required to account for precession of the desired attitude about the body frame yaw axes
 	_rate_bf_target.x += _angle_bf_error.y * _ahrs.get_gyro().z;
 	_rate_bf_target.y += -_angle_bf_error.x * _ahrs.get_gyro().z;
 }
