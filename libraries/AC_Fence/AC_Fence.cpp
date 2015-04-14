@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] PROGMEM = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_InertialNav* inav) :
+AC_Fence::AC_Fence(const AP_InertialNav& inav) :
     _inav(inav),
     _alt_max_backup(0),
     _circle_radius_backup(0),
@@ -102,7 +102,7 @@ bool AC_Fence::pre_arm_check() const
     }
 
     // if we have horizontal limits enabled, check inertial nav position is ok
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav->get_filter_status().flags.horiz_pos_abs && !_inav->get_filter_status().flags.pred_horiz_pos_abs) {
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE)!=0 && !_inav.get_filter_status().flags.horiz_pos_abs && !_inav.get_filter_status().flags.pred_horiz_pos_abs) {
         return false;
     }
 
@@ -111,7 +111,7 @@ bool AC_Fence::pre_arm_check() const
 }
 
 /// check_fence - returns the fence type that has been breached (if any)
-uint8_t AC_Fence::check_fence()
+uint8_t AC_Fence::check_fence(float curr_alt)
 {
     uint8_t ret = AC_FENCE_TYPE_NONE;
 
@@ -130,9 +130,6 @@ uint8_t AC_Fence::check_fence()
             _manual_recovery_start_ms = 0;
         }
     }
-
-    // get current altitude in meters
-    float curr_alt = _inav->get_altitude() * 0.01f;
 
     // altitude fence check
     if ((_enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {

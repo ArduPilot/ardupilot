@@ -90,7 +90,7 @@ static void sport_run()
         // call throttle controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
             // if sonar is ok, use surface tracking
-            target_climb_rate = get_throttle_surface_tracking(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
         }
 
         // call position controller
