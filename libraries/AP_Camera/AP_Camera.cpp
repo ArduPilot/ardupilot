@@ -1,10 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+
+
+#include <stdio.h>
+#include <AP_Param.h>
 #include <AP_Camera.h>
 #include <AP_Relay.h>
 #include <AP_Math.h>
 #include <RC_Channel.h>
 #include <AP_HAL.h>
+
+
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -49,6 +55,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
+    // @Param: CAM_TYPE
+    // @DisplayName: Camera type
+    // @Description: Defines the type of camera in the vehicle
+    // @Values: 0:None,1:Standard 2:SmartCamera
+    // @User: Standard
+    AP_GROUPINFO("CAM_TYPE",  5, AP_Camera, _camera_type, AP_CAMERA_TYPE_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -74,8 +87,9 @@ AP_Camera::relay_pic()
 }
 
 /// single entry point to take pictures
+///  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
 void
-AP_Camera::trigger_pic()
+AP_Camera::trigger_pic(bool send_mavlink_msg)
 {
     _image_index++;
     switch (_trigger_type)
@@ -86,6 +100,20 @@ AP_Camera::trigger_pic()
     case AP_CAMERA_TRIGGER_TYPE_RELAY:
         relay_pic();                    // basic relay activation
         break;
+    }
+
+    if (send_mavlink_msg) {
+        // create command long mavlink message
+        mavlink_command_long_t cmd_msg;
+        memset(&cmd_msg, 0, sizeof(cmd_msg));
+        cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
+        cmd_msg.param5 = 1;
+        // create message
+        mavlink_message_t msg;
+        mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
+
+        // forward to all components
+        GCS_MAVLINK::send_to_components(&msg);
     }
 }
 
@@ -112,21 +140,8 @@ AP_Camera::trigger_pic_cleanup()
 void
 AP_Camera::configure_msg(mavlink_message_t* msg)
 {
-    __mavlink_digicam_configure_t packet;
-    mavlink_msg_digicam_configure_decode(msg, &packet);
-    // This values may or not be used by APM
-    // They are bypassed as "echo" to a external specialized board
-    /*
-     *  packet.aperture
-     *  packet.command_id
-     *  packet.engine_cut_off
-     *  packet.exposure_type
-     *  packet.extra_param
-     *  packet.extra_value
-     *  packet.iso
-     *  packet.mode
-     *  packet.shutter_speed
-     */
+    // this message is not used directly but instead forwarded to components
+    GCS_MAVLINK::send_to_components(msg);
 }
 
 /// decode MavLink that controls camera
@@ -150,10 +165,47 @@ AP_Camera::control_msg(mavlink_message_t* msg)
      */
     if (packet.shot)
     {
-        trigger_pic();
+        trigger_pic(false);
+    }
+
+    // forward to all components
+    GCS_MAVLINK::send_to_components(msg);
+}
+
+// Mission command processing
+void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
+{
+    mavlink_command_long_t mav_cmd = {};
+
+    // convert command to mavlink message
+    if (AP_Mission::mission_cmd_to_mavlink_cmdlng(cmd, mav_cmd)) {
+
+        mavlink_message_t msg;
+
+        // Encode Command long into MAVLINK msg
+        mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd);
+
+        // send to all components
+        GCS_MAVLINK::send_to_components(&msg);
     }
 }
 
+void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
+{
+    mavlink_command_long_t mav_cmd = {};
+
+    // convert command to mavlink mission item
+    if (AP_Mission::mission_cmd_to_mavlink_cmdlng(cmd, mav_cmd)) {
+
+        mavlink_message_t msg;
+
+        // Encode Command long into MAVLINK msg
+        mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd);
+
+        // send to all components
+        GCS_MAVLINK::send_to_components(&msg);
+    }
+}
 
 /*
   Send camera feedback to the GCS

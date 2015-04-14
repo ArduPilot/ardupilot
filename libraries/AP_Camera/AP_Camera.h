@@ -6,12 +6,13 @@
 #ifndef AP_CAMERA_H
 #define AP_CAMERA_H
 
-#include <AP_Param.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
+#include <GCS.h>
 #include <AP_Relay.h>
 #include <AP_GPS.h>
 #include <AP_AHRS.h>
+#include <AP_Mission.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -19,6 +20,8 @@
 #define AP_CAMERA_TRIGGER_DEFAULT_TRIGGER_TYPE  AP_CAMERA_TRIGGER_TYPE_SERVO    // default is to use servo to trigger camera
 
 #define AP_CAMERA_TRIGGER_DEFAULT_DURATION  10      // default duration servo or relay is held open in 10ths of a second (i.e. 10 = 1 second)
+
+#define AP_CAMERA_TYPE_DEFAULT              Camera_Type_Standard
 
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
 #define AP_CAMERA_SERVO_OFF_PWM             1100    // default PWM value to move servo to when shutter is deactivated
@@ -28,6 +31,14 @@
 class AP_Camera {
 
 public:
+
+    // Enums
+     enum CameraType {
+         Camera_Type_None = 0,          // no camera
+         Camera_Type_Standard,          // Legacy Standard Camera
+         Camera_Type_SmartCamera        // Mavlink Compatible Smart Camera Board
+     };
+
     /// Constructor
     ///
     AP_Camera(AP_Relay *obj_relay) :
@@ -39,7 +50,8 @@ public:
     }
 
     // single entry point to take pictures
-    void            trigger_pic();
+    //  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
+    void            trigger_pic(bool send_mavlink_msg);
 
     // de-activate the trigger after some delay, but without using a delay() function
     // should be called at 50hz from main program
@@ -50,11 +62,18 @@ public:
     void            control_msg(mavlink_message_t* msg);
     void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
 
+    // Mission command processing
+    void            configure_cmd(const AP_Mission::Mission_Command& cmd);
+    void            control_cmd(const AP_Mission::Mission_Command& cmd);
+
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
 
     // Update location of vehicle and return true if a picture should be taken
     bool update_location(const struct Location &loc);
+
+    // Configuration Parameters
+    AP_Int8         _camera_type;       // camera type (none, standard, smart_camera, etc...)
 
     static const struct AP_Param::GroupInfo        var_info[];
 
