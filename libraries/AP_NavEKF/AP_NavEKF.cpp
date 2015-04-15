@@ -4,9 +4,11 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-// uncomment this to force the optimisation of this code, note that
-// this makes debugging harder
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+/*
+  turn down optimisation on SITL to make debugging easier. We are not
+  short of CPU in SITL.
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #pragma GCC optimize("O0")
 #else
 #pragma GCC optimize("O3")
