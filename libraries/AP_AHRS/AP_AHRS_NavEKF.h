@@ -34,9 +34,9 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng) :
     AP_AHRS_DCM(ins, baro, gps),
-        EKF(this, baro),
+        EKF(this, baro, rng),
         ekf_started(false),
         startup_delay_ms(1000),
         start_time_ms(0)
@@ -104,7 +104,7 @@ public:
     bool get_relative_position_NED(Vector3f &vec) const;
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
+    void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
 
     // inibit GPS useage
     uint8_t setInhibitGPS(void);
