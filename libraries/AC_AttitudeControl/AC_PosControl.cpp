@@ -829,7 +829,7 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     float freq_cut = POSCONTROL_ACCEL_FILTER_HZ * ekfNavVelGainScaler;
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
     _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
-    _accel_target_filtered.y  += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
+    _accel_target_filtered.y += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
 
     // rotate accelerations into body forward-right frame
     accel_forward = _accel_target_filtered.x*_ahrs.cos_yaw() + _accel_target_filtered.y*_ahrs.sin_yaw();
