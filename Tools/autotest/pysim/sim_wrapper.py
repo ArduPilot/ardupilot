@@ -92,7 +92,7 @@ def interpret_address(addrstr):
 ##################
 # main program
 from optparse import OptionParser
-parser = OptionParser("sim_multicopter.py [options]")
+parser = OptionParser("sim_wrapper.py [options]")
 parser.add_option("--fgout", dest="fgout",  help="flightgear output (IP:port)", default="127.0.0.1:5503")
 parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       default="127.0.0.1:5502")
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")

@@ -151,7 +151,7 @@ kill_tasks()
         pkill -f runsim.py
         pkill -f sim_tracker.py
         pkill -f sim_rover.py
-        pkill -f sim_multicopter.py
+        pkill -f sim_wrapper.py
     }
 }
 
@@ -325,7 +325,7 @@ EOF
         fi
         ;;
     ArduCopter)
-        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
