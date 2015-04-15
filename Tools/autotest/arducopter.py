@@ -487,12 +487,13 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     mavproxy.send('rc 2 1500\n')
 
     # wait for copter to slow down
-    if not wait_groundspeed(mav, 0, 2):
+    if not wait_groundspeed(mav, 0, 1):
         show_gps_and_sim_positions(mavproxy, False)
         return False
 
     # record time and position
     tstart = get_sim_time(mav)
+    tnow = tstart
     start_pos = sim_location(mav)
     success = True
 
@@ -503,28 +504,32 @@ def fly_gps_glitch_loiter_test(mavproxy, mav, timeout=30, max_distance=20):
     mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
 
     # record position for 30 seconds
-    while get_sim_time(mav) < tstart + timeout:
-
-        time_in_sec = int(get_sim_time(mav) - tstart);
-        if time_in_sec > glitch_current and glitch_current != -1:
-            glitch_current = time_in_sec
+    while tnow < tstart + timeout:
+        tnow = get_sim_time(mav)
+        desired_glitch_num = int((tnow - tstart) * 2.2)
+        if desired_glitch_num > glitch_current and glitch_current != -1:
+            glitch_current = desired_glitch_num
             # turn off glitching if we've reached the end of the glitch list
             if glitch_current >= glitch_num:
                 glitch_current = -1
+                print("Completed Glitches")
                 mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
                 mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
             else:
+                print("Applying glitch %u" % glitch_current)
                 #move onto the next glitch
                 mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' % glitch_lat[glitch_current])
                 mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
 
-        m = mav.recv_match(type='VFR_HUD', blocking=True)
-        curr_pos = sim_location(mav)
-        moved_distance = get_distance(curr_pos, start_pos)
-        print("Alt: %u  Moved: %.0f" % (m.alt, moved_distance))
-        if moved_distance > max_distance:
-            print("Moved over %u meters, Failed!" % max_distance)
-            success = False
+        # start displaying distance moved after all glitches applied
+        if (glitch_current == -1):
+            m = mav.recv_match(type='VFR_HUD', blocking=True)
+            curr_pos = sim_location(mav)
+            moved_distance = get_distance(curr_pos, start_pos)
+            print("Alt: %u  Moved: %.0f" % (m.alt, moved_distance))
+            if moved_distance > max_distance:
+                print("Moved over %u meters, Failed!" % max_distance)
+                success = False
 
     # disable gps glitch
     if glitch_current != -1:
@@ -577,6 +582,7 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 
     # record time and position
     tstart = get_sim_time(mav)
+    tnow = tstart
     start_pos = sim_location(mav)
 
     # initialise current glitch
@@ -587,15 +593,18 @@ def fly_gps_glitch_auto_test(mavproxy, mav, timeout=30, max_distance=100):
 
     # record position for 30 seconds
     while glitch_current < glitch_num:
-        time_in_sec = int(get_sim_time(mav) - tstart);
-        if (time_in_sec * 2) > glitch_current and glitch_current != -1:
-            glitch_current = (time_in_sec * 2)
+        tnow = get_sim_time(mav)
+        desired_glitch_num = int((tnow - tstart) * 2)
+        if desired_glitch_num > glitch_current and glitch_current != -1:
+            glitch_current = desired_glitch_num
             # apply next glitch
             if glitch_current < glitch_num:
+                print("Applying glitch %u" % glitch_current)
                 mavproxy.send('param set SIM_GPS_GLITCH_X %.7f\n' % glitch_lat[glitch_current])
                 mavproxy.send('param set SIM_GPS_GLITCH_Y %.7f\n' % glitch_lon[glitch_current])
 
     # turn off glitching
+    print("Completed Glitches")
     mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
     mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
 
@@ -1228,6 +1237,9 @@ def fly_ArduCopter(viewerip=None, map=False):
             failed = True
         else:
             print("Flew copter mission OK")
+
+        # wait for disarm
+        mav.motors_disarmed_wait()
 
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/ArduCopter-log.bin")):
             failed_test_msg = "log_download failed"
