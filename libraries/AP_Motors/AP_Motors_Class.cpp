@@ -247,8 +247,8 @@ void AP_Motors::current_limit_max_throttle()
         // Fast drop for extreme over current (1 second)
         _throttle_limit -= 1.0f/_loop_rate;
     } else if(_batt_current > _batt_current_max) {
-        // Slow drop for extreme over current (2 second)
-        _throttle_limit -= 0.5f/_loop_rate;
+        // Slow drop for extreme over current (5 second)
+        _throttle_limit -= 0.2f/_loop_rate;
     } else {
         // Increase throttle limit (2 second)
         _throttle_limit += 0.5f/_loop_rate;
@@ -324,10 +324,10 @@ void AP_Motors::update_throttle_low_comp()
 {
     // slew _throttle_low_comp to _throttle_low_comp_desired
     if (_throttle_low_comp < _throttle_low_comp_desired) {
-        // increase quickly (i.e. from 0.1 to 0.9 in 0.8 seconds)
-        _throttle_low_comp += min(1.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
+        _throttle_low_comp += min(2.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
     } else if (_throttle_low_comp > _throttle_low_comp_desired) {
-        // reduce more slowly (from 0.9 to 0.1 in 1.8 seconds)
+        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
         _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
     }
     _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
