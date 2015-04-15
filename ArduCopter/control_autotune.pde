@@ -69,8 +69,9 @@
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF          0.75f     // back off from maximum acceleration
-#define AUTOTUNE_RP_ACCEL_MIN          75000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_RP_ACCEL_MIN          54000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_SUCCESS_COUNT                4     // how many successful iterations we need to freeze at current gains
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
@@ -381,7 +382,7 @@ static void autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_roll(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
             autotune_start_angle = ahrs.roll_sensor;
-            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_roll.filt_hz()*4.0f);
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_roll.filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
                 rotation_rate_filt.reset(autotune_start_rate);
             } else {
@@ -393,7 +394,7 @@ static void autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_pitch(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
             autotune_start_angle = ahrs.pitch_sensor;
-            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_pitch.filt_hz()*4.0f);
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,g.pid_rate_pitch.filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
                 rotation_rate_filt.reset(autotune_start_rate);
             } else {
@@ -405,7 +406,7 @@ static void autotune_attitude_control()
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_yaw(), AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
             autotune_start_rate = ToDeg(ahrs.get_gyro().z) * 100.0f;
             autotune_start_angle = ahrs.yaw_sensor;
-            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,orig_yaw_rLPF*4.0f);
+            rotation_rate_filt.set_cutoff_frequency(MAIN_LOOP_SECONDS,AUTOTUNE_Y_FILT_FREQ);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
                 rotation_rate_filt.reset(autotune_start_rate);
             } else {
@@ -1120,6 +1121,10 @@ void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, f
         // we have not achieved a high enough maximum to get a good measurement of bounce back.
         // increase P gain (which should increase maximum)
         tune_p += tune_p*tune_p_step_ratio;
+        if (tune_p >= tune_p_max) {
+            tune_p = tune_p_max;
+            Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+        }
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) {
@@ -1171,6 +1176,10 @@ void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step
         // we have not achieved a high enough maximum to get a good measurement of bounce back.
         // increase P gain (which should increase maximum)
         tune_p += tune_p*tune_p_step_ratio;
+        if (tune_p >= tune_p_max) {
+            tune_p = tune_p_max;
+            Log_Write_Event(DATA_AUTOTUNE_REACHED_LIMIT);
+        }
     }else{
         // we have a good measurement of bounce back
         if (measurement_max-measurement_min < measurement_max*g.autotune_aggressiveness) {
