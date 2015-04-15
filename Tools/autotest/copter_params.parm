@@ -46,6 +46,9 @@ SIM_WIND_SPD    0
 SIM_WIND_TURB   0
 SIM_BARO_RND    0
 SIM_MAG_RND     0
+SIM_GPS_GLITCH_X    0
+SIM_GPS_GLITCH_Y    0
+SIM_GPS_GLITCH_Z    0
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001
