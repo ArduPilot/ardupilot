@@ -227,8 +227,10 @@ public:
     // attitude
     virtual const Matrix3f &get_dcm_matrix(void) const = 0;
 
-    // get our current position estimate. Return true if a position is available,
-    // otherwise false. This call fills in lat, lng and alt
+    // Get our current position estimate in WGS-84 coordinates.
+    // Return true if a position is available, otherwise false.
+    // This call fills in lat, lng and alt
+    // lat, long in degrees * 10^7; alt in meters * 100
     virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s

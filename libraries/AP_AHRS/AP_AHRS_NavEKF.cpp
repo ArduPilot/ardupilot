@@ -179,14 +179,35 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
     }
 }
 
-// dead-reckoning support
+// Get our current position estimate in WGS-84 coordinates.
+// Return true if a position is available, otherwise false.
+// This call fills in lat, lng and alt
+// lat, long in degrees * 10^7; alt in meters * 100
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
     Vector3f ned_pos;
-    if (using_EKF() && EKF.getLLH(loc) && EKF.getPosNED(ned_pos)) {
-        // fixup altitude using relative position from AHRS home, not
-        // EKF origin
-        loc.alt = get_home().alt - ned_pos.z*100;
+    struct Location ekfOriginLLH;
+    struct Location ekfPosLLH;
+    if (using_EKF() && EKF.getLLH(ekfPosLLH) && EKF.getPosNED(ned_pos) && EKF.getOriginLLH(ekfOriginLLH)) {
+        nav_filter_status filt_state;
+        EKF.getFilterStatus(filt_state);
+        if (filt_state.flags.horiz_pos_rel || filt_state.flags.horiz_pos_abs) {
+            // Get horiz position estimate from EKF if available
+            loc.lat = ekfPosLLH.lat;
+            loc.lng = ekfPosLLH.lng;
+        } else if (_gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+            // get horiz position from GPS if available
+            loc.lat = _gps.location().lat;
+            loc.lng = _gps.location().lng;
+        } else {
+            // get horiz position from EKF origin as last resort
+            loc.lat = ekfOriginLLH.lat;
+            loc.lng = ekfOriginLLH.lng;
+        }
+        // calculate and correct for offset in altitude
+        float altOffset = ekfOriginLLH.alt - get_home().alt;
+        // calculate lat, lng and height relative to AHRS home
+        loc.alt = get_home().alt - ned_pos.z*100 + altOffset;
         return true;
     }
     return AP_AHRS_DCM::get_position(loc);
