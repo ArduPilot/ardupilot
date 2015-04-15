@@ -170,13 +170,3 @@ return_zero:
     return 0;
 }
 
-/*
-  return throttle percentage for takeoff
- */
-static uint8_t takeoff_throttle(void)
-{
-    if (g.takeoff_throttle_max != 0) {
-        return g.takeoff_throttle_max;
-    }
-    return aparm.throttle_max;
-}

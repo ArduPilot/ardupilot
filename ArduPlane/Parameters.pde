@@ -453,7 +453,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(takeoff_throttle_max,   "TKOFF_THR_MAX",        0),
+    ASCALAR(takeoff_throttle_max,   "TKOFF_THR_MAX",        0),
 
     // @Param: THR_SLEWRATE
     // @DisplayName: Throttle slew rate
