@@ -1988,6 +1988,8 @@ void NavEKF::FuseVelPosNED()
                         decayGpsOffset();
                         // reset the position to the current GPS position which will include the glitch correction offset
                         ResetPosition();
+                        // reset the velocity to the GPS velocity
+                        ResetVelocity();
                         // don't fuse data on this time step
                         fusePosData = false;
                     }
