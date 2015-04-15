@@ -583,6 +583,7 @@ private:
     uint16_t hgtRetryTime;          // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime;       // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime;       // time stamp when GPS position measurement last passed innovation consistency check (msec)
+    uint32_t lastPosFailTime;       // time stamp when GPS position measurement last failed innovation consistency check (msec)
     uint32_t lastHgtPassTime;       // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
@@ -629,6 +630,8 @@ private:
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     Vector3f lastMagOffsets;        // magnetometer offsets returned by compass object from previous update
+    bool gpsAidingBad;              // true when GPS position measurements have been consistently rejected by the filter
+    uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
