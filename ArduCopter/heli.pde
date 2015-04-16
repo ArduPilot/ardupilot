@@ -16,7 +16,6 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 static void heli_init()
 {
-    attitude_control.update_feedforward_filter_rates(MAIN_LOOP_SECONDS);
     motors.set_dt(MAIN_LOOP_SECONDS);
     // force recalculation of RSC ramp rates after setting _dt
     motors.recalc_scalers();
