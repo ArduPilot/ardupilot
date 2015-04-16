@@ -54,7 +54,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _alt_max(0.0f),
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
-    _accel_target_filtered(0.0f,0.0f)
+    _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -82,7 +82,7 @@ void AC_PosControl::set_dt(float delta_sec)
     _pid_accel_z.set_dt(_dt);
 
     // update rate z-axis velocity error and accel error filters
-    _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
+    _vel_error_filter.set_cutoff_frequency(POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
 }
 
 /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
@@ -362,7 +362,7 @@ void AC_PosControl::rate_to_accel_z()
         _flags.reset_rate_to_accel_z = false;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
-        _vel_error.z = _vel_error_filter.apply(_vel_target.z - curr_vel.z);
+        _vel_error.z = _vel_error_filter.apply(_vel_target.z - curr_vel.z, _dt);
     }
 
     // calculate p
@@ -841,8 +841,7 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     if (_flags.reset_accel_to_lean_xy) {
         _accel_target_jerk_limited.x = _accel_target.x;
         _accel_target_jerk_limited.y = _accel_target.y;
-        _accel_target_filtered.x = _accel_target.x;
-        _accel_target_filtered.y = _accel_target.y;
+        _accel_target_filter.reset(Vector2f(_accel_target.x, _accel_target.y));
         _flags.reset_accel_to_lean_xy = false;
     }
 
@@ -859,14 +858,12 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     _accel_target_jerk_limited += accel_change;
 
     // lowpass filter on NE accel
-    float freq_cut = min(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler);
-    float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
-    _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
-    _accel_target_filtered.y += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
+    _accel_target_filter.set_cutoff_frequency(min(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler));
+    Vector2f accel_target_filtered = _accel_target_filter.apply(_accel_target_jerk_limited, dt);
 
     // rotate accelerations into body forward-right frame
-    accel_forward = _accel_target_filtered.x*_ahrs.cos_yaw() + _accel_target_filtered.y*_ahrs.sin_yaw();
-    accel_right = -_accel_target_filtered.x*_ahrs.sin_yaw() + _accel_target_filtered.y*_ahrs.cos_yaw();
+    accel_forward = accel_target_filtered.x*_ahrs.cos_yaw() + accel_target_filtered.y*_ahrs.sin_yaw();
+    accel_right = -accel_target_filtered.x*_ahrs.sin_yaw() + accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);

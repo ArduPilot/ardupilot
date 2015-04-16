@@ -130,7 +130,7 @@ public:
     int16_t             get_yaw() const { return _rc_yaw.servo_out; }
     int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
 
-    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,filt_hz); }
+    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     // output - sends commands to the motors
     void                output();

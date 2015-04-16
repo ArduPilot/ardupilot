@@ -538,8 +538,7 @@ static uint8_t sonar_alt_health;    // true if we can trust the altitude from th
 static float target_sonar_alt;      // desired altitude in cm above the ground
 static int32_t baro_alt;            // barometer altitude in cm above home
 static float baro_climbrate;        // barometer climbrate in cm/s
-Vector3f land_filtered_accel_ef;    // accelerations for land detector test
-
+static LowPassFilterVector3f land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF); // accelerations for land detector test
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors
@@ -967,6 +966,9 @@ static void fast_loop()
 
     // update home from EKF if necessary
     update_home_from_EKF();
+
+    // check if we've landed
+    update_land_detector();
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -985,9 +987,6 @@ static void throttle_loop()
 {
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
-
-    // check if we've landed
-    update_land_detector();
 
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
     update_throttle_low_comp();

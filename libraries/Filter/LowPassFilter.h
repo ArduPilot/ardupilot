@@ -26,114 +26,141 @@
 #include <AP_Math.h>
 #include "FilterClass.h"
 
-// 1st parameter <T> is the type of data being filtered.
-template <class T>
-class LowPassFilter : public Filter<T>
+class DigitalLPF
 {
 public:
     // constructor
-    LowPassFilter();
+    DigitalLPF() :
+    _output(0.0f) {}
 
-    void set_cutoff_frequency(float time_step, float cutoff_freq);
-    float get_cutoff_frequency() { return _cutoff_hz; }
-    void set_time_constant(float time_step, float time_constant);
-
-    // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
-
-    // get - returns latest filtered value from filter (equal to the value returned by latest call to apply method)
-    virtual T        get() const { return (T)_base_value; }
-
-    // reset - clear the filter - next sample added will become the new base value
-    virtual void        reset() {
-        _base_value_set = false;
+    struct lpf_params {
+        float cutoff_freq;
+        float sample_freq;
+        float alpha;
     };
 
-    // reset - clear the filter and provide the new base value
-    void        reset( T new_base_value ) {
-        _base_value = new_base_value; _base_value_set = true;
-    };
+    float apply(float sample, float cutoff_freq, float dt) {
+        if (cutoff_freq <= 0.0f) {
+            _output = sample;
+            return _output;
+        }
+
+        float rc = 1.0f/(2.0f*M_PI_F*cutoff_freq);
+        float alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+        _output += (sample - _output) * alpha;
+        return _output;
+    }
+
+    float get() const {
+        return _output;
+    }
+
+    void reset(float value) { _output = value; }
 
 private:
-    float           _alpha;             // gain value  (like 0.02) applied to each new value
-    bool            _base_value_set;    // true if the base value has been set
-    float           _base_value;        // filter output
-    float           _cutoff_hz;         // cutoff frequency in hz
+    float _output;
 };
 
-// Typedef for convenience (1st argument is the data type, 2nd is a larger datatype to handle overflows, 3rd is buffer size)
-typedef LowPassFilter<int8_t> LowPassFilterInt8;
-typedef LowPassFilter<uint8_t> LowPassFilterUInt8;
-
-typedef LowPassFilter<int16_t> LowPassFilterInt16;
-typedef LowPassFilter<uint16_t> LowPassFilterUInt16;
-
-typedef LowPassFilter<int32_t> LowPassFilterInt32;
-typedef LowPassFilter<uint32_t> LowPassFilterUInt32;
-
-typedef LowPassFilter<float> LowPassFilterFloat;
-
-// Constructor    //////////////////////////////////////////////////////////////
-
-template <class T>
-LowPassFilter<T>::LowPassFilter() :
-    Filter<T>(),
-    _alpha(1),
-    _base_value_set(false)
-{};
-
-//    F_Cut = 1; % Hz
-//RC = 1/(2*pi*F_Cut);
-//Alpha = Ts/(Ts + RC);
-
-// Public Methods //////////////////////////////////////////////////////////////
-
-template <class T>
-void LowPassFilter<T>::set_cutoff_frequency(float time_step, float cutoff_freq)
+class LowPassFilter
 {
-    _cutoff_hz = cutoff_freq;
-    // avoid divide by zero and allow removing filtering
-    if (cutoff_freq <= 0.0f) {
-        _alpha = 1.0f;
-        return;
+public:
+    LowPassFilter() :
+    _cutoff_freq(0.0f) { }
+    // constructor
+    LowPassFilter(float cutoff_freq) :
+    _cutoff_freq(cutoff_freq) { }
+
+    // change parameters
+    void set_cutoff_frequency(float cutoff_freq) {
+        _cutoff_freq = cutoff_freq;
     }
 
-    // calculate alpha
-    float rc = 1/(2*M_PI_F*cutoff_freq);
-    _alpha = time_step / (time_step + rc);
-}
-
-template <class T>
-void LowPassFilter<T>::set_time_constant(float time_step, float time_constant)
-{
-    // avoid divide by zero
-    if ((time_constant <= 0.0f) || (time_step <= 0.0f)) {
-        _cutoff_hz = 0.0f;
-        _alpha = 1.0f;
-        return;
+    // return the cutoff frequency
+    float get_cutoff_freq(void) const {
+        return _cutoff_freq;
     }
 
-    _cutoff_hz = 1/(2*M_PI_F*time_constant);
+protected:
+    float _cutoff_freq;
+};
 
-    // calculate alpha
-    _alpha = time_step / (time_constant + time_step);
-}
-
-template <class T>
-T LowPassFilter<T>::apply(T sample)
+class LowPassFilterFloat : public LowPassFilter
 {
-    // initailise _base_value if required
-    if( !_base_value_set ) {
-        _base_value = sample;
-        _base_value_set = true;
+public:
+    LowPassFilterFloat() :
+    LowPassFilter() {}
+
+    LowPassFilterFloat(float cutoff_freq):
+    LowPassFilter(cutoff_freq) {}
+
+    float apply(float sample, float dt) {
+        return _filter.apply(sample, _cutoff_freq, dt);
     }
 
-    // do the filtering
-    //_base_value = _alpha * (float)sample + (1.0 - _alpha) * _base_value;
-    _base_value = _base_value + _alpha * ((float)sample - _base_value);
+    float get() const {
+        return _filter.get();
+    }
 
-    // return the value.  Should be no need to check limits
-    return (T)_base_value;
-}
+    void reset(float value) {
+        _filter.reset(value);
+    }
+private:
+    DigitalLPF _filter;
+};
+
+class LowPassFilterVector2f : public LowPassFilter
+{
+public:
+    LowPassFilterVector2f() :
+    LowPassFilter() {}
+
+    LowPassFilterVector2f(float cutoff_freq) :
+    LowPassFilter(cutoff_freq) {}
+
+    Vector2f apply(const Vector2f &sample, float dt) {
+        Vector2f ret;
+        ret.x = _filter_x.apply(sample.x, _cutoff_freq, dt);
+        ret.y = _filter_y.apply(sample.y, _cutoff_freq, dt);
+        return ret;
+    }
+
+    void reset(const Vector2f& value) {
+        _filter_x.reset(value.x);
+        _filter_y.reset(value.y);
+    }
+
+private:
+    DigitalLPF _filter_x;
+    DigitalLPF _filter_y;
+};
+
+class LowPassFilterVector3f : public LowPassFilter
+{
+public:
+    LowPassFilterVector3f() :
+    LowPassFilter() {}
+
+    LowPassFilterVector3f(float cutoff_freq) :
+    LowPassFilter(cutoff_freq) {}
+
+    Vector3f apply(const Vector3f &sample, float dt) {
+        Vector3f ret;
+        ret.x = _filter_x.apply(sample.x, _cutoff_freq, dt);
+        ret.y = _filter_y.apply(sample.y, _cutoff_freq, dt);
+        ret.z = _filter_z.apply(sample.z, _cutoff_freq, dt);
+        return ret;
+    }
+
+    void reset(const Vector3f& value) {
+        _filter_x.reset(value.x);
+        _filter_y.reset(value.y);
+        _filter_z.reset(value.z);
+    }
+
+private:
+    DigitalLPF _filter_x;
+    DigitalLPF _filter_y;
+    DigitalLPF _filter_z;
+};
 
 #endif // __LOW_PASS_FILTER_H__

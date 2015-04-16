@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // counter to verify landings
-static uint16_t land_detector = LAND_DETECTOR_TRIGGER;  // we assume we are landed
+static uint32_t land_detector = ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE; // we assume we are landed
 
 // land_complete_maybe - return true if we may have landed (used to reset loiter targets during landing)
 static bool land_complete_maybe()
@@ -10,7 +10,7 @@ static bool land_complete_maybe()
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
-// called at 50hz
+// called at MAIN_LOOP_RATE
 static void update_land_detector()
 {
     // land detector can not use the following sensors because they are unreliable during landing
@@ -27,24 +27,19 @@ static void update_land_detector()
     accel_ef.z += GRAVITY_MSS;
 
     // lowpass filter on accel
-    float freq_cut = 1.0f;
-    float dt = 0.02f; //This should be set from somewhere
-    float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
-    land_filtered_accel_ef.x += alpha * (accel_ef.x - land_filtered_accel_ef.x);
-    land_filtered_accel_ef.y += alpha * (accel_ef.y - land_filtered_accel_ef.y);
-    land_filtered_accel_ef.z += alpha * (accel_ef.z - land_filtered_accel_ef.z);
+    accel_ef = land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
 
     // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-    bool accel_stationary = (land_filtered_accel_ef.length() < 1.0f);
+    bool accel_stationary = (accel_ef.length() < 1.0f);
 
     if ( motor_at_lower_limit && accel_stationary) {
         if (!ap.land_complete) {
             // increase counter until we hit the trigger then set land complete flag
-            if( land_detector < LAND_DETECTOR_TRIGGER) {
+            if( land_detector < ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
                 land_detector++;
             }else{
                 set_land_complete(true);
-                land_detector = LAND_DETECTOR_TRIGGER;
+                land_detector = ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE;
             }
         }
     } else {
@@ -57,7 +52,7 @@ static void update_land_detector()
     }
 
     // set land maybe flag
-    set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER);
+    set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE);
 }
 
 // update_throttle_low_comp - sets motors throttle_low_comp value depending upon vehicle state
