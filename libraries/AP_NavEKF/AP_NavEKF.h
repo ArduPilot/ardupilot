@@ -324,6 +324,10 @@ private:
     // initialise the covariance matrix
     void CovarianceInit();
 
+    // helper functions for readIMUData
+    bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
+    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
+
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
 
@@ -700,7 +704,8 @@ private:
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
     float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
 
-    bool haveDeltaAngles;
+    float dtDelVel1;
+    float dtDelVel2;
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
