@@ -993,9 +993,6 @@ static void ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_RCIN();
     }
-    if (should_log(MASK_LOG_RCOUT)) {
-        DataFlash.Log_Write_RCOUT();
-    }
     if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
     }
@@ -1014,6 +1011,10 @@ static void fifty_hz_logging_loop()
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
         Log_Write_Rate();
+    }
+
+    if (should_log(MASK_LOG_RCOUT)) {
+        DataFlash.Log_Write_RCOUT();
     }
 
     // log IMU data if we're not already logging at the higher rate
