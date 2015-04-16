@@ -293,11 +293,11 @@ bool CompassCalibrator::accept_sample(const Vector3f& sample)
         return false;
     }
 
-    float max_distance = fabsf(5.38709f * _params.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
+    float min_distance = fabsf(5.38709f * _params.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
 
     for (uint16_t i = 0; i<_samples_collected; i++){
         float distance = (sample - _sample_buffer[i].get()).length();
-        if(distance < max_distance) {
+        if(distance < min_distance) {
             return false;
         }
     }
