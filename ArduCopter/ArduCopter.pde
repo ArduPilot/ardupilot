@@ -261,9 +261,16 @@ static Compass compass;
 
 AP_InertialSensor ins;
 
+////////////////////////////////////////////////////////////////////////////////
+// SONAR
+#if CONFIG_SONAR == ENABLED
+static RangeFinder sonar;
+static bool sonar_enabled = true; // enable user switch for sonar
+#endif
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps, sonar);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
@@ -297,13 +304,6 @@ static float ekfNavVelGainScaler;
 static AP_SerialManager serial_manager;
 static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
-
-////////////////////////////////////////////////////////////////////////////////
-// SONAR
-#if CONFIG_SONAR == ENABLED
-static RangeFinder sonar;
-static bool sonar_enabled = true; // enable user switch for sonar
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // User variables
