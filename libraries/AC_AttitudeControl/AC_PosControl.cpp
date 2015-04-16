@@ -74,7 +74,6 @@ void AC_PosControl::set_dt(float delta_sec)
 
     // update rate z-axis velocity error and accel error filters
     _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
-    _accel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ);
 }
 
 /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
@@ -354,11 +353,10 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
-        _accel_error_filter.reset(0);
         _flags.reset_accel_to_throttle = false;
     } else {
-        // calculate accel error and Filter with fc = 2 Hz
-        _accel_error.z = _accel_error_filter.apply(accel_target_z - z_accel_meas);
+        // calculate accel error
+        _accel_error.z = accel_target_z - z_accel_meas;
     }
 
     // set input to PID
@@ -382,7 +380,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     float thr_out = p+i+d+_throttle_hover;
 
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true);
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
 }
 
 ///
