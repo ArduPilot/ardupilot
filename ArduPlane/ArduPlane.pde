@@ -189,6 +189,7 @@ static int32_t pitch_limit_min_cd;
 
 // GPS driver
 static AP_GPS gps;
+static RangeFinder rng;
 
 // flight modes convenience array
 static AP_Int8          *flight_modes = &g.flight_mode1;
@@ -205,7 +206,7 @@ AP_InertialSensor ins;
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps, rng);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
@@ -1622,9 +1623,7 @@ static void update_optical_flow(void)
         uint8_t flowQuality = optflow.quality();
         Vector2f flowRate = optflow.flowRate();
         Vector2f bodyRate = optflow.bodyRate();
-        // Use range from a separate range finder if available, not the PX4Flows built in sensor which is ineffective
-        float ground_distance_m = 0.01f*rangefinder.distance_cm();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, rangefinder_state.in_range_count, ground_distance_m);
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update);
         Log_Write_Optflow();
     }
 }
