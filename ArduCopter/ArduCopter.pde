@@ -967,6 +967,9 @@ static void fast_loop()
 
     // update home from EKF if necessary
     update_home_from_EKF();
+
+    // check if we've landed
+    update_land_detector();
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -985,9 +988,6 @@ static void throttle_loop()
 {
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
-
-    // check if we've landed
-    update_land_detector();
 
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
     update_throttle_low_comp();
