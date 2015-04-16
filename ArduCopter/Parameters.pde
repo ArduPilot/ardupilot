@@ -844,7 +844,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: POSCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    GOBJECT(pos_control, "POSCON_", AC_PosControl),
+    GOBJECT(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
