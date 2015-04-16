@@ -26,8 +26,16 @@ static void update_land_detector()
     Vector3f accel_ef = ahrs.get_accel_ef_blended();
     accel_ef.z += GRAVITY_MSS;
 
+    // lowpass filter on accel
+    float freq_cut = 1.0f;
+    float dt = 0.02f; //This should be set from somewhere
+    float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
+    land_filtered_accel_ef.x += alpha * (accel_ef.x - land_filtered_accel_ef.x);
+    land_filtered_accel_ef.y += alpha * (accel_ef.y - land_filtered_accel_ef.y);
+    land_filtered_accel_ef.z += alpha * (accel_ef.z - land_filtered_accel_ef.z);
+
     // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-    bool accel_stationary = (accel_ef.length() < 1.0f);
+    bool accel_stationary = (land_filtered_accel_ef.length() < 1.0f);
 
     if ( motor_at_lower_limit && accel_stationary) {
         if (!ap.land_complete) {
