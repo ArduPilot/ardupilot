@@ -36,12 +36,12 @@
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200    // position controller is considered active if it has been called within the past 0.2 seconds
+#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 0.2 seconds
 
-#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // 4hz low-pass filter on velocity error
-#define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // 2hz low-pass filter on accel error
-#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
-#define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // 5hz low-pass filter on acceleration
+#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
+#define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
+#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // jerk limit on horizontal acceleration (unit: m/s/s/s)
+#define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // low-pass filter on acceleration (unit: hz)
 #define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
 class AC_PosControl
