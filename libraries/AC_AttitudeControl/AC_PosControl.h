@@ -383,6 +383,6 @@ private:
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
 
     Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
-    Vector2f    _accel_target_filtered;     // acceleration target filtered with 5hz low pass filter
+    LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 };
 #endif	// AC_POSCONTROL_H
