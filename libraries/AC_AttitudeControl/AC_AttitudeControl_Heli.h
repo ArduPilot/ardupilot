@@ -73,8 +73,8 @@ private:
     // throttle methods
     //
 
-    // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    virtual int16_t get_angle_boost(int16_t throttle_pwm);
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    float get_boosted_throttle(float throttle_in);
     
     
     // LPF filters to act on Rate Feedforward terms to linearize output.

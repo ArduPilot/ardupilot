@@ -74,7 +74,6 @@ void AC_PosControl::set_dt(float delta_sec)
 
     // update rate z-axis velocity error and accel error filters
     _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
-    _accel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ);
 }
 
 /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
@@ -335,7 +334,6 @@ void AC_PosControl::rate_to_accel_z()
 
     // consolidate and constrain target acceleration
     desired_accel = _accel_feedforward.z + p;
-    desired_accel = constrain_int32(desired_accel, -32000, 32000);
 
     // set target for accel based throttle controller
     accel_to_throttle(desired_accel);
@@ -346,7 +344,7 @@ void AC_PosControl::rate_to_accel_z()
 void AC_PosControl::accel_to_throttle(float accel_target_z)
 {
     float z_accel_meas;         // actual acceleration
-    int32_t p,i,d;              // used to capture pid values for logging
+    float p,i,d;              // used to capture pid values for logging
 
     // Calculate Earth Frame Z acceleration
     z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
@@ -355,11 +353,10 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     if (_flags.reset_accel_to_throttle) {
         // Reset Filter
         _accel_error.z = 0;
-        _accel_error_filter.reset(0);
         _flags.reset_accel_to_throttle = false;
     } else {
-        // calculate accel error and Filter with fc = 2 Hz
-        _accel_error.z = _accel_error_filter.apply(constrain_float(accel_target_z - z_accel_meas, -32000, 32000));
+        // calculate accel error
+        _accel_error.z = accel_target_z - z_accel_meas;
     }
 
     // set input to PID
@@ -380,11 +377,10 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
     // get d term
     d = _pid_accel_z.get_d();
 
-    // ensure throttle is above zero (or motors lib will stop stabilizing)
-    int16_t thr_out = max((int16_t)p+i+d+_throttle_hover,1);
+    float thr_out = p+i+d+_throttle_hover;
 
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true);
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
 }
 
 ///

@@ -62,6 +62,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
 #endif
 
+    // @Param: PILOT_THR_FILT
+    // @DisplayName: Throttle filter cutoff
+    // @Description: Throttle filter cutoff (Hz) - active whenever altitude control is inactive - 0 to disable
+    // @User: Advanced
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: .5
+    GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),

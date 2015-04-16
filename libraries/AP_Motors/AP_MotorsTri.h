@@ -47,8 +47,9 @@ public:
 
 protected:
     // output - sends commands to the motors
-    virtual void        output_armed();
-    virtual void        output_disarmed();
+    void                output_armed_stabilizing();
+    void                output_armed_not_stabilizing();
+    void                output_disarmed();
 
     RC_Channel&         _rc_tail;       // REV parameter used from this channel to determine direction of tail servo movement
 };
