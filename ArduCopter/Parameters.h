@@ -127,7 +127,8 @@ public:
         k_param_optflow,
         k_param_dcmcheck_thresh,        // deprecated - remove
         k_param_log_bitmask,
-        k_param_cli_enabled,            // 61
+        k_param_cli_enabled,
+        k_param_batt_arm_voltage,       //62        
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -345,6 +346,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+    AP_Float        batt_arm_voltage;           // miminum voltage to allow arming
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position

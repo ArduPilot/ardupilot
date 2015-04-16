@@ -115,6 +115,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
 
+    // @Param: BATT_ARM_VOLTAGE
+    // @DisplayName: Battery Arm Voltage
+    // @Description: Minimum battery voltage to allow arming. If the battery voltage is below this value, the vehicle will not arm.
+    // @Units: Volts
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(batt_arm_voltage,       "BATT_ARM_VOLTAGE", BATT_ARM_VOLTAGE_DEFAULT),
+    
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
