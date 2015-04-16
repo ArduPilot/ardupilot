@@ -34,9 +34,9 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay)
             AP_Notify::events.initiated_compass_cal = 1;
         }
         if (i == get_primary()) {
-            _calibrator[i].set_tolerance(5);
+            _calibrator[i].set_tolerance(8);
         } else {
-            _calibrator[i].set_tolerance(10);
+            _calibrator[i].set_tolerance(16);
         }
         _calibrator[i].start(retry, autosave, delay);
         return true;
