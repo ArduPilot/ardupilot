@@ -93,14 +93,6 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
 
-    // @Param: THR_FILT
-    // @DisplayName: Throttle output filter
-    // @Description: Frequency cutoff (in hz) of throttle output filter
-    // @Range: 2 5
-    // @Units: Hz
-    // @User: Advanced
-    AP_GROUPINFO("THR_FILT", 13, AP_Motors, _throttle_filt_hz, 0.0f),
-
     AP_GROUPEND
 };
 
@@ -138,7 +130,8 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_voltage_filt.set_cutoff_frequency(1.0f/_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
-    _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,_throttle_filt_hz);
+    // setup throttle filtering
+    _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,0.0f);
     _throttle_filter.reset(0.0f);
 };
 
@@ -220,10 +213,6 @@ void AP_Motors::slow_start(bool true_false)
 // update the throttle input filter
 void AP_Motors::update_throttle_filter()
 {
-    if (_throttle_filter.get_cutoff_frequency() != _throttle_filt_hz) {
-        _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,_throttle_filt_hz);
-    }
-
     if (armed()) {
         _throttle_filter.apply(_throttle_in);
     } else {

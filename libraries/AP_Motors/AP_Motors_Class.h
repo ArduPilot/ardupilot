@@ -130,6 +130,8 @@ public:
     int16_t             get_yaw() const { return _rc_yaw.servo_out; }
     int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
 
+    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,filt_hz); }
+
     // output - sends commands to the motors
     void                output();
 
@@ -250,7 +252,6 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
-    AP_Float            _throttle_filt_hz;       // throttle output filter time constant in hz
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
