@@ -757,6 +757,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: User
     GSCALAR(mixing_gain,            "MIXING_GAIN",    0.5f),
 
+    // @Param: RUDDER_ONLY
+    // @DisplayName: Rudder only aircraft
+    // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the RCMAP_YAW channel (normally channel 4). The rudder servo should be attached to the RCMAP_YAW channel as well. Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: User
+    GSCALAR(rudder_only,             "RUDDER_ONLY",  0),
+
     // @Param: SYS_NUM_RESETS
     // @DisplayName: Num Resets
     // @Description: Number of APM board resets

@@ -968,7 +968,9 @@ static void set_servos(void)
 
     // send values to the PWM timers for output
     // ----------------------------------------
-    channel_roll->output();
+    if (g.rudder_only == 0) {
+        channel_roll->output();
+    }
     channel_pitch->output();
     channel_throttle->output();
     channel_rudder->output();

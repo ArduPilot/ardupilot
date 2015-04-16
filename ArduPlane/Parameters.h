@@ -136,6 +136,7 @@ public:
         k_param_hil_mode,
         k_param_land_disarm_delay,
         k_param_glide_slope_threshold,
+        k_param_rudder_only,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -428,6 +429,7 @@ public:
     AP_Int8 mix_mode;
     AP_Int8 vtail_output;
     AP_Int8 elevon_output;
+    AP_Int8 rudder_only;
     AP_Float mixing_gain;
     AP_Int8 reverse_elevons;
     AP_Int8 reverse_ch1_elevon;
