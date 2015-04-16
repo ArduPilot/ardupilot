@@ -123,10 +123,10 @@ else
     tone_alarm MBABGP
     if px4io update /etc/px4io/px4io.bin
     then
-	echo "upgraded PX4IO firmware OK"
+    echo "upgraded PX4IO firmware OK"
         tone_alarm MSPAA
     else
-	echo "Failed to upgrade PX4IO firmware"
+    echo "Failed to upgrade PX4IO firmware"
         tone_alarm MNGGG
     fi
     sleep 1
@@ -134,7 +134,7 @@ else
     then
         set HAVE_PX4IO true
         # play happy tune again
-	tone_alarm MFMST200L64O4ceceP32ceceP8df#df#P32df#df#P8L16gf#g>c
+        tone_alarm MFMST200L64O4ceceP32ceceP8df#df#P32df#df#P8L16gf#g>c
     fi
 fi
 
