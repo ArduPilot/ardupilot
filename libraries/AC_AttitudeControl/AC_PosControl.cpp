@@ -82,7 +82,7 @@ void AC_PosControl::set_dt(float delta_sec)
     _pid_accel_z.set_dt(_dt);
 
     // update rate z-axis velocity error and accel error filters
-    _vel_error_filter.set_cutoff_frequency(_dt,POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
+    _vel_error_filter.set_cutoff_frequency(POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
 }
 
 /// set_dt_xy - sets time delta in seconds for horizontal controller (i.e. 50hz = 0.02)
@@ -362,7 +362,7 @@ void AC_PosControl::rate_to_accel_z()
         _flags.reset_rate_to_accel_z = false;
     } else {
         // calculate rate error and filter with cut off frequency of 2 Hz
-        _vel_error.z = _vel_error_filter.apply(_vel_target.z - curr_vel.z);
+        _vel_error.z = _vel_error_filter.apply(_vel_target.z - curr_vel.z, _dt);
     }
 
     // calculate p
