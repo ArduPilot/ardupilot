@@ -127,11 +127,11 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _flags.slow_start_low_end = true;
 
     // setup battery voltage filtering
-    _batt_voltage_filt.set_cutoff_frequency(1.0f/_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
+    _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
 
     // setup throttle filtering
-    _throttle_filter.set_cutoff_frequency(1.0f/_loop_rate,0.0f);
+    _throttle_filter.set_cutoff_frequency(0.0f);
     _throttle_filter.reset(0.0f);
 };
 
@@ -214,7 +214,7 @@ void AP_Motors::slow_start(bool true_false)
 void AP_Motors::update_throttle_filter()
 {
     if (armed()) {
-        _throttle_filter.apply(_throttle_in);
+        _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
     } else {
         _throttle_filter.reset(0.0f);
     }
@@ -315,7 +315,7 @@ void AP_Motors::update_lift_max_from_batt_voltage()
     batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max);
+    float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max, 1.0f/_loop_rate);
 
     // calculate lift max
     _lift_max = bvf*(1-_thrust_curve_expo) + _thrust_curve_expo*bvf*bvf;
