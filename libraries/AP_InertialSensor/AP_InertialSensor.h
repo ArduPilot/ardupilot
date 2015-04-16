@@ -119,7 +119,6 @@ public:
 
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
 
-
     //get delta velocity if available
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
         if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
@@ -197,7 +196,8 @@ public:
     uint16_t error_count(void) const { return 0; }
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
-    uint8_t get_primary_accel(void) const { return 0; }
+    uint8_t get_primary_accel(void) const { return _primary_accel; }
+    uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
