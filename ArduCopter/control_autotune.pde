@@ -55,7 +55,7 @@
 #define AUTOTUNE_RD_TEST_NOISE            0.05f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RD_BACKOFF                4.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF               1.0f      // Stab P gains are reduced to 60% of their maximum value discovered during tuning
+#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 60% of their maximum value discovered during tuning
 #define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
 #define AUTOTUNE_PI_RATIO_FINAL            2.5f     // I is set 1x P after testing
 #define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
@@ -64,13 +64,13 @@
 #define AUTOTUNE_RLPF_MIN                  1.0f     // minimum Rate Yaw filter value
 #define AUTOTUNE_RLPF_MAX                 10.0f     // maximum Rate Yaw filter value
 #define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    1.0f     // maximum Rate P value
+#define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF          0.75f     // back off from maximum acceleration
-#define AUTOTUNE_RP_ACCEL_MIN          54000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN           18000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_RP_ACCEL_MIN          36000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN            9000.0f     // Minimum acceleration for Yaw
 #define AUTOTUNE_Y_FILT_FREQ              10.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_SUCCESS_COUNT                4     // how many successful iterations we need to freeze at current gains
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
