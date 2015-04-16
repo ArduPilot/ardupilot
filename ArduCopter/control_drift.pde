@@ -48,7 +48,7 @@ static void drift_run()
 
     // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || (ap.land_complete && ap.throttle_zero)) {
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
 
@@ -95,7 +95,7 @@ static void drift_run()
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
-    attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true);
+    attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1000) based on pilot input and z-axis velocity

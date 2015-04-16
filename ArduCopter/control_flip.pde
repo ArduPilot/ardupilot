@@ -219,8 +219,8 @@ static void flip_run()
 
     // output pilot's throttle without angle boost
     if (throttle_out == 0.0f) {
-        attitude_control.set_throttle_out_unstabilized(0,false);
+        attitude_control.set_throttle_out_unstabilized(0,false,g.throttle_filt);
     } else {
-        attitude_control.set_throttle_out(throttle_out, false);
+        attitude_control.set_throttle_out(throttle_out, false, g.throttle_filt);
     }
 }

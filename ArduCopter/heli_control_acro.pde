@@ -49,7 +49,7 @@ static void heli_acro_run()
     }
 
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(g.rc_3.control_in, false);
+    attitude_control.set_throttle_out(g.rc_3.control_in, false, g.throttle_filt);
 }
 
 // get_pilot_desired_yaw_rate - transform pilot's yaw input into a desired yaw angle rate

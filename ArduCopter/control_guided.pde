@@ -161,7 +161,7 @@ static void guided_run()
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         // To-Do: reset waypoint controller?
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: handle take-offs - these may not only be immediately after auto_armed becomes true
         return;
     }
@@ -200,7 +200,7 @@ static void guided_takeoff_run()
         // initialise wpnav targets
         wp_nav.shift_wp_origin_to_current_pos();
         // reset attitude control targets
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // tell motors to do a slow start
         motors.slow_start(true);
         return;

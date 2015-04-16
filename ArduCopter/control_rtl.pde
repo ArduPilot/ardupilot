@@ -134,7 +134,7 @@ static void rtl_climb_return_run()
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         // reset attitude control targets
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: re-initialise wpnav targets
         return;
     }
@@ -190,7 +190,7 @@ static void rtl_loiterathome_run()
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         // reset attitude control targets
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: re-initialise wpnav targets
         return;
     }
@@ -259,7 +259,7 @@ static void rtl_descent_run()
 
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // set target to current position
         wp_nav.init_loiter_target();
         return;
@@ -321,7 +321,7 @@ static void rtl_land_run()
     float target_yaw_rate = 0;
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
-        attitude_control.set_throttle_out_unstabilized(0,true);
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // set target to current position
         wp_nav.init_loiter_target();
 
