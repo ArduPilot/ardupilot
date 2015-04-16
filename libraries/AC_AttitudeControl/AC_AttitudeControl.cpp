@@ -694,9 +694,10 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 
  // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
  // provide 0 to cut motors
-void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost)
+void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost, float filter_cutoff)
 {
     _motors.set_stabilizing(true);
+    _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
         _motors.set_throttle(get_boosted_throttle(throttle_out));
     }else{
@@ -707,12 +708,13 @@ void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_b
 }
 
 // outputs a throttle to all motors evenly with no attitude stabilization
-void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control)
+void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
     if (reset_attitude_control) {
         relax_bf_rate_controller();
         set_yaw_target_to_current_heading();
     }
+    _motors.set_throttle_filter_cutoff(filter_cutoff);
     _motors.set_stabilizing(false);
     _motors.set_throttle(throttle_in);
     _angle_boost = 0;
