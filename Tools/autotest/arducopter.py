@@ -1066,7 +1066,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         # RTL
         print("# RTL #")
         if not fly_RTL(mavproxy, mav):
-            failed_test_msg = "fly_RTL failed"
+            failed_test_msg = "fly_RTL after stab patch failed"
             print(failed_test_msg)
             failed = True
 
@@ -1159,7 +1159,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("########## Test RTL ##########")
         print("#")
         if not fly_RTL(mavproxy, mav):
-            failed_test_msg = "fly_RTL failed"
+            failed_test_msg = "fly_RTL after Loiter climb/descend failed"
             print(failed_test_msg)
             failed = True
 
@@ -1182,7 +1182,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("########## Test RTL ##########")
         print("#")
         if not fly_RTL(mavproxy, mav):
-            failed_test_msg = "fly_RTL failed"
+            failed_test_msg = "fly_RTL after simple mode failed"
             print(failed_test_msg)
             failed = True
 
@@ -1203,7 +1203,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         # RTL
         print("# RTL #")
         if not fly_RTL(mavproxy, mav):
-            failed_test_msg = "fly_RTL failed"
+            failed_test_msg = "fly_RTL after super simple mode failed"
             print(failed_test_msg)
             failed = True
 
@@ -1226,7 +1226,7 @@ def fly_ArduCopter(viewerip=None, map=False):
         print("########## Test RTL ##########")
         print("#")
         if not fly_RTL(mavproxy, mav):
-            failed_test_msg = "fly_RTL failed"
+            failed_test_msg = "fly_RTL after circle failed"
             print(failed_test_msg)
             failed = True
 
