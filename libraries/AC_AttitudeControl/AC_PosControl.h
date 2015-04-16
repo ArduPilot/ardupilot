@@ -41,7 +41,8 @@
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // 4hz low-pass filter on velocity error
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // 2hz low-pass filter on accel error
 #define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
-#define POSCONTROL_ACCEL_FILTER_HZ              5.0f    // 5hz low-pass filter on acceleration
+#define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // 5hz low-pass filter on acceleration
+#define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
 class AC_PosControl
 {
@@ -343,6 +344,9 @@ private:
     AC_PID&     _pid_accel_z;
     AC_P&	    _p_pos_xy;
     AC_PI_2D&   _pi_vel_xy;
+
+    // parameters
+    AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
 
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program

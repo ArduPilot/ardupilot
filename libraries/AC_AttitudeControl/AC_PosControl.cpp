@@ -5,7 +5,16 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
-   // 0 was used for HOVER
+    // 0 was used for HOVER
+
+    // @Param: _ACC_XY_FILT
+    // @DisplayName: XY Acceleration filter cutoff frequency
+    // @Description: Lower values will slow the response of the navigation controller and reduce twitchiness
+    // @Units: Hz
+    // @Range: 0.5 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_ACC_XY_FILT", 1, AC_PosControl, _accel_xy_filt_hz, POSCONTROL_ACCEL_FILTER_HZ),
 
     AP_GROUPEND
 };
@@ -134,12 +143,12 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
 void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
 {
-    // jurk is calculated to reach full acceleration in 500ms.
-    float jurk_z = _accel_z_cms * 2.0f;
+    // jerk_z is calculated to reach full acceleration in 1000ms.
+    float jerk_z = _accel_z_cms * POSCONTROL_JERK_RATIO;
 
-    float accel_z_max = min(_accel_z_cms, safe_sqrt(2.0f*fabs(_vel_desired.z - climb_rate_cms)*jurk_z));
+    float accel_z_max = min(_accel_z_cms, safe_sqrt(2.0f*fabs(_vel_desired.z - climb_rate_cms)*jerk_z));
 
-    _accel_last_z_cms += jurk_z * dt;
+    _accel_last_z_cms += jerk_z * dt;
     _accel_last_z_cms = min(accel_z_max, _accel_last_z_cms);
 
     float vel_change_limit = _accel_last_z_cms * dt;
@@ -849,8 +858,8 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     }
     _accel_target_jerk_limited += accel_change;
 
-    // 5Hz lowpass filter on NE accel
-    float freq_cut = POSCONTROL_ACCEL_FILTER_HZ * ekfNavVelGainScaler;
+    // lowpass filter on NE accel
+    float freq_cut = min(_accel_xy_filt_hz, 5.0f*ekfNavVelGainScaler);
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
     _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
     _accel_target_filtered.y += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
