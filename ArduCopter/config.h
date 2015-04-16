@@ -379,6 +379,9 @@
 #ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
  # define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f  // number of 50hz iterations with near zero climb rate and low throttle that means we might be landed (used to reset horizontal position targets to prevent tipping over)
 #endif
+#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
+# define LAND_DETECTOR_ACCEL_LPF_CUTOFF 1.0f // frequency cutoff of land detector accelerometer filter
+#endif
 #ifndef LAND_DETECTOR_CLIMBRATE_MAX
 # define LAND_DETECTOR_CLIMBRATE_MAX    30  // vehicle climb rate must be between -30 and +30 cm/s
 #endif
