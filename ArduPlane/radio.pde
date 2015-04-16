@@ -9,6 +9,8 @@
 static void set_control_channels(void)
 {
     if (g.rudder_only) {
+        // in rudder only mode the roll and rudder channels are the
+        // same.
         channel_roll     = RC_Channel::rc_channel(rcmap.yaw()-1);
     } else {
         channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
@@ -174,6 +176,14 @@ static void read_radio()
     }
 
     rudder_arm_check();
+
+    if (g.rudder_only != 0) {
+        // in rudder only mode we discard rudder input and get target
+        // attitude from the roll channel.
+        rudder_input = 0;
+    } else {
+        rudder_input = channel_rudder->control_in;
+    }
 }
 
 static void control_failsafe(uint16_t pwm)
