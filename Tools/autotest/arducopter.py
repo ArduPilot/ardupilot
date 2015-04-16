@@ -1148,12 +1148,6 @@ def fly_ArduCopter(viewerip=None, map=False):
             print(failed_test_msg)
             failed = True
 
-        # takeoff
-        if not takeoff(mavproxy, mav, 10):
-            failed_test_msg = "takeoff failed"
-            print(failed_test_msg)
-            failed = True
-
         # RTL
         print("#")
         print("########## Test RTL ##########")
