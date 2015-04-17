@@ -36,7 +36,7 @@ static int16_t read_sonar(void)
     sonar.update();
 
     // exit immediately if sonar is disabled
-    if (!sonar_enabled || !sonar.healthy()) {
+    if (!sonar_enabled || (sonar.status() != RangeFinder::RangeFinder_Good)) {
         sonar_alt_health = 0;
         return 0;
     }
