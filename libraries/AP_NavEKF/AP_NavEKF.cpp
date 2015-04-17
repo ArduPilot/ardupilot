@@ -699,6 +699,19 @@ void NavEKF::UpdateFilter()
     // read IMU data and convert to delta angles and velocities
     readIMUData();
 
+    static bool prev_armed = false;
+    bool armed = getVehicleArmStatus();
+
+    // the vehicle was previously disarmed and time has slipped
+    // gyro auto-zero has likely just been done - skip this timestep
+    if (!prev_armed && dtIMUactual > dtIMUavg*5.0f) {
+        // stop the timer used for load measurement
+        perf_end(_perf_UpdateFilter);
+        prev_armed = armed;
+        return;
+    }
+    prev_armed = armed;
+
     // detect if the filter update has been delayed for too long
     if (dtIMUactual > 0.2f) {
         // we have stalled for too long - reset states
