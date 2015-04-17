@@ -143,14 +143,14 @@ public:
     uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
 
     // multi-device interface
-    bool get_gyro_health(uint8_t instance) const { return _gyro_healthy[instance]; }
+    bool get_gyro_health(uint8_t instance) const { return (instance<_gyro_count) ? _gyro_healthy[instance] : false; }
     bool get_gyro_health(void) const { return get_gyro_health(_primary_gyro); }
     bool get_gyro_health_all(void) const;
     uint8_t get_gyro_count(void) const { return _gyro_count; }
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
 
-    bool get_accel_health(uint8_t instance) const { return _accel_healthy[instance]; }
+    bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
     bool get_accel_health_all(void) const;
     uint8_t get_accel_count(void) const { return _accel_count; };
