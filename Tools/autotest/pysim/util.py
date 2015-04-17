@@ -413,7 +413,15 @@ def toVec(magnitude, angle):
     m.from_euler(0, 0, angle)
     return m.transposed() * v
 
+def constrain(value, minv, maxv):
+    '''constrain a value to a range'''
+    if value < minv:
+        value = minv
+    if value > maxv:
+        value = maxv
+    return value
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
