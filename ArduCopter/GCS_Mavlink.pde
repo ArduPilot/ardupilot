@@ -1086,6 +1086,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_LAND_START:
+            if (packet.param5 == 0.0f && packet.param5 == 0.0f && set_mode(LAND)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
+            break;
+
         case MAV_CMD_NAV_LAND:
             if (set_mode(LAND)) {
                 result = MAV_RESULT_ACCEPTED;
