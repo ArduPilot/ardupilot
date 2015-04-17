@@ -459,7 +459,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     delay(20);
     sonar.update();
 
-    if (!sonar.healthy()) {
+    if (sonar.status() == RangeFinder::RangeFinder_NotConnected) {
         cliSerial->println_P(PSTR("WARNING: Sonar is not enabled"));
     }
 
