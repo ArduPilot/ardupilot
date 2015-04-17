@@ -285,7 +285,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         if (g.rangefinder_landing) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (rangefinder.healthy()) {
+        if (rangefinder.has_data()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
@@ -470,7 +470,7 @@ static void NOINLINE send_wind(mavlink_channel_t chan)
 
 static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 {
-    if (!rangefinder.healthy()) {
+    if (!rangefinder.has_data()) {
         // no sonar to report
         return;
     }
