@@ -382,9 +382,10 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 };
 
 // constructor
-NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
+NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     _ahrs(ahrs),
     _baro(baro),
+    _rng(rng),
     state(*reinterpret_cast<struct state_elements *>(&states)),
     gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
@@ -736,6 +737,9 @@ void NavEKF::UpdateFilter()
     } else {
         covPredStep = false;
     }
+
+    // Read range finder data which is used by both position and optical flow fusion
+    readRangeFinder();
 
     // Update states using GPS, altimeter, compass, airspeed and synthetic sideslip observations
     SelectVelPosFusion();
@@ -4205,7 +4209,7 @@ void NavEKF::readAirSpdData()
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange)
+void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
 {
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
@@ -4243,21 +4247,6 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
         flowValidMeaTime_ms = imuSampleTime_ms;
     } else {
         newDataFlow = false;
-    }
-    // Use range finder if 3 or more consecutive good samples. This reduces likelihood of using bad data.
-    if (rangeHealth >= 3) {
-        statesAtRngTime = statesAtFlowTime;
-        rngMea = rawSonarRange;
-        newDataRng = true;
-        rngValidMeaTime_ms = imuSampleTime_ms;
-    } else if (!vehicleArmed) {
-        statesAtRngTime = statesAtFlowTime;
-        rngMea = RNG_MEAS_ON_GND;
-        newDataRng = true;
-        rngValidMeaTime_ms = imuSampleTime_ms;
-    } else {
-        // set flag that will trigger fusion of height data
-        newDataRng = false;
     }
 }
 
@@ -4937,4 +4926,65 @@ bool NavEKF::calcGpsGoodToAlign(void)
     }
 }
 
+// Read the range finder and take new measurements if available
+// Read at 20Hz and apply a median filter
+void NavEKF::readRangeFinder(void)
+{
+    static float storedRngMeas[3];
+    static uint32_t storedRngMeasTime_ms[3];
+    static uint32_t lastRngMeasTime_ms = 0;
+    static uint8_t rngMeasIndex = 0;
+    uint8_t midIndex;
+    uint8_t maxIndex;
+    uint8_t minIndex;
+    // get theoretical correct range when the vehicle is on the ground
+    rngOnGnd = _rng.ground_clearance_cm() * 0.01f;
+    if (_rng.status() == RangeFinder::RangeFinder_Good && (imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
+        // store samples and sample time into a ring buffer
+        rngMeasIndex ++;
+        if (rngMeasIndex > 2) {
+            rngMeasIndex = 0;
+        }
+        storedRngMeasTime_ms[rngMeasIndex] = imuSampleTime_ms;
+        storedRngMeas[rngMeasIndex] = _rng.distance_cm() * 0.01f;
+        // check for three fresh samples and take median
+        bool sampleFresh[3];
+        for (uint8_t index = 0; index <= 2; index++) {
+            sampleFresh[index] = (imuSampleTime_ms - storedRngMeasTime_ms[index]) < 500;
+        }
+        if (sampleFresh[0] && sampleFresh[1] && sampleFresh[2]) {
+            if (storedRngMeas[0] > storedRngMeas[1]) {
+                minIndex = 1;
+                maxIndex = 0;
+            } else {
+                maxIndex = 0;
+                minIndex = 1;
+            }
+            if (storedRngMeas[2] > storedRngMeas[maxIndex]) {
+                midIndex = maxIndex;
+            } else if (storedRngMeas[2] < storedRngMeas[minIndex]) {
+                midIndex = minIndex;
+            } else {
+                midIndex = 2;
+            }
+            rngMea = max(storedRngMeas[midIndex],rngOnGnd);
+            newDataRng = true;
+            rngValidMeaTime_ms = imuSampleTime_ms;
+            // recall vehicle states at mid sample time for range finder
+            RecallStates(statesAtRngTime, storedRngMeasTime_ms[midIndex] - 25);
+        } else if (!vehicleArmed) {
+            // if not armed and no return, we assume on ground range
+            rngMea = rngOnGnd;
+            newDataRng = true;
+            rngValidMeaTime_ms = imuSampleTime_ms;
+            // assume synthetic measurement is at current time (no delay)
+            statesAtRngTime = state;
+        } else {
+            newDataRng = false;
+        }
+        lastRngMeasTime_ms =  imuSampleTime_ms;
+    }
+}
+
+// Detect takeoff for optical flow navigation
 #endif // HAL_CPU_CLASS

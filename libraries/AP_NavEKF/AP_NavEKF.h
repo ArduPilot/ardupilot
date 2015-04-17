@@ -29,6 +29,7 @@
 #include <AP_Param.h>
 #include <AP_Nav_Common.h>
 #include <GCS_MAVLink.h>
+#include <RangeFinder.h>
 
 // #define MATH_CHECK_INDEXES 1
 
@@ -88,7 +89,7 @@ public:
 #endif
 
     // Constructor
-    NavEKF(const AP_AHRS *ahrs, AP_Baro &baro);
+    NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
     // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
@@ -193,9 +194,8 @@ public:
     // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
     // rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
-    // rawSonarRange is the range in metres measured by the range finder
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
-    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, uint8_t &rangeHealth, float &rawSonarRange);
+    void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
@@ -245,6 +245,7 @@ public:
 private:
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
+    const RangeFinder &_rng;
 
     // the states are available in two forms, either as a Vector34, or
     // broken down as individual elements. Both are equivalent (same
@@ -423,6 +424,10 @@ private:
 
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
+
+    // Read the range finder and take new measurements if available
+    // Apply a median filter to range finder data
+    void readRangeFinder();
 
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
