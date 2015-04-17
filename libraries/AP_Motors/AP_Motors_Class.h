@@ -104,6 +104,12 @@ public:
     bool                armed() const { return _flags.armed; };
     void                armed(bool arm);
 
+    // set motor interlock status
+    void                set_interlock(bool set) { _flags.interlock = set;}
+
+    // get motor interlock status
+    bool                get_interlock() const { return _flags.interlock; };
+
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     void                set_min_throttle(uint16_t min_throttle);
 
@@ -208,6 +214,7 @@ protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
     virtual void        output_armed_not_stabilizing()=0;
+    virtual void        output_armed_zero_throttle() { output_min(); }
     virtual void        output_disarmed()=0;
 
     // update the throttle input filter
@@ -244,6 +251,7 @@ protected:
         uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t slow_start         : 1;    // 1 if slow start is active
         uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
+        uint8_t interlock          : 1;    // 1 if the motor interlock is enabled, 0 if disabled
     } _flags;
 
     // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2

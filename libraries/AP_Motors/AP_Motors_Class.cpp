@@ -190,7 +190,9 @@ void AP_Motors::output()
     update_throttle_low_comp();
 
     if (_flags.armed) {
-        if (_flags.stabilizing) {
+        if (!_flags.interlock) {
+            output_armed_zero_throttle();
+        } else if (_flags.stabilizing) {
             output_armed_stabilizing();
         } else {
             output_armed_not_stabilizing();
