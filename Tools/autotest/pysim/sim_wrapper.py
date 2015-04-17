@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from multicopter import MultiCopter
-from helicopter import HeliCopter
 import util, time, os, sys, math
 import socket, struct
 import select, errno
@@ -55,7 +53,6 @@ def sim_send(m, a):
         if not e.errno in [ errno.ECONNREFUSED ]:
             raise
 
-
 def sim_recv(m):
     '''receive control information from SITL'''
     try:
@@ -97,7 +94,7 @@ parser.add_option("--fgout", dest="fgout",  help="flightgear output (IP:port)", 
 parser.add_option("--simin",  dest="simin",   help="SIM input (IP:port)",       default="127.0.0.1:5502")
 parser.add_option("--simout", dest="simout",  help="SIM output (IP:port)",      default="127.0.0.1:5501")
 parser.add_option("--home", dest="home",  type='string', default=None, help="home lat,lng,alt,hdg (required)")
-parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=400)
+parser.add_option("--rate", dest="rate", type='int', help="SIM update rate", default=0)
 parser.add_option("--wind", dest="wind", help="Simulate wind (speed,direction,turbulance)", default='0,0,0')
 parser.add_option("--frame", dest="frame", help="frame type (+,X,octo)", default='+')
 parser.add_option("--gimbal", dest="gimbal", action='store_true', default=False, help="enable gimbal")
@@ -134,14 +131,26 @@ sim_out.setblocking(0)
 # FG FDM object
 fdm = fgFDM.fgFDM()
 
-# create the quadcopter model
+# create the model based on frame type
 if opts.frame == 'heli':
+    from helicopter import HeliCopter
     a = HeliCopter(frame=opts.frame)
+    frame_rate = 400
 elif opts.frame == 'IrisRos':
     from iris_ros import IrisRos
     a = IrisRos()
+    frame_rate = 1000
+elif opts.frame.startswith('CRRCSim'):
+    from crrcsim import CRRCSim
+    a = CRRCSim(frame=opts.frame)
+    frame_rate = 360
 else:    
+    from multicopter import MultiCopter
     a = MultiCopter(frame=opts.frame)
+    frame_rate = 400
+
+if opts.rate != 0:
+    frame_rate = opts.rate
 
 print("Simulating for frame %s" % opts.frame)
 
@@ -178,7 +187,7 @@ if opts.gimbal:
 else:
     gimbal = None
 
-a.setup_frame_time(opts.rate, opts.speedup)
+a.setup_frame_time(frame_rate, opts.speedup)
 counter = 0
 
 while True:
@@ -200,6 +209,6 @@ while True:
         a.time_advance(a.frame_time)
 
     counter += 1
-    if counter == 1000:
+    if counter == 10000:
         print("t=%f speedup=%.1f" % ((a.time_now - a.time_base), a.achieved_rate/a.rate))
         counter = 0
