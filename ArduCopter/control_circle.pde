@@ -32,8 +32,8 @@ static void circle_run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete) {
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         // To-Do: add some initialisation of position controllers
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.set_alt_target_to_current_alt();

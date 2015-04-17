@@ -158,8 +158,8 @@ static void guided_set_destination_posvel(const Vector3f& destination, const Vec
 // should be called at 100hz or more
 static void guided_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motors not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint controller?
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: handle take-offs - these may not only be immediately after auto_armed becomes true
@@ -195,8 +195,8 @@ static void guided_run()
 //      called by guided_run at 100hz or more
 static void guided_takeoff_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motors interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         // initialise wpnav targets
         wp_nav.shift_wp_origin_to_current_pos();
         // reset attitude control targets
