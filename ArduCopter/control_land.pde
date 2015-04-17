@@ -180,7 +180,7 @@ static void land_nogps_run()
 static float get_land_descent_speed()
 {
 #if CONFIG_SONAR == ENABLED
-    bool sonar_ok = sonar_enabled && sonar.healthy();
+    bool sonar_ok = sonar_enabled && (sonar.status() == RangeFinder::RangeFinder_Good);
 #else
     bool sonar_ok = false;
 #endif
