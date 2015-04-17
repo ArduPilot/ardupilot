@@ -136,6 +136,8 @@ public:
         k_param_hil_mode,
         k_param_land_disarm_delay,
         k_param_glide_slope_threshold,
+        k_param_mixing_offset,
+        k_param_dspoiler_rud_rate,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -432,6 +434,8 @@ public:
     AP_Int8 reverse_elevons;
     AP_Int8 reverse_ch1_elevon;
     AP_Int8 reverse_ch2_elevon;
+    AP_Int16 mixing_offset;
+    AP_Int16 dspoiler_rud_rate;
     AP_Int16 num_resets;
     AP_Int32 log_bitmask;
     AP_Int8 reset_switch_chan;
