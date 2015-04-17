@@ -26,6 +26,7 @@
 #include <AP_Math.h>
 #include "FilterClass.h"
 
+// DigitalLPF implements the filter math
 class DigitalLPF
 {
 public:
@@ -39,6 +40,7 @@ public:
         float alpha;
     };
 
+    // add a new raw value to the filter, retrieve the filtered result
     float apply(float sample, float cutoff_freq, float dt) {
         if (cutoff_freq <= 0.0f) {
             _output = sample;
@@ -51,6 +53,7 @@ public:
         return _output;
     }
 
+    // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     float get() const {
         return _output;
     }
@@ -61,6 +64,7 @@ private:
     float _output;
 };
 
+// LPF base class
 class LowPassFilter
 {
 public:
@@ -84,6 +88,7 @@ protected:
     float _cutoff_freq;
 };
 
+// LPF for a single float
 class LowPassFilterFloat : public LowPassFilter
 {
 public:
@@ -108,6 +113,7 @@ private:
     DigitalLPF _filter;
 };
 
+// LPF for a 2D vector
 class LowPassFilterVector2f : public LowPassFilter
 {
 public:
@@ -134,6 +140,7 @@ private:
     DigitalLPF _filter_y;
 };
 
+// LPF for 3D vector
 class LowPassFilterVector3f : public LowPassFilter
 {
 public:
