@@ -269,12 +269,13 @@ def BodyRatesToEarthRates(dcm, gyro):
     psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
     return Vector3(phiDot, thetaDot, psiDot)
 
+radius_of_earth = 6378100.0 # in meters
+
 def gps_newpos(lat, lon, bearing, distance):
     '''extrapolate latitude/longitude given a heading and distance 
     thanks to http://www.movable-type.co.uk/scripts/latlong.html
     '''
     from math import sin, asin, cos, atan2, radians, degrees
-    radius_of_earth = 6378100.0 # in meters
     
     lat1 = radians(lat)
     lon1 = radians(lon)
@@ -287,6 +288,37 @@ def gps_newpos(lat, lon, bearing, distance):
                         cos(dr)-sin(lat1)*sin(lat2))
     return (degrees(lat2), degrees(lon2))
 
+
+def gps_distance(lat1, lon1, lat2, lon2):
+    '''return distance between two points in meters,
+    coordinates are in degrees
+    thanks to http://www.movable-type.co.uk/scripts/latlong.html'''
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    dLat = lat2 - lat1
+    dLon = lon2 - lon1
+
+    a = math.sin(0.5*dLat)**2 + math.sin(0.5*dLon)**2 * math.cos(lat1) * math.cos(lat2)
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
+    return radius_of_earth * c
+
+def gps_bearing(lat1, lon1, lat2, lon2):
+    '''return bearing between two points in degrees, in range 0-360
+    thanks to http://www.movable-type.co.uk/scripts/latlong.html'''
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    dLat = lat2 - lat1
+    dLon = lon2 - lon1
+    y = math.sin(dLon) * math.cos(lat2)
+    x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon)
+    bearing = math.degrees(math.atan2(y, x))
+    if bearing < 0:
+        bearing += 360.0
+    return bearing
 
 class Wind(object):
     '''a wind generation object'''
