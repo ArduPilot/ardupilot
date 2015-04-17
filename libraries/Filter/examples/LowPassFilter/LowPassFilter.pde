@@ -25,8 +25,7 @@ void setup()
     hal.console->printf("ArduPilot LowPassFilter test ver 1.0\n\n");
 
     // set-up filter
-    low_pass_filter.set_time_constant(0.02f, 0.015f);
-    //low_pass_filter.set_cutoff_frequency(0.02f, 1.0f);
+    low_pass_filter.set_cutoff_frequency(1.0f);
 
     // Wait for the serial connection
     hal.scheduler->delay(500);
@@ -51,7 +50,7 @@ void loop()
         hal.console->printf("applying: %6.4f", new_value);
 
         // apply new value and retrieved filtered result
-        filtered_value = low_pass_filter.apply(new_value);
+        filtered_value = low_pass_filter.apply(new_value, 0.02f);
 
         // display results
         hal.console->printf("\toutput: %6.4f\n", filtered_value);

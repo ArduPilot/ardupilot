@@ -4,9 +4,11 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-// uncomment this to force the optimisation of this code, note that
-// this makes debugging harder
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+/*
+  turn down optimisation on SITL to make debugging easier. We are not
+  short of CPU in SITL.
+ */
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 #pragma GCC optimize("O0")
 #else
 #pragma GCC optimize("O3")
@@ -43,8 +45,8 @@
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         1
-#define GLITCH_ACCEL_DEFAULT    150
-#define GLITCH_RADIUS_DEFAULT   15
+#define GLITCH_ACCEL_DEFAULT    100
+#define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
@@ -813,6 +815,10 @@ void NavEKF::SelectVelPosFusion()
                 decayGpsOffset();
                 ResetPosition();
                 ResetVelocity();
+                // record the fail time
+                lastPosFailTime = imuSampleTime_ms;
+                // Reset the normalised innovation to avoid false failing the bad position fusion test
+                posTestRatio = 0.0f;
             }
         } else {
             fuseVelData = false;
@@ -892,6 +898,21 @@ void NavEKF::SelectVelPosFusion()
             states[i] += hgtIncrStateDelta[i];
         }
     }
+
+    // Detect and declare bad GPS aiding status for minimum 10 seconds if a GPS rejection occurs after
+    // rejection of GPS and reset to GPS position. This addresses failure case where errors cause ongoing rejection
+    // of GPS and severe loss of position accuracy.
+    uint32_t gpsRetryTime;
+    if (useAirspeed()) {
+        gpsRetryTime = gpsRetryTimeUseTAS;
+    } else {
+        gpsRetryTime = gpsRetryTimeNoTAS;
+    }
+    if ((posTestRatio > 2.0f) && ((imuSampleTime_ms - lastPosFailTime) < gpsRetryTime) && ((imuSampleTime_ms - lastPosFailTime) > gpsRetryTime/2) && fusePosData) {
+        lastGpsAidBadTime_ms = imuSampleTime_ms;
+        gpsAidingBad = true;
+    }
+    gpsAidingBad = gpsAidingBad && ((imuSampleTime_ms - lastGpsAidBadTime_ms) < 10000);
 }
 
 // select fusion of magnetometer data
@@ -1858,8 +1879,6 @@ void NavEKF::FuseVelPosNED()
     Vector3f velInnov;
     Vector3f velInnov1;
     Vector3f velInnov2;
-    Vector2 posInnov;
-    float hgtInnov = 0;
 
     // declare variables used to control access to arrays
     bool fuseData[6] = {false,false,false,false,false,false};
@@ -1963,35 +1982,41 @@ void NavEKF::FuseVelPosNED()
         // test position measurements
         if (fusePosData) {
             // test horizontal position measurements
-            posInnov[0] = statesAtPosTime.position.x - observation[3];
-            posInnov[1] = statesAtPosTime.position.y - observation[4];
+            innovVelPos[3] = statesAtPosTime.position.x - observation[3];
+            innovVelPos[4] = statesAtPosTime.position.y - observation[4];
             varInnovVelPos[3] = P[7][7] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[8][8] + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate max valid position innovation squared based on a maximum horizontal inertial nav accel error and GPS noise parameter
             // max inertial nav error is scaled with horizontal g to allow for increased errors when manoeuvring
             float accelScale =  (1.0f + 0.1f * accNavMag);
-            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise + 0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - posFailTime)));
-            posTestRatio = (sq(posInnov[0]) + sq(posInnov[1])) / maxPosInnov2;
+            float maxPosInnov2 = sq(_gpsPosInnovGate * _gpsHorizPosNoise) + sq(0.005f * accelScale * float(_gpsGlitchAccelMax) * sq(0.001f * float(imuSampleTime_ms - lastPosPassTime)));
+            posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data or not aiding
-            posTimeout = (((imuSampleTime_ms - posFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
+            posTimeout = (((imuSampleTime_ms - lastPosPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy, timed out, or in constant position mode
             if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
                 // only reset the failed time and do glitch timeout checks if we are doing full aiding
                 if (PV_AidingMode == AID_ABSOLUTE) {
-                    posFailTime = imuSampleTime_ms;
+                    lastPosPassTime = imuSampleTime_ms;
                     // if timed out or outside the specified glitch radius, increment the offset applied to GPS data to compensate for large GPS position jumps
                     if (posTimeout || (maxPosInnov2 > sq(float(_gpsGlitchRadiusMax)))) {
-                        gpsPosGlitchOffsetNE.x += posInnov[0];
-                        gpsPosGlitchOffsetNE.y += posInnov[1];
+                        gpsPosGlitchOffsetNE.x += innovVelPos[3];
+                        gpsPosGlitchOffsetNE.y += innovVelPos[4];
                         // limit the radius of the offset and decay the offset to zero radially
                         decayGpsOffset();
                         // reset the position to the current GPS position which will include the glitch correction offset
                         ResetPosition();
+                        // reset the velocity to the GPS velocity
+                        ResetVelocity();
                         // don't fuse data on this time step
                         fusePosData = false;
+                        // record the fail time
+                        lastPosFailTime = imuSampleTime_ms;
+                        // Reset the normalised innovation to avoid false failing the bad position fusion test
+                        posTestRatio = 0.0f;
                     }
                 }
             } else {
@@ -2043,12 +2068,12 @@ void NavEKF::FuseVelPosNED()
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
-            velTimeout = (((imuSampleTime_ms - velFailTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
+            velTimeout = (((imuSampleTime_ms - lastVelPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // if data is healthy  or in constant velocity mode we fuse it
             if (velHealth || velTimeout || constVelMode) {
                 velHealth = true;
                 // restart the timeout count
-                velFailTime = imuSampleTime_ms;
+                lastVelPassTime = imuSampleTime_ms;
             } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
                 // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
@@ -2062,17 +2087,17 @@ void NavEKF::FuseVelPosNED()
         // test height measurements
         if (fuseHgtData) {
             // calculate height innovations
-            hgtInnov = statesAtHgtTime.position.z - observation[5];
+            innovVelPos[5] = statesAtHgtTime.position.z - observation[5];
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
-            hgtTestRatio = sq(hgtInnov) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
+            hgtTestRatio = sq(innovVelPos[5]) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
-            hgtTimeout = (imuSampleTime_ms - hgtFailTime) > hgtRetryTime;
+            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in constant position mode
             if (hgtHealth || hgtTimeout || constPosMode) {
                 hgtHealth = true;
-                hgtFailTime = imuSampleTime_ms;
+                lastHgtPassTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
                 if (hgtTimeout) {
                     ResetHeight();
@@ -3183,14 +3208,14 @@ void NavEKF::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - tasFailTime) > tasRetryTime;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime) > tasRetryTime;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout))
         {
 
             // restart the counter
-            tasFailTime = imuSampleTime_ms;
+            lastTasPassTime = imuSampleTime_ms;
 
             // correct the state vector
             for (uint8_t j=0; j<=21; j++)
@@ -4426,10 +4451,11 @@ void NavEKF::InitialiseVariables()
     lastMagUpdate = 0;
     lastHgtMeasTime = imuSampleTime_ms;
     lastAirspeedUpdate = 0;
-    velFailTime = imuSampleTime_ms;
-    posFailTime = imuSampleTime_ms;
-    hgtFailTime = imuSampleTime_ms;
-    tasFailTime = imuSampleTime_ms;
+    lastVelPassTime = imuSampleTime_ms;
+    lastPosPassTime = imuSampleTime_ms;
+    lastPosFailTime = 0;
+    lastHgtPassTime = imuSampleTime_ms;
+    lastTasPassTime = imuSampleTime_ms;
     lastStateStoreTime_ms = imuSampleTime_ms;
     lastFixTime_ms = 0;
     secondLastFixTime_ms = 0;
@@ -4442,6 +4468,7 @@ void NavEKF::InitialiseVariables()
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
+    lastGpsAidBadTime_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -4521,6 +4548,7 @@ void NavEKF::InitialiseVariables()
     gndEffectMode = false;
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
+    gpsAidingBad = false;
 }
 
 // return true if we should use the airspeed sensor
@@ -4670,7 +4698,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = (doingFlowNav || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
+    status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
@@ -4770,7 +4798,9 @@ void NavEKF::performArmingChecks()
                 lastFixTime_ms = imuSampleTime_ms;
                 secondLastFixTime_ms = imuSampleTime_ms;
                 // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
-                posFailTime = imuSampleTime_ms;
+                lastPosPassTime = imuSampleTime_ms;
+                // reset the fail time to prevent premature reporting of loss of position accruacy
+                lastPosFailTime = 0;
             }
         }
         // Reset filter positon, height and velocity states on arming or disarming

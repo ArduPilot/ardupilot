@@ -117,7 +117,9 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_resistance(0.0f),
     _batt_timer(0),
     _lift_max(1.0f),
-    _throttle_limit(1.0f)
+    _throttle_limit(1.0f),
+    _throttle_in(0.0f),
+    _throttle_filter()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -125,8 +127,12 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _flags.slow_start_low_end = true;
 
     // setup battery voltage filtering
-    _batt_voltage_filt.set_cutoff_frequency(1.0f/_loop_rate,AP_MOTORS_BATT_VOLT_FILT_HZ);
+    _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
+
+    // setup throttle filtering
+    _throttle_filter.set_cutoff_frequency(0.0f);
+    _throttle_filter.reset(0.0f);
 };
 
 void AP_Motors::armed(bool arm)
@@ -167,6 +173,9 @@ void AP_Motors::throttle_pass_through(int16_t pwm)
 // output - sends commands to the motors
 void AP_Motors::output()
 {
+    // update throttle filter
+    update_throttle_filter();
+
     // update max throttle
     update_max_throttle();
 
@@ -179,10 +188,13 @@ void AP_Motors::output()
     // move throttle_low_comp towards desired throttle low comp
     update_throttle_low_comp();
 
-    // output to motors
-    if (_flags.armed ) {
-        output_armed();
-    }else{
+    if (_flags.armed) {
+        if (_flags.stabilizing) {
+            output_armed_stabilizing();
+        } else {
+            output_armed_not_stabilizing();
+        }
+    } else {
         output_disarmed();
     }
 };
@@ -196,6 +208,19 @@ void AP_Motors::slow_start(bool true_false)
 
     // initialise maximum throttle to current throttle
     _max_throttle = constrain_int16(_rc_throttle.servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
+}
+
+// update the throttle input filter
+void AP_Motors::update_throttle_filter()
+{
+    if (armed()) {
+        _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+    } else {
+        _throttle_filter.reset(0.0f);
+    }
+
+    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
+    _rc_throttle.servo_out = constrain_float(_throttle_filter.get(),-32000,32000);
 }
 
 // update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
@@ -247,8 +272,8 @@ void AP_Motors::current_limit_max_throttle()
         // Fast drop for extreme over current (1 second)
         _throttle_limit -= 1.0f/_loop_rate;
     } else if(_batt_current > _batt_current_max) {
-        // Slow drop for extreme over current (2 second)
-        _throttle_limit -= 0.5f/_loop_rate;
+        // Slow drop for extreme over current (5 second)
+        _throttle_limit -= 0.2f/_loop_rate;
     } else {
         // Increase throttle limit (2 second)
         _throttle_limit += 0.5f/_loop_rate;
@@ -290,7 +315,7 @@ void AP_Motors::update_lift_max_from_batt_voltage()
     batt_voltage = constrain_float(batt_voltage, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max);
+    float bvf = _batt_voltage_filt.apply(batt_voltage/_batt_voltage_max, 1.0f/_loop_rate);
 
     // calculate lift max
     _lift_max = bvf*(1-_thrust_curve_expo) + _thrust_curve_expo*bvf*bvf;
@@ -324,11 +349,21 @@ void AP_Motors::update_throttle_low_comp()
 {
     // slew _throttle_low_comp to _throttle_low_comp_desired
     if (_throttle_low_comp < _throttle_low_comp_desired) {
-        // increase quickly (i.e. from 0.1 to 0.9 in 0.8 seconds)
-        _throttle_low_comp += min(1.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
+        // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
+        _throttle_low_comp += min(2.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
     } else if (_throttle_low_comp > _throttle_low_comp_desired) {
-        // reduce more slowly (from 0.9 to 0.1 in 1.8 seconds)
+        // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
         _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
     }
     _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
+}
+
+float AP_Motors::rel_pwm_to_thr_range(float pwm) const
+{
+    return 1000.0f*pwm/(_rc_throttle.radio_max-_rc_throttle.radio_min);
+}
+
+float AP_Motors::thr_range_to_rel_pwm(float thr) const
+{
+    return (_rc_throttle.radio_max-_rc_throttle.radio_min)*thr/1000.0f;
 }

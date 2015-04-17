@@ -140,6 +140,9 @@ public:
     // angle_ef_targets - returns angle controller earth-frame targets (for reporting)
     const Vector3f& angle_ef_targets() const { return _angle_ef_target; }
 
+    // angle_bf_error - returns angle controller body-frame errors (for stability checking)
+    const Vector3f& angle_bf_error() const { return _angle_bf_error; }
+
     // rate_bf_targets - sets rate controller body-frame targets
     void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
     void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
@@ -176,8 +179,10 @@ public:
     //
 
      // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
-     // provide 0 to cut motors
-     void set_throttle_out(int16_t throttle_pwm, bool apply_angle_boost);
+     void set_throttle_out(float throttle_pwm, bool apply_angle_boost, float filt_cutoff);
+
+     // outputs a throttle to all motors evenly with no stabilization
+     void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
 
      // angle_boost - accessor for angle boost so it can be logged
      int16_t angle_boost() const { return _angle_boost; }
@@ -233,8 +238,8 @@ protected:
     // throttle methods
     //
 
-    // get_angle_boost - calculate total body frame throttle required to produce the given earth frame throttle
-    virtual int16_t get_angle_boost(int16_t throttle_pwm);
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    virtual float get_boosted_throttle(float throttle_in);
 
     // references to external libraries
     const AP_AHRS&      _ahrs;

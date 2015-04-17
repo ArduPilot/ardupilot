@@ -325,7 +325,7 @@ static void Log_Write_Control_Tuning()
         baro_alt            : baro_alt,
         desired_sonar_alt   : (int16_t)target_sonar_alt,
         sonar_alt           : sonar_alt,
-        desired_climb_rate  : desired_climb_rate,
+        desired_climb_rate  : (int16_t)pos_control.get_vel_target_z(),
         climb_rate          : climb_rate
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -395,12 +395,16 @@ struct PACKED log_Rate {
     float   control_yaw;
     float   yaw;
     float   yaw_out;
+    float   control_accel;
+    float   accel;
+    float   accel_out;
 };
 
 // Write an rate packet
 static void Log_Write_Rate()
 {
     const Vector3f &rate_targets = attitude_control.rate_bf_targets();
+    const Vector3f &accel_target = pos_control.get_accel_target();
     struct log_Rate pkt_rate = {
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_ms         : hal.scheduler->millis(),
@@ -412,7 +416,10 @@ static void Log_Write_Rate()
         pitch_out       : (float)(motors.get_pitch()),
         control_yaw     : (float)rate_targets.z,
         yaw             : (float)(ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100),
-        yaw_out         : (float)(motors.get_yaw())
+        yaw_out         : (float)(motors.get_yaw()),
+        control_accel   : (float)accel_target.z,
+        accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
+        accel_out       : (float)(motors.get_throttle_out())
     };
     DataFlash.WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
@@ -607,7 +614,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBH",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
-      "RATE", "Ifffffffff",  "TimeMS,RllDes,Rll,RllOut,PitDes,Pit,PitOut,YawDes,Yaw,YawOut" },
+      "RATE", "Iffffffffffff",  "TimeMS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
       "MOTB", "Iffff",  "TimeMS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         

@@ -586,11 +586,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
 		nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;
     }
     
-	if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
-	{
-		_throttle_dem = _THRmaxf;
-	}
-	else if (_pitch_dem > 0.0f && _PITCHmaxf > 0.0f)
+	if (_pitch_dem > 0.0f && _PITCHmaxf > 0.0f)
 	{
 		_throttle_dem = nomThr + (_THRmaxf - nomThr) * _pitch_dem / _PITCHmaxf;
 	}
@@ -751,7 +747,6 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 	else if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
 	{
 		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
-		_THRminf            = _THRmaxf - 0.01f;
 		_hgt_dem_adj_last  = hgt_afe;
 		_hgt_dem_adj       = _hgt_dem_adj_last;
 		_hgt_dem_prev      = _hgt_dem_adj_last;
@@ -789,7 +784,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	// Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
 	_EAS_dem = EAS_dem_cm * 0.01f;
-    _THRmaxf  = aparm.throttle_max * 0.01f;
+    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF && aparm.takeoff_throttle_max != 0) {
+        _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
+    } else {
+        _THRmaxf  = aparm.throttle_max * 0.01f;
+    }
     _THRminf  = aparm.throttle_min * 0.01f;
 
 	// work out the maximum and minimum pitch

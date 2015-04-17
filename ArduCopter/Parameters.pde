@@ -62,6 +62,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(cli_enabled,    "CLI_ENABLED",    0),
 #endif
 
+    // @Param: PILOT_THR_FILT
+    // @DisplayName: Throttle filter cutoff
+    // @Description: Throttle filter cutoff (Hz) - active whenever altitude control is inactive - 0 to disable
+    // @User: Advanced
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: .5
+    GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -835,7 +844,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Group: POSCON_
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
-    GOBJECT(pos_control, "POSCON_", AC_PosControl),
+    GOBJECT(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.pde
@@ -987,7 +996,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Description: autotune_aggressiveness. Defines the bounce back used to detect size of the D term.
     // @Range: 0.05 0.10
     // @User: Standard
-    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.05f),
+    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
 
     AP_VAREND
 };

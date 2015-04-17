@@ -128,6 +128,7 @@ public:
         k_param_dcmcheck_thresh,        // deprecated - remove
         k_param_log_bitmask,
         k_param_cli_enabled,            // 61
+        k_param_throttle_filt,          // 62
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -266,7 +267,7 @@ public:
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,           // 198
-        k_param_rcmap,
+        k_param_rcmap, // 199
 
         //
         // 200: flight modes
@@ -338,6 +339,8 @@ public:
 #if CLI_ENABLED == ENABLED
     AP_Int8         cli_enabled;
 #endif
+
+    AP_Float        throttle_filt;
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;

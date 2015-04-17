@@ -61,8 +61,9 @@ public:
 
 protected:
     // output - sends commands to the motors
-    virtual void        output_armed();
-    virtual void        output_disarmed();
+    void                output_armed_stabilizing();
+    void                output_armed_not_stabilizing();
+    void                output_disarmed();
 
     AP_Int8             _rev_roll;      // REV Roll feedback
     AP_Int8             _rev_pitch;     // REV pitch feedback

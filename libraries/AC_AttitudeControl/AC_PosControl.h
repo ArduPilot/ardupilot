@@ -36,12 +36,13 @@
 #define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
 
-#define POSCONTROL_ACTIVE_TIMEOUT_MS            200    // position controller is considered active if it has been called within the past 0.2 seconds
+#define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 0.2 seconds
 
-#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // 4hz low-pass filter on velocity error
-#define POSCONTROL_ACCEL_ERROR_CUTOFF_FREQ      2.0f    // 2hz low-pass filter on accel error
-#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // 17m/s/s/s jerk limit on horizontal acceleration
-#define POSCONTROL_ACCEL_FILTER_HZ              5.0f    // 5hz low-pass filter on acceleration
+#define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
+#define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
+#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // jerk limit on horizontal acceleration (unit: m/s/s/s)
+#define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // low-pass filter on acceleration (unit: hz)
+#define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
 class AC_PosControl
 {
@@ -93,6 +94,9 @@ public:
     /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
     float get_speed_down() const { return _speed_down_cms; }
 
+    /// get_vel_target_z - returns current vertical speed in cm/s
+    float get_vel_target_z() const { return _vel_target.z; }
+
     /// set_accel_z - set vertical acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_z_controller() is called
     void set_accel_z(float accel_cmss);
@@ -125,6 +129,9 @@ public:
 
     /// set_alt_target_to_current_alt - set altitude target to current altitude
     void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
+
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    void relax_alt_hold_controllers(float throttle_setting);
 
     /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     /// To-Do: remove one of the two functions below
@@ -338,6 +345,9 @@ private:
     AC_P&	    _p_pos_xy;
     AC_PI_2D&   _pi_vel_xy;
 
+    // parameters
+    AP_Float    _accel_xy_filt_hz;      // XY acceleration filter cutoff frequency
+
     // internal variables
     float       _dt;                    // time difference (in seconds) between calls from the main program
     float       _dt_xy;                 // time difference (in seconds) between update_xy_controller and update_vel_controller_xyz calls
@@ -348,6 +358,7 @@ private:
     float       _speed_up_cms;          // max climb rate in cm/s
     float       _speed_cms;             // max horizontal speed in cm/s
     float       _accel_z_cms;           // max vertical acceleration in cm/s/s
+    float       _accel_last_z_cms;      // max vertical acceleration in cm/s/s
     float       _accel_cms;             // max horizontal acceleration in cm/s/s
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
@@ -370,9 +381,8 @@ private:
     float       _alt_max;               // max altitude - should be updated from the main code with altitude limit from fence
     float       _distance_to_target;    // distance to position target - for reporting only
     LowPassFilterFloat _vel_error_filter;   // low-pass-filter on z-axis velocity error
-    LowPassFilterFloat _accel_error_filter; // low-pass-filter on z-axis accelerometer error
 
     Vector2f    _accel_target_jerk_limited; // acceleration target jerk limited to 100deg/s/s
-    Vector2f    _accel_target_filtered;     // acceleration target filtered with 5hz low pass filter
+    LowPassFilterVector2f _accel_target_filter; // acceleration target filter
 };
 #endif	// AC_POSCONTROL_H

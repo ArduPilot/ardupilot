@@ -1195,9 +1195,8 @@ static void handle_auto_mode(void)
     case MAV_CMD_NAV_TAKEOFF:
         takeoff_calc_roll();
         takeoff_calc_pitch();
-        
-        // max throttle for takeoff
-        channel_throttle->servo_out = takeoff_throttle();
+        calc_throttle();
+
         break;
 
     case MAV_CMD_NAV_LAND:
