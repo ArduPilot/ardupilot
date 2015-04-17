@@ -42,7 +42,7 @@ public:
 
     // add a new raw value to the filter, retrieve the filtered result
     float apply(float sample, float cutoff_freq, float dt) {
-        if (cutoff_freq <= 0.0f) {
+        if (cutoff_freq <= 0.0f || dt < 0.0f) {
             _output = sample;
             return _output;
         }
