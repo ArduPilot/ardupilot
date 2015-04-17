@@ -547,9 +547,8 @@ static float rangefinder_correction(void)
 static void rangefinder_height_update(void)
 {
     uint16_t distance_cm = rangefinder.distance_cm();
-    int16_t max_distance_cm = rangefinder.max_distance_cm();
     float height_estimate = 0;
-    if (rangefinder.healthy() && distance_cm < max_distance_cm && home_is_set != HOME_UNSET) {
+    if ((rangefinder.status() == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
         height_estimate = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
