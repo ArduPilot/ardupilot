@@ -94,7 +94,7 @@ AP_Camera::trigger_pic(bool send_mavlink_msg)
         mavlink_command_long_t cmd_msg;
         memset(&cmd_msg, 0, sizeof(cmd_msg));
         cmd_msg.command = MAV_CMD_DO_DIGICAM_CONTROL;
-
+        cmd_msg.param5 = 1;
         // create message
         mavlink_message_t msg;
         mavlink_msg_command_long_encode(0, 0, &msg, &cmd_msg);
@@ -170,33 +170,56 @@ AP_Camera::control_msg(mavlink_message_t* msg)
 }
 
 // Mission command processing
-void AP_Camera::configure_cmd(AP_Mission::Mission_Command& cmd)
+void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
 {
-    mavlink_mission_item_t mav_cmd = {};
+    // we cannot process the configure command so convert to mavlink message
+    // and send to all components in case they and process it
 
-    // convert command to mavlink message
-    if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
-        // convert mission item to mavlink message
-        // convert mission item to mavlink message
-        mavlink_message_t msg;
-        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
-        // send to all components
-        GCS_MAVLINK::send_to_components(&msg);
-    }
+    mavlink_message_t msg;
+    mavlink_command_long_t mav_cmd_long = {};
+
+    // convert mission command to mavlink command_long
+    mav_cmd_long.target_system = 0;
+    mav_cmd_long.target_component = 0;
+    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONFIGURE;
+    mav_cmd_long.confirmation = 0;
+    mav_cmd_long.param1 = cmd.content.digicam_configure.shooting_mode;
+    mav_cmd_long.param2 = cmd.content.digicam_configure.shutter_speed;
+    mav_cmd_long.param3 = cmd.content.digicam_configure.aperture;
+    mav_cmd_long.param4 = cmd.content.digicam_configure.ISO;
+    mav_cmd_long.param5 = cmd.content.digicam_configure.exposure_type;
+    mav_cmd_long.param6 = cmd.content.digicam_configure.cmd_id;
+    mav_cmd_long.param7 = cmd.content.digicam_configure.engine_cutoff_time;
+
+    // Encode Command long into MAVLINK msg
+    mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
+
+    // send to all components
+    GCS_MAVLINK::send_to_components(&msg);
 }
 
-void AP_Camera::control_cmd(AP_Mission::Mission_Command& cmd)
+void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
 {
-    mavlink_mission_item_t mav_cmd = {};
+    mavlink_message_t msg;
+    mavlink_command_long_t mav_cmd_long = {};
 
-    // convert command to mavlink mission item
-    if (AP_Mission::mission_cmd_to_mavlink(cmd, mav_cmd)) {
-        // convert mission item to mavlink message
-        mavlink_message_t msg;
-        mavlink_msg_mission_item_encode(0, 0, &msg, &mav_cmd);
-        // send to all components
-        GCS_MAVLINK::send_to_components(&msg);
-    }
+    // convert command to mavlink command long
+    mav_cmd_long.target_system = 0;
+    mav_cmd_long.target_component = 0;
+    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONTROL;
+    mav_cmd_long.confirmation = 0;
+    mav_cmd_long.param1 = cmd.content.digicam_control.session;
+    mav_cmd_long.param2 = cmd.content.digicam_control.zoom_pos;
+    mav_cmd_long.param3 = cmd.content.digicam_control.zoom_step;
+    mav_cmd_long.param4 = cmd.content.digicam_control.focus_lock;
+    mav_cmd_long.param5 = cmd.content.digicam_control.shooting_cmd;
+    mav_cmd_long.param6 = cmd.content.digicam_control.cmd_id;
+
+    // Encode Command long into MAVLINK msg
+    mavlink_msg_command_long_encode(0, 0, &msg, &mav_cmd_long);
+
+    // send to all components
+    GCS_MAVLINK::send_to_components(&msg);
 }
 
 /*
