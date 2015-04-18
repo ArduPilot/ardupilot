@@ -6,6 +6,7 @@
 #include <AP_Math.h>
 #include "AC_PID.h"
 
+
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
@@ -69,7 +70,7 @@ void AC_PID::set_dt(float dt)
 // filt_hz - set input filter hz
 void AC_PID::filt_hz(float hz)
 {
-    _filt_hz.set(fabs(hz));
+    _filt_hz.set(fabs(hz) );
 
     // sanity check _filt_hz
     _filt_hz = max(_filt_hz, AC_PID_FILT_HZ_MIN);
@@ -130,9 +131,8 @@ float AC_PID::get_p() const
     return (_input * _kp);
 }
 
-float AC_PID::get_i()
-{
-    if((_ki != 0) && (_dt != 0)) {
+float AC_PID::get_i() {
+    if(!is_equal(_ki, 0.0f) && !is_equal(_dt, 0.0f) ) {
         _integrator += ((float)_input * _ki) * _dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;
@@ -199,11 +199,11 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
 // calc_filt_alpha - recalculate the input filter alpha
 float AC_PID::get_filt_alpha() const
 {
-    if (_filt_hz == 0.0f) {
+    if (is_equal(_filt_hz, 0.0f) ) {
         return 1.0f;
     }
 
     // calculate alpha
-    float rc = 1/(2*PI*_filt_hz);
+    float rc = 1/(M_2PI_F*_filt_hz);
     return _dt / (_dt + rc);
 }

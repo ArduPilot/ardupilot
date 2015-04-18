@@ -20,7 +20,7 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt);
+    AC_PID(float initial_p = 0.f, float initial_i = 0.f, float initial_d = 0.f, float initial_imax = 0.f, float initial_filt_hz = AC_PID_FILT_HZ_DEFAULT, float dt = 0.f);
 
     // set_dt - set time step in seconds
     void        set_dt(float dt);
