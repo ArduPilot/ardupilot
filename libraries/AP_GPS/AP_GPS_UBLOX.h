@@ -16,7 +16,7 @@
 
 //
 //  u-blox UBX GPS driver for ArduPilot and ArduPilotMega.
-//	Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//    Code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 
@@ -42,7 +42,7 @@
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
 public:
-	AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     // Methods
     bool read();
@@ -200,6 +200,33 @@ private:
         uint8_t globalFlags;
         uint16_t reserved;
     };
+    struct PACKED ubx_aid_alpsrv {
+        uint8_t  idSize;
+        uint8_t  type;
+        uint16_t ofs;
+        uint16_t size;
+        uint16_t fileId;
+        uint16_t dataSize;
+        uint8_t  id1;
+        uint8_t  id2;
+        uint32_t id3;
+    };
+    struct PACKED ubx_aid_ini {
+        int32_t        ecefXOrLat;
+        int32_t        ecefYOrLon;
+        int32_t        ecefZOrAlt;
+        uint32_t    posAcc;
+        uint16_t    tmCfg;
+        uint16_t    wn;
+        uint32_t    tow;
+        int32_t        towNs;
+        uint32_t    tAccMs;
+        uint32_t    tAccNs;
+        int32_t        clkDOrFreq;
+        uint32_t    clkDOrFreqAcc;
+        uint32_t    flags;
+    };
+    
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -212,6 +239,8 @@ private:
         ubx_mon_hw2 mon_hw2;
         ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
+        ubx_aid_alpsrv alpsrv;
+        ubx_aid_ini    aid_ini;
         uint8_t bytes[];
     } _buffer;
 
@@ -222,6 +251,7 @@ private:
         CLASS_ACK = 0x05,
         CLASS_CFG = 0x06,
         CLASS_MON = 0x0A,
+        CLASS_AID = 0x0B,
         MSG_ACK_NACK = 0x00,
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
@@ -235,7 +265,10 @@ private:
         MSG_CFG_SBAS = 0x16,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
-        MSG_NAV_SVINFO = 0x30
+        MSG_AID_INI = 0x01,
+        MSG_NAV_SVINFO = 0x30,
+        MSG_AID_ALPSRV = 0x32,
+        MSG_AID_ALP = 0x50
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -266,9 +299,9 @@ private:
     uint16_t        _payload_length;
     uint16_t        _payload_counter;
 
-	// 8 bit count of fix messages processed, used for periodic
-	// processing
-    uint8_t			_fix_count;
+    // 8 bit count of fix messages processed, used for periodic
+    // processing
+    uint8_t            _fix_count;
     uint8_t         _class;
 
     uint32_t        _last_vel_time;
@@ -282,6 +315,25 @@ private:
 
     uint8_t         _disable_counter;
 
+    // aiding related variables
+    Location        _aid_location, _aid_location_ecef, _rec_aid_location_ecef;
+    uint16_t         _alp_file_data_u2[6144];  //file in memory, size enough to hold 1d corrections file
+    uint32_t          _alp_file_length_u2;        //Size of alp file, in U2 words
+    uint16_t          _alp_file_id;                 // ID of this file
+    uint8_t            _alp_step;
+    int                _alp_fd;
+    bool            _aid_pos_success;
+    
+    // aiding functions
+    bool            _alpsrv_on;
+    void             _do_initial_aiding();
+    bool             _aid_alp_file();
+    bool             _aid_alp_srv();
+    void            _send_aid_position();
+    void            _send_alplus_aid_chunk(uint16_t ofs_u2, uint16_t size_u2, ubx_aid_alpsrv *req);
+    // NOTE: this can be made public, or defined in the GPS interface when aiding other modules becomes available
+    void aid_position(const Location &loc);    
+    
     // Buffer parse & GPS state update
     bool        _parse_gps();
 
@@ -292,13 +344,13 @@ private:
     uint32_t _last_5hz_time;
     uint32_t _last_hw_status;
 
-    void 	    _configure_navigation_rate(uint16_t rate_ms);
+    void         _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_gps(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint8_t len, uint8_t &ck_a, uint8_t &ck_b);
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size);
-    void		send_next_rate_update(void);
+    void        send_next_rate_update(void);
     void        _request_version(void);
 
     void unexpected_message(void);
