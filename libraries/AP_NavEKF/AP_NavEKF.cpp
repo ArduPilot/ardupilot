@@ -4822,12 +4822,18 @@ void NavEKF::performArmingChecks()
                 lastPosFailTime = 0;
             }
         }
-        // Reset filter positon, height and velocity states on arming or disarming
-        ResetVelocity();
-        ResetPosition();
-        baroHgtOffset = 0.0f;
-        ResetHeight();
-        StoreStatesReset();
+        if (vehicleArmed) {
+            // Reset filter position to GPS when transitioning into flight mode
+            // We need to do this becasue the vehicle may have moved since the EKF origin was set
+            ResetPosition();
+            StoreStatesReset();
+        } else {
+            // Reset all position and velocity states when transitioning out of flight mode
+            // We need to do this becasue we are going into a mode that assumes zero position and velocity
+            ResetVelocity();
+            ResetPosition();
+            StoreStatesReset();
+        }
 
     } else if (vehicleArmed && !firstMagYawInit && state.position.z < -1.5f && !assume_zero_sideslip()) {
         // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
