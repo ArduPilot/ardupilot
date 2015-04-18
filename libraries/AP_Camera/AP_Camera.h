@@ -54,8 +54,8 @@ public:
     void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
 
     // Mission command processing
-    void            configure_cmd(AP_Mission::Mission_Command& cmd);
-    void            control_cmd(AP_Mission::Mission_Command& cmd);
+    void            configure_cmd(const AP_Mission::Mission_Command& cmd);
+    void            control_cmd(const AP_Mission::Mission_Command& cmd);
 
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
