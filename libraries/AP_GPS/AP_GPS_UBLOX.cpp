@@ -35,6 +35,16 @@
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+#include <assert.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
