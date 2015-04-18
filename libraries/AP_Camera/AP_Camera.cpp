@@ -200,6 +200,9 @@ void AP_Camera::configure_cmd(const AP_Mission::Mission_Command& cmd)
 
 void AP_Camera::control_cmd(const AP_Mission::Mission_Command& cmd)
 {
+    // take picture
+    trigger_pic(false);
+
     mavlink_message_t msg;
     mavlink_command_long_t mav_cmd_long = {};
 
