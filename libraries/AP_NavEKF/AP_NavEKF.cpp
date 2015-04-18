@@ -4132,7 +4132,7 @@ void NavEKF::readHgtData()
                 statesAtHgtTime = statesAtFlowTime;
                 // calculate offset to baro data that enables baro to be used as a backup
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.2f * (_baro.get_altitude() + state.position.z) + 0.8f * baroHgtOffset;
+                baroHgtOffset = 0.1f * (_baro.get_altitude() + state.position.z) + 0.9f * baroHgtOffset;
             } else if (vehicleArmed && takeOffDetected) {
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
                 hgtMea = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
@@ -4145,7 +4145,7 @@ void NavEKF::readHgtData()
                 statesAtHgtTime = state;
                 // calculate offset to baro data that enables baro to be used as a backup
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.2f * (_baro.get_altitude() + state.position.z) + 0.8f * baroHgtOffset;
+                baroHgtOffset = 0.1f * (_baro.get_altitude() + state.position.z) + 0.9f * baroHgtOffset;
             }
         } else {
             // use baro measurement and correct for baro offset
