@@ -49,7 +49,6 @@ public:
     void            trigger_pic_cleanup();
 
     // MAVLink methods
-    void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
     void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
 

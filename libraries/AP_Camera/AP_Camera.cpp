@@ -123,27 +123,6 @@ AP_Camera::trigger_pic_cleanup()
     }
 }
 
-/// decode MavLink that configures camera
-void
-AP_Camera::configure_msg(mavlink_message_t* msg)
-{
-    __mavlink_digicam_configure_t packet;
-    mavlink_msg_digicam_configure_decode(msg, &packet);
-    // This values may or not be used by APM
-    // They are bypassed as "echo" to a external specialized board
-    /*
-     *  packet.aperture
-     *  packet.command_id
-     *  packet.engine_cut_off
-     *  packet.exposure_type
-     *  packet.extra_param
-     *  packet.extra_value
-     *  packet.iso
-     *  packet.mode
-     *  packet.shutter_speed
-     */
-}
-
 /// decode MavLink that controls camera
 void
 AP_Camera::control_msg(mavlink_message_t* msg)
