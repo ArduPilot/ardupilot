@@ -13,6 +13,7 @@
 #include <AP_Relay.h>
 #include <AP_GPS.h>
 #include <AP_AHRS.h>
+#include <AP_Mission.h>
 
 #define AP_CAMERA_TRIGGER_TYPE_SERVO                0
 #define AP_CAMERA_TRIGGER_TYPE_RELAY                1
@@ -51,6 +52,10 @@ public:
     void            configure_msg(mavlink_message_t* msg);
     void            control_msg(mavlink_message_t* msg);
     void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
+
+    // Mission command processing
+    void            configure_cmd(AP_Mission::Mission_Command& cmd);
+    void            control_cmd(AP_Mission::Mission_Command& cmd);
 
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
