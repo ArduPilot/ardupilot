@@ -19,6 +19,7 @@ class CRRCSim(Aircraft):
         self.sim.setblocking(0)
         self.accel_body = Vector3(0, 0, -self.gravity)
         self.frame = frame
+        self.last_timestamp = 0
         if self.frame.find("heli") != -1:
             self.decode_servos = self.decode_servos_heli
         else:
@@ -89,6 +90,12 @@ class CRRCSim(Aircraft):
         self.position.z = -altitude
         self.dcm.from_euler(roll, pitch, yaw)
         self.time_now = timestamp + self.time_base
+
+        # auto-adjust to crrcsim frame rate
+        deltat = timestamp - self.last_timestamp
+        if deltat < 0.01 and deltat > 0:
+            self.adjust_frame_time(1.0/deltat)
+        self.last_timestamp = timestamp
 
     def update(self, actuators):
         '''update model'''

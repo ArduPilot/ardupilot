@@ -70,6 +70,12 @@ class Aircraft(object):
         self.last_wall_time = time.time()
         self.achieved_rate = rate
 
+    def adjust_frame_time(self, rate):
+        '''adjust frame_time calculation'''
+        self.rate = rate
+        self.frame_time = 1.0/rate
+        self.scaled_frame_time = self.frame_time/self.speedup
+
     def sync_frame_time(self):
         '''try to synchronise simulation time with wall clock time, taking
         into account desired speedup'''
