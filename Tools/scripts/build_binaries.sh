@@ -10,7 +10,7 @@ rm -rf $TMPDIR
 echo "Building in $TMPDIR"
 
 date
-git checkout master
+git checkout -f master
 githash=$(git rev-parse HEAD)
 
 hdate=$(date +"%Y-%m/%Y-%m-%d-%H:%m")
@@ -40,12 +40,12 @@ checkout() {
 
     echo "Checkout for $vehicle for $board with tag $tag"
 
-    git checkout "$vtag" || git checkout "$vtag2" || return 1
+    git checkout -f "$vtag" || git checkout -f "$vtag2" || return 1
 
     git log -1
 
     pushd ../../PX4NuttX
-    git checkout "$vtag" || git checkout "$vtag2" || git checkout master || {
+    git checkout -f "$vtag" || git checkout -f "$vtag2" || git checkout -f master || {
         popd
         return 1
     }
@@ -53,7 +53,7 @@ checkout() {
     popd
 
     pushd ../../PX4Firmware
-    git checkout "$vtag" || git checkout "$vtag2" || git checkout master || {
+    git checkout -f "$vtag" || git checkout -f "$vtag2" || git checkout -f master || {
         popd
         return 1
     }
