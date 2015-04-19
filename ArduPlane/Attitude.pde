@@ -623,6 +623,14 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
     c1 = chan1_out - 1500;
     c2 = chan2_out - 1500;
 
+    // apply MIXING_OFFSET to input channels using long-integer version
+    //  of formula:  x = x * (g.mixing_offset/100.0 + 1.0)
+    //  -100 => 2x on 'c1', 100 => 2x on 'c2'
+    if (g.mixing_offset < 0)
+      c1 = (int16_t)(((int32_t)c1) * (-g.mixing_offset+100) / 100);
+    else if (g.mixing_offset > 0)
+      c2 = (int16_t)(((int32_t)c2) * (g.mixing_offset+100) / 100);
+
     v1 = (c1 - c2) * g.mixing_gain;
     v2 = (c1 + c2) * g.mixing_gain;
 
@@ -741,12 +749,6 @@ static void set_servos(void)
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_aileron_with_input);
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_elevator_with_input);
 
-        if (g.mix_mode == 0 && g.elevon_output == MIXING_DISABLED) {
-            // set any differential spoilers to follow the elevons in
-            // manual mode. 
-            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, channel_roll->radio_out);
-            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, channel_pitch->radio_out);
-        }
     } else {
         if (g.mix_mode == 0) {
             // both types of secondary aileron are slaved to the roll servo out
@@ -772,12 +774,15 @@ static void set_servos(void)
 			if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) && RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
 				float ch3 = ch1;
 				float ch4 = ch2;
-				if ( BOOL_TO_SIGN(g.reverse_elevons) * channel_rudder->servo_out < 0) {
-				    ch1 += abs(channel_rudder->servo_out);
-				    ch3 -= abs(channel_rudder->servo_out);
+                   //get rudder value and multiply by DSPOILR_RUD_RATE/100:
+				int16_t ruddVal = (int16_t)((int32_t)(channel_rudder->servo_out) *
+				                                       g.dspoiler_rud_rate / 100);
+				if ( BOOL_TO_SIGN(g.reverse_elevons) * ruddVal < 0) {
+				    ch1 += abs(ruddVal);
+				    ch3 -= abs(ruddVal);
 				} else {
-					ch2 += abs(channel_rudder->servo_out);
-				    ch4 -= abs(channel_rudder->servo_out);
+					ch2 += abs(ruddVal);
+				    ch4 -= abs(ruddVal);
 				}
 				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler1, ch3);
 				RC_Channel_aux::set_servo_out(RC_Channel_aux::k_dspoiler2, ch4);
@@ -928,6 +933,34 @@ static void set_servos(void)
         channel_output_mixer(g.vtail_output, channel_pitch->radio_out, channel_rudder->radio_out);
     } else if (g.elevon_output != MIXING_DISABLED) {
         channel_output_mixer(g.elevon_output, channel_pitch->radio_out, channel_roll->radio_out);
+              //if (both) differential spoilers setup then apply rudder
+              // control into splitting the two elevons on the side of
+              // the aircraft where we want to induce additional drag:
+        if (RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler1) &&
+                   RC_Channel_aux::function_assigned(RC_Channel_aux::k_dspoiler2)) {
+            int16_t ch3 = channel_roll->radio_out;    //diff spoiler 1
+            int16_t ch4 = channel_pitch->radio_out;   //diff spoiler 2
+                   //convert rudder-servo output (-4500 to 4500) to PWM
+                   // offset value and multiply by DSPOILR_RUD_RATE/100:
+            int16_t ruddVal = (int16_t)((int32_t)(channel_rudder->servo_out) *
+                                         g.dspoiler_rud_rate / (SERVO_MAX/5));
+            if (ruddVal != 0) {   //if nonzero rudder then apply to spoilers
+                int16_t ch1 = ch3;          //elevon 1
+                int16_t ch2 = ch4;          //elevon 2
+                if (ruddVal > 0) {     //apply rudder to right or left side
+                    ch1 += ruddVal;
+                    ch3 -= ruddVal;
+                } else {
+                    ch2 += ruddVal;
+                    ch4 -= ruddVal;
+                }
+                channel_roll->radio_out = ch1;   //change elevon 1 position
+                channel_pitch->radio_out = ch2;  //change elevon 2 position
+            }
+                   //set positions of differential spoilers:
+            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler1, ch3);
+            RC_Channel_aux::set_radio(RC_Channel_aux::k_dspoiler2, ch4);
+        }
     }
 
     //send throttle to 0 or MIN_PWM if not yet armed
