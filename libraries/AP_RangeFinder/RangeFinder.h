@@ -20,6 +20,7 @@
 #include <AP_Common.h>
 #include <AP_HAL.h>
 #include <AP_Param.h>
+#include <AP_Math.h>
 
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
@@ -77,6 +78,10 @@ public:
     AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
 
+    AP_Int8 _mix_enable; // effect and r_a, r_b needed for the mixing.
+    float effect[2];
+    uint8_t r_a, r_b;
+
     static const struct AP_Param::GroupInfo var_info[];
     
     // Return the number of range finder instances
@@ -93,39 +98,86 @@ public:
     
 #define _RangeFinder_STATE(instance) state[instance]
 
-    uint16_t distance_cm(uint8_t instance) const {
+    inline uint16_t distance_cm(uint8_t instance) const {
         return _RangeFinder_STATE(instance).distance_cm;
     }
-    uint16_t distance_cm() const {
-        return distance_cm(primary_instance);
+    uint16_t distance_cm() {
+	if(!_mix_enable) {
+            return distance_cm(primary_instance);
+        } else {
+            // We need to know which one of two range finders is upper (A) and lower (B)
+            if(max_distance_cm(0) > max_distance_cm(1))
+            {
+                r_a = 0;
+                r_b = 1;
+            } else
+            {
+                r_a = 1;
+                r_b = 0;
+            }
+
+            // Calculate overlapping distance
+            float overlapp = max_distance_cm(r_b) - min_distance_cm(r_a);
+
+            // The finders have more effect on the result as their values are approaching inside their range
+            // and have less effect outside. We compare this only inside overlapping region.
+            effect[r_a] = ((float) (distance_cm(r_a) - min_distance_cm(r_a))) / overlapp;
+            effect[r_b] = ((float) (max_distance_cm(r_b) - distance_cm(r_b))) / overlapp;
+
+            // The sum of effects may not be equal to 100%. We need to scale them to match 100% in total.
+            float eff_k = 100.0f / (effect[r_a] + effect[r_b]);
+            effect[r_a] *= eff_k;
+            effect[r_b] *= eff_k;
+
+            // New range will be combined distance using scale of effect.
+            return (((float) distance_cm(r_a)) * effect[r_a] + ((float) distance_cm(r_b)) * effect[r_b]);
+        }
     }
 
-    uint16_t voltage_mv(uint8_t instance) const {
+    inline uint16_t voltage_mv(uint8_t instance) const {
         return _RangeFinder_STATE(instance).voltage_mv;
     }
     uint16_t voltage_mv() const {
-        return voltage_mv(primary_instance);
+        if(!_mix_enable) {
+            return voltage_mv(primary_instance);
+        } else {
+            // With 2 range finders working in parallel this is obsolete. There is no use of it right now apart from Rover, but that logic will not use mixing anyway.
+            // Return the sensor number that gives bigger influence for debug and setup purpose as it goes to mission planner.
+            return ((effect[r_a] > effect[r_b])?r_a*1000:r_b*1000)+1000;
+        }
     }
 
-    int16_t max_distance_cm(uint8_t instance) const {
+    inline int16_t max_distance_cm(uint8_t instance) const {
         return _max_distance_cm[instance];
     }
     int16_t max_distance_cm() const {
-        return max_distance_cm(primary_instance);
+        if(!_mix_enable) {
+            return max_distance_cm(primary_instance);
+        } else {
+            return max(max_distance_cm(0), max_distance_cm(1));
+        }
     }
 
-    int16_t min_distance_cm(uint8_t instance) const {
+    inline int16_t min_distance_cm(uint8_t instance) const {
         return _min_distance_cm[instance];
     }
     int16_t min_distance_cm() const {
-        return min_distance_cm(primary_instance);
+        if(!_mix_enable) {
+            return min_distance_cm(primary_instance);
+        } else {
+            return min(min_distance_cm(0), min_distance_cm(1));
+        }
     }
     
-    bool healthy(uint8_t instance) const {
+    inline bool healthy(uint8_t instance) const {
         return instance < num_instances && _RangeFinder_STATE(instance).healthy;
     }
     bool healthy() const {
-        return healthy(primary_instance);
+        if(!_mix_enable) {
+            return healthy(primary_instance);
+        } else {
+            return (healthy(0) && healthy(1));
+        }
     }
 
     /*

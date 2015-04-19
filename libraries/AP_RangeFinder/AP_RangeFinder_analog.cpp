@@ -91,6 +91,7 @@ void AP_RangeFinder_analog::update(void)
     float offset  = ranger._offset[state.instance];
     RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)ranger._function[state.instance].get();
     int16_t max_distance_cm = ranger._max_distance_cm[state.instance];
+    int16_t min_distance_cm = ranger._min_distance_cm[state.instance];
 
     switch (function) {
     case RangeFinder::FUNCTION_LINEAR:
@@ -106,14 +107,20 @@ void AP_RangeFinder_analog::update(void)
             dist_m = 0;
         }
         dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm) {
-            dist_m = max_distance_cm * 0.01;
+        if (isinf(dist_m)) {
+            dist_m = max_distance_cm * 0.01f;
         }
         break;
     }
-    if (dist_m < 0) {
-        dist_m = 0;
-    }
+
+    // Check for the hardware limits of sensor (with conversion from meters to cantimeters)
+    if ((dist_m*100.0f) > max_distance_cm) {
+            dist_m = max_distance_cm * 0.01f;
+        }
+    if ((dist_m*100.0f) < min_distance_cm) {
+            dist_m = min_distance_cm * 0.01f;
+        }
+    
     state.distance_cm = dist_m * 100.0f;  
 
     // we can't actually tell if an analog rangefinder is healthy, so

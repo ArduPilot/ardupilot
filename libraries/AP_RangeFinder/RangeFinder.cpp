@@ -162,6 +162,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("2_RMETRIC", 21, RangeFinder, _ratiometric[1], 1),
+
+    // @Param: _MIX_ENABLE
+    // @DisplayName: 2 range finders mixing
+    // @Description: This parameter sets 2 range finders to work in parallel to increase distance/accuracy or resolution. They must have overlapping ranges and they will be blended in this region into one value. Outside of overlapping region they fork on their own. The result will be fed to the defult instance calls.
+    // @Values: 0:No,1:Yes
+    AP_GROUPINFO("_MIX_EN", 22, RangeFinder, _mix_enable, 0),
 #endif
 
     AP_GROUPEND
@@ -186,6 +192,10 @@ void RangeFinder::init(void)
             num_instances = i+1;
         }
     }
+
+    #if RANGEFINDER_MAX_INSTANCES <= 1
+        _mix_enable = 0;
+    #endif
 }
 
 /*
