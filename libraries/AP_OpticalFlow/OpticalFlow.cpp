@@ -46,6 +46,8 @@ OpticalFlow::OpticalFlow(void) :
     backend(new AP_OpticalFlow_PX4(*this)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     backend(new AP_OpticalFlow_HIL(*this)),
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    backend(new AP_OpticalFlow_Linux(*this)),
 #else
     backend(NULL),
 #endif
