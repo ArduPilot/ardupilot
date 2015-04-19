@@ -173,6 +173,10 @@ set -x
     VEHICLE=$(basename $PWD)
 }
 
+[ -z "$FRAME" -a "$VEHICLE" = "APMrover2" ] && {
+    FRAME="rover"
+}
+
 EXTRA_PARM=""
 EXTRA_SIM=""
 
@@ -223,8 +227,8 @@ case $FRAME in
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
         EXTRA_SIM="$EXTRA_SIM --vtail"
 	;;
-    skid)
-        EXTRA_SIM="$EXTRA_SIM --skid-steering"
+    rover|rover-skid)
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
 	;;
     obc)
         BUILD_TARGET="sitl-obc"
@@ -341,7 +345,7 @@ EOF
         PARMS="copter_params.parm"
         ;;
     APMrover2)
-        RUNSIM="nice $autotest/pysim/sim_rover.py --home=$SIMHOME --rate=400 $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="Rover.parm"
         ;;
     *)

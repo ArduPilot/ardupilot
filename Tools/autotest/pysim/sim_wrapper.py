@@ -144,6 +144,10 @@ elif opts.frame.startswith('CRRCSim'):
     from crrcsim import CRRCSim
     a = CRRCSim(frame=opts.frame)
     frame_rate = 360
+elif opts.frame.startswith('rover'):
+    from rover import Rover
+    a = Rover(frame=opts.frame)
+    frame_rate = 360
 else:    
     from multicopter import MultiCopter
     a = MultiCopter(frame=opts.frame)
