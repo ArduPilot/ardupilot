@@ -753,6 +753,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_mount,          8,     45 },
     { ten_hz_logging_loop,  40,     30 },
     { fifty_hz_logging_loop, 8,     22 },
+    { full_rate_logging_loop,1,     22 },
     { perf_update,        4000,     20 },
     { read_receiver_rssi,   40,      5 },
 #if FRSKY_TELEM_ENABLED == ENABLED
@@ -1076,6 +1077,15 @@ static void fifty_hz_logging_loop()
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
+}
+
+// full_rate_logging_loop
+// should be run at the MAIN_LOOP_RATE
+static void full_rate_logging_loop()
+{
+    if (should_log(MASK_LOG_FULL_IMU)) {
+        DataFlash.Log_Write_IMU(ins);
+    }
 }
 
 // three_hz_loop - 3.3hz loop
