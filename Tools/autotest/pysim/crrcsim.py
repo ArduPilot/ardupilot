@@ -18,20 +18,12 @@ class CRRCSim(Aircraft):
         self.sim.connect(('127.0.0.1', 9002))
         self.sim.setblocking(0)
         self.accel_body = Vector3(0, 0, -self.gravity)
-        self.last_fdm_time = time.time()
         self.frame = frame
         if self.frame.find("heli") != -1:
             self.decode_servos = self.decode_servos_heli
         else:
             self.decode_servos = self.decode_servos_fixed_wing
         self.rsc_setpoint = 0.8
-
-    def checksum(self, buf):
-        '''calculate MNAV checksum'''
-        sum = 0
-        for b in buf:
-            sum += ord(b)
-        return sum & 0xFFFF
 
     def decode_servos_heli(self, servos):
         '''decode servos for heli'''
@@ -68,15 +60,12 @@ class CRRCSim(Aircraft):
         self.thrust = util.constrain(self.thrust, 0, 1)
         self.yaw_rate = util.constrain(self.yaw_rate, -1, 1)
 
-        buf = struct.pack('>BBBBHHHH10x',
-                          0x55, 0x55,
-                          ord('S'), ord('S'),
-                          int(self.roll_rate*32767)+32768,
-                          int(self.pitch_rate*32767)+32768,
-                          int(self.thrust*65535),
-                          int(self.yaw_rate*32767)+32768)
-        sum = self.checksum(buf[2:])
-        buf += struct.pack('>H', sum)
+        buf = struct.pack('<fffff',
+                          self.roll_rate,
+                          self.pitch_rate,
+                          self.thrust,
+                          self.yaw_rate,
+                          0)
         self.sim.send(buf)
 
     def recv_fdm(self):
@@ -84,46 +73,29 @@ class CRRCSim(Aircraft):
         try:
             select.select([self.sim.fileno()], [], [], 1)
             buf = self.sim.recv(1024)
-            while True:
-                try:
-                    buf2 = self.sim.recv(1024)
-                    buf = buf2
-                except Exception:
-                    break
         except Exception as ex:
             return False
 
-        # the MNAV packets come as 3 chunks, called IMU, GPS and AHRS
-        if len(buf) != 93 or buf[0:3] != 'UUI' or buf[33] != 'G' or buf[66] != 'A':
-            return False
+        (timestamp,
+         latitude, longitude,
+         altitude,
+         heading,
+         speedN, speedE, speedD,
+         xAccel, yAccel, zAccel,
+         rollRate, pitchRate, yawRate,
+         roll, pitch, yaw,
+         airspeed) = struct.unpack('<dddddddddddddddddd', buf)
 
-        # decode IMU chunk
-        ax,ay,az = struct.unpack(">hhh", buf[3:9])
-        self.accel_body = Vector3(ax, ay, az) * 5.98755e-04
-
-        gx,gy,gz = struct.unpack(">hhh", buf[9:15])
-        self.gyro = Vector3(gx, gy, gz) * 1.06526e-04
-
-        # decode GPS chunk
-        vx,vy,vz = struct.unpack("<iii", buf[34:46])
-        self.velocity = Vector3(vx,vy,vz) * 1.0e-2
-
-        lon,lat,alt = struct.unpack('<iii', buf[46:58])
-        lat *= 1.0e-7
-        lon *= 1.0e-7
-        alt *= 1.0e-3
-        dist = util.gps_distance(0, 0, lat, lon)
-        bearing = util.gps_bearing(0, 0, lat, lon)
+        self.accel_body = Vector3(xAccel, yAccel, zAccel)
+        self.gyro = Vector3(rollRate, pitchRate, yawRate)
+        self.velocity = Vector3(speedN, speedE, speedD)
+        dist = util.gps_distance(0, 0, latitude, longitude)
+        bearing = util.gps_bearing(0, 0, latitude, longitude)
         self.position.x = dist * cos(radians(bearing))
         self.position.y = dist * sin(radians(bearing))
-        self.position.z = -alt
-
-        # decode AHRS chunk
-        roll,pitch,yaw = struct.unpack(">hhh", buf[67:73])
-        self.dcm.from_euler(roll*0.000106526, pitch*0.000106526, yaw*0.000106526)
-
-        now = time.time()
-        self.last_fdm_time = now
+        self.position.z = -altitude
+        self.dcm.from_euler(roll, pitch, yaw)
+        self.time_now = timestamp + self.time_base
 
     def update(self, actuators):
         '''update model'''
