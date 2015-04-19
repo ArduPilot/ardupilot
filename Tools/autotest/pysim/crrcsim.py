@@ -23,7 +23,6 @@ class CRRCSim(Aircraft):
             self.decode_servos = self.decode_servos_heli
         else:
             self.decode_servos = self.decode_servos_fixed_wing
-        self.rsc_setpoint = 0.8
 
     def decode_servos_heli(self, servos):
         '''decode servos for heli'''
@@ -32,42 +31,36 @@ class CRRCSim(Aircraft):
         swash3 = servos[2]
         tail_rotor = servos[3]
         rsc = servos[7]
-        rsc = util.constrain(rsc, 0, self.rsc_setpoint)
 
-        # get total thrust from 0 to 1
-        rsc_scaling = (rsc/self.rsc_setpoint)
-        self.thrust = rsc_scaling*(swash1+swash2+swash3)/3.0
+        col_pitch = (swash1+swash2+swash3)/6.0
+        roll_rate = (swash1 - swash2)/2
+        pitch_rate = -((swash1 + swash2)/2.0 - swash3)/2
+        yaw_rate = -(tail_rotor - 0.5)
+        rsc_speed = rsc
 
-        # very simplistic mapping to body euler rates
-        self.roll_rate = (swash1 - swash2)*rsc_scaling
-        self.pitch_rate = -((swash1 + swash2)/2.0 - swash3)*rsc_scaling
-        self.yaw_rate = -(tail_rotor - 0.5)*rsc_scaling
+        buf = struct.pack('<fffff',
+                          util.constrain(roll_rate, -0.5, 0.5),
+                          util.constrain(pitch_rate, -0.5, 0.5),
+                          util.constrain(rsc, 0, 1),
+                          util.constrain(yaw_rate, -0.5, 0.5),
+                          util.constrain(col_pitch, -0.5, 0.5))
+        self.sim.send(buf)
 
     def decode_servos_fixed_wing(self, servos):
         '''decode servos for fixed wing'''
-        self.roll_rate = 2*(servos[0]-0.5)
-        self.pitch_rate = 2*(servos[1]-0.5)
-        self.thrust = servos[2]
-        self.yaw_rate = 2*(servos[3]-0.5)
-        
-
-    def send_servos(self, servos):
-        '''send servo packet'''
-        self.decode_servos(servos)
-
-        self.roll_rate = util.constrain(self.roll_rate, -1, 1)
-        self.pitch_rate = util.constrain(self.pitch_rate, -1, 1)
-        self.thrust = util.constrain(self.thrust, 0, 1)
-        self.yaw_rate = util.constrain(self.yaw_rate, -1, 1)
+        roll_rate = util.constrain(servos[0]-0.5, -0.5, 0.5)
+        pitch_rate = util.constrain(servos[1]-0.5, -0.5, 0.5)
+        throttle = util.constrain(servos[2], 0, 1)
+        yaw_rate = util.constrain(servos[3]-0.5, -0.5, 0.5)
 
         buf = struct.pack('<fffff',
-                          self.roll_rate,
-                          self.pitch_rate,
-                          self.thrust,
-                          self.yaw_rate,
+                          roll_rate,
+                          pitch_rate,
+                          throttle,
+                          yaw_rate,
                           0)
         self.sim.send(buf)
-
+        
     def recv_fdm(self):
         '''receive FDM packet'''
         try:
@@ -99,6 +92,6 @@ class CRRCSim(Aircraft):
 
     def update(self, actuators):
         '''update model'''
-        self.send_servos(actuators)
+        self.decode_servos(actuators)
         self.recv_fdm()
         self.update_position()
