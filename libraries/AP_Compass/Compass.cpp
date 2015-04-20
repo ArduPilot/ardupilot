@@ -566,10 +566,6 @@ bool Compass::configured(void)
     return all_configured;
 }
 
-#define MAG_OFS_X 5.0
-#define MAG_OFS_Y 13.0
-#define MAG_OFS_Z -18.0
-
 // Update raw magnetometer values from HIL data
 //
 void Compass::setHIL(float roll, float pitch, float yaw)
@@ -587,7 +583,6 @@ void Compass::setHIL(float roll, float pitch, float yaw)
     // convert the earth frame magnetic vector to body frame, and
     // apply the offsets
     _hil.field = R.mul_transpose(_hil.Bearth);
-    _hil.field -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
 
     // apply default board orientation for this compass type. This is
     // a noop on most boards
