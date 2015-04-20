@@ -164,7 +164,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecGyroBias()
 
 void AP_Gimbal::send_control(mavlink_channel_t chan)
 {
-    mavlink_msg_gimbal_control_send(chan,_sysid, _compid, 
+    mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
         gimbalRateDemVec.x, gimbalRateDemVec.y, gimbalRateDemVec.z);
 }
 

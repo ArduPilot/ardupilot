@@ -23,7 +23,7 @@ class AP_Gimbal
 {
 public:
     //Constructor
-    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid, const AP_Mount::gimbal_params &gimbalParams) :
+    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t compid, const AP_Mount::gimbal_params &gimbalParams) :
         _ekf(ahrs),
         _ahrs(ahrs),
         _gimbalParams(gimbalParams),
@@ -31,7 +31,6 @@ public:
         yawRateFiltPole(10.0f),
         yawErrorLimit(0.1f)
     {
-        _sysid = sysid;
         _compid = compid;
     }
 
@@ -68,7 +67,6 @@ private:
     // reducing this makes the gimbal respond more to vehicle yaw disturbances
     float const yawErrorLimit;
 
-    uint8_t _sysid;
     uint8_t _compid;
 
     void send_control(mavlink_channel_t chan);
