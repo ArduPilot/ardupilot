@@ -26,10 +26,10 @@ public:
     AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t sysid, uint8_t compid, const AP_Mount::gimbal_params &gimbalParams) :
         _ekf(ahrs),
         _ahrs(ahrs),
+        _gimbalParams(gimbalParams),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
-        yawErrorLimit(0.1f),
-        _gimbalParams(gimbalParams)
+        yawErrorLimit(0.1f)
     {
         _sysid = sysid;
         _compid = compid;
