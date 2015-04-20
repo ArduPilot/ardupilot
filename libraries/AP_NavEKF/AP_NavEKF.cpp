@@ -4760,6 +4760,10 @@ void NavEKF::performArmingChecks()
             getEulerAngles(eulerAngles);
             state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         }
+        // store vertical position at arming to use as a reference for ground relative cehcks
+        if (vehicleArmed) {
+            posDownAtArming = state.position.z;
+        }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
         // reset the flag that indicates takeoff for use by optical flow navigation
@@ -4835,14 +4839,14 @@ void NavEKF::performArmingChecks()
             StoreStatesReset();
         }
 
-    } else if (vehicleArmed && !firstMagYawInit && state.position.z < -1.5f && !assume_zero_sideslip()) {
+    } else if (vehicleArmed && !firstMagYawInit && (state.position.z  - posDownAtArming) < -1.5f && !assume_zero_sideslip()) {
         // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
         Vector3f eulerAngles;
         getEulerAngles(eulerAngles);
         state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         firstMagYawInit = true;
-    } else if (vehicleArmed && !secondMagYawInit && state.position.z < -5.0f && !assume_zero_sideslip()) {
+    } else if (vehicleArmed && !secondMagYawInit && (state.position.z - posDownAtArming) < -5.0f && !assume_zero_sideslip()) {
         // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
         // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
         Vector3f eulerAngles;
