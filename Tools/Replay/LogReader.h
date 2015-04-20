@@ -40,6 +40,8 @@ public:
     void set_accel_mask(uint8_t mask) { accel_mask = mask; }
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
 
+    uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
+
 private:
     int fd;
     AP_AHRS &ahrs;
@@ -64,6 +66,7 @@ private:
     Vector3f sim_attitude;
     Vector3f inavpos;
     float rel_altitude;
+    uint64_t last_timestamp_usec;
 
     void wait_timestamp(uint32_t timestamp);
 
