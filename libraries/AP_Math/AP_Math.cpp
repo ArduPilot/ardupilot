@@ -1,8 +1,36 @@
 #include "AP_Math.h"
 #include <float.h>
 
-bool is_equal(const float &fVal1, const float &fVal2) {
+
+/*
+ * Correct rounding up and down with 0.5f as bias
+ */
+int round_half(const float fVal) {
+  int iRet = 0;
+  iRet = fabs(fVal) < 0.5f ? 0 : fVal > 0.f ? fVal + 0.5f : fVal - 0.5f;
+  return iRet;
+}
+
+Vector3i round_half(const Vector3f &v3f) {
+  Vector3i v3i(0, 0, 0);
+  v3i.x = round_half(v3i.x);
+  v3i.y = round_half(v3i.y);
+  v3i.z = round_half(v3i.z);
+  return v3i;
+}
+
+// is the float zero?
+bool is_zero(const float fVal) {
+  return fabs(fVal) < FLT_EPSILON ? true : false;
+}
+
+// are two floats equal
+bool is_equal(const float fVal1, const float fVal2) {
   return fabs(fVal1 - fVal2) < FLT_EPSILON ? true : false;
+}
+
+bool is_equal(const float fVal1, const float fVal2, const float fBias) {
+  return fabs(fVal1 - fVal2) < fBias ? true : false;
 }
 
 // a varient of asin() that checks the input ranges and ensures a

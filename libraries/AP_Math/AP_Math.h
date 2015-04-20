@@ -74,8 +74,20 @@
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-bool            is_equal(const float &, const float &);
+/*
+ * Correct rounding up and down with 0.5f as bias
+ */
+int             round_half(const float fVal);
+Vector3i        round_half(const Vector3f &v3f);
+
+// if float is zero
+bool            is_zero(const float);
+
+// are two floats 'absolutely' equal
+bool            is_equal(const float, const float);
+
+// compare two floats
+bool            is_equal(const float, const float, const float bias);
 
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);

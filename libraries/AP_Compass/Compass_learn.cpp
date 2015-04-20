@@ -1,19 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <AP_Math.h>
 #include "Compass.h"
 
 // don't allow any axis of the offset to go above 2000
 #define COMPASS_OFS_LIMIT 2000
 
-/*
- * Correct rounding up and down with 0.5f as bias
- */
-inline Vector3i round_vector3f(const Vector3f &v3f) {
-  Vector3i v3i;
-  v3i.x = fabs(v3f.x) < 0.5f ? 0 : v3f.x > 0.f ? v3f.x + 0.5f : v3f.x - 0.5f;
-  v3i.y = fabs(v3f.y) < 0.5f ? 0 : v3f.y > 0.f ? v3f.y + 0.5f : v3f.y - 0.5f;
-  v3i.z = fabs(v3f.z) < 0.5f ? 0 : v3f.z > 0.f ? v3f.z + 0.5f : v3f.z - 0.5f;
-  return v3i;
-}
 
 /*
  *  this offset learning algorithm is inspired by this paper from Bill Premerlani
@@ -60,7 +51,7 @@ Compass::learn_offsets(void)
             // fill the history buffer with the current mag vector,
             // with the offset removed
             for (uint8_t i=0; i<_mag_history_size; i++) {
-                _state[k].mag_history[i] = round_vector3f(history);
+                _state[k].mag_history[i] = round_half(history);
             }
             _state[k].mag_history_index = 0;
         }
@@ -102,7 +93,7 @@ Compass::learn_offsets(void)
         }
 
         // put the vector in the history
-        _state[k].mag_history[_state[k].mag_history_index] = round_vector3f(history);
+        _state[k].mag_history[_state[k].mag_history_index] = round_half(history);
         _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
 
         // equation 6 of Bills paper
