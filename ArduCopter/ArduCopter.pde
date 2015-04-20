@@ -925,6 +925,8 @@ static void throttle_loop()
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
     update_throttle_low_comp();
 
+    update_ground_effect_detector();
+
     // check auto_armed status
     update_auto_armed();
 

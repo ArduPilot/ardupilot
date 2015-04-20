@@ -91,3 +91,74 @@ static void update_throttle_low_comp()
         }
     }
 }
+
+static void update_ground_effect_detector(void)
+{
+    static bool takeoffExpected = false;
+    static uint32_t takeoff_time_ms;
+    static float takeoff_alt_cm;
+
+    if(!motors.armed()) {
+        // disarmed - disable ground effect and return
+        ahrs.setTakeoffExpected(false);
+        ahrs.setTouchdownExpected(false);
+        takeoffExpected = false;
+        return;
+    }
+
+    // variable initialization
+    uint32_t tnow_ms = hal.scheduler->millis();
+    float xy_des_speed_cms = 0.0f;
+    float xy_speed_cms = 0.0f;
+    float des_climb_rate_cms = pos_control.get_desired_velocity().z;
+
+    if(pos_control.is_active_xy()) {
+        Vector3f vel_target = pos_control.get_vel_target();
+        vel_target.z = 0.0f;
+        xy_des_speed_cms = vel_target.length();
+    }
+
+    if(position_ok() || optflow_position_ok()) {
+        Vector3f vel = inertial_nav.get_velocity();
+        vel.z = 0.0f;
+        xy_speed_cms = vel.length();
+    }
+
+    // takeoff logic
+
+    // if we are armed and haven't yet taken off
+    if (motors.armed() && ap.land_complete && !takeoffExpected) {
+        takeoffExpected = true;
+    }
+
+    // if we aren't taking off yet, reset the takeoff timer, altitude and complete flag
+    bool throttle_up = mode_has_manual_throttle(control_mode) && g.rc_3.control_in > 0;
+    if (!throttle_up && ap.land_complete) {
+        takeoff_time_ms = tnow_ms;
+        takeoff_alt_cm = inertial_nav.get_altitude();
+    }
+
+    // if we are in takeoffExpected and we meet the conditions for having taken off
+    // end the takeoffExpected state
+    if (takeoffExpected && (tnow_ms-takeoff_time_ms > 5000 || inertial_nav.get_altitude()-takeoff_alt_cm > 50.0f)) {
+        takeoffExpected = false;
+    }
+
+    // landing logic
+    bool xy_speed_low = (position_ok() || optflow_position_ok()) && xy_speed_cms <= 100.0f;
+    bool xy_speed_demand_low = pos_control.is_active_xy() && xy_des_speed_cms <= 50.0f;
+    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control.is_active_xy());
+
+    bool descent_demanded = pos_control.is_active_z() && des_climb_rate_cms < 0.0f;
+    bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
+    bool z_speed_low = abs(climb_rate) <= LAND_DETECTOR_CLIMBRATE_MAX*2.0f;
+    bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
+
+    bool height_low = current_loc.alt < 1000;
+
+    bool touchdownExpected = slow_horizontal && slow_descent && height_low;
+
+    // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
+    ahrs.setTakeoffExpected(takeoffExpected);
+    ahrs.setTouchdownExpected(touchdownExpected);
+}
