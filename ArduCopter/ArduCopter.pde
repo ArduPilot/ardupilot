@@ -701,7 +701,6 @@ static bool pre_arm_checks(bool display_failure);
 // setup the var_info table
 AP_Param param_loader(var_info);
 
-#if MAIN_LOOP_RATE == 400
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
   should be listed here, along with how often they should be called
@@ -778,80 +777,6 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { userhook_SuperSlowLoop,400,   10 },
 #endif
 };
-#else
-/*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here, along with how often they should be called
-  (in 10ms units) and the maximum time they are expected to take (in
-  microseconds)
-  1    = 100hz
-  2    = 50hz
-  4    = 25hz
-  10   = 10hz
-  20   = 5hz
-  33   = 3hz
-  50   = 2hz
-  100  = 1hz
-  1000 = 0.1hz
- */
-static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { rc_loop,               1,     100 },
-    { throttle_loop,         2,     450 },
-    { update_GPS,            2,     900 },
-#if OPTFLOW == ENABLED
-    { update_optical_flow,   1,     100 },
-#endif
-    { update_batt_compass,  10,     720 },
-    { read_aux_switches,    10,      50 },
-    { arm_motors_check,     10,      10 },
-    { auto_trim,            10,     140 },
-    { update_altitude,      10,    1000 },
-    { run_nav_updates,       4,     800 },
-    { update_thr_average,    1,      50 },
-    { three_hz_loop,        33,      90 },
-    { compass_accumulate,    2,     420 },
-    { barometer_accumulate,  2,     250 },
-#if FRAME_CONFIG == HELI_FRAME
-    { check_dynamic_flight,  2,     100 },
-#endif
-    { update_notify,         2,     100 },
-    { one_hz_loop,         100,     420 },
-    { ekf_check,            10,      20 },
-    { crash_check,          10,      20 },
-    { landinggear_update,   10,      10 },
-    { gcs_check_input,	     2,     550 },
-    { gcs_send_heartbeat,  100,     150 },
-    { gcs_send_deferred,     2,     720 },
-    { gcs_data_stream_send,  2,     950 },
-    { update_mount,          2,     450 },
-    { ten_hz_logging_loop,  10,     300 },
-    { fifty_hz_logging_loop, 2,     220 },
-    { perf_update,        1000,     200 },
-    { read_receiver_rssi,   10,      50 },
-#if FRSKY_TELEM_ENABLED == ENABLED
-    { frsky_telemetry_send, 20,     100 },
-#endif
-#if EPM_ENABLED == ENABLED
-    { epm_update,           10,      20 },
-#endif
-#ifdef USERHOOK_FASTLOOP
-    { userhook_FastLoop,     1,    100  },
-#endif
-#ifdef USERHOOK_50HZLOOP
-    { userhook_50Hz,         2,    100  },
-#endif
-#ifdef USERHOOK_MEDIUMLOOP
-    { userhook_MediumLoop,   10,    100 },
-#endif
-#ifdef USERHOOK_SLOWLOOP
-    { userhook_SlowLoop,     30,    100 },
-#endif
-#ifdef USERHOOK_SUPERSLOWLOOP
-    { userhook_SuperSlowLoop,100,   100 },
-#endif
-};
-#endif
-
 
 void setup() 
 {
