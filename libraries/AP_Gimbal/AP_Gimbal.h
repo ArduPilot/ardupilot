@@ -50,7 +50,7 @@ public:
         Vector3f delta_angles;
         Vector3f delta_velocity;
         Vector3f joint_angles;
-    } _measurament;
+    } _measurement;
 
     SmallEKF    _ekf;                   // state of small EKF for gimbal
     const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF    
