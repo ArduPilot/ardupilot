@@ -199,9 +199,77 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
+    // @Param: _OFF_JNT_X
+    // @DisplayName: MAVLink Mount's roll angle offsets
+    // @Description: MAVLink Mount's roll angle offsets
+    // @Units: radians
+    // @Range: 0 0.5
+    // @User: Advanced
+
+    // @Param: _OFF_JNT_Y
+    // @DisplayName: MAVLink Mount's pitch angle offsets
+    // @Description: MAVLink Mount's pitch angle offsets
+    // @Units: radians
+    // @Range: 0 0.5
+    // @User: Advanced
+
+    // @Param: _OFF_JNT_Z
+    // @DisplayName: MAVLink Mount's yaw angle offsets
+    // @Description: MAVLink Mount's yaw angle offsets
+    // @Units: radians
+    // @Range: 0 0.5
+    // @User: Advanced
     AP_GROUPINFO("_OFF_JNT", 20, AP_Mount, state[0]._gimbalParams.joint_angles_offsets, 0),
+
+    // @Param: _OFF_ACC_X
+    // @DisplayName: MAVLink Mount's roll velocity offsets
+    // @Description: MAVLink Mount's roll velocity offsets
+    // @Units: m/s
+    // @Range: 0 2
+    // @User: Advanced
+
+    // @Param: _OFF_ACC_Y
+    // @DisplayName: MAVLink Mount's pitch velocity offsets
+    // @Description: MAVLink Mount's pitch velocity offsets
+    // @Units: m/s
+    // @Range: 0 2
+    // @User: Advanced
+
+    // @Param: _OFF_ACC_Z
+    // @DisplayName: MAVLink Mount's yaw velocity offsets
+    // @Description: MAVLink Mount's yaw velocity offsets
+    // @Units: m/s
+    // @Range: 0 2
+    // @User: Advanced
     AP_GROUPINFO("_OFF_ACC",  21, AP_Mount, state[0]._gimbalParams.delta_velocity_offsets, 0),
+
+    // @Param: _OFF_GYRO_X
+    // @DisplayName: MAVLink Mount's roll gyro offsets
+    // @Description: MAVLink Mount's roll gyro offsets
+    // @Units: radians/sec
+    // @Range: 0 0.5
+    // @User: Advanced
+
+    // @Param: _OFF_GYRO_Y
+    // @DisplayName: MAVLink Mount's pitch gyro offsets
+    // @Description: MAVLink Mount's pitch gyro offsets
+    // @Units: radians/sec
+    // @Range: 0 0.5
+    // @User: Advanced
+
+    // @Param: _OFF_GYRO_Z
+    // @DisplayName: MAVLink Mount's yaw gyro offsets
+    // @Description: MAVLink Mount's yaw gyro offsets
+    // @Units: radians/sec
+    // @Range: 0 0.5
+    // @User: Advanced
     AP_GROUPINFO("_OFF_GYRO", 22, AP_Mount, state[0]._gimbalParams.delta_angles_offsets, 0),
+
+    // @Param: _K_RATE
+    // @DisplayName: MAVLink Mount's rate gain
+    // @Description: MAVLink Mount's rate gain
+    // @Range: 0 10
+    // @User: Advanced
     AP_GROUPINFO("_K_RATE", 23, AP_Mount, state[0]._gimbalParams.K_gimbalRate, 5.0f),
 
     // 20 ~ 24 reserved for future parameters
