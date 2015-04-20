@@ -30,6 +30,8 @@ class SITL
 public:
     
     SITL() {
+        // set a default compass offset
+        mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);        
     }
 
@@ -59,6 +61,7 @@ public:
 	AP_Float mag_noise;   // in mag units (earth field is 818)
 	AP_Float mag_error;   // in degrees
 	AP_Vector3f mag_mot;  // in mag units per amp
+	AP_Vector3f mag_ofs;  // in mag units
     AP_Float servo_rate;  // servo speed in degrees/second
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
