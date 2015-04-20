@@ -23,7 +23,6 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     //::printf("target=(%+1.3f %+1.3f %+1.3f)\t",_angle_ef_target_rad.x,_angle_ef_target_rad.y,_angle_ef_target_rad.z);
     //::printf("\n");
 }
-    
 
 void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 {
@@ -32,13 +31,13 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 
     _measurement.delta_time = report_msg.delta_time;
     _measurement.delta_angles.x = report_msg.delta_angle_x;
-    _measurement.delta_angles.y = report_msg.delta_angle_y,
+    _measurement.delta_angles.y = report_msg.delta_angle_y;
     _measurement.delta_angles.z = report_msg.delta_angle_z;
     _measurement.delta_velocity.x = report_msg.delta_velocity_x,
-    _measurement.delta_velocity.y = report_msg.delta_velocity_y,
-    _measurement.delta_velocity.z = report_msg.delta_velocity_z;   
+    _measurement.delta_velocity.y = report_msg.delta_velocity_y;
+    _measurement.delta_velocity.z = report_msg.delta_velocity_z;
     _measurement.joint_angles.x = report_msg.joint_roll;
-    _measurement.joint_angles.y = report_msg.joint_el,
+    _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
 
     //apply joint angle compensation
@@ -55,7 +54,7 @@ void AP_Gimbal::update_state()
     // get the gimbal quaternion estimate
     Quaternion quatEst;
     _ekf.getQuat(quatEst);
- 
+
     // Add the control rate vectors
     gimbalRateDemVec.zero();
     gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
@@ -98,11 +97,11 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
         float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
             if (vehicle_rate_ef.z>0.0f){
-                gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);    
-            }else{
-                gimbalRateDemVecYaw -= _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);    
-            }            
-        }        
+                gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+            } else {
+                gimbalRateDemVecYaw -= _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+            }
+        }
 
         // rotate into gimbal frame to calculate the gimbal rate vector required to keep the yaw gimbal centred
         gimbalRateDemVecYaw = Tvg * gimbalRateDemVecYaw;
@@ -124,7 +123,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(const Quaternion &quatEst)
         //divide the demanded quaternion by the estimated to get the error
         Quaternion quatErr = quatDem / quatEst;
 
-        // Convert to a delta rotation using a small angle appoximation
+        // Convert to a delta rotation using a small angle approximation
         quatErr.normalize();
         Vector3f deltaAngErr;
         float scaler;
@@ -175,15 +174,18 @@ void AP_Gimbal::update_target(Vector3f newTarget)
     _angle_ef_target_rad.y = _angle_ef_target_rad.y + 0.02f*(newTarget.y - _angle_ef_target_rad.y);
     // Update tilt
     _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y,radians(-90),radians(0));
-
 }
 
 Vector3f AP_Gimbal::getGimbalEstimateEF()
 {
-    Quaternion quatEst;_ekf.getQuat(quatEst);Vector3f eulerEst;quatEst.to_vector312(eulerEst.x, eulerEst.y, eulerEst.z);
+    Quaternion quatEst;
+    _ekf.getQuat(quatEst);
+    Vector3f eulerEst;
+    quatEst.to_vector312(eulerEst.x, eulerEst.y, eulerEst.z);
     return eulerEst;
 }
 
-uint8_t AP_Gimbal::isCopterFlipped(){
-    return _ahrs.cos_roll()*_ahrs.cos_pitch() < 0.5f;
+bool AP_Gimbal::isCopterFlipped()
+{
+    return (_ahrs.cos_roll()*_ahrs.cos_pitch() < 0.5f);
 }

@@ -1,15 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /************************************************************
-* AP_Gimbal -- library to control a 3 axis rate gimbal.		*
-*															*
-* Author:  Arthur Benemann, Paul Riseborough;									*
-*															*
-* Purpose:                          						*
-*															*
-* Usage:	           										*
-*															*
-* Comments:                         						*
+* AP_Gimbal -- library to control a 3 axis rate gimbal.     *
+*                                                           *
+* Author:  Arthur Benemann, Paul Riseborough;               *
+*                                                           *
 ************************************************************/
 #ifndef __AP_GIMBAL_H__
 #define __AP_GIMBAL_H__
@@ -53,11 +48,11 @@ public:
     } _measurement;
 
     SmallEKF    _ekf;                   // state of small EKF for gimbal
-    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF    
-    Vector3f    gimbalRateDemVec;       // degrees/s   
-    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians    
+    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF
+    Vector3f    gimbalRateDemVec;       // degrees/s
+    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 
-private:  
+private:
     const AP_Mount::gimbal_params &_gimbalParams;
 
     // filtered yaw rate from the vehicle
@@ -71,16 +66,16 @@ private:
 
     // amount of yaw angle that we permit the gimbal to lag the vehicle when operating in slave mode
     // reducing this makes the gimbal respond more to vehicle yaw disturbances
-    float const yawErrorLimit;   
+    float const yawErrorLimit;
 
-    uint8_t _sysid;                     
-    uint8_t _compid;    
+    uint8_t _sysid;
+    uint8_t _compid;
 
     void send_control(mavlink_channel_t chan);
     void update_state();
     void decode_feedback(mavlink_message_t *msg);
 
-    uint8_t isCopterFlipped();
+    bool isCopterFlipped();
 
     // Control loop functions
     Vector3f getGimbalRateDemVecYaw(const Quaternion &quatEst);
