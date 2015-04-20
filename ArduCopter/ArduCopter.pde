@@ -1008,7 +1008,7 @@ static void fifty_hz_logging_loop()
 // should be run at the MAIN_LOOP_RATE
 static void full_rate_logging_loop()
 {
-    if (should_log(MASK_LOG_FULL_IMU)) {
+    if (should_log(MASK_LOG_IMU_FAST)) {
         DataFlash.Log_Write_IMU(ins);
     }
 }
