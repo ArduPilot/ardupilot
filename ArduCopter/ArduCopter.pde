@@ -965,7 +965,8 @@ static void update_batt_compass(void)
 // should be run at 10hz
 static void ten_hz_logging_loop()
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED)) {
+    // log attitude data if we're not already logging at the higher rate
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
         Log_Write_Rate();
     }
@@ -998,7 +999,8 @@ static void fifty_hz_logging_loop()
         Log_Write_Rate();
     }
 
-    if (should_log(MASK_LOG_IMU)) {
+    // log IMU data if we're not already logging at the higher rate
+    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_FAST)) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
