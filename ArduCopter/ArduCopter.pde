@@ -742,7 +742,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { ekf_check,            40,      2 },
     { crash_check,          40,      2 },
     { landinggear_update,   40,      1 },
-    { gcs_check_input,	     1,    550 },
+    { gcs_check_input,       1,    550 },
     { gcs_send_heartbeat,  400,    150 },
     { gcs_send_deferred,     8,    720 },
     { gcs_data_stream_send,  8,    950 },
