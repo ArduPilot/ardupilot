@@ -575,14 +575,14 @@ bool NavEKF::InitialiseFilterDynamic(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    // initialise the covariance matrix
-    CovarianceInit();
-
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
 
     // initialise IMU pre-processing states
     readIMUData();
+
+    // initialise the covariance matrix
+    CovarianceInit();
 
     return true;
 }
@@ -662,14 +662,14 @@ bool NavEKF::InitialiseFilterBootstrap(void)
     // set to true now we have intialised the states
     statesInitialised = true;
 
-    // initialise the covariance matrix
-    CovarianceInit();
-
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
 
     // initialise IMU pre-processing states
     readIMUData();
+
+    // initialise the covariance matrix
+    CovarianceInit();
 
     return true;
 }
