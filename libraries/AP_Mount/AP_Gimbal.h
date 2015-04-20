@@ -9,15 +9,18 @@
 #ifndef __AP_GIMBAL_H__
 #define __AP_GIMBAL_H__
 
+#include <AP_HAL.h>
+#include <AP_AHRS.h>
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_GPS.h>
-#include <AP_AHRS.h>
 #include <GCS_MAVLink.h>
+#include <AP_Mount.h>
 #include <AP_SmallEKF.h>
 #include <AP_NavEKF.h>
-#include <AP_Mount.h>
-
 
 class AP_Gimbal
 {
@@ -82,5 +85,7 @@ private:
     Vector3f getGimbalRateDemVecGyroBias();
 
 };
+
+#endif // AP_AHRS_NAVEKF_AVAILABLE
 
 #endif // __AP_MOUNT_H__

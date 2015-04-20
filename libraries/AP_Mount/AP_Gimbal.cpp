@@ -1,8 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_Gimbal.h>
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+
 #include <stdio.h>
 #include <AP_Common.h>
-#include <AP_Gimbal.h>
 #include <GCS.h>
 #include <AP_SmallEKF.h>
 
@@ -189,3 +192,5 @@ bool AP_Gimbal::isCopterFlipped()
 {
     return (_ahrs.cos_roll()*_ahrs.cos_pitch() < 0.5f);
 }
+
+#endif // AP_AHRS_NAVEKF_AVAILABLE
