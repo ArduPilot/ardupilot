@@ -1139,7 +1139,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
             }
 
             // check for invalid target
-            if (temp_cmd.content.jump.target >= (unsigned)_cmd_total) {
+            if ((temp_cmd.content.jump.target >= (unsigned)_cmd_total) || (temp_cmd.content.jump.target == 0)) {
                 // To-Do: log an error?
                 return false;
             }
@@ -1230,7 +1230,7 @@ void AP_Mission::init_jump_tracking()
 int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 {
     // exit immediatley if cmd is not a do-jump command or target is invalid
-    if (cmd.id != MAV_CMD_DO_JUMP || cmd.content.jump.target >= (unsigned)_cmd_total) {
+    if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total) || (cmd.content.jump.target == 0)) {
         // To-Do: log an error?
         return AP_MISSION_JUMP_TIMES_MAX;
     }
