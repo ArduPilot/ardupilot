@@ -739,6 +739,7 @@ private:
     uint32_t takeoffExpectedSet_ms;   // system time at which takeoffExpected was set
     bool touchdownExpected;           // external state from ArduCopter - touchdown expected
     uint32_t touchdownExpectedSet_ms; // system time at which touchdownExpected was set
+    float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
