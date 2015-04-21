@@ -476,8 +476,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         _omega_I_sum.z += error_z * _ki_yaw * yaw_deltat;
     }
 
-    _error_yaw_sum += fabsf(yaw_error);
-    _error_yaw_count++;
+    _error_yaw = 0.9f * _error_yaw + 0.1f * fabsf(yaw_error);
 }
 
 
@@ -737,8 +736,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         return;
     }
 
-    _error_rp_sum += best_error;
-    _error_rp_count++;
+    _error_rp = 0.9f * _error_rp + 0.1f * best_error;
 
     // base the P gain on the spin rate
     float spin_rate = _omega.length();
@@ -871,36 +869,6 @@ AP_AHRS_DCM::euler_angles(void)
     _body_dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
     update_cd_values();
-}
-
-/* reporting of DCM state for MAVLink */
-
-// average error_roll_pitch since last call
-float AP_AHRS_DCM::get_error_rp(void)
-{
-    if (_error_rp_count == 0) {
-        // this happens when telemetry is setup on two
-        // serial ports
-        return _error_rp_last;
-    }
-    _error_rp_last = _error_rp_sum / _error_rp_count;
-    _error_rp_sum = 0;
-    _error_rp_count = 0;
-    return _error_rp_last;
-}
-
-// average error_yaw since last call
-float AP_AHRS_DCM::get_error_yaw(void)
-{
-    if (_error_yaw_count == 0) {
-        // this happens when telemetry is setup on two
-        // serial ports
-        return _error_yaw_last;
-    }
-    _error_yaw_last = _error_yaw_sum / _error_yaw_count;
-    _error_yaw_sum = 0;
-    _error_yaw_count = 0;
-    return _error_yaw_last;
 }
 
 // return our current position estimate using
