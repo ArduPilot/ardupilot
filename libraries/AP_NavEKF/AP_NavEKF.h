@@ -424,6 +424,12 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
+    // checks the health of the range finder
+    void checkRngHealth(float rawRange);
+
+    // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
+    void detectOptFlowTakeoff(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -458,6 +464,7 @@ private:
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
+    AP_Int8 _rngOnGnd_cm;           // Expected range (in cm) that the range finder should return when the vehicle is on the ground.
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -698,7 +705,17 @@ private:
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
+
+    // Range finder fault handling
     float baroHgtOffset;            // offset applied when baro height used as a backup height reference if range-finder fails
+    bool optFlowRngHealthy;         // Boolean true when the range finder has passed the pre-flight tests
+    float minHgtPreFlight;          // minimum reading returned by the range sensor during pre-arm checks
+    float maxHgtPreFlight;          // maximum reading returned by the range sensor during pre-arm checks
+
+    // Movement detector
+    bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
+    float rangeAtArming;            // range finder measurement when armed
+    uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     bool haveDeltaAngles;
 
