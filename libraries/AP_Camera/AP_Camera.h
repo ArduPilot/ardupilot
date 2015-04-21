@@ -78,6 +78,8 @@ private:
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
+    uint8_t         _camera_flags;      // See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask
+
 
 };
 

@@ -109,6 +109,7 @@
 
     <!-- camera feedback flags, a little bit of future-proofing -->
     <enum name="CAMERA_FEEDBACK_FLAGS">
+        <entry name="PHOTO"       value="0"> <description>Shooting photos, not video</description></entry>
         <entry name="VIDEO"       value="1"> <description>Shooting video, not stills</description></entry>
         <entry name="BADEXPOSURE" value="2"> <description>Unable to achieve requested exposure (e.g. shutter speed too low)</description></entry>
         <entry name="CLOSEDLOOP"  value="3"> <description>Closed loop feedback from camera, we know for sure it has successfully taken a picture</description></entry>
