@@ -167,6 +167,9 @@ class MultiCopter(Aircraft):
         # acceleration (ie. real movement), plus gravity
         self.accel_body = self.dcm.transposed() * (accel_earth + Vector3(0, 0, -self.gravity))
 
+        # add some noise
+        self.add_noise(thrust / (self.thrust_scale * len(self.motors)))
+
         # new velocity vector
         self.velocity += accel_earth * delta_time
 
