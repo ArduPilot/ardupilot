@@ -16,7 +16,7 @@ MODE4        10
 MODE5        2
 MODE6        0
 STEER2SRV_P     1.8
-SIM_GPS_DELAY 2
+SIM_GPS_DELAY 1
 NAVL1_PERIOD 6
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
