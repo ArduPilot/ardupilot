@@ -43,8 +43,7 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     _compass->setHIL(radians(rollDeg), radians(pitchDeg), radians(yawDeg));
     Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
     Vector3f motor = _sitl->mag_mot.get() * _current;
-
-    new_mag_data = _compass->getHIL() + noise + motor;
+    Vector3f new_mag_data = _compass->getHIL() + noise + motor;
 
     uint32_t now = hal.scheduler->millis();
     // add delay
@@ -74,10 +73,12 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
         }
     }
     if (best_time_delta_mag < 1000) { // only output stored state if < 1 sec retrieval error
-        mag_data = buffer_mag[best_index_mag].data;
+        new_mag_data = buffer_mag[best_index_mag].data;
     }
 
-    _compass->setHIL(mag_data);
+    new_mag_data -= _sitl->mag_ofs.get();
+
+    _compass->setHIL(new_mag_data);
 }
 
 #endif

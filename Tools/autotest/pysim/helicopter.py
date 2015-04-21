@@ -2,7 +2,7 @@
 
 from aircraft import Aircraft
 import util, time, math
-from math import degrees, radians
+from math import degrees, radians, sin, cos
 from rotmat import Vector3, Matrix3
 
 class HeliCopter(Aircraft):
@@ -11,7 +11,10 @@ class HeliCopter(Aircraft):
                  hover_throttle=0.65,
                  terminal_velocity=40.0,
                  frame_height=0.1,
-                 mass=2.5):
+                 hover_lean=8.0,
+                 yaw_zero=0.1,
+                 rotor_rot_accel=radians(20),
+                 mass=2.13):
         Aircraft.__init__(self)
         self.mass = mass # Kg
         self.hover_throttle = hover_throttle
@@ -19,11 +22,15 @@ class HeliCopter(Aircraft):
         self.terminal_rotation_rate = 4*radians(360.0)
         self.frame_height = frame_height
         self.last_time = time.time()
-        self.roll_rate_max = radians(720)
-        self.pitch_rate_max = radians(720)
-        self.yaw_rate_max = radians(720)
+        self.roll_rate_max = radians(1400)
+        self.pitch_rate_max = radians(1400)
+        self.yaw_rate_max = radians(1400)
         self.rsc_setpoint = 0.8
         self.thrust_scale = (self.mass * self.gravity) / self.hover_throttle
+        self.rotor_rot_accel=rotor_rot_accel
+
+        # calculate lateral thrust ratio for tail rotor
+        self.tail_thrust_scale = sin(radians(hover_lean)) * self.thrust_scale / yaw_zero
 
     def update(self, servos):
         # how much time has passed?
@@ -48,9 +55,11 @@ class HeliCopter(Aircraft):
 
         #print(swash1, swash2, swash3, roll_rate, pitch_rate, yaw_rate, thrust, rsc)
 
-        roll_rate *= rsc/self.rsc_setpoint
-        pitch_rate *= rsc/self.rsc_setpoint
-        yaw_rate *= rsc/self.rsc_setpoint
+        rsc_scale = rsc/self.rsc_setpoint
+
+        roll_rate *= rsc_scale
+        pitch_rate *= rsc_scale
+        yaw_rate *= rsc_scale
 
         rot_accel = Vector3(roll_rate*self.roll_rate_max,
                             pitch_rate*self.pitch_rate_max,
@@ -60,6 +69,8 @@ class HeliCopter(Aircraft):
         rot_accel.x -= self.gyro.x * radians(5000.0) / self.terminal_rotation_rate
         rot_accel.y -= self.gyro.y * radians(5000.0) / self.terminal_rotation_rate
         rot_accel.z -= self.gyro.z * radians(5000.0) / self.terminal_rotation_rate
+
+        rot_accel.z += (rsc_scale+thrust) * self.rotor_rot_accel
 
         # update rotational rates in body frame
         self.gyro += rot_accel * delta_time
@@ -73,7 +84,7 @@ class HeliCopter(Aircraft):
 
         thrust *= self.thrust_scale
 
-        accel_body = Vector3(0, 0, -thrust / self.mass)
+        accel_body = Vector3(0, yaw_rate * rsc_scale * self.tail_thrust_scale, -thrust / self.mass)
         accel_earth = self.dcm * accel_body
         accel_earth += Vector3(0, 0, self.gravity)
         accel_earth += air_resistance

@@ -141,7 +141,7 @@ def fly_ArduCopter_scripted(testname):
     '''
     global homeloc
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --rate=400 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --home=%f,%f,%u,%u' % (
         FRAME, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sim_cmd += ' --wind=6,45,.3'
 

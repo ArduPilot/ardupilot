@@ -210,6 +210,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     // if position controller is active add current velocity error to avoid sudden jump in acceleration
     if (is_active_z()) {
         curr_vel_z += _vel_error.z;
+        curr_vel_z -= _vel_desired.z;
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function

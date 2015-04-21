@@ -29,7 +29,8 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     airspeed(_airspeed),
     dataflash(_dataflash),
     accel_mask(7),
-    gyro_mask(7)
+    gyro_mask(7),
+    last_timestamp_usec(0)
 {}
 
 bool LogReader::open_log(const char *logfile)
@@ -361,6 +362,7 @@ bool LogReader::update(uint8_t &type)
         }
         memcpy(&msg, data, f.length);
         wait_timestamp(msg.timestamp);
+        //printf("IMU %lu\n", (unsigned long)msg.timestamp);
         if (gyro_mask & 1) {
             ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
         }
@@ -550,6 +552,7 @@ bool LogReader::update(uint8_t &type)
         wait_timestamp(msg.time_ms);
         compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
         compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
+        dataflash.Log_Write_Compass(compass);
         break;
     }
 
@@ -571,7 +574,10 @@ bool LogReader::update(uint8_t &type)
 
 void LogReader::wait_timestamp(uint32_t timestamp)
 {
-    hal.scheduler->stop_clock(timestamp*1000UL);
+    uint64_t timestamp_usec = timestamp*1000UL;
+    timestamp_usec = ((timestamp_usec + 1000) / 2500) * 2500;
+    last_timestamp_usec = timestamp_usec;
+    hal.scheduler->stop_clock(timestamp_usec);
 }
 
 bool LogReader::wait_type(uint8_t wtype)

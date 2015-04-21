@@ -97,6 +97,8 @@ static bool done_home_init;
 static uint16_t update_rate = 50;
 static uint32_t arm_time_ms;
 static bool ahrs_healthy;
+static bool have_imu2;
+static uint32_t last_imu_usec;
 
 static uint8_t num_user_parameters;
 static struct {
@@ -298,28 +300,14 @@ static void read_sensors(uint8_t type)
         done_parameters = true;
         set_user_parameters();
     }
+    if (type == LOG_IMU2_MSG) {
+        have_imu2 = true;
+    }
+
     if (type == LOG_GPS_MSG) {
         gps.update();
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             ahrs.estimate_wind();
-        }
-    } else if (type == LOG_IMU_MSG) {
-        uint32_t update_delta_usec = 1e6 / update_rate;
-        uint8_t update_count = update_rate>0?update_rate/50:1;
-        for (uint8_t i=0; i<update_count; i++) {
-            ahrs.update();
-            if (ahrs.get_home().lat != 0) {
-                inertial_nav.update(ins.get_delta_time());
-            }
-            hal.scheduler->stop_clock(hal.scheduler->micros() + (i+1)*update_delta_usec);
-            dataflash.Log_Write_EKF(ahrs,false);
-            dataflash.Log_Write_AHRS2(ahrs);
-            ins.set_gyro(0, ins.get_gyro());
-            ins.set_accel(0, ins.get_accel());
-            if (ahrs.healthy() != ahrs_healthy) {
-                ahrs_healthy = ahrs.healthy();
-                printf("AHRS health: %u\n", (unsigned)ahrs_healthy);
-            }
         }
     } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
                (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
@@ -333,6 +321,39 @@ static void read_sensors(uint8_t type)
             done_baro_init = true;
             ::printf("Barometer initialised\n");
             barometer.update_calibration();
+        }
+    }
+
+    // special handling of IMU messages as these trigger an ahrs.update()
+    if ((type == LOG_IMU_MSG && !have_imu2) || (type == LOG_IMU2_MSG && have_imu2)) {
+        uint32_t imu_deltat_usec = LogReader.last_timestamp_us() - last_imu_usec;
+        uint32_t update_delta_usec = 1e6 / update_rate;
+        if (imu_deltat_usec < update_delta_usec/2) {
+            // it is a duplicate
+            return;
+        }
+        uint32_t update_count = (imu_deltat_usec + (update_delta_usec-1)) / update_delta_usec;
+        if (update_count > 8) {
+            update_count = 8;
+        }
+        if (update_count < 1) {
+            update_count = 1;
+        }
+        last_imu_usec = LogReader.last_timestamp_us();
+        for (uint8_t i=0; i<update_count; i++) {
+            ahrs.update();
+            if (ahrs.get_home().lat != 0) {
+                inertial_nav.update(ins.get_delta_time());
+            }
+            hal.scheduler->stop_clock(hal.scheduler->micros() + update_delta_usec);
+            dataflash.Log_Write_EKF(ahrs,false);
+            dataflash.Log_Write_AHRS2(ahrs);
+            ins.set_gyro(0, ins.get_gyro());
+            ins.set_accel(0, ins.get_accel());
+            if (ahrs.healthy() != ahrs_healthy) {
+                ahrs_healthy = ahrs.healthy();
+                printf("AHRS health: %u\n", (unsigned)ahrs_healthy);
+            }
         }
     }
 }

@@ -596,6 +596,9 @@ static int32_t nav_roll_cd;
 // The instantaneous desired pitch angle.  Hundredths of a degree
 static int32_t nav_pitch_cd;
 
+// we separate out rudder input to allow for RUDDER_ONLY=1
+static int16_t rudder_input;
+
 // the aerodymamic load factor. This is calculated from the demanded
 // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
 static float aerodynamic_load_factor = 1.0f;
@@ -1362,7 +1365,7 @@ static void update_flight_mode(void)
           any aileron or rudder input
         */
         if ((channel_roll->control_in != 0 ||
-             channel_rudder->control_in != 0)) {                
+             rudder_input != 0)) {                
             cruise_state.locked_heading = false;
             cruise_state.lock_timer_ms = 0;
         }                 

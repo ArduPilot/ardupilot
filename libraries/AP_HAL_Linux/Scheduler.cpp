@@ -416,8 +416,10 @@ void LinuxScheduler::reboot(bool hold_in_bootloader)
 
 void LinuxScheduler::stop_clock(uint64_t time_usec)
 {
-    stopped_clock_usec = time_usec;
-    _run_io();
+    if (time_usec >= stopped_clock_usec) {
+        stopped_clock_usec = time_usec;
+        _run_io();
+    }
 }
 
 #endif // CONFIG_HAL_BOARD

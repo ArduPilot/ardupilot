@@ -11,6 +11,7 @@ from rotmat import Vector3, Matrix3
 class Rover(Aircraft):
     '''a simple rover'''
     def __init__(self,
+                 frame='',
                  max_speed=20,
                  max_accel=30,
                  wheelbase=0.335,
@@ -72,17 +73,17 @@ class Rover(Aircraft):
         steer = 0.5 * lat_accel * mincircle / (speed**2)
         return steer * 35
 
-    def update(self, state):
+    def update(self, servos):
 
         # if in skid steering mode the steering and throttle values are used for motor1 and motor2
         if self.skid_steering:
-            motor1 = state.steering # left motor
-            motor2 = state.throttle # right motor
+            motor1 = 2*(servos[0]-0.5)
+            motor2 = 2*(servos[2]-0.5)
             steering = motor1 - motor2
             throttle = 0.5*(motor1 + motor2)
         else:
-            steering = state.steering
-            throttle = state.throttle
+            steering = 2*(servos[0]-0.5)
+            throttle = 2*(servos[2]-0.5)
 
         # how much time has passed?
         t = self.time_now

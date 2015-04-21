@@ -89,6 +89,7 @@ private:
     perf_counter_t  _perf_write;
     perf_counter_t  _perf_fsync;
     perf_counter_t  _perf_errors;
+    perf_counter_t  _perf_overruns;
 #endif
 };
 

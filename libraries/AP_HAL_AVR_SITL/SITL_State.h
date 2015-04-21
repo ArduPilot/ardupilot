@@ -154,8 +154,6 @@ private:
     VectorN<readings_mag,mag_buffer_length> buffer_mag;
     uint32_t time_delta_mag;
     uint32_t delayed_time_mag;
-    Vector3f mag_data;
-    Vector3f new_mag_data;
 
     // airspeed sensor delay buffer variables
     struct readings_wind {

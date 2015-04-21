@@ -911,7 +911,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     if TARGET != 'sitl':
         util.build_SIL('ArduCopter', target=TARGET)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --speedup=100 --rate=400 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --speedup=100 --rate=400 --home=%f,%f,%u,%u' % (
         FRAME, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
     sim_cmd += ' --wind=6,45,.3'
     if viewerip:
@@ -1272,7 +1272,7 @@ def fly_CopterAVC(viewerip=None, map=False):
     if TARGET != 'sitl':
         util.build_SIL('ArduCopter', target=TARGET)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_multicopter.py') + ' --frame=%s --rate=400 --speedup=100 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --speedup=100 --home=%f,%f,%u,%u' % (
         FRAME, AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
     if viewerip:
         sim_cmd += ' --fgout=%s:5503' % viewerip

@@ -150,8 +150,7 @@ kill_tasks()
         killall -q JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf
         pkill -f runsim.py
         pkill -f sim_tracker.py
-        pkill -f sim_rover.py
-        pkill -f sim_multicopter.py
+        pkill -f sim_wrapper.py
     }
 }
 
@@ -171,6 +170,10 @@ set -x
 
 [ -z "$VEHICLE" ] && {
     VEHICLE=$(basename $PWD)
+}
+
+[ -z "$FRAME" -a "$VEHICLE" = "APMrover2" ] && {
+    FRAME="rover"
 }
 
 EXTRA_PARM=""
@@ -207,6 +210,14 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=IrisRos"
 	;;
+    CRRCSim-heli)
+	BUILD_TARGET="sitl-heli"
+        EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim-heli"
+	;;
+    CRRCSim)
+	BUILD_TARGET="sitl"
+        EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim"
+	;;
     elevon*)
         EXTRA_PARM="param set ELEVON_OUTPUT 4;"
         EXTRA_SIM="$EXTRA_SIM --elevon"
@@ -215,8 +226,8 @@ case $FRAME in
         EXTRA_PARM="param set VTAIL_OUTPUT 4;"
         EXTRA_SIM="$EXTRA_SIM --vtail"
 	;;
-    skid)
-        EXTRA_SIM="$EXTRA_SIM --skid-steering"
+    rover|rover-skid)
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
 	;;
     obc)
         BUILD_TARGET="sitl-obc"
@@ -318,18 +329,22 @@ for more details
 EOF
             exit 1
         fi
-        RUNSIM="nice $autotest/jsb_sim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="ArduPlane.parm"
         if [ $WIPE_EEPROM == 1 ]; then
             cmd="$cmd -PFORMAT_VERSION=13 -PSKIP_GYRO_CAL=1 -PRC3_MIN=1000 -PRC3_TRIM=1000"
         fi
+        if [ "$FRAME" = "CRRCSim" ]; then
+            RUNSIM="nice $autotest/pysim/sim_wrapper.py --frame=CRRCSim --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        else
+            RUNSIM="nice $autotest/jsb_sim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        fi
         ;;
     ArduCopter)
-        RUNSIM="nice $autotest/pysim/sim_multicopter.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
-        RUNSIM="nice $autotest/pysim/sim_rover.py --home=$SIMHOME --rate=400 $EXTRA_SIM"
+        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         PARMS="Rover.parm"
         ;;
     *)

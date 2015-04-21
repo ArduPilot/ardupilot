@@ -90,7 +90,9 @@ void failsafe_check(void)
             channel_pitch->output();
         }
         channel_throttle->output();
-        channel_rudder->output();
+        if (g.rudder_only == 0) {
+            channel_rudder->output();
+        }
 
         // setup secondary output channels that do have
         // corresponding input channels
