@@ -233,6 +233,26 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
 }
 
+template <typename T>
+void Vector3<T>::rotate_inverse(enum Rotation rotation)
+{
+    Vector3<T> x_vec(1.0f,0.0f,0.0f);
+    Vector3<T> y_vec(0.0f,1.0f,0.0f);
+    Vector3<T> z_vec(0.0f,0.0f,1.0f);
+
+    x_vec.rotate(rotation);
+    y_vec.rotate(rotation);
+    z_vec.rotate(rotation);
+
+    Matrix3<T> M(
+        x_vec.x, y_vec.x, z_vec.x,
+        x_vec.y, y_vec.y, z_vec.y,
+        x_vec.z, y_vec.z, z_vec.z
+    );
+
+    (*this) = M.mul_transpose(*this);
+}
+
 // vector cross product
 template <typename T>
 Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
@@ -363,6 +383,7 @@ Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
 
 // only define for float
 template void Vector3<float>::rotate(enum Rotation);
+template void Vector3<float>::rotate_inverse(enum Rotation);
 template float Vector3<float>::length(void) const;
 template Vector3<float> Vector3<float>::operator %(const Vector3<float> &v) const;
 template float Vector3<float>::operator *(const Vector3<float> &v) const;
@@ -385,6 +406,7 @@ template float Vector3<float>::angle(const Vector3<float> &v) const;
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Vector3<double>::rotate(enum Rotation);
+template void Vector3<double>::rotate_inverse(enum Rotation);
 template float Vector3<double>::length(void) const;
 template Vector3<double> Vector3<double>::operator %(const Vector3<double> &v) const;
 template double Vector3<double>::operator *(const Vector3<double> &v) const;
