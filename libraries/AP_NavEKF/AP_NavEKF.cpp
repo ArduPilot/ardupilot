@@ -4176,7 +4176,15 @@ void NavEKF::readHgtData()
         newDataHgt = true;
         // time stamp used to check for new measurement
         lastHgtMeasTime = _baro.get_last_update();
-
+        // filtered baro data used to provide a reference for takeoff
+        // it is is reset to last height measurement on disarming in performArmingChecks()
+        if (!vehicleArmed || !getTakeoffExpected()) {
+            meaHgtAtTakeOff = 0.1f * hgtMea + 0.9f * meaHgtAtTakeOff;
+        } else if (vehicleArmed && getTakeoffExpected()) {
+            // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
+            // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
+            hgtMea = max(hgtMea, meaHgtAtTakeOff);
+        }
     } else {
         newDataHgt = false;
     }
@@ -4801,6 +4809,9 @@ void NavEKF::performArmingChecks()
             // store the current position to be used to keep reporting the last known position when disarmed
             lastKnownPositionNE.x = state.position.x;
             lastKnownPositionNE.y = state.position.y;
+            // initialise filtered altitude used to provide a takeoff reference to current baro on disarm
+            // this reduces the time required for the filter to settle before the estimate can be used
+            meaHgtAtTakeOff = hgtMea;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
