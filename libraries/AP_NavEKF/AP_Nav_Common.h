@@ -32,6 +32,8 @@ union nav_filter_status {
         uint16_t pred_horiz_pos_rel : 1; // 8 - true if filter expects it can produce a good relative horizontal position estimate - used before takeoff
         uint16_t pred_horiz_pos_abs : 1; // 9 - true if filter expects it can produce a good absolute horizontal position estimate - used before takeoff
         uint16_t takeoff_detected   : 1; // 10 - true if optical flow takeoff has been detected
+        uint16_t takeoff            : 1; // 11 - true if filter is compensating for baro errors during takeoff
+        uint16_t touchdown          : 1; // 12 - true if filter is compensating for baro errors during touchdown
     } flags;
     uint16_t value;
 };
