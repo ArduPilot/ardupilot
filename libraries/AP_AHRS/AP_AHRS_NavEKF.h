@@ -64,8 +64,8 @@ public:
     bool get_position(struct Location &loc) const;
 
     // status reporting of estimated error
-    float           get_error_rp(void);
-    float           get_error_yaw(void);
+    float           get_error_rp(void) const;
+    float           get_error_yaw(void) const;
 
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate(void);

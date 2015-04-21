@@ -217,11 +217,11 @@ public:
 
     // return the average size of the roll/pitch error estimate
     // since last call
-    virtual float get_error_rp(void) = 0;
+    virtual float get_error_rp(void) const = 0;
 
     // return the average size of the yaw error estimate
     // since last call
-    virtual float get_error_yaw(void) = 0;
+    virtual float get_error_yaw(void) const = 0;
 
     // return a DCM rotation matrix representing our current
     // attitude

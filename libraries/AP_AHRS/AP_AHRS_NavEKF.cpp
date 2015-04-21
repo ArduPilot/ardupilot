@@ -193,12 +193,12 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 }
 
 // status reporting of estimated errors
-float AP_AHRS_NavEKF::get_error_rp(void)
+float AP_AHRS_NavEKF::get_error_rp(void) const
 {
     return AP_AHRS_DCM::get_error_rp();
 }
 
-float AP_AHRS_NavEKF::get_error_yaw(void)
+float AP_AHRS_NavEKF::get_error_yaw(void) const
 {
     return AP_AHRS_DCM::get_error_yaw();
 }
