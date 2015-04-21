@@ -33,7 +33,7 @@ class CRRCSim(Aircraft):
         tail_rotor = servos[3]
         rsc = servos[7]
 
-        col_pitch = (swash1+swash2+swash3)/6.0
+        col_pitch = (swash1+swash2+swash3)/3.0 - 0.5
         roll_rate = (swash1 - swash2)/2
         pitch_rate = -((swash1 + swash2)/2.0 - swash3)/2
         yaw_rate = -(tail_rotor - 0.5)
