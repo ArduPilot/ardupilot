@@ -693,13 +693,6 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->print_P(PSTR("Init Gyro"));
 
-    /*
-      we do the gyro calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
-
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k].set(Vector3f());
@@ -739,7 +732,9 @@ AP_InertialSensor::_init_gyro()
         for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
-                gyro_sum[k] += get_gyro(k);
+                Vector3f gyro = get_gyro(k);
+                gyro.rotate_inverse(_board_orientation);
+                gyro_sum[k] += gyro;
             }
             hal.scheduler->delay(5);
         }
@@ -796,9 +791,6 @@ AP_InertialSensor::_init_gyro()
             _gyro_offset[k] = new_gyro_offset[k];
         }
     }
-
-    // restore orientation
-    _board_orientation = saved_orientation;
 
     // record calibration complete
     _calibrating = false;
