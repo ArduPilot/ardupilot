@@ -10,6 +10,7 @@
 #include <AP_Param.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
+#include <AP_Gimbal.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
@@ -82,6 +83,7 @@ public:
 	void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
+    void Log_Write_Gimbal(const AP_Gimbal &gimbal);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -204,6 +206,36 @@ struct PACKED log_IMU {
     float accel_x, accel_y, accel_z;
     uint32_t gyro_error, accel_error;
     float temperature;
+};
+
+struct PACKED log_Gimbal1 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    float delta_time;
+    float delta_angles_x;
+    float delta_angles_y;
+    float delta_angles_z;
+    float delta_velocity_x;
+    float delta_velocity_y;
+    float delta_velocity_z;
+    float joint_angles_x;
+    float joint_angles_y;
+    float joint_angles_z;
+};
+
+struct PACKED log_Gimbal2 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t  est_sta;
+    float est_x;
+    float est_y;  
+    float est_z;  
+    float rate_x;  
+    float rate_y; 
+    float rate_z; 
+    float target_x;
+    float target_y;
+    float target_z;
 };
 
 struct PACKED log_RCIN {
@@ -609,7 +641,11 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" } \
+      "MAG3","Ihhhhhhhhh",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ" }, \
+    { LOG_GIMBAL1_MSG, sizeof(log_Gimbal1), \
+      "GMB1", "Iffffffffff", "TimeMS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz" }, \
+    { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
+      "GMB2", "IBfffffffff", "TimeMS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -663,6 +699,8 @@ Format characters in the format string for binary log messages
 #define LOG_COMPASS2_MSG  168
 #define LOG_COMPASS3_MSG  169
 #define LOG_MODE_MSG      170
+#define LOG_GIMBAL1_MSG   171
+#define LOG_GIMBAL2_MSG   172
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
