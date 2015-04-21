@@ -4731,6 +4731,8 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
     status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
+    status.flags.takeoff = takeoffExpected; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
+    status.flags.touchdown = touchdownExpected; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
 }
 
 // send an EKF_STATUS message to GCS
