@@ -43,7 +43,7 @@ if rm /fs/microsd/APM/boot.log
 then
    echo "removed old boot.log"
 fi
-set logfile /fs/microsd/APM/BOOT.LOG
+set logfile /dev/null
 
 if [ ! -f /bin/ArduPilot ]
 then
