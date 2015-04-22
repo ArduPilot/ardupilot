@@ -65,7 +65,7 @@ static void init_rc_out()
     // enable output to motors
     pre_arm_rc_checks();
     if (ap.pre_arm_rc_check) {
-        output_min();
+        enable_motor_output();
     }
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
@@ -74,8 +74,8 @@ static void init_rc_out()
     hal.rcout->set_esc_scaling(g.rc_3.radio_min, g.rc_3.radio_max);
 }
 
-// output_min - enable and output lowest possible value to motors
-void output_min()
+// enable_motor_output() - enable and output lowest possible value to motors
+void enable_motor_output()
 {
     // enable motors
     motors.enable();
