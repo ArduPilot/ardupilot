@@ -450,8 +450,8 @@ bool NavEKF::healthy(void) const
         // extremely unhealthy.
         return false;
     }
-    // Give the filter 10 seconds to settle before use
-    if ((imuSampleTime_ms - ekfStartTime_ms) < 10000) {
+    // Give the filter a second to settle before use
+    if ((imuSampleTime_ms - ekfStartTime_ms) < 1000 ) {
         return false;
     }
     // barometer innovations must be within limits when on-ground
@@ -534,6 +534,11 @@ bool NavEKF::InitialiseFilterDynamic(void)
 
     // If we are a plane and don't have GPS lock then don't initialise
     if (assume_zero_sideslip() && _ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
+    }
+
+    // If the DCM solution has not converged, then don't initialise
+    if (_ahrs->get_error_rp() > 0.02f) {
         return false;
     }
 
@@ -4742,7 +4747,7 @@ void NavEKF::performArmingChecks()
 {
     // determine vehicle arm status and don't allow filter to arm until it has been running for long enough to stabilise
     prevVehicleArmed = vehicleArmed;
-    vehicleArmed = (getVehicleArmStatus() && (imuSampleTime_ms - ekfStartTime_ms) > 10000);
+    vehicleArmed = (getVehicleArmStatus() && (imuSampleTime_ms - ekfStartTime_ms) > 1000);
 
     // check to see if arm status has changed and reset states if it has
     if (vehicleArmed != prevVehicleArmed) {
