@@ -146,9 +146,9 @@ void set_using_interlock(bool b)
     }
 }
 
-void set_motor_estop(bool b)
+void set_motor_emergency_stop(bool b)
 {
-    if(ap.motor_estop != b) {
-        ap.motor_estop = b;
+    if(ap.motor_emergency_stop != b) {
+        ap.motor_emergency_stop = b;
     }
 }

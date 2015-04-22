@@ -83,13 +83,13 @@ static void auto_disarm_check()
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    // always allow auto disarm if using interlock switch or motors are E-stopped
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !motors.get_interlock()) || ap.motor_estop) {
+    // always allow auto disarm if using interlock switch or motors are Emergency Stopped
+    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
         auto_disarming_counter++;
 
-        // use a shorter delay if using throttle interlock switch or E-stop, because it is less
+        // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
-        if (ap.using_interlock || ap.motor_estop){
+        if (ap.using_interlock || ap.motor_emergency_stop){
             delay = AUTO_DISARMING_DELAY_SHORT;
         } else {
             delay = AUTO_DISARMING_DELAY_LONG;
@@ -180,12 +180,12 @@ static bool init_arm_motors(bool arming_from_gcs)
         return false;
     }
 
-    // if we are not E-Stop switch option, force Estop false to ensure motors
+    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
     if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
-        set_motor_estop(false);
+        set_motor_emergency_stop(false);
     // if we are using motor Estop switch, it must not be in Estop position
-    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_estop){
+    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
         gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Emergency Stopped"));
         AP_Notify::flags.armed = false;
         return false;
@@ -240,7 +240,7 @@ static bool pre_arm_checks(bool display_failure)
         return true;
     }
 
-    // check if motor interlock and E-stop aux switches are used
+    // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
         if (display_failure) {
@@ -261,9 +261,9 @@ static bool pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // if we are using Motor E-Stop aux switch, check it is not enabled 
+    // if we are using Motor Emergency Stop aux switch, check it is not enabled 
     // and warn if it is
-    if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_estop){
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Emergency Stopped"));
         }
@@ -792,11 +792,11 @@ static void motors_output()
         motor_test_output();
     } else {
         if (!ap.using_interlock){
-            // if not using interlock switch, set according to E-Stop status
-            // where E-Stop is forced false during arming if E-Stop switch
+            // if not using interlock switch, set according to Emergency Stop status
+            // where Emergency Stop is forced false during arming if Emergency Stop switch
             // is not used. Interlock enabled means motors run, so we must
-            // invert motor_estop status for motors to run.
-            motors.set_interlock(!ap.motor_estop);
+            // invert motor_emergency_stop status for motors to run.
+            motors.set_interlock(!ap.motor_emergency_stop);
         }
         motors.output();
     }
