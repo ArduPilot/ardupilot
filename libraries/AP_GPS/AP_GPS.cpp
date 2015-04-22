@@ -79,6 +79,25 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
 
+#if GPS_MAX_INSTANCES > 1
+
+    // @Param: INJECT_TO
+    // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
+    // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
+    // @Values: 0,1: send to specified instance. 127: broadcast
+    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, 127),
+
+#endif
+
+#if GPS_RTK_AVAILABLE
+    // @Param: SBP_LOGMASK
+    // @DisplayName: Swift Binary Protocol Logging Mask
+    // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
+    // @Values: 0x0000 for none, 0xFFFF for all, 0xFF00 for external only.
+    // @User: Advanced
+    AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
+#endif
+
     AP_GROUPEND
 };
 
@@ -251,34 +270,6 @@ found_gps:
 	}
 }
 
-bool 
-AP_GPS::can_calculate_base_pos(void)
-{
-#if GPS_RTK_AVAILABLE
-    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
-        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
-            return true;
-        }
-    }
-#endif
-    return false;
-}
-
-/*
-    Tells the underlying GPS drivers to capture its current position as home.
- */
-void 
-AP_GPS::calculate_base_pos(void) 
-{
-#if GPS_RTK_AVAILABLE
-    for (uint8_t i = 0; i<GPS_MAX_INSTANCES; i++) {
-        if (drivers[i] != NULL && drivers[i]->can_calculate_base_pos()) {
-            drivers[i]->calculate_base_pos(); 
-        }
-    }
-#endif
-}
-
 AP_GPS::GPS_Status 
 AP_GPS::highest_supported_status(uint8_t instance) const
 {
@@ -441,6 +432,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
 void 
 AP_GPS::lock_port(uint8_t instance, bool lock)
 {
+
     if (instance >= GPS_MAX_INSTANCES) {
         return;
     }
@@ -450,6 +442,35 @@ AP_GPS::lock_port(uint8_t instance, bool lock)
         locked_ports &= ~(1U<<instance);
     }
 }
+
+    //Inject a packet of raw binary to a GPS
+void 
+AP_GPS::inject_data(uint8_t *data, uint8_t len)
+{
+
+#if GPS_MAX_INSTANCES > 1
+
+    //Support broadcasting to all GPSes.
+    if (_inject_to == 127) {
+        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            inject_data(i, data, len);
+        }
+    } else {
+        inject_data(_inject_to, data, len);
+    }
+
+#else
+    inject_data(0,data,len);
+#endif
+
+}
+
+void 
+AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+{
+    if (instance < GPS_MAX_INSTANCES && drivers[instance] != NULL)
+        drivers[instance]->inject_data(data, len);
+}  
 
 void 
 AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
