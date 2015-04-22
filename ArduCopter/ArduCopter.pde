@@ -1116,9 +1116,6 @@ static void update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // check gps base position (used for RTK only)
-        check_gps_base_pos();
-
         // checks to initialise home and take location based pictures
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
