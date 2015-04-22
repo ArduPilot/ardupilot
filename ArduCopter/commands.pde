@@ -118,16 +118,3 @@ static void set_system_time_from_GPS()
         Log_Write_Event(DATA_SYSTEM_TIME_SET);
     }
 }
-
-// check_gps_base_pos - sets gps base position (used for RTK only)
-static void check_gps_base_pos()
-{
-    if (!ap.gps_base_pos_set && !motors.armed() && home_is_set()) {
-        // if we're ready to enter RTK mode, then capture current state as home,
-        // and enter RTK fixes
-        if (gps.can_calculate_base_pos()) {
-            gps.calculate_base_pos();
-        }
-        ap.gps_base_pos_set = true;
-    }
-}
