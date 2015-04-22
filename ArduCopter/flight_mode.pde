@@ -89,6 +89,10 @@ static bool set_mode(uint8_t mode)
             break;
 #endif
 
+        case STOP:
+            success = stop_init(ignore_checks);
+            break;
+
         default:
             success = false;
             break;
@@ -197,6 +201,10 @@ static void update_flight_mode()
             poshold_run();
             break;
 #endif
+
+        case STOP:
+            stop_run();
+            break;
     }
 }
 
@@ -243,6 +251,7 @@ static bool mode_requires_GPS(uint8_t mode) {
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
+        case STOP:
             return true;
         default:
             return false;
