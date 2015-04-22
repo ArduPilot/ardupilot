@@ -86,51 +86,61 @@ int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 
 
 uint8_t PX4GPIO::read(uint8_t pin) {
-    uint32_t relays = 0;
     switch (pin) {
 
 #ifdef GPIO_EXT_1
-        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & GPIO_EXT_1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef GPIO_EXT_2
-        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & GPIO_EXT_2)?HIGH:LOW;
-            break;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER1
-        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+        case PX4_GPIO_EXT_IO_RELAY1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER2
-        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+        case PX4_GPIO_EXT_IO_RELAY2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER2)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC1
-        case PX4_GPIO_EXT_IO_ACC1_PIN:
+        case PX4_GPIO_EXT_IO_ACC1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC2
-        case PX4_GPIO_EXT_IO_ACC2_PIN:
+        case PX4_GPIO_EXT_IO_ACC2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
+        }
 #endif
 
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5): {
-        uint32_t v = 0;
-        ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&v);
-        return (v & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
-    }
+            uint32_t relays = 0;
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
+        }
     }
     return LOW;
 }
