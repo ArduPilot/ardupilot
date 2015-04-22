@@ -16,6 +16,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#define streq(x, y) (!strcmp(x, y))
+
 extern const AP_HAL::HAL& hal;
 
 LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash) :
@@ -33,6 +35,293 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     last_timestamp_usec(0)
 {}
 
+void fatal(const char *msg) {
+    ::printf("%s",msg);
+    ::printf("\n");
+    exit(1);
+}
+
+char *xstrdup(const char *string)
+{
+    char *ret = strdup(string);
+    if (ret == NULL) {
+        perror("strdup");
+        fatal("strdup failed");
+    }
+    return ret;
+}
+
+#define LOGREADER_MAX_FIELDS 30
+class MsgParser {
+public:
+    // constructor - create a parser for a MavLink message format
+    MsgParser(struct log_Format f);
+
+    // field_value - retrieve the value of a field from the supplied message
+    // these return false if the field was not found
+    template<typename R>
+    bool field_value(uint8_t *msg, const char *label, R &ret);
+
+    bool field_value(uint8_t *msg, const char *label, Vector3f &ret);
+    bool field_value(uint8_t *msg, const char *label,
+		     char *buffer, uint8_t bufferlen);
+
+    // retrieve a comma-separated list of all labels
+    void string_for_labels(char *buffer, uint bufferlen);
+
+private:
+
+    void add_field(const char *_label, uint8_t _type, uint8_t _offset,
+                   uint8_t length);
+
+    template<typename R>
+    void field_value_for_type_at_offset(uint8_t *msg, uint8_t type,
+                                        uint8_t offset, R &ret);
+
+    struct log_Format f; // the format we are a parser for
+    struct format_field_info { // parsed field information
+        char *label;
+        uint8_t type;
+        uint8_t offset;
+        uint8_t length;
+    };
+    struct format_field_info field_info[LOGREADER_MAX_FIELDS];
+
+    uint8_t next_field;
+    size_t size_for_type_table[52]; // maps field type (e.g. 'f') to e.g 4 bytes
+
+    struct format_field_info *find_field_info(const char *label);
+
+    void parse_format_fields();
+    void init_field_types();
+    void add_field_type(char type, size_t size);
+    uint8_t size_for_type(char type);
+
+    ~MsgParser();
+};
+
+void MsgParser::add_field_type(char type, size_t size)
+{
+    size_for_type_table[(type > 'A' ? (type-'A') : (type-'a'))] = size;
+}
+
+uint8_t MsgParser::size_for_type(char type)
+{
+    return size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
+}
+
+void MsgParser::init_field_types()
+{
+    add_field_type('b', sizeof(int8_t));
+    add_field_type('c', sizeof(int16_t));
+    add_field_type('e', sizeof(int32_t));
+    add_field_type('f', sizeof(float));
+    add_field_type('h', sizeof(int16_t));
+    add_field_type('i', sizeof(int32_t));
+    add_field_type('n', sizeof(char[4]));
+    add_field_type('B', sizeof(uint8_t));
+    add_field_type('C', sizeof(uint16_t));
+    add_field_type('E', sizeof(uint32_t));
+    add_field_type('H', sizeof(uint16_t));
+    add_field_type('I', sizeof(uint32_t));
+    add_field_type('L', sizeof(int32_t));
+    add_field_type('M', sizeof(uint8_t));
+    add_field_type('N', sizeof(char[16]));
+    add_field_type('Z', sizeof(char[64]));
+}
+
+struct MsgParser::format_field_info *MsgParser::find_field_info(const char *label)
+{
+    for(uint8_t i=0; i<next_field; i++) {
+        if (streq(field_info[i].label, label)) {
+            return &field_info[i];
+        }
+    }
+    return NULL;
+}
+
+MsgParser::MsgParser(struct log_Format fx) : next_field(0), f(fx)
+{
+    init_field_types();
+    parse_format_fields();
+}
+
+
+void MsgParser::add_field(const char *_label, uint8_t _type, uint8_t _offset,
+                          uint8_t _length)
+{
+    field_info[next_field].label = xstrdup(_label);
+    field_info[next_field].type = _type;
+    field_info[next_field].offset = _offset;
+    field_info[next_field].length = _length;
+    next_field++;
+}
+
+void MsgParser::parse_format_fields()
+{
+    char *labels = xstrdup(f.labels);
+    char * arg = labels;
+    uint8_t label_offset = 0;
+    char *next_label;
+    uint8_t msg_offset = 3; // 3 bytes for the header
+
+    while ((next_label = strtok(arg, ",")) != NULL) {
+	if (label_offset > strlen(f.format)) {
+	    free(labels);
+	    printf("too few field times for labels %s (format=%s) (labels=%s)\n",
+		   f.name, f.format, f.labels);
+	    exit(1);
+	}
+        uint8_t field_type = f.format[label_offset];
+        uint8_t length = size_for_type(field_type);
+        add_field(next_label, field_type, msg_offset, length);
+        arg = NULL;
+        msg_offset += length;
+        label_offset++;
+    }
+
+    if (label_offset != strlen(f.format)) {
+	    free(labels);
+	    printf("too few labels for format (format=%s) (labels=%s)\n",
+		   f.format, f.labels);
+    }
+
+    free(labels);
+}
+
+
+template<typename R>
+inline void MsgParser::field_value_for_type_at_offset(uint8_t *msg,
+                                                      uint8_t type,
+                                                      uint8_t offset,
+                                                      R &ret)
+{
+    /* we register the types - add_field_type - so can we do without
+     * this switch statement somehow? */
+    switch (type) {
+    case 'B':
+        ret = (R)(((uint8_t*)&msg[offset])[0]);
+        break;
+    case 'c':
+    case 'h':
+        ret = (R)(((int16_t*)&msg[offset])[0]);
+        break;
+    case 'H':
+        ret = (R)(((uint16_t*)&msg[offset])[0]);
+        break;
+    case 'C':
+        ret = (R)(((uint16_t*)&msg[offset])[0]);
+        break;
+    case 'f':
+        ret = (R)(((float*)&msg[offset])[0]);
+        break;
+    case 'I':
+    case 'E':
+        ret = (R)(((uint32_t*)&msg[offset])[0]);
+        break;
+    case 'L':
+    case 'e':
+        ret = (R)(((int32_t*)&msg[offset])[0]);
+        break;
+    default:
+        ::printf("Unhandled format type (%c)\n", type);
+        exit(1);
+    }
+}
+
+template<typename R>
+bool MsgParser::field_value(uint8_t *msg, const char *label, R &ret)
+{
+    struct format_field_info *info = find_field_info(label);
+    uint8_t offset = info->offset;
+    if (offset == 0) {
+        return false;
+    }
+
+    field_value_for_type_at_offset(msg, info->type, offset, ret);
+
+    return true;
+}
+
+bool MsgParser::field_value(uint8_t *msg, const char *label, char *ret, uint8_t retlen)
+{
+    struct format_field_info *info = find_field_info(label);
+    uint8_t offset = info->offset;
+    if (offset == 0) {
+        return false;
+    }
+
+    memset(ret, '\0', retlen);
+
+    memcpy(ret, &msg[offset], (retlen < info->length) ? retlen : info->length);
+
+    return true;
+}
+
+
+bool MsgParser::field_value(uint8_t *msg, const char *label, Vector3f &ret)
+{
+    const char *axes = "XYZ";
+    uint8_t i;
+    for(i=0; i<next_field; i++) {
+	if (!strncmp(field_info[i].label, label, strlen(label)) &&
+	    strlen(field_info[i].label) == strlen(label)+1) {
+	    for (uint8_t j=0; j<3; j++) {
+		if (field_info[i].label[strlen(label)] == axes[j]) {
+                    field_value_for_type_at_offset(msg,
+                                                   field_info[i].type,
+                                                   field_info[i].offset,
+                                                   ret[j]);
+                    break; // break from finding-label loop
+                }
+            }
+        }
+        if (i == next_field) {
+            return 0; // not found
+        }
+    }
+
+    return true;
+}
+
+
+void MsgParser::string_for_labels(char *buffer, uint bufferlen)
+{
+    memset(buffer, '\0', bufferlen);
+    bufferlen--;
+
+    char *pos = buffer;
+    for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
+        if (field_info[k].label != NULL) {
+            uint8_t remaining = bufferlen - (pos - buffer);
+            uint8_t label_length = strlen(field_info[k].label);
+            uint8_t required = label_length;
+            if (pos != buffer) { // room for a comma
+                required++;
+            }
+            if (required+1 > remaining) { // null termination
+                break;
+            }
+
+            if (pos != buffer) {
+                *pos++ = ',';
+            }
+
+            memcpy(pos, field_info[k].label, label_length);
+            pos += label_length;
+        }
+    }
+}
+
+MsgParser::~MsgParser()
+{
+    for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
+        if (field_info[k].label != NULL) {
+            free(field_info[k].label);
+        }
+    }
+}
+
 bool LogReader::open_log(const char *logfile)
 {
     fd = ::open(logfile, O_RDONLY);
@@ -42,211 +331,75 @@ bool LogReader::open_log(const char *logfile)
     return true;
 }
 
-
-struct PACKED log_Plane_Compass_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-};
-
-struct PACKED log_Copter_Compass_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-    int16_t motor_offset_x;
-    int16_t motor_offset_y;
-    int16_t motor_offset_z;
-};
-
-struct PACKED log_Plane_Attitude_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
-};
-
-struct PACKED log_Copter_Attitude_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t control_roll;
-    int16_t roll;
-    int16_t control_pitch;
-    int16_t pitch;
-    uint16_t control_yaw;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
-};
-
-struct PACKED log_Copter_Nav_Tuning {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    float    desired_pos_x;
-    float    desired_pos_y;
-    float    pos_x;
-    float    pos_y;
-    float    desired_vel_x;
-    float    desired_vel_y;
-    float    vel_x;
-    float    vel_y;
-    float    desired_accel_x;
-    float    desired_accel_y;
-};
-
-struct PACKED log_Rover_Attitude_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-};
-
-struct PACKED log_Rover_Compass_old {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-    int16_t motor_offset_x;
-    int16_t motor_offset_y;
-    int16_t motor_offset_z;
-};
-
-void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
+void LogReader::update_plane(uint8_t type, uint8_t *data, uint16_t length)
 {
+    MsgParser *p = msgparser[type];
+
     switch (type) {
     case LOG_PLANE_COMPASS_MSG: {
-        struct log_Plane_Compass_old msg;
-        if(sizeof(msg) != length) {
-            printf("Bad plane COMPASS_OLD length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
+        update_from_msg_compass(0, p, data);
         break;
     }
 
     case LOG_PLANE_ATTITUDE_MSG: {
-        struct log_Plane_Attitude_old msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, data);
+        attitude_from_msg(p, data, attitude, "Roll", "Pitch", "Yaw");
         break;
     }
 
     case LOG_PLANE_AIRSPEED_MSG:
     case LOG_ARSP_MSG: {
-        struct log_AIRSPEED msg;
-        if (sizeof(msg) != length && length != sizeof(msg)+8) {
-            printf("Bad AIRSPEED length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        airspeed.setHIL(msg.airspeed, msg.diffpressure, msg.temperature);
+	wait_timestamp_from_msg(p, data);
+	p = msgparser[LOG_ARSP_MSG]; // this actually uses a non-"old" structure
+	airspeed.setHIL(require_field_float(p, data, "AirSpeed"),
+			require_field_float(p, data, "DiffPress"),
+			require_field_float(p, data, "Temp"));
         dataflash.Log_Write_Airspeed(airspeed);
         break;
     }
     }
 }
 
-void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
+void LogReader::update_rover(uint8_t type, uint8_t *data, uint16_t length)
 {
+    MsgParser *p = msgparser[type];
+
     switch (type) {
     case LOG_ROVER_COMPASS_MSG: {
-        struct log_Rover_Compass_old msg;
-        if(sizeof(msg) != length) {
-            printf("Bad rover COMPASS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
+        wait_timestamp_from_msg(p, data);
+        update_from_msg_compass(0, p, data);
         break;
     }
 
     case LOG_ROVER_ATTITUDE_MSG: {
-        struct log_Rover_Attitude_old msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, data);
+        attitude_from_msg(p, data, attitude, "Roll", "Pitch", "Yaw");
         break;
     }
     }
 }
 
-void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
+void LogReader::update_copter(uint8_t type, uint8_t *data, uint16_t length)
 {
+    MsgParser *p = msgparser[type];
+
     switch (type) {
     case LOG_COPTER_COMPASS_MSG: {
-        struct log_Copter_Compass_old msg;
-        if(sizeof(msg) != length) {
-            printf("Bad copter COMPASS length %u expected %u\n", (unsigned)length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
+        wait_timestamp_from_msg(p, data);
+        update_from_msg_compass(0, p, data);
         break;
     }
 
     case LOG_COPTER_ATTITUDE_MSG: {
-        struct log_Copter_Attitude_old msg;
-        if (sizeof(msg) == length+sizeof(uint16_t)*2) {
-            // old style, without errors
-            memset(&msg, 0, sizeof(msg));
-            memcpy(&msg, data, length);
-        } else if (sizeof(msg) == length) {
-            memcpy(&msg, data, sizeof(msg));
-        } else {
-            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, data);
+        attitude_from_msg(p, data, attitude, "Roll", "Pitch", "Yaw");
         break;
     }
 
     case LOG_COPTER_NAV_TUNING_MSG: {
-        struct log_Copter_Nav_Tuning msg;
-        if(sizeof(msg) != length) {
-            printf("Bad copter NAV_TUNING length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        inavpos = Vector3f(msg.pos_x * 0.01f, 
-                           msg.pos_y * 0.01f,
-                           0);
+        inavpos = Vector3f(require_field_float(p, data, "PosX") * 0.01f,
+			   require_field_float(p, data, "PosY") * 0.01f,
+			   0);
         break;
     }
     }
@@ -256,7 +409,7 @@ bool LogReader::set_parameter(const char *name, float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE" };
     for (uint8_t i=0; i<sizeof(ignore_parms)/sizeof(ignore_parms[0]); i++) {
-        if (strcmp(name, ignore_parms[i]) == 0) {
+        if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
             return true;
         }
@@ -285,6 +438,177 @@ bool LogReader::set_parameter(const char *name, float value)
     return true;
 }
 
+template <typename R>
+void LogReader::require_field(class MsgParser *p, uint8_t *msg, const char *label, R &ret)
+{
+    if (! p->field_value(msg, label, ret)) {
+        char all_labels[256];
+        p->string_for_labels(all_labels, 256);
+        ::printf("Field (%s) not found; options are (%s)\n", label, all_labels);
+        exit(1);
+    }
+}
+
+void LogReader::require_field(MsgParser *p, uint8_t *msg, const char *label, char *buffer, uint8_t bufferlen)
+{
+    if (! p->field_value(msg, label, buffer, bufferlen)) {
+        char all_labels[256];
+        p->string_for_labels(all_labels, 256);
+        ::printf("Field (%s) not found; options are (%s)\n", label, all_labels);
+        exit(1);
+    }
+}
+
+// start convenience functions for getting values for fields.  Also,
+// these are required in some places as otherwise we attempt to take
+// references to bit-packed data structures...
+uint8_t LogReader::require_field_uint8_t(class MsgParser *p, uint8_t *msg, const char *label)
+{
+    uint8_t ret;
+    require_field(p, msg, label, ret);
+    return ret;
+}
+uint16_t LogReader::require_field_uint16_t(class MsgParser *p, uint8_t *msg, const char *label)
+{
+    uint16_t ret;
+    require_field(p, msg, label, ret);
+    return ret;
+}
+int16_t LogReader::require_field_int16_t(class MsgParser *p, uint8_t *msg, const char *label)
+{
+    int16_t ret;
+    require_field(p, msg, label, ret);
+    return ret;
+}
+
+int32_t LogReader::require_field_int32_t(class MsgParser *p, uint8_t *msg, const char *label)
+{
+    int32_t ret;
+    require_field(p, msg, label, ret);
+    return ret;
+}
+float LogReader::require_field_float(class MsgParser *p, uint8_t *msg, const char *label)
+{
+    float ret;
+    require_field(p, msg, label, ret);
+    return ret;
+}
+
+void LogReader::wait_timestamp_from_msg(class MsgParser *p, uint8_t *msg)
+{
+    uint32_t timestamp;
+    require_field(p, msg, "TimeMS", timestamp);
+    wait_timestamp(timestamp);
+}
+
+void LogReader::update_from_msg_imu(uint8_t imu_offset, class MsgParser *p, uint8_t *msg)
+{
+    wait_timestamp_from_msg(p, msg);
+
+    uint8_t this_imu_mask = 1 << imu_offset;
+
+    if (gyro_mask & this_imu_mask) {
+        Vector3f gyro;
+        require_field(p, msg, "Gyr", gyro);
+        ins.set_gyro(imu_offset, gyro);
+    }
+    if (accel_mask & this_imu_mask) {
+        Vector3f accel2;
+        require_field(p, msg, "Acc", accel2);
+        ins.set_accel(imu_offset, accel2);
+    }
+
+    dataflash.Log_Write_IMU(ins);
+}
+
+void LogReader::location_from_msg(class MsgParser *p, uint8_t *msg,
+                                  Location &loc,
+                                  const char *label_lat,
+                                  const char *label_long,
+                                  const char *label_alt)
+{
+    loc.lat = require_field_int32_t(p, msg, label_lat);
+    loc.lng = require_field_int32_t(p, msg, label_long);
+    loc.alt = require_field_int32_t(p, msg, label_alt);
+    loc.options = 0;
+}
+
+void LogReader::ground_vel_from_msg(class MsgParser *p, uint8_t *msg,
+                                    Vector3f &vel,
+                                    const char *label_speed,
+                                    const char *label_course,
+                                    const char *label_vz)
+{
+    uint32_t ground_speed;
+    int32_t ground_course;
+    require_field(p, msg, label_speed, ground_speed);
+    require_field(p, msg, label_course, ground_course);
+    vel[0] = ground_speed*0.01f*cosf(radians(ground_course*0.01f));
+    vel[1] = ground_speed*0.01f*sinf(radians(ground_course*0.01f));
+    vel[2] = require_field_float(p, msg, label_vz);
+}
+
+void LogReader::attitude_from_msg(class MsgParser *p, uint8_t *msg,
+                                  Vector3f &att,
+                                  const char *label_roll,
+                                  const char *label_pitch,
+                                  const char *label_yaw)
+{
+    att[0] = require_field_int16_t(p, msg, label_roll) * 0.01f;
+    att[1] = require_field_int16_t(p, msg, label_pitch) * 0.01f;
+    att[2] = require_field_uint16_t(p, msg, label_yaw) * 0.01f;
+}
+
+void LogReader::update_from_msg_gps(uint8_t gps_offset, class MsgParser *p, uint8_t *msg, bool responsible_for_relalt)
+{
+    uint32_t timestamp;
+    require_field(p, msg, "T", timestamp);
+    wait_timestamp(timestamp);
+
+    Location loc;
+    location_from_msg(p, msg, loc, "Lat", "Lng", "Alt");
+    Vector3f vel;
+    ground_vel_from_msg(p, msg, vel, "Spd", "GCrs", "VZ");
+
+    uint8_t status = require_field_uint8_t(p, msg, "Status");
+    gps.setHIL(gps_offset,
+               (AP_GPS::GPS_Status)status,
+               timestamp,
+               loc,
+               vel,
+               require_field_uint8_t(p, msg, "NSats"),
+               require_field_uint8_t(p, msg, "HDop"),
+               require_field_float(p, msg, "VZ") != 0);
+    if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
+        ground_alt_cm = require_field_int32_t(p, msg, "Alt");
+    }
+
+    if (responsible_for_relalt) {
+        // this could possibly check for the presence of "RelAlt" label?
+        rel_altitude = 0.01f * require_field_int32_t(p, msg, "RelAlt");
+    }
+
+    dataflash.Log_Write_GPS(gps, gps_offset, rel_altitude);
+}
+
+
+void LogReader::update_from_msg_compass(uint8_t compass_offset, class MsgParser *p, uint8_t *msg)
+{
+    wait_timestamp_from_msg(p, msg);
+
+    Vector3f mag;
+    require_field(p, msg, "Mag", mag);
+    Vector3f mag_offset;
+    require_field(p, msg, "Ofs", mag_offset);
+
+    compass.setHIL(mag - mag_offset);
+    // compass_offset is which compass we are setting info for;
+    // mag_offset is a vector indicating the compass' calibration...
+    compass.set_offsets(compass_offset, mag_offset);
+
+    dataflash.Log_Write_Compass(compass);
+}
+
 bool LogReader::update(uint8_t &type)
 {
     uint8_t hdr[3];
@@ -297,272 +621,140 @@ bool LogReader::update(uint8_t &type)
     }
 
     if (hdr[2] == LOG_FORMAT_MSG) {
-        struct log_Format &f = formats[num_formats];
+        struct log_Format f;
         memcpy(&f, hdr, 3);
         if (::read(fd, &f.type, sizeof(f)-3) != sizeof(f)-3) {
             return false;
         }
-        if (num_formats < LOGREADER_MAX_FORMATS-1) {
-            num_formats++;
-        }
+        memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
         type = f.type;
+
+        msgparser[f.type] = new MsgParser(f);
+
+	// ::printf("Defining log format for type (%d)\n", f.type);
+
         return true;
     }
 
-    uint8_t i;
-    for (i=0; i<num_formats; i++) {
-        if (formats[i].type == hdr[2]) break;
-    }
-    if (i == num_formats) {
+    if (formats[hdr[2]].type == 0) {
+        // no format message received for this type; we should
+        // probably have a verbose option and warn here!
         return false;
     }
-    const struct log_Format &f = formats[i];
+    const struct log_Format &f = formats[hdr[2]];
     
-    uint8_t data[f.length];
-    memcpy(data, hdr, 3);
-    if (::read(fd, &data[3], f.length-3) != f.length-3) {
+    uint8_t msg[f.length];
+    memcpy(msg, hdr, 3);
+    if (::read(fd, &msg[3], f.length-3) != f.length-3) {
         return false;
     }
 
+    MsgParser *p = msgparser[f.type];
+
     switch (f.type) {
     case LOG_MESSAGE_MSG: {
-        struct log_Message msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad MESSAGE length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        if (strncmp(msg.msg, "ArduPlane", strlen("ArduPlane")) == 0) {
+        const uint8_t msg_text_len = 64;
+        char msg_text[msg_text_len];
+        require_field(p, msg, "Message", msg_text, msg_text_len);
+
+        if (strncmp(msg_text, "ArduPlane", strlen("ArduPlane")) == 0) {
             vehicle = VEHICLE_PLANE;
             ::printf("Detected Plane\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
             ahrs.set_fly_forward(true);
-        } else if (strncmp(msg.msg, "ArduCopter", strlen("ArduCopter")) == 0) {
+        } else if (strncmp(msg_text, "ArduCopter", strlen("ArduCopter")) == 0) {
             vehicle = VEHICLE_COPTER;
             ::printf("Detected Copter\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
             ahrs.set_fly_forward(false);
-        } else if (strncmp(msg.msg, "ArduRover", strlen("ArduRover")) == 0) {
+        } else if (strncmp(msg_text, "ArduRover", strlen("ArduRover")) == 0) {
             vehicle = VEHICLE_ROVER;
             ::printf("Detected Rover\n");
             ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
             ahrs.set_fly_forward(true);
         }
-        dataflash.Log_Write_Message(msg.msg);
+        dataflash.Log_Write_Message(msg_text);
         break;
     }
 
     case LOG_IMU_MSG: {
-        struct log_IMU msg;
-        memset(&msg, 0, sizeof(msg));
-        if (sizeof(msg) < f.length) {
-            printf("Bad IMU length %u expected %u\n",
-                   (unsigned)sizeof(msg), (unsigned)f.length);
-            exit(1);
-        }
-        memcpy(&msg, data, f.length);
-        wait_timestamp(msg.timestamp);
-        //printf("IMU %lu\n", (unsigned long)msg.timestamp);
-        if (gyro_mask & 1) {
-            ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        }
-        if (accel_mask & 1) {
-            ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
-        }
-        dataflash.Log_Write_IMU(ins);
+        update_from_msg_imu(0, p, msg);
         break;
     }
 
     case LOG_IMU2_MSG: {
-        struct log_IMU msg;
-        memset(&msg, 0, sizeof(msg));
-        if (sizeof(msg) < f.length) {
-            printf("Bad IMU2 length %u expected %u\n",
-                   (unsigned)sizeof(msg), (unsigned)f.length);
-            exit(1);
-        }
-        memcpy(&msg, data, f.length);
-        wait_timestamp(msg.timestamp);
-        if (gyro_mask & 2) {
-            ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        }
-        if (accel_mask & 2) {
-            ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
-        }
-        dataflash.Log_Write_IMU(ins);
+        update_from_msg_imu(1, p, msg);
         break;
     }
 
     case LOG_IMU3_MSG: {
-        struct log_IMU msg;
-        memset(&msg, 0, sizeof(msg));
-        if (sizeof(msg) < f.length) {
-            printf("Bad IMU3 length %u expected %u\n",
-                   (unsigned)sizeof(msg), (unsigned)f.length);
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        if (gyro_mask & 4) {
-            ins.set_gyro(2, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        }
-        if (accel_mask & 4) {
-            ins.set_accel(2, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
-        }
-        dataflash.Log_Write_IMU(ins);
+        update_from_msg_imu(2, p, msg);
         break;
     }
 
     case LOG_GPS_MSG: {
-        struct log_GPS msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad GPS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.apm_time);
-        Location loc;
-        loc.lat = msg.latitude;
-        loc.lng = msg.longitude;
-        loc.alt = msg.altitude;
-        loc.options = 0;
-
-        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
-                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
-                     msg.vel_z);
-        gps.setHIL(0, (AP_GPS::GPS_Status)msg.status,
-                   msg.apm_time,
-                   loc,
-                   vel,
-                   msg.num_sats,
-                   msg.hdop,
-                   msg.vel_z != 0);
-        if (msg.status == 3 && ground_alt_cm == 0) {
-            ground_alt_cm = msg.altitude;
-        }
-        rel_altitude = msg.rel_altitude*0.01f;
-        dataflash.Log_Write_GPS(gps, 0, rel_altitude);
+        update_from_msg_gps(0,p, msg, true);
         break;
     }
 
     case LOG_GPS2_MSG: {
-        struct log_GPS2 msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad GPS2 length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.apm_time);
-        Location loc;
-        loc.lat = msg.latitude;
-        loc.lng = msg.longitude;
-        loc.alt = msg.altitude;
-        loc.options = 0;
-
-        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
-                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
-                     msg.vel_z);
-        gps.setHIL(1, (AP_GPS::GPS_Status)msg.status,
-                   msg.apm_time,
-                   loc,
-                   vel,
-                   msg.num_sats,
-                   msg.hdop,
-                   msg.vel_z != 0);
-        if (msg.status == 3 && ground_alt_cm == 0) {
-            ground_alt_cm = msg.altitude;
-        }
-        dataflash.Log_Write_GPS(gps, 1, rel_altitude);
+        // only LOG_GPS_MSG gives us relative altitude.  We still log
+        // the relative altitude when we get a LOG_GPS2_MESSAGE - but
+        // the value we use (probably) comes from the most recent
+        // LOG_GPS_MESSAGE message!
+        update_from_msg_gps(1, p, msg, false);
         break;
     }
 
     case LOG_SIMSTATE_MSG: {
-        struct log_AHRS msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad SIMSTATE length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        sim_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, msg);
+        attitude_from_msg(p, msg, sim_attitude, "Roll", "Pitch", "Yaw");
         break;
     }
 
     case LOG_BARO_MSG: {
-        struct log_BARO msg;
-        if (sizeof(msg) == f.length+sizeof(float)) {
-            // old style, without climbrate
-            memset(&msg, 0, sizeof(msg));
-            memcpy(&msg, data, f.length);
-        } else if (sizeof(msg) == f.length) {
-            memcpy(&msg, data, sizeof(msg));
-        } else {
-            printf("Bad LOG_BARO length %u expected %u\n",
-                   (unsigned)f.length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        wait_timestamp(msg.timestamp);
-        baro.setHIL(0, msg.pressure, msg.temperature*0.01f);
+        wait_timestamp_from_msg(p, msg);
+        baro.setHIL(0,
+                    require_field_float(p, msg, "Press"),
+                    require_field_int16_t(p, msg, "Temp") * 0.01f);
         dataflash.Log_Write_Baro(baro);
         break;
     }
 
     case LOG_PARAMETER_MSG: {
-        struct log_Parameter msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad LOG_PARAMETER length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        set_parameter(msg.name, msg.value);
-        break;        
+        const uint8_t parameter_name_len = AP_MAX_NAME_SIZE + 1; // null-term
+        char parameter_name[parameter_name_len];
+
+        require_field(p, msg, "Name", parameter_name, parameter_name_len);
+
+        set_parameter(parameter_name, require_field_float(p, msg, "Value"));
+        break;
     }
-        
+
     case LOG_AHR2_MSG: {
-        struct log_AHRS msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad AHR2 length %u should be %u\n", (unsigned)f.length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        ahr2_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, msg);
+        attitude_from_msg(p, msg, ahr2_attitude, "Roll", "Pitch", "Yaw");
         break;
     }
 
     case LOG_ATTITUDE_MSG: {
-        struct log_Attitude msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)f.length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
+        wait_timestamp_from_msg(p, msg);
+        attitude_from_msg(p, msg, attitude, "Roll", "Pitch", "Yaw");
         break;
     }
 
     case LOG_COMPASS_MSG: {
-        struct log_Compass msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad COMPASS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(0, Vector3f(msg.offset_x, msg.offset_y, msg.offset_z));
-        dataflash.Log_Write_Compass(compass);
+        update_from_msg_compass(0, p, msg);
         break;
     }
 
     default:
         if (vehicle == VEHICLE_PLANE) {
-            process_plane(f.type, data, f.length);
+            update_plane(f.type, msg, f.length);
         } else if (vehicle == VEHICLE_COPTER) {
-            process_copter(f.type, data, f.length);
+            update_copter(f.type, msg, f.length);
         } else if (vehicle == VEHICLE_ROVER) {
-            process_rover(f.type, data, f.length);
+            update_rover(f.type, msg, f.length);
         }
         break;
     }
@@ -593,3 +785,4 @@ bool LogReader::wait_type(uint8_t wtype)
     }
     return true;
 }
+
