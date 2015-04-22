@@ -564,6 +564,13 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // Turn on when above LOW, because channel will also be used for speed
             // control signal in tradheli
             motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+
+            // Log new status
+            if (motors.get_interlock()){
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+            } else {
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+            }
             break;
                 
     }
