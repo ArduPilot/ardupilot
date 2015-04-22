@@ -800,7 +800,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_logging1,        5,   1700 },
     { update_logging2,        5,   1700 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,        10,    100 },	
+    { frsky_telemetry_send,        10,    100 },
 #endif
     { terrain_update,         5,    500 },
 };
