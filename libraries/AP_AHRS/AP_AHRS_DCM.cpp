@@ -476,7 +476,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         _omega_I_sum.z += error_z * _ki_yaw * yaw_deltat;
     }
 
-    _error_yaw = 0.9f * _error_yaw + 0.1f * fabsf(yaw_error);
+    _error_yaw = 0.8f * _error_yaw + 0.2f * fabsf(yaw_error);
 }
 
 
@@ -736,7 +736,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         return;
     }
 
-    _error_rp = 0.9f * _error_rp + 0.1f * best_error;
+    _error_rp = 0.8f * _error_rp + 0.2f * best_error;
 
     // base the P gain on the spin rate
     float spin_rate = _omega.length();
