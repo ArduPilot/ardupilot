@@ -240,6 +240,15 @@ static bool pre_arm_checks(bool display_failure)
         return true;
     }
 
+    // check if motor interlock and E-stop aux switches are used
+    // at the same time.  This cannot be allowed.
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Interlock/E-Stop Conflict"));
+        }
+        return false;
+    }
+
     // check if motor interlock aux switch is in use
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated, 
