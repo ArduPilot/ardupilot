@@ -74,14 +74,6 @@ public:
     /// more) to process incoming data.
     void update(void);
 
-    //True if any of the underlying GPS Drivers are ready to enter
-    //a dgps-based fix beyond 3D lock, such as RTK mode. 
-    bool can_calculate_base_pos(void);
-
-    //Allows the underlying GPS Drivers to enter a differential lock
-    //Might cause a position jump, thus only do this on the ground.
-    void calculate_base_pos(void);
-
     // GPS driver types
     enum GPS_Type {
         GPS_TYPE_NONE  = 0,
@@ -336,6 +328,8 @@ public:
 #if GPS_MAX_INSTANCES > 1
     AP_Int8 _auto_switch;
     AP_Int8 _min_dgps;
+    AP_Int16 _sbp_logmask;
+    AP_Int8 _inject_to;
 #endif
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
@@ -346,6 +340,10 @@ public:
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
+
+    //Inject a packet of raw binary to a GPS
+    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(uint8_t instance, uint8_t *data, uint8_t len);
 
     //MAVLink Status Sending
     void send_mavlink_gps_raw(mavlink_channel_t chan);
