@@ -111,7 +111,7 @@ static uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_se
             // enable and arm motors
             if (!motors.armed()) {
                 init_rc_out();
-                output_min();
+                enable_motor_output();
                 motors.armed(true);
             }
 

@@ -207,7 +207,7 @@ static bool init_arm_motors(bool arming_from_gcs)
     delay(30);
 
     // enable output to motors
-    output_min();
+    enable_motor_output();
 
     // finally actually arm the motors
     motors.armed(true);
