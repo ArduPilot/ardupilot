@@ -647,6 +647,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // running at 800Hz and the MPU6000 running at 1kHz, by combining
     // the two the effects of aliasing are greatly reduced.
     Vector3f error[INS_MAX_INSTANCES];
+    float error_dirn[INS_MAX_INSTANCES];
     Vector3f GA_b[INS_MAX_INSTANCES];
     int8_t besti = -1;
     float best_error = 0;
@@ -673,11 +674,18 @@ AP_AHRS_DCM::drift_correction(float deltat)
             continue;
         }
         error[i] = GA_b[i] % GA_e;
+        // Take dot product to catch case vectors are opposite sign and parallel
+        error_dirn[i] = GA_b[i] * GA_e;
         float error_length = error[i].length();
         if (besti == -1 || error_length < best_error) {
             besti = i;
             best_error = error_length;
         }
+        // Catch case where orientation is 180 degrees out
+        if (error_dirn[besti] < 0.0f) {
+            best_error = 1.0f;
+        }
+
     }
 
     if (besti == -1) {
