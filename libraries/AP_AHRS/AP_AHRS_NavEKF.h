@@ -38,7 +38,7 @@ public:
     AP_AHRS_DCM(ins, baro, gps),
         EKF(this, baro),
         ekf_started(false),
-        startup_delay_ms(10000),
+        startup_delay_ms(1000),
         start_time_ms(0)
         {
         }
