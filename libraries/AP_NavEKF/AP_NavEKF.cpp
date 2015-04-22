@@ -2100,6 +2100,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseHgtData) {
             // calculate height innovations
             innovVelPos[5] = statesAtHgtTime.position.z - observation[5];
+
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
@@ -2159,6 +2160,22 @@ void NavEKF::FuseVelPosNED()
                     R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                 } else {
                     innovVelPos[obsIndex] = statesAtHgtTime.position[obsIndex-3] - observation[obsIndex];
+                    if (obsIndex == 5) {
+                        static const float gndMaxBaroErr = 4.0f;
+                        static const float gndBaroInnovFloor = -0.5f;
+
+                        if(getTouchdownExpected()) {
+                            // when a touchdown is expected, floor the barometer innovation at gndBaroInnovFloor
+                            // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
+                            // this function looks like this:
+                            //         |/
+                            //---------|---------
+                            //    ____/|
+                            //   /     |
+                            //  /      |
+                            innovVelPos[5] += constrain_float(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                        }
+                    }
                 }
 
                 // calculate the Kalman gain and calculate innovation variances
