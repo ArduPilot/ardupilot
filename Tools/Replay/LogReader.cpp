@@ -354,6 +354,7 @@ bool LogReader::update(uint8_t &type)
 
     case LOG_IMU_MSG: {
         struct log_IMU msg;
+        uint64_t delay;
         memset(&msg, 0, sizeof(msg));
         if (sizeof(msg) < f.length) {
             printf("Bad IMU length %u expected %u\n",
@@ -361,8 +362,9 @@ bool LogReader::update(uint8_t &type)
             exit(1);
         }
         memcpy(&msg, data, f.length);
-        wait_timestamp(msg.timestamp);
-        //printf("IMU %lu\n", (unsigned long)msg.timestamp);
+        delay = msg.timestamp*1000 + msg.timestamp_us;
+        wait_timestamp_usec(delay);
+        //printf("IMU %lu\n", (unsigned long)delay);
         if (gyro_mask & 1) {
             ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
         }
@@ -572,12 +574,17 @@ bool LogReader::update(uint8_t &type)
     return true;
 }
 
-void LogReader::wait_timestamp(uint32_t timestamp)
+void LogReader::wait_timestamp_usec(uint64_t timestamp_usec)
 {
-    uint64_t timestamp_usec = timestamp*1000UL;
     timestamp_usec = ((timestamp_usec + 1000) / 2500) * 2500;
     last_timestamp_usec = timestamp_usec;
     hal.scheduler->stop_clock(timestamp_usec);
+}
+
+void LogReader::wait_timestamp(uint32_t timestamp)
+{
+    uint64_t timestamp_usec = timestamp*1000UL;
+    wait_timestamp_usec(timestamp_usec);
 }
 
 bool LogReader::wait_type(uint8_t wtype)

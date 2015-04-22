@@ -68,6 +68,7 @@ private:
     float rel_altitude;
     uint64_t last_timestamp_usec;
 
+    void wait_timestamp_usec(uint64_t timestamp_usec);
     void wait_timestamp(uint32_t timestamp);
 
     void process_plane(uint8_t type, uint8_t *data, uint16_t length);
