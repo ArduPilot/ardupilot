@@ -784,10 +784,12 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 #endif
 }
 
-// Write an raw accel/gyro data packet
+// Write accel/gyro data packets for each of the IMUs
 void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 {
     uint32_t tstamp = hal.scheduler->millis();
+    uint16_t tstamp_us = hal.scheduler->micros() % 1000;
+
     const Vector3f &gyro = ins.get_gyro(0);
     const Vector3f &accel = ins.get_accel(0);
     struct log_IMU pkt = {
@@ -801,7 +803,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel.z,
         gyro_error  : ins.get_gyro_error_count(0),
         accel_error : ins.get_accel_error_count(0),
-        temperature : ins.get_temperature(0)
+        temperature : ins.get_temperature(0),
+        timestamp_us : tstamp_us
     };
     WriteBlock(&pkt, sizeof(pkt));
     if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
@@ -821,7 +824,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel2.z,
         gyro_error  : ins.get_gyro_error_count(1),
         accel_error : ins.get_accel_error_count(1),
-        temperature : ins.get_temperature(1)
+        temperature : ins.get_temperature(1),
+        timestamp_us : tstamp_us
     };
     WriteBlock(&pkt2, sizeof(pkt2));
     if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
@@ -840,7 +844,8 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
         accel_z : accel3.z,
         gyro_error  : ins.get_gyro_error_count(2),
         accel_error : ins.get_accel_error_count(2),
-        temperature : ins.get_temperature(2)
+        temperature : ins.get_temperature(2),
+        timestamp_us : tstamp_us
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 #endif
