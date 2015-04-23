@@ -546,7 +546,13 @@ static bool verify_loiter_turns()
     return false;
 }
 
-static bool verify_loiter_to_alt() {
+/*
+  verify a LOITER_TO_ALT command. This involves checking we have
+  reached both the desired altitude and desired heading. The desired
+  altitude only needs to be reached once.
+ */
+static bool verify_loiter_to_alt() 
+{
     update_loiter();
 
     //has target altitude been reached?
@@ -574,30 +580,27 @@ static bool verify_loiter_to_alt() {
         } 
 
         // Bearing in radians
-        float bearing = (radians( (float)(get_bearing_cd(current_loc,next_nav_cmd.content.location)/100.0) ));
+        int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
 
-        // Calculate heading
-        float heading = 5000;
-        if (((Compass &) compass).read()) {
-            const Matrix3f &m = ahrs.get_dcm_matrix();
-            heading = compass.calculate_heading(m);
+        // get current heading. We should probably be using the ground
+        // course instead to improve the accuracy in wind
+        int32_t heading_cd = ahrs.yaw_sensor;
 
-            //map heading to bearing's coordinate space:
-            if (heading < 0.0f) {
-                heading += 2.0f*PI;
-            }
-        }
+        int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
  
-        // Check to see if the the plane is heading toward the land waypoint
-        //3 degrees = 0.0523598776 radians
-        if (fabs(bearing - heading) <= 0.0523598776f) {
+        /*
+          Check to see if the the plane is heading toward the land
+          waypoint
+          We use 10 degrees of slop so that we can handle 100
+          degrees/second of yaw
+        */
+        if (abs(heading_err_cd) <= 1000) {
             //Want to head in a straight line from _here_ to the next waypoint.
             //DON'T want to head in a line from the center of the loiter to 
             //the next waypoint.
             //Therefore: mark the "last" (next_wp_loc is about to be updated)
             //wp lat/lon as the current location.
             next_WP_loc = current_loc;
-
             return true;
         } else {
             return false;
