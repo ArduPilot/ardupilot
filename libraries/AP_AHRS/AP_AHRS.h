@@ -291,6 +291,8 @@ public:
         return _flags.have_initial_yaw;
     }
 
+    virtual float get_yaw_for_control_cd(void) const { return yaw_sensor; }
+
     // set the correct centrifugal flag
     // allows arducopter to disable corrections when disarmed
     void set_correct_centrifugal(bool setting) {

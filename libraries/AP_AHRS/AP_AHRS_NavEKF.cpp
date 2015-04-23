@@ -26,6 +26,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+float AP_AHRS_NavEKF::get_yaw_for_control_cd(void) const
+{
+    if (!using_EKF()) {
+        return AP_AHRS_DCM::get_yaw_for_control_cd();
+    }
+    return degrees(attitude_for_control.get_euler_yaw())*100.0f;
+}
+
 // return the smoothed gyro vector corrected for drift
 const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 {
