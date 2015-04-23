@@ -316,7 +316,7 @@ static void mavlink_test_digicam_control(uint8_t system_id, uint8_t component_id
 	151,
 	218,
 	29,
-	80.0,
+	80.0f,
 	};
 	mavlink_digicam_control_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));

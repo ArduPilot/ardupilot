@@ -1223,7 +1223,7 @@ AP_Param *AP_Param::set_param_by_name(const char *pname, float value, enum ap_va
     // add a small amount before casting parameter values
     // from float to integer to avoid truncating to the
     // next lower integer value.
-    float rounding_addition = 0.01;
+    float rounding_addition = 0.01f;
         
     // handle variables with standard type IDs
     if (var_type == AP_PARAM_FLOAT) {

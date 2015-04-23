@@ -311,7 +311,7 @@ AP_HAL::AnalogSource* VRBRAINAnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new VRBRAINAnalogSource(pin, 0.0);
+            _channels[j] = new VRBRAINAnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }

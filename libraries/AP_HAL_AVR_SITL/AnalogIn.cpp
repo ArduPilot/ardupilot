@@ -47,7 +47,7 @@ float ADCSource::read_latest() {
 
     case ANALOG_INPUT_NONE:
     default:
-        return 0.0;
+        return 0.0f;
     }
 }
 

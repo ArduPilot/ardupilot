@@ -594,7 +594,7 @@ bool AP_InertialSensor_L3GD20::_hardware_init(Sample_rate sample_rate)
 float AP_InertialSensor_L3GD20::get_gyro_drift_rate(void)
 {
     // 0.5 degrees/second/minute
-    return ToRad(0.5/60);
+    return ToRad(0.5f/60);
 }
 
 // return true if a sample is available
@@ -630,6 +630,6 @@ void AP_InertialSensor_L3GD20::_dump_registers(void)
 float AP_InertialSensor_L3GD20::get_delta_time() const
 {
     // the sensor runs at 200Hz
-    return 0.005 * _num_samples;
+    return 0.005f * _num_samples;
 }
 #endif

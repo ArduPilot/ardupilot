@@ -641,11 +641,12 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
     }
 }
 
+#if CLI_ENABLED == ENABLED
 static void print_comma(void)
 {
     cliSerial->print_P(PSTR(","));
 }
-
+#endif
 
 /*
   write to a servo
@@ -686,12 +687,12 @@ static bool should_log(uint32_t mask)
 /*
   send FrSky telemetry. Should be called at 5Hz by scheduler
  */
-static void telemetry_send(void)
-{
 #if FRSKY_TELEM_ENABLED == ENABLED
+static void frsky_telemetry_send(void)
+{
     frsky_telemetry.send_frames((uint8_t)control_mode);
-#endif
 }
+#endif
 
 
 /*

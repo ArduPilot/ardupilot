@@ -415,10 +415,10 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
     flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)
-    flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTO_ms(30000),          // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    gndEffectBaroTO_ms(5000)        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
+    gndEffectBaroTO_ms(5000),        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
+    flowIntervalMax_ms(100)        // maximum allowable time between flow fusion events
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -1864,7 +1864,7 @@ void NavEKF::CovariancePrediction()
     covPredStep = true;
     summedDelAng.zero();
     summedDelVel.zero();
-    dt = 0.0;
+    dt = 0.0f;
 
     perf_end(_perf_CovariancePrediction);
 }
@@ -2396,8 +2396,8 @@ void NavEKF::FuseMagnetometer()
             Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[3] - P[14][2]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[5] - P[14][18]*SK_MX[4]);
             Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[3] - P[15][2]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[5] - P[15][18]*SK_MX[4]);
         } else {
-            Kfusion[14] = 0.0;
-            Kfusion[15] = 0.0;
+            Kfusion[14] = 0.0f;
+            Kfusion[15] = 0.0f;
         }
         // zero Kalman gains to inhibit magnetic field state estimation
         if (!inhibitMagStates) {
@@ -2474,8 +2474,8 @@ void NavEKF::FuseMagnetometer()
             Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
             Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
         } else {
-            Kfusion[14] = 0.0;
-            Kfusion[15] = 0.0;
+            Kfusion[14] = 0.0f;
+            Kfusion[15] = 0.0f;
         }
         // zero Kalman gains to inhibit magnetic field state estimation
         if (!inhibitMagStates) {
@@ -2550,8 +2550,8 @@ void NavEKF::FuseMagnetometer()
             Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] + P[14][3]*SH_MAG[0] - P[14][1]*SK_MZ[2] + P[14][2]*SK_MZ[3] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[5] - P[14][17]*SK_MZ[4]);
             Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] + P[15][3]*SH_MAG[0] - P[15][1]*SK_MZ[2] + P[15][2]*SK_MZ[3] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[5] - P[15][17]*SK_MZ[4]);
         } else {
-            Kfusion[14] = 0.0;
-            Kfusion[15] = 0.0;
+            Kfusion[14] = 0.0f;
+            Kfusion[15] = 0.0f;
         }
         // zero Kalman gains to inhibit magnetic field state estimation
         if (!inhibitMagStates) {
@@ -2700,7 +2700,7 @@ void NavEKF::EstimateTerrainOffset()
             float q3 = statesAtRngTime.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            float R_RNG = 0.5;
+            float R_RNG = 0.5f;
 
             // calculate Kalman gain
             float SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -3234,17 +3234,17 @@ void NavEKF::FuseAirspeed()
             // take advantage of the empty columns in H to reduce the number of operations
             for (uint8_t i = 0; i<=21; i++)
             {
-                for (uint8_t j = 0; j<=3; j++) KH[i][j] = 0.0;
+                for (uint8_t j = 0; j<=3; j++) KH[i][j] = 0.0f;
                 for (uint8_t j = 4; j<=6; j++)
                 {
                     KH[i][j] = Kfusion[i] * H_TAS[j];
                 }
-                for (uint8_t j = 7; j<=13; j++) KH[i][j] = 0.0;
+                for (uint8_t j = 7; j<=13; j++) KH[i][j] = 0.0f;
                 for (uint8_t j = 14; j<=15; j++)
                 {
                     KH[i][j] = Kfusion[i] * H_TAS[j];
                 }
-                for (uint8_t j = 16; j<=21; j++) KH[i][j] = 0.0;
+                for (uint8_t j = 16; j<=21; j++) KH[i][j] = 0.0f;
             }
             for (uint8_t i = 0; i<=21; i++)
             {
@@ -3430,12 +3430,12 @@ void NavEKF::FuseSideslip()
             {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
-            for (uint8_t j = 7; j<=13; j++) KH[i][j] = 0.0;
+            for (uint8_t j = 7; j<=13; j++) KH[i][j] = 0.0f;
             for (uint8_t j = 14; j<=15; j++)
             {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
-            for (uint8_t j = 16; j<=21; j++) KH[i][j] = 0.0;
+            for (uint8_t j = 16; j<=21; j++) KH[i][j] = 0.0f;
         }
         for (uint8_t i = 0; i<=21; i++)
         {

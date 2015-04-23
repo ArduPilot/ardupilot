@@ -302,7 +302,7 @@ void AP_Motors::update_lift_max_from_batt_voltage()
 {
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
-    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage < 0.25*_batt_voltage_min)) {
+    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage < 0.25f*_batt_voltage_min)) {
         _batt_voltage_filt.reset(1.0f);
         _lift_max = 1.0f;
         return;

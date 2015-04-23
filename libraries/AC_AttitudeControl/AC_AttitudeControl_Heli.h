@@ -77,6 +77,9 @@ private:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_boosted_throttle(float throttle_in);
     
+    // pass through for roll and pitch
+    int16_t _passthrough_roll;
+    int16_t _passthrough_pitch;
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
@@ -85,9 +88,6 @@ private:
     LowPassFilterFloat roll_feedforward_filter;
     LowPassFilterFloat yaw_feedforward_filter;
 
-    // pass through for roll and pitch
-    int16_t _passthrough_roll;
-    int16_t _passthrough_pitch;
 };
 
 #endif //AC_ATTITUDECONTROL_HELI_H

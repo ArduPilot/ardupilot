@@ -55,8 +55,8 @@ public:
 
         // these are experimentally derived from the simulator
         // with large drift levels
-        _ki = 0.0087;
-        _ki_yaw = 0.01;
+        _ki = 0.0087f;
+        _ki_yaw = 0.01f;
     }
 
     // return the smoothed gyro vector corrected for drift

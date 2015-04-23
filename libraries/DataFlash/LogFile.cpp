@@ -1254,9 +1254,9 @@ void DataFlash_Class::Log_Write_ESC(void)
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
                     time_ms     : time_ms,
                     rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
-                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.f + .5f),
-                    current     : (int16_t)(esc_status.esc[i].esc_current*100.f + .5f),
-                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.f + .5f)
+                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
+                    current     : (int16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
+                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f)
                 };
 
                 WriteBlock(&pkt, sizeof(pkt));

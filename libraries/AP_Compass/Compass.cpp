@@ -277,10 +277,10 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 Compass::Compass(void) :
     _last_update_usec(0),
     _null_init_done(false),
-    _thr_or_curr(0.0f),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
+    _thr_or_curr(0.0f),
     _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);

@@ -49,8 +49,8 @@ public:
     void sem_give();
 
 private:
-    enum AP_HAL::SPIDeviceDriver::bus_speed _speed;
     enum AP_HAL::SPIDevice _device;
+    enum AP_HAL::SPIDeviceDriver::bus_speed _speed;
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
 };
