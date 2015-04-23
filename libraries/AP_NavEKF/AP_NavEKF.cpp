@@ -418,7 +418,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTO_ms(30000),          // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    gndEffectBaroTO_ms(5000)        // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
+    gndEffectBaroTO_ms(5000)       // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
@@ -697,6 +697,19 @@ void NavEKF::UpdateFilter()
 
     // read IMU data and convert to delta angles and velocities
     readIMUData();
+
+    static bool prev_armed = false;
+    bool armed = getVehicleArmStatus();
+
+    // the vehicle was previously disarmed and time has slipped
+    // gyro auto-zero has likely just been done - skip this timestep
+    if (!prev_armed && dtIMUactual > dtIMUavg*5.0f) {
+        // stop the timer used for load measurement
+        perf_end(_perf_UpdateFilter);
+        prev_armed = armed;
+        return;
+    }
+    prev_armed = armed;
 
     // detect if the filter update has been delayed for too long
     if (dtIMUactual > 0.2f) {
@@ -1106,7 +1119,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     float rotScaler;     // scaling variable used to calculate delta quaternion from last to current time step
     Quaternion qUpdated; // quaternion at current time step after application of delta quaternion
     Quaternion deltaQuat; // quaternion from last to current time step
-    const Vector3f gravityNED(0, 0, GRAVITY_MSS); // NED gravity vector m/s^2
 
     // remove sensor bias errors
     correctedDelAng = dAngIMU - state.gyro_bias;
@@ -1118,13 +1130,9 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // use weighted average of both IMU units for delta velocities
     correctedDelVel12 = correctedDelVel1 * IMU1_weighting + correctedDelVel2 * (1.0f - IMU1_weighting);
 
-    // apply corrections for earths rotation rate and coning errors
+    // apply correction for earths rotation rate
     // % * - and + operators have been overloaded
-    if (haveDeltaAngles) {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
-    } else {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual + (prevDelAng % correctedDelAng) * 8.333333e-2f;
-    }
+    correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
 
     // save current measurements
     prevDelAng = correctedDelAng;
@@ -1163,16 +1171,26 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.quat.rotation_matrix(Tbn_temp);
     prevTnb = Tbn_temp.transposed();
 
+    float delVelGravity1_z = GRAVITY_MSS*dtDelVel1;
+    float delVelGravity2_z = GRAVITY_MSS*dtDelVel2;
+    float delVelGravity_z = delVelGravity1_z * IMU1_weighting + delVelGravity2_z * (1.0f - IMU1_weighting);
+
     // transform body delta velocities to delta velocities in the nav frame
     // * and + operators have been overloaded
+
     // blended IMU calc
-    delVelNav  = Tbn_temp*correctedDelVel12 + gravityNED*dtIMUactual;
+    delVelNav  = Tbn_temp*correctedDelVel12;
+    delVelNav.z += delVelGravity_z;
+
     // single IMU calcs
-    delVelNav1 = Tbn_temp*correctedDelVel1 + gravityNED*dtIMUactual;
-    delVelNav2 = Tbn_temp*correctedDelVel2 + gravityNED*dtIMUactual;
+    delVelNav1 = Tbn_temp*correctedDelVel1;
+    delVelNav1.z += delVelGravity1_z;
+
+    delVelNav2 = Tbn_temp*correctedDelVel2;
+    delVelNav2.z += delVelGravity2_z;
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
-    velDotNED = delVelNav / dtIMUactual ;
+    velDotNED = delVelNav / dtIMUactual;
 
     // apply a first order lowpass filter
     velDotNEDfilt = velDotNED * 0.05f + velDotNEDfilt * 0.95f;
@@ -3972,54 +3990,70 @@ void NavEKF::ConstrainStates()
     terrainState = max(terrainState, state.position.z + RNG_MEAS_ON_GND);
 }
 
+bool NavEKF::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
+    if (ins_index < ins.get_accel_count()) {
+        if (ins.get_delta_velocity(ins_index,dVel)) {
+            dVel_dt = ins.get_delta_velocity_dt(ins_index);
+        } else {
+            dVel = ins.get_accel(ins_index) * dtIMUactual;
+            dVel_dt = dtIMUactual;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NavEKF::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
+    if (ins_index < ins.get_gyro_count()) {
+        if (!ins.get_delta_angle(ins_index,dAng)) {
+            dAng = ins.get_accel(ins_index) * dtIMUactual;
+        }
+        return true;
+    }
+    return false;
+}
+
 // update IMU delta angle and delta velocity measurements
 void NavEKF::readIMUData()
 {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     dtIMUavg = 1.0f/ins.get_sample_rate();
-
-    // limit IMU delta time to prevent numerical problems elsewhere
-    dtIMUactual = constrain_float(ins.get_delta_time(),0.001f,0.2f);
+    dtIMUactual = max(ins.get_delta_time(),1.0e-3f);
 
     // the imu sample time is sued as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    bool dual_ins = ins.get_accel_health(0) && ins.get_accel_health(1);
-    haveDeltaAngles = true;
-
-    if (dual_ins) {
-        Vector3f dAngIMU1;
-        Vector3f dAngIMU2;
-
-        if(!ins.get_delta_velocity(0,dVelIMU1)) {
-            dVelIMU1 = ins.get_accel(0) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_velocity(1,dVelIMU2)) {
-            dVelIMU2 = ins.get_accel(1) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_angle(0, dAngIMU1)) {
-            haveDeltaAngles = false;
-            dAngIMU1 = ins.get_gyro(0) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_angle(1, dAngIMU2)) {
-            haveDeltaAngles = false;
-            dAngIMU2 = ins.get_gyro(1) * dtIMUactual;
-        }
-        dAngIMU = (dAngIMU1+dAngIMU2) * 0.5f;
+    if (ins.get_accel_health(0) && ins.get_accel_health(1)) {
+        // dual accel mode
+        readDeltaVelocity(0, dVelIMU1, dtDelVel1);
+        readDeltaVelocity(1, dVelIMU2, dtDelVel2);
     } else {
-        if(!ins.get_delta_velocity(dVelIMU1)) {
-            dVelIMU1 = ins.get_accel() * dtIMUactual;
-        }
-        dVelIMU2 = dVelIMU1;
+        // single accel mode - one of the first two accelerometers are unhealthy
+        // read primary accelerometer into dVelIMU1 and copy to dVelIMU2
+        readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
 
-        if(!ins.get_delta_angle(dAngIMU)) {
-            haveDeltaAngles = false;
-            dAngIMU = ins.get_gyro() * dtIMUactual;
-        }
+        dtDelVel2 = dtDelVel1;
+        dVelIMU2 = dVelIMU1;
+    }
+
+    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
+        // dual gyro mode - average first two gyros
+        Vector3f dAng;
+        dAngIMU.zero();
+        readDeltaAngle(0, dAng);
+        dAngIMU += dAng;
+        readDeltaAngle(1, dAng);
+        dAngIMU += dAng;
+        dAngIMU *= 0.5f;
+    } else {
+        // single gyro mode - one of the first two gyros are unhealthy or don't exist
+        // just read primary gyro
+        readDeltaAngle(ins.get_primary_gyro(), dAngIMU);
     }
 }
 
@@ -4548,7 +4582,6 @@ void NavEKF::InitialiseVariables()
     inhibitMagStates = true;
     gndOffsetValid =  false;
     flowXfailed = false;
-    haveDeltaAngles = false;
     validOrigin = false;
     gndEffectMode = false;
     gpsSpdAccuracy = 0.0f;
