@@ -5040,4 +5040,19 @@ void NavEKF::detectOptFlowTakeoff(void)
     }
 }
 
+// provides the height limit to be observed by the control loops
+// returns false if no height limiting is required
+// this is needed to ensure the vehicle does not fly too high when using optical flow navigation
+bool NavEKF::getHeightControlLimit(float &height) const
+{
+    // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
+    height = max(float(_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+    // only ask for limiting if we are doing optical flow navigation
+    if (_fusionModeGPS == 3) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 #endif // HAL_CPU_CLASS
