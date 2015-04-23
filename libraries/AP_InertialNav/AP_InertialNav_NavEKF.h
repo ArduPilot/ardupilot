@@ -100,7 +100,7 @@ public:
      * it will return invalid when no limiting is required
      * @return
      */
-    bool       get_hgt_ctrl_limit(float limit) const;
+    bool       get_hgt_ctrl_limit(float& limit) const;
 
     /**
      * get_velocity_z - returns the current climbrate.
