@@ -4172,19 +4172,24 @@ void NavEKF::readHgtData()
             // get states that were stored at the time closest to the measurement time, taking measurement delay into account
             RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
         }
-        // set flag to let other functions know new data has arrived
-        newDataHgt = true;
-        // time stamp used to check for new measurement
-        lastHgtMeasTime = _baro.get_last_update();
+
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!vehicleArmed || !getTakeoffExpected()) {
-            meaHgtAtTakeOff = 0.1f * hgtMea + 0.9f * meaHgtAtTakeOff;
+            static const float gndHgtFiltTC = 1.0f;
+            static const float dtBaro = msecHgtAvg*1.0e-3f;
+            float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
+            meaHgtAtTakeOff += (hgtMea-meaHgtAtTakeOff)*alpha;
         } else if (vehicleArmed && getTakeoffExpected()) {
             // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
             // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
             hgtMea = max(hgtMea, meaHgtAtTakeOff);
         }
+
+        // set flag to let other functions know new data has arrived
+        newDataHgt = true;
+        // time stamp used to check for new measurement
+        lastHgtMeasTime = _baro.get_last_update();
     } else {
         newDataHgt = false;
     }
