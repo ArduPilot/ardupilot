@@ -226,12 +226,30 @@ void Quaternion::rotate_fast(const Vector3f &v) {
     q4 = w1*z2 + x1*y2 - y1*x2 + z1*w2;
 }
 
+// get euler roll angle
+float Quaternion::get_euler_roll() const
+{
+    return (atan2f(2.0f*(q1*q2 + q3*q4), 1 - 2.0f*(q2*q2 + q3*q3)));
+}
+
+// get euler pitch angle
+float Quaternion::get_euler_pitch() const
+{
+    return safe_asin(2.0f*(q1*q3 - q4*q2));
+}
+
+// get euler yaw angle
+float Quaternion::get_euler_yaw() const
+{
+    return atan2f(2.0f*(q1*q4 + q2*q3), 1 - 2.0f*(q3*q3 + q4*q4));
+}
+
 // create eulers from a quaternion
 void Quaternion::to_euler(float &roll, float &pitch, float &yaw) const
 {
-    roll = (atan2f(2.0f*(q1*q2 + q3*q4), 1 - 2.0f*(q2*q2 + q3*q3)));
-    pitch = safe_asin(2.0f*(q1*q3 - q4*q2));
-    yaw = atan2f(2.0f*(q1*q4 + q2*q3), 1 - 2.0f*(q3*q3 + q4*q4));
+    roll = get_euler_roll();
+    pitch = get_euler_pitch();
+    yaw = get_euler_yaw();
 }
 
 // create eulers from a quaternion
