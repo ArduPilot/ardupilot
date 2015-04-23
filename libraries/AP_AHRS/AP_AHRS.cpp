@@ -261,8 +261,8 @@ void AP_AHRS::update_trig(void)
     if (yaw_vector.is_inf() || yaw_vector.is_nan()) {
         yaw_vector.x = 0.0f;
         yaw_vector.y = 0.0f;
-        _sin_yaw = 1.0f;
-        _cos_yaw = 0.0f;
+        _sin_yaw = 0.0f;
+        _cos_yaw = 1.0f;
     }
 
     if (isinf(_cos_roll) || isnan(_cos_roll)) {
