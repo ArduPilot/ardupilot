@@ -117,6 +117,7 @@ public:
 
     /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
     void set_speed_xy(float speed_cms);
+    void reset_speed_xy();
 
     /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
     float get_speed_xy() const { return _wp_speed_cms; }
@@ -323,5 +324,6 @@ protected:
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
     float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
+    float       _wp_speed_cms_orig;
 };
 #endif	// AC_WPNAV_H

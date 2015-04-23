@@ -127,6 +127,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _yaw(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    _wp_speed_cms_orig = _wp_speed_cms;
 }
 
 ///
@@ -374,6 +375,9 @@ void AC_WPNav::wp_and_spline_init()
         _wp_accel_cms.set_and_save(WPNAV_ACCELERATION);
     }
 
+    // load _wp_speed_cms from eeprom/default
+    reset_speed_xy();
+
     // initialise position controller
     _pos_control.init_xy_controller();
 
@@ -396,6 +400,14 @@ void AC_WPNav::set_speed_xy(float speed_cms)
         // flag that wp leash must be recalculated
         _flags.recalc_wp_leash = true;
     //}
+}
+
+void AC_WPNav::reset_speed_xy()
+{
+    if(!_wp_speed_cms.load()) {
+        // no entry in FRAM, original value should be default
+        _wp_speed_cms = _wp_speed_cms_orig;
+    }
 }
 
 /// set_destination - set destination using cm from home
