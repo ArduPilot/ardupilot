@@ -1082,12 +1082,8 @@ static void one_hz_loop()
 #endif
 #endif
 
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        pos_control.set_alt_max(pv_alt_above_origin(fence.get_safe_alt()*100.0f));
-    }
-#endif
+    // update position controller alt limits
+    update_poscon_alt_max();
 }
 
 // called at 50hz
