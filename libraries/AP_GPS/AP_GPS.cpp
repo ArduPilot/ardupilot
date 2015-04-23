@@ -475,20 +475,20 @@ AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
 void 
 AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
-    static uint32_t last_send_time_ms;
+    static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
     if (status(0) > AP_GPS::NO_GPS) {
         // when we have a GPS then only send new data
-        if (last_send_time_ms == last_message_time_ms(0)) {
+        if (last_send_time_ms[chan] == last_message_time_ms(0)) {
             return;
         }
-        last_send_time_ms = last_message_time_ms(0);
+        last_send_time_ms[chan] = last_message_time_ms(0);
     } else {
         // when we don't have a GPS then send at 1Hz
         uint32_t now = hal.scheduler->millis();
-        if (now - last_send_time_ms < 1000) {
+        if (now - last_send_time_ms[chan] < 1000) {
             return;
         }
-        last_send_time_ms = now;
+        last_send_time_ms[chan] = now;
     }
     const Location &loc = location(0);
     mavlink_msg_gps_raw_int_send(
@@ -509,15 +509,15 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 void 
 AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
-    static uint32_t last_send_time_ms;
+    static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
     if (num_sensors() < 2 || status(1) <= AP_GPS::NO_GPS) {
         return;
     }
     // when we have a GPS then only send new data
-    if (last_send_time_ms == last_message_time_ms(1)) {
+    if (last_send_time_ms[chan] == last_message_time_ms(1)) {
         return;
     }
-    last_send_time_ms = last_message_time_ms(1);
+    last_send_time_ms[chan] = last_message_time_ms(1);
 
     const Location &loc = location(1);
     mavlink_msg_gps2_raw_send(
