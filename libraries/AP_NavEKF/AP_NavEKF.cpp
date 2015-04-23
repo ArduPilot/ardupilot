@@ -1107,10 +1107,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     Vector3f delVelNav;  // delta velocity vector calculated using a blend of IMU1 and IMU2 data
     Vector3f delVelNav1; // delta velocity vector calculated using IMU1 data
     Vector3f delVelNav2; // delta velocity vector calculated using IMU2 data
-    float rotationMag;   // magnitude of rotation vector from previous to current time step
-    float rotScaler;     // scaling variable used to calculate delta quaternion from last to current time step
-    Quaternion qUpdated; // quaternion at current time step after application of delta quaternion
-    Quaternion deltaQuat; // quaternion from last to current time step
 
     // remove sensor bias errors
     correctedDelAng = dAngIMU - state.gyro_bias;
@@ -1127,33 +1123,12 @@ void NavEKF::UpdateStrapdownEquationsNED()
     correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
 
     // convert the rotation vector to its equivalent quaternion
-    rotationMag = correctedDelAng.length();
-    if (rotationMag < 1e-12f)
-    {
-        deltaQuat[0] = 1;
-        deltaQuat[1] = 0;
-        deltaQuat[2] = 0;
-        deltaQuat[3] = 0;
-    }
-    else
-    {
-        deltaQuat[0] = cosf(0.5f * rotationMag);
-        rotScaler = (sinf(0.5f * rotationMag)) / rotationMag;
-        deltaQuat[1] = correctedDelAng.x * rotScaler;
-        deltaQuat[2] = correctedDelAng.y * rotScaler;
-        deltaQuat[3] = correctedDelAng.z * rotScaler;
-    }
+    correctedDelAngQuat.from_axis_angle(correctedDelAng);
 
-    // update the quaternions by rotating from the previous attitude through
-    // the delta angle rotation quaternion
-    qUpdated[0] = states[0]*deltaQuat[0] - states[1]*deltaQuat[1] - states[2]*deltaQuat[2] - states[3]*deltaQuat[3];
-    qUpdated[1] = states[0]*deltaQuat[1] + states[1]*deltaQuat[0] + states[2]*deltaQuat[3] - states[3]*deltaQuat[2];
-    qUpdated[2] = states[0]*deltaQuat[2] + states[2]*deltaQuat[0] + states[3]*deltaQuat[1] - states[1]*deltaQuat[3];
-    qUpdated[3] = states[0]*deltaQuat[3] + states[3]*deltaQuat[0] + states[1]*deltaQuat[2] - states[2]*deltaQuat[1];
-
-    // normalise the quaternions and update the quaternion states
-    qUpdated.normalize();
-    state.quat = qUpdated;
+    // update the quaternion states by rotating from the previous attitude through
+    // the delta angle rotation quaternion and normalise
+    state.quat *= correctedDelAngQuat;
+    state.quat.normalize();
 
     // calculate the body to nav cosine matrix
     Matrix3f Tbn_temp;
