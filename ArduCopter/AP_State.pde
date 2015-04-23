@@ -105,6 +105,10 @@ void set_land_complete(bool b)
         Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
+
+    if (ap.land_complete && motors.armed() && mode_disarms_on_land(control_mode)) {
+        init_disarm_motors();
+    }
 }
 
 // ---------------------------------------------

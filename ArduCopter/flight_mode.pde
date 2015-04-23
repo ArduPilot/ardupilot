@@ -263,6 +263,10 @@ static bool mode_requires_GPS(uint8_t mode) {
     return false;
 }
 
+static bool mode_disarms_on_land(uint8_t mode) {
+    return mode_allows_arming(mode, false) && !mode_has_manual_throttle(mode);
+}
+
 // mode_has_manual_throttle - returns true if the flight mode has a manual throttle (i.e. pilot directly controls throttle)
 static bool mode_has_manual_throttle(uint8_t mode) {
     switch(mode) {
