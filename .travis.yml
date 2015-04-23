@@ -10,13 +10,19 @@ before_install:
 script:
   - Tools/scripts/build_px4_v2_quad_travis.sh ${GITHUB_API_KEY}
 
+before_deploy:
+  - mkdir deploy_files
+  - cp ArduCopter/ArduCopter-v2.px4 deploy_files
+  - cp ../PX4Firmware/Build/px4fmu-v2_APM.build/firmware.elf deploy_files/fmu.elf
+  - cp ../PX4Firmware/Build/px4io-v2_default.build/firmware.elf deploy_files/io.elf
+
 deploy:
   provider: releases
   api-key: ${GITHUB_API_KEY}
   file:
-  - "ArduCopter/ArduCopter-v2.px4"
-  - "Tools/Frame_params/Solo.param"
-  - "Tools/Frame_params/Solo-minus.param"
+  - "deploy_files/ArduCopter-v2.px4"
+  - "deploy_files/fmu.elf"
+  - "deploy_files/io.elf"
   skip_cleanup: true
   on:
     tags: true
