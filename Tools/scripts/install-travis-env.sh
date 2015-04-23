@@ -23,6 +23,10 @@ ARM_ROOT="gcc-arm-none-eabi-4_7-2014q2"
 ARM_TARBALL="$ARM_ROOT-20140408-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
 
+RPI_ROOT="master"
+RPI_TARBALL="$RPI_ROOT.tar.gz"
+RPI_TARBALL_URL="http://firmware.diydrones.com/Tools/Travis/NavIO/$RPI_TARBALL"
+
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
@@ -77,13 +81,24 @@ wget $ARM_TARBALL_URL
 tar xjf ${ARM_TARBALL}
 rm -f ${ARM_TARBALL}
 
+cd $OPT
+wget $RPI_TARBALL_URL
+tar xzf ${RPI_TARBALL}
+rm -f ${RPI_TARBALL}
+
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 echo $exportline >> ~/.profile
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
 echo $exportline2 >> ~/.profile
 
+exportline3="export PATH=$OPT/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH";
+echo $exportline3 >> ~/.profile
+
 . ~/.profile
 echo $PATH
 ls -l $OPT/$ARM_ROOT/bin
 $OPT/$ARM_ROOT/bin/arm-none-eabi-gcc --version
+
+echo "Compiler for NavIO"
+arm-linux-gnueabihf-gcc --version
