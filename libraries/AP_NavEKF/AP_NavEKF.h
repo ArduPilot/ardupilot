@@ -541,6 +541,7 @@ private:
     VectorN<state_elements,50> storedStates;       // state vectors stored for the last 50 time steps
     Vector_u32_50 statetimeStamp;    // time stamp for each state vector stored
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
+    Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
     Vector3f correctedDelVel12;     // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
     Vector3f correctedDelVel1;      // delta velocities along the XYZ body axes for IMU1 corrected for errors (m/s)
     Vector3f correctedDelVel2;      // delta velocities along the XYZ body axes for IMU2 corrected for errors (m/s)
