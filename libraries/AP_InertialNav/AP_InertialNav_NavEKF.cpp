@@ -140,13 +140,15 @@ bool AP_InertialNav_NavEKF::get_hagl(float height) const
  * it will return invalid when no limiting is required
  * @return
  */
-bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float limit) const
+bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float& limit) const
 {
     // true when estimate is valid
-    bool valid = _ahrs_ekf.get_NavEKF().getHeightControlLimit(limit);
-    // convert height from m to cm
-    limit *= 100.0f;
-    return valid;
+    if (_ahrs_ekf.get_NavEKF().getHeightControlLimit(limit)) {
+        // convert height from m to cm
+        limit *= 100.0f;
+        return true;
+    }
+    return false;
 }
 
 /**
