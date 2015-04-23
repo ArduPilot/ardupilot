@@ -71,19 +71,19 @@ void Quaternion::from_rotation_matrix(const Matrix3f &m)
         qy = (m02 - m20) / S; 
         qz = (m10 - m01) / S; 
     } else if ((m00 > m11) && (m00 > m22)) { 
-        float S = sqrtf(1.0 + m00 - m11 - m22) * 2;
+        float S = sqrtf(1.0f + m00 - m11 - m22) * 2;
         qw = (m21 - m12) / S;
         qx = 0.25f * S;
         qy = (m01 + m10) / S; 
         qz = (m02 + m20) / S; 
     } else if (m11 > m22) { 
-        float S = sqrtf(1.0 + m11 - m00 - m22) * 2;
+        float S = sqrtf(1.0f + m11 - m00 - m22) * 2;
         qw = (m02 - m20) / S;
         qx = (m01 + m10) / S; 
         qy = 0.25f * S;
         qz = (m12 + m21) / S; 
     } else { 
-        float S = sqrtf(1.0 + m22 - m00 - m11) * 2;
+        float S = sqrtf(1.0f + m22 - m00 - m11) * 2;
         qw = (m10 - m01) / S;
         qx = (m02 + m20) / S;
         qy = (m12 + m21) / S;
