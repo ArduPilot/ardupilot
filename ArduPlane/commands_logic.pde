@@ -390,7 +390,7 @@ static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     condition_value = next_WP_loc.alt;
     
     //are lat and lon 0?  if so, don't change the current wp lat/lon
-    if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         set_next_WP(cmd.content.location);
     }
     //set loiter direction
