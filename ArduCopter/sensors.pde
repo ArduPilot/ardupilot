@@ -86,12 +86,8 @@ static void init_optflow()
         return;
     }
 
-    // initialise sensor and display error on failure
+    // initialise optical flow sensor
     optflow.init();
-    if (!optflow.healthy()) {
-        cliSerial->print_P(PSTR("Failed to Init OptFlow\n"));
-        Log_Write_Error(ERROR_SUBSYSTEM_OPTFLOW,ERROR_CODE_FAILED_TO_INITIALISE);
-    }
 #endif      // OPTFLOW == ENABLED
 }
 
