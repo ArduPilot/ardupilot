@@ -190,7 +190,7 @@ Vector3f AP_Gimbal::getGimbalEstimateEF()
 
 bool AP_Gimbal::isCopterFlipped()
 {
-    return (_ahrs.cos_roll()*_ahrs.cos_pitch() < 0.5f);
+    return fabsf(_ahrs.roll)>0.7f || _ahrs.pitch > 1.0f || _ahrs.pitch < -0.8f;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
