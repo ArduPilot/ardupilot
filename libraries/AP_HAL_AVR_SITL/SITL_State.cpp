@@ -536,7 +536,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
 			control.pwm[2] = ((control.pwm[2]-1000) * _sitl->engine_mul) + 1000;
 			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
 		}
-		_motors_on = ((control.pwm[2]-1000)/1000.0) > 0;
+		_motors_on = ((control.pwm[2]-1000)/1000.0f) > 0;
 	} else if (_vehicle == APMrover2) {
 		// add in engine multiplier
 		if (control.pwm[2] != 1500) {
@@ -544,7 +544,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
 			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
 			if (control.pwm[2] < 1000) control.pwm[2] = 1000;
 		}
-		_motors_on = ((control.pwm[2]-1500)/500.0) != 0;
+		_motors_on = ((control.pwm[2]-1500)/500.0f) != 0;
 	} else {
 		_motors_on = false;
         // apply engine multiplier to first motor
@@ -555,7 +555,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
             if (control.pwm[i] > 2000) control.pwm[i] = 2000;
             if (control.pwm[i] < 1000) control.pwm[i] = 1000;
             // update motor_on flag
-			if ((control.pwm[i]-1000)/1000.0 > 0) {
+			if ((control.pwm[i]-1000)/1000.0f > 0) {
                 _motors_on = true;
 			}
 		}
@@ -565,10 +565,10 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
     // lose 0.7V at full throttle
     float voltage = _sitl->batt_voltage - 0.7f*throttle;
     // assume 50A at full throttle
-    _current = 50.0 * throttle;
+    _current = 50.0f * throttle;
     // assume 3DR power brick
-    voltage_pin_value = ((voltage / 10.1) / 5.0) * 1024;
-    current_pin_value = ((_current / 17.0) / 5.0) * 1024;
+    voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
+    current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
 
 	// setup wind control
     float wind_speed = _sitl->wind_speed * 100;
@@ -607,7 +607,7 @@ Vector3f SITL_State::_rand_vec3f(void)
 	Vector3f v = Vector3f(_rand_float(),
                           _rand_float(),
                           _rand_float());
-	if (v.length() != 0.0) {
+	if (v.length() != 0.0f) {
 		v.normalize();
 	}
 	return v;

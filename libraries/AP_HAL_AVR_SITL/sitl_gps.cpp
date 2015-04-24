@@ -101,7 +101,7 @@ int SITL_State::gps2_pipe(void)
 void SITL_State::_gps_write(const uint8_t *p, uint16_t size)
 {
 	while (size--) {
-		if (_sitl->gps_byteloss > 0.0) {
+		if (_sitl->gps_byteloss > 0.0f) {
 			float r = ((((unsigned)random()) % 1000000)) / 1.0e4;
 			if (r < _sitl->gps_byteloss) {
 				// lose the byte
@@ -222,8 +222,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	pos.time = time_week_ms;
 	pos.longitude = d->longitude * 1.0e7;
 	pos.latitude  = d->latitude * 1.0e7;
-	pos.altitude_ellipsoid = d->altitude*1000.0;
-	pos.altitude_msl = d->altitude*1000.0;
+	pos.altitude_ellipsoid = d->altitude*1000.0f;
+	pos.altitude_msl = d->altitude*1000.0f;
 	pos.horizontal_accuracy = 1500;
 	pos.vertical_accuracy = 2000;
 
@@ -236,14 +236,14 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
 	status.uptime = hal.scheduler->millis();
 
 	velned.time = time_week_ms;
-	velned.ned_north = 100.0 * d->speedN;
-	velned.ned_east  = 100.0 * d->speedE;
-	velned.ned_down  = 100.0 * d->speedD;
+	velned.ned_north = 100.0f * d->speedN;
+	velned.ned_east  = 100.0f * d->speedE;
+	velned.ned_down  = 100.0f * d->speedD;
 	velned.speed_2d = pythagorous2(d->speedN, d->speedE) * 100;
 	velned.speed_3d = pythagorous3(d->speedN, d->speedE, d->speedD) * 100;
-	velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0;
-	if (velned.heading_2d < 0.0) {
-		velned.heading_2d += 360.0 * 100000.0;
+	velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0f;
+	if (velned.heading_2d < 0.0f) {
+		velned.heading_2d += 360.0f * 100000.0f;
 	}
 	velned.speed_accuracy = 40;
 	velned.heading_accuracy = 4;
@@ -312,9 +312,9 @@ void SITL_State::_update_gps_mtk(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0;
-	if (p.ground_course < 0.0) {
-		p.ground_course += 360.0 * 1000000.0;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 1000000.0f;
+	if (p.ground_course < 0.0f) {
+		p.ground_course += 360.0f * 1000000.0f;
 	}
     p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
@@ -369,9 +369,9 @@ void SITL_State::_update_gps_mtk16(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e6;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0;
-	if (p.ground_course < 0.0) {
-		p.ground_course += 360.0 * 100.0;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
+	if (p.ground_course < 0.0f) {
+		p.ground_course += 360.0f * 100.0f;
 	}
     p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
@@ -427,9 +427,9 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d)
     p.longitude     = d->longitude * 1.0e7;
     p.altitude      = d->altitude * 100;
     p.ground_speed  = pythagorous2(d->speedN, d->speedE) * 100;
-    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0;
-	if (p.ground_course < 0.0) {
-		p.ground_course += 360.0 * 100.0;
+    p.ground_course = ToDeg(atan2f(d->speedE, d->speedN)) * 100.0f;
+	if (p.ground_course < 0.0f) {
+		p.ground_course += 360.0f * 100.0f;
 	}
     p.satellites    = d->have_lock?_sitl->gps_numsats:3;
     p.fix_type      = d->have_lock?3:1;
@@ -723,7 +723,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     if (_sitl->gps_drift_alt > 0) {
         // slow altitude drift
-        d.altitude += _sitl->gps_drift_alt*sinf(hal.scheduler->millis()*0.001*0.02);
+        d.altitude += _sitl->gps_drift_alt*sinf(hal.scheduler->millis()*0.001f*0.02f);
     }
     
 	d.speedN = speedN;

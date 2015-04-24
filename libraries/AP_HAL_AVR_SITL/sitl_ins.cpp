@@ -34,7 +34,7 @@ using namespace AVR_SITL;
  */
 uint16_t SITL_State::_airspeed_sensor(float airspeed)
 {
-	const float airspeed_ratio = 1.9936;
+	const float airspeed_ratio = 1.9936f;
 	const float airspeed_offset = 2013;
 	float airspeed_pressure, airspeed_raw;
 
@@ -80,8 +80,8 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
 
 float SITL_State::_gyro_drift(void)
 {
-	if (_sitl->drift_speed == 0.0f ||
-	    _sitl->drift_time == 0.0f) {
+    if (_sitl->drift_speed == 0.0f ||
+        _sitl->drift_time == 0.0f) {
 		return 0;
 	}
 	double period  = _sitl->drift_time * 2;
@@ -165,9 +165,9 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 
 	// minimum noise levels are 2 bits, but averaged over many
 	// samples, giving around 0.01 m/s/s
-	float accel_noise = 0.01;
+	float accel_noise = 0.01f;
         // minimum gyro noise is also less than 1 bit
-	float gyro_noise = ToRad(0.04);
+	float gyro_noise = ToRad(0.04f);
 	if (_motors_on) {
 		// add extra noise when the motors are on
 		accel_noise += _sitl->accel_noise;
