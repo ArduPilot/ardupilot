@@ -121,7 +121,7 @@ public:
     void                set_roll(int16_t roll_in) { _rc_roll.servo_out = roll_in; };                    // range -4500 ~ 4500
     void                set_pitch(int16_t pitch_in) { _rc_pitch.servo_out = pitch_in; };                // range -4500 ~ 4500
     void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
-    void                set_throttle(int16_t throttle_in) { _throttle_in = throttle_in; };    // range 0 ~ 1000
+    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };    // range 0 ~ 1000
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
