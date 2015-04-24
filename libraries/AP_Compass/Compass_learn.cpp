@@ -1,8 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <AP_Math.h>
 #include "Compass.h"
 
 // don't allow any axis of the offset to go above 2000
 #define COMPASS_OFS_LIMIT 2000
+
 
 /*
  *  this offset learning algorithm is inspired by this paper from Bill Premerlani
@@ -37,17 +39,19 @@ Compass::learn_offsets(void)
     const float gain = 0.01;
     const float max_change = 10.0;
     const float min_diff = 50.0;
-
+    
     if (!_null_init_done) {
         // first time through
         _null_init_done = true;
         for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-            const Vector3f &field = _state[k].field;
             const Vector3f &ofs = _state[k].offset.get();
+            const Vector3f &field = _state[k].field;
+            const Vector3f history = field - ofs;
+          
+            // fill the history buffer with the current mag vector,
+            // with the offset removed
             for (uint8_t i=0; i<_mag_history_size; i++) {
-                // fill the history buffer with the current mag vector,
-                // with the offset removed
-                _state[k].mag_history[i] = Vector3i((field.x+0.5f) - ofs.x, (field.y+0.5f) - ofs.y, (field.z+0.5f) - ofs.z);
+                _state[k].mag_history[i] = round_half(history);
             }
             _state[k].mag_history_index = 0;
         }
@@ -57,8 +61,9 @@ Compass::learn_offsets(void)
     for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
         const Vector3f &ofs = _state[k].offset.get();
         const Vector3f &field = _state[k].field;
-        Vector3f b1, diff;
-        float length;
+        Vector3f history = field - ofs;
+      
+        float length = 0.f;
 
         if (ofs.is_nan()) {
             // offsets are bad possibly due to a past bug - zero them
@@ -66,19 +71,15 @@ Compass::learn_offsets(void)
         }
 
         // get a past element
-        b1 = Vector3f(_state[k].mag_history[_state[k].mag_history_index].x,
-                      _state[k].mag_history[_state[k].mag_history_index].y,
-                      _state[k].mag_history[_state[k].mag_history_index].z);
+        Vector3f b1 = Vector3f( _state[k].mag_history[_state[k].mag_history_index].x,
+                                _state[k].mag_history[_state[k].mag_history_index].y,
+                                _state[k].mag_history[_state[k].mag_history_index].z );
 
         // the history buffer doesn't have the offsets
         b1 += ofs;
 
-        // get the current vector
-        const Vector3f &b2 = field;
-
         // calculate the delta for this sample
-        diff = b2 - b1;
-        length = diff.length();
+        length = history.length();
         if (length < min_diff) {
             // the mag vector hasn't changed enough - we don't get
             // enough information from this vector to use it.
@@ -92,23 +93,21 @@ Compass::learn_offsets(void)
         }
 
         // put the vector in the history
-        _state[k].mag_history[_state[k].mag_history_index] = Vector3i((field.x+0.5f) - ofs.x, 
-                                                                      (field.y+0.5f) - ofs.y, 
-                                                                      (field.z+0.5f) - ofs.z);
+        _state[k].mag_history[_state[k].mag_history_index] = round_half(history);
         _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
 
         // equation 6 of Bills paper
-        diff = diff * (gain * (b2.length() - b1.length()) / length);
+        history = history * (gain * (field.length() - b1.length()) / length);
 
         // limit the change from any one reading. This is to prevent
         // single crazy readings from throwing off the offsets for a long
         // time
-        length = diff.length();
+        length = history.length();
         if (length > max_change) {
-            diff *= max_change / length;
+            history *= max_change / length;
         }
 
-        Vector3f new_offsets = _state[k].offset.get() - diff;
+        Vector3f new_offsets = _state[k].offset.get() - history;
 
         if (new_offsets.is_nan()) {
             // don't apply bad offsets
