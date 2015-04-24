@@ -64,6 +64,7 @@
 #include <RC_Channel.h>
 #include <AP_BoardConfig.h>
 #include <AP_OpticalFlow.h>
+#include <AP_RangeFinder.h>
 
 // Configuration
 #include "config.h"
@@ -128,9 +129,11 @@ AP_ADC_ADS7844 apm1_adc;
 
 AP_InertialSensor ins;
 
+static RangeFinder rng;
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps, rng);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
