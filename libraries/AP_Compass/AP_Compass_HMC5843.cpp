@@ -60,6 +60,7 @@ extern const AP_HAL::HAL& hal;
 // constructor
 AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     AP_Compass_Backend(compass),
+    _retry_time(0),
     _i2c_sem(NULL),
     _mag_x(0),
     _mag_y(0),
@@ -70,7 +71,6 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _accum_count(0),
     _last_accum_time(0),
     _compass_instance(0),
-    _retry_time(0),
     _product_id(0)
 {}
 
