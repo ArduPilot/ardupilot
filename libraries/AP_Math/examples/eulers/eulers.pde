@@ -70,9 +70,9 @@ static void check_result(const char *msg,
         yaw2 += fmod(yaw2+PI, 2*PI);
     }
 
-    if (rad_diff(roll2,roll) > 0.01 ||
-        rad_diff(pitch2, pitch) > 0.01 ||
-        rad_diff(yaw2, yaw) > 0.01) {
+    if (rad_diff(roll2,roll) > 0.01f ||
+        rad_diff(pitch2, pitch) > 0.01f ||
+        rad_diff(yaw2, yaw) > 0.01f) {
         if (pitch >= PI/2 ||
             pitch <= -PI/2 ||
             ToDeg(rad_diff(pitch, PI/2)) < 1 ||
@@ -168,13 +168,13 @@ void test_quaternion_eulers(void)
     test_quaternion(1, -PI/4, 1);
     test_quaternion(1, 1, -PI/4);
 
-    test_quaternion(ToRad(89), 0, 0.1);
-    test_quaternion(0, ToRad(89), 0.1);
-    test_quaternion(0.1, 0, ToRad(89));
+    test_quaternion(ToRad(89), 0, 0.1f);
+    test_quaternion(0, ToRad(89), 0.1f);
+    test_quaternion(0.1f, 0, ToRad(89));
 
-    test_quaternion(ToRad(91), 0, 0.1);
-    test_quaternion(0, ToRad(91), 0.1);
-    test_quaternion(0.1, 0, ToRad(91));
+    test_quaternion(ToRad(91), 0, 0.1f);
+    test_quaternion(0, ToRad(91), 0.1f);
+    test_quaternion(0.1f, 0, ToRad(91));
 
     for (i=0; i<N; i++)
         for (j=0; j<N; j++)
@@ -218,11 +218,11 @@ void test_conversions(void)
 
     hal.console->println("matrix/quaternion tests\n");
 
-    test_conversion(1, 1.1, 1.2);
-    test_conversion(1, -1.1, 1.2);
-    test_conversion(1, -1.1, -1.2);
-    test_conversion(-1, 1.1, -1.2);
-    test_conversion(-1, 1.1, 1.2);
+    test_conversion(1, 1.1f, 1.2f);
+    test_conversion(1, -1.1f, 1.2f);
+    test_conversion(1, -1.1f, -1.2f);
+    test_conversion(-1, 1.1f, -1.2f);
+    test_conversion(-1, 1.1f, 1.2f);
 
     for (i=0; i<N; i++)
         for (j=0; j<N; j++)

@@ -6,7 +6,7 @@
 float safe_asin(float v)
 {
     if (isnan(v)) {
-        return 0.0;
+        return 0.0f;
     }
     if (v >= 1.0f) {
         return PI/2;
