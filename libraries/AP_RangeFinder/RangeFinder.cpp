@@ -40,14 +40,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
     // @Units: meters/Volt
     // @Increment: 0.001
-    AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0),
+    AP_GROUPINFO("_SCALING", 2, RangeFinder, _scaling[0], 3.0f),
 
     // @Param: _OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance for analog rangefinders. Offset added to distance in centimeters for PWM and I2C Lidars
     // @Units: Volts
     // @Increment: 0.001
-    AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0),
+    AP_GROUPINFO("_OFFSET",  3, RangeFinder, _offset[0], 0.0f),
 
     // @Param: _FUNCTION
     // @DisplayName: Rangefinder function
@@ -124,14 +124,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
     // @Units: meters/Volt
     // @Increment: 0.001
-    AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0),
+    AP_GROUPINFO("2_SCALING", 14, RangeFinder, _scaling[1], 3.0f),
 
     // @Param: 2_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
     // @Units: Volts
     // @Increment: 0.001
-    AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0),
+    AP_GROUPINFO("2_OFFSET",  15, RangeFinder, _offset[1], 0.0f),
 
     // @Param: 2_FUNCTION
     // @DisplayName: Rangefinder function
