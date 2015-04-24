@@ -141,7 +141,7 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 ///     should be called continuously (with dt set to be the expected time between calls)
 ///     actual position target will be moved no faster than the speed_down and speed_up
 ///     target will also be stopped if the motors hit their limits or leash length is exceeded
-void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
+void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend)
 {
     // jerk_z is calculated to reach full acceleration in 1000ms.
     float jerk_z = _accel_z_cms * POSCONTROL_JERK_RATIO;
@@ -175,6 +175,23 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 void AC_PosControl::add_takeoff_climb_rate(float climb_rate_cms, float dt)
 {
     _pos_target.z += climb_rate_cms * dt;
+}
+
+void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend)
+{
+    // adjust desired alt if motors have not hit their limits
+    // To-Do: add check of _limit.pos_down?
+    if ((climb_rate_cms<0 && (!_motors.limit.throttle_lower || force_descend)) || (climb_rate_cms>0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
+        _pos_target.z += climb_rate_cms * dt;
+    }
+
+    // do not let target alt get above limit
+    if (_alt_max > 0 && _pos_target.z > _alt_max) {
+        _pos_target.z = _alt_max;
+        _limit.pos_up = true;
+    }
+
+    _vel_desired.z = 0.0f;
 }
 
 /// relax_alt_hold_controllers - set all desired and targets to measured
