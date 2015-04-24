@@ -236,7 +236,7 @@ AP_Compass_HMC5843::init()
          */
         expected_x = 766;
         expected_yz  = 713;
-        gain_multiple = 660.0 / 1090;  // adjustment for runtime vs calibration gain
+        gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
     } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
         _product_id = AP_COMPASS_TYPE_HMC5843;
     } else {
