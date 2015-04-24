@@ -29,7 +29,7 @@
 #include <AP_Param.h>
 #include <AP_Nav_Common.h>
 #include <GCS_MAVLink.h>
-#include <RangeFinder.h>
+#include <AP_RangeFinder.h>
 
 // #define MATH_CHECK_INDEXES 1
 
