@@ -40,12 +40,12 @@
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 // default PID values
-#define TEST_P 1.0
-#define TEST_I 0.01
-#define TEST_D 0.2
+#define TEST_P 1.0f
+#define TEST_I 0.01f
+#define TEST_D 0.2f
 #define TEST_IMAX 10
-#define TEST_FILTER 5.0
-#define TEST_DT 0.01
+#define TEST_FILTER 5.0f
+#define TEST_DT 0.01f
 
 // setup function
 void setup()

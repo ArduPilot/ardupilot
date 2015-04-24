@@ -24,7 +24,7 @@ public:
     /// @param  initial_p       Initial value for the P term.
     ///
     AC_P(
-        const float &   initial_p = 0.0)
+        const float &   initial_p = 0.0f)
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;
