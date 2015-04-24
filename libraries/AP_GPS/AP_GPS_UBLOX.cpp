@@ -29,13 +29,10 @@
     #define UBLOX_VERSION_AUTODETECTION 0
 #endif
 
-#define AID_POSITION    1
-#define AID_ALP         1
-
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
+#if HAL_OS_POSIX_IO && defined(HAL_BOARD_UBLOX_AID_DIRECTORY)
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -43,6 +40,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#define AID_POSITION		1
+#define AID_ALP				1
+#else
+#define AID_POSITION		0
+#define AID_ALP				0
 #endif
 
 extern const AP_HAL::HAL& hal;
