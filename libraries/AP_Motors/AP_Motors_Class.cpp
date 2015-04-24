@@ -224,7 +224,7 @@ void AP_Motors::slow_start(bool true_false)
 void AP_Motors::update_throttle_filter()
 {
     if (armed()) {
-        _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+        _throttle_filter.apply(constrain_float(_throttle_in,-100,1100), 1.0f/_loop_rate);
     } else {
         _throttle_filter.reset(0.0f);
     }
