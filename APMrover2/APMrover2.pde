@@ -511,7 +511,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_notify,          1,    300 },
     { one_second_loop,       50,   3000 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { telemetry_send,        10,    100 }	
+    { frsky_telemetry_send,  10,    100 }
 #endif
 };
 
