@@ -212,9 +212,13 @@ AP_ADC_ADS7844 apm1_adc;
 
 AP_InertialSensor ins;
 
+////////////////////////////////////////////////////////////////////////////////
+// SONAR
+static RangeFinder sonar;
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, gps);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps, sonar);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
@@ -252,10 +256,6 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
 // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
 AP_HAL::AnalogSource *rssi_analog_source;
-
-////////////////////////////////////////////////////////////////////////////////
-// SONAR
-static RangeFinder sonar;
 
 // relay support
 AP_Relay relay;
