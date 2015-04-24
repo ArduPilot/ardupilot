@@ -25,6 +25,21 @@
 
 #include <AP_GPS.h>
 
+#if HAL_OS_POSIX_IO && defined(HAL_BOARD_UBLOX_AID_DIRECTORY)
+#include <assert.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#define AID_POSITION        1
+#define AID_ALP                1
+#else
+#define AID_POSITION        0
+#define AID_ALP                0
+#endif
+
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
  *
@@ -315,6 +330,7 @@ private:
 
     uint8_t         _disable_counter;
 
+#if AID_POSITION || AID_ALP
     // aiding related variables
     Location        _aid_location, _aid_location_ecef, _rec_aid_location_ecef;
     uint16_t         _alp_file_data_u2[6144];  //file in memory, size enough to hold 1d corrections file
@@ -333,6 +349,7 @@ private:
     void            _send_alplus_aid_chunk(uint16_t ofs_u2, uint16_t size_u2, ubx_aid_alpsrv *req);
     // NOTE: this can be made public, or defined in the GPS interface when aiding other modules becomes available
     void aid_position(const Location &loc);    
+#endif
     
     // Buffer parse & GPS state update
     bool        _parse_gps();

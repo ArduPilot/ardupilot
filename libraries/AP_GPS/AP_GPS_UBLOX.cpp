@@ -23,29 +23,8 @@
 #include "AP_GPS_UBLOX.h"
 #include <DataFlash.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define UBLOX_VERSION_AUTODETECTION 1
-#else
-    #define UBLOX_VERSION_AUTODETECTION 0
-#endif
-
-#define UBLOX_DEBUGGING 0
-#define UBLOX_FAKE_3DLOCK 0
-
-#if HAL_OS_POSIX_IO && defined(HAL_BOARD_UBLOX_AID_DIRECTORY)
-#include <assert.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#define AID_POSITION		1
-#define AID_ALP				1
-#else
-#define AID_POSITION		0
-#define AID_ALP				0
-#endif
+#define UBLOX_DEBUGGING     1
+#define UBLOX_FAKE_3DLOCK     0
 
 extern const AP_HAL::HAL& hal;
 
@@ -412,8 +391,10 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 #endif // UBLOX_HW_LOGGING
     
+#if AID_POSITION || AID_ALP
     if (_class == CLASS_AID) {
         switch (_msg_id) {
+#if AID_POSITION
             case (MSG_AID_INI):
                 Debug("MSG_AID_INI: has ECEF XYZ = %d, %d, %d\n", _buffer.aid_ini.ecefXOrLat, 
                      _buffer.aid_ini.ecefYOrLon, _buffer.aid_ini.ecefZOrAlt);
@@ -433,7 +414,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _aid_pos_success = true;
                 }
             break;
-        
+#endif
+            
+#if AID_ALP        
             case (MSG_AID_ALP): 
                 _alp_step = _buffer.bytes[0]; 
                 Debug("MSG_AID_ALP: reply (%d)\n", _alp_step);
@@ -476,10 +459,12 @@ AP_GPS_UBLOX::_parse_gps(void)
                     }
                 }
             break;
+#endif // AID_ALP
         }
         return false;
     }
-
+#endif // AID_POSITION || AID_ALP
+    
     if (_class != CLASS_NAV) {
         unexpected_message();
         return false;
@@ -716,6 +701,9 @@ AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
 }
 
+#if AID_POSITION || AID_ALP
+
+#if AID_POSITION
 void wgs84_lla2ecef(const Location &lla, Location &ecef)
 {
     // these datum matched UBLOX's
@@ -772,15 +760,13 @@ AP_GPS_UBLOX::_send_aid_position()
 void
 AP_GPS_UBLOX::aid_position(const Location &loc)
 {
-#if !AID_POSITION
-    return;
-#endif
     if (!_aid_pos_success) {
         _aid_location = loc;
         wgs84_lla2ecef(_aid_location, _aid_location_ecef);
         _send_aid_position();
     }
 }
+#endif // AID_POSITION
 
 void
 AP_GPS_UBLOX::_do_initial_aiding()
@@ -857,6 +843,7 @@ AP_GPS_UBLOX::_do_initial_aiding()
 #endif
 }
 
+#if AID_ALP
 void
 AP_GPS_UBLOX::_send_alplus_aid_chunk(uint16_t ofs_u2, uint16_t size_u2, ubx_aid_alpsrv *req)
 {
@@ -906,6 +893,7 @@ AP_GPS_UBLOX::_aid_alp_srv()
     _configure_message_rate(CLASS_AID, MSG_AID_ALPSRV, 1);
     // send initial chunk of data
     _send_alplus_aid_chunk(0, 42, NULL);
+
     return true;
 }
 
@@ -1006,6 +994,8 @@ AP_GPS_UBLOX::_aid_alp_file()
         return false;
     }
 }
+#endif // AID_ALP
+#endif // AID_POSITION || AID_ALP
 
 /*
  *  configure a UBlox GPS for the given message rate
@@ -1015,8 +1005,10 @@ AP_GPS_UBLOX::_configure_gps(void)
 {
     port->begin(38400U);
 
+#if AID_POSITION || AID_ALP
     // Do any possible aiding before start
     _do_initial_aiding();
+#endif
     
     // start the process of updating the GPS rates
     need_rate_update = true;
