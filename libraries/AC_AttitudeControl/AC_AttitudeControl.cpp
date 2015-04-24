@@ -734,7 +734,7 @@ float AC_AttitudeControl::get_boosted_throttle(float throttle_in)
     float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
 
     float throttle_out = (throttle_in-min_throttle)*inverted_factor*boost_factor + min_throttle;
-    _angle_boost = throttle_out - throttle_in;
+    _angle_boost = constrain_float(throttle_out - throttle_in,-32000,32000);
     return throttle_out;
 }
 
