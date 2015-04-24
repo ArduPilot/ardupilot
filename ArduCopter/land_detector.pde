@@ -145,9 +145,11 @@ static void update_ground_effect_detector(void)
     }
 
     // landing logic
+    const Vector3f& angle_target = attitude_control.angle_ef_targets();
+    bool small_angle_request = pythagorous2(angle_target.x, angle_target.y) < 750.0f;
     bool xy_speed_low = (position_ok() || optflow_position_ok()) && xy_speed_cms <= 100.0f;
     bool xy_speed_demand_low = pos_control.is_active_xy() && xy_des_speed_cms <= 50.0f;
-    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control.is_active_xy());
+    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control.is_active_xy()) || (control_mode == ALT_HOLD && small_angle_request);
 
     bool descent_demanded = pos_control.is_active_z() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
