@@ -60,8 +60,8 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_P 0.3f
 
 // tau ranges
-#define AUTOTUNE_MAX_TAU 0.7
-#define AUTOTUNE_MIN_TAU 0.2
+#define AUTOTUNE_MAX_TAU 0.7f
+#define AUTOTUNE_MIN_TAU 0.2f
 
 #define AUTOTUNE_MIN_IMAX 2000
 #define AUTOTUNE_MAX_IMAX 4000
