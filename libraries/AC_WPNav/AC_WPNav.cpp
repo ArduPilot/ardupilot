@@ -230,17 +230,21 @@ void AC_WPNav::get_loiter_stopping_point_xy(Vector3f& stopping_point) const
 ///		updated velocity sent directly to position controller
 void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 {
+    // calculate a loieter speed limit wich is the minimum of the value set by the WPNAV_LOITER_SPEED
+    // parameter or the value set by the EKF to observe optical flow limits
+    float gnd_speed_limit_cms = min(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
+
     // range check nav_dt
     if( nav_dt < 0 ) {
         return;
     }
 
     // check loiter speed and avoid divide by zero
-    if( _loiter_speed_cms < WPNAV_LOITER_SPEED_MIN) {
-        _loiter_speed_cms = WPNAV_LOITER_SPEED_MIN;
+    if(gnd_speed_limit_cms < WPNAV_LOITER_SPEED_MIN) {
+        gnd_speed_limit_cms = WPNAV_LOITER_SPEED_MIN;
     }
 
-    _pos_control.set_speed_xy(_loiter_speed_cms);
+    _pos_control.set_speed_xy(gnd_speed_limit_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
 
     // rotate pilot input to lat/lon frame
@@ -275,7 +279,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 
     if (desired_speed != 0.0f) {
         Vector2f desired_vel_norm = desired_vel/desired_speed;
-        float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/_loiter_speed_cms;
+        float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
         if (_pilot_accel_fwd_cms == 0.0f && _pilot_accel_rgt_cms == 0.0f) {
             drag_speed_delta = min(drag_speed_delta,-_loiter_accel_min_cmss*nav_dt);
@@ -285,13 +289,11 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
         desired_vel = desired_vel_norm*desired_speed;
     }
 
-    // limit EKF speed limit and convert to cm/s
-    ekfGndSpdLimit = 100.0f * max(ekfGndSpdLimit,0.1f);
     // Apply EKF limit to desired velocity -  this limit is calculated by the EKF and adjusted as required to ensure certain sensor limits are respected (eg optical flow sensing)
     float horizSpdDem = sqrtf(sq(desired_vel.x) + sq(desired_vel.y));
-    if (horizSpdDem > ekfGndSpdLimit) {
-        desired_vel.x = desired_vel.x * ekfGndSpdLimit / horizSpdDem;
-        desired_vel.y = desired_vel.y * ekfGndSpdLimit / horizSpdDem;
+    if (horizSpdDem > gnd_speed_limit_cms) {
+        desired_vel.x = desired_vel.x * gnd_speed_limit_cms / horizSpdDem;
+        desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
     }
 
     // send adjusted feed forward velocity back to position controller
