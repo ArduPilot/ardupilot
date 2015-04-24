@@ -113,7 +113,7 @@ test_compass(uint8_t argc, const Menu::arg *argv)
         delay(20);
         if (millis() - fast_loopTimer > 19) {
             delta_ms_fast_loop      = millis() - fast_loopTimer;
-            G_Dt                    = (float)delta_ms_fast_loop / 1000.f;                       // used by DCM integrator
+            G_Dt                    = (float)delta_ms_fast_loop / 1000.0f;                       // used by DCM integrator
             fast_loopTimer          = millis();
 
             // INS

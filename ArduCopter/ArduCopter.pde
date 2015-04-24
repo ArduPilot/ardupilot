@@ -842,7 +842,7 @@ void loop()
     perf_info_check_loop_time(timer - fast_loopTimer);
 
     // used by PI Loops
-    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.f;
+    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
     fast_loopTimer          = timer;
 
     // for mainloop failure monitoring
