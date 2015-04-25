@@ -2,6 +2,20 @@
 
 #define CONTROL_SWITCH_DEBOUNCE_TIME_MS  200
 
+//Documentation of Aux Switch Flags:
+static union {
+    struct {
+        uint8_t CH6_flag            : 2; // 0, 1    // ch6 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH7_flag            : 2; // 2, 3    // ch7 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH8_flag            : 2; // 4, 5    // ch8 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH9_flag            : 2; // 6, 7    // ch9 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH10_flag           : 2; // 8, 9    // ch10 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH11_flag           : 2; // 10,11   // ch11 aux switch : 0 is low or false, 1 is center or true, 2 is high
+        uint8_t CH12_flag           : 2; // 12,13   // ch12 aux switch : 0 is low or false, 1 is center or true, 2 is high
+    };
+    uint32_t value;
+} aux_con;
+
 static void read_control_switch()
 {
     uint32_t tnow_ms = millis();
@@ -115,65 +129,65 @@ static void read_aux_switches()
 
     // check if ch7 switch has changed position
     switch_position = read_3pos_switch(g.rc_7.radio_in);
-    if (ap.CH7_flag != switch_position) {
+    if (aux_con.CH7_flag != switch_position) {
         // set the CH7 flag
-        ap.CH7_flag = switch_position;
+        aux_con.CH7_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch7_option, ap.CH7_flag);
+        do_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
     }
 
     // check if Ch8 switch has changed position
     switch_position = read_3pos_switch(g.rc_8.radio_in);
-    if (ap.CH8_flag != switch_position) {
+    if (aux_con.CH8_flag != switch_position) {
         // set the CH8 flag
-        ap.CH8_flag = switch_position;
+        aux_con.CH8_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch8_option, ap.CH8_flag);
+        do_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch9 switch has changed position
     switch_position = read_3pos_switch(g.rc_9.radio_in);
-    if (ap.CH9_flag != switch_position) {
+    if (aux_con.CH9_flag != switch_position) {
         // set the CH9 flag
-        ap.CH9_flag = switch_position;
+        aux_con.CH9_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch9_option, ap.CH9_flag);
+        do_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
     }
 #endif
 
     // check if Ch10 switch has changed position
     switch_position = read_3pos_switch(g.rc_10.radio_in);
-    if (ap.CH10_flag != switch_position) {
+    if (aux_con.CH10_flag != switch_position) {
         // set the CH10 flag
-        ap.CH10_flag = switch_position;
+        aux_con.CH10_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch10_option, ap.CH10_flag);
+        do_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
     }
 
     // check if Ch11 switch has changed position
     switch_position = read_3pos_switch(g.rc_11.radio_in);
-    if (ap.CH11_flag != switch_position) {
+    if (aux_con.CH11_flag != switch_position) {
         // set the CH11 flag
-        ap.CH11_flag = switch_position;
+        aux_con.CH11_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch11_option, ap.CH11_flag);
+        do_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // check if Ch12 switch has changed position
     switch_position = read_3pos_switch(g.rc_12.radio_in);
-    if (ap.CH12_flag != switch_position) {
+    if (aux_con.CH12_flag != switch_position) {
         // set the CH12 flag
-        ap.CH12_flag = switch_position;
+        aux_con.CH12_flag = switch_position;
 
         // invoke the appropriate function
-        do_aux_switch_function(g.ch12_option, ap.CH12_flag);
+        do_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
     }
 #endif
 }
@@ -182,27 +196,27 @@ static void read_aux_switches()
 static void init_aux_switches()
 {
     // set the CH7 ~ CH12 flags
-    ap.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
-    ap.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
-    ap.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
-    ap.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
+    aux_con.CH7_flag = read_3pos_switch(g.rc_7.radio_in);
+    aux_con.CH8_flag = read_3pos_switch(g.rc_8.radio_in);
+    aux_con.CH10_flag = read_3pos_switch(g.rc_10.radio_in);
+    aux_con.CH11_flag = read_3pos_switch(g.rc_11.radio_in);
 
     // ch9, ch12 only supported on some boards
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ap.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
-    ap.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
+    aux_con.CH9_flag = read_3pos_switch(g.rc_9.radio_in);
+    aux_con.CH12_flag = read_3pos_switch(g.rc_12.radio_in);
 #endif
 
     // initialise functions assigned to switches
-    init_aux_switch_function(g.ch7_option, ap.CH7_flag);
-    init_aux_switch_function(g.ch8_option, ap.CH8_flag);
-    init_aux_switch_function(g.ch10_option, ap.CH10_flag);
-    init_aux_switch_function(g.ch11_option, ap.CH11_flag);
+    init_aux_switch_function(g.ch7_option, aux_con.CH7_flag);
+    init_aux_switch_function(g.ch8_option, aux_con.CH8_flag);
+    init_aux_switch_function(g.ch10_option, aux_con.CH10_flag);
+    init_aux_switch_function(g.ch11_option, aux_con.CH11_flag);
 
     // ch9, ch12 only supported on some boards
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    init_aux_switch_function(g.ch9_option, ap.CH9_flag);
-    init_aux_switch_function(g.ch12_option, ap.CH12_flag);
+    init_aux_switch_function(g.ch9_option, aux_con.CH9_flag);
+    init_aux_switch_function(g.ch12_option, aux_con.CH12_flag);
 #endif
 }
 
@@ -227,28 +241,23 @@ static void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
         case AUXSW_ATTCON_ACCEL_LIM:
         case AUXSW_RELAY:
         case AUXSW_LANDING_GEAR:
+        case AUXSW_MOTOR_ESTOP:
             do_aux_switch_function(ch_option, ch_flag);
             break;
+
+        case AUXSW_MOTOR_INTERLOCK:
+            set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+            do_aux_switch_function(ch_option, ch_flag);
+            break;
+            
     }
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
 static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 {
-    int8_t tmp_function = ch_function;
 
-    // multi mode check
-    if(ch_function == AUXSW_MULTI_MODE) {
-        if (g.rc_6.radio_in < CH6_PWM_TRIGGER_LOW) {
-            tmp_function = AUXSW_FLIP;
-        }else if (g.rc_6.radio_in > CH6_PWM_TRIGGER_HIGH) {
-            tmp_function = AUXSW_SAVE_WP;
-        }else{
-            tmp_function = AUXSW_RTL;
-        }
-    }
-
-    switch(tmp_function) {
+    switch(ch_function) {
         case AUXSW_FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if(ch_flag == AUX_SWITCH_HIGH) {
@@ -293,10 +302,10 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                     return;
                 }
 
-				// do not allow saving the first waypoint with zero throttle
-				if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
-					return;
-				}
+                // do not allow saving the first waypoint with zero throttle
+                if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
+                    return;
+                }
 
                 // create new mission command
                 AP_Mission::Mission_Command cmd  = {};
@@ -326,7 +335,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 if(g.rc_3.control_in > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
-					// with zero throttle, create LAND command
+                    // with zero throttle, create LAND command
                     cmd.id = MAV_CMD_NAV_LAND;
                 }
 
@@ -458,93 +467,112 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
 #if PARACHUTE == ENABLED
-    case AUXSW_PARACHUTE_ENABLE:
-        // Parachute enable/disable
-        parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_PARACHUTE_ENABLE:
+            // Parachute enable/disable
+            parachute.enabled(ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_PARACHUTE_RELEASE:
-        if (ch_flag == AUX_SWITCH_HIGH) {
-            parachute_manual_release();
-        }
-        break;
-
-    case AUXSW_PARACHUTE_3POS:
-        // Parachute disable, enable, release with 3 position switch
-        switch (ch_flag) {
-            case AUX_SWITCH_LOW:
-                parachute.enabled(false);
-                Log_Write_Event(DATA_PARACHUTE_DISABLED);
-                break;
-            case AUX_SWITCH_MIDDLE:
-                parachute.enabled(true);
-                Log_Write_Event(DATA_PARACHUTE_ENABLED);
-                break;
-            case AUX_SWITCH_HIGH:
-                parachute.enabled(true);
+        case AUXSW_PARACHUTE_RELEASE:
+            if (ch_flag == AUX_SWITCH_HIGH) {
                 parachute_manual_release();
-                break;
-        }
-        break;
+            }
+            break;
+
+        case AUXSW_PARACHUTE_3POS:
+            // Parachute disable, enable, release with 3 position switch
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    parachute.enabled(false);
+                    Log_Write_Event(DATA_PARACHUTE_DISABLED);
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    parachute.enabled(true);
+                    Log_Write_Event(DATA_PARACHUTE_ENABLED);
+                    break;
+                case AUX_SWITCH_HIGH:
+                    parachute.enabled(true);
+                    parachute_manual_release();
+                    break;
+            }
+            break;
 #endif
 
-    case AUXSW_MISSION_RESET:
-        if (ch_flag == AUX_SWITCH_HIGH) {
-            mission.reset();
-        }
-        break;
+        case AUXSW_MISSION_RESET:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                mission.reset();
+            }
+            break;
 
-    case AUXSW_ATTCON_FEEDFWD:
-        // enable or disable feed forward
-        attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_ATTCON_FEEDFWD:
+            // enable or disable feed forward
+            attitude_control.bf_feedforward(ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_ATTCON_ACCEL_LIM:
-        // enable or disable accel limiting by restoring defaults
-        attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_ATTCON_ACCEL_LIM:
+            // enable or disable accel limiting by restoring defaults
+            attitude_control.accel_limiting(ch_flag == AUX_SWITCH_HIGH);
+            break;
         
 #if MOUNT == ENABLE
-    case AUXSW_RETRACT_MOUNT:
-        switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
-                break;
-            case AUX_SWITCH_LOW:
-                camera_mount.set_mode_to_default();
-                break;
-        }
-        break;
+        case AUXSW_RETRACT_MOUNT:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
+                    break;
+                case AUX_SWITCH_LOW:
+                    camera_mount.set_mode_to_default();
+                    break;
+            }
+            break;
 #endif
 
-    case AUXSW_RELAY:
-        ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
-        break;
+        case AUXSW_RELAY:
+            ServoRelayEvents.do_set_relay(0, ch_flag == AUX_SWITCH_HIGH);
+            break;
 
-    case AUXSW_LANDING_GEAR:
-        switch (ch_flag) {
-            case AUX_SWITCH_LOW:
-                landinggear.set_cmd_mode(LandingGear_Deploy);
-                break;
-            case AUX_SWITCH_MIDDLE:
-                landinggear.set_cmd_mode(LandingGear_Auto);
-                break;
-            case AUX_SWITCH_HIGH:
-                landinggear.set_cmd_mode(LandingGear_Retract);
-                break;
-        }
-        break;    
+        case AUXSW_LANDING_GEAR:
+            switch (ch_flag) {
+                case AUX_SWITCH_LOW:
+                    landinggear.set_cmd_mode(LandingGear_Deploy);
+                    break;
+                case AUX_SWITCH_MIDDLE:
+                    landinggear.set_cmd_mode(LandingGear_Auto);
+                    break;
+                case AUX_SWITCH_HIGH:
+                    landinggear.set_cmd_mode(LandingGear_Retract);
+                    break;
+            }
+            break;
 
-    case AUXSW_LOST_COPTER_SOUND:
-        switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                AP_Notify::flags.vehicle_lost = true;
-                break;
-            case AUX_SWITCH_LOW:
-                AP_Notify::flags.vehicle_lost = false;
-                break;
-        }
-        break;
+        case AUXSW_LOST_COPTER_SOUND:
+            switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    AP_Notify::flags.vehicle_lost = true;
+                    break;
+                case AUX_SWITCH_LOW:
+                    AP_Notify::flags.vehicle_lost = false;
+                    break;
+            }
+            break;
+
+        case AUXSW_MOTOR_ESTOP:
+            // Turn on Emergency Stop logic when channel is high
+            set_motor_emergency_stop(ch_flag == AUX_SWITCH_HIGH);
+            break;
+
+        case AUXSW_MOTOR_INTERLOCK:
+            // Turn on when above LOW, because channel will also be used for speed
+            // control signal in tradheli
+            motors.set_interlock(ch_flag == AUX_SWITCH_HIGH || ch_flag == AUX_SWITCH_MIDDLE);
+
+            // Log new status
+            if (motors.get_interlock()){
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
+            } else {
+                Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
+            }
+            break;
+                
     }
 }
 

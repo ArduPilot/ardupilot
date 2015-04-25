@@ -1,9 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
+#define ARM_DELAY                   20  // called at 10hz so 2 seconds
+#define DISARM_DELAY                20  // called at 10hz so 2 seconds
+#define AUTO_TRIM_DELAY             100 // called at 10hz so 10 seconds
+#define AUTO_DISARMING_DELAY_LONG   15  // called at 1hz so 15 seconds
+#define AUTO_DISARMING_DELAY_SHORT   5  // called at 1hz so 5 seconds
 
 static uint8_t auto_disarming_counter;
 
@@ -71,17 +72,29 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
-    // exit immediately if we are already disarmed or throttle is not zero
+
+    uint8_t delay;
+
+    // exit immediately if we are already disarmed or throttle output is not zero,
     if (!motors.armed() || !ap.throttle_zero) {
         auto_disarming_counter = 0;
         return;
     }
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete) {
+    // always allow auto disarm if using interlock switch or motors are Emergency Stopped
+    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
         auto_disarming_counter++;
 
-        if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
+        // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
+        // obvious the copter is armed as the motors will not be spinning
+        if (ap.using_interlock || ap.motor_emergency_stop){
+            delay = AUTO_DISARMING_DELAY_SHORT;
+        } else {
+            delay = AUTO_DISARMING_DELAY_LONG;
+        }
+
+        if(auto_disarming_counter >= delay) {
             init_disarm_motors();
             auto_disarming_counter = 0;
         }
@@ -156,6 +169,27 @@ static bool init_arm_motors(bool arming_from_gcs)
         did_ground_start = true;
     }
 
+    // check if we are using motor interlock control on an aux switch
+    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+
+    // if we are using motor interlock switch and it's enabled, fail to arm
+    if (ap.using_interlock && motors.get_interlock()){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Interlock Enabled"));
+        AP_Notify::flags.armed = false;
+        return false;
+    }
+
+    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
+    // can run normally
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        set_motor_emergency_stop(false);
+    // if we are using motor Estop switch, it must not be in Estop position
+    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Emergency Stopped"));
+        AP_Notify::flags.armed = false;
+        return false;
+    }
+
     // go back to normal AHRS gains
     ahrs.set_fast_gains(false);
 
@@ -175,7 +209,7 @@ static bool init_arm_motors(bool arming_from_gcs)
     delay(30);
 
     // enable output to motors
-    output_min();
+    enable_motor_output();
 
     // finally actually arm the motors
     motors.armed(true);
@@ -206,6 +240,36 @@ static bool pre_arm_checks(bool display_failure)
     // exit immediately if already armed
     if (motors.armed()) {
         return true;
+    }
+
+    // check if motor interlock and Emergency Stop aux switches are used
+    // at the same time.  This cannot be allowed.
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Interlock/E-Stop Conflict"));
+        }
+        return false;
+    }
+
+    // check if motor interlock aux switch is in use
+    // if it is, switch needs to be in disabled position to arm
+    // otherwise exit immediately.  This check to be repeated, 
+    // as state can change at any time.
+    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+    if (ap.using_interlock && motors.get_interlock()){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Interlock Enabled"));
+        }
+        return false;
+    }
+
+    // if we are using Motor Emergency Stop aux switch, check it is not enabled 
+    // and warn if it is
+    if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Emergency Stopped"));
+        }
+        return false;
     }
 
     // exit immediately if we've already successfully performed the pre-arm check
@@ -688,6 +752,7 @@ static void init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
+    // send disarm command to motors
     motors.armed(false);
 
     // save compass offsets learned by the EKF
@@ -731,6 +796,13 @@ static void motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
+        if (!ap.using_interlock){
+            // if not using interlock switch, set according to Emergency Stop status
+            // where Emergency Stop is forced false during arming if Emergency Stop switch
+            // is not used. Interlock enabled means motors run, so we must
+            // invert motor_emergency_stop status for motors to run.
+            motors.set_interlock(!ap.motor_emergency_stop);
+        }
         motors.output();
     }
 }

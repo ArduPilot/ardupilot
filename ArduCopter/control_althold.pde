@@ -25,8 +25,8 @@ static void althold_run()
     float target_yaw_rate;
     int16_t target_climb_rate;
 
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
         return;

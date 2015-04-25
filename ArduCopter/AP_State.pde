@@ -139,3 +139,23 @@ void set_pre_arm_rc_check(bool b)
     }
 }
 
+void set_using_interlock(bool b)
+{
+    if(ap.using_interlock != b) {
+        ap.using_interlock = b;
+    }
+}
+
+void set_motor_emergency_stop(bool b)
+{
+    if(ap.motor_emergency_stop != b) {
+        ap.motor_emergency_stop = b;
+    }
+
+    // Log new status
+    if (ap.motor_emergency_stop){
+        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOPPED);
+    } else {
+        Log_Write_Event(DATA_MOTORS_EMERGENCY_STOP_CLEARED);
+    }
+}

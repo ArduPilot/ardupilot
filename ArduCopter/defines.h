@@ -13,14 +13,15 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-// Flight modes
-// ------------
-#define AUTO_YAW_HOLD                   0       // pilot controls the heading
-#define AUTO_YAW_LOOK_AT_NEXT_WP        1       // point towards next waypoint (no pilot input accepted)
-#define AUTO_YAW_ROI                    2       // point towards a location held in roi_WP (no pilot input accepted)
-#define AUTO_YAW_LOOK_AT_HEADING        3       // point towards a particular angle (not pilot input accepted)
-#define AUTO_YAW_LOOK_AHEAD             4       // point in the direction the copter is moving
-#define AUTO_YAW_RESETTOARMEDYAW        5       // point towards heading at time motors were armed
+// Autopilot Yaw Mode enumeration
+enum autopilot_yaw_mode {
+    AUTO_YAW_HOLD =             0,  // pilot controls the heading
+    AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
+    AUTO_YAW_ROI =              2,  // point towards a location held in roi_WP (no pilot input accepted)
+    AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
+    AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
+    AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+};
 
 // Ch6... Ch12 aux switch control
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
@@ -35,37 +36,35 @@
 
 // Aux Switch enumeration
 enum aux_sw_func {
-    AUXSW_DO_NOTHING =     0,      // aux switch disabled
-    AUXSW_SET_HOVER,               // deprecated
-    AUXSW_FLIP,                    // flip
-    AUXSW_SIMPLE_MODE,             // change to simple mode
-    AUXSW_RTL,                     // change to RTL flight mode
-    AUXSW_SAVE_TRIM,               // save current position as level
-    AUXSW_ADC_FILTER,              // deprecated
-    AUXSW_SAVE_WP,                 // save mission waypoint or RTL if in auto mode
-    AUXSW_MULTI_MODE,              // depending upon CH6 position Flip (if ch6 is low), RTL (if ch6 in middle) or Save WP (if ch6 is high)
-    AUXSW_CAMERA_TRIGGER,          // trigger camera servo or relay
-    AUXSW_SONAR,                   // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
-    AUXSW_FENCE,                   // allow enabling or disabling fence in flight
-    AUXSW_RESETTOARMEDYAW,         // changes yaw to be same as when quad was armed
-    AUXSW_SUPERSIMPLE_MODE,        // change to simple mode in middle, super simple at top
-    AUXSW_ACRO_TRAINER,            // low = disabled, middle = leveled, high = leveled and limited
-    AUXSW_SPRAYER,                 // enable/disable the crop sprayer
-    AUXSW_AUTO,                    // change to auto flight mode
-    AUXSW_AUTOTUNE,                // auto tune
-    AUXSW_LAND,                    // change to LAND flight mode
-    AUXSW_EPM,                     // Operate the EPM cargo gripper low=off, middle=neutral, high=on
-    AUXSW_EKF,                     // Deprecated
-    AUXSW_PARACHUTE_ENABLE,        // Parachute enable/disable
-    AUXSW_PARACHUTE_RELEASE,       // Parachute release
-    AUXSW_PARACHUTE_3POS,          // Parachute disable, enable, release with 3 position switch
-    AUXSW_MISSION_RESET,           // Reset auto mission to start from first command
-    AUXSW_ATTCON_FEEDFWD,          // enable/disable the roll and pitch rate feed forward
-    AUXSW_ATTCON_ACCEL_LIM,        // enable/disable the roll, pitch and yaw accel limiting
-    AUXSW_RETRACT_MOUNT,           // Retract Mount
-    AUXSW_RELAY,                   // Relay pin on/off (only supports first relay)
-    AUXSW_LANDING_GEAR,            // Landing gear controller
-    AUXSW_LOST_COPTER_SOUND,       // Play lost copter sound
+    AUXSW_DO_NOTHING =           0, // aux switch disabled
+    AUXSW_FLIP =                 2, // flip
+    AUXSW_SIMPLE_MODE =          3, // change to simple mode
+    AUXSW_RTL =                  4, // change to RTL flight mode
+    AUXSW_SAVE_TRIM =            5, // save current position as level
+    AUXSW_SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
+    AUXSW_CAMERA_TRIGGER =       9, // trigger camera servo or relay
+    AUXSW_SONAR =               10, // allow enabling or disabling sonar in flight which helps avoid surface tracking when you are far above the ground
+    AUXSW_FENCE =               11, // allow enabling or disabling fence in flight
+    AUXSW_RESETTOARMEDYAW =     12, // changes yaw to be same as when quad was armed
+    AUXSW_SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
+    AUXSW_ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
+    AUXSW_SPRAYER =             15, // enable/disable the crop sprayer
+    AUXSW_AUTO =                16, // change to auto flight mode
+    AUXSW_AUTOTUNE =            17, // auto tune
+    AUXSW_LAND =                18, // change to LAND flight mode
+    AUXSW_EPM =                 19, // Operate the EPM cargo gripper low=off, middle=neutral, high=on
+    AUXSW_PARACHUTE_ENABLE  =   21, // Parachute enable/disable
+    AUXSW_PARACHUTE_RELEASE =   22, // Parachute release
+    AUXSW_PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+    AUXSW_MISSION_RESET =       24, // Reset auto mission to start from first command
+    AUXSW_ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
+    AUXSW_ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
+    AUXSW_RETRACT_MOUNT =       27, // Retract Mount
+    AUXSW_RELAY =               28, // Relay pin on/off (only supports first relay)
+    AUXSW_LANDING_GEAR =        29, // Landing gear controller
+    AUXSW_LOST_COPTER_SOUND =   30, // Play lost copter sound
+    AUXSW_MOTOR_ESTOP =         31, // Emergency Stop Switch
+    AUXSW_MOTOR_INTERLOCK =     32  // Motor On/Off switch
 };
 
 // Frame types
@@ -90,73 +89,68 @@ enum aux_sw_func {
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
 
-// Auto Pilot modes
-// ----------------
-#define STABILIZE 0                     // hold level position
-#define ACRO 1                          // rate control
-#define ALT_HOLD 2                      // AUTO control
-#define AUTO 3                          // AUTO control
-#define GUIDED 4                        // AUTO control
-#define LOITER 5                        // Hold a single location
-#define RTL 6                           // AUTO control
-#define CIRCLE 7                        // AUTO control
-#define LAND 9                          // AUTO control
-#define OF_LOITER 10                    // Hold a single location using optical flow sensor
-#define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
-#define SPORT 13                        // earth frame rate control
-#define FLIP        14                  // flip the vehicle on the roll axis
-#define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
-#define POSHOLD     16                  // position hold with manual override
-#define NUM_MODES   17
+// Auto Pilot Modes enumeration
+enum autopilot_modes {
+    STABILIZE =     0,  // 0, manual airframe angle with manual throttle
+    ACRO =          1,  // 1, manual body-frame angular rate with manual throttle
+    ALT_HOLD =      2,  // 2, manual airframe angle with automatic throttle
+    AUTO =          3,  // 3, fully automatic waypoint control
+    GUIDED =        4,  // 4, fully automatic fly to coordinate or fly at velocity/direction
+    LOITER =        5,  // 5, automatic horizontal acceleration with automatic throttle
+    RTL =           6,  // 6, automatic return to launching point
+    CIRCLE =        7,  // 7, automatic circular flight with automatic throttle
+    LAND =          9,  // 9, automatic landing with horizontal position control
+    OF_LOITER =    10,  // 10, automatic position control using optical flow sensor
+    DRIFT =        11,  // 11, semi-automatic position, yaw and throttle control
+    SPORT =        13,  // 13, manual earth-frame angular rate control with manual throttle
+    FLIP =         14,  // 14, automatically flip the vehicle on the roll axis
+    AUTOTUNE =     15,  // 15, automatically tune the vehicle's roll and pitch gains
+    POSHOLD =      16,  // 16, automatic position hold with manual override, with automatic throttle
+};
 
-
-// CH_6 Tuning
-// -----------
-#define CH6_NONE                        0   // no tuning performed
-#define CH6_STABILIZE_ROLL_PITCH_KP     1   // stabilize roll/pitch angle controller's P term
-#define CH6_RATE_ROLL_PITCH_KP          4   // body frame roll/pitch rate controller's P term
-#define CH6_RATE_ROLL_PITCH_KI          5   // body frame roll/pitch rate controller's I term
-#define CH6_RATE_ROLL_PITCH_KD          21  // body frame roll/pitch rate controller's D term
-#define CH6_STABILIZE_YAW_KP            3   // stabilize yaw heading controller's P term
-#define CH6_YAW_RATE_KP                 6   // body frame yaw rate controller's P term
-#define CH6_YAW_RATE_KD                 26  // body frame yaw rate controller's D term
-#define CH6_ALTITUDE_HOLD_KP            14  // altitude hold controller's P term (alt error to desired rate)
-#define CH6_THROTTLE_RATE_KP            7   // throttle rate controller's P term (desired rate to acceleration or motor output)
-#define CH6_ACCEL_Z_KP                  34  // accel based throttle controller's P term
-#define CH6_ACCEL_Z_KI                  35  // accel based throttle controller's I term
-#define CH6_ACCEL_Z_KD                  36  // accel based throttle controller's D term
-#define CH6_LOITER_POSITION_KP          12  // loiter distance controller's P term (position error to speed)
-#define CH6_VEL_XY_KP                   22  // loiter rate controller's P term (speed error to tilt angle)
-#define CH6_VEL_XY_KI                   28  // loiter rate controller's I term (speed error to tilt angle)
-#define CH6_WP_SPEED                    10  // maximum speed to next way point (0 to 10m/s)
-#define CH6_ACRO_RP_KP                  25  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-#define CH6_ACRO_YAW_KP                 40  // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
-#define CH6_RELAY                       9   // deprecated -- remove
-#define CH6_HELI_EXTERNAL_GYRO          13  // TradHeli specific external tail gyro gain
-#define CH6_OPTFLOW_KP                  17  // deprecated -- remove
-#define CH6_OPTFLOW_KI                  18  // deprecated -- remove
-#define CH6_OPTFLOW_KD                  19  // deprecated -- remove
-#define CH6_AHRS_YAW_KP                 30  // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
-#define CH6_AHRS_KP                     31  // accelerometer effect on roll/pitch angle (0=low)
-#define CH6_INAV_TC                     32  // deprecated -- remove
-#define CH6_DECLINATION                 38  // compass declination in radians
-#define CH6_CIRCLE_RATE                 39  // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
-#define CH6_SONAR_GAIN                  41  // sonar gain
-#define CH6_EKF_VERTICAL_POS            42  // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
-#define CH6_EKF_HORIZONTAL_POS          43  // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
-#define CH6_EKF_ACCEL_NOISE             44  // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
-#define CH6_RC_FEEL_RP                  45  // roll-pitch input smoothing
-#define CH6_RATE_PITCH_KP               46  // body frame pitch rate controller's P term
-#define CH6_RATE_PITCH_KI               47  // body frame pitch rate controller's I term
-#define CH6_RATE_PITCH_KD               48  // body frame pitch rate controller's D term
-#define CH6_RATE_ROLL_KP                49  // body frame roll rate controller's P term
-#define CH6_RATE_ROLL_KI                50  // body frame roll rate controller's I term
-#define CH6_RATE_ROLL_KD                51  // body frame roll rate controller's D term
-#define CH6_RATE_PITCH_FF               52  // body frame pitch rate controller FF term
-#define CH6_RATE_ROLL_FF                53  // body frame roll rate controller FF term
-#define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
-#define CH6_RATE_MOT_YAW_HEADROOM       55  // motors yaw headroom minimum
-#define CH6_RATE_YAW_FILT               56  // yaw rate input filter
+// Tuning enumeration
+enum tuning_func {
+    TUNING_NONE =                        0, //
+    TUNING_STABILIZE_ROLL_PITCH_KP =     1, // stabilize roll/pitch angle controller's P term
+    TUNING_STABILIZE_YAW_KP =            3, // stabilize yaw heading controller's P term
+    TUNING_RATE_ROLL_PITCH_KP =          4, // body frame roll/pitch rate controller's P term
+    TUNING_RATE_ROLL_PITCH_KI =          5, // body frame roll/pitch rate controller's I term
+    TUNING_YAW_RATE_KP =                 6, // body frame yaw rate controller's P term
+    TUNING_THROTTLE_RATE_KP =            7, // throttle rate controller's P term (desired rate to acceleration or motor output)
+    TUNING_WP_SPEED =                   10, // maximum speed to next way point (0 to 10m/s)
+    TUNING_LOITER_POSITION_KP =         12, // loiter distance controller's P term (position error to speed)
+    TUNING_HELI_EXTERNAL_GYRO =         13, // TradHeli specific external tail gyro gain
+    TUNING_ALTITUDE_HOLD_KP =           14, // altitude hold controller's P term (alt error to desired rate)
+    TUNING_RATE_ROLL_PITCH_KD =         21, // body frame roll/pitch rate controller's D term
+    TUNING_VEL_XY_KP =                  22, // loiter rate controller's P term (speed error to tilt angle)
+    TUNING_ACRO_RP_KP =                 25, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+    TUNING_YAW_RATE_KD =                26, // body frame yaw rate controller's D term
+    TUNING_VEL_XY_KI =                  28, // loiter rate controller's I term (speed error to tilt angle)
+    TUNING_AHRS_YAW_KP =                30, // ahrs's compass effect on yaw angle (0 = very low, 1 = very high)
+    TUNING_AHRS_KP =                    31, // accelerometer effect on roll/pitch angle (0=low)
+    TUNING_ACCEL_Z_KP =                 34, // accel based throttle controller's P term
+    TUNING_ACCEL_Z_KI =                 35, // accel based throttle controller's I term
+    TUNING_ACCEL_Z_KD =                 36, // accel based throttle controller's D term
+    TUNING_DECLINATION =                38, // compass declination in radians
+    TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
+    TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
+    TUNING_SONAR_GAIN =                 41, // sonar gain
+    TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
+    TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
+    TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
+    TUNING_RC_FEEL_RP =                 45, // roll-pitch input smoothing
+    TUNING_RATE_PITCH_KP =              46, // body frame pitch rate controller's P term
+    TUNING_RATE_PITCH_KI =              47, // body frame pitch rate controller's I term
+    TUNING_RATE_PITCH_KD =              48, // body frame pitch rate controller's D term
+    TUNING_RATE_ROLL_KP =               49, // body frame roll rate controller's P term
+    TUNING_RATE_ROLL_KI =               50, // body frame roll rate controller's I term
+    TUNING_RATE_ROLL_KD =               51, // body frame roll rate controller's D term
+    TUNING_RATE_PITCH_FF =              52, // body frame pitch rate controller FF term
+    TUNING_RATE_ROLL_FF =               53, // body frame roll rate controller FF term
+    TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
+    TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
+    TUNING_RATE_YAW_FILT =              56  // yaw rate input filter
+};
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
@@ -265,51 +259,55 @@ enum FlipState {
 #define MASK_LOG_ANY                    0xFFFF
 
 // DATA - event logging
-#define DATA_MAVLINK_FLOAT              1
-#define DATA_MAVLINK_INT32              2
-#define DATA_MAVLINK_INT16              3
-#define DATA_MAVLINK_INT8               4
-#define DATA_AP_STATE                   7
-#define DATA_SYSTEM_TIME_SET            8
-#define DATA_INIT_SIMPLE_BEARING        9
-#define DATA_ARMED                      10
-#define DATA_DISARMED                   11
-#define DATA_AUTO_ARMED                 15
-#define DATA_TAKEOFF                    16
-#define DATA_LAND_COMPLETE_MAYBE        17
-#define DATA_LAND_COMPLETE              18
-#define DATA_NOT_LANDED                 28
-#define DATA_LOST_GPS                   19
-#define DATA_FLIP_START                 21
-#define DATA_FLIP_END                   22
-#define DATA_SET_HOME                   25
-#define DATA_SET_SIMPLE_ON              26
-#define DATA_SET_SIMPLE_OFF             27
-#define DATA_SET_SUPERSIMPLE_ON         29
-#define DATA_AUTOTUNE_INITIALISED       30
-#define DATA_AUTOTUNE_OFF               31
-#define DATA_AUTOTUNE_RESTART           32
-#define DATA_AUTOTUNE_SUCCESS           33
-#define DATA_AUTOTUNE_FAILED            34
-#define DATA_AUTOTUNE_REACHED_LIMIT     35
-#define DATA_AUTOTUNE_PILOT_TESTING     36
-#define DATA_AUTOTUNE_SAVEDGAINS        37
-#define DATA_SAVE_TRIM                  38
-#define DATA_SAVEWP_ADD_WP              39
-#define DATA_SAVEWP_CLEAR_MISSION_RTL   40
-#define DATA_FENCE_ENABLE               41
-#define DATA_FENCE_DISABLE              42
-#define DATA_ACRO_TRAINER_DISABLED      43
-#define DATA_ACRO_TRAINER_LEVELING      44
-#define DATA_ACRO_TRAINER_LIMITED       45
-#define DATA_EPM_GRAB                   46
-#define DATA_EPM_RELEASE                47
-#define DATA_EPM_NEUTRAL                48  // deprecated
-#define DATA_PARACHUTE_DISABLED         49
-#define DATA_PARACHUTE_ENABLED          50
-#define DATA_PARACHUTE_RELEASED         51
-#define DATA_LANDING_GEAR_DEPLOYED      52
-#define DATA_LANDING_GEAR_RETRACTED     53
+#define DATA_MAVLINK_FLOAT                  1
+#define DATA_MAVLINK_INT32                  2
+#define DATA_MAVLINK_INT16                  3
+#define DATA_MAVLINK_INT8                   4
+#define DATA_AP_STATE                       7
+#define DATA_SYSTEM_TIME_SET                8
+#define DATA_INIT_SIMPLE_BEARING            9
+#define DATA_ARMED                          10
+#define DATA_DISARMED                       11
+#define DATA_AUTO_ARMED                     15
+#define DATA_TAKEOFF                        16
+#define DATA_LAND_COMPLETE_MAYBE            17
+#define DATA_LAND_COMPLETE                  18
+#define DATA_NOT_LANDED                     28
+#define DATA_LOST_GPS                       19
+#define DATA_FLIP_START                     21
+#define DATA_FLIP_END                       22
+#define DATA_SET_HOME                       25
+#define DATA_SET_SIMPLE_ON                  26
+#define DATA_SET_SIMPLE_OFF                 27
+#define DATA_SET_SUPERSIMPLE_ON             29
+#define DATA_AUTOTUNE_INITIALISED           30
+#define DATA_AUTOTUNE_OFF                   31
+#define DATA_AUTOTUNE_RESTART               32
+#define DATA_AUTOTUNE_SUCCESS               33
+#define DATA_AUTOTUNE_FAILED                34
+#define DATA_AUTOTUNE_REACHED_LIMIT         35
+#define DATA_AUTOTUNE_PILOT_TESTING         36
+#define DATA_AUTOTUNE_SAVEDGAINS            37
+#define DATA_SAVE_TRIM                      38
+#define DATA_SAVEWP_ADD_WP                  39
+#define DATA_SAVEWP_CLEAR_MISSION_RTL       40
+#define DATA_FENCE_ENABLE                   41
+#define DATA_FENCE_DISABLE                  42
+#define DATA_ACRO_TRAINER_DISABLED          43
+#define DATA_ACRO_TRAINER_LEVELING          44
+#define DATA_ACRO_TRAINER_LIMITED           45
+#define DATA_EPM_GRAB                       46
+#define DATA_EPM_RELEASE                    47
+#define DATA_EPM_NEUTRAL                    48  // deprecated
+#define DATA_PARACHUTE_DISABLED             49
+#define DATA_PARACHUTE_ENABLED              50
+#define DATA_PARACHUTE_RELEASED             51
+#define DATA_LANDING_GEAR_DEPLOYED          52
+#define DATA_LANDING_GEAR_RETRACTED         53
+#define DATA_MOTORS_EMERGENCY_STOPPED       54
+#define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
+#define DATA_MOTORS_INTERLOCK_DISABLED      56
+#define DATA_MOTORS_INTERLOCK_ENABLED       57
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f

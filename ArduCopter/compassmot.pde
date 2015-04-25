@@ -124,7 +124,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
 
     // enable motors and pass through throttle
     init_rc_out();
-    output_min();
+    enable_motor_output();
     motors.armed(true);
 
     // initialise run time

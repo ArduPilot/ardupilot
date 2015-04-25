@@ -45,7 +45,7 @@ static bool flip_init(bool ignore_checks)
     }
 
     // if in acro or stabilize ensure throttle is above zero
-    if ((g.rc_3.control_in <= 0) && (control_mode == ACRO || control_mode == STABILIZE)) {
+    if (ap.throttle_zero && (control_mode == ACRO || control_mode == STABILIZE)) {
         return false;
     }
 

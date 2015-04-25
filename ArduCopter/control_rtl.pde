@@ -131,8 +131,8 @@ static void rtl_return_start()
 //      called by rtl_run at 100hz or more
 static void rtl_climb_return_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: re-initialise wpnav targets
@@ -187,8 +187,8 @@ static void rtl_loiterathome_start()
 //      called by rtl_run at 100hz or more
 static void rtl_loiterathome_run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // To-Do: re-initialise wpnav targets
@@ -257,8 +257,8 @@ static void rtl_descent_run()
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
 
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed) {
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // set target to current position
         wp_nav.init_loiter_target();
@@ -319,8 +319,8 @@ static void rtl_land_run()
 {
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
-    // if not auto armed set throttle to zero and exit immediately
-    if(!ap.auto_armed || ap.land_complete) {
+    // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // set target to current position
         wp_nav.init_loiter_target();

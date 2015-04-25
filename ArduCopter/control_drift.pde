@@ -46,8 +46,8 @@ static void drift_run()
     float target_yaw_rate;
     int16_t pilot_throttle_scaled;
 
-    // if not armed or landed and throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || (ap.land_complete && ap.throttle_zero)) {
+    // if not armed or motor interlock not enabled or landed and throttle at zero, set throttle to zero and exit immediately
+    if(!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }
