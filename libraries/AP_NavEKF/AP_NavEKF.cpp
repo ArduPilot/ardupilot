@@ -4809,6 +4809,8 @@ void NavEKF::performArmingChecks()
             // initialise filtered altitude used to provide a takeoff reference to current baro on disarm
             // this reduces the time required for the filter to settle before the estimate can be used
             meaHgtAtTakeOff = hgtMea;
+            // reset the vertical position state to faster recover from baro errors experienced during touchdown
+            state.position.z = -hgtMea;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
