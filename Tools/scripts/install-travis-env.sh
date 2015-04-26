@@ -15,7 +15,7 @@ PYTHON_PKGS="pymavlink MAVProxy catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs"
-UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386 gcc-multilib"
+UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386 gcc-multilib g++-arm-linux-gnueabi"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
