@@ -72,7 +72,7 @@ public:
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
-        uint32_t vehicle_lost        : 1;    // 1 when lost copter tone is requested (normally only used for copter)
+        uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
     };
 
     /// notify_events_type - bitmask of active events.
