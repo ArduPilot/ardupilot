@@ -79,6 +79,15 @@ public:
     /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
     void calculate_loiter_leash_length();
 
+    ///
+    /// stop controller
+    ///
+    /// init_stop_target - initialize's loiter position and feed-forward velocity from current pos and velocity
+    void init_stop_target(float accel_cmss);
+    ///
+    /// update_stop - run the stop controller - should be called at 400hz
+    void update_stop(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+
     /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
     void set_pilot_desired_acceleration(float control_roll, float control_pitch);
 

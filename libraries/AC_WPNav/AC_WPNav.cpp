@@ -212,6 +212,41 @@ void AC_WPNav::set_loiter_velocity(float velocity_cms)
     }
 }
 
+/// init_stop_target - initializes stop position from current position and velocity
+void AC_WPNav::init_stop_target(float accel_cmss)
+{
+    const Vector3f& curr_vel = _inav.get_velocity();
+    Vector3f stopping_point;
+
+    // initialise position controller
+    _pos_control.init_xy_controller();
+
+    // initialise pos controller speed and acceleration
+    _pos_control.set_speed_xy(curr_vel.length());
+    _pos_control.set_accel_xy(accel_cmss);
+    _pos_control.calc_leash_length_xy();
+
+    _pos_control.get_stopping_point_xy(stopping_point);
+
+    // set target position
+    init_loiter_target(stopping_point);
+}
+
+// update_stop - run the stop controller - gets called at 400hz
+void AC_WPNav::update_stop(float ekfGndSpdLimit, float ekfNavVelGainScaler)
+{
+    // calculate dt
+    float dt = _pos_control.time_since_last_xy_update();
+
+    // run at poscontrol update rate.
+    if (dt >= _pos_control.get_dt_xy()) {
+
+        // send adjusted feed forward velocity back to position controller
+        _pos_control.set_desired_velocity_xy(0,0);
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler);
+    }
+}
+
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
 void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
 {
