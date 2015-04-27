@@ -31,6 +31,8 @@ for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     make clean
     make px4-cleandep
     make px4-v2
+    make clean
+    make pxf -j4
     popd
 done
 
