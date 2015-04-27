@@ -1254,9 +1254,13 @@ void NavEKF::CovariancePrediction()
         }
     }
     // scale accel bias noise when disarmed to allow for faster bias estimation
-    processNoise[13] = dVelBiasSigma;
-    if (!vehicleArmed) {
-        processNoise[13] *= accelBiasNoiseScaler;
+    // inhibit bias estimation during takeoff with ground effect to prevent bad bias learning
+    if (takeoffExpected) {
+        processNoise[13] = 0.0f;
+    } else if (!vehicleArmed) {
+        processNoise[13] = dVelBiasSigma * accelBiasNoiseScaler;
+    } else {
+        processNoise[13] = dVelBiasSigma;
     }
     for (uint8_t i=14; i<=15; i++) processNoise[i] = windVelSigma;
     for (uint8_t i=16; i<=18; i++) processNoise[i] = magEarthSigma;
@@ -2172,7 +2176,8 @@ void NavEKF::FuseVelPosNED()
                 // Only height and height rate observations are used to update z accel bias estimate
                 // Protect Kalman gain from ill-conditioning
                 // Don't update Z accel bias if off-level by greater than 60 degrees to avoid scale factor error effects
-                if ((obsIndex == 5 || obsIndex == 2) && prevTnb.c.z > 0.5f) {
+                // Don't update if we are taking off with ground effect
+                if ((obsIndex == 5 || obsIndex == 2) && prevTnb.c.z > 0.5f && !getTakeoffExpected()) {
                     Kfusion[13] = constrain_float(P[13][stateIndex]*SK,-1.0f,0.0f);
                 } else {
                     Kfusion[13] = 0.0f;
