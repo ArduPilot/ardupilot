@@ -274,14 +274,9 @@ static bool verify_within_distance()
 
 static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
-	switch (cmd.p1)
-	{
-		case 0:
-			if (cmd.content.speed.target_ms > 0) {
-				g.speed_cruise.set(cmd.content.speed.target_ms);
-                gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), g.speed_cruise.get());
-            }
-			break;
+	if (cmd.content.speed.target_ms > 0) {
+		g.speed_cruise.set(cmd.content.speed.target_ms);
+		gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), g.speed_cruise.get());
 	}
 
 	if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
