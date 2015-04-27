@@ -131,6 +131,7 @@ public:
 
 private:
     bool using_EKF(void) const;
+    void update_attitude_for_control(float dt);
 
     NavEKF EKF;
     bool ekf_started;
@@ -142,6 +143,8 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms;
     uint32_t start_time_ms;
+
+    Quaternion attitude_for_control;
 };
 #endif
 

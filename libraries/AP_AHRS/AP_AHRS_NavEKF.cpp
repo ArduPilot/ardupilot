@@ -145,6 +145,69 @@ void AP_AHRS_NavEKF::update(void)
             }
         }
     }
+
+    static uint32_t last_update_ms = 0;
+    uint32_t tnow = hal.scheduler->millis();
+    float dt = (tnow-last_update_ms)*1.0e-3f;
+    last_update_ms = tnow;
+
+    update_attitude_for_control(dt);
+}
+
+void AP_AHRS_NavEKF::update_attitude_for_control(float dt)
+{
+    static const float att_diff_max = radians(20.0f);
+    Quaternion att;
+    EKF.getQuaternion(att);
+    static Quaternion att_rate_limited;
+    Vector3f attitude_adj;
+    float attitude_adj_mag = 0.0f;
+
+    // rotate filter elements with gyro
+    Quaternion del_ang;
+    del_ang = EKF.getDeltaQuaternion();
+    attitude_for_control *= del_ang;
+    att_rate_limited *= del_ang;
+
+    // apply rate limit to attitude corrections for step protection
+    static float attCorrRateMax = radians(40.0f);
+    float adj_limit = attCorrRateMax*dt;
+
+    (att_rate_limited.inverse()*att).to_axis_angle(attitude_adj);
+
+    attitude_adj_mag = attitude_adj.length();
+
+    if (attitude_adj_mag <= att_diff_max) {
+        if (attitude_adj_mag > adj_limit) {
+            attitude_adj *= adj_limit/attitude_adj_mag;
+        }
+    } else {
+        // strictly constrain att_rate_limited to within att_diff_max radians of att
+        attitude_adj *= (attitude_adj_mag-att_diff_max)/attitude_adj_mag;
+    }
+
+    att_rate_limited.rotate(attitude_adj);
+    att_rate_limited.normalize();
+
+    // filter to smooth out attitude corrections
+    static const float attStepFiltTC = 2.0f;
+
+    (attitude_for_control.inverse()*att_rate_limited).to_axis_angle(attitude_adj);
+
+    float alpha = constrain_float(dt / (dt+attStepFiltTC),0.0f,1.0f);
+    attitude_adj *= alpha;
+
+    attitude_for_control.rotate(attitude_adj);
+
+    // strictly constrain attitude_for_control to within att_diff_max radians of att
+    (attitude_for_control.inverse()*att).to_axis_angle(attitude_adj);
+    attitude_adj_mag = attitude_adj.length();
+    if (attitude_adj_mag > att_diff_max) {
+        attitude_adj *= (attitude_adj_mag-att_diff_max)/attitude_adj_mag;
+        attitude_for_control.rotate(attitude_adj);
+    }
+
+    attitude_for_control.normalize();
 }
 
 // accelerometer values in the earth frame in m/s/s
