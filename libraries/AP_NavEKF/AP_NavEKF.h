@@ -740,10 +740,10 @@ private:
     float dtDelVel2;
 
     // baro ground effect
-    bool takeoffExpected;             // external state from ArduCopter - takeoff expected
-    uint32_t takeoffExpectedSet_ms;   // system time at which takeoffExpected was set
-    bool touchdownExpected;           // external state from ArduCopter - touchdown expected
-    uint32_t touchdownExpectedSet_ms; // system time at which touchdownExpected was set
+    bool expectGndEffectTakeoff;      // external state from ArduCopter - takeoff expected
+    uint32_t takeoffExpectedSet_ms;   // system time at which expectGndEffectTakeoff was set
+    bool expectGndEffectTouchdown;    // external state from ArduCopter - touchdown expected
+    uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
     // states held by optical flow fusion across time steps
