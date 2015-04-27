@@ -597,6 +597,31 @@ static void Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
+struct PACKED log_ParameterTuning {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
+    float    tuning_value;  // normalized value used inside tuning() function
+    int16_t  control_in;    // raw tune input value
+    int16_t  tuning_low;    // tuning low end value
+    int16_t  tuning_high;   // tuning high end value
+};
+
+static void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high)
+{
+    struct log_ParameterTuning pkt_tune = {
+        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
+        time_ms        : hal.scheduler->millis(),
+        parameter      : param,
+        tuning_value   : tuning_val,
+        control_in     : control_in,
+        tuning_low     : tune_low,
+        tuning_high    : tune_high
+    };
+
+    DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -605,6 +630,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "Iff",          "TimeMS,Angle,Rate" },
 #endif
+    { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
+      "PTUN", "IBfHHH",          "TimeMS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
       "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
