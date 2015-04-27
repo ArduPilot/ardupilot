@@ -1255,7 +1255,7 @@ void NavEKF::CovariancePrediction()
     }
     // scale accel bias noise when disarmed to allow for faster bias estimation
     // inhibit bias estimation during takeoff with ground effect to prevent bad bias learning
-    if (takeoffExpected) {
+    if (expectGndEffectTakeoff) {
         processNoise[13] = 0.0f;
     } else if (!vehicleArmed) {
         processNoise[13] = dVelBiasSigma * accelBiasNoiseScaler;
@@ -4589,9 +4589,9 @@ void NavEKF::InitialiseVariables()
     flowXfailed = false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
-    takeoffExpected = false;
+    expectGndEffectTakeoff = false;
     touchdownExpectedSet_ms = 0;
-    touchdownExpected = false;
+    expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     gpsAidingBad = false;
@@ -4751,8 +4751,8 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
     status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
-    status.flags.takeoff = takeoffExpected; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
-    status.flags.touchdown = touchdownExpected; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
+    status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
+    status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
 }
 
 // send an EKF_STATUS message to GCS
@@ -4945,11 +4945,11 @@ bool NavEKF::setOriginLLH(struct Location &loc)
 // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
 bool NavEKF::getTakeoffExpected()
 {
-    if (takeoffExpected && imuSampleTime_ms - takeoffExpectedSet_ms > gndEffectTimeout_ms) {
-        takeoffExpected = false;
+    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > gndEffectTimeout_ms) {
+        expectGndEffectTakeoff = false;
     }
 
-    return takeoffExpected;
+    return expectGndEffectTakeoff;
 }
 
 // called by vehicle code to specify that a takeoff is happening
@@ -4957,18 +4957,18 @@ bool NavEKF::getTakeoffExpected()
 void NavEKF::setTakeoffExpected(bool val)
 {
     takeoffExpectedSet_ms = imuSampleTime_ms;
-    takeoffExpected = val;
+    expectGndEffectTakeoff = val;
 }
 
 
 // determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
 bool NavEKF::getTouchdownExpected()
 {
-    if (touchdownExpected && imuSampleTime_ms - touchdownExpectedSet_ms > gndEffectTimeout_ms) {
-        touchdownExpected = false;
+    if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > gndEffectTimeout_ms) {
+        expectGndEffectTouchdown = false;
     }
 
-    return touchdownExpected;
+    return expectGndEffectTouchdown;
 }
 
 // called by vehicle code to specify that a touchdown is expected to happen
@@ -4976,7 +4976,7 @@ bool NavEKF::getTouchdownExpected()
 void NavEKF::setTouchdownExpected(bool val)
 {
     touchdownExpectedSet_ms = imuSampleTime_ms;
-    touchdownExpected = val;
+    expectGndEffectTouchdown = val;
 }
 
 // Monitor GPS data to see if quality is good enough to initialise the EKF
