@@ -29,6 +29,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
+    // @Param: SYSID_TARGET
+    // @DisplayName: Target vehicle's MAVLink system ID
+    // @Description: The identifier of the vehicle being tracked. This should be zero (to auto detect) or be the same as the SYSID_THISMAV parameter of the vehicle being tracked.
+    // @Range: 1 255
+    // @User: Advanced
+    GSCALAR(sysid_target,           "SYSID_TARGET",    0),
+
     // @Param: MAG_ENABLE
     // @DisplayName: Enable Compass
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.

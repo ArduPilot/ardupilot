@@ -457,7 +457,18 @@ GCS_MAVLINK::data_stream_send(void)
 */
 void mavlink_snoop(const mavlink_message_t* msg)
 {
+    // return immediately if sysid doesn't match our target sysid
+    if ((g.sysid_target != 0) && (g.sysid_target != msg->sysid)) {
+        return;
+    }
+
     switch (msg->msgid) {
+    case MAVLINK_MSG_ID_HEARTBEAT:
+    {
+        mavlink_check_target(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
     {
         // decode
@@ -476,6 +487,53 @@ void mavlink_snoop(const mavlink_message_t* msg)
         break;
     }
     }
+}
+
+// locks onto a particular target sysid and sets it's position data stream to at least 1hz
+void mavlink_check_target(const mavlink_message_t* msg)
+{
+    static bool target_set = false;
+
+    // exit immediately if the target has already been set
+    if (target_set) {
+        return;
+    }
+
+    // decode
+    mavlink_heartbeat_t packet;
+    mavlink_msg_heartbeat_decode(msg, &packet);
+
+    // exit immediately if this is not a vehicle we would track
+    if ((packet.type == MAV_TYPE_ANTENNA_TRACKER) ||
+        (packet.type == MAV_TYPE_GCS) ||
+        (packet.type == MAV_TYPE_ONBOARD_CONTROLLER) ||
+        (packet.type == MAV_TYPE_GIMBAL)) {
+        return;
+    }
+
+    // set our sysid to the target, this ensures we lock onto a single vehicle
+    if (g.sysid_target == 0) {
+        g.sysid_target = msg->sysid;
+    }
+
+    // send data stream request to target on all channels
+    //  Note: this doesn't check success for all sends meaning it's not guaranteed the vehicle's positions will be sent at 1hz
+    for (uint8_t i=0; i < num_gcs; i++) {
+        if (gcs[i].initialised) {
+            if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= MAVLINK_MSG_ID_DATA_STREAM_LEN) {
+                mavlink_msg_request_data_stream_send(
+                    (mavlink_channel_t)i,
+                    msg->sysid,
+                    msg->compid,
+                    MAV_DATA_STREAM_POSITION,
+                    1,  // 1hz
+                    1); // start streaming
+            }
+        }
+    }
+
+    // flag target has been set
+    target_set = true;
 }
 
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
