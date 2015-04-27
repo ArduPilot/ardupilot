@@ -55,6 +55,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <fenv.h>
+#include <VehicleType.h>
 
 #ifndef INT16_MIN
 #define INT16_MIN -32768
@@ -311,11 +312,11 @@ static void read_sensors(uint8_t type)
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             ahrs.estimate_wind();
         }
-    } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
-               (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
-               (type == LOG_ROVER_COMPASS_MSG && LogReader.vehicle == LogReader::VEHICLE_ROVER)) {
+    } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) ||
+               (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_COPTER) ||
+               (type == LOG_ROVER_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_ROVER)) {
         compass.read();
-    } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) {
+    } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) {
         ahrs.set_airspeed(&airspeed);
     } else if (type == LOG_BARO_MSG) {
         barometer.update();
@@ -380,9 +381,9 @@ void loop()
         read_sensors(type);
 
         if ((type == LOG_ATTITUDE_MSG) ||
-            (type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_PLANE) ||
-            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_COPTER) ||
-            (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == LogReader::VEHICLE_ROVER)) {
+            (type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) ||
+            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_COPTER) ||
+            (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_ROVER)) {
 
             Vector3f ekf_euler;
             Vector3f velNED;
