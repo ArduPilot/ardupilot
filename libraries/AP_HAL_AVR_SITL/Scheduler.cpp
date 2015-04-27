@@ -232,10 +232,15 @@ void SITLScheduler::system_initialized() {
         panic(
             PSTR("PANIC: scheduler system initialized called more than once"));
     }
+    int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+#ifndef __i386__
+    // i386 with gcc doesn't work with FE_INVALID
+    exceptions |= FE_INVALID;
+#endif
     if (_sitlState->_sitl == NULL || _sitlState->_sitl->float_exception) {
-        feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);
+        feenableexcept(exceptions);
     } else {
-        feclearexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO);
+        feclearexcept(exceptions);
     }
     _initialized = true;
 }
