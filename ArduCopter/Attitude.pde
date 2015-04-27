@@ -64,9 +64,12 @@ static float get_roi_yaw()
 
 static float get_look_ahead_yaw()
 {
+    const Vector3f& vel = inertial_nav.get_velocity();
+    float speed = pythagorous2(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed_cm() > YAW_LOOK_AHEAD_MIN_SPEED) {
-        yaw_look_ahead_bearing = gps.ground_course_cd();
+    if (position_ok() && speed > YAW_LOOK_AHEAD_MIN_SPEED) {
+
+        yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
 }
