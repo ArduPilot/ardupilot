@@ -1213,12 +1213,6 @@ static void handle_auto_mode(void)
             // during final approach constrain roll to the range
             // allowed for level flight
             nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
-        } else {
-            if (!ahrs.airspeed_sensor_enabled()) {
-                // when not under airspeed control, don't allow
-                // down pitch in landing
-                nav_pitch_cd = constrain_int32(nav_pitch_cd, 0, nav_pitch_cd);
-            }
         }
         calc_throttle();
         
