@@ -330,6 +330,10 @@ private:
     // initialise the covariance matrix
     void CovarianceInit();
 
+    // helper functions for readIMUData
+    bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
+    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
+
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
 
@@ -535,7 +539,6 @@ private:
     Vector3f correctedDelVel2;      // delta velocities along the XYZ body axes for IMU2 corrected for errors (m/s)
     Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
     Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
-	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
     Vector3f lastGyroBias;          // previous gyro bias vector used by filter divergence check
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
@@ -722,7 +725,8 @@ private:
     float rangeAtArming;            // range finder measurement when armed
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
-    bool haveDeltaAngles;
+    float dtDelVel1;
+    float dtDelVel2;
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
