@@ -5119,5 +5119,10 @@ Quaternion NavEKF::getDeltaQuaternion(void) const
     return correctedDelAngQuat;
 }
 
+// return the quaternions defining the rotation from NED to XYZ (body) axes
+void NavEKF::getQuaternion(Quaternion& ret) const
+{
+    ret = state.quat;
+}
 
 #endif // HAL_CPU_CLASS
