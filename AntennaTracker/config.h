@@ -53,6 +53,9 @@
 #ifndef TRACKING_TIMEOUT_SEC
  # define TRACKING_TIMEOUT_SEC              5.0f    // consider we've lost track of vehicle after 5 seconds with no position update.
 #endif
+#ifndef DISTANCE_MIN_DEFAULT
+ # define DISTANCE_MIN_DEFAULT              5.0f    // do not track targets within 5 meters
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items

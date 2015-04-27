@@ -89,7 +89,8 @@ public:
         k_param_yaw_trim,
         k_param_pitch_trim,
         k_param_yaw_range,
-        k_param_pitch_range,            // 136
+        k_param_pitch_range,
+        k_param_distance_min,       // 137
 
         //
         // 150: Telemetry control
@@ -138,6 +139,7 @@ public:
     AP_Float pitch_trim;
     AP_Int16 yaw_range;             // yaw axis total range of motion in degrees
     AP_Int16 pitch_range;           // pitch axis total range of motion in degrees
+    AP_Int16 distance_min;          // target's must be at least this distance from tracker to be tracked
 
     // Waypoints
     //

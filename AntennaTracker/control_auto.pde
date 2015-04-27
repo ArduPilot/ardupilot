@@ -17,6 +17,10 @@ static void update_auto(void)
 
     float yaw = wrap_180_cd((nav_status.bearing+g.yaw_trim)*100) * 0.01f;
     float pitch = constrain_float(nav_status.pitch+g.pitch_trim, -90, 90);
-    update_pitch_servo(pitch);
-    update_yaw_servo(yaw);
+
+    // only move servos if target is at least distance_min away
+    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min)) {
+        update_pitch_servo(pitch);
+        update_yaw_servo(yaw);
+    }
 }

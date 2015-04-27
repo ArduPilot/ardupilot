@@ -178,6 +178,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(pitch_range,            "PITCH_RANGE", PITCH_RANGE_DEFAULT),
 
+    // @Param: DISTANCE_MIN
+    // @DisplayName: Distance minimum to target
+    // @Description: Tracker will track targets at least this distance away
+    // @Units: meters
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    GSCALAR(distance_min,           "DISTANCE_MIN", DISTANCE_MIN_DEFAULT),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
