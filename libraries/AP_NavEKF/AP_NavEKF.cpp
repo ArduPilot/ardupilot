@@ -677,6 +677,11 @@ bool NavEKF::InitialiseFilterBootstrap(void)
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF::UpdateFilter()
 {
+    // zero the delta quaternion used by the strapdown navigation because it is published
+    // and we need to return a zero rotation of the INS fails to update it
+    memset(&correctedDelAngQuat[0], 0, sizeof(correctedDelAngQuat));
+    correctedDelAngQuat[0] = 1.0f;
+
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
@@ -5100,5 +5105,14 @@ bool NavEKF::getHeightControlLimit(float &height) const
         return false;
     }
 }
+
+// provides the delta quaternion that was used by the INS calculation to rotate from the previous orientation to the orientation at the current time
+// the delta quaternion returned will be a zero rotation if the INS calculation was not performed on that time step
+Quaternion NavEKF::getDeltaQuaternion(void) const
+{
+    // Note: correctedDelAngQuat is reset to a zero rotation at the start of every update cycle in UpdateFilter()
+    return correctedDelAngQuat;
+}
+
 
 #endif // HAL_CPU_CLASS
