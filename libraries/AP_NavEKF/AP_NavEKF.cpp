@@ -1124,16 +1124,9 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // use weighted average of both IMU units for delta velocities
     correctedDelVel12 = correctedDelVel1 * IMU1_weighting + correctedDelVel2 * (1.0f - IMU1_weighting);
 
-    // apply corrections for earths rotation rate and coning errors
+    // apply correction for earths rotation rate
     // % * - and + operators have been overloaded
-    if (haveDeltaAngles) {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
-    } else {
-        correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual + (prevDelAng % correctedDelAng) * 8.333333e-2f;
-    }
-
-    // save current measurements
-    prevDelAng = correctedDelAng;
+    correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
 
     // convert the rotation vector to its equivalent quaternion
     rotationMag = correctedDelAng.length();
@@ -3978,6 +3971,33 @@ void NavEKF::ConstrainStates()
     terrainState = max(terrainState, state.position.z + rngOnGnd);
 }
 
+bool NavEKF::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
+    if (ins_index < ins.get_accel_count()) {
+        if (ins.get_delta_velocity(ins_index,dVel)) {
+            dVel_dt = ins.get_delta_velocity_dt(ins_index);
+        } else {
+            dVel = ins.get_accel(ins_index) * dtIMUactual;
+            dVel_dt = dtIMUactual;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NavEKF::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
+    if (ins_index < ins.get_gyro_count()) {
+        if (!ins.get_delta_angle(ins_index,dAng)) {
+            dAng = ins.get_gyro(ins_index) * dtIMUactual;
+        }
+        return true;
+    }
+    return false;
+}
+
 // update IMU delta angle and delta velocity measurements
 void NavEKF::readIMUData()
 {
@@ -3986,44 +4006,35 @@ void NavEKF::readIMUData()
     dtIMUavg = 1.0f/ins.get_sample_rate();
     dtIMUactual = max(ins.get_delta_time(),1.0e-3f);
 
-    // the imu sample time is sued as a common time reference throughout the filter
+    // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    bool dual_ins = ins.get_accel_health(0) && ins.get_accel_health(1);
-    haveDeltaAngles = true;
-
-    if (dual_ins) {
-        Vector3f dAngIMU1;
-        Vector3f dAngIMU2;
-
-        if(!ins.get_delta_velocity(0,dVelIMU1)) {
-            dVelIMU1 = ins.get_accel(0) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_velocity(1,dVelIMU2)) {
-            dVelIMU2 = ins.get_accel(1) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_angle(0, dAngIMU1)) {
-            haveDeltaAngles = false;
-            dAngIMU1 = ins.get_gyro(0) * dtIMUactual;
-        }
-
-        if(!ins.get_delta_angle(1, dAngIMU2)) {
-            haveDeltaAngles = false;
-            dAngIMU2 = ins.get_gyro(1) * dtIMUactual;
-        }
-        dAngIMU = (dAngIMU1+dAngIMU2) * 0.5f;
+    if (ins.get_accel_health(0) && ins.get_accel_health(1)) {
+        // dual accel mode
+        readDeltaVelocity(0, dVelIMU1, dtDelVel1);
+        readDeltaVelocity(1, dVelIMU2, dtDelVel2);
     } else {
-        if(!ins.get_delta_velocity(dVelIMU1)) {
-            dVelIMU1 = ins.get_accel() * dtIMUactual;
-        }
-        dVelIMU2 = dVelIMU1;
+        // single accel mode - one of the first two accelerometers are unhealthy
+        // read primary accelerometer into dVelIMU1 and copy to dVelIMU2
+        readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
 
-        if(!ins.get_delta_angle(dAngIMU)) {
-            haveDeltaAngles = false;
-            dAngIMU = ins.get_gyro() * dtIMUactual;
-        }
+        dtDelVel2 = dtDelVel1;
+        dVelIMU2 = dVelIMU1;
+    }
+
+    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
+        // dual gyro mode - average first two gyros
+        Vector3f dAng;
+        dAngIMU.zero();
+        readDeltaAngle(0, dAng);
+        dAngIMU += dAng;
+        readDeltaAngle(1, dAng);
+        dAngIMU += dAng;
+        dAngIMU *= 0.5f;
+    } else {
+        // single gyro mode - one of the first two gyros are unhealthy or don't exist
+        // just read primary gyro
+        readDeltaAngle(ins.get_primary_gyro(), dAngIMU);
     }
 }
 
@@ -4493,7 +4504,6 @@ void NavEKF::InitialiseVariables()
     hgtMea = 0;
     storeIndex = 0;
     lastGyroBias.zero();
-	prevDelAng.zero();
     lastAngRate.zero();
     lastAccel1.zero();
     lastAccel2.zero();
@@ -4549,7 +4559,6 @@ void NavEKF::InitialiseVariables()
     inhibitMagStates = true;
     gndOffsetValid =  false;
     flowXfailed = false;
-    haveDeltaAngles = false;
     validOrigin = false;
     gndEffectMode = false;
     gpsSpdAccuracy = 0.0f;
