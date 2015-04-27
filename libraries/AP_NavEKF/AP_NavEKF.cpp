@@ -4177,8 +4177,8 @@ void NavEKF::readHgtData()
 
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
-        if (!vehicleArmed || !getTakeoffExpected()) {
-            static const float gndHgtFiltTC = 1.0f;
+        if (!getTakeoffExpected()) {
+            static const float gndHgtFiltTC = 0.5f;
             static const float dtBaro = msecHgtAvg*1.0e-3f;
             float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
             meaHgtAtTakeOff += (hgtMea-meaHgtAtTakeOff)*alpha;
