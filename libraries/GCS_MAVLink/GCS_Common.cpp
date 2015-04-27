@@ -967,9 +967,13 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
  */
 void GCS_MAVLINK::send_system_time(AP_GPS &gps)
 {
+    uint64_t rtctime = hal.util->get_system_clock();
+    if(rtctime == 0) // No RTC on this platform, fallback to GPS
+        rtctime = gps.time_epoch_usec();
+
     mavlink_msg_system_time_send(
         chan,
-        gps.time_epoch_usec(),
+        rtctime,
         hal.scheduler->millis());
 }
 

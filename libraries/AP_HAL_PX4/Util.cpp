@@ -95,7 +95,14 @@ void PX4Util::set_system_clock(uint64_t time_utc_usec)
     timespec ts;
     ts.tv_sec = time_utc_usec/1.0e6;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
-    clock_settime(CLOCK_REALTIME, &ts);    
+    clock_settime(CLOCK_REALTIME, &ts);
+}
+
+uint64_t PX4Util::get_system_clock()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return ts.tv_sec * 1.0e6 + ts.tv_nsec / 1000;
 }
 
 /*

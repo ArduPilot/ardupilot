@@ -46,6 +46,12 @@ public:
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
     /*
+      return system clock in UTC microseconds (or 0 if there is no system clock
+      on this platform).
+    */
+    virtual uint64_t get_system_clock(void) { return 0; }
+
+    /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
 
