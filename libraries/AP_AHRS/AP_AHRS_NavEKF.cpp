@@ -384,5 +384,15 @@ bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
     return status;
 }
 
+void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
+{
+    EKF.setTakeoffExpected(val);
+}
+
+void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
+{
+    EKF.setTouchdownExpected(val);
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
