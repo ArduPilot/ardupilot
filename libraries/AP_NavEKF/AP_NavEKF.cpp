@@ -532,7 +532,7 @@ bool NavEKF::InitialiseFilterDynamic(void)
     }
 
     // If the DCM solution has not converged, then don't initialise
-    if (_ahrs->get_error_rp() > 0.02f) {
+    if (_ahrs->get_error_rp() > 0.05f) {
         return false;
     }
 
