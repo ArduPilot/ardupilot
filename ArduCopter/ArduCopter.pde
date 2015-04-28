@@ -374,6 +374,13 @@ static struct {
     uint32_t last_edge_time_ms;         // system time that switch position was last changed
 } control_switch_state;
 
+static struct {
+    bool running;
+    float speed;
+    uint32_t start_ms;
+    uint32_t time_ms;
+} takeoff_state;
+
 static RCMapper rcmap;
 
 // board specific config

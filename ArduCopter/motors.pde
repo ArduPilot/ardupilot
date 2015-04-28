@@ -646,7 +646,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         // check throttle is not too high - skips checks if arming from GCS in Guided
         if (!(arming_from_gcs && control_mode == GUIDED)) {
             // above top of deadband is too always high
-            if (g.rc_3.control_in > (g.rc_3.get_control_mid() + g.throttle_deadzone)) {
+            if (g.rc_3.control_in > get_takeoff_trigger_throttle()) {
                 if (display_failure) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
                 }
