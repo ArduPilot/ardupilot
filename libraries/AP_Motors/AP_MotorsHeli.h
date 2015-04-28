@@ -139,7 +139,7 @@ public:
     // enable - starts allowing signals to be sent to motors
     void enable();
 
-    // output_min - sends minimum values out to the motors
+    // output_min - sets servos to neutral point
     void output_min();
 
     // output_test - spin a motor at the pwm value specified
@@ -210,6 +210,7 @@ protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
     void                output_armed_not_stabilizing();
+    void                output_armed_zero_throttle();
     void                output_disarmed();
 
 private:

@@ -260,7 +260,7 @@ void AP_MotorsHeli::enable()
     hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
 }
 
-// output_min - sends minimum values out to the motors
+// output_min - sets servos to neutral point
 void AP_MotorsHeli::output_min()
 {
     // move swash to mid
@@ -377,7 +377,7 @@ uint16_t AP_MotorsHeli::get_motor_mask()
 
 void AP_MotorsHeli::output_armed_not_stabilizing()
 {
-    // call output_armed_stabilizing
+    // stabilizing servos always operate for helicopters
     output_armed_stabilizing();
 }
 
@@ -403,10 +403,18 @@ void AP_MotorsHeli::output_armed_stabilizing()
     rsc_control();
 }
 
+// output_armed_zero_throttle - sends commands to the motors
+void AP_MotorsHeli::output_armed_zero_throttle()
+{
+    // stabilizing servos always operate for helicopters
+    // ToDo: Bring RSC Master On/Off into this function
+    output_armed_stabilizing();
+}
+
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    // for helis - armed or disarmed we allow servos to move
+    // stabilizing servos always operate for helicopters
     output_armed_stabilizing();
 }
 
