@@ -50,7 +50,7 @@ public:
     void        save_gains();
 
     /// operator function call for easy initialisation
-    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt );
+    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt);
 
     // get accessors
     float       kP() const { return _kp.get(); }
