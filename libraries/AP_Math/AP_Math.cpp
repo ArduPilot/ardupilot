@@ -1,4 +1,11 @@
 #include "AP_Math.h"
+#include <float.h>
+
+// are two floats equal
+bool is_equal(const float &fVal1, const float &fVal2)
+{
+  return fabs(fVal1 - fVal2) < FLT_EPSILON ? true : false;
+}
 
 // a varient of asin() that checks the input ranges and ensures a
 // valid angle as output. If nan is given as input then zero is
