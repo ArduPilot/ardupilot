@@ -728,6 +728,8 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
 
+    _track_speed = min(_track_speed,_wp_speed_cms);
+
     // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
     calc_slow_down_distance(_track_speed, _track_accel);
 
