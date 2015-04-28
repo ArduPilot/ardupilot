@@ -52,6 +52,10 @@ AP_AHRS_DCM::update(void)
 {
     float delta_t;
 
+    if (_last_startup_ms == 0) {
+        _last_startup_ms = hal.scheduler->millis();
+    }
+
     // tell the IMU to grab some data
     _ins.update();
 
@@ -136,6 +140,8 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         // otherwise make it flat
         _dcm_matrix.from_euler(0, 0, 0);
     }
+
+    _last_startup_ms = hal.scheduler->millis();
 }
 
 // reset the current attitude, used by HIL
@@ -326,6 +332,20 @@ bool AP_AHRS_DCM::have_gps(void) const
     return true;
 }
 
+/*
+  when we are getting the initial attitude we want faster gains so
+  that if the board starts upside down we quickly approach the right
+  attitude.
+  We don't want to keep those high gains for too long though as high P
+  gains cause slow gyro offset learning. So we keep the high gains for
+  a maximum of 20 seconds
+ */
+bool AP_AHRS_DCM::use_fast_gains(void) const
+{
+    return !hal.util->get_soft_armed() && (hal.scheduler->millis() - _last_startup_ms) < 20000U;
+}
+
+
 // return true if we should use the compass for yaw correction
 bool AP_AHRS_DCM::use_compass(void)
 {
@@ -465,7 +485,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
     // The accelration derived heading will be more reliable in turns than compass or GPS
 
     _omega_yaw_P.z = error_z * _P_gain(spin_rate) * _kp_yaw * _yaw_gain();
-    if (_flags.fast_ground_gains) {
+    if (use_fast_gains()) {
         _omega_yaw_P.z *= 8;
     }
 
@@ -758,7 +778,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // _omega_P value is what drags us quickly to the
     // accelerometer reading.
     _omega_P = error[besti] * _P_gain(spin_rate) * _kp;
-    if (_flags.fast_ground_gains) {
+    if (use_fast_gains()) {
         _omega_P *= 8;
     }
 

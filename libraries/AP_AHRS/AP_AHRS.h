@@ -291,11 +291,6 @@ public:
         return _flags.have_initial_yaw;
     }
 
-    // set the fast gains flag
-    void set_fast_gains(bool setting) {
-        _flags.fast_ground_gains = setting;
-    }
-
     // set the correct centrifugal flag
     // allows arducopter to disable corrections when disarmed
     void set_correct_centrifugal(bool setting) {
@@ -326,11 +321,6 @@ public:
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
-
-    // these are public for ArduCopter
-	AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
 
     // return secondary attitude solution if available, as eulers in radians
     virtual bool get_secondary_attitude(Vector3f &eulers) { return false; }
@@ -364,6 +354,11 @@ protected:
     AHRS_VehicleClass _vehicle_class;
 
     // settable parameters
+    // these are public for ArduCopter
+    AP_Float _kp_yaw;
+    AP_Float _kp;
+    AP_Float gps_gain;
+
     AP_Float beta;
     AP_Int8 _gps_use;
     AP_Int8 _wind_max;
@@ -380,7 +375,6 @@ protected:
     // flags structure
     struct ahrs_flags {
         uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t fast_ground_gains       : 1;    // should we raise the gain on the accelerometers for faster convergence, used when disarmed for ArduCopter
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
