@@ -85,35 +85,6 @@
 
 #define MAV_CMD_CONDITION_YAW 23
 
-//  GCS Message ID's
-/// NOTE: to ensure we never block on sending MAVLink messages
-/// please keep each MSG_ to a single MAVLink message. If need be
-/// create new MSG_ IDs for additional messages on the same
-/// stream
-enum ap_message {
-    MSG_HEARTBEAT,
-    MSG_ATTITUDE,
-    MSG_LOCATION,
-    MSG_EXTENDED_STATUS1,
-    MSG_EXTENDED_STATUS2,
-    MSG_NAV_CONTROLLER_OUTPUT,
-    MSG_CURRENT_WAYPOINT,
-    MSG_VFR_HUD,
-    MSG_RADIO_OUT,
-    MSG_RADIO_IN,
-    MSG_RAW_IMU1,
-    MSG_RAW_IMU2,
-    MSG_RAW_IMU3,
-    MSG_GPS_STATUS,
-    MSG_GPS_RAW,
-    MSG_SERVO_OUT,
-    MSG_NEXT_WAYPOINT,
-    MSG_NEXT_PARAM,
-    MSG_STATUSTEXT,
-    MSG_FENCE_STATUS,
-    MSG_RETRY_DEFERRED // this must be last
-};
-
 // Waypoint Modes
 // ----------------
 #define ABS_WP 0
