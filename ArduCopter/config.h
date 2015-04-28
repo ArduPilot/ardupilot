@@ -93,6 +93,8 @@
  # define FRAME_CONFIG_STRING "HELI"
 #elif FRAME_CONFIG == HELI_DUAL_FRAME
  # define FRAME_CONFIG_STRING "HELI_DUAL"
+#elif FRAME_CONFIG == HELI_COMPOUND_FRAME
+ # define FRAME_CONFIG_STRING "HELI_COMPOUND"
 #elif FRAME_CONFIG == SINGLE_FRAME
  # define FRAME_CONFIG_STRING "SINGLE"
 #elif FRAME_CONFIG == COAX_FRAME
@@ -103,7 +105,7 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // TradHeli defaults
-#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME || FRAME_CONFIG == HELI_COMPOUND_FRAME
   # define RC_FAST_SPEED                        125
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define RATE_ROLL_D                          0

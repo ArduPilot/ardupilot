@@ -80,6 +80,7 @@ enum aux_sw_func {
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
 #define HELI_DUAL_FRAME 10
+#define HELI_COMPOUND_FRAME 11
 
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
