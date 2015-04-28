@@ -118,32 +118,6 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
     return mask;
 }
 
-void AP_MotorsMatrix::output_armed_zero_throttle()
-{
-    int8_t i;
-    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // outputs sent to the motors
-
-    // set all limits flags true
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = true;
-    limit.throttle_upper = true;
-
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        // spin motors at minimum
-        if (motor_enabled[i]) {
-            motor_out[i] = _rc_throttle.radio_min;
-        }
-    }
-
-    // send output to each motor
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
-        }
-    }
-}
-
 void AP_MotorsMatrix::output_armed_not_stabilizing()
 {
     int8_t i;
