@@ -292,9 +292,6 @@ static void startup_ground(bool force_gyro_cal)
         ahrs.reset_gyro_drift();
     }
 
-    // setup fast AHRS gains to get right attitude
-    ahrs.set_fast_gains(true);
-
     // set landed flag
     set_land_complete(true);
     set_land_complete_maybe(true);

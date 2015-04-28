@@ -156,9 +156,6 @@ static bool init_arm_motors(bool arming_from_gcs)
         did_ground_start = true;
     }
 
-    // go back to normal AHRS gains
-    ahrs.set_fast_gains(false);
-
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
@@ -707,9 +704,6 @@ static void init_disarm_motors()
 
     // reset the mission
     mission.reset();
-
-    // setup fast AHRS gains to get right attitude
-    ahrs.set_fast_gains(true);
 
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);

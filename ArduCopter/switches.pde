@@ -575,16 +575,12 @@ static void auto_trim()
         // calculate pitch trim adjustment
         float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0f);
 
-        // make sure accelerometer values impact attitude quickly
-        ahrs.set_fast_gains(true);
-
         // add trim to ahrs object
         // save to eeprom on last iteration
         ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
 
         // on last iteration restore leds and accel gains to normal
         if(auto_trim_counter == 0) {
-            ahrs.set_fast_gains(false);
             AP_Notify::flags.save_trim = false;
         }
     }

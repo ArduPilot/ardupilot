@@ -1034,23 +1034,9 @@ static void load_parameters(void)
         hal.scheduler->panic(PSTR("Bad var table"));
     }
 
-    // change the default for the AHRS_GPS_GAIN for ArduCopter
-    // if it hasn't been set by the user
-    if (!ahrs.gps_gain.load()) {
-        ahrs.gps_gain.set_and_save(1.0);
-    }
     // disable centrifugal force correction, it will be enabled as part of the arming process
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
-
-    // setup different AHRS gains for ArduCopter than the default
-    // but allow users to override in their config
-    if (!ahrs._kp.load()) {
-        ahrs._kp.set_and_save(0.1);
-    }
-    if (!ahrs._kp_yaw.load()) {
-        ahrs._kp_yaw.set_and_save(0.1);
-    }
 
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

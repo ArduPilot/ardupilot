@@ -120,14 +120,6 @@ static void tuning() {
         break;
 #endif
 
-    case CH6_AHRS_YAW_KP:
-        ahrs._kp_yaw.set(tuning_value);
-        break;
-
-    case CH6_AHRS_KP:
-        ahrs._kp.set(tuning_value);
-        break;
-
     case CH6_DECLINATION:
         // set declination to +-20degrees
         compass.set_declination(ToRad((2.0f * g.rc_6.control_in - g.radio_tuning_high)/100.0f), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
