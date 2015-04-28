@@ -4,6 +4,7 @@
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
+#define NOTIFY_LOCATION_DELAY   1   // called at 1hz so 1 seconds
 
 static uint8_t auto_disarming_counter;
 
@@ -71,6 +72,26 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
+    static int16_t soundalarm_counter;
+
+    // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
+    if (!g.rc_3.control_in > 0 && !motors.armed() && g.rc_1.control_in > 4000 && g.rc_2.control_in > 4000) {
+        if (soundalarm_counter >= NOTIFY_LOCATION_DELAY) {
+            if (AP_Notify::flags.vehicle_lost == false) {
+                AP_Notify::flags.vehicle_lost = true;
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Locate Copter Alarm!!"));
+            }
+        } else {
+            soundalarm_counter++;
+        }
+    }else{
+        soundalarm_counter = 0;
+        if (AP_Notify::flags.vehicle_lost == true) {
+            AP_Notify::flags.vehicle_lost = false;
+            gcs_send_text_P(SEVERITY_LOW,PSTR("Locate Copter Alarm Off"));
+        }
+    }
+
     // exit immediately if we are already disarmed or throttle is not zero
     if (!motors.armed() || !ap.throttle_zero) {
         auto_disarming_counter = 0;
