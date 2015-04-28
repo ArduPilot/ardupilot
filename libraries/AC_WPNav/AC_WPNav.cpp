@@ -230,9 +230,10 @@ void AC_WPNav::get_loiter_stopping_point_xy(Vector3f& stopping_point) const
 ///		updated velocity sent directly to position controller
 void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 {
-    // calculate a loieter speed limit wich is the minimum of the value set by the WPNAV_LOITER_SPEED
-    // parameter or the value set by the EKF to observe optical flow limits
+    // calculate a loiter speed limit which is the minimum of the value set by the WPNAV_LOITER_SPEED
+    // parameter and the value set by the EKF to observe optical flow limits
     float gnd_speed_limit_cms = min(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
+    gnd_speed_limit_cms = max(gnd_speed_limit_cms, 10.0f);
 
     // range check nav_dt
     if( nav_dt < 0 ) {
