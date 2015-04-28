@@ -32,7 +32,8 @@ for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     make px4-cleandep
     make px4-v2
     make clean
-    make navio -j4
+    # navio disabled due to travis internal compiler error
+    #make navio -j4
     popd
 done
 
