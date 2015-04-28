@@ -217,7 +217,6 @@ float AP_Baro::get_air_density_ratio(void)
     } else {
         return 1.0f;
     }
-}
 
 // return current climb_rate estimeate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
