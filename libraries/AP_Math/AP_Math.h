@@ -19,12 +19,13 @@
 #include "quaternion.h"
 #include "polygon.h"
 #include "edc.h"
+#include "float.h"
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
 #endif
 #ifndef M_2PI_F
- #define M_2PI_F 2*M_PI_F
+ #define M_2PI_F (2*M_PI_F)
 #endif
 #ifndef PI
  # define PI M_PI_F
@@ -75,7 +76,10 @@ AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 // are two floats equal
-bool            is_equal(const float &fVal1, const float &fVal2);
+inline bool     is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+
+// are two floats equal
+inline bool     is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
 
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
