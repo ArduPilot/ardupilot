@@ -20,7 +20,11 @@
 */
 
 #include <AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "../AP_HAL_Linux/GPIO.h"
 
@@ -812,5 +816,7 @@ void AP_InertialSensor_LSM9DS0::_dump_registers(void)
 
 }
 #endif
+
+#endif // CONFIG_HAL_BOARD_SUBTYPE
 
 #endif // CONFIG_HAL_BOARD
