@@ -24,8 +24,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-// MPU6000 accelerometer scaling
-#define MPU9250_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
+// MPU9250 accelerometer scaling for 16g range
+#define MPU9250_ACCEL_SCALE_1G    (GRAVITY_MSS / 2048.0f)
 
 #define MPUREG_XG_OFFS_TC                               0x00
 #define MPUREG_YG_OFFS_TC                               0x01
@@ -454,8 +454,8 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_1000HZ);
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
 
-    // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 8g
-    _register_write(MPUREG_ACCEL_CONFIG,2<<3);
+    // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g
+    _register_write(MPUREG_ACCEL_CONFIG,3<<3);
 
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
