@@ -118,7 +118,7 @@ static void rtl_return_start()
     Vector3f destination = pv_location_to_vector(rally_point);
 #else
     Vector3f destination = pv_location_to_vector(ahrs.get_home());
-    destination.z = get_RTL_alt();
+    destination.z = pv_alt_above_origin(get_RTL_alt());
 #endif
 
     wp_nav.set_wp_destination(destination);
