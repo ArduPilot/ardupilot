@@ -55,7 +55,9 @@ SITLScheduler::SITLScheduler(SITL_State *sitlState) :
     stopped_clock_usec(0)
 {
     signal(SIGCONT, sigcont_handler);
-    pthread_barrier_init(&clock_barrier, NULL, 2);
+    pthread_mutex_init(&clock_barrier.m, NULL);
+    pthread_cond_init(&clock_barrier.cv, NULL);
+    clock_barrier.state = CLOCK_WAIT_INIT;
 }
 
 void SITLScheduler::init(void *unused) 
@@ -134,6 +136,38 @@ uint32_t SITLScheduler::millis()
 
 extern AVR_SITL::SITL_State *g_state;
 
+/*
+  implement a barrier wait for SITL lock-step scheduling. We don't use
+  pthread_barrier_* as it is not available in cygwin
+ */
+void SITLScheduler::clock_barrier_wait(void)
+{
+    pthread_mutex_lock(&clock_barrier.m);
+
+    while (clock_barrier.state == CLOCK_WAIT_TWO || 
+           clock_barrier.state == CLOCK_WAIT_THREE) {
+        pthread_cond_wait(&clock_barrier.cv, &clock_barrier.m);
+    }
+
+    if (clock_barrier.state == CLOCK_WAIT_INIT) {
+        clock_barrier.state = CLOCK_WAIT_ONE;
+		pthread_cond_signal(&clock_barrier.cv);
+		while (clock_barrier.state != CLOCK_WAIT_TWO) {
+			pthread_cond_wait(&clock_barrier.cv, &clock_barrier.m);
+		}
+        clock_barrier.state = CLOCK_WAIT_THREE;
+		pthread_cond_signal(&clock_barrier.cv);
+    } else {
+        clock_barrier.state = CLOCK_WAIT_TWO;
+		pthread_cond_signal(&clock_barrier.cv);
+		while (clock_barrier.state != CLOCK_WAIT_THREE) {
+			pthread_cond_wait(&clock_barrier.cv, &clock_barrier.m);
+		}
+        clock_barrier.state = CLOCK_WAIT_INIT;
+		pthread_cond_signal(&clock_barrier.cv);
+	}
+    pthread_mutex_unlock(&clock_barrier.m);
+}
 
 void SITLScheduler::delay_microseconds(uint16_t usec) 
 {
@@ -145,7 +179,7 @@ void SITLScheduler::delay_microseconds(uint16_t usec)
               we are using a synthetic clock. We want to wait until
               the stop_clock() call advances the clock
              */
-            pthread_barrier_wait(&clock_barrier);
+            clock_barrier_wait();
         } else {
             usleep(usec - dtime);
         }
@@ -332,13 +366,13 @@ void SITLScheduler::stop_clock(uint64_t time_usec)
           wait until the main thread is waiting for us. This ensures
           that any processing is complete before we advance the clock
          */
-        pthread_barrier_wait(&clock_barrier);
+        clock_barrier_wait();
     }
     stopped_clock_usec = time_usec;
     /*
       wait again to ensure the main thread can't get behind the FDM
      */
-    pthread_barrier_wait(&clock_barrier);
+    clock_barrier_wait();
     _run_io_procs(false);
 }
 
