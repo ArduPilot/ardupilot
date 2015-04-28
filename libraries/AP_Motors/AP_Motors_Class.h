@@ -179,6 +179,9 @@ public:
     // get_throttle_limit - throttle limit ratio
     float               get_throttle_limit() { return _throttle_limit; }
 
+    // returns warning throttle
+    float               get_throttle_warn() { return rel_pwm_to_thr_range(_spin_when_armed); }
+
     // 1 if motor is enabled, 0 otherwise
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
