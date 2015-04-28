@@ -25,15 +25,14 @@ popd
 for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     pushd $d
     make clean
+    make navio -j3
+    make clean
     make sitl -j4
     make clean
     make linux -j4
     make clean
     make px4-cleandep
     make px4-v2
-    make clean
-    # navio disabled due to travis internal compiler error
-    #make navio -j4
     popd
 done
 
