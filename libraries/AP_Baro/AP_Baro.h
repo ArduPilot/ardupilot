@@ -79,6 +79,9 @@ public:
     // get scale factor required to convert equivalent to true airspeed
     float get_EAS2TAS(void);
 
+    // get air density / sea level density - decreases in altitude
+    float get_air_density_ratio(void);
+
     // get current climb rate in meters/s. A positive number means
     // going up
     float get_climb_rate(void);
