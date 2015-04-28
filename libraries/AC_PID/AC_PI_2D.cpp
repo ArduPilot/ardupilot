@@ -95,7 +95,7 @@ Vector2f AC_PI_2D::get_p() const
 
 Vector2f AC_PI_2D::get_i()
 {
-    if((_ki != 0.0f) && (_dt != 0.0f)) {
+    if(!is_equal(_ki, 0.0f) && !is_equal(_dt, 0.0f)) {
         _integrator += (_input * _ki) * _dt;
         float integrator_length = _integrator.length();
         if ((integrator_length > _imax) && (integrator_length > 0)) {
@@ -103,13 +103,13 @@ Vector2f AC_PI_2D::get_i()
         }
         return _integrator;
     }
-    return Vector2f(0,0);
+    return Vector2f();
 }
 
 // get_i_shrink - get_i but do not allow integrator to grow in length (it may shrink)
 Vector2f AC_PI_2D::get_i_shrink()
 {
-    if((_ki != 0.0f) && (_dt != 0.0f)) {
+    if (!is_equal(_ki, 0.0f) && !is_equal(_dt, 0.0f)) {
         float integrator_length_orig = min(_integrator.length(),_imax);
         _integrator += (_input * _ki) * _dt;
         float integrator_length_new = _integrator.length();
@@ -118,7 +118,7 @@ Vector2f AC_PI_2D::get_i_shrink()
         }
         return _integrator;
     }
-    return Vector2f(0,0);
+    return Vector2f();
 }
 
 Vector2f AC_PI_2D::get_pi()
@@ -167,7 +167,12 @@ void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz,
 // calc_filt_alpha - recalculate the input filter alpha
 void AC_PI_2D::calc_filt_alpha()
 {
+    if (is_equal(_filt_hz, 0.0f)) {
+        _filt_alpha = 1.0f;
+        return;
+    }
+  
     // calculate alpha
-    float rc = 1/(2*PI*_filt_hz);
+    float rc = 1/(M_2PI_F*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);
 }
