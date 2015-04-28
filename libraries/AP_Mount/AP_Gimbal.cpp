@@ -89,6 +89,11 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
         gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.z;
+        if (gimbalRateDemVecYaw.z > 0.0f){
+            gimbalRateDemVecYaw.z = +0.2f*gimbalRateDemVecYaw.z*gimbalRateDemVecYaw.z;
+        }else{
+            gimbalRateDemVecYaw.z = -0.2f*gimbalRateDemVecYaw.z*gimbalRateDemVecYaw.z;
+        }
 
         // Get filtered vehicle turn rate in earth frame
         vehicleYawRateFilt = (1.0f - yawRateFiltPole * _measurement.delta_time) * vehicleYawRateFilt + yawRateFiltPole * _measurement.delta_time * _ahrs.get_yaw_rate_earth();
