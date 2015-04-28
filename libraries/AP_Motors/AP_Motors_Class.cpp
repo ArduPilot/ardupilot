@@ -116,6 +116,7 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
+    _air_density_ratio(1.0f),
     _lift_max(1.0f),
     _throttle_limit(1.0f),
     _throttle_in(0.0f),
@@ -363,6 +364,17 @@ void AP_Motors::update_throttle_low_comp()
         _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
     }
     _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
+}
+
+float AP_Motors::get_compensation_gain() const
+{
+    float ret = 1.0f / _lift_max;
+
+    // air density ratio is increasing in density / decreasing in altitude
+    if (_air_density_ratio > 0.3f && _air_density_ratio < 1.5f) {
+        ret *= 1.0f / constrain_float(_air_density_ratio,0.5f,1.25f);
+    }
+    return ret;
 }
 
 float AP_Motors::rel_pwm_to_thr_range(float pwm) const
