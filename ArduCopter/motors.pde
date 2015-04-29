@@ -304,21 +304,22 @@ static bool pre_arm_checks(bool display_failure)
                 Vector3f mag_vec_norm = mag_vec;
                 mag_vec_norm.normalize();
                 Vector3f vec_diff = mag_vec_norm - prime_mag_vec_norm;
+
                 // check for gross misalignment on all axes
-                if (vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
+                bool vector_diff_large = vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF;
+
+                // check for an unacceptable angle difference on the xy plane
+                float angDiff_XY = wrap_PI((atan2f(prime_mag_vec.y,prime_mag_vec.x) - atan2f(mag_vec.y,mag_vec.x)));
+                bool xy_angle_diff_large = fabsf(angDiff_XY) > MAX_COMPASS_XY_ANG_DIFF;
+
+                // check for an unacceptable length difference on the xy plane
+                float lengthDiff_XY = sqrtf(sq(prime_mag_vec.x - mag_vec.x) + sq(prime_mag_vec.y - mag_vec.y));
+                bool xy_length_diff_large = lengthDiff_XY > MAX_COMPASS_XY_LENGTH_DIFF;
+
+                // check for inconsistency in the XY plane
+                if (vector_diff_large || xy_angle_diff_large || xy_length_diff_large) {
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
-                    }
-                    return false;
-                }
-                // calculate the angular difference in the XY plane
-                float angDiff_XY = wrap_PI((atan2f(prime_mag_vec.y,prime_mag_vec.x) - atan2f(mag_vec.y,mag_vec.x)));
-                // calculate the length difference in the XY plane
-                float lengthDiff_XY = sqrtf(sq(prime_mag_vec.x - mag_vec.x) + sq(prime_mag_vec.y - mag_vec.y));
-                // check for inconsistency in the XY plane
-                if (fabsf(angDiff_XY) > MAX_COMPASS_XY_ANG_DIFF || lengthDiff_XY > MAX_COMPASS_XY_LENGTH_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass XY field inconsistency"));
                     }
                     return false;
                 }
