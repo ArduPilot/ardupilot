@@ -331,8 +331,9 @@ static void guided_posvel_control_run()
 
         // run position controller
         pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_AND_VEL_FF, ekfNavVelGainScaler);
-        pos_control.update_z_controller();
     }
+
+    pos_control.update_z_controller();
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
