@@ -148,6 +148,7 @@ public:
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();
+    void set_target_to_stopping_point_z_ff();
 
     /// get_stopping_point_z - calculates stopping point based on current position, velocity, vehicle acceleration
     void get_stopping_point_z(Vector3f& stopping_point) const;

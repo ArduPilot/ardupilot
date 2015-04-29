@@ -222,6 +222,18 @@ float AC_PosControl::get_alt_error() const
 /// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
 void AC_PosControl::set_target_to_stopping_point_z()
 {
+    _flags.enable_z_vel_ff = false;
+    // check if z leash needs to be recalculated
+    calc_leash_length_z();
+
+    get_stopping_point_z(_pos_target);
+}
+
+/// set_target_to_stopping_point_z - returns reasonable stopping altitude in cm above home
+void AC_PosControl::set_target_to_stopping_point_z_ff()
+{
+    _flags.enable_z_vel_ff = true;
+
     // check if z leash needs to be recalculated
     calc_leash_length_z();
 
