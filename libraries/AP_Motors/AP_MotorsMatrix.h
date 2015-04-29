@@ -14,6 +14,12 @@
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
+#define AP_MOTORS_MATRIX_COAX_NONE  0
+#define AP_MOTORS_MATRIX_COAX_UPPER 1
+#define AP_MOTORS_MATRIX_COAX_LOWER -1
+
+#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    200
+
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
 public:
@@ -45,10 +51,10 @@ public:
     virtual void        output_min();
 
     // add_motor using just position and yaw_factor (or prop direction)
-    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
+    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
 
     // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
-    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
 
     // remove_motor
     void                remove_motor(int8_t motor_num);
@@ -72,12 +78,13 @@ protected:
     void                output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
 
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
+    int8_t              _coax_orientation[AP_MOTORS_MAX_NUM_MOTORS];  // in a coax setup, which are upper or lower for differential mixing
 };
 
 #endif  // AP_MOTORSMATRIX
