@@ -67,8 +67,7 @@ static float get_look_ahead_yaw()
     const Vector3f& vel = inertial_nav.get_velocity();
     float speed = pythagorous2(vel.x,vel.y);
     // Commanded Yaw to automatically look ahead.
-    if (position_ok() && speed > YAW_LOOK_AHEAD_MIN_SPEED) {
-
+    if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
