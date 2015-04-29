@@ -20,6 +20,8 @@ static void read_barometer(void)
     }
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
+
+    motors.set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
 #if CONFIG_SONAR == ENABLED

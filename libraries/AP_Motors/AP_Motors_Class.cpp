@@ -116,6 +116,7 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _batt_current_resting(0.0f),
     _batt_resistance(0.0f),
     _batt_timer(0),
+    _air_density_ratio(1.0f),
     _lift_max(1.0f),
     _throttle_limit(1.0f),
     _throttle_in(0.0f),
@@ -289,12 +290,19 @@ void AP_Motors::current_limit_max_throttle()
 // apply_thrust_curve_and_volt_scaling - returns throttle curve adjusted pwm value (i.e. 1000 ~ 2000)
 int16_t AP_Motors::apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const
 {
-    float temp_out = ((float)(pwm_out-pwm_min))/((float)(pwm_max-pwm_min));
+    // convert to 0.0 to 1.0 ratio
+    float throttle_ratio = ((float)(pwm_out-pwm_min))/((float)(pwm_max-pwm_min));
+
+    // apply thrust curve - domain 0.0 to 1.0, range 0.0 to 1.0
     if (_thrust_curve_expo > 0.0f){
-        temp_out = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*temp_out))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
+        throttle_ratio = ((_thrust_curve_expo-1.0f) + safe_sqrt((1.0f-_thrust_curve_expo)*(1.0f-_thrust_curve_expo) + 4.0f*_thrust_curve_expo*_lift_max*throttle_ratio))/(2.0f*_thrust_curve_expo*_batt_voltage_filt.get());
     }
-    temp_out = constrain_float(temp_out*_thrust_curve_max*(pwm_max-pwm_min)+pwm_min, pwm_min, pwm_max);
-    return (int16_t)temp_out;
+
+    // scale to maximum thrust point
+    throttle_ratio *= _thrust_curve_max;
+
+    // convert back to pwm range, constrain and return
+    return (int16_t)constrain_float(throttle_ratio*(pwm_max-pwm_min)+pwm_min, pwm_min, (pwm_max-pwm_min)*_thrust_curve_max+pwm_min);
 }
 
 // update_lift_max from battery voltage - used for voltage compensation
@@ -356,6 +364,17 @@ void AP_Motors::update_throttle_low_comp()
         _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
     }
     _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
+}
+
+float AP_Motors::get_compensation_gain() const
+{
+    float ret = 1.0f / _lift_max;
+
+    // air density ratio is increasing in density / decreasing in altitude
+    if (_air_density_ratio > 0.3f && _air_density_ratio < 1.5f) {
+        ret *= 1.0f / constrain_float(_air_density_ratio,0.5f,1.25f);
+    }
+    return ret;
 }
 
 float AP_Motors::rel_pwm_to_thr_range(float pwm) const

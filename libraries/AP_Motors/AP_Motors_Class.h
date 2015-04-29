@@ -156,6 +156,9 @@ public:
     // set_current - set current to be used for output scaling
     virtual void        set_current(float current){ _batt_current = current; }
 
+    // set_density_ratio - sets air density as a proportion of sea level density
+    void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
+
     // set_throttle_low_comp - set desired throttle_low_comp (actual throttle_low_comp is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
@@ -225,8 +228,8 @@ protected:
     // update_throttle_low_comp - updates thr_low_comp value towards the target
     void                update_throttle_low_comp();
 
-    // get_voltage_comp_gain - return battery voltage compensation gain
-    float               get_voltage_comp_gain() const { return 1.0f/_lift_max; }
+    // return gain scheduling gain based on voltage and air density
+    float               get_compensation_gain() const;
 
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;
@@ -275,6 +278,7 @@ protected:
     float               _batt_current_resting;  // battery's current when motors at minimum
     float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
     int16_t             _batt_timer;            // timer used in battery resistance calcs
+    float               _air_density_ratio;     // air density / sea level density - decreases in altitude
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_in;           // last throttle input from set_throttle caller
