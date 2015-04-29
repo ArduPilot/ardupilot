@@ -1041,6 +1041,10 @@ static void one_second_loop()
         terrain.log_terrain_data(DataFlash);
     }
 #endif
+    // piggyback the status log entry on the MODE log entry flag
+    if (should_log(MASK_LOG_MODE)) {
+        Log_Write_Status();
+    }
 }
 
 static void log_perf_info()
