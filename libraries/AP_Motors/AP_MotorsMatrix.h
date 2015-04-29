@@ -18,8 +18,6 @@
 #define AP_MOTORS_MATRIX_COAX_UPPER 1
 #define AP_MOTORS_MATRIX_COAX_LOWER -1
 
-#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    200
-
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
 public:

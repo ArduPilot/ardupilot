@@ -38,10 +38,10 @@ void AP_MotorsQuad::setup_motors()
 
     }else if( _flags.frame_orientation == AP_MOTORS_V_FRAME ) {
         // V frame set-up
-        add_motor(AP_MOTORS_MOT_1,   45,  0.7981,  1);
-        add_motor(AP_MOTORS_MOT_2, -135,  1.0000,  3);
-        add_motor(AP_MOTORS_MOT_3,  -45, -0.7981,  4);
-        add_motor(AP_MOTORS_MOT_4,  135, -1.0000,  2);
+        add_motor(AP_MOTORS_MOT_1,   45,  0.7981f,  1);
+        add_motor(AP_MOTORS_MOT_2, -135,  1.0000f,  3);
+        add_motor(AP_MOTORS_MOT_3,  -45, -0.7981f,  4);
+        add_motor(AP_MOTORS_MOT_4,  135, -1.0000f,  2);
 
     }else if( _flags.frame_orientation == AP_MOTORS_H_FRAME ) {
         // H frame set-up - same as X but motors spin in opposite directiSons
