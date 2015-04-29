@@ -368,6 +368,11 @@ void AP_Motors::update_throttle_low_comp()
 
 float AP_Motors::get_compensation_gain() const
 {
+    // avoid divide by zero
+    if (_lift_max <= 0.0f) {
+        return 1.0f;
+    }
+
     float ret = 1.0f / _lift_max;
 
     // air density ratio is increasing in density / decreasing in altitude
