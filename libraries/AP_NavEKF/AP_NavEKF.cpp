@@ -3734,22 +3734,45 @@ bool NavEKF::getMagOffsets(Vector3f &magOffsets) const
     }
 }
 
-// return the last calculated latitude, longitude and height
+// Return the last calculated latitude, longitude and height in WGS-84
+// If a calculated location isn't available, return false and the raw GPS measurement or last known position if available
 bool NavEKF::getLLH(struct Location &loc) const
 {
     if(validOrigin) {
-        loc.lat = EKF_origin.lat;
-        loc.lng = EKF_origin.lng;
+        // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
         loc.alt = EKF_origin.alt - state.position.z*100;
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
-        if (constPosMode) {
-            location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
-        } else {
+        // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
+        nav_filter_status status;
+        getFilterStatus(status);
+        if (status.flags.horiz_pos_abs || status.flags.horiz_pos_rel) {
+            loc.lat = EKF_origin.lat;
+            loc.lng = EKF_origin.lng;
             location_offset(loc, state.position.x, state.position.y);
+            return true;
+        } else {
+            // we could be in constant position mode  becasue the vehicle has taken off without GPS, or has lost GPS
+            // in this mode we cannot use the EKF states to estimate position so will return the best available data
+            if ((_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
+                // we have a GPS position fix to return
+                const struct Location &gpsloc = _ahrs->get_gps().location();
+                loc = gpsloc;
+            } else {
+                // if no GPS fix, provide last known position before entering the mode
+                location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+            }
+            return false;
         }
-        return true;
     } else {
+        // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
+        // GPS reading if available and return false
+        if ((_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D)) {
+            const struct Location &gpsloc = _ahrs->get_gps().location();
+            loc = gpsloc;
+            loc.flags.relative_alt = 0;
+            loc.flags.terrain_alt = 0;
+        }
         return false;
     }
 }

@@ -152,7 +152,9 @@ public:
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(Vector3f &magOffsets) const;
 
-    // return the last calculated latitude, longitude and height
+    // Return the last calculated latitude, longitude and height in WGS-84
+    // If a calculated location isn't available, return false and the raw GPS measurement or last known position if available
+    // If false returned, do not use for flight control
     bool getLLH(struct Location &loc) const;
 
     // return the latitude and longitude and height used to set the NED origin
