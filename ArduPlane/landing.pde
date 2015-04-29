@@ -159,7 +159,10 @@ static void setup_landing_glide_slope(void)
 
         // the height we aim for is the one to give us the right flare point
         float aim_height = aparm.land_flare_sec * sink_rate;
-
+        if (aim_height == 0.f) {
+            aim_height = g.land_flare_alt;
+        } 
+            
         // don't allow the aim height to be too far above LAND_FLARE_ALT
         if (g.land_flare_alt > 0 && aim_height > g.land_flare_alt*2) {
             aim_height = g.land_flare_alt*2;
