@@ -208,10 +208,15 @@ float AP_Baro::get_EAS2TAS(void)
     return _EAS2TAS;
 }
 
-// return air density / sea level density - decreases in altitude
+// return air density / sea level density - decreases as altitude climbs
 float AP_Baro::get_air_density_ratio(void)
 {
-    return 1.0f/(sq(get_EAS2TAS()));
+    float eas2tas = get_EAS2TAS();
+    if (eas2tas > 0.0f) {
+        return 1.0f/(sq(get_EAS2TAS()));
+    } else {
+        return 1.0f;
+    }
 }
 
 // return current climb_rate estimeate relative to time that calibrate()
