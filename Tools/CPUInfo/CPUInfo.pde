@@ -37,6 +37,7 @@
 #include <AP_Rally.h>
 #include <AP_ADC_AnalogSource.h>
 #include <AP_OpticalFlow.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
