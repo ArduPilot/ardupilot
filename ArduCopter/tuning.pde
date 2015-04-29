@@ -188,8 +188,16 @@ static void tuning() {
         motors.set_yaw_headroom(tuning_value*1000);
         break;
 
-     case CH6_RATE_YAW_FILT:
+    case CH6_RATE_YAW_FILT:
          g.pid_rate_yaw.filt_hz(tuning_value);
          break;
+
+    case CH6_MIX_UPPER:
+        motors.set_coax_mix_upper(tuning_value);
+        break;
+
+    case CH6_MIX_LOWER:
+        motors.set_coax_mix_lower(tuning_value);
+        break;
     }
 }

@@ -158,6 +158,8 @@ enum aux_sw_func {
 #define CH6_RATE_YAW_FF                 54  // body frame yaw rate controller FF term
 #define CH6_RATE_MOT_YAW_HEADROOM       55  // motors yaw headroom minimum
 #define CH6_RATE_YAW_FILT               56  // yaw rate input filter
+#define CH6_MIX_UPPER                   57  // coax upper motor mix
+#define CH6_MIX_LOWER                   58  // coax lower motor mix
 
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0

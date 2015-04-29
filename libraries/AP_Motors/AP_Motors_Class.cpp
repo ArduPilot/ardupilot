@@ -93,6 +93,18 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
 
+    // @Param: MIX_UPPER
+    // @DisplayName: Coax Upper Motor Mix
+    // @Description: Scales the throttle of the upper motors in an X8 coax configuration
+    // @User: Standard
+    AP_GROUPINFO("MIX_UPPER", 13, AP_Motors, _coax_mix_upper, AP_MOTORS_COAX_MIX_UPPER),
+
+    // @Param: MIX_LOWER
+    // @DisplayName: Coax Lower Motor Mix
+    // @Description: Scales the throttle of the lower motors in an X8 coax configuration
+    // @User: Standard
+    AP_GROUPINFO("MIX_LOWER", 14, AP_Motors, _coax_mix_lower, AP_MOTORS_COAX_MIX_LOWER),
+
     AP_GROUPEND
 };
 

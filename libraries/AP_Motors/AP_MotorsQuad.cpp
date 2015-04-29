@@ -31,24 +31,24 @@ void AP_MotorsQuad::setup_motors()
     // hard coded config for supported frames
     if( _flags.frame_orientation == AP_MOTORS_PLUS_FRAME ) {
         // plus frame set-up
-        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
-        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-        add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-        add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
+        add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)2);
+        add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)3);
 
     }else if( _flags.frame_orientation == AP_MOTORS_V_FRAME ) {
         // V frame set-up
-        add_motor(AP_MOTORS_MOT_1,   45,  0.7981f,  1);
-        add_motor(AP_MOTORS_MOT_2, -135,  1.0000f,  3);
-        add_motor(AP_MOTORS_MOT_3,  -45, -0.7981f,  4);
-        add_motor(AP_MOTORS_MOT_4,  135, -1.0000f,  2);
+        add_motor(AP_MOTORS_MOT_1,   45,  0.7981,  (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_2, -135,  1.0000,  (uint8_t)3);
+        add_motor(AP_MOTORS_MOT_3,  -45, -0.7981,  (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_4,  135, -1.0000,  (uint8_t)2);
 
     }else if( _flags.frame_orientation == AP_MOTORS_H_FRAME ) {
         // H frame set-up - same as X but motors spin in opposite directiSons
-        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
-        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3);
-        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4);
-        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)3);
+        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)2);
     }else if(_flags.frame_orientation == AP_MOTORS_VTAIL_FRAME) {
         /*
             Tested with: Lynxmotion Hunter Vtail 400
@@ -66,10 +66,10 @@ void AP_MotorsQuad::setup_motors()
                 motors 3's yaw factor should be changed to -sin(radians(40))
         */
 
-        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
-        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 3);
-        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
-        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, (uint8_t)3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)2);
     } else if (_flags.frame_orientation == AP_MOTORS_ATAIL_FRAME) {
         /*
             The A-Shaped VTail is the exact same as a V-Shaped VTail, with one difference:
@@ -84,15 +84,15 @@ void AP_MotorsQuad::setup_motors()
             - Yaw control is entirely in the rear motors
             - Roll is is entirely in the front motors
         */
-        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, 1);
-        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
-        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+        add_motor(AP_MOTORS_MOT_1, 60, 60, 0, (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)3);
+        add_motor(AP_MOTORS_MOT_3, -60, -60, 0, (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, (uint8_t)2);
     }else{
         // X frame set-up
-        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
-        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
-        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
-        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
+        add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)1);
+        add_motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, (uint8_t)3);
+        add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)4);
+        add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  (uint8_t)2);
     }
 }

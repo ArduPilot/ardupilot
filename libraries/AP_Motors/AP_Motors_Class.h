@@ -64,6 +64,10 @@
 #define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 
+#define AP_MOTORS_COAX_MIX_UPPER    1.0 // coax upper motors 100% scaling by default
+#define AP_MOTORS_COAX_MIX_LOWER    1.0 // coax lower motors 100% scaling by default (this should probably default to 1.05 or 1.1 after testing with a wider range of copters)
+
+
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
@@ -187,6 +191,10 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() = 0;
 
+    // set coax upper/lower mixes from CH6 tuning option
+    void set_coax_mix_upper(float new_coax_mix_upper) { _coax_mix_upper = new_coax_mix_upper; }
+    void set_coax_mix_lower(float new_coax_mix_lower) { _coax_mix_lower = new_coax_mix_lower; }
+
     // structure for holding motor limit flags
     struct AP_Motors_limit {
         uint8_t roll_pitch      : 1; // we have reached roll or pitch limit
@@ -245,6 +253,8 @@ protected:
 
     // parameters
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
+    AP_Float            _coax_mix_upper;        // scales the upper motor throttle in a coax setup
+    AP_Float            _coax_mix_lower;        // scales the lower motor throttle in a coax setup
 
     AP_Int16            _yaw_headroom;          // yaw control is given at least this pwm range
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation

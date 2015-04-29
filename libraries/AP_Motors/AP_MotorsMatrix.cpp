@@ -49,7 +49,7 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     uint32_t mask = 0;
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-		mask |= 1U << pgm_read_byte(&_motor_to_channel_map[i]);
+            mask |= 1U << pgm_read_byte(&_motor_to_channel_map[i]);
         }
     }
     hal.rcout->set_freq( mask, _speed_hz );
@@ -340,6 +340,21 @@ void AP_MotorsMatrix::output_armed_stabilizing()
             motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
         }
     }
+        
+    // TODO: think some more about where in the order this should be applied, maybe after throttle curve? after clipping?
+    #if (FRAME_CONFIG == OCTA_QUAD_FRAME)
+        // clamp mix values to range 0.0 -> 1.2, as too high a value could cause a vertical flyaway
+        _coax_mix_upper = constrain_float(_coax_mix_upper, 0.0, 1.2);
+        _coax_mix_lower = constrain_float(_coax_mix_lower, 0.0, 1.2);
+        // scale each motor registered as an upper or lower by its corresponding mix scale
+        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (_coax_orientation[i] == AP_MOTORS_MATRIX_COAX_UPPER) {
+                motor_out[i] = motor_out[i] * _coax_mix_upper;
+            } else if (_coax_orientation[i] == AP_MOTORS_MATRIX_COAX_LOWER) {
+                motor_out[i] = motor_out[i] * _coax_mix_lower;
+            }
+        }
+    #endif
 
     // clip motor output if required (shouldn't be)
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -383,7 +398,7 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // add_motor
-void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
+void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, int8_t coax_orientation)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
@@ -401,26 +416,30 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
+        // in a coax setup, keep track of which are upper or lower for differential mixing
+        _coax_orientation[motor_num] = coax_orientation;
+
         // disable this channel from being used by RC_Channel_aux
         RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[motor_num]);
     }
 }
 
 // add_motor using just position and prop direction - assumes that for each motor, roll and pitch factors are equal
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation)
 {
-    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order, coax_orientation);
 }
 
 // add_motor using position and prop direction. Roll and Pitch factors can differ (for asymmetrical frames)
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation)
 {
     add_motor_raw(
         motor_num,
         cosf(radians(roll_factor_in_degrees + 90)),
         cosf(radians(pitch_factor_in_degrees)),
         yaw_factor,
-        testing_order);
+        testing_order,
+        coax_orientation);
 }
 
 // remove_motor - disabled motor and clears all roll, pitch, throttle factors for this motor
