@@ -106,7 +106,7 @@ static bool poshold_init(bool ignore_checks)
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
+    pos_control.set_target_to_stopping_point_z_ff();
 
     // initialise lean angles to current attitude
     poshold.pilot_roll = 0;
