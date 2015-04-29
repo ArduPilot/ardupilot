@@ -128,7 +128,7 @@ public:
     struct PACKED Digicam_Control {
         uint8_t session;        // 1 = on, 0 = off
         uint8_t zoom_pos;
-        uint8_t zoom_step;
+        int8_t zoom_step;       // +1 = zoom in, -1 = zoom out
         uint8_t focus_lock;
         uint8_t shooting_cmd;
         uint8_t cmd_id;
