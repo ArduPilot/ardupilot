@@ -49,10 +49,13 @@ public:
     virtual void        output_min();
 
     // add_motor using just position and yaw_factor (or prop direction)
-    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
+    void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
 
     // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
-    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
+    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+
+    // add coax motor with parameter to identify upper or lower differential mixing
+    void                add_motor_coax(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation);    
 
     // add coax motor with parameter to identify upper or lower differential mixing
     void                add_motor_coax(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation);    
@@ -79,7 +82,7 @@ protected:
     void                output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, int8_t coax_orientation = AP_MOTORS_MATRIX_COAX_NONE);
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
 
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch

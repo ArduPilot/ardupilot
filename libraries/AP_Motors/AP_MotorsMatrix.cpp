@@ -398,7 +398,7 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
 }
 
 // add_motor
-void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, int8_t coax_orientation)
+void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
@@ -416,30 +416,36 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         // set order that motor appears in test
         _test_order[motor_num] = testing_order;
 
-        // in a coax setup, keep track of which are upper or lower for differential mixing
-        _coax_orientation[motor_num] = coax_orientation;
-
         // disable this channel from being used by RC_Channel_aux
         RC_Channel_aux::disable_aux_channel(_motor_to_channel_map[motor_num]);
     }
 }
 
 // add_motor using just position and prop direction - assumes that for each motor, roll and pitch factors are equal
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order)
 {
-    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order, coax_orientation);
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
 }
 
 // add_motor using position and prop direction. Roll and Pitch factors can differ (for asymmetrical frames)
-void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation)
+void AP_MotorsMatrix::add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order)
 {
     add_motor_raw(
         motor_num,
         cosf(radians(roll_factor_in_degrees + 90)),
         cosf(radians(pitch_factor_in_degrees)),
         yaw_factor,
-        testing_order,
-        coax_orientation);
+        testing_order);
+}
+
+// in a coax setup, need to keep track of which are upper or lower for differential mixing
+void AP_MotorsMatrix::add_motor_coax(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order, int8_t coax_orientation)
+{
+    add_motor(motor_num, angle_degrees, angle_degrees, yaw_factor, testing_order);
+
+    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+        _coax_orientation[motor_num] = coax_orientation;
+    }
 }
 
 // in a coax setup, need to keep track of which are upper or lower for differential mixing
