@@ -73,9 +73,6 @@ public:
     /// loiter_soften_for_landing - reduce response for landing
     void loiter_soften_for_landing();
 
-    /// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
-    void set_loiter_velocity(float velocity_cms);
-
     /// calculate_loiter_leash_length - calculates the maximum distance in cm that the target position may be from the current location
     void calculate_loiter_leash_length();
 
