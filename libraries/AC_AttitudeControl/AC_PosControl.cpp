@@ -169,6 +169,14 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     }
 }
 
+/// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
+///     should be called continuously (with dt set to be the expected time between calls)
+///     almost no checks are performed on the input
+void AC_PosControl::add_takeoff_climb_rate(float climb_rate_cms, float dt)
+{
+    _pos_target.z += climb_rate_cms * dt;
+}
+
 /// relax_alt_hold_controllers - set all desired and targets to measured
 void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
 {

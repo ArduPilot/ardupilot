@@ -127,6 +127,11 @@ public:
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
     void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend = false);
 
+    /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
+    ///     should be called continuously (with dt set to be the expected time between calls)
+    ///     almost no checks are performed on the input
+    void add_takeoff_climb_rate(float climb_rate_cms, float dt);
+
     /// set_alt_target_to_current_alt - set altitude target to current altitude
     void set_alt_target_to_current_alt() { _pos_target.z = _inav.get_altitude(); }
 
