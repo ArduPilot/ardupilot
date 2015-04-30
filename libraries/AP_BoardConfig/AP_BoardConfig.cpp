@@ -78,6 +78,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
+    // @Param: SERIAL_NUM
+    // @DisplayName: User-defined serial number
+    // @Description: User-defined serial number of this vehicle, it can be any arbitrary number you want and has no effect on the autopilot
+    // @Range: -32767 to 32768 (any 16bit signed number)
+    // @User: Standard
+    AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
+
     AP_GROUPEND
 };
 
