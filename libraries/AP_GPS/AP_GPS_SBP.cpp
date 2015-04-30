@@ -413,7 +413,7 @@ struct PACKED log_SbpLLH {
 
 struct PACKED log_SbpHealth {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint32_t crc_error_counter;
     uint32_t last_injected_data_ms;
     uint32_t last_iar_num_hypotheses;
@@ -421,7 +421,7 @@ struct PACKED log_SbpHealth {
 
 struct PACKED log_SbpRAW1 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint16_t msg_type;
     uint16_t sender_id;
     uint8_t msg_len;
@@ -430,7 +430,7 @@ struct PACKED log_SbpRAW1 {
 
 struct PACKED log_SbpRAW2 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint16_t msg_type;
     uint8_t data2[192];
 };
@@ -438,11 +438,11 @@ struct PACKED log_SbpRAW2 {
 
 static const struct LogStructure sbp_log_structures[] PROGMEM = {
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth),
-      "SBPH", "IIII",   "TimeMS,CrcError,LastInject,IARhyp" },
+      "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" },
     { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1),
-      "SBR1", "IHHBZ",      "TimeMS,msg_type,sender_id,msg_len,d1" },
+      "SBR1", "QHHBZ",      "TimeUS,msg_type,sender_id,msg_len,d1" },
     { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2),
-      "SBR2", "IHZZZ",      "TimeMS,msg_type,d2,d3,d4" }
+      "SBR2", "QHZZZ",      "TimeUS,msg_type,d2,d3,d4" }
 };
 
 void
@@ -466,7 +466,7 @@ AP_GPS_SBP::logging_log_full_update()
 
     struct log_SbpHealth pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPHEALTH),
-        timestamp       : hal.scheduler->millis(),
+        time_us                    : hal.scheduler->micros64(),
         crc_error_counter          : crc_error_counter,
         last_injected_data_ms      : last_injected_data_ms,
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
@@ -492,11 +492,11 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
     logging_write_headers();
 
-    uint32_t now = hal.scheduler->millis();
+    uint64_t time_us = hal.scheduler->micros64();
 
     struct log_SbpRAW1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW1),
-        timestamp       : now,
+        time_us         : time_us,
         msg_type        : msg_type,
         sender_id       : sender_id,
         msg_len         : msg_len,
@@ -508,7 +508,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
         struct log_SbpRAW2 pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAW2),
-            timestamp       : now,
+            time_us         : time_us,
             msg_type        : msg_type,
         };
         memcpy(pkt2.data2, &msg_buff[64], msg_len - 64);
