@@ -5,7 +5,7 @@
 
 // Traditional helicopter variables and functions
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME || FRAME_CONFIG == HELI_COMPOUND_FRAME
 
 // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
 // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
@@ -18,5 +18,5 @@ static struct {
     uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
 } heli_flags;
 
-#endif  // FRAME_CONFIG == HELI_FRAME
+#endif  // FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME || FRAME_CONFIG == HELI_COMPOUND_FRAME
 #endif  // __HELI_H__

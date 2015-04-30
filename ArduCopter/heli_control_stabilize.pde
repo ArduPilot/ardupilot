@@ -1,5 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME || FRAME_CONFIG == HELI_DUAL_FRAME || FRAME_CONFIG == HELI_COMPOUND_FRAME
 /*
  * heli_control_stabilize.pde - init and run calls for stabilize flight mode for trad heli
  */
@@ -57,4 +57,4 @@ static void heli_stabilize_run()
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
 }
 
-#endif  //HELI_FRAME
+#endif  //HELI_FRAME || HELI_DUAL_FRAME || HELI_COMPOUND_FRAME
