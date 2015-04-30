@@ -130,6 +130,7 @@ public:
         k_param_cli_enabled,
         k_param_throttle_filt,
         k_param_throttle_behavior,
+        k_param_pilot_takeoff_alt, // 64
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -345,6 +346,7 @@ public:
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
     AP_Int16        takeoff_trigger_dz;
+    AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;

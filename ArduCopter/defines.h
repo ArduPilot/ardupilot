@@ -402,4 +402,7 @@ enum FlipState {
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
 #define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
 
+// for PILOT_THR_BHV parameter
+#define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)
+
 #endif // _DEFINES_H

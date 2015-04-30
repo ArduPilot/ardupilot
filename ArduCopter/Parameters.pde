@@ -71,6 +71,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: .5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
+    // @Param: PILOT_TKOFF_ALT
+    // @DisplayName: Pilot takeoff altitude
+    // @Description: Altitude that altitude control modes will climb to when a takeoff is triggered with the throttle stick.
+    // @User: Standard
+    // @Units: Centimeters
+    // @Range: 0.0 1000.0
+    // @Increment: 10
+    GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",     0.0f),
+
     // @Param: PILOT_TKOFF_DZ
     // @DisplayName: Takeoff trigger deadzone
     // @Description: Offset from mid stick at which takeoff is triggered
