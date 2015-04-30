@@ -171,12 +171,12 @@ static void poshold_run()
 
         // get pilot desired climb rate (for alt-hold mode and take-off)
         target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max-tkoff_get_speed(), g.pilot_velocity_z_max-tkoff_get_speed());
+        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max-takeoff_get_speed(), g.pilot_velocity_z_max-takeoff_get_speed());
 
         // check for take-off
         if (ap.land_complete && (takeoff_state.running || g.rc_3.control_in > get_takeoff_trigger_throttle())) {
             if (!takeoff_state.running) {
-                tkoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+                takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             }
 
             // indicate we are taking off
@@ -526,7 +526,7 @@ static void poshold_run()
         }
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
-        tkoff_increment_alt_target(G_Dt);
+        takeoff_increment_alt_target(G_Dt);
         pos_control.update_z_controller();
     }
 }
