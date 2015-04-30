@@ -164,7 +164,7 @@ static void do_erase_logs(void)
 #if AUTOTUNE_ENABLED == ENABLED
 struct PACKED log_AutoTune {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t axis;           // roll or pitch
     uint8_t tune_step;      // tuning PI or D up or down
     float   rate_target;    // target achieved rotation rate
@@ -180,7 +180,7 @@ static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_targe
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
-        time_ms     : hal.scheduler->millis(),
+        time_us     : hal.scheduler->micros64(),
         axis        : axis,
         tune_step   : tune_step,
         rate_target : rate_target,
@@ -195,7 +195,7 @@ static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_targe
 
 struct PACKED log_AutoTuneDetails {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     float    angle_cd;      // lean angle in centi-degrees
     float    rate_cds;      // current rotation rate in centi-degrees / second
 };
@@ -205,7 +205,7 @@ static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
-        time_ms     : hal.scheduler->millis(),
+        time_us     : hal.scheduler->micros64(),
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
@@ -224,7 +224,7 @@ static void Log_Write_Current()
 
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t surface_quality;
     float flow_x;
     float flow_y;
@@ -244,7 +244,7 @@ static void Log_Write_Optflow()
     const Vector2f &bodyRate = optflow.bodyRate();
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         surface_quality : optflow.quality(),
         flow_x          : flowRate.x,
         flow_y          : flowRate.y,
@@ -257,7 +257,7 @@ static void Log_Write_Optflow()
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     float    desired_pos_x;
     float    desired_pos_y;
     float    pos_x;
@@ -281,7 +281,7 @@ static void Log_Write_Nav_Tuning()
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         desired_pos_x   : pos_target.x,
         desired_pos_y   : pos_target.y,
         pos_x           : position.x,
@@ -298,7 +298,7 @@ static void Log_Write_Nav_Tuning()
 
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t  throttle_in;
     int16_t  angle_boost;
     float    throttle_out;
@@ -316,7 +316,7 @@ static void Log_Write_Control_Tuning()
 {
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        time_ms             : hal.scheduler->millis(),
+        time_us             : hal.scheduler->micros64(),
         throttle_in         : channel_throttle->control_in,
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
@@ -333,6 +333,7 @@ static void Log_Write_Control_Tuning()
 
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint16_t num_long_running;
     uint16_t num_loops;
     uint32_t max_time;
@@ -346,6 +347,7 @@ static void Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
+        time_us          : hal.scheduler->micros64(),
         num_long_running : perf_info_get_num_long_running(),
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
@@ -386,7 +388,7 @@ static void Log_Write_Attitude()
 
 struct PACKED log_Rate {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     float   control_roll;
     float   roll;
     float   roll_out;
@@ -408,7 +410,7 @@ static void Log_Write_Rate()
     const Vector3f &accel_target = pos_control.get_accel_target();
     struct log_Rate pkt_rate = {
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         control_roll    : (float)rate_targets.x,
         roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
         roll_out        : motors.get_roll(),
@@ -427,7 +429,7 @@ static void Log_Write_Rate()
 
 struct PACKED log_MotBatt {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     float   lift_max;
     float   bat_volt;
     float   bat_res;
@@ -439,7 +441,7 @@ static void Log_Write_MotBatt()
 {
     struct log_MotBatt pkt_mot = {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         lift_max        : (float)(motors.get_lift_max()),
         bat_volt        : (float)(motors.get_batt_voltage_filt()),
         bat_res         : (float)(motors.get_batt_resistance()),
@@ -450,13 +452,15 @@ static void Log_Write_MotBatt()
 
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
 };
 
 // Write Startup packet
 static void Log_Write_Startup()
 {
     struct log_Startup pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG)
+        LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
+        time_us         : hal.scheduler->micros64()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
@@ -477,6 +481,7 @@ static void Log_Write_EntireMission()
 
 struct PACKED log_Event {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
 };
 
@@ -486,7 +491,8 @@ static void Log_Write_Event(uint8_t id)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Event pkt = {
             LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
-            id  : id
+            time_us  : hal.scheduler->micros64(),
+            id       : id
         };
         DataFlash.WriteBlock(&pkt, sizeof(pkt));
     }
@@ -494,6 +500,7 @@ static void Log_Write_Event(uint8_t id)
 
 struct PACKED log_Data_Int16t {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
     int16_t data_value;
 };
@@ -505,6 +512,7 @@ static void Log_Write_Data(uint8_t id, int16_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT16_MSG),
+            time_us     : hal.scheduler->micros64(),
             id          : id,
             data_value  : value
         };
@@ -514,6 +522,7 @@ static void Log_Write_Data(uint8_t id, int16_t value)
 
 struct PACKED log_Data_UInt16t {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
     uint16_t data_value;
 };
@@ -525,6 +534,7 @@ static void Log_Write_Data(uint8_t id, uint16_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT16_MSG),
+            time_us     : hal.scheduler->micros64(),
             id          : id,
             data_value  : value
         };
@@ -534,6 +544,7 @@ static void Log_Write_Data(uint8_t id, uint16_t value)
 
 struct PACKED log_Data_Int32t {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
     int32_t data_value;
 };
@@ -544,6 +555,7 @@ static void Log_Write_Data(uint8_t id, int32_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT32_MSG),
+            time_us  : hal.scheduler->micros64(),
             id          : id,
             data_value  : value
         };
@@ -553,6 +565,7 @@ static void Log_Write_Data(uint8_t id, int32_t value)
 
 struct PACKED log_Data_UInt32t {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
     uint32_t data_value;
 };
@@ -563,6 +576,7 @@ static void Log_Write_Data(uint8_t id, uint32_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT32_MSG),
+            time_us     : hal.scheduler->micros64(),
             id          : id,
             data_value  : value
         };
@@ -572,6 +586,7 @@ static void Log_Write_Data(uint8_t id, uint32_t value)
 
 struct PACKED log_Data_Float {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t id;
     float data_value;
 };
@@ -583,6 +598,7 @@ static void Log_Write_Data(uint8_t id, float value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Float pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_FLOAT_MSG),
+            time_us     : hal.scheduler->micros64(),
             id          : id,
             data_value  : value
         };
@@ -592,6 +608,7 @@ static void Log_Write_Data(uint8_t id, float value)
 
 struct PACKED log_Error {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     uint8_t sub_system;
     uint8_t error_code;
 };
@@ -601,6 +618,7 @@ static void Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 {
     struct log_Error pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
+        time_us       : hal.scheduler->micros64(),
         sub_system    : sub_system,
         error_code    : error_code,
     };
@@ -614,7 +632,7 @@ static void Log_Write_Baro(void)
 
 struct PACKED log_ParameterTuning {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t  parameter;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
     float    tuning_value;  // normalized value used inside tuning() function
     int16_t  control_in;    // raw tune input value
@@ -626,7 +644,7 @@ static void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t 
 {
     struct log_ParameterTuning pkt_tune = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_ms        : hal.scheduler->millis(),
+        time_us        : hal.scheduler->micros64(),
         parameter      : param,
         tuning_value   : tuning_val,
         control_in     : control_in,
@@ -641,40 +659,40 @@ static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "IBBffffff",       "TimeMS,Axis,TuneStep,RateTarg,RateMin,RateMax,RP,RD,SP" },
+      "ATUN", "QBBffffff",       "TimeUS,Axis,TuneStep,RateTarg,RateMin,RateMax,RP,RD,SP" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
-      "ATDE", "Iff",          "TimeMS,Angle,Rate" },
+      "ATDE", "Qff",          "TimeUS,Angle,Rate" },
 #endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-      "PTUN", "IBfHHH",          "TimeMS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
+      "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "IBffff",   "TimeMS,Qual,flowX,flowY,bodyX,bodyY" },
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY" },
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
-      "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
+      "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Ihhfffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
+      "CTUN", "Qhhfffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "HHIhBH",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
+      "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
-      "RATE", "Iffffffffffff",  "TimeMS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" },
+      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Iffff",  "TimeMS,LiftMax,BatVolt,BatRes,ThLimit" },
+      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "",            "" },
+      "STRT", "Q",            "TimeUS" },
     { LOG_EVENT_MSG, sizeof(log_Event),         
-      "EV",   "B",           "Id" },
+      "EV",   "QB",           "TimeUS,Id" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
-      "D16",   "Bh",         "Id,Value" },
+      "D16",   "QBh",         "TimeUS,Id,Value" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
-      "DU16",  "BH",         "Id,Value" },
+      "DU16",  "QBH",         "TimeUS,Id,Value" },
     { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
-      "D32",   "Bi",         "Id,Value" },
+      "D32",   "QBi",         "TimeUS,Id,Value" },
     { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
-      "DU32",  "BI",         "Id,Value" },
+      "DU32",  "QBI",         "TimeUS,Id,Value" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
-      "DFLT",  "Bf",         "Id,Value" },
+      "DFLT",  "QBf",         "TimeUS,Id,Value" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
-      "ERR",   "BB",         "Subsys,ECode" },
+      "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
 };
 
 #if CLI_ENABLED == ENABLED
