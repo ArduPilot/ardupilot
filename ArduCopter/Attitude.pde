@@ -199,8 +199,8 @@ static float get_takeoff_trigger_throttle()
 static float get_throttle_pre_takeoff(float input_thr)
 {
     // exit immediately if input_thr is zero
-    if (input_thr <= 0) {
-        return 0;
+    if (input_thr <= 0.0f) {
+        return 0.0f;
     }
 
     // TODO: does this parameter sanity check really belong here?
@@ -221,7 +221,7 @@ static float get_throttle_pre_takeoff(float input_thr)
 
     // sanity check ranges
     if (input_range <= 0.0f || output_range <= 0.0f) {
-        return 0;
+        return 0.0f;
     }
 
     return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
