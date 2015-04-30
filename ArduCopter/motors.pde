@@ -84,7 +84,7 @@ static void auto_disarm_check()
 
     // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
     // always allow auto disarm if using interlock switch or motors are E-stopped
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !ap.motor_interlock) || ap.motor_estop) {
+    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !motors.get_interlock()) || ap.motor_estop) {
         auto_disarming_counter++;
 
         // use a shorter delay if using throttle interlock switch or E-stop, because it is less
@@ -173,8 +173,8 @@ static bool init_arm_motors(bool arming_from_gcs)
     // check if we are using motor interlock control on an aux switch
     set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
 
-    // if we are using motor interlock switch and it's disabled, fail to arm
-    if (ap.using_interlock && ap.motor_interlock){
+    // if we are using motor interlock switch and it's enabled, fail to arm
+    if (ap.using_interlock && motors.get_interlock()){
         gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Interlock Enabled"));
         AP_Notify::flags.armed = false;
         return false;
@@ -245,7 +245,7 @@ static bool pre_arm_checks(bool display_failure)
     // otherwise exit immediately.  This check to be repeated, 
     // as state can change at any time.
     set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
-    if (ap.using_interlock && ap.motor_interlock){
+    if (ap.using_interlock && motors.get_interlock()){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Interlock Enabled"));
         }
@@ -741,9 +741,6 @@ static void init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
-    // always force Motor Interlock to false
-    set_motor_interlock(false);
-
     // send disarm command to motors
     motors.armed(false);
 
@@ -785,11 +782,7 @@ static void motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        if (ap.using_interlock){
-            // pass in motor interlock status to motors class
-            // true means motors run, false motors don't run
-            motors.set_interlock(ap.motor_interlock);
-        } else {
+        if (!ap.using_interlock){
             // if not using interlock switch, set according to E-Stop status
             // where E-Stop is forced false during arming if E-Stop switch
             // is not used. Interlock enabled means motors run, so we must
