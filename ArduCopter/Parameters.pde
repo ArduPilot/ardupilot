@@ -78,7 +78,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Units: Centimeters
     // @Range: 0.0 1000.0
     // @Increment: 10
-    GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",     0.0f),
+    GSCALAR(pilot_takeoff_alt,  "PILOT_TKOFF_ALT",  PILOT_TKOFF_ALT_DEFAULT),
 
     // @Param: PILOT_TKOFF_DZ
     // @DisplayName: Takeoff trigger deadzone
