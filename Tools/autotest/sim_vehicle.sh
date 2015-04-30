@@ -303,7 +303,7 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     popd
 fi
 
-cmd="/tmp/$VEHICLE.build/$VEHICLE.elf -I$INSTANCE"
+cmd="/tmp/$VEHICLE.build/$VEHICLE.elf -S -I$INSTANCE"
 if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
