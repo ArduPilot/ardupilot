@@ -668,6 +668,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
         const struct Location &loc = gps.location(i);
         struct log_GPS pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
+            time_us       : hal.scheduler->micros64(),
             status        : (uint8_t)gps.status(i),
             gps_week_ms   : gps.time_week_ms(i),
             gps_week      : gps.time_week(i),
@@ -680,7 +681,6 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
             ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
             ground_course : gps.ground_course_cd(i),
             vel_z         : gps.velocity(i).z,
-            apm_time      : hal.scheduler->millis()
         };
         WriteBlock(&pkt, sizeof(pkt));
     }
@@ -689,6 +689,7 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
         const struct Location &loc2 = gps.location(i);
         struct log_GPS2 pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_GPS2_MSG),
+            time_us       : hal.scheduler->micros64(),
             status        : (uint8_t)gps.status(i),
             gps_week_ms   : gps.time_week_ms(i),
             gps_week      : gps.time_week(i),
@@ -700,7 +701,6 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
             ground_speed  : (uint32_t)(gps.ground_speed(i)*100),
             ground_course : gps.ground_course_cd(i),
             vel_z         : gps.velocity(i).z,
-            apm_time      : hal.scheduler->millis(),
             dgps_numch    : 0,
             dgps_age      : 0
         };
@@ -1125,6 +1125,7 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
 
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CAMERA_MSG),
+        time_us     : hal.scheduler->micros64(),
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
