@@ -81,7 +81,7 @@ public:
 
 	struct PACKED log_TECS_Tuning {
 		LOG_PACKET_HEADER;
-		uint32_t time_ms;
+		uint64_t time_us;
 		float hgt;
 		float dhgt;
 		float hgt_dem;
@@ -288,6 +288,6 @@ private:
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\
-							   "TECS", "Iffffffffffff", "TimeMS,h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
+							   "TECS", "Qffffffffffff", "TimeUS,h,dh,h_dem,dh_dem,sp_dem,sp,dsp,ith,iph,th,ph,dsp_dem" }
 
 #endif //AP_TECS_H
