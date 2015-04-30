@@ -71,6 +71,21 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: .5
     GSCALAR(throttle_filt,  "PILOT_THR_FILT",     0),
 
+    // @Param: PILOT_TKOFF_DZ
+    // @DisplayName: Takeoff trigger deadzone
+    // @Description: Offset from mid stick at which takeoff is triggered
+    // @User: Standard
+    // @Range 0.0 500.0
+    // @Increment: 10
+    GSCALAR(takeoff_trigger_dz, "PILOT_TKOFF_DZ", THR_DZ_DEFAULT),
+
+    // @Param: PILOT_THR_BHV
+    // @DisplayName: Throttle stick behavior
+    // @Description: Bits for: Feedback starts from mid stick
+    // @User: Standard
+    // @Values: 0:None,1:FeedbackFromMid
+    GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
