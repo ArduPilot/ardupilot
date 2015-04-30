@@ -103,6 +103,18 @@ uint32_t FLYMAPLEScheduler::micros() {
     return libmaple_micros();
 }
 
+uint64_t FLYMAPLEScheduler::millis64() {
+    return millis();
+}
+
+uint64_t FLYMAPLEScheduler::micros64() {
+    // this is slow, but solves the problem with logging uint64_t timestamps
+    uint64_t ret = millis();
+    ret *= 1000ULL;
+    ret += micros() % 1000;
+    return ret;
+}
+
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
 { 
     delay_us(us);
