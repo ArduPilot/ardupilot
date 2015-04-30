@@ -309,7 +309,9 @@ AP_InertialSensor::AP_InertialSensor() :
     _hil_mode(false),
     _calibrating(false),
     _log_raw_data(false),
-    _dataflash(NULL)
+    _dataflash(NULL),
+    _startup_error_counts_set(false),
+    _startup_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);        
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
@@ -323,6 +325,9 @@ AP_InertialSensor::AP_InertialSensor() :
 #endif
 
         _accel_max_abs_offsets[i] = 3.5f;
+
+        _accel_startup_error_count[i] = 0;
+        _gyro_startup_error_count[i] = 0;
     }
 #if INS_VIBRATION_CHECK
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
@@ -1199,25 +1204,47 @@ void AP_InertialSensor::update(void)
             _backends[i]->update();
         }
 
+        if (!_startup_error_counts_set) {
+            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
+            }
+
+            if (_startup_ms == 0) {
+                _startup_ms = hal.scheduler->millis();
+            } else if (hal.scheduler->millis()-_startup_ms > 2000) {
+                _startup_error_counts_set = true;
+            }
+        }
+
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+            }
+            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
+            }
+        }
+
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't. 
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _accel_error_count[i] == 0) {
+            if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
                 have_zero_accel_error_count = true;
             }
-            if (_gyro_healthy[i] && _gyro_error_count[i] == 0) {
+            if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
                 have_zero_gyro_error_count = true;
             }
         }
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _gyro_error_count[i] != 0 && have_zero_gyro_error_count) {
+            if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
                 // we prefer not to use a gyro that has had errors
                 _gyro_healthy[i] = false;
             }
-            if (_accel_healthy[i] && _accel_error_count[i] != 0 && have_zero_accel_error_count) {
+            if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
                 // we prefer not to use a accel that has had errors
                 _accel_healthy[i] = false;
             }

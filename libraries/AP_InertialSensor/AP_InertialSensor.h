@@ -365,6 +365,12 @@ private:
     } _hil {};
 
     DataFlash_Class *_dataflash;
+
+    // sensor error count at startup (used to ignore errors within 2 seconds of startup)
+    uint32_t _accel_startup_error_count[INS_MAX_INSTANCES];
+    uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
+    bool _startup_error_counts_set;
+    uint32_t _startup_ms;
 };
 
 #include "AP_InertialSensor_Backend.h"
