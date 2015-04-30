@@ -146,7 +146,8 @@ static void poshold_run()
 {
     float target_roll, target_pitch;  // pilot's roll and pitch angle inputs
     float target_yaw_rate = 0;          // pilot desired yaw rate in centi-degrees/sec
-    int16_t target_climb_rate = 0;      // pilot desired climb rate in centimeters/sec
+    float target_climb_rate = 0;      // pilot desired climb rate in centimeters/sec
+    float takeoff_climb_rate = 0.0f;    // takeoff induced climb rate
     float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
     float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
@@ -171,7 +172,10 @@ static void poshold_run()
 
         // get pilot desired climb rate (for alt-hold mode and take-off)
         target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
-        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max-takeoff_get_speed(), g.pilot_velocity_z_max-takeoff_get_speed());
+        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
+        // get takeoff adjusted pilot and takeoff climb rates
+        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // check for take-off
         if (ap.land_complete && (takeoff_state.running || g.rc_3.control_in > get_takeoff_trigger_throttle())) {
@@ -526,7 +530,7 @@ static void poshold_run()
         }
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
-        takeoff_increment_alt_target(G_Dt);
+        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
     }
 }
