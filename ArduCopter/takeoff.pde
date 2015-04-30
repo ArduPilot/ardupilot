@@ -7,7 +7,7 @@
 
 // return true if this flight mode supports user takeoff
 //  must_nagivate is true if mode must also control horizontal position
-bool current_mode_has_user_takeoff(bool with_navigation)
+bool current_mode_has_user_takeoff(bool must_navigate)
 {
     switch (control_mode) {
         case GUIDED:
@@ -16,7 +16,7 @@ bool current_mode_has_user_takeoff(bool with_navigation)
             return true;
         case ALT_HOLD:
         case SPORT:
-            return !with_navigation;
+            return !must_navigate;
         default:
             return false;
     }
