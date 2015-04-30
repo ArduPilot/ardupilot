@@ -146,21 +146,20 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
 // without any deadzone at the bottom
-static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
+static float get_pilot_desired_climb_rate(float throttle_control)
 {
-    int16_t desired_rate = 0;
-
     // throttle failsafe check
     if( failsafe.radio ) {
-        return 0;
+        return 0.0f;
     }
 
-    int16_t mid_stick = g.rc_3.get_control_mid();
-    int16_t deadband_top = mid_stick + g.throttle_deadzone;
-    int16_t deadband_bottom = mid_stick - g.throttle_deadzone;
+    float desired_rate = 0.0f;
+    float mid_stick = g.rc_3.get_control_mid();
+    float deadband_top = mid_stick + g.throttle_deadzone;
+    float deadband_bottom = mid_stick - g.throttle_deadzone;
 
     // ensure a reasonable throttle value
-    throttle_control = constrain_int16(throttle_control,g.throttle_min,1000);
+    throttle_control = constrain_float(throttle_control,g.throttle_min,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
@@ -168,13 +167,13 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / (deadband_bottom-g.throttle_min);
+        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_bottom) / (deadband_bottom-g.throttle_min);
     }else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = (int32_t)g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000-deadband_top);
+        desired_rate = g.pilot_velocity_z_max * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     }else{
         // must be in the deadband
-        desired_rate = 0;
+        desired_rate = 0.0f;
     }
 
     // desired climb rate for logging
@@ -184,7 +183,7 @@ static int16_t get_pilot_desired_climb_rate(int16_t throttle_control)
 }
 
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-static int16_t get_non_takeoff_throttle()
+static float get_non_takeoff_throttle()
 {
     return (g.throttle_mid / 2.0f);
 }
