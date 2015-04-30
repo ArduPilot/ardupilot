@@ -154,6 +154,10 @@ static void poshold_run()
     float vel_fw, vel_right;            // vehicle's current velocity in body-frame forward and right directions
     const Vector3f& vel = inertial_nav.get_velocity();
 
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         wp_nav.init_loiter_target();

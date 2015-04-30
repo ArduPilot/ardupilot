@@ -7,7 +7,7 @@
 // sport_init - initialise sport controller
 static bool sport_init(bool ignore_checks)
 {
-    // initialize vertical speed and accelerationj
+    // initialize vertical speed and acceleration
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
@@ -24,6 +24,10 @@ static void sport_run()
     float target_roll_rate, target_pitch_rate, target_yaw_rate;
     float target_climb_rate = 0;
     float takeoff_climb_rate = 0.0f;
+
+    // initialize vertical speed and acceleration
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
 
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || g.rc_3.control_in <= 0) {

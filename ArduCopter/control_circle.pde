@@ -32,6 +32,9 @@ static void circle_run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete) {
         // To-Do: add some initialisation of position controllers
