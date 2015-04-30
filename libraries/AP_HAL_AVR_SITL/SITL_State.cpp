@@ -215,7 +215,7 @@ void SITL_State::_sitl_setup(void)
 
     if (_synthetic_clock_mode) {
         // start with non-zero clock
-        hal.scheduler->stop_clock(100);
+        hal.scheduler->stop_clock(1);
     }
 
     // setup a pipe used to trigger loop to stop sleeping

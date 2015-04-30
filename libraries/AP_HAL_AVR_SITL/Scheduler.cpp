@@ -317,6 +317,12 @@ void SITLScheduler::panic(const prog_char_t *errormsg) {
  */
 void SITLScheduler::stop_clock(uint64_t time_usec)
 {
+    if (time_usec == 1) {
+        // special case for initialisation in synthetic clock mode
+        stopped_clock_usec = time_usec;
+        return;
+    }
+
     if (stopped_clock_usec != 0) {
         /*
           wait until the main thread is waiting for us. This ensures
