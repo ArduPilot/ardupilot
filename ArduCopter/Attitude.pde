@@ -188,42 +188,43 @@ static float get_non_takeoff_throttle()
     return (g.throttle_mid / 2.0f);
 }
 
+static float get_takeoff_trigger_throttle()
+{
+    return g.rc_3.get_control_mid() + g.takeoff_trigger_dz;
+}
+
 // get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
 // used only for althold, loiter, hybrid flight modes
 // returns throttle output 0 to 1000
-static int16_t get_throttle_pre_takeoff(int16_t throttle_control)
+static float get_throttle_pre_takeoff(float input_thr)
 {
-    int16_t throttle_out;
-
-    // exit immediately if throttle_control is zero
-    if (throttle_control <= 0) {
+    // exit immediately if input_thr is zero
+    if (input_thr <= 0) {
         return 0;
     }
 
-    // calculate mid stick and deadband
-    int16_t mid_stick = g.rc_3.get_control_mid();
-    int16_t deadband_top = mid_stick + g.throttle_deadzone;
-
-    // sanity check throttle input
-    throttle_control = constrain_int16(throttle_control,0,1000);
-
-    // sanity check throttle_mid
+    // TODO: does this parameter sanity check really belong here?
     g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
 
-    // sanity check throttle_min vs throttle_mid
-    if (g.throttle_min > get_non_takeoff_throttle()) {
-        return g.throttle_min;
+    float in_min = g.throttle_min;
+    float in_max = get_takeoff_trigger_throttle();
+
+    float out_min = motors.get_throttle_warn();
+    float out_max = get_non_takeoff_throttle();
+
+    if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
+        in_min = g.rc_3.get_control_mid();
     }
 
-    // check throttle is below top of deadband
-    if (throttle_control < deadband_top) {
-        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(get_non_takeoff_throttle() - g.throttle_min))/((float)(deadband_top-g.throttle_min));
-    }else{
-        // must be in the deadband
-        throttle_out = get_non_takeoff_throttle();
+    float input_range = in_max-in_min;
+    float output_range = out_max-out_min;
+
+    // sanity check ranges
+    if (input_range <= 0.0f || output_range <= 0.0f) {
+        return 0;
     }
 
-    return throttle_out;
+    return constrain_float(out_min + (input_thr-in_min)*output_range/input_range, out_min, out_max);
 }
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground

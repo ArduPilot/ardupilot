@@ -127,8 +127,9 @@ public:
         k_param_optflow,
         k_param_dcmcheck_thresh,        // deprecated - remove
         k_param_log_bitmask,
-        k_param_cli_enabled,            // 61
-        k_param_throttle_filt,          // 62
+        k_param_cli_enabled,
+        k_param_throttle_filt,
+        k_param_throttle_behavior,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -190,6 +191,7 @@ public:
         k_param_ch10_option,
         k_param_ch11_option,
         k_param_ch12_option,     // 123
+        k_param_takeoff_trigger_dz,
 
         //
         // 140: Sensor parameters
@@ -341,6 +343,8 @@ public:
 #endif
 
     AP_Float        throttle_filt;
+    AP_Int16        throttle_behavior;
+    AP_Int16        takeoff_trigger_dz;
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;
