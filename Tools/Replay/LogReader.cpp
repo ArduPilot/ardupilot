@@ -189,14 +189,16 @@ bool LogReader::update(uint8_t &type)
         return true;
     }
 
-    if (formats[hdr[2]].type == 0) {
-        // no format message received for this type; we should
-        // probably have a verbose option and warn here!
-        return false;
-    }
     const struct log_Format &f = formats[hdr[2]];
-    
+    if (f.length == 0) {
+        // can't just throw these away as the format specifies the
+        // number of bytes in the message
+        ::printf("No format defined for type (%d)\n", hdr[2]);
+        exit(1);
+    }
+
     uint8_t msg[f.length];
+
     memcpy(msg, hdr, 3);
     if (::read(fd, &msg[3], f.length-3) != f.length-3) {
         return false;
