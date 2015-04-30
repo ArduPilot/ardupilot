@@ -129,8 +129,6 @@ static bool set_mode(uint8_t mode)
 // called at 100hz or more
 static void update_flight_mode()
 {
-    takeoff_timer_update();
-
 #if AP_AHRS_NAVEKF_AVAILABLE
     // Update EKF speed limit - used to limit speed when we are using optical flow
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);

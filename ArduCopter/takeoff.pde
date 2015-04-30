@@ -36,7 +36,7 @@ static bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case ALT_HOLD:
             case SPORT:
                 set_auto_armed(true);
-                takeoff_timer_start(pv_alt_above_origin(takeoff_alt_cm)-pos_control.get_pos_target().z);
+                takeoff_timer_start(takeoff_alt_cm);
                 return true;
         }
     }
@@ -68,27 +68,51 @@ static void takeoff_stop()
     takeoff_state.start_ms = 0;
 }
 
-// update takeoff timer and stop the takeoff after time_ms has passed
-static void takeoff_timer_update()
+// returns pilot and takeoff climb rates
+//  pilot_climb_rate is both an input and an output
+//  takeoff_climb_rate is only an output
+//  has side-effect of turning takeoff off when timeout as expired
+static void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
 {
-    if (millis()-takeoff_state.start_ms >= takeoff_state.time_ms) {
-        takeoff_state.running = false;
+    // return pilot_climb_rate if take-off inactive
+    if (!takeoff_state.running) {
+        takeoff_climb_rate = 0.0f;
+        return;
     }
-}
 
-// increase altitude target as part of takeoff
-//   dt - time interval (in seconds) that this function is called
-static void takeoff_increment_alt_target(float dt)
-{
-    if (takeoff_state.running) {
-        Vector3f pos_target = pos_control.get_pos_target();
-        pos_target.z += takeoff_state.speed*dt;
-        pos_control.set_pos_target(pos_target);
+    // check if timeout as expired
+    if ((millis()-takeoff_state.start_ms) >= takeoff_state.time_ms) {
+        takeoff_stop();
+        takeoff_climb_rate = 0.0f;
+        return;
     }
-}
 
-// get take off speed in cm/s
-static float takeoff_get_speed()
-{
-    return takeoff_state.running?takeoff_state.speed:0.0f;
+    // if takeoff climb rate is zero return
+    if (takeoff_state.speed <= 0.0f) {
+        takeoff_climb_rate = 0.0f;
+        return;
+    }
+
+    // default take-off climb rate to maximum speed
+    takeoff_climb_rate = takeoff_state.speed;
+
+    // if pilot's commands descent
+    if (pilot_climb_rate < 0.0f) {
+        // if overall climb rate is still positive, move to take-off climb rate
+        if (takeoff_climb_rate + pilot_climb_rate > 0.0f) {
+            takeoff_climb_rate = takeoff_climb_rate + pilot_climb_rate;
+            pilot_climb_rate = 0;
+        } else {
+            // if overall is negative, move to pilot climb rate
+            pilot_climb_rate = pilot_climb_rate + takeoff_climb_rate;
+            takeoff_climb_rate = 0.0f;
+        }
+    } else { // pilot commands climb
+        // pilot climb rate is zero until it surpasses the take-off climb rate
+        if (pilot_climb_rate > takeoff_climb_rate) {
+            pilot_climb_rate = pilot_climb_rate - takeoff_climb_rate;
+        } else {
+            pilot_climb_rate = 0.0f;
+        }
+    }
 }
