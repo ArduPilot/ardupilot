@@ -87,7 +87,7 @@ def drive_APMrover2(viewerip=None, map=False):
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     sil = util.start_SIL('APMrover2', wipe=True)
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options, synthetic_clock=True)
+    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
 
     runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
     runsim.delaybeforesend = 0
@@ -106,7 +106,7 @@ def drive_APMrover2(viewerip=None, map=False):
     util.pexpect_close(runsim)
 
     sil = util.start_SIL('APMrover2')
-    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options, synthetic_clock=True)
+    mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
