@@ -242,7 +242,11 @@
 //
 // uses 7726 bytes of memory on 2560 chips (all options are enabled)
 #ifndef MOUNT
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
  # define MOUNT          ENABLED
+#else
+ # define MOUNT          DISABLED
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
