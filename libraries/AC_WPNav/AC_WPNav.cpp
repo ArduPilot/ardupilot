@@ -305,6 +305,11 @@ void AC_WPNav::update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler)
         if (dt >= 0.2f) {
             dt = 0.0f;
         }
+
+        // initialise pos controller speed and acceleration
+        _pos_control.set_speed_xy(_loiter_speed_cms);
+        _pos_control.set_accel_xy(_loiter_accel_cmss);
+
         calc_loiter_desired_velocity(dt,ekfGndSpdLimit);
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_LIMITED_AND_VEL_FF, ekfNavVelGainScaler);
     }
