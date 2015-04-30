@@ -149,7 +149,7 @@ steps = [
     'prerequisites',
     'build.All',
     'build.Binaries',
-    'build.DevRelease',
+#    'build.DevRelease',
     'build.Examples',
     'build.Parameters',
 
