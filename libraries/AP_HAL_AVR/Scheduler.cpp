@@ -66,6 +66,24 @@ uint32_t AVRScheduler::millis() {
     return _timer.millis();
 }
 
+/*
+  64 bit version of millis(). This wraps at 32 bits on AVR
+ */
+uint64_t AVRScheduler::millis64() {
+    return millis();
+}
+
+/*
+  64 bit version of micros(). This wraps when 32 bit millis() wraps
+ */
+uint64_t AVRScheduler::micros64() {
+    // this is slow, but solves the problem with logging uint64_t timestamps
+    uint64_t ret = millis();
+    ret *= 1000ULL;
+    ret += micros() % 1000UL;
+    return ret;
+}
+
 void AVRScheduler::delay_microseconds(uint16_t us) {
     _timer.delay_microseconds(us);
 }
