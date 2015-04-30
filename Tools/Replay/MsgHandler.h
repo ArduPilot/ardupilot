@@ -104,6 +104,10 @@ template<typename R>
 bool MsgHandler::field_value(uint8_t *msg, const char *label, R &ret)
 {
     struct format_field_info *info = find_field_info(label);
+    if (info == NULL) {
+        return false;
+    }
+
     uint8_t offset = info->offset;
     if (offset == 0) {
         return false;
