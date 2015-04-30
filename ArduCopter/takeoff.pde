@@ -29,16 +29,14 @@ static bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case ALT_HOLD:
             case SPORT:
                 set_auto_armed(true);
-                tkoff_timer_start(pv_alt_above_origin(takeoff_alt_cm)-pos_control.get_pos_target().z);
+                takeoff_timer_start(pv_alt_above_origin(takeoff_alt_cm)-pos_control.get_pos_target().z);
                 return true;
         }
     }
     return false;
 }
 
-
-
-static void tkoff_timer_start(float alt)
+static void takeoff_timer_start(float alt)
 {
     float speed = min(wp_nav.get_speed_up(), max(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
 
@@ -52,14 +50,14 @@ static void tkoff_timer_start(float alt)
     takeoff_state.time_ms = (alt/takeoff_state.speed) * 1.0e3f;
 }
 
-static void tkoff_timer_update()
+static void takeoff_timer_update()
 {
     if (millis()-takeoff_state.start_ms >= takeoff_state.time_ms) {
         takeoff_state.running = false;
     }
 }
 
-static void tkoff_increment_alt_target(float dt)
+static void takeoff_increment_alt_target(float dt)
 {
     if (takeoff_state.running) {
         Vector3f pos_target = pos_control.get_pos_target();
@@ -68,7 +66,7 @@ static void tkoff_increment_alt_target(float dt)
     }
 }
 
-static float tkoff_get_speed()
+static float takeoff_get_speed()
 {
     return takeoff_state.running?takeoff_state.speed:0.0f;
 }
