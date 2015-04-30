@@ -61,6 +61,13 @@ static void takeoff_timer_start(float alt)
     takeoff_state.time_ms = (alt/takeoff_state.speed) * 1.0e3f;
 }
 
+// stop takeoff
+static void takeoff_stop()
+{
+    takeoff_state.running = false;
+    takeoff_state.start_ms = 0;
+}
+
 // update takeoff timer and stop the takeoff after time_ms has passed
 static void takeoff_timer_update()
 {
