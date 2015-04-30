@@ -1,3 +1,69 @@
+Release 3.3.0beta2, 30th April 2015
+-----------------------------------
+
+Changes in this release:
+
+
+ - a new SerialManager library which gives much more flexible management of serial port assignment
+ - changed the default FS_LONG_TIMEOUT to 5 seconds
+ - raised default IMAX for roll/pitch to 3000
+ - lowered default L1 navigation period to 20
+ - new BRD_SBUS_OUT parameter to enable SBUS output on Pixhawk
+ - large improvements to the internals of PX4Firmware/PX4NuttX for better performance
+ - auto-formatting of microSD cards if they can't be mounted on boot (PX4/Pixhawk only)
+ - a new PWM based driver for the PulsedLight Lidar to avoid issues with the I2C interface
+ - fixed throttle forcing to zero when disarmed
+ - only reset mission on disarm if not in AUTO mode
+ - much better handling of steep landings
+ - added smooth transition in landing flare
+ - added HIL_MODE parameter for HIL without a special firmware
+ - lowered default FS_LONG_TIMEOUT to 5 seconds
+ - mark old ELEVON_MIXING mode as deprecated
+ - fixed 50Hz MAVLink support
+ - support DO_SET_HOME MAVLink command
+ - fixed larger values of TKOFF_THR_DELAY
+ - allow PulsedLight Lidar to be disabled at a given height
+ - fixed bungee launch (long throttle delay)
+ - fixed a bug handling entering AUTO mode before we have GPS lock
+ - added CLI_ENABLED parameter
+ - removed 1D accel calibration
+ - added EKF_STATUS_REPORT MAVLink message
+ - added INITIAL_MODE parameter
+ - added TRIM_RC_AT_START parameter
+ - added auto-disarm after landing (LAND_DISARMDELAY)
+ - added LOCAL_POSITION_NED MAVLink message
+ - avoid triggering a fence breach in final stage of landing
+ - rebuild glide slope if we are above it and climbing
+ - use TECS to control throttle on takeoff
+ - added RUDDER_ONLY parameter to better support planes with no ailerons
+ - updated Piksi RTK GPS driver
+ - improved support for GPS data injection (for Piksi RTK GPS)
+ - added NAV_LOITER_TO_ALT mission item
+ - fixed landing approach without an airspeed sensor
+ - support RTL_AUTOLAND=2 for landing without coming to home first
+ - disabled camera mount support on APM1/APM2
+ - added support for SToRM32 and Alexmos camera gimbals
+ - added support for Jaimes mavlink enabled gimbal
+ - improved EKF default tuning for planes
+ - updated support for NavIO and NavIO+ boards
+ - updated support for VRBrain boards
+ - fixes for realtime threads on Linux
+ - added simulated sensor lag for baro and mag in SITL
+ - made it possible to build SITL for native Windows
+ - switched to faster accel sampling on Pixhawk
+ - added coning corrections on Pixhawk
+ - set ARMING_CHECK to 1 by default
+ - disable NMEA and SiRF GPS on APM1/APM2
+ - support MPU9255 IMU on Linux
+ - updates to BBBMINI port for Linux
+ - added TECS_LAND_PMAX parameter
+ - switched to synthetic clock in SITL
+ - support CRRCSim FDM backend in SITL
+ - new general purpose replay parsing code
+ - switched to 16g accel range in Pixhawk
+
+
+
 Release 3.2.2, February 10th 2015
 ---------------------------------
 
