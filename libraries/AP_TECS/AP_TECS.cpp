@@ -887,7 +887,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	log_tuning.thr      = _throttle_dem;
 	log_tuning.ptch     = _pitch_dem;
 	log_tuning.dspd_dem = _TAS_rate_dem;
-	log_tuning.time_ms  = hal.scheduler->millis();
+	log_tuning.time_us  = hal.scheduler->micros64();
 }
 
 // log the contents of the log_tuning structure to dataflash
