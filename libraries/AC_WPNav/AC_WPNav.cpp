@@ -196,22 +196,6 @@ void AC_WPNav::loiter_soften_for_landing()
     _pos_control.freeze_ff_xy();
 }
 
-/// set_loiter_velocity - allows main code to pass the maximum velocity for loiter
-void AC_WPNav::set_loiter_velocity(float velocity_cms)
-{
-    // range check velocity and update position controller
-    //float maxSpd_cms = _ahrs.getSpeedlimit();
-    if (velocity_cms >= WPNAV_LOITER_SPEED_MIN) {
-        _loiter_speed_cms = velocity_cms;
-
-        // initialise pos controller speed
-        _pos_control.set_speed_xy(_loiter_speed_cms);
-
-        // initialise pos controller acceleration
-        _pos_control.set_accel_xy(_loiter_accel_cmss);
-    }
-}
-
 /// set_pilot_desired_acceleration - sets pilot desired acceleration from roll and pitch stick input
 void AC_WPNav::set_pilot_desired_acceleration(float control_roll, float control_pitch)
 {
