@@ -94,15 +94,12 @@ static void update_throttle_low_comp()
 
 static void update_ground_effect_detector(void)
 {
-    static bool takeoffExpected = false;
-    static uint32_t takeoff_time_ms;
-    static float takeoff_alt_cm;
-
     if(!motors.armed()) {
         // disarmed - disable ground effect and return
-        ahrs.setTakeoffExpected(false);
-        ahrs.setTouchdownExpected(false);
-        takeoffExpected = false;
+        gndeffect_state.takeoff_expected = false;
+        gndeffect_state.touchdown_expected = false;
+        ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
+        ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
         return;
     }
 
@@ -127,21 +124,21 @@ static void update_ground_effect_detector(void)
     // takeoff logic
 
     // if we are armed and haven't yet taken off
-    if (motors.armed() && ap.land_complete && !takeoffExpected) {
-        takeoffExpected = true;
+    if (motors.armed() && ap.land_complete && !gndeffect_state.takeoff_expected) {
+        gndeffect_state.takeoff_expected = true;
     }
 
     // if we aren't taking off yet, reset the takeoff timer, altitude and complete flag
     bool throttle_up = mode_has_manual_throttle(control_mode) && g.rc_3.control_in > 0;
     if (!throttle_up && ap.land_complete) {
-        takeoff_time_ms = tnow_ms;
-        takeoff_alt_cm = inertial_nav.get_altitude();
+        gndeffect_state.takeoff_time_ms = tnow_ms;
+        gndeffect_state.takeoff_alt_cm = inertial_nav.get_altitude();
     }
 
-    // if we are in takeoffExpected and we meet the conditions for having taken off
-    // end the takeoffExpected state
-    if (takeoffExpected && (tnow_ms-takeoff_time_ms > 5000 || inertial_nav.get_altitude()-takeoff_alt_cm > 50.0f)) {
-        takeoffExpected = false;
+    // if we are in takeoff_expected and we meet the conditions for having taken off
+    // end the takeoff_expected state
+    if (gndeffect_state.takeoff_expected && (tnow_ms-gndeffect_state.takeoff_time_ms > 5000 || inertial_nav.get_altitude()-gndeffect_state.takeoff_alt_cm > 50.0f)) {
+        gndeffect_state.takeoff_expected = false;
     }
 
     // landing logic
@@ -156,9 +153,9 @@ static void update_ground_effect_detector(void)
     bool z_speed_low = abs(climb_rate) <= LAND_DETECTOR_CLIMBRATE_MAX*2.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
 
-    bool touchdownExpected = slow_horizontal && slow_descent;
+    gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;
 
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
-    ahrs.setTakeoffExpected(takeoffExpected);
-    ahrs.setTouchdownExpected(touchdownExpected);
+    ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
+    ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
 }

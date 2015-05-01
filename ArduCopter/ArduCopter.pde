@@ -387,6 +387,13 @@ static struct {
     uint32_t time_ms;
 } takeoff_state;
 
+static struct {
+    bool takeoff_expected;
+    bool touchdown_expected;
+    uint32_t takeoff_time_ms;
+    float takeoff_alt_cm;
+} gndeffect_state;
+
 static RCMapper rcmap;
 
 // board specific config
