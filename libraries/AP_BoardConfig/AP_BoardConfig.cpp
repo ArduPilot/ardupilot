@@ -40,6 +40,10 @@
 
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+#define BOARD_EXT_LEDBUZZ_DEFAULT 0
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -68,10 +72,19 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
+	AP_GROUPEND
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    // @Param: EXT_LEDBUZZ
+    // @DisplayName:  Enable use of external LEDs and buzzer
+    // @Description: Enabling this option will allow the use of the APM’s A4 - A7 pins to add external GPS and Arming LEDs and/or buzzer to your aircraft. A4: MotorLED, A5: Buzzer, A6: GPS LED (will flash with no GPS lock, solid with GPS lock), A7: Arming LED.
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("EXT_LEDBUZZ",   0, AP_BoardConfig, _ext_ledbuzz, BOARD_EXT_LEDBUZZ_DEFAULT),
     AP_GROUPEND
+#endif
+    
 };
 
 void AP_BoardConfig::init()
