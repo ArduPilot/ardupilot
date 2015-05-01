@@ -542,8 +542,6 @@ void setup() {
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init(false);
-
     battery.init();
 
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
