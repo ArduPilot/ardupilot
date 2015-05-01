@@ -105,8 +105,9 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
-    // return the last calculated NED position relative to the reference point (m).
-    // return false if no position is available
+    // Return the last calculated NED position relative to the reference point (m).
+    // If a calculated solution is not available, use the best available data and return false
+    // If false returned, do not use for flight control
     bool getPosNED(Vector3f &pos) const;
 
     // return NED velocity in m/s
@@ -152,7 +153,9 @@ public:
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(Vector3f &magOffsets) const;
 
-    // return the last calculated latitude, longitude and height
+    // Return the last calculated latitude, longitude and height in WGS-84
+    // If a calculated location isn't available, return false and the raw GPS measurement or last known position if available
+    // If false returned, do not use for flight control
     bool getLLH(struct Location &loc) const;
 
     // return the latitude and longitude and height used to set the NED origin
@@ -200,11 +203,13 @@ public:
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
-    // Tells the EKF to de-weight the baro sensor to take account of ground effect on baro during takeoff of landing when set to true
-    // Should be set to off by sending a false when the ground effect height region is cleared or the landing completed
-    // If not reactivated, this condition times out after the number of msec set by the _gndEffectTO_ms parameter
-    // The amount of de-weighting is controlled by the gndEffectBaroScaler parameter
-    void setGndEffectMode(bool modeOn);
+    // called by vehicle code to specify that a takeoff is happening
+    // causes the EKF to compensate for expected barometer errors due to ground effect
+    void setTakeoffExpected(bool val);
+
+    // called by vehicle code to specify that a touchdown is expected to happen
+    // causes the EKF to compensate for expected barometer errors due to ground effect
+    void setTouchdownExpected(bool val);
 
     /*
     return the filter fault status as a bitmasked integer
@@ -244,6 +249,10 @@ public:
     // returns false if no height limiting is required
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
+
+    // provides the quaternion that was used by the INS calculation to rotate from the previous orientation to the orientaion at the current time step
+    // returns a zero rotation quaternion if the INS calculation was not performed on that time step.
+    Quaternion getDeltaQuaternion(void) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -329,6 +338,10 @@ private:
 
     // initialise the covariance matrix
     void CovarianceInit();
+
+    // helper functions for readIMUData
+    bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
+    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
     // update IMU delta angle and delta velocity measurements
     void readIMUData();
@@ -423,9 +436,11 @@ private:
     // Set the NED origin to be used until the next filter reset
     void setOrigin();
 
-    // get status of baro ground effect compensation mode
-    // returns true when baro ground effect compensation is required
-    bool getGndEffectMode(void);
+    // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
+    bool getTakeoffExpected();
+
+    // determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
+    bool getTouchdownExpected();
 
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
@@ -475,9 +490,6 @@ private:
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
     const float gpsDVelVarAccScale;     // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
-    const uint16_t gndEffectTO_ms;      // time in msec that ground effect mode is active after being activated
-    const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
-    const float gndEffectBaroTO_ms;     // time in msec that the baro measurement will be rejected if the gndEffectBaroVarLim has failed it
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const float msecHgtDelay;           // Height measurement delay (msec)
     const uint16_t msecMagDelay;        // Magnetometer measurement delay (msec)
@@ -507,6 +519,12 @@ private:
     const uint8_t flowTimeDeltaAvg_ms;  // average interval between optical flow measurements (msec)
     const uint32_t flowIntervalMax_ms;  // maximum allowable time between flow fusion events
 
+
+    // ground effect tuning parameters
+    const uint16_t gndEffectTimeout_ms;      // time in msec that ground effect mode is active after being activated
+    const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
+
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
@@ -530,12 +548,12 @@ private:
     VectorN<state_elements,50> storedStates;       // state vectors stored for the last 50 time steps
     Vector_u32_50 statetimeStamp;    // time stamp for each state vector stored
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
+    Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
     Vector3f correctedDelVel12;     // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
     Vector3f correctedDelVel1;      // delta velocities along the XYZ body axes for IMU1 corrected for errors (m/s)
     Vector3f correctedDelVel2;      // delta velocities along the XYZ body axes for IMU2 corrected for errors (m/s)
     Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
     Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
-	Vector3f prevDelAng;            // previous delta angle use for INS coning error compensation
     Vector3f lastGyroBias;          // previous gyro bias vector used by filter divergence check
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
@@ -637,9 +655,6 @@ private:
     bool prevVehicleArmed;          // vehicleArmed from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
-    bool gndEffectMode;             // modifiy baro processing to compensate for ground effect
-    uint32_t startTimeTO_ms;        // time in msec that the takeoff condition started - used to compensate for ground effect on baro height
-    uint32_t startTimeLAND_ms;      // time in msec that the landing condition started - used to compensate for ground effect on baro height
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     Vector3f lastMagOffsets;        // magnetometer offsets returned by compass object from previous update
@@ -722,7 +737,17 @@ private:
     float rangeAtArming;            // range finder measurement when armed
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
+    // IMU processing
     bool haveDeltaAngles;
+    float dtDelVel1;
+    float dtDelVel2;
+
+    // baro ground effect
+    bool expectGndEffectTakeoff;      // external state from ArduCopter - takeoff expected
+    uint32_t takeoffExpectedSet_ms;   // system time at which expectGndEffectTakeoff was set
+    bool expectGndEffectTouchdown;    // external state from ArduCopter - touchdown expected
+    uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
+    float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
