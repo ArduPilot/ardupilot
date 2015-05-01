@@ -14,7 +14,9 @@
 #include <AP_HAL_Empty.h>
 #include <AP_Notify.h>          // Notify library
 #include <AP_BoardLED.h>        // Board LED library
+#include <GCS_MAVLink.h>
 #include <StorageManager.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

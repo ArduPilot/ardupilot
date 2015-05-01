@@ -32,6 +32,7 @@
 #include <AP_Compass.h>
 #include <AP_Declination.h>
 #include <AP_BattMonitor.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
