@@ -1,5 +1,34 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc2 02-May-2015
+Changes from 3.3-rc1
+1) AutoTune reliability fixes (improved filtering to reduce noise interference)
+2) Optical flow improvements:
+    a) Range Finder pre-arm check - lift vehicle between 50cm ~ 2m before arming.  Can be disabled by setting ARMING_CHECK to "Skip Params/Sonar"
+    b) Vehicle altitude limited to range finder altitude when optical flow is enabled 
+3) AltHold & Take-off changes:
+    a) feed-forward controller and jerk limiting should result in slightly snappier performance and smoother take-offs
+    b) vehicle climbs automatically to PILOT_TKOFF_ALT alt when taking off in Loiter, AltHold, PosHold, Sport (disabled by default, pilot's throttle input overrides takeoff)
+    c) PILOT_THR_FILT allows enforcing smoother throttle response in manual flight modes (defaults to 0 = off)
+    d) TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick
+    e) GCS can initiate takeoff even in Loiter, AltHold, PosHold and sport by issuing NAV_TAKEOFF mavlink command
+4) Stop flight mode - vehicle simply stops and does not respond to user input
+5) Aux channel features:
+    a) Emergency Stop - stops all motors immediately and disarms in 5 seconds
+    b) Motor Interlock - opposite of Emergency Stop, must be on to allow motors to spin motors, must be off to arm 
+6) Air pressure gain scaling (of roll, pitch, yaw) should mostly remove need to re-tune when flying at very different altitudes
+7) landing detector simplified to only check vehicle is not accelerating & motors have hit their lower limit
+8) Loiter tuning params to remove "freight train" stops:
+       raising WPNAV_LOIT_MAXA makes vehicle start and stop faster
+       raising WPNAV_LOIT_MINA makes vehicle stop more quickly when sticks centered 
+9) Other items:
+    a) faster EKF startup
+    b) Camera control messages sent via MAVLink to smart cameras.  Allow control of camera zoom for upcoming IntelEdison/Sony QX1 camera control board
+    c) Lost Copter Alarm can be triggered by holding throttle down, roll right, pitch back
+10) Bug fixes:
+    a) Home position set to latest arm position (it was being set to previous disarm location or first GPS lock position)
+    b) bug fix to mission Jump to command zero
+------------------------------------------------------------------
 Copter 3.3-rc1 11-Apr-2015
 Changes from 3.2.1
 1) Only support fast CPUs boards (Pixhawk, VRBrain, etc) and drop support for APM1, APM2 (sorry!)
