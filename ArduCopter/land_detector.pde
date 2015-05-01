@@ -156,9 +156,7 @@ static void update_ground_effect_detector(void)
     bool z_speed_low = abs(climb_rate) <= LAND_DETECTOR_CLIMBRATE_MAX*2.0f;
     bool slow_descent = (slow_descent_demanded || (z_speed_low && descent_demanded));
 
-    bool height_low = current_loc.alt < 1000;
-
-    bool touchdownExpected = slow_horizontal && slow_descent && height_low;
+    bool touchdownExpected = slow_horizontal && slow_descent;
 
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
     ahrs.setTakeoffExpected(takeoffExpected);
