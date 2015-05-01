@@ -98,6 +98,9 @@ public:
     float length(void) const;
     void normalize();
 
+    // initialise the quaternion to no rotation
+    void initialise() { q1 = 1.0f; q2 = q3 = q4 = 0.0f; }
+
     Quaternion inverse(void) const;
 
     // allow a quaternion to be used as an array, 0 indexed
