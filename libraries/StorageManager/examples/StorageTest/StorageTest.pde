@@ -38,6 +38,7 @@
 #include <AP_NavEKF.h>
 #include <AP_HAL_Linux.h>
 #include <AP_Scheduler.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
