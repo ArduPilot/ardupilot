@@ -679,8 +679,7 @@ void NavEKF::UpdateFilter()
 {
     // zero the delta quaternion used by the strapdown navigation because it is published
     // and we need to return a zero rotation of the INS fails to update it
-    memset(&correctedDelAngQuat[0], 0, sizeof(correctedDelAngQuat));
-    correctedDelAngQuat[0] = 1.0f;
+    correctedDelAngQuat.initialise();
 
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
