@@ -162,59 +162,40 @@ void AP_AHRS_NavEKF::update(void)
     update_attitude_for_control(dt);
 }
 
+// update an attitude reference that filters out correction steps from the EKF
+// this function uses the gyros to rotate an attitude reference, then
+// drags it towards the EKF attitude. this filters out any step functions that
+// the ekf might add to its attitude output.
 void AP_AHRS_NavEKF::update_attitude_for_control(float dt)
 {
     static const float att_diff_max = radians(20.0f);
-    Quaternion att;
-    EKF.getQuaternion(att);
-    static Quaternion att_rate_limited;
-    Vector3f attitude_adj;
-    float attitude_adj_mag = 0.0f;
+    static const float attStepFiltTC = 2.0f;
 
-    // rotate filter elements with gyro
+    // compute alpha
+    float alpha = constrain_float(dt / (dt+attStepFiltTC),0.0f,1.0f);
+
+    // get ekf attitude
+    Quaternion ekf_att;
+    EKF.getQuaternion(ekf_att);
+
+    // rotate filtered attitude with gyro
     Quaternion del_ang;
     del_ang = EKF.getDeltaQuaternion();
     attitude_for_control *= del_ang;
-    att_rate_limited *= del_ang;
-
-    // apply rate limit to attitude corrections for step protection
-    static float attCorrRateMax = radians(40.0f);
-    float adj_limit = attCorrRateMax*dt;
-
-    (att_rate_limited.inverse()*att).to_axis_angle(attitude_adj);
-
-    attitude_adj_mag = attitude_adj.length();
-
-    if (attitude_adj_mag <= att_diff_max) {
-        if (attitude_adj_mag > adj_limit) {
-            attitude_adj *= adj_limit/attitude_adj_mag;
-        }
-    } else {
-        // strictly constrain att_rate_limited to within att_diff_max radians of att
-        attitude_adj *= (attitude_adj_mag-att_diff_max)/attitude_adj_mag;
-    }
-
-    att_rate_limited.rotate(attitude_adj);
-    att_rate_limited.normalize();
 
     // filter to smooth out attitude corrections
-    static const float attStepFiltTC = 2.0f;
+    Vector3f attitude_adj;
+    float attitude_adj_mag = attitude_adj.length();
+    (attitude_for_control.inverse()*ekf_att).to_axis_angle(attitude_adj);
 
-    (attitude_for_control.inverse()*att_rate_limited).to_axis_angle(attitude_adj);
-
-    float alpha = constrain_float(dt / (dt+attStepFiltTC),0.0f,1.0f);
     attitude_adj *= alpha;
 
-    attitude_for_control.rotate(attitude_adj);
-
-    // strictly constrain attitude_for_control to within att_diff_max radians of att
-    (attitude_for_control.inverse()*att).to_axis_angle(attitude_adj);
-    attitude_adj_mag = attitude_adj.length();
+    // strictly constrain attitude_for_control to within att_diff_max radians of ekf_att
     if (attitude_adj_mag > att_diff_max) {
         attitude_adj *= (attitude_adj_mag-att_diff_max)/attitude_adj_mag;
-        attitude_for_control.rotate(attitude_adj);
     }
 
+    attitude_for_control.rotate(attitude_adj);
     attitude_for_control.normalize();
 }
 

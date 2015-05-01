@@ -132,6 +132,8 @@ public:
 
 private:
     bool using_EKF(void) const;
+
+    // update an attitude reference that filters out correction steps from the EKF
     void update_attitude_for_control(float dt);
 
     NavEKF EKF;
