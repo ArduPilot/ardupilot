@@ -279,6 +279,8 @@ AP_InertialSensor::AP_InertialSensor() :
     _accel(),
     _gyro(),
     _board_orientation(ROTATION_NONE),
+    _primary_gyro(0),
+    _primary_accel(0),
     _hil_mode(false),
     _have_3D_calibration(false),
     _calibrating(false)
