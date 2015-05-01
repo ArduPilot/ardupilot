@@ -298,6 +298,10 @@ static void set_mode(enum mode mode)
 			do_RTL();
 			break;
 
+        case GUIDED:
+            set_guided_WP();
+            break;
+        
 		default:
 			do_RTL();
 			break;

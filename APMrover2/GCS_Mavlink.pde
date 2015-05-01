@@ -805,9 +805,6 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     guided_WP = cmd.content.location;
 
     set_mode(GUIDED);
-
-    // make any new wp uploaded instant (in case we are already in Guided mode)
-    set_guided_WP();
 }
 
 void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
