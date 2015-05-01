@@ -738,7 +738,6 @@ private:
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     // IMU processing
-    bool haveDeltaAngles;
     float dtDelVel1;
     float dtDelVel2;
 
