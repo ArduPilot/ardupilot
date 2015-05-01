@@ -107,7 +107,7 @@ public:
     // set motor interlock status
     void                set_interlock(bool set) { _flags.interlock = set;}
 
-    // get motor interlock status
+    // get motor interlock status.  true means motors run, false motors don't run
     bool                get_interlock() const { return _flags.interlock; };
 
     // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
@@ -251,7 +251,7 @@ protected:
         uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t slow_start         : 1;    // 1 if slow start is active
         uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
-        uint8_t interlock          : 1;    // 1 if the motor interlock is enabled, 0 if disabled
+        uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     } _flags;
 
     // mapping of motor number (as received from upper APM code) to RC channel output - used to account for differences between APM1 and APM2
