@@ -44,6 +44,7 @@
 #include <AP_Rally.h>
 #include <AP_Scheduler.h>
 #include <UARTDriver.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
