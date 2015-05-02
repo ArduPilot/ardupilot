@@ -122,8 +122,6 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     thrust_scale = (mass * GRAVITY_MSS) / (frame->num_motors * hover_throttle);
 
     frame_height = 0.1;
-
-    setup_frame_time(400, 3);
 }
 
 /*

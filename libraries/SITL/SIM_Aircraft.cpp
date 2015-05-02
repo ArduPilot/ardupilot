@@ -38,11 +38,11 @@ Aircraft::Aircraft(const char *home_str) :
     velocity_ef(),
     velocity_body(),
     mass(0),
-    update_frequency(50),
     accel_body(0, 0, -GRAVITY_MSS),
     time_now_us(0),
     gyro_noise(radians(0.1f)),
-    accel_noise(0.3)
+    accel_noise(0.3),
+    rate_hz(400)
 {
     char *saveptr=NULL;
     char *s = strdup(home_str);
@@ -60,6 +60,8 @@ Aircraft::Aircraft(const char *home_str) :
 
     dcm.from_euler(0, 0, atof(yaw_s));
     free(s);
+
+    set_speedup(1);
 }
 
 /* 
@@ -234,4 +236,12 @@ uint64_t Aircraft::get_wall_time_us() const
 	struct timeval tp;
 	gettimeofday(&tp,NULL);
 	return tp.tv_sec*1.0e6 + tp.tv_usec;
+}
+
+/*
+  set simulation speedup
+ */
+void Aircraft::set_speedup(float speedup)
+{
+    setup_frame_time(rate_hz, speedup);
 }

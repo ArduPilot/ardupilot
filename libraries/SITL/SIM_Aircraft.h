@@ -41,6 +41,11 @@ public:
     };
 
     /*
+      set simulation speedup
+     */
+    void set_speedup(float speedup);
+
+    /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;
@@ -60,7 +65,6 @@ protected:
     Vector3f velocity_body; // m/s, body frame
     Vector3f position; // meters, NED from origin
     float mass; // kg
-    float update_frequency;
     Vector3f accel_body; // m/s/s NED, body frame
 
     uint64_t time_now_us;
