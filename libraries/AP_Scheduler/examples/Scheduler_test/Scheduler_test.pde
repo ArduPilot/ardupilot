@@ -33,6 +33,7 @@
 #include <AP_Rally.h>
 #include <AP_BattMonitor.h>
 #include <AP_Scheduler.h>
+#include <AP_RangeFinder.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_AVR_SITL.h>
