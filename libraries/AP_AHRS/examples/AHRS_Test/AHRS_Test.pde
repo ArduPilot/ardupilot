@@ -125,7 +125,7 @@ void loop(void)
                         ToDeg(drift.y),
                         ToDeg(drift.z),
                         compass.use_for_yaw() ? ToDeg(heading) : 0.0f,
-                        (1.0e6*counter)/(now-last_print));
+                        (1.0e6f*counter)/(now-last_print));
         last_print = now;
         counter = 0;
     }
