@@ -7,6 +7,7 @@
 #include <AP_HAL.h>
 #include <AP_Notify.h>
 #include <AP_Vehicle.h>
+#include <AP_Math.h>
 
 /*
   enable TIMING_DEBUG to track down scheduling issues with the main
@@ -556,11 +557,11 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k], saved_orientation);
 
         interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
-                           (unsigned)k,
-                           new_offsets[k].x, new_offsets[k].y, new_offsets[k].z);
+                            (unsigned)k,
+                           (double)new_offsets[k].x, (double)new_offsets[k].y, (double)new_offsets[k].z);
         interact->printf_P(PSTR("Scaling[%u]: %.2f %.2f %.2f\n"),
                            (unsigned)k,
-                           new_scaling[k].x, new_scaling[k].y, new_scaling[k].z);
+                           (double)new_scaling[k].x, (double)new_scaling[k].y, (double)new_scaling[k].z);
         if (success) num_ok++;
     }
 
@@ -798,7 +799,7 @@ AP_InertialSensor::_init_gyro()
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
             hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
-                                  (unsigned)k, ToDeg(best_diff[k]));
+                                  (unsigned)k, (double)ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
@@ -859,7 +860,7 @@ bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum
     }
     Vector3f range = max_sample - min_sample;
     interact->printf_P(PSTR("AccelRange: %.1f %.1f %.1f"),
-                       range.x, range.y, range.z);
+            (double)range.x, (double)range.y, (double)range.z);
     bool ok = (range.x >= min_range && 
                range.y >= min_range && 
                range.z >= min_range);
@@ -988,7 +989,7 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
         //eliminate all nonzero entries below JS[i][i]
         for( j=i+1; j<6; j++ ) {
             mu = JS[i][j]/JS[i][i];
-            if( mu != 0.0f ) {
+            if( !is_zero(mu) ) {
                 dS[j] -= mu*dS[i];
                 for( k=j; k<6; k++ ) {
                     JS[k][j] -= mu*JS[k][i];
