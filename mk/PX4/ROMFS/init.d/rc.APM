@@ -402,7 +402,7 @@ then
 fi
 
 # optional oreo leds
-if oreoled start alwaysupdate
+if oreoled start autoupdate
 then
     echo "oreoled started OK"
 fi
