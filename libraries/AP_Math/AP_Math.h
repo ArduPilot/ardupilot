@@ -75,11 +75,15 @@
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-inline bool     is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+class AP_Math {
 
-// are two floats equal
-inline bool     is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+public:
+    // are two floats equal
+    static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+
+    // is a float is zero
+    static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+};
 
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
