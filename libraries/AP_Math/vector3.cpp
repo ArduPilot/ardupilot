@@ -327,13 +327,13 @@ Vector3<T> Vector3<T>::operator -(void) const
 template <typename T>
 bool Vector3<T>::operator ==(const Vector3<T> &v) const
 {
-    return (x==v.x && y==v.y && z==v.z);
+    return (AP_Math::is_equal(x,v.x) && AP_Math::is_equal(y,v.y) && AP_Math::is_equal(z,v.z));
 }
 
 template <typename T>
 bool Vector3<T>::operator !=(const Vector3<T> &v) const
 {
-    return (x!=v.x || y!=v.y || z!=v.z);
+    return (!AP_Math::is_equal(x,v.x) || !AP_Math::is_equal(y,v.y) || !AP_Math::is_equal(z,v.z));
 }
 
 template <typename T>
