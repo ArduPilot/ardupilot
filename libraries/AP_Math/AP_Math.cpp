@@ -47,11 +47,11 @@ float fast_atan(float v)
     //      origin source: https://gist.github.com/volkansalma/2972237/raw/
     float fast_atan2(float y, float x)
     {
-        if (x == 0.0f) {
+        if (AP_Math::is_zero(x)) {
             if (y > 0.0f) {
                 return FAST_ATAN2_PIBY2_FLOAT;
             }
-            if (y == 0.0f) {
+            if (AP_Math::is_zero(y)) {
                 return 0.0f;
             }
             return -FAST_ATAN2_PIBY2_FLOAT;
