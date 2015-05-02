@@ -156,3 +156,28 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
 	*r = cosf(phi)*psiDot*cosf(theta) - sinf(phi)*thetaDot;    
 }
 
+
+/*
+  convert angular velocities from body frame to
+  earth frame.
+  
+  all inputs and outputs are in radians/s
+*/
+Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
+{
+    float p = gyro.x;
+    float q = gyro.y;
+    float r = gyro.z;
+
+    float phi, theta, psi;
+    dcm.to_euler(&phi, &theta, &psi);
+
+    float phiDot = p + tanf(theta)*(q*sinf(phi) + r*cosf(phi));
+    float thetaDot = q*cosf(phi) - r*sinf(phi);
+    if (fabsf(cosf(theta)) < 1.0e-20f) {
+        theta += 1.0e-10f;
+    }
+    float psiDot = (q*sinf(phi) + r*cosf(phi))/cosf(theta);
+    return Vector3f(phiDot, thetaDot, psiDot);
+}
+

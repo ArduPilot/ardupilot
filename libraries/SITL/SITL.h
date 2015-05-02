@@ -13,6 +13,7 @@ struct PACKED sitl_fdm {
 	// this is the packet sent by the simulator
 	// to the APM executable to update the simulator state
 	// All values are little-endian
+    uint64_t timestamp_us;
 	double latitude, longitude; // degrees
 	double altitude;  // MSL
 	double heading;   // degrees
@@ -106,6 +107,9 @@ public:
 	static void convert_body_frame(double rollDeg, double pitchDeg,
 				       double rollRate, double pitchRate, double yawRate,
 				       double *p, double *q, double *r);
+
+	// convert a set of roll rates from body frame to earth frame
+    static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 };
 
 #endif // __SITL_H__
