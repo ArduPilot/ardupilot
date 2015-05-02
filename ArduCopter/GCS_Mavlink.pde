@@ -1114,7 +1114,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param6 : longitude
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
-            if(AP_Math::is_equal(packet.param1,1.0f) || AP_Math::is_zero(packet.param5) && AP_Math::is_zero(packet.param6) && AP_Math::is_zero(packet.param7)) {
+            if(AP_Math::is_equal(packet.param1,1.0f) || (AP_Math::is_zero(packet.param5) && AP_Math::is_zero(packet.param6) && AP_Math::is_zero(packet.param7))) {
                 if (set_home_to_current_location_and_lock()) {
                     result = MAV_RESULT_ACCEPTED;
                 }
