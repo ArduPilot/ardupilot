@@ -8,12 +8,13 @@
 #include <AP_Common.h>
 #include <GCS.h>
 #include <AP_SmallEKF.h>
+#include "AP_Math.h"
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
     decode_feedback(msg);
     update_state();
-    if (_ekf.getStatus() && !isCopterFlipped() && _gimbalParams.K_gimbalRate!=0.0f){
+    if (_ekf.getStatus() && !isCopterFlipped() && !AP_Math::is_zero(_gimbalParams.K_gimbalRate)){
         send_control(chan);
     }
 
