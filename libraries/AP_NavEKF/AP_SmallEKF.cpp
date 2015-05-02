@@ -859,7 +859,7 @@ float SmallEKF::calcMagHeadingInnov()
     if (_main_ekf.healthy()) {
         _main_ekf.getMagNED(earth_magfield);
         _main_ekf.getMagXYZ(body_magfield);
-        declination = atan2(earth_magfield.y,earth_magfield.x);
+        declination = atan2f(earth_magfield.y,earth_magfield.x);
     } else {
         body_magfield.zero();
         earth_magfield.zero();
@@ -873,7 +873,7 @@ float SmallEKF::calcMagHeadingInnov()
     Vector3f magMeasNED = Tmn*(magData - body_magfield);
 
     // calculate the innovation where the predicted measurement is the angle wrt magnetic north of the horizontal component of the measured field
-    float innovation = atan2(magMeasNED.y,magMeasNED.x) - declination;
+    float innovation = atan2f(magMeasNED.y,magMeasNED.x) - declination;
 
     // wrap the innovation so it sits on the range from +-pi
     if (innovation > 3.1415927f) {
@@ -910,7 +910,7 @@ void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector
     tilt = TiltCorrection;
     velocity = state.velocity;
     state.quat.to_euler(euler.x, euler.y, euler.z);
-    if (dtIMU < 1.0e-6) {
+    if (dtIMU < 1.0e-6f) {
         gyroBias.zero();
     } else {
         gyroBias = state.delAngBias / dtIMU;
@@ -920,7 +920,7 @@ void SmallEKF::getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector
 // get gyro bias data
 void SmallEKF::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMU < 1.0e-6) {
+    if (dtIMU < 1.0e-6f) {
         gyroBias.zero();
     } else {
         gyroBias = state.delAngBias / dtIMU;
