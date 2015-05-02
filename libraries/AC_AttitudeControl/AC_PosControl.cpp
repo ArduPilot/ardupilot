@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 #include <AC_PosControl.h>
+#include <AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -99,9 +100,9 @@ void AC_PosControl::set_dt_xy(float dt_xy)
 void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 {
     // ensure speed_down is always negative
-    speed_down = (float)-fabs(speed_down);
+    speed_down = -fabsf(speed_down);
 
-    if (((float)fabs(_speed_down_cms-speed_down) > 1.0f) || ((float)fabs(_speed_up_cms-speed_up) > 1.0f)) {
+    if ((fabsf(_speed_down_cms-speed_down) > 1.0f) || (fabsf(_speed_up_cms-speed_up) > 1.0f)) {
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
@@ -111,7 +112,7 @@ void AC_PosControl::set_speed_z(float speed_down, float speed_up)
 /// set_accel_z - set vertical acceleration in cm/s/s
 void AC_PosControl::set_accel_z(float accel_cmss)
 {
-    if ((float)fabs(_accel_z_cms-accel_cmss) > 1.0f) {
+    if (fabsf(_accel_z_cms-accel_cmss) > 1.0f) {
         _accel_z_cms = accel_cmss;
         _flags.recalc_leash_z = true;
     }
@@ -146,7 +147,7 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     // jerk_z is calculated to reach full acceleration in 1000ms.
     float jerk_z = _accel_z_cms * POSCONTROL_JERK_RATIO;
 
-    float accel_z_max = min(_accel_z_cms, safe_sqrt(2.0f*fabs(_vel_desired.z - climb_rate_cms)*jerk_z));
+    float accel_z_max = min(_accel_z_cms, safe_sqrt(2.0f*fabsf(_vel_desired.z - climb_rate_cms)*jerk_z));
 
     _accel_last_z_cms += jerk_z * dt;
     _accel_last_z_cms = min(accel_z_max, _accel_last_z_cms);
@@ -224,7 +225,7 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
     linear_velocity = _accel_z_cms/_p_pos_z.kP();
 
-    if ((float)fabs(curr_vel_z) < linear_velocity) {
+    if (fabsf(curr_vel_z) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
         stopping_point.z = curr_pos_z + curr_vel_z/_p_pos_z.kP();
     } else {
@@ -436,7 +437,7 @@ void AC_PosControl::accel_to_throttle(float accel_target_z)
 ///     calc_leash_length_xy should be called afterwards
 void AC_PosControl::set_accel_xy(float accel_cmss)
 {
-    if ((float)fabs(_accel_cms-accel_cmss) > 1.0f) {
+    if (fabsf(_accel_cms-accel_cmss) > 1.0f) {
         _accel_cms = accel_cmss;
         _flags.recalc_leash_xy = true;
     }
@@ -446,7 +447,7 @@ void AC_PosControl::set_accel_xy(float accel_cmss)
 ///     calc_leash_length_xy should be called afterwards
 void AC_PosControl::set_speed_xy(float speed_cms)
 {
-    if ((float)fabs(_speed_cms-speed_cms) > 1.0f) {
+    if (fabsf(_speed_cms-speed_cms) > 1.0f) {
         _speed_cms = speed_cms;
         _flags.recalc_leash_xy = true;
     }
@@ -504,7 +505,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     float vel_total = pythagorous2(curr_vel.x, curr_vel.y);
 
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
-    if (kP <= 0.0f || _accel_cms <= 0.0f || vel_total == 0.0f) {
+    if (kP <= 0.0f || _accel_cms <= 0.0f || AP_Math::is_zero(vel_total)) {
         stopping_point.x = curr_pos.x;
         stopping_point.y = curr_pos.y;
         return;
@@ -875,9 +876,9 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     accel_right = -accel_target_filtered.x*_ahrs.sin_yaw() + accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);
+    _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/(float)M_PI),-lean_angle_max, lean_angle_max);
     float cos_pitch_target = cosf(_pitch_target*(float)M_PI/18000);
-    _roll_target = constrain_float(fast_atan(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI), -lean_angle_max, lean_angle_max);
+    _roll_target = constrain_float(fast_atan(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/(float)M_PI), -lean_angle_max, lean_angle_max);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
