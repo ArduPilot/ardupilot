@@ -338,35 +338,35 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
         case 'f': {
             float v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%f"), v);
+            port->printf_P(PSTR("%f"), (double)v);
             ofs += sizeof(v);
             break;
         }
         case 'c': {
             int16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), 0.01f*v);
+            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'C': {
             uint16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), 0.01f*v);
+            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'e': {
             int32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), 0.01f*v);
+            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'E': {
             uint32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), 0.01f*v);
+            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
