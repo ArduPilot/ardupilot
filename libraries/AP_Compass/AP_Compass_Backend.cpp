@@ -60,7 +60,7 @@ void AP_Compass_Backend::apply_corrections(Vector3f &mag, uint8_t i)
       being applied so it can be logged correctly
      */
     mag += offsets;
-    if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _compass._thr_or_curr != 0.0f) {
+    if(_compass._motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && !AP_Math::is_zero(_compass._thr_or_curr)) {
         state.motor_offset = mot * _compass._thr_or_curr;
         mag += state.motor_offset;
     } else {

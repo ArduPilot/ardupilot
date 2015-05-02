@@ -284,7 +284,7 @@ bool AP_Compass_AK8963_MPU9250::read_raw()
         _mag_y = (float) int16_val(rx, 2);
         _mag_z = (float) int16_val(rx, 3);
 
-        if (_mag_x == 0 && _mag_y == 0 && _mag_z == 0) {
+        if (AP_Math::is_zero(_mag_x) && AP_Math::is_zero(_mag_y) && AP_Math::is_zero(_mag_z)) {
             return false;
         }
 
