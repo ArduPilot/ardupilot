@@ -142,7 +142,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
             _alt_max_breach_distance = curr_alt - _alt_max;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (_alt_max_backup != 0.0f && curr_alt >= _alt_max_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) == 0 || (!AP_Math::is_zero(_alt_max_backup) && curr_alt >= _alt_max_backup)) {
 
                 // record that we have breached the upper limit
                 record_breach(AC_FENCE_TYPE_ALT_MAX);
@@ -171,7 +171,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
             _circle_breach_distance = _home_distance - _circle_radius;
 
             // check for a new breach or a breach of the backup fence
-            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (_circle_radius_backup != 0.0f && _home_distance >= _circle_radius_backup)) {
+            if ((_breached_fences & AC_FENCE_TYPE_CIRCLE) == 0 || (!AP_Math::is_zero(_circle_radius_backup) && _home_distance >= _circle_radius_backup)) {
 
                 // record that we have breached the circular distance limit
                 record_breach(AC_FENCE_TYPE_CIRCLE);
