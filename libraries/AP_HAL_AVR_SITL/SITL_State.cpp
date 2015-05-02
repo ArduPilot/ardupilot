@@ -445,10 +445,21 @@ void SITL_State::_fdm_input_local(void)
 {
     Aircraft::sitl_input input;
 
+    // check for direct RC input
+    _fdm_input();
+
+    // construct servos structure for FDM
     _simulator_servos(input);
+
+    // update the model
     sitl_model->update(input);
+
+    // get FDM output from the model
     sitl_model->fill_fdm(_sitl->state);
+
+    // update simulation time
     hal.scheduler->stop_clock(_sitl->state.timestamp_us);
+
     _synthetic_clock_mode = true;
     _update_count++;
 }
