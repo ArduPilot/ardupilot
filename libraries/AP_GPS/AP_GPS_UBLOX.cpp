@@ -16,7 +16,7 @@
 
 //
 //  u-blox GPS driver for ArduPilot
-//	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
+//    Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //  Substantially rewitten for new GPS driver structure by Andrew Tridgell
 //
 #include <AP_GPS.h>
@@ -28,7 +28,6 @@
 #else
     #define UBLOX_VERSION_AUTODETECTION 0
 #endif
-
 
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
@@ -156,7 +155,7 @@ AP_GPS_UBLOX::read(void)
         // read the next byte
         data = port->read();
 
-	reset:
+    reset:
         switch(_step) {
 
         // Message preamble detection
@@ -215,7 +214,7 @@ AP_GPS_UBLOX::read(void)
                 // assume very large payloads are line noise
                 _payload_length = 0;
                 _step = 0;
-				goto reset;
+                goto reset;
             }
             _payload_counter = 0;                               // prepare to receive payload
             break;
@@ -238,7 +237,7 @@ AP_GPS_UBLOX::read(void)
             if (_ck_a != data) {
                 Debug("bad cka %x should be %x", data, _ck_a);
                 _step = 0;
-				goto reset;
+                goto reset;
             }
             break;
         case 8:
@@ -338,7 +337,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_NAV_SETTINGS) {
-		Debug("Got settings %u min_elev %d drLimit %u\n", 
+        Debug("Got settings %u min_elev %d drLimit %u\n", 
               (unsigned)_buffer.nav_settings.dynModel,
               (int)_buffer.nav_settings.minElev,
               (unsigned)_buffer.nav_settings.drLimit);
@@ -367,7 +366,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
-		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
+        Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
               (unsigned)_buffer.sbas.mode,
               (unsigned)_buffer.sbas.usage,
               (unsigned)_buffer.sbas.maxSBAS,
@@ -397,7 +396,81 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 #endif // UBLOX_HW_LOGGING
+    
+#if AID_POSITION || AID_ALP
+    if (_class == CLASS_AID) {
+        switch (_msg_id) {
+#if AID_POSITION
+            case (MSG_AID_INI):
+                Debug("MSG_AID_INI: has ECEF XYZ = %d, %d, %d\n", _buffer.aid_ini.ecefXOrLat, 
+                     _buffer.aid_ini.ecefYOrLon, _buffer.aid_ini.ecefZOrAlt);
+                Debug("compared to sent ECEF XYZ = %d, %d, %d\n", _aid_location_ecef.lat, 
+                      _aid_location_ecef.lng, _aid_location_ecef.alt);
+                _rec_aid_location_ecef.lat = _buffer.aid_ini.ecefXOrLat;
+                _rec_aid_location_ecef.lng = _buffer.aid_ini.ecefYOrLon;
+                _rec_aid_location_ecef.alt = _buffer.aid_ini.ecefZOrAlt;
+                
+                if ( (abs(_rec_aid_location_ecef.lat - _aid_location_ecef.lat) > 10) ||
+                        (abs(_rec_aid_location_ecef.lng - _aid_location_ecef.lng) > 10) ||
+                        (abs(_rec_aid_location_ecef.alt - _aid_location_ecef.alt) > 10) ) {
+                    _send_aid_position();
+                    _aid_pos_success = false;
+                }
+                else {
+                    _aid_pos_success = true;
+                }
+            break;
+#endif
+            
+#if AID_ALP        
+            case (MSG_AID_ALP): 
+                _alp_step = _buffer.bytes[0]; 
+                Debug("MSG_AID_ALP: reply (%d)\n", _alp_step);
+            break;
 
+            case (MSG_AID_ALPSRV):
+                uint16_t from_u2 = _buffer.alpsrv.ofs;
+                uint16_t sz_u2 = _buffer.alpsrv.size;
+                uint16_t from_u1 = from_u2 << 1, sz_u1 = sz_u2 << 1;
+                
+                if (!_alpsrv_on) {
+                    Debug("MSG_AID_ALPSRV: client requesting alp data but no server is ready\n");
+                    break;
+                }
+                    
+                if (_buffer.alpsrv.type != 0xFF) {
+                    // data request from client, send requested data
+                    Debug("MSG_AID_ALPSRV: client requesting %d bytes from offset %d\n", sz_u1, from_u1);
+                    
+                    if (from_u2 + sz_u2 <= _alp_file_length_u2) {
+                        _send_alplus_aid_chunk(from_u2, sz_u2, &(_buffer.alpsrv));
+                    }
+                    else {
+                        // should not happen, ignore message
+                        Debug("MSG_AID_ALPSRV: ALPSRV client requesting more data than available\n");
+                    }
+                }
+                else {
+                    // data from client, overwrite
+                    // check if it is the right file we have loaded
+                    if (_buffer.alpsrv.fileId == _alp_file_id) {
+                        Debug("MSG_AID_ALPSRV: Accepting %d bytes from offset %d for alpfile %d\n",
+                                sz_u1, from_u1, _alp_file_id);
+
+                        // copy to the appropriate location
+                        memcpy(_alp_file_data_u2 + from_u2, ((uint8_t*) (&(_buffer.alpsrv))) + _buffer.alpsrv.idSize, sz_u1);
+                    }
+                    else {
+                        Debug("MSG_AID_ALPSRV: wrong file ID (%d)\n", _buffer.alpsrv.fileId);
+                    }
+                }
+            break;
+#endif // AID_ALP
+        }
+        return false;
+    }
+#endif // AID_POSITION || AID_ALP
+    
     if (_class != CLASS_NAV) {
         unexpected_message();
         return false;
@@ -535,7 +608,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     // this ensures we don't use stale data
     if (_new_position && _new_speed && _last_vel_time == _last_pos_time) {
         _new_speed = _new_position = false;
-		_fix_count++;
+        _fix_count++;
         if ((hal.scheduler->millis() - _last_5hz_time) > 15000U && !need_rate_update) {
             // the GPS is running slow. It possibly browned out and
             // restarted with incorrect parameters. We will slowly
@@ -545,17 +618,17 @@ AP_GPS_UBLOX::_parse_gps(void)
             _last_5hz_time = hal.scheduler->millis();
         }
 
-		if (_fix_count == 50 && gps._sbas_mode != 2) {
-			// ask for SBAS settings every 20 seconds
-			Debug("Asking for SBAS setting\n");
-			_send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
-		}
-		if (_fix_count == 100) {
-			// ask for nav settings every 20 seconds
-			Debug("Asking for engine setting\n");
-			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+        if (_fix_count == 50 && gps._sbas_mode != 2) {
+            // ask for SBAS settings every 20 seconds
+            Debug("Asking for SBAS setting\n");
+            _send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
+        }
+        if (_fix_count == 100) {
+            // ask for nav settings every 20 seconds
+            Debug("Asking for engine setting\n");
+            _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
             _fix_count = 0;
-		}
+        }
 
 #if UBLOX_HW_LOGGING
         log_accuracy();
@@ -634,6 +707,302 @@ AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
     _send_message(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(msg));
 }
 
+#if AID_POSITION || AID_ALP
+
+#if AID_POSITION
+void wgs84_lla2ecef(const Location &lla, Location &ecef)
+{
+    // these datum matched UBLOX's
+#define D2R_Em7            0.000000001745329251994329576923690768489
+#define _WGS84_A        6378137.0
+#define _WGS84_E        0.081819190842621
+#define _WGS84_E_SQ        0.00669437999014
+    
+    double latr = lla.lat * D2R_Em7;
+    double lonr = lla.lng * D2R_Em7;
+    double alt = lla.alt * 1e-2;
+    double clat = cos(latr);
+    double slat = sin(latr);
+    
+    double d = _WGS84_E * slat;
+    double N = _WGS84_A / sqrt(1. - d*d);
+    
+    double x = (N + alt) * clat * cos(lonr);
+    double y = (N + alt) * clat * sin(lonr);
+    double z = ((1. - _WGS84_E_SQ)*N + alt) * slat;
+    
+    ecef.lat = round(x * 100.);
+    ecef.lng = round(y * 100.);
+    ecef.alt = round(z * 100.);
+}
+
+void
+AP_GPS_UBLOX::_send_aid_position()
+{
+    // aid only in case of no fix
+    if (state.status <= AP_GPS::NO_FIX) {
+        
+        ubx_aid_ini ini_pkt;
+        ini_pkt.ecefXOrLat = _aid_location.lat;
+        ini_pkt.ecefYOrLon = _aid_location.lng;
+        ini_pkt.ecefZOrAlt = _aid_location.alt;
+        // set the position covariance at 5 meters. 
+        ini_pkt.posAcc = 500;
+        // TODO: Adding approximate time (using an RTC) would help speeding up the TTF
+        
+        // set the flags to indicate an LLA valid position only
+        ini_pkt.flags = (1 | (1 << 5));
+        // send the aiding message
+        _send_message(CLASS_AID, MSG_AID_INI, &ini_pkt, sizeof(ubx_aid_ini));
+        
+        Debug("Aided the receiver with lat = %d, lng = %d, alt = %d\n",
+              _aid_location.lat, _aid_location.lng, _aid_location.alt);
+        
+        // poll the INI packet to make sure the receiver has got it
+        _send_message(CLASS_AID, MSG_AID_INI, NULL, 0);
+    }
+}
+
+void
+AP_GPS_UBLOX::aid_position(const Location &loc)
+{
+    if (!_aid_pos_success) {
+        _aid_location = loc;
+        wgs84_lla2ecef(_aid_location, _aid_location_ecef);
+        _send_aid_position();
+    }
+}
+#endif // AID_POSITION
+
+void
+AP_GPS_UBLOX::_do_initial_aiding()
+{
+    _alp_fd = -1;
+    _aid_location.lat = _aid_location.lng = _aid_location.alt = 0;
+    _rec_aid_location_ecef.lat = _rec_aid_location_ecef.lng = _rec_aid_location_ecef.alt = 0;
+    _aid_pos_success = false;
+    _alpsrv_on = false;
+    
+#if AID_POSITION
+    char p0_path[] = HAL_BOARD_UBLOX_AID_DIRECTORY "/pos0.txt";
+    int p0_fid = -1;
+    
+    // look for the initial position file
+    p0_fid = ::open(p0_path, O_RDONLY, 0644);
+    if (p0_fid == -1) {
+        Debug("No initial position file found at %s - err:(%s)\n", p0_path, strerror(errno));
+    }
+    else {
+        // read init position
+        char line[64];
+        if (::read(p0_fid, line, sizeof(line)) > 0) {
+            double lat0, lon0, alt0;
+            if (sscanf(line, "%lf,%lf,%lf", &lat0, &lon0, &alt0) == 3) {
+                Location loc;
+                loc.lat = round(lat0 * 1e+7);
+                loc.lng = round(lon0 * 1e+7);
+                loc.alt = round(alt0 * 1e+2);
+                aid_position(loc);
+            }
+            else {
+                Debug("Error parsing initial position file\n");
+            }
+        }
+        else {
+            Debug("Error reading initial position file - err:(%s)\n", strerror(errno));
+        }
+        ::close(p0_fid);
+    }
+#endif
+    
+#if AID_ALP
+    // build the pathname to the ALP file
+    //possible_days[]could be = {'1', '2', '3', '5', '7'}; but larger files 
+    // would require more memory, hence only the 1d file is looked for
+    char possible_days[] = {'1'};
+    char path[] = HAL_BOARD_UBLOX_AID_DIRECTORY "/current_xd.alp";
+    char *p = &path[strlen(HAL_BOARD_UBLOX_AID_DIRECTORY)+9];
+    uint8_t i;
+    // look for the ALP file
+    for (i = 0; i < sizeof(possible_days); i++) {
+        *p = possible_days[i];
+        _alp_fd = ::open(path, O_RDONLY, 0644);
+        if (_alp_fd != -1)
+            break;
+    }
+    
+    if (_alp_fd == -1) {
+        Debug("No ALP file found! last checked is %s - err:(%s)\n", path, strerror(errno));
+        return;    
+    }
+    
+    // set the file id
+    _alp_file_id = i;
+    
+    Debug("Opened ALP file %s\n", path);
+    
+    // try first aiding via single file transfer, if it didn't work try server mode
+    if (!_aid_alp_file())
+        _alpsrv_on = _aid_alp_srv();
+    
+    ::close(_alp_fd);
+#endif
+}
+
+#if AID_ALP
+void
+AP_GPS_UBLOX::_send_alplus_aid_chunk(uint16_t ofs_u2, uint16_t size_u2, ubx_aid_alpsrv *req)
+{
+    uint8_t data4client[512];
+    ubx_aid_alpsrv *header = (ubx_aid_alpsrv *) data4client;
+    
+    // set the header data    
+    if (req) {
+        memcpy(header, req, req->idSize);
+    }
+    else {
+        header->idSize = sizeof(ubx_aid_alpsrv);
+        header->type = 1;
+        header->ofs = ofs_u2;
+        header->size = size_u2;
+    }
+    // actual size in bytes
+    header->dataSize = header->size << 1;
+    header->fileId = _alp_file_id;
+    
+    memcpy(data4client + header->idSize, _alp_file_data_u2 + header->ofs, header->dataSize);
+    _send_message(CLASS_AID, MSG_AID_ALPSRV, data4client, header->idSize + header->dataSize);
+    Debug("Sent alplus data %d bytes from offset %d\n", header->dataSize, header->ofs << 1);
+}
+
+bool
+AP_GPS_UBLOX::_aid_alp_srv()
+{
+    // read the file
+    if (::lseek(_alp_fd, 0, SEEK_SET) != (off_t)0) {
+        Debug("Error seeking ALP file - err:(%s)\n",
+              strerror(errno));
+        return false;
+    }
+    ssize_t ret = ::read(_alp_fd, _alp_file_data_u2, sizeof(_alp_file_data_u2));
+    if (ret == -1) {
+        Debug("Error reading from ALP file - err:(%s)\n",
+              strerror(errno));
+        return false;
+    }
+    
+    // set the file size in shorts
+    _alp_file_length_u2 = ret >> 1;
+    Debug("Read %d bytes from alp_file\n", ret);
+    
+    // enable the AID_ALP_SRV msg
+    _configure_message_rate(CLASS_AID, MSG_AID_ALPSRV, 1);
+    // send initial chunk of data
+    _send_alplus_aid_chunk(0, 42, NULL);
+
+    return true;
+}
+
+bool
+AP_GPS_UBLOX::_aid_alp_file()
+{
+    bool alp_in_progress = true;
+    bool alp_stop_is_sent = false;
+    uint8_t alp_file_send_counter = 1;
+    int sent = 0;
+    char dummy;
+    
+    _alp_step = MSG_ACK_NACK;
+    
+    while (alp_in_progress) {
+        // a maximum of 700 bytes can only be read by the GPS engine
+        uint16_t alp_data[64];
+        uint32_t last_chunk_time_ms;
+        ssize_t ret = ::read(_alp_fd, alp_data, sizeof(alp_data));
+        if (ret == -1) {
+            Debug("Error reading from ALP file - err:(%s)\n",
+                                strerror(errno));
+            break;
+        }
+        else {
+            _alp_step = 100;
+            
+            if (ret) {
+                _send_message(CLASS_AID, MSG_AID_ALP, alp_data, ret);
+                alp_stop_is_sent = false;
+                Debug("Sent %d bytes of ALP file, %d sent so far\n", ret, sent);
+            }
+            else
+            {
+                // send a stop message with a dummy byte
+                _send_message(CLASS_AID, MSG_AID_ALP, &dummy, 1);
+                alp_stop_is_sent = true;
+                alp_in_progress = false;
+                Debug("Senting ALP file termination %d sent so far\n", sent);
+            }
+            last_chunk_time_ms = hal.scheduler->millis();
+            
+            // wait for the ACK/NACK
+            while (1) {                
+                read();
+                if (_alp_step == MSG_ACK_NACK) {
+                    if (alp_stop_is_sent) {
+                        // restart ?
+                        if (alp_file_send_counter < 1) {
+                            if (::lseek(_alp_fd, 0, SEEK_SET) != (off_t)0) {
+                                Debug("Seek ALP file to zero failed - %s\n", strerror(errno));
+                                alp_in_progress = false;
+                            }
+                            else {
+                                alp_file_send_counter++;
+                                sent = 0;
+                                Debug("Retrying ALP send #%d!", alp_file_send_counter);
+                            }
+                        }
+                        else {
+                            Debug("Max ALP file send retries exceeded\n");
+                            alp_in_progress = false;
+                        }
+                        break;
+                    }
+                    else {
+                        // send a stop message with a dummy byte
+                        _alp_step = 100;
+                        _send_message(CLASS_AID, MSG_AID_ALP, &dummy, 1);
+                        last_chunk_time_ms = hal.scheduler->millis();
+                        alp_stop_is_sent = true;
+                    }
+                }
+                else if (_alp_step == MSG_ACK_ACK) {
+                    sent += ret;
+                    break;
+                }
+                else {
+                    // check if we have waiting too long for a response
+                    if (hal.scheduler->millis() - last_chunk_time_ms > 1000) {
+                        Debug("alp reply timeout!\n");
+                        _alp_step = MSG_ACK_NACK;
+                        continue;
+                    }
+                    // take a nap!
+                    hal.scheduler->delay(10);
+                }
+            }
+        }
+    }
+    
+    if (_alp_step == MSG_ACK_ACK) {
+        Debug("Uploading ALP file succeeded\n");
+        return true;
+    }
+    else {
+        Debug("Uploading ALP file failed\n");
+        return false;
+    }
+}
+#endif // AID_ALP
+#endif // AID_POSITION || AID_ALP
+
 /*
  *  configure a UBlox GPS for the given message rate
  */
@@ -642,13 +1011,18 @@ AP_GPS_UBLOX::_configure_gps(void)
 {
     port->begin(38400U);
 
+#if AID_POSITION || AID_ALP
+    // Do any possible aiding before start
+    _do_initial_aiding();
+#endif
+    
     // start the process of updating the GPS rates
     need_rate_update = true;
     _last_5hz_time = hal.scheduler->millis();
     rate_update_step = 0;
 
     // ask for the current navigation settings
-	Debug("Asking for engine setting\n");
+    Debug("Asking for engine setting\n");
     _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
 }
 
@@ -661,7 +1035,7 @@ bool
 AP_GPS_UBLOX::_detect(struct UBLOX_detect_state &state, uint8_t data)
 {
 reset:
-	switch (state.step) {
+    switch (state.step) {
         case 1:
             if (PREAMBLE2 == data) {
                 state.step++;
@@ -699,17 +1073,17 @@ reset:
             state.step++;
             if (state.ck_a != data) {
                 state.step = 0;
-				goto reset;
+                goto reset;
             }
             break;
         case 8:
             state.step = 0;
-			if (state.ck_b == data) {
-				// a valid UBlox packet
-				return true;
-			} else {
-				goto reset;
-			}
+            if (state.ck_b == data) {
+                // a valid UBlox packet
+                return true;
+            } else {
+                goto reset;
+            }
     }
     return false;
 }
