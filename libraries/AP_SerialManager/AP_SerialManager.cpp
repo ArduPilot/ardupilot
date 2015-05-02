@@ -228,6 +228,10 @@ bool AP_SerialManager::get_mavlink_channel(enum SerialProtocol protocol, uint8_t
             mav_chan = MAVLINK_COMM_2;
             return true;
         }
+        if (instance == 2) {
+            mav_chan = MAVLINK_COMM_3;
+            return true;
+        }
     }
 
     // report failure
