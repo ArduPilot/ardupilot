@@ -480,7 +480,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
     
         float dist_cm = sonar.distance_cm(0);
         float voltage = sonar.voltage_mv(0);
-        if (sonar_dist_cm_min == 0.0f) {
+        if (AP_Math::is_zero(sonar_dist_cm_min)) {
             sonar_dist_cm_min = dist_cm;
             voltage_min = voltage;
         }
@@ -491,7 +491,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
         dist_cm = sonar.distance_cm(1);
         voltage = sonar.voltage_mv(1);
-        if (sonar2_dist_cm_min == 0.0f) {
+        if (AP_Math::is_zero(sonar2_dist_cm_min)) {
             sonar2_dist_cm_min = dist_cm;
             voltage2_min = voltage;
         }
