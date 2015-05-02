@@ -132,7 +132,7 @@ float AC_PID::get_p() const
 
 float AC_PID::get_i()
 {
-    if(!is_zero(_ki) && !is_zero(_dt)) {
+    if(!AP_Math::is_zero(_ki) && !AP_Math::is_zero(_dt)) {
         _integrator += ((float)_input * _ki) * _dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;
@@ -199,7 +199,7 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
 // calc_filt_alpha - recalculate the input filter alpha
 float AC_PID::get_filt_alpha() const
 {
-    if (is_zero(_filt_hz)) {
+    if (AP_Math::is_zero(_filt_hz)) {
         return 1.0f;
     }
 
