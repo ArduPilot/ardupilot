@@ -271,6 +271,10 @@ AP_AHRS_DCM::yaw_error_compass(void)
     // get the mag vector in the earth frame
     Vector2f rb = _dcm_matrix.mulXY(mag);
 
+    if (rb.length() < FLT_EPSILON) {
+        return 0.0f;
+    }
+
     rb.normalize();
     if (rb.is_inf()) {
         // not a valid vector
