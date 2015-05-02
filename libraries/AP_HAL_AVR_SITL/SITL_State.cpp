@@ -22,6 +22,8 @@
 #include <AP_Param.h>
 #include <pthread.h>
 
+#include <SIM_Multicopter.h>
+
 typedef void *(*pthread_startroutine_t)(void *);
 
 #ifdef __CYGWIN__
@@ -75,6 +77,8 @@ void SITL_State::_usage(void)
 void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
 	int opt;
+    const char *home_str = NULL;
+    const char *model_str = NULL;
 
 	signal(SIGFPE, _sig_fpe);
 	// No-op SIGPIPE handler
@@ -88,7 +92,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _rcout_port = 5502;
     _simin_port = 5501;
 
-	while ((opt = getopt(argc, argv, "swhr:H:CI:P:S")) != -1) {
+	while ((opt = getopt(argc, argv, "swhr:H:CI:P:SO:M:")) != -1) {
 		switch (opt) {
 		case 'w':
 			AP_Param::erase_all();
@@ -116,11 +120,22 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 		case 'S':
             _synthetic_clock_mode = true;
 			break;
+        case 'O':
+            home_str = optarg;
+            break;
+        case 'M':
+            model_str = optarg;
+            break;
 		default:
 			_usage();
 			exit(1);
 		}
 	}
+
+    if (model_str && home_str) {
+        sitl_model = new MultiCopter(home_str, model_str);
+        printf("Started model %s at %s\n", model_str, home_str);
+    }
 
 	fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
 
@@ -292,25 +307,29 @@ void SITL_State::_fdm_thread(void)
             next_stop_clock = 0;
         }
 
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
+        if (sitl_model != NULL) {
+            _fdm_input_local();
+        } else {
+            tv.tv_sec = 1;
+            tv.tv_usec = 0;
 
-        FD_ZERO(&fds);
-        FD_SET(_sitl_fd, &fds);
-        if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
-            // internal error
-            _simulator_output(true);
-            continue;
+            FD_ZERO(&fds);
+            FD_SET(_sitl_fd, &fds);
+            if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
+                // internal error
+                _simulator_output(true);
+                continue;
+            }
+
+            /* check for packet from flight sim */
+            _fdm_input();
         }
-
-        /* check for packet from flight sim */
-        _fdm_input();
 
         /* make sure we die if our parent dies */
         if (kill(_parent_pid, 0) != 0) {
             exit(1);
         }
-
+        
         if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
             continue;
         }
@@ -372,10 +391,6 @@ void SITL_State::_fdm_input(void)
 		uint16_t pwm[8];
 	};
 	union {
-        struct {
-            uint64_t timestamp;
-            struct sitl_fdm fg_pkt;
-        } fg_pkt_timestamped;
 		struct sitl_fdm fg_pkt;
 		struct pwm_packet pwm_pkt;
 	} d;
@@ -385,13 +400,6 @@ void SITL_State::_fdm_input(void)
 	size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
 	switch (size) {
     case 148:
-        /* a fg packate with a timestamp */
-        next_stop_clock = d.fg_pkt_timestamped.timestamp;
-        memmove(&d.fg_pkt, &d.fg_pkt_timestamped.fg_pkt, sizeof(d.fg_pkt));
-        _synthetic_clock_mode = true;
-        // fall through
-
-	case 140:
 		static uint32_t last_report;
 		static uint32_t count;
 
@@ -400,6 +408,8 @@ void SITL_State::_fdm_input(void)
 			return;
 		}
 
+        next_stop_clock = d.fg_pkt.timestamp_us;
+        _synthetic_clock_mode = true;
         got_fg_input = true;
 
 		if (d.fg_pkt.latitude == 0 ||
@@ -447,6 +457,22 @@ void SITL_State::_fdm_input(void)
         _simulator_output(_synthetic_clock_mode);
     }
 }
+
+
+/*
+  get FDM input from a local model
+ */
+void SITL_State::_fdm_input_local(void)
+{
+    Aircraft::sitl_input input;
+
+    _simulator_servos(input);
+    sitl_model->update(input);
+    sitl_model->fill_fdm(_sitl->state);
+    next_stop_clock = _sitl->state.timestamp_us;
+    _synthetic_clock_mode = true;
+    _update_count++;
+}
 #endif
 
 /*
@@ -476,15 +502,12 @@ void SITL_State::_apply_servo_filter(float deltat)
 
 
 /*
-  send RC outputs to simulator
+  create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_output(bool synthetic_clock_mode)
+void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
 {
-	static uint32_t last_update_usec;
-	struct {
-		uint16_t pwm[11];
-		uint16_t speed, direction, turbulance;
-	} control;
+    static uint32_t last_update_usec;
+
 	/* this maps the registers used for PWM outputs. The RC
 	 * driver updates these whenever it wants the channel output
 	 * to change */
@@ -507,15 +530,8 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
         }
 	}
 
-    if (_sitl == NULL) {
-        return;
-    }
-
 	// output at chosen framerate
     uint32_t now = hal.scheduler->micros();
-	if (!synthetic_clock_mode && last_update_usec != 0 && now - last_update_usec < 1000000/_framerate) {
-		return;
-	}
     float deltat = (now - last_update_usec) * 1.0e-6f;
 	last_update_usec = now;
 
@@ -523,52 +539,75 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
 
 	for (i=0; i<11; i++) {
 		if (pwm_output[i] == 0xFFFF) {
-			control.pwm[i] = 0;
+			input.servos[i] = 0;
 		} else {
-			control.pwm[i] = pwm_output[i];
+			input.servos[i] = pwm_output[i];
 		}
         last_pwm_output[i] = pwm_output[i];
 	}
 
 	if (_vehicle == ArduPlane) {
 		// add in engine multiplier
-		if (control.pwm[2] > 1000) {
-			control.pwm[2] = ((control.pwm[2]-1000) * _sitl->engine_mul) + 1000;
-			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
+		if (input.servos[2] > 1000) {
+			input.servos[2] = ((input.servos[2]-1000) * _sitl->engine_mul) + 1000;
+			if (input.servos[2] > 2000) input.servos[2] = 2000;
 		}
-		_motors_on = ((control.pwm[2]-1000)/1000.0f) > 0;
+		_motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
 	} else if (_vehicle == APMrover2) {
 		// add in engine multiplier
-		if (control.pwm[2] != 1500) {
-			control.pwm[2] = ((control.pwm[2]-1500) * _sitl->engine_mul) + 1500;
-			if (control.pwm[2] > 2000) control.pwm[2] = 2000;
-			if (control.pwm[2] < 1000) control.pwm[2] = 1000;
+		if (input.servos[2] != 1500) {
+			input.servos[2] = ((input.servos[2]-1500) * _sitl->engine_mul) + 1500;
+			if (input.servos[2] > 2000) input.servos[2] = 2000;
+			if (input.servos[2] < 1000) input.servos[2] = 1000;
 		}
-		_motors_on = ((control.pwm[2]-1500)/500.0f) != 0;
+		_motors_on = ((input.servos[2]-1500)/500.0f) != 0;
 	} else {
 		_motors_on = false;
         // apply engine multiplier to first motor
-        control.pwm[0] = ((control.pwm[0]-1000) * _sitl->engine_mul) + 1000;
+        input.servos[0] = ((input.servos[0]-1000) * _sitl->engine_mul) + 1000;
         // run checks on each motor
 		for (i=0; i<4; i++) {
             // check motors do not exceed their limits
-            if (control.pwm[i] > 2000) control.pwm[i] = 2000;
-            if (control.pwm[i] < 1000) control.pwm[i] = 1000;
+            if (input.servos[i] > 2000) input.servos[i] = 2000;
+            if (input.servos[i] < 1000) input.servos[i] = 1000;
             // update motor_on flag
-			if ((control.pwm[i]-1000)/1000.0f > 0) {
+			if ((input.servos[i]-1000)/1000.0f > 0) {
                 _motors_on = true;
 			}
 		}
 	}
 
-    float throttle = _motors_on?(control.pwm[2]-1000) / 1000.0f:0;
+    float throttle = _motors_on?(input.servos[2]-1000) / 1000.0f:0;
     // lose 0.7V at full throttle
     float voltage = _sitl->batt_voltage - 0.7f*throttle;
+
     // assume 50A at full throttle
     _current = 50.0f * throttle;
+
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
     current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
+}
+
+
+/*
+  send RC outputs to simulator
+ */
+void SITL_State::_simulator_output(bool synthetic_clock_mode)
+{
+	struct {
+		uint16_t pwm[11];
+		uint16_t speed, direction, turbulance;
+	} control;
+    Aircraft::sitl_input input;
+
+    _simulator_servos(input);
+
+    if (_sitl == NULL) {
+        return;
+    }
+
+    memcpy(control.pwm, input.servos, sizeof(control.pwm));
 
 	// setup wind control
     float wind_speed = _sitl->wind_speed * 100;

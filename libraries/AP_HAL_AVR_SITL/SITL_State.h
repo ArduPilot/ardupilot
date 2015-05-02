@@ -22,6 +22,7 @@
 #include "../AP_OpticalFlow/AP_OpticalFlow.h"
 #include "../AP_Terrain/AP_Terrain.h"
 #include "../SITL/SITL.h"
+#include "../SITL/SIM_Multicopter.h"
 
 class HAL_AVR_SITL;
 
@@ -101,6 +102,8 @@ private:
 			    double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
 			    float airspeed,	float altitude);
     void _fdm_input(void);
+    void _fdm_input_local(void);
+    void _simulator_servos(Aircraft::sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
     void _apply_servo_filter(float deltat);
     uint16_t _airspeed_sensor(float airspeed);
@@ -176,6 +179,9 @@ private:
     VectorN<readings_baro,baro_buffer_length> buffer_baro;
     uint32_t time_delta_baro;
     uint32_t delayed_time_baro;
+
+    // internal SITL model
+    Aircraft *sitl_model;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
