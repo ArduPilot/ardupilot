@@ -279,7 +279,7 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
 		case 0:
 			if (cmd.content.speed.target_ms > 0) {
 				g.speed_cruise.set(cmd.content.speed.target_ms);
-                gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), g.speed_cruise.get());
+                gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), (double)g.speed_cruise.get());
             }
 			break;
 	}
