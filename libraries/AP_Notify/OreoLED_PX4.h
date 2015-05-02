@@ -56,9 +56,6 @@ private:
     // set_macrxo - set macro for one or all LEDs
     void set_macro(uint8_t instance, enum oreoled_macro macro);
 
-    // send_bytes - send bytes to one or all LEDs
-    void send_bytes(uint8_t instance, uint8_t num_bytes, uint8_t bytes[OREOLED_CMD_LENGTH_MAX]);
-
     // oreo led modes (pattern, macro or rgb)
     enum oreoled_mode {
         OREOLED_MODE_PATTERN,
