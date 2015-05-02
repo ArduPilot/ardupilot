@@ -20,11 +20,8 @@
 #include <sys/select.h>
 
 #include <AP_Param.h>
-#include <pthread.h>
 
 #include <SIM_Multicopter.h>
-
-typedef void *(*pthread_startroutine_t)(void *);
 
 #ifdef __CYGWIN__
 #include <stdio.h>
@@ -54,7 +51,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
 
-// this allows loop_hook to be called
 SITL_State *g_state;
 
 // catch floating point exceptions
@@ -72,6 +68,9 @@ void SITL_State::_usage(void)
 	fprintf(stdout, "\t-H HEIGHT   initial barometric height\n");
 	fprintf(stdout, "\t-C          use console instead of TCP ports\n");
 	fprintf(stdout, "\t-I          set instance of SITL (adds 10*instance to all port numbers)\n");
+	fprintf(stdout, "\t-s SPEEDUP  simulation speedup\n");
+	fprintf(stdout, "\t-O ORIGIN   set home location (lat,lng,alt,yaw)\n");
+	fprintf(stdout, "\t-M MODEL    set simulation model\n");
 }
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
@@ -79,6 +78,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 	int opt;
     const char *home_str = NULL;
     const char *model_str = NULL;
+    float speedup = 1.0f;
 
 	signal(SIGFPE, _sig_fpe);
 	// No-op SIGPIPE handler
@@ -92,7 +92,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _rcout_port = 5502;
     _simin_port = 5501;
 
-	while ((opt = getopt(argc, argv, "swhr:H:CI:P:SO:M:")) != -1) {
+	while ((opt = getopt(argc, argv, "s:whr:H:CI:P:SO:M:S:")) != -1) {
 		switch (opt) {
 		case 'w':
 			AP_Param::erase_all();
@@ -126,6 +126,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'M':
             model_str = optarg;
             break;
+        case 's':
+            speedup = atof(optarg);
+            break;
 		default:
 			_usage();
 			exit(1);
@@ -134,7 +137,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (model_str && home_str) {
         sitl_model = new MultiCopter(home_str, model_str);
-        printf("Started model %s at %s\n", model_str, home_str);
+        sitl_model->set_speedup(speedup);
+        _synthetic_clock_mode = true;
+        printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
     }
 
 	fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
@@ -233,22 +238,8 @@ void SITL_State::_sitl_setup(void)
         hal.scheduler->stop_clock(1);
     }
 
-    // setup a pipe used to trigger loop to stop sleeping
-    pipe(_fdm_pipe);
-    AVR_SITL::SITLUARTDriver::_set_nonblocking(_fdm_pipe[0]);
-    AVR_SITL::SITLUARTDriver::_set_nonblocking(_fdm_pipe[1]);
-
+    // keep a global state pointer for static callbacks
     g_state = this;
-
-    /*
-      setup thread that receives input from the FDM
-     */
-    pthread_attr_t thread_attr;
-    pthread_attr_init(&thread_attr);
-
-    pthread_create(&_fdm_thread_ctx, &thread_attr, 
-                   (pthread_startroutine_t)&AVR_SITL::SITL_State::_fdm_thread, this);
-
 }
 
 
@@ -291,92 +282,81 @@ void SITL_State::_setup_fdm(void)
 
 
 /*
-  thread for FDM input
+  step the FDM by one time step
  */
-void SITL_State::_fdm_thread(void)
+void SITL_State::_fdm_input_step(void)
 {
-	uint32_t last_update_count = 0;
-    uint32_t last_pwm_input = 0;
+    static uint32_t last_pwm_input = 0;
+    fd_set fds;
+    struct timeval tv;
 
-    while (true) {
-        fd_set fds;
-        struct timeval tv;
-
-        if (next_stop_clock != 0) {
-            hal.scheduler->stop_clock(next_stop_clock);
-            next_stop_clock = 0;
-        }
-
-        if (sitl_model != NULL) {
-            _fdm_input_local();
-        } else {
-            tv.tv_sec = 1;
-            tv.tv_usec = 0;
-
-            FD_ZERO(&fds);
-            FD_SET(_sitl_fd, &fds);
-            if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
-                // internal error
-                _simulator_output(true);
-                continue;
-            }
-
-            /* check for packet from flight sim */
-            _fdm_input();
-        }
-
-        /* make sure we die if our parent dies */
-        if (kill(_parent_pid, 0) != 0) {
-            exit(1);
+    if (sitl_model != NULL) {
+        _fdm_input_local();
+    } else {
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        
+        FD_ZERO(&fds);
+        FD_SET(_sitl_fd, &fds);
+        if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
+            // internal error
+            _simulator_output(true);
+            return;
         }
         
-        if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
-            continue;
-        }
+        /* check for packet from flight sim */
+        _fdm_input();
+    }
 
-        // simulate RC input at 50Hz
-        if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
-            last_pwm_input = hal.scheduler->millis();
-            new_rc_input = true;
-        }
+    /* make sure we die if our parent dies */
+    if (kill(_parent_pid, 0) != 0) {
+        exit(1);
+    }
+        
+    if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
+        return;
+    }
 
-        _scheduler->sitl_begin_atomic();
+    // simulate RC input at 50Hz
+    if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
+        last_pwm_input = hal.scheduler->millis();
+        new_rc_input = true;
+    }
 
-        if (_update_count == 0 && _sitl != NULL) {
-            _update_gps(0, 0, 0, 0, 0, 0, false);
-            _update_barometer(0);
-            _scheduler->timer_event();
-            _scheduler->sitl_end_atomic();
-            continue;
-        }
+    _scheduler->sitl_begin_atomic();
 
-        if (_update_count == last_update_count) {
-            _scheduler->timer_event();
-            _scheduler->sitl_end_atomic();
-            continue;
-        }
-        last_update_count = _update_count;
-
-        if (_sitl != NULL) {
-            _update_gps(_sitl->state.latitude, _sitl->state.longitude,
-                        _sitl->state.altitude,
-                        _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
-                        !_sitl->gps_disable);
-            _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
-                        _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
-                        _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
-                        _sitl->state.airspeed, _sitl->state.altitude);
-            _update_barometer(_sitl->state.altitude);
-            _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
-            _update_flow();
-        }
-
-        // trigger all APM timers. 
+    if (_update_count == 0 && _sitl != NULL) {
+        _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_barometer(0);
         _scheduler->timer_event();
         _scheduler->sitl_end_atomic();
+        return;
+    }
 
-        char b = 0;
-        write(_fdm_pipe[1], &b, 1);
+    if (_sitl != NULL) {
+        _update_gps(_sitl->state.latitude, _sitl->state.longitude,
+                    _sitl->state.altitude,
+                    _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
+                    !_sitl->gps_disable);
+        _update_ins(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg,
+                    _sitl->state.rollRate, _sitl->state.pitchRate, _sitl->state.yawRate,
+                    _sitl->state.xAccel, _sitl->state.yAccel, _sitl->state.zAccel,
+                    _sitl->state.airspeed, _sitl->state.altitude);
+        _update_barometer(_sitl->state.altitude);
+        _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
+        _update_flow();
+    }
+    
+    // trigger all APM timers. 
+    _scheduler->timer_event();
+    _scheduler->sitl_end_atomic();
+}
+
+
+void SITL_State::wait_clock(uint64_t wait_time_usec)
+{
+    while (hal.scheduler->micros64() < wait_time_usec) {
+        _fdm_input_step();
     }
 }
 
@@ -395,7 +375,6 @@ void SITL_State::_fdm_input(void)
 		struct pwm_packet pwm_pkt;
 	} d;
     bool got_fg_input = false;
-    next_stop_clock = 0;
 
 	size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
 	switch (size) {
@@ -408,7 +387,7 @@ void SITL_State::_fdm_input(void)
 			return;
 		}
 
-        next_stop_clock = d.fg_pkt.timestamp_us;
+        hal.scheduler->stop_clock(d.fg_pkt.timestamp_us);
         _synthetic_clock_mode = true;
         got_fg_input = true;
 
@@ -469,7 +448,7 @@ void SITL_State::_fdm_input_local(void)
     _simulator_servos(input);
     sitl_model->update(input);
     sitl_model->fill_fdm(_sitl->state);
-    next_stop_clock = _sitl->state.timestamp_us;
+    hal.scheduler->stop_clock(_sitl->state.timestamp_us);
     _synthetic_clock_mode = true;
     _update_count++;
 }
@@ -662,56 +641,6 @@ void SITL_State::init(int argc, char * const argv[])
     _scheduler = (SITLScheduler *)hal.scheduler;
 	_parse_command_line(argc, argv);
 }
-
-// wait for serial input, or 100usec
-void SITL_State::loop_hook(void)
-{
-    struct timeval tv;
-    fd_set fds;
-    int fd, max_fd = 0;
-
-    FD_ZERO(&fds);
-    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartA)->_fd;
-    if (fd != -1) {
-        FD_SET(fd, &fds);
-        max_fd = max(fd, max_fd);
-    }
-    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartB)->_fd;
-    if (fd != -1) {
-        FD_SET(fd, &fds);
-        max_fd = max(fd, max_fd);
-    }
-    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartC)->_fd;
-    if (fd != -1) {
-        FD_SET(fd, &fds);
-        max_fd = max(fd, max_fd);
-    }
-    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartD)->_fd;
-    if (fd != -1) {
-        FD_SET(fd, &fds);
-        max_fd = max(fd, max_fd);
-    }
-    fd = ((AVR_SITL::SITLUARTDriver*)hal.uartE)->_fd;
-    if (fd != -1) {
-        FD_SET(fd, &fds);
-        max_fd = max(fd, max_fd);
-    }
-
-    FD_SET(_fdm_pipe[0], &fds);
-    max_fd = max(_fdm_pipe[0], max_fd);
-
-    tv.tv_sec = 0;
-    tv.tv_usec = 100;
-    fflush(stdout);
-    fflush(stderr);
-    select(max_fd+1, &fds, NULL, NULL, &tv);
-    
-    if (FD_ISSET(_fdm_pipe[0], &fds)) {
-        char b;
-        read(_fdm_pipe[0], &b, 1);
-    }
-}
-
 
 /*
   return height above the ground in meters

@@ -111,11 +111,12 @@ private:
     float _gyro_drift(void);
     float _rand_float(void);
     Vector3f _rand_vec3f(void);
+    void _fdm_input_step(void);
+    
+    void wait_clock(uint64_t wait_time_usec);
 
     pthread_t _fdm_thread_ctx;
     void _fdm_thread(void);
-    int _fdm_pipe[2];
-    uint64_t next_stop_clock;
 
     // internal state
     enum vehicle_type _vehicle;

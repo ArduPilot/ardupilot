@@ -74,16 +74,9 @@ private:
 #endif
 
     void stop_clock(uint64_t time_usec);
-    void clock_barrier_wait();
 
     bool _initialized;
-    volatile uint64_t stopped_clock_usec;
-    enum clock_wait { CLOCK_WAIT_INIT, CLOCK_WAIT_ONE, CLOCK_WAIT_TWO, CLOCK_WAIT_THREE };
-    struct {
-        enum clock_wait state;
-        pthread_mutex_t m;
-        pthread_cond_t cv;
-    } clock_barrier;
+    uint64_t stopped_clock_usec;
 };
 #endif
 #endif // __AP_HAL_SITL_SCHEDULER_H__
