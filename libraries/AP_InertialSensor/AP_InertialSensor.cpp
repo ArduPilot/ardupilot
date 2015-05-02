@@ -989,7 +989,7 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
         //eliminate all nonzero entries below JS[i][i]
         for( j=i+1; j<6; j++ ) {
             mu = JS[i][j]/JS[i][i];
-            if( !is_zero(mu) ) {
+            if( !AP_Math::is_zero(mu) ) {
                 dS[j] -= mu*dS[i];
                 for( k=j; k<6; k++ ) {
                     JS[k][j] -= mu*JS[k][i];
