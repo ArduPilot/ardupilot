@@ -26,8 +26,8 @@
 // only two telemetry ports on APM1/APM2
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #else
-// allow three telemetry ports on other boards
-#define MAVLINK_COMM_NUM_BUFFERS 3
+// allow four telemetry ports on other boards
+#define MAVLINK_COMM_NUM_BUFFERS 4
 #endif
 
 /*
@@ -61,6 +61,10 @@ extern AP_HAL::UARTDriver	*mavlink_comm_1_port;
 extern AP_HAL::UARTDriver	*mavlink_comm_2_port;
 #endif
 
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+extern AP_HAL::UARTDriver   *mavlink_comm_3_port;
+#endif
+
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
 
@@ -82,6 +86,11 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 	case MAVLINK_COMM_2:
 		mavlink_comm_2_port->write(ch);
 		break;
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    case MAVLINK_COMM_3:
+        mavlink_comm_3_port->write(ch);
+        break;
 #endif
 	default:
 		break;

@@ -52,6 +52,12 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
             initialised = true;
             break;
 #endif
+        case MAVLINK_COMM_3:
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+            mavlink_comm_3_port = _port;
+            initialised = true;
+            break;
+#endif
         default:
             // do nothing for unsupport mavlink channels
             break;
@@ -437,6 +443,16 @@ bool GCS_MAVLINK::have_flow_control(void)
             return false;
         } else {
             return mavlink_comm_2_port != NULL && mavlink_comm_2_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+        }
+        break;
+#endif
+
+    case MAVLINK_COMM_3:
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+        if (mavlink_comm_3_port == NULL) {
+            return false;
+        } else {
+            return mavlink_comm_3_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
         }
         break;
 #endif

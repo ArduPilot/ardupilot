@@ -36,6 +36,9 @@ AP_HAL::UARTDriver	*mavlink_comm_1_port;
 #if MAVLINK_COMM_NUM_BUFFERS > 2
 AP_HAL::UARTDriver	*mavlink_comm_2_port;
 #endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+AP_HAL::UARTDriver  *mavlink_comm_3_port;
+#endif
 
 mavlink_system_t mavlink_system = {7,1};
 
@@ -101,6 +104,11 @@ uint8_t comm_receive_ch(mavlink_channel_t chan)
 		data = mavlink_comm_2_port->read();
 		break;
 #endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    case MAVLINK_COMM_3:
+        data = mavlink_comm_3_port->read();
+        break;
+#endif
 	default:
 		break;
 	}
@@ -128,6 +136,11 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
 	case MAVLINK_COMM_2:
 		ret = mavlink_comm_2_port->txspace();
 		break;
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    case MAVLINK_COMM_3:
+        ret = mavlink_comm_3_port->txspace();
+        break;
 #endif
 	default:
 		break;
@@ -160,6 +173,11 @@ uint16_t comm_get_available(mavlink_channel_t chan)
 		bytes = mavlink_comm_2_port->available();
 		break;
 #endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    case MAVLINK_COMM_3:
+        bytes = mavlink_comm_3_port->available();
+        break;
+#endif
 	default:
 		break;
 	}
@@ -185,6 +203,11 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 	case MAVLINK_COMM_2:
 		mavlink_comm_2_port->write(buf, len);
 		break;
+#endif
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    case MAVLINK_COMM_3:
+        mavlink_comm_3_port->write(buf, len);
+        break;
 #endif
 	default:
 		break;
