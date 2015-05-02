@@ -91,22 +91,22 @@ enum aux_sw_func {
 
 // Auto Pilot Modes enumeration
 enum autopilot_modes {
-    STABILIZE =     0,  // 0, manual airframe angle with manual throttle
-    ACRO,               // 1, manual body-frame angular rate with manual throttle
-    ALT_HOLD,           // 2, manual airframe angle with automatic throttle
-    AUTO,               // 3, fully automatic waypoint control
-    GUIDED,             // 4, fully automatic fly to coordinate or fly at velocity/direction
-    LOITER,             // 5, automatic horizontal acceleration with automatic throttle
-    RTL,                // 6, automatic return to launching point
-    CIRCLE,             // 7, automatic circular flight with automatic throttle
-    LAND =          9,  // 9, automatic landing with horizontal position control
-    OF_LOITER,          // 10, automatic position control using optical flow sensor
-    DRIFT,              // 11, semi-automatic position, yaw and throttle control
-    SPORT =        13,  // 13, manual earth-frame angular rate control with manual throttle
-    FLIP,               // 14, automatically flip the vehicle on the roll axis
-    AUTOTUNE,           // 15, automatically tune the vehicle's roll and pitch gains
-    POSHOLD,            // 16, automatic position hold with manual override, with automatic throttle
-    STOP                // 17, full-stop using inertial/GPS system, no pilot input
+    STABILIZE =     0,  // manual airframe angle with manual throttle
+    ACRO =          1,  // manual body-frame angular rate with manual throttle
+    ALT_HOLD =      2,  // manual airframe angle with automatic throttle
+    AUTO =          3,  // fully automatic waypoint control using mission commands
+    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+    LOITER =        5,  // automatic horizontal acceleration with automatic throttle
+    RTL =           6,  // automatic return to launching point
+    CIRCLE =        7,  // automatic circular flight with automatic throttle
+    LAND =          9,  // automatic landing with horizontal position control
+    OF_LOITER =    10,  // deprecated
+    DRIFT =        11,  // semi-automous position, yaw and throttle control
+    SPORT =        13,  // manual earth-frame angular rate control with manual throttle
+    FLIP =         14,  // automatically flip the vehicle on the roll axis
+    AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
+    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
+    STOP =         17   // full-stop using inertial/GPS system, no pilot input
 };
 
 // Tuning enumeration
