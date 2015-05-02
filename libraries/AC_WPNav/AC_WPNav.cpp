@@ -262,11 +262,11 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 
     float desired_speed = desired_vel.length();
 
-    if (desired_speed != 0.0f) {
+    if (!AP_Math::is_zero(desired_speed)) {
         Vector2f desired_vel_norm = desired_vel/desired_speed;
         float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
-        if (_pilot_accel_fwd_cms == 0.0f && _pilot_accel_rgt_cms == 0.0f) {
+        if (_pilot_accel_fwd_cms == 0 && _pilot_accel_rgt_cms == 0) {
             drag_speed_delta = min(drag_speed_delta,-_loiter_accel_min_cmss*nav_dt);
         }
 
@@ -411,7 +411,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
     _track_length = pos_delta.length(); // get track length
 
     // calculate each axis' percentage of the total distance to the destination
-    if (_track_length == 0.0f) {
+    if (AP_Math::is_zero(_track_length)) {
         // avoid possible divide by zero
         _pos_delta_unit.x = 0;
         _pos_delta_unit.y = 0;
@@ -682,15 +682,15 @@ void AC_WPNav::calculate_wp_leash_length()
     }
 
     // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
-    if(pos_delta_unit_z == 0.0f && pos_delta_unit_xy == 0.0f){
+    if(AP_Math::is_zero(pos_delta_unit_z) &&AP_Math::is_zero(pos_delta_unit_xy)){
         _track_accel = 0;
         _track_speed = 0;
         _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
-    }else if(_pos_delta_unit.z == 0.0f){
+    }else if(AP_Math::is_zero(_pos_delta_unit.z)){
         _track_accel = _wp_accel_cms/pos_delta_unit_xy;
         _track_speed = _wp_speed_cms/pos_delta_unit_xy;
         _track_leash_length = _pos_control.get_leash_xy()/pos_delta_unit_xy;
-    }else if(pos_delta_unit_xy == 0.0f){
+    }else if(AP_Math::is_zero(pos_delta_unit_xy)){
         _track_accel = _wp_accel_z_cms/pos_delta_unit_z;
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
@@ -954,7 +954,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
         float target_vel_length = target_vel.length();
-        if (target_vel_length != 0.0f) {
+        if (!AP_Math::is_zero(target_vel_length)) {
             _spline_time_scale = _spline_vel_scaler/target_vel_length;
         }
 
