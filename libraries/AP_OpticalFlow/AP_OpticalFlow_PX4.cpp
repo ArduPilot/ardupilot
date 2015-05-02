@@ -34,6 +34,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static float last_ground_distance_m = -1;    // value of ground distance read by last sonar sensor in m (<0 = no sensor init)
+
 AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend) : 
 OpticalFlow_backend(_frontend) 
 {}
@@ -57,6 +59,7 @@ void AP_OpticalFlow_PX4::init(void)
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_PX4::update(void)
 {
+
     // return immediately if not initialised
     if (_fd == -1) {
         return;
@@ -68,6 +71,7 @@ void AP_OpticalFlow_PX4::update(void)
         struct OpticalFlow::OpticalFlow_state state;
         state.device_id = report.sensor_id;
         state.surface_quality = report.quality;
+        last_ground_distance_m = report.ground_distance_m;
         if (report.integration_timespan > 0) {
             float yawAngleRad = _yawAngleRad();
             float cosYaw = cosf(yawAngleRad);
@@ -89,6 +93,12 @@ void AP_OpticalFlow_PX4::update(void)
 
         _update_frontend(state);
     }
+}
+
+// ground_distance - read ground distance of last sensor data
+float AP_OpticalFlow_PX4_ground_distance(void)
+{
+    return last_ground_distance_m;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

@@ -20,6 +20,7 @@
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include "AP_RangeFinder_PX4.h"
 #include "AP_RangeFinder_PX4_PWM.h"
+#include "AP_RangeFinder_PX4_Flow.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -290,6 +291,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         if (AP_RangeFinder_analog::detect(*this, instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_RangeFinder_analog(*this, instance, state[instance]);
+            return;
+        }
+    }
+    if (type == RangeFinder_TYPE_PX4_FLOW) {
+        if (AP_RangeFinder_PX4_Flow::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_PX4_Flow(*this, instance, state[instance]);
             return;
         }
     }
