@@ -395,16 +395,16 @@ then
     fi
 fi
 
-# optional smbus battery monitor
-if batt_smbus -b 2 start
-then
-    echo "Found batt_smbus"
-fi
-
 # optional oreo leds
 if oreoled start autoupdate
 then
     echo "oreoled started OK"
+fi
+
+# optional smbus battery monitor
+if batt_smbus -b 2 start
+then
+    echo "Found batt_smbus"
 fi
 
 if [ $BOARD == FMUv2 ]
