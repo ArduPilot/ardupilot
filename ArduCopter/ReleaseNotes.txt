@@ -12,10 +12,10 @@ Changes from 3.3-rc1
     c) PILOT_THR_FILT allows enforcing smoother throttle response in manual flight modes (defaults to 0 = off)
     d) TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick
     e) GCS can initiate takeoff even in Loiter, AltHold, PosHold and sport by issuing NAV_TAKEOFF mavlink command
-4) Stop flight mode - vehicle simply stops and does not respond to user input
+4) Stop flight mode - causes vehicle to stop quickly, and does not respond to user input or waypoint movement via MAVLink.  Requires GPS, will be renamed to Brake mode.
 5) Aux channel features:
     a) Emergency Stop - stops all motors immediately and disarms in 5 seconds
-    b) Motor Interlock - opposite of Emergency Stop, must be on to allow motors to spin motors, must be off to arm 
+    b) Motor Interlock - opposite of Emergency Stop, must be on to allow motors to spin motors, must be off to arm
 6) Air pressure gain scaling (of roll, pitch, yaw) should mostly remove need to re-tune when flying at very different altitudes
 7) landing detector simplified to only check vehicle is not accelerating & motors have hit their lower limit
 8) Loiter tuning params to remove "freight train" stops:
