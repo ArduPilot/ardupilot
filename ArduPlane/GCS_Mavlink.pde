@@ -1049,7 +1049,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
             in_calibration = true;
-            if (packet.param1 == 1) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 ins.init_gyro();
                 if (ins.gyro_calibrated_ok_all()) {
                     ahrs.reset_gyro_drift();
@@ -1057,16 +1057,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
-            } else if (packet.param3 == 1) {
+            } else if (AP_Math::is_equal(packet.param3,1.0f)) {
                 init_barometer();
                 if (airspeed.enabled()) {
                     zero_airspeed(false);
                 }
                 result = MAV_RESULT_ACCEPTED;
-            } else if (packet.param4 == 1) {
+            } else if (AP_Math::is_equal(packet.param4,1.0f)) {
                 trim_radio();
                 result = MAV_RESULT_ACCEPTED;
-            } else if (packet.param5 == 1) {
+            } else if (AP_Math::is_equal(packet.param5,1.0f)) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(this);
                 if (g.skip_gyro_cal) {
@@ -1089,12 +1089,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-            if (packet.param1 == 2) {
+            if (AP_Math::is_equal(packet.param1,2.0f)) {
                 // save first compass's offsets
                 compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             }
-            if (packet.param1 == 5) {
+            if (AP_Math::is_equal(packet.param1,5.0f)) {
                 // save secondary compass's offsets
                 compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
                 result = MAV_RESULT_ACCEPTED;
@@ -1102,14 +1102,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (packet.param1 == 1.0f) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 // run pre_arm_checks and arm_checks and display failures
                 if (arm_motors(AP_Arming::MAVLINK)) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
-            } else if (packet.param1 == 0.0f)  {
+            } else if (AP_Math::is_zero(packet.param1))  {
                 if (disarm_motors()) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
@@ -1170,9 +1170,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (packet.param1 == 1 || packet.param1 == 3) {
+            if (AP_Math::is_equal(packet.param1,1.0f) || AP_Math::is_equal(packet.param1,3.0f)) {
                 // when packet.param1 == 3 we reboot to hold in bootloader
-                hal.scheduler->reboot(packet.param1 == 3);
+                hal.scheduler->reboot(AP_Math::is_equal(packet.param1,3.0f));
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1227,7 +1227,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (packet.param1 == 1) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                 result = MAV_RESULT_ACCEPTED;
             }
@@ -1239,10 +1239,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param6 : longitude
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
-            if (packet.param1 == 1) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 init_home();
             } else {
-                if (packet.param5 == 0 && packet.param6 == 0 && packet.param7 == 0) {
+                if (AP_Math::is_zero(packet.param5) && AP_Math::is_zero(packet.param6) && AP_Math::is_zero(packet.param7)) {
                     // don't allow the 0,0 position
                     break;
                 }
@@ -1383,7 +1383,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         } else {
             Vector2l point = get_fence_point_with_index(packet.idx);
             mavlink_msg_fence_point_send_buf(msg, chan, msg->sysid, msg->compid, packet.idx, g.fence_total,
-                                             point.x*1.0e-7, point.y*1.0e-7);
+                                             point.x*1.0e-7f, point.y*1.0e-7f);
         }
         break;
     }
