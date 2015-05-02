@@ -74,7 +74,7 @@ protected:
     float rate_hz;
     float achieved_rate_hz;
     float target_speedup;
-    float frame_time_us;
+    uint64_t frame_time_us;
     float scaled_frame_time_us;
     uint64_t last_wall_time_us;
 
