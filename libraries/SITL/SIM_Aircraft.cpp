@@ -20,6 +20,8 @@
 #include <AP_Common.h>
 #include "SIM_Aircraft.h"
 #include <unistd.h>
+#include <sys/time.h>
+#include <stdio.h>
 
 /*
   parent class for all simulator types
@@ -54,10 +56,10 @@ Aircraft::Aircraft(const char *home_str) :
     home.lng = atof(lon_s) * 1.0e7;
     home.alt = atof(alt_s) * 1.0e2;
     location = home;
-
-    free(s);
+    ground_level = home.alt*0.01;
 
     dcm.from_euler(0, 0, atof(yaw_s));
+    free(s);
 }
 
 /* 
@@ -81,6 +83,9 @@ void Aircraft::update_position(void)
 
     location.alt  = home.alt - position.z*100.0f;
     velocity_body = dcm.transposed() * velocity_ef;
+
+    time_now_us += frame_time_us;
+    sync_frame_time();
 }
 
 /* 
@@ -126,9 +131,9 @@ void Aircraft::adjust_frame_time(float new_rate)
 void Aircraft::sync_frame_time(void)
 {
     uint64_t now = get_wall_time_us();
-
-    if (now < last_wall_time_us + scaled_frame_time_us) {
-        usleep(last_wall_time_us + scaled_frame_time_us - now);
+    uint64_t dt_us = now - last_wall_time_us;
+    if (dt_us < scaled_frame_time_us) {
+        usleep(scaled_frame_time_us - dt_us);
         now = get_wall_time_us();
 
         if (now > last_wall_time_us && now - last_wall_time_us < 1.0e5) {
@@ -150,10 +155,10 @@ void Aircraft::add_noise(float throttle)
 {
     gyro += Vector3f(rand_normal(0, 1),
                      rand_normal(0, 1),
-                     rand_normal(0, 1)) * gyro_noise;
+                     rand_normal(0, 1)) * gyro_noise * throttle;
     accel_body += Vector3f(rand_normal(0, 1),
                            rand_normal(0, 1),
-                           rand_normal(0, 1)) * accel_noise;
+                           rand_normal(0, 1)) * accel_noise * throttle;
 }
 
 /*
@@ -190,4 +195,43 @@ double Aircraft::rand_normal(double mean, double stddev)
         n2_cached = 0;
         return n2*stddev + mean;
     }
+}
+
+
+
+
+/* 
+   fill a sitl_fdm structure from the simulator state 
+*/
+void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
+{
+    fdm.timestamp_us = time_now_us;
+    fdm.latitude  = location.lat * 1.0e-7;
+    fdm.longitude = location.lng * 1.0e-7;
+    fdm.altitude  = location.alt * 1.0e-2;
+    fdm.heading   = degrees(atan2f(velocity_ef.y, velocity_ef.x));
+    fdm.speedN    = velocity_ef.x;
+    fdm.speedE    = velocity_ef.y;
+    fdm.speedD    = velocity_ef.z;
+    fdm.xAccel    = accel_body.x;
+    fdm.yAccel    = accel_body.y;
+    fdm.zAccel    = accel_body.z;
+    Vector3f gyro_ef = SITL::convert_earth_frame(dcm, gyro);
+    fdm.rollRate  = degrees(gyro_ef.x);
+    fdm.pitchRate = degrees(gyro_ef.y);
+    fdm.yawRate   = degrees(gyro_ef.z);
+    float r, p, y;
+    dcm.to_euler(&r, &p, &y);
+    fdm.rollDeg  = degrees(r);
+    fdm.pitchDeg = degrees(p);
+    fdm.yawDeg   = degrees(y);
+    fdm.airspeed = velocity_ef.length();
+    fdm.magic = 0x4c56414f;
+}
+
+uint64_t Aircraft::get_wall_time_us() const
+{
+	struct timeval tp;
+	gettimeofday(&tp,NULL);
+	return tp.tv_sec*1.0e6 + tp.tv_usec;
 }

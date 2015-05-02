@@ -17,6 +17,9 @@
   parent class for aircraft simulators
 */
 
+#ifndef _SIM_MULTICOPTER_H
+#define _SIM_MULTICOPTER_H
+
 #include "SIM_Aircraft.h"
 
 /*
@@ -73,3 +76,4 @@ private:
 };
 
 
+#endif // _SIM_MULTICOPTER_H

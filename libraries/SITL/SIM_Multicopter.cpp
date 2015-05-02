@@ -118,10 +118,12 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
        scaling from total motor power to Newtons. Allows the copter
        to hover against gravity when each motor is at hover_throttle
     */
+    mass = 1.5;
     thrust_scale = (mass * GRAVITY_MSS) / (frame->num_motors * hover_throttle);
 
     frame_height = 0.1;
-    mass = 1.5;
+
+    setup_frame_time(400, 3);
 }
 
 /*

@@ -17,6 +17,9 @@
   parent class for aircraft simulators
 */
 
+#ifndef _SIM_AIRCRAFT_H
+#define _SIM_AIRCRAFT_H
+
 #include "SITL.h"
 #include <AP_Common.h>
 #include <AP_Math.h>
@@ -101,3 +104,6 @@ protected:
     /* return normal distribution random numbers */
     double rand_normal(double mean, double stddev);
 };
+
+#endif // _SIM_AIRCRAFT_H
+
