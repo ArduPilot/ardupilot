@@ -82,8 +82,6 @@ uint32_t SITLScheduler::millis()
     return millis64() & 0xFFFFFFFF;
 }
 
-extern AVR_SITL::SITL_State *g_state;
-
 void SITLScheduler::delay_microseconds(uint16_t usec) 
 {
 	uint64_t start = micros64();

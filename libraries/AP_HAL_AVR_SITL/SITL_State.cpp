@@ -51,8 +51,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace AVR_SITL;
 
-SITL_State *g_state;
-
 // catch floating point exceptions
 static void _sig_fpe(int signum)
 {
@@ -237,9 +235,6 @@ void SITL_State::_sitl_setup(void)
         // start with non-zero clock
         hal.scheduler->stop_clock(1);
     }
-
-    // keep a global state pointer for static callbacks
-    g_state = this;
 }
 
 
