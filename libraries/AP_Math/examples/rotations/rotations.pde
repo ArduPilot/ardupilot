@@ -81,7 +81,7 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
 {
     Vector3f v, v1, v2, diff;
     Matrix3f rotmat;
-    const float accuracy = 1.0e-6;
+    const float accuracy = 1.0e-6f;
 
     v.x = 1;
     v.y = 2;

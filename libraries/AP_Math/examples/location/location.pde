@@ -69,8 +69,8 @@ static const struct {
 static struct Location location_from_point(Vector2f pt)
 {
     struct Location loc = {0};
-    loc.lat = pt.x * 1.0e7;
-    loc.lng = pt.y * 1.0e7;
+    loc.lat = pt.x * 1.0e7f;
+    loc.lng = pt.y * 1.0e7f;
     return loc;
 }
 
@@ -130,8 +130,8 @@ static void test_offset(void)
 {
     struct Location loc;
 
-    loc.lat = -35*1.0e7;
-    loc.lng = 149*1.0e7;
+    loc.lat = -35*1.0e7f;
+    loc.lng = 149*1.0e7f;
 
     for (uint8_t i=0; i<ARRAY_LENGTH(test_offsets); i++) {
         test_one_offset(loc,

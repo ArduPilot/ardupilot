@@ -268,7 +268,7 @@ void test_frame_transforms(void)
 static float rand_num(void)
 {
     float ret = ((unsigned)random()) % 2000000;
-    return (ret - 1.0e6) / 1.0e6;
+    return (ret - 1.0e6f) / 1.0e6f;
 }
 
 void test_matrix_rotate(void)
