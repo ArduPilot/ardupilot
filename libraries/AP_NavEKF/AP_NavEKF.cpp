@@ -3755,7 +3755,9 @@ bool NavEKF::getMagOffsets(Vector3f &magOffsets) const
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available, return false and the raw GPS measurement or last known position if available
+// If a calculated location isn't available, return a raw GPS measurement
+// The status will return true if a calculation or raw measurement is available
+// The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF::getLLH(struct Location &loc) const
 {
     if(validOrigin) {
@@ -3778,11 +3780,12 @@ bool NavEKF::getLLH(struct Location &loc) const
                 // we have a GPS position fix to return
                 const struct Location &gpsloc = _ahrs->get_gps().location();
                 loc = gpsloc;
+                return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+                return false;
             }
-            return false;
         }
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw

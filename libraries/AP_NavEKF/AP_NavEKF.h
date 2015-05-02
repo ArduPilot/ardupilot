@@ -154,8 +154,9 @@ public:
     bool getMagOffsets(Vector3f &magOffsets) const;
 
     // Return the last calculated latitude, longitude and height in WGS-84
-    // If a calculated location isn't available, return false and the raw GPS measurement or last known position if available
-    // If false returned, do not use for flight control
+    // If a calculated location isn't available, return a raw GPS measurement
+    // The status will return true if a calculation or raw measurement is available
+    // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(struct Location &loc) const;
 
     // return the latitude and longitude and height used to set the NED origin
