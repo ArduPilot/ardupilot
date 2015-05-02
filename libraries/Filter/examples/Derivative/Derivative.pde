@@ -29,7 +29,7 @@ static float noise(void)
 void loop()
 {
     hal.scheduler->delay(50);
-    float t = hal.scheduler->millis()*1.0e-3;
+    float t = hal.scheduler->millis()*1.0e-3f;
     float s = sinf(t);
     //s += noise();
     uint32_t t1 = hal.scheduler->micros();
