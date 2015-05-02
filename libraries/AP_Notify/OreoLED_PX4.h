@@ -26,7 +26,6 @@
 #define OREOLED_NUM_LEDS        4       // maximum number of individual LEDs connected to the oreo led cpu
 #define OREOLED_INSTANCE_ALL    0xff    // instance number to indicate all LEDs (used for set_rgb and set_macro)
 #define OREOLED_BRIGHT          0xff    // maximum brightness when flying (disconnected from usb)
-#define OREOLED_DIM             0x0f    // dim when connected to USB
 
 class OreoLED_PX4 : public NotifyDevice
 {
