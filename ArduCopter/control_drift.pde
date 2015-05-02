@@ -82,7 +82,7 @@ static void drift_run()
     target_roll = constrain_int16(target_roll, -4500, 4500);
 
     // If we let go of sticks, bring us to a stop
-    if(target_pitch == 0){
+    if(AP_Math::is_zero(target_pitch)){
         // .14/ (.03 * 100) = 4.6 seconds till full breaking
         breaker += .03f;
         breaker = min(breaker, DRIFT_SPEEDGAIN);

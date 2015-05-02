@@ -1053,7 +1053,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             float takeoff_alt = packet.param7 * 100;      // Convert m to cm
 
-            if(do_user_takeoff(takeoff_alt, !packet.param3)) {
+            if(do_user_takeoff(takeoff_alt, AP_Math::is_zero(packet.param3))) {
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 result = MAV_RESULT_FAILED;
@@ -1087,7 +1087,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param4 : relative offset (1) or absolute angle (0)
             if ((packet.param1 >= 0.0f)   &&
             	(packet.param1 <= 360.0f) &&
-            	((packet.param4 == 0) || (packet.param4 == 1))) {
+            	(AP_Math::is_zero(packet.param4) || AP_Math::is_equal(packet.param4,1.0f))) {
             	set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             } else {
@@ -1114,7 +1114,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param6 : longitude
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
-            if(packet.param1 == 1 || (packet.param5 == 0 && packet.param6 == 0 && packet.param7 == 0)) {
+            if(AP_Math::is_equal(packet.param1,1.0f) || AP_Math::is_zero(packet.param5) && AP_Math::is_zero(packet.param6) && AP_Math::is_zero(packet.param7)) {
                 if (set_home_to_current_location_and_lock()) {
                     result = MAV_RESULT_ACCEPTED;
                 }
@@ -1158,7 +1158,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_FAILED;
                 break;
             }
-            if (packet.param1 == 1) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 // gyro offset calibration
                 ins.init_gyro();
                 // reset ahrs gyro bias
@@ -1168,13 +1168,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
-            } else if (packet.param3 == 1) {
+            } else if (AP_Math::is_equal(packet.param3,1.0f)) {
                 // fast barometer calibration
                 init_barometer(false);
                 result = MAV_RESULT_ACCEPTED;
-            } else if (packet.param4 == 1) {
+            } else if (AP_Math::is_equal(packet.param4,1.0f)) {
                 result = MAV_RESULT_UNSUPPORTED;
-            } else if (packet.param5 == 1) {
+            } else if (AP_Math::is_equal(packet.param5,1.0f)) {
                 // 3d accel calibration
                 float trim_roll, trim_pitch;
                 // this blocks
@@ -1186,19 +1186,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
-            } else if (packet.param6 == 1) {
+            } else if (AP_Math::is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
             }
             break;
 
         case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-            if (packet.param1 == 2) {
+            if (AP_Math::is_equal(packet.param1,2.0f)) {
                 // save first compass's offsets
                 compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
                 result = MAV_RESULT_ACCEPTED;
             }
-            if (packet.param1 == 5) {
+            if (AP_Math::is_equal(packet.param1,5.0f)) {
                 // save secondary compass's offsets
                 compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
                 result = MAV_RESULT_ACCEPTED;
@@ -1206,12 +1206,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (packet.param1 == 1.0f) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 // attempt to arm and return success or failure
                 if (init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
-            } else if (packet.param1 == 0.0f && (mode_has_manual_throttle(control_mode) || ap.land_complete))  {
+            } else if (AP_Math::is_zero(packet.param1) && (mode_has_manual_throttle(control_mode) || ap.land_complete))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
@@ -1244,12 +1244,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (packet.param1 == 1 || packet.param1 == 3) {
+            if (AP_Math::is_equal(packet.param1,1.0f) || AP_Math::is_equal(packet.param1,3.0f)) {
                 AP_Notify::events.firmware_update = 1;
                 update_notify();
                 hal.scheduler->delay(50);
                 // when packet.param1 == 3 we reboot to hold in bootloader
-                hal.scheduler->reboot(packet.param1 == 3);
+                hal.scheduler->reboot(AP_Math::is_equal(packet.param1,3.0f));
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1329,7 +1329,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (packet.param1 == 1) {
+            if (AP_Math::is_equal(packet.param1,1.0f)) {
                 gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                 result = MAV_RESULT_ACCEPTED;
             }
@@ -1481,9 +1481,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         // m/s/s
         Vector3f accels;
-        accels.x = packet.xacc * (GRAVITY_MSS/1000.0);
-        accels.y = packet.yacc * (GRAVITY_MSS/1000.0);
-        accels.z = packet.zacc * (GRAVITY_MSS/1000.0);
+        accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
+        accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
+        accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
 
         ins.set_gyro(0, gyros);
 
