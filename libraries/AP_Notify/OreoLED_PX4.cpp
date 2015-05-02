@@ -81,7 +81,6 @@ void OreoLED_PX4::update()
     static uint8_t initialization_done = 0;   // Keep track if initialization has begun.  There is a period when the driver
                                               // is running but initialization has not yet begun -- this prevents post-initialization
                                               // LED patterns from displaying before initialization has completed.
-    uint8_t brightness = OREOLED_BRIGHT;
 
     // return immediately if not healthy
     if (!_overall_health) {
@@ -108,11 +107,6 @@ void OreoLED_PX4::update()
     }
     counter = 0;
 
-    // use dim light when connected through USB
-    if (hal.gpio->usb_connected()) {
-        brightness = OREOLED_DIM;
-    }
-
     // move forward one step
     step++;
     if (step >= 10) {
@@ -121,7 +115,7 @@ void OreoLED_PX4::update()
 
     // Pre-initialization pattern is all solid green
     if (!initialization_done) {
-        set_rgb(OREOLED_ALL_INSTANCES, 0, brightness, 0);
+        set_rgb(OREOLED_ALL_INSTANCES, 0, OREOLED_BRIGHT, 0);
     }
 
     // initialising pattern
@@ -140,21 +134,21 @@ void OreoLED_PX4::update()
             case 3:
             case 6:
                 // red
-                set_rgb(OREOLED_INSTANCE_ALL, brightness, 0, 0);
+                set_rgb(OREOLED_INSTANCE_ALL, OREOLED_BRIGHT, 0, 0);
                 break;
 
             case 1:
             case 4:
             case 7:
                 // blue
-                set_rgb(OREOLED_INSTANCE_ALL, 0, 0, brightness);
+                set_rgb(OREOLED_INSTANCE_ALL, 0, 0, OREOLED_BRIGHT);
                 break;
 
             case 2:
             case 5:
             case 8:
                 // green on
-                set_rgb(OREOLED_INSTANCE_ALL, 0, brightness, 0);
+                set_rgb(OREOLED_INSTANCE_ALL, 0, OREOLED_BRIGHT, 0);
                 break;
 
             case 9:
@@ -177,8 +171,8 @@ void OreoLED_PX4::update()
             case 3:
             case 4:
                 // Front red/rear black
-                set_rgb(OREOLED_FRONTLEFT, brightness, 0, 0);
-                set_rgb(OREOLED_FRONTRIGHT, brightness, 0, 0);
+                set_rgb(OREOLED_FRONTLEFT, OREOLED_BRIGHT, 0, 0);
+                set_rgb(OREOLED_FRONTRIGHT, OREOLED_BRIGHT, 0, 0);
                 set_rgb(OREOLED_BACKLEFT, 0, 0, 0);
                 set_rgb(OREOLED_BACKRIGHT, 0, 0, 0);
                 break;
@@ -190,8 +184,8 @@ void OreoLED_PX4::update()
                 // Front black/rear red
                 set_rgb(OREOLED_FRONTLEFT, 0, 0, 0);
                 set_rgb(OREOLED_FRONTRIGHT, 0, 0, 0);
-                set_rgb(OREOLED_BACKLEFT, brightness, 0, 0);
-                set_rgb(OREOLED_BACKRIGHT, brightness, 0, 0);
+                set_rgb(OREOLED_BACKLEFT, OREOLED_BRIGHT, 0, 0);
+                set_rgb(OREOLED_BACKRIGHT, OREOLED_BRIGHT, 0, 0);
                 break;
         }
         // record stage
