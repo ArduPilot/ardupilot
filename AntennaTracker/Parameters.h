@@ -92,6 +92,7 @@ public:
         k_param_pitch_range,
         k_param_distance_min,
         k_param_sysid_target,       // 138
+        k_param_gcs3,               // stream rates for fourth MAVLink port
 
         //
         // 150: Telemetry control
