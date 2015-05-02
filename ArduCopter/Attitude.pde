@@ -82,7 +82,7 @@ static float get_look_ahead_yaw()
 static void update_thr_average()
 {
     // ensure throttle_average has been initialised
-    if( throttle_average == 0 ) {
+    if( AP_Math::is_zero(throttle_average) ) {
         throttle_average = g.throttle_mid;
         // update position controller
         pos_control.set_throttle_hover(throttle_average);

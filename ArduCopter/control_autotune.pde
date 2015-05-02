@@ -295,7 +295,7 @@ static void autotune_run()
         pos_control.set_alt_target_to_current_alt();
     }else{
         // check if pilot is overriding the controls
-        if (target_roll != 0 || target_pitch != 0 || target_yaw_rate != 0.0f || target_climb_rate != 0) {
+        if (!AP_Math::is_zero(target_roll) || !AP_Math::is_zero(target_pitch) || !AP_Math::is_zero(target_yaw_rate) || !AP_Math::is_zero(target_climb_rate)) {
             if (!autotune_state.pilot_override) {
                 autotune_state.pilot_override = true;
                 // set gains to their original values
@@ -334,7 +334,7 @@ static void autotune_attitude_control()
 {
     float rotation_rate = 0.0f;        // rotation rate in radians/second
     float lean_angle = 0.0f;
-    const float direction_sign = autotune_state.positive_direction ? 1.0 : -1.0;
+    const float direction_sign = autotune_state.positive_direction ? 1.0f : -1.0f;
 
     // check tuning step
     switch (autotune_state.step) {
@@ -747,7 +747,7 @@ static void autotune_backup_gains_and_initialise()
 
     autotune_desired_yaw = ahrs.yaw_sensor;
 
-    g.autotune_aggressiveness = constrain_float(g.autotune_aggressiveness, 0.05, 0.1);
+    g.autotune_aggressiveness = constrain_float(g.autotune_aggressiveness, 0.05f, 0.1f);
 
     // backup original pids and initialise tuned pid values
     if (autotune_roll_enabled()) {
@@ -789,7 +789,7 @@ static void autotune_load_orig_gains()
     // sanity check the gains
     bool failed = false;
     if (autotune_roll_enabled()) {
-        if ((orig_roll_rp != 0) || (orig_roll_sp != 0)) {
+        if (!AP_Math::is_zero(orig_roll_rp) || !AP_Math::is_zero(orig_roll_sp)) {
             g.pid_rate_roll.kP(orig_roll_rp);
             g.pid_rate_roll.kI(orig_roll_ri);
             g.pid_rate_roll.kD(orig_roll_rd);
@@ -799,7 +799,7 @@ static void autotune_load_orig_gains()
         }
     }
     if (autotune_pitch_enabled()) {
-        if ((orig_pitch_rp != 0) || (orig_pitch_sp != 0)) {
+        if (!AP_Math::is_zero(orig_pitch_rp) || !AP_Math::is_zero(orig_pitch_sp)) {
             g.pid_rate_pitch.kP(orig_pitch_rp);
             g.pid_rate_pitch.kI(orig_pitch_ri);
             g.pid_rate_pitch.kD(orig_pitch_rd);
@@ -809,7 +809,7 @@ static void autotune_load_orig_gains()
         }
     }
     if (autotune_yaw_enabled()) {
-        if ((orig_yaw_rp != 0) || (orig_yaw_sp != 0) || (orig_yaw_rLPF != 0)) {
+        if (!AP_Math::is_zero(orig_yaw_rp) || !AP_Math::is_zero(orig_yaw_sp) || !AP_Math::is_zero(orig_yaw_rLPF)) {
             g.pid_rate_yaw.kP(orig_yaw_rp);
             g.pid_rate_yaw.kI(orig_yaw_ri);
             g.pid_rate_yaw.kD(orig_yaw_rd);
@@ -831,7 +831,7 @@ static void autotune_load_tuned_gains()
     // sanity check the gains
     bool failed = true;
     if (autotune_roll_enabled()) {
-        if (tune_roll_rp != 0) {
+        if (!AP_Math::is_zero(tune_roll_rp)) {
             g.pid_rate_roll.kP(tune_roll_rp);
             g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_roll.kD(tune_roll_rd);
@@ -840,7 +840,7 @@ static void autotune_load_tuned_gains()
         }
     }
     if (autotune_pitch_enabled()) {
-        if (tune_pitch_rp != 0) {
+        if (!AP_Math::is_zero(tune_pitch_rp)) {
             g.pid_rate_pitch.kP(tune_pitch_rp);
             g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_pitch.kD(tune_pitch_rd);
@@ -849,7 +849,7 @@ static void autotune_load_tuned_gains()
         }
     }
     if (autotune_yaw_enabled()) {
-        if (tune_yaw_rp != 0) {
+        if (!AP_Math::is_zero(tune_yaw_rp)) {
             g.pid_rate_yaw.kP(tune_yaw_rp);
             g.pid_rate_yaw.kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
             g.pid_rate_yaw.kD(0.0f);
@@ -871,21 +871,21 @@ static void autotune_load_intra_test_gains()
     // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
     // sanity check the gains
     bool failed = true;
-    if (autotune_roll_enabled() && (orig_roll_rp != 0)) {
+    if (autotune_roll_enabled() && !AP_Math::is_zero(orig_roll_rp)) {
         g.pid_rate_roll.kP(orig_roll_rp);
         g.pid_rate_roll.kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_roll.kD(orig_roll_rd);
         g.p_stabilize_roll.kP(orig_roll_sp);
         failed = false;
     }
-    if (autotune_pitch_enabled() && (orig_pitch_rp != 0)) {
+    if (autotune_pitch_enabled() && !AP_Math::is_zero(orig_pitch_rp)) {
         g.pid_rate_pitch.kP(orig_pitch_rp);
         g.pid_rate_pitch.kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_pitch.kD(orig_pitch_rd);
         g.p_stabilize_pitch.kP(orig_pitch_sp);
         failed = false;
     }
-    if (autotune_yaw_enabled() && (orig_yaw_rp != 0)) {
+    if (autotune_yaw_enabled() && !AP_Math::is_zero(orig_yaw_rp)) {
         g.pid_rate_yaw.kP(orig_yaw_rp);
         g.pid_rate_yaw.kI(orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_yaw.kD(orig_yaw_rd);
@@ -906,7 +906,7 @@ static void autotune_load_twitch_gains()
     bool failed = true;
     switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
-            if (tune_roll_rp != 0) {
+            if (!AP_Math::is_zero(tune_roll_rp)) {
                 g.pid_rate_roll.kP(tune_roll_rp);
                 g.pid_rate_roll.kI(tune_roll_rp*0.01f);
                 g.pid_rate_roll.kD(tune_roll_rd);
@@ -915,7 +915,7 @@ static void autotune_load_twitch_gains()
             }
             break;
         case AUTOTUNE_AXIS_PITCH:
-            if (tune_pitch_rp != 0) {
+            if (!AP_Math::is_zero(tune_pitch_rp)) {
                 g.pid_rate_pitch.kP(tune_pitch_rp);
                 g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
                 g.pid_rate_pitch.kD(tune_pitch_rd);
@@ -924,7 +924,7 @@ static void autotune_load_twitch_gains()
             }
             break;
         case AUTOTUNE_AXIS_YAW:
-            if (tune_yaw_rp != 0) {
+            if (!AP_Math::is_zero(tune_yaw_rp)) {
                 g.pid_rate_yaw.kP(tune_yaw_rp);
                 g.pid_rate_yaw.kI(tune_yaw_rp*0.01f);
                 g.pid_rate_yaw.kD(0.0f);
@@ -947,7 +947,7 @@ static void autotune_save_tuning_gains()
     // if we successfully completed tuning
     if (autotune_state.mode == AUTOTUNE_MODE_SUCCESS) {
         // sanity check the rate P values
-        if (autotune_roll_enabled() && (tune_roll_rp != 0)) {
+        if (autotune_roll_enabled() && !AP_Math::is_zero(tune_roll_rp)) {
             // rate roll gains
             g.pid_rate_roll.kP(tune_roll_rp);
             g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
@@ -968,7 +968,7 @@ static void autotune_save_tuning_gains()
             orig_roll_sp = g.p_stabilize_roll.kP();
         }
 
-        if (autotune_pitch_enabled() && (tune_pitch_rp != 0)) {
+        if (autotune_pitch_enabled() && !AP_Math::is_zero(tune_pitch_rp)) {
             // rate pitch gains
             g.pid_rate_pitch.kP(tune_pitch_rp);
             g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
@@ -989,7 +989,7 @@ static void autotune_save_tuning_gains()
             orig_pitch_sp = g.p_stabilize_pitch.kP();
         }
 
-        if (autotune_yaw_enabled() && (tune_yaw_rp != 0)) {
+        if (autotune_yaw_enabled() && !AP_Math::is_zero(tune_yaw_rp)) {
             // rate yaw gains
             g.pid_rate_yaw.kP(tune_yaw_rp);
             g.pid_rate_yaw.kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
