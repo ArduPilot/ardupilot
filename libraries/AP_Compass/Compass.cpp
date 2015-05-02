@@ -533,7 +533,7 @@ bool Compass::configured(uint8_t i)
     }
 
     // exit immediately if all offsets are zero
-    if (get_offsets(i).length() == 0.0f) {
+    if (AP_Math::is_zero(get_offsets(i).length())) {
         return false;
     }
 
@@ -575,7 +575,7 @@ void Compass::setHIL(float roll, float pitch, float yaw)
     // create a rotation matrix for the given attitude
     R.from_euler(roll, pitch, yaw);
 
-    if (_hil.last_declination != get_declination()) {
+    if (!AP_Math::is_equal(_hil.last_declination,get_declination())) {
         _setup_earth_field();
         _hil.last_declination = get_declination();
     }
