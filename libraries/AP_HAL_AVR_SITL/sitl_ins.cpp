@@ -80,8 +80,8 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
 
 float SITL_State::_gyro_drift(void)
 {
-    if (_sitl->drift_speed == 0.0f ||
-        _sitl->drift_time == 0.0f) {
+    if (AP_Math::is_zero(_sitl->drift_speed) ||
+            AP_Math::is_zero(_sitl->drift_time)) {
 		return 0;
 	}
 	double period  = _sitl->drift_time * 2;

@@ -607,7 +607,7 @@ Vector3f SITL_State::_rand_vec3f(void)
 	Vector3f v = Vector3f(_rand_float(),
                           _rand_float(),
                           _rand_float());
-	if (v.length() != 0.0f) {
+	if (!AP_Math::is_zero(v.length())) {
 		v.normalize();
 	}
 	return v;
