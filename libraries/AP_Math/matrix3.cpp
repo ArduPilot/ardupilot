@@ -117,6 +117,21 @@ void Matrix3<T>::rotateXYinv(const Vector3<T> &g)
     (*this) += temp_matrix;
 }
 
+/*
+  re-normalise a rotation matrix
+*/
+template <typename T>
+void Matrix3<T>::normalize(void)
+{
+    float error = a * b;
+    Vector3<T> t0 = a - (b * (0.5f * error));
+    Vector3<T> t1 = b - (a * (0.5f * error));
+    Vector3<T> t2 = t0 % t1;
+    a = t0 * (1.0f / t0.length());
+    b = t1 * (1.0f / t1.length());
+    c = t2 * (1.0f / t2.length());
+}
+
 // multiplication by a vector
 template <typename T>
 Vector3<T> Matrix3<T>::operator *(const Vector3<T> &v) const
@@ -181,6 +196,7 @@ template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::rotateXY(const Vector3<float> &g);
 template void Matrix3<float>::rotateXYinv(const Vector3<float> &g);
+template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;

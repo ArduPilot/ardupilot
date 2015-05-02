@@ -219,6 +219,9 @@ public:
     // apply an additional inverse rotation to a rotation matrix but 
     // only use X, Y elements from rotation vector
     void        rotateXYinv(const Vector3<T> &g);
+
+    // normalize a rotation matrix
+    void        normalize(void);
 };
 
 typedef Matrix3<int16_t>                Matrix3i;
