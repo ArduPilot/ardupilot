@@ -1094,7 +1094,7 @@ void AP_Param::show(const AP_Param *ap, const char *s,
         port->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
         break;
     case AP_PARAM_FLOAT:
-        port->printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
+        port->printf_P(PSTR("%s: %f\n"), s, (double)((AP_Float *)ap)->get());
         break;
     default:
         break;
