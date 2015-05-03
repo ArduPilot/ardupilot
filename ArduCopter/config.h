@@ -156,7 +156,7 @@
 #endif
 
 #ifndef SONAR_GAIN_DEFAULT
- # define SONAR_GAIN_DEFAULT 0.8            // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
+ # define SONAR_GAIN_DEFAULT 0.8f           // gain for controlling how quickly sonar range adjusts target altitude (lower means slower reaction)
 #endif
 
 #ifndef THR_SURFACE_TRACKING_VELZ_MAX
@@ -287,7 +287,7 @@
 
 // arming check's maximum acceptable vector difference between internal and external compass after vectors are normalized to field length of 1.0
 #ifndef COMPASS_ACCEPTABLE_VECTOR_DIFF
-  #define COMPASS_ACCEPTABLE_VECTOR_DIFF    0.75    // pre arm compass check will fail if internal vs external compass direction differ by more than 45 degrees
+  #define COMPASS_ACCEPTABLE_VECTOR_DIFF    0.75f    // pre arm compass check will fail if internal vs external compass direction differ by more than 45 degrees
  #endif
 
 //////////////////////////////////////////////////////////////////////////////
