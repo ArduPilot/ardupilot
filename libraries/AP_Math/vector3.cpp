@@ -19,7 +19,7 @@
 
 #include "AP_Math.h"
 
-#define HALF_SQRT_2 0.70710678118654757f
+#define HALF_SQRT_2 0.70710678118654757
 
 // rotate a vector by a standard rotation, attempting
 // to use the minimum number of floating point operations
