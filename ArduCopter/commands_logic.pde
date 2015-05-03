@@ -701,7 +701,7 @@ static bool verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(circle_nav.get_angle_total()/(2*M_PI)) >= (float)LOWBYTE(cmd.p1);
+    return fabsf(circle_nav.get_angle_total()/(float)(2*M_PI)) >= LOWBYTE(cmd.p1);
 }
 
 // externs to remove compiler warning
