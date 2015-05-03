@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  parent class for aircraft simulators
+  multicopter simulator class
 */
 
 #ifndef _SIM_MULTICOPTER_H
@@ -65,6 +65,9 @@ public:
 
     /* update model by one time step */
     void update(const struct sitl_input &input);
+
+    /* static object creator */
+    static Aircraft *create(const char *home_str, const char *frame_str) { return new MultiCopter(home_str, frame_str); }
 
 private:
     const Frame *frame;

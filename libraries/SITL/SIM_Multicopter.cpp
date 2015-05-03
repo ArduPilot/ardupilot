@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  parent class for aircraft simulators
+  multicopter simulator class
 */
 
 #include "SIM_Multicopter.h"
@@ -99,7 +99,7 @@ static const Frame supported_frames[] =
   constructor
  */
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str),    
+    Aircraft(home_str, frame_str),    
     frame(NULL),
     hover_throttle(0.51),
     terminal_velocity(15.0),

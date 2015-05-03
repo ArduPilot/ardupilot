@@ -30,7 +30,7 @@
 class Aircraft 
 {
 public:
-    Aircraft(const char *home_str);
+    Aircraft(const char *home_str, const char *frame_str);
 
     /*
       structure passed in giving servo positions as PWM values in

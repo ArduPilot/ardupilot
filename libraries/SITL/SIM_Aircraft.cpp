@@ -30,7 +30,7 @@
 /*
   constructor
  */
-Aircraft::Aircraft(const char *home_str) :
+Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     ground_level(0),
     frame_height(0),
     dcm(),
