@@ -25,6 +25,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
+#include "float.h"
 
 #include <AP_Progmem.h>
 #include <../StorageManager/StorageManager.h>
@@ -421,7 +423,7 @@ public:
     /// Combined set and save
     ///
     bool set_and_save(const T &v) {
-        bool force = (_value != v);
+        bool force = fabsf(_value - v) < FLT_EPSILON;
         set(v);
         return save(force);
     }
