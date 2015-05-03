@@ -33,9 +33,9 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder &_ranger, uint8_t ins
 void AP_RangeFinder_Backend::update_status()
 {
     // check distance
-    if (state.distance_cm > ranger._max_distance_cm[state.instance]) {
+    if ((int16_t)state.distance_cm > ranger._max_distance_cm[state.instance]) {
         set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
-    } else if (state.distance_cm < ranger._min_distance_cm[state.instance]) {
+    } else if ((int16_t)state.distance_cm < ranger._min_distance_cm[state.instance]) {
         set_status(RangeFinder::RangeFinder_OutOfRangeLow);
     } else {
         set_status(RangeFinder::RangeFinder_Good);
