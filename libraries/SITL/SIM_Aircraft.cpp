@@ -36,7 +36,6 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     dcm(),
     gyro(),
     velocity_ef(),
-    velocity_body(),
     mass(0),
     accel_body(0, 0, -GRAVITY_MSS),
     time_now_us(0),
@@ -84,7 +83,6 @@ void Aircraft::update_position(void)
     location_update(location, bearing, distance);
 
     location.alt  = home.alt - position.z*100.0f;
-    velocity_body = dcm.transposed() * velocity_ef;
 
     time_now_us += frame_time_us;
     sync_frame_time();

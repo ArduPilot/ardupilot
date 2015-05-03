@@ -62,7 +62,6 @@ protected:
     Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
     Vector3f gyro; // rad/s
     Vector3f velocity_ef; // m/s, earth frame
-    Vector3f velocity_body; // m/s, body frame
     Vector3f position; // meters, NED from origin
     float mass; // kg
     Vector3f accel_body; // m/s/s NED, body frame
