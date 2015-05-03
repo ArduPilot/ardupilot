@@ -431,12 +431,12 @@ print_accel_offsets_and_scaling(void)
     const Vector3f &accel_offsets = ins.get_accel_offsets();
     const Vector3f &accel_scale = ins.get_accel_scale();
     cliSerial->printf_P(PSTR("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n"),
-                    (float)accel_offsets.x,                           // Pitch
-                    (float)accel_offsets.y,                           // Roll
-                    (float)accel_offsets.z,                           // YAW
-                    (float)accel_scale.x,                             // Pitch
-                    (float)accel_scale.y,                             // Roll
-                    (float)accel_scale.z);                            // YAW
+                    (double)accel_offsets.x,                           // Pitch
+                    (double)accel_offsets.y,                           // Roll
+                    (double)accel_offsets.z,                           // YAW
+                    (double)accel_scale.x,                             // Pitch
+                    (double)accel_scale.y,                             // Roll
+                    (double)accel_scale.z);                            // YAW
 }
 
 static void
@@ -444,9 +444,9 @@ print_gyro_offsets(void)
 {
     const Vector3f &gyro_offsets = ins.get_gyro_offsets();
     cliSerial->printf_P(PSTR("G_off: %4.2f, %4.2f, %4.2f\n"),
-                    (float)gyro_offsets.x,
-                    (float)gyro_offsets.y,
-                    (float)gyro_offsets.z);
+                    (double)gyro_offsets.x,
+                    (double)gyro_offsets.y,
+                    (double)gyro_offsets.z);
 }
 
 #endif // CLI_ENABLED
@@ -461,7 +461,7 @@ static void report_compass()
 
     // mag declination
     cliSerial->printf_P(PSTR("Mag Dec: %4.4f\n"),
-                    degrees(compass.get_declination()));
+            (double)degrees(compass.get_declination()));
 
     // mag offsets
     Vector3f offsets;
@@ -470,9 +470,9 @@ static void report_compass()
         // mag offsets
         cliSerial->printf_P(PSTR("Mag%d off: %4.4f, %4.4f, %4.4f\n"),
                         (int)i,
-                        offsets.x,
-                        offsets.y,
-                        offsets.z);
+                        (double)offsets.x,
+                        (double)offsets.y,
+                        (double)offsets.z);
     }
 
     // motor compensation
@@ -491,9 +491,9 @@ static void report_compass()
             motor_compensation = compass.get_motor_compensation(i);
             cliSerial->printf_P(PSTR("\nComMot%d: %4.2f, %4.2f, %4.2f\n"),
                         (int)i,
-                        motor_compensation.x,
-                        motor_compensation.y,
-                        motor_compensation.z);
+                        (double)motor_compensation.x,
+                        (double)motor_compensation.y,
+                        (double)motor_compensation.z);
         }
     }
     print_blanks(1);
