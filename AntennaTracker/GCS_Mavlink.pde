@@ -375,7 +375,7 @@ bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
 
     // send at a much lower rate during parameter sends
     if (_queued_parameter != NULL) {
-        rate *= 0.25;
+        rate *= 0.25f;
     }
 
     if (rate <= 0) {
