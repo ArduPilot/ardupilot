@@ -5,6 +5,10 @@ sitl: HAL_BOARD = HAL_BOARD_AVR_SITL
 sitl: TOOLCHAIN = NATIVE
 sitl: all
 
+sitl-arm: HAL_BOARD = HAL_BOARD_AVR_SITL
+sitl-arm: TOOLCHAIN = RPI
+sitl-arm: all
+
 apm1: HAL_BOARD = HAL_BOARD_APM1
 apm1: TOOLCHAIN = AVR
 apm1: all
