@@ -20,6 +20,7 @@
 #include "polygon.h"
 #include "edc.h"
 #include "float.h"
+#include "AP_Param.h"
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
