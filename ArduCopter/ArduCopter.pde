@@ -937,7 +937,7 @@ static void throttle_loop()
     read_inertial_altitude();
 
     // update throttle_low_comp value (controls priority of throttle vs attitude control)
-    update_throttle_low_comp();
+    update_throttle_thr_mix();
 
     update_ground_effect_detector();
 
