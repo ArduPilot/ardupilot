@@ -828,7 +828,7 @@ static void update_current_mode(void)
 
         // and throttle gives speed in proportion to cruise speed, up
         // to 50% throttle, then uses nudging above that.
-        float target_speed = channel_throttle->pwm_to_angle() * 0.01 * 2 * g.speed_cruise;
+        float target_speed = channel_throttle->pwm_to_angle() * 0.01f * 2 * g.speed_cruise;
         set_reverse(target_speed < 0);
         if (in_reverse) {
             target_speed = constrain_float(target_speed, -g.speed_cruise, 0);

@@ -369,8 +369,8 @@ test_ins(uint8_t argc, const Menu::arg *argv)
                             (int)ahrs.roll_sensor / 100,
                             (int)ahrs.pitch_sensor / 100,
                             (uint16_t)ahrs.yaw_sensor / 100,
-                            gyros.x, gyros.y, gyros.z,
-                            accels.x, accels.y, accels.z);
+                            (double)gyros.x, (double)gyros.y, (double)gyros.z,
+                            (double)accels.x, (double)accels.y, (double)accels.z);
         if(cliSerial->available() > 0){
             return (0);
         }
@@ -430,8 +430,8 @@ test_mag(uint8_t argc, const Menu::arg *argv)
                 const Vector3f mag = compass.get_field();
                 cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                     (wrap_360_cd(ToDeg(heading) * 100)) /100,
-                                    mag.x, mag.y, mag.z,
-                                    mag_ofs.x, mag_ofs.y, mag_ofs.z);
+                                    (double)mag.x, (double)mag.y, (double)mag.z,
+                                    (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
             } else {
                 cliSerial->println_P(PSTR("compass not healthy"));
             }
@@ -502,14 +502,14 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 
         if (now - last_print >= 200) {
             cliSerial->printf_P(PSTR("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n"), 
-                                sonar_dist_cm_min, 
-                                sonar_dist_cm_max, 
-                                voltage_min,
-                                voltage_max,
-                                sonar2_dist_cm_min, 
-                                sonar2_dist_cm_max, 
-                                voltage2_min,
-                                voltage2_max);
+                                (double)sonar_dist_cm_min,
+                                (double)sonar_dist_cm_max,
+                                (double)voltage_min,
+                                (double)voltage_max,
+                                (double)sonar2_dist_cm_min,
+                                (double)sonar2_dist_cm_max,
+                                (double)voltage2_min,
+                                (double)voltage2_max);
             voltage_min = voltage_max = 0.0f;
             voltage2_min = voltage2_max = 0.0f;
             sonar_dist_cm_min = sonar_dist_cm_max = 0.0f;
