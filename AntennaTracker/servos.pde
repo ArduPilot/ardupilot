@@ -234,7 +234,7 @@ static void update_yaw_position_servo(float yaw)
                           (int)slew_dir, (int)new_slew_dir,
                           (long)angle_err,
                           (long)channel_yaw.servo_out,
-                          degrees(ahrs.get_gyro().z));
+                          (double)degrees(ahrs.get_gyro().z));
     }
 
     slew_dir = new_slew_dir;
