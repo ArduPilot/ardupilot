@@ -22,4 +22,7 @@ private:
     uint64_t    _last_timestamp;    // time of last update (used to avoid processing old reports)
 };
 
+// ground_distance
+float AP_OpticalFlow_PX4_ground_distance(void);
+
 #endif
