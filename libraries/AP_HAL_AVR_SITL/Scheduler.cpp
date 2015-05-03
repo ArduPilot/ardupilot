@@ -8,8 +8,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
-#include <signal.h>
-#include <pthread.h>
 
 using namespace AVR_SITL;
 
