@@ -63,6 +63,9 @@
 #define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
 #define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
+#define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
+#define AP_MOTORS_THR_MIX_MID_DEFAULT   0.5f    // manual throttle mix
+#define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.9f    // maximum throttle mix
 
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
@@ -165,13 +168,15 @@ public:
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
 
-    // set_throttle_low_comp - set desired throttle_low_comp (actual throttle_low_comp is slewed towards this value over 1~2 seconds)
+    // set_throttle_thr_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
-    void                set_throttle_low_comp(float throttle_low_comp) { _throttle_low_comp_desired = throttle_low_comp; }
+    void                set_throttle_mix_min() { _throttle_thr_mix_desired = _thr_mix_min; }
+    void                set_throttle_mix_mid() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MID_DEFAULT; }
+    void                set_throttle_mix_max() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MAX_DEFAULT; }
 
-    // get_throttle_low_comp - get low throttle compensation value
-    float               get_throttle_low_comp() { return _throttle_low_comp; }
+    // get_throttle_thr_mix - get low throttle compensation value
+    float               is_throttle_mix_min() { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
 
     // get_lift_max - get maximum lift ratio
     float               get_lift_max() { return _lift_max; }
@@ -235,8 +240,8 @@ protected:
     // update_battery_resistance - calculate battery resistance when throttle is above hover_out
     void                update_battery_resistance();
 
-    // update_throttle_low_comp - updates thr_low_comp value towards the target
-    void                update_throttle_low_comp();
+    // update_throttle_thr_mix - updates thr_low_comp value towards the target
+    void                update_throttle_thr_mix();
 
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
@@ -266,6 +271,7 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
+    AP_Float            _thr_mix_min;           // current over which maximum throttle is limited
 
     // internal variables
     RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
@@ -278,8 +284,8 @@ protected:
     int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;             // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
-    float               _throttle_low_comp;     // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
-    float               _throttle_low_comp_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _throttle_thr_mix;      // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_thr_mix_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
 
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading
