@@ -88,7 +88,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 				cliSerial->printf_P(PSTR("INT32 %s: %ld\n"), argv[1].str, (long)((AP_Int32 *)param)->get());
 				break;
 			case AP_PARAM_FLOAT:
-				cliSerial->printf_P(PSTR("FLOAT %s: %f\n"), argv[1].str, ((AP_Float *)param)->get());
+				cliSerial->printf_P(PSTR("FLOAT %s: %f\n"), argv[1].str, (double)((AP_Float *)param)->get());
 				break;
 			default:
 				cliSerial->printf_P(PSTR("Unhandled parameter type for %s: %d.\n"), argv[1].str, type);
@@ -516,9 +516,9 @@ static void report_compass()
 
 	// mag offsets
 	cliSerial->printf_P(PSTR("Mag offsets: %4.4f, %4.4f, %4.4f\n"),
-							offsets.x,
-							offsets.y,
-							offsets.z);
+                            (double)offsets.x,
+                            (double)offsets.y,
+                            (double)offsets.z);
 	print_blanks(2);
 }
 
@@ -542,9 +542,9 @@ static void
 print_PID(PID * pid)
 {
 	cliSerial->printf_P(PSTR("P: %4.3f, I:%4.3f, D:%4.3f, IMAX:%ld\n"),
-					pid->kP(),
-					pid->kI(),
-					pid->kD(),
+                    (double)pid->kP(),
+                    (double)pid->kI(),
+                    (double)pid->kD(),
 					(long)pid->imax());
 }
 
