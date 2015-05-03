@@ -798,7 +798,7 @@ AP_InertialSensor::_init_gyro()
     hal.console->println();
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
-            hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
+            hal.console->printf_P("gyro[%u] did not converge: diff=%f dps\n",
                                   (unsigned)k, (double)ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
