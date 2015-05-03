@@ -47,7 +47,7 @@ static bool auto_takeoff_check(void)
         launchTimerStarted = true;
         last_tkoff_arm_time = now;
         gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
-                          SpdHgt_Controller->get_VXdot(), wait_time_ms*0.001f);
+                (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
     }
 
     // Only perform velocity check if not timed out
@@ -67,7 +67,7 @@ static bool auto_takeoff_check(void)
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || AP_Math::is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), gps.ground_speed());
+        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), (double)gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
         return true;

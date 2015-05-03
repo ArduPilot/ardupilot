@@ -57,10 +57,10 @@ static bool verify_land()
 
         if (!auto_state.land_complete) {
             if (!is_flying() && (hal.scheduler->millis()-auto_state.last_flying_ms) > 3000) {
-                gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), gps.ground_speed());
+                gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), (double)gps.ground_speed());
             } else {
                 gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
-                                  height, auto_state.land_sink_rate, gps.ground_speed());
+                        (double)height, (double)auto_state.land_sink_rate, (double)gps.ground_speed());
             }
         }
         auto_state.land_complete = true;
