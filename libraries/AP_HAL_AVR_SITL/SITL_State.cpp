@@ -23,6 +23,7 @@
 
 #include <SIM_Multicopter.h>
 #include <SIM_Helicopter.h>
+#include <SIM_Rover.h>
 
 #ifdef __CYGWIN__
 #include <stdio.h>
@@ -82,7 +83,9 @@ static const struct {
     { "hexax",     MultiCopter::create },
     { "octa",      MultiCopter::create },
     { "octa-quad", MultiCopter::create },
-    { "heli",      Helicopter::create }
+    { "heli",      Helicopter::create },
+    { "rover",     Rover::create },
+    { "rover-skid",Rover::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
