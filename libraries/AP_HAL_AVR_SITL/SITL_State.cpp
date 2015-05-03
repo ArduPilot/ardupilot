@@ -22,6 +22,7 @@
 #include <AP_Param.h>
 
 #include <SIM_Multicopter.h>
+#include <SIM_Helicopter.h>
 
 #ifdef __CYGWIN__
 #include <stdio.h>
@@ -70,6 +71,19 @@ void SITL_State::_usage(void)
 	fprintf(stdout, "\t-O ORIGIN   set home location (lat,lng,alt,yaw)\n");
 	fprintf(stdout, "\t-M MODEL    set simulation model\n");
 }
+
+static const struct {
+    const char *name;
+    Aircraft *(*constructor)(const char *home_str, const char *frame_str);
+} model_constructors[] = {
+    { "+",         MultiCopter::create },
+    { "x",         MultiCopter::create },
+    { "hexa",      MultiCopter::create },
+    { "hexax",     MultiCopter::create },
+    { "octa",      MultiCopter::create },
+    { "octa-quad", MultiCopter::create },
+    { "heli",      Helicopter::create }
+};
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
@@ -134,10 +148,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 	}
 
     if (model_str && home_str) {
-        sitl_model = new MultiCopter(home_str, model_str);
-        sitl_model->set_speedup(speedup);
-        _synthetic_clock_mode = true;
-        printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
+        for (uint8_t i=0; i<sizeof(model_constructors)/sizeof(model_constructors[0]); i++) {
+            if (strcmp(model_constructors[i].name, model_str) == 0) {
+                sitl_model = model_constructors[i].constructor(home_str, model_str);
+                sitl_model->set_speedup(speedup);
+                _synthetic_clock_mode = true;
+                printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
+                break;
+            }
+        }
     }
 
 	fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
