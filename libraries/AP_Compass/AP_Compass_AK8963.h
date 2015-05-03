@@ -54,9 +54,9 @@ protected:
 private:
     typedef enum 
     {
-        CONVERSION,
-        SAMPLE,
-        ERROR
+        STATE_CONVERSION,
+        STATE_SAMPLE,
+        STATE_ERROR
     } state_t;
 
     virtual bool        _backend_init() = 0;
