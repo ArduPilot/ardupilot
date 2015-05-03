@@ -152,6 +152,8 @@ static void update_events(void);
 void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 static void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
 static bool arm_motors(AP_Arming::ArmingMethod method);
+static bool create_mixer_file(const char *filename);
+static bool setup_failsafe_mixing(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // DataFlash
