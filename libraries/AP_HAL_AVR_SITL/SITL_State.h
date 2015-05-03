@@ -143,6 +143,8 @@ private:
 
     bool _synthetic_clock_mode;
 
+    const char *_fdm_address;
+
     // delay buffer variables
     static const uint8_t mag_buffer_length = 250;
     static const uint8_t wind_buffer_length = 50;

@@ -71,6 +71,7 @@ void SITL_State::_usage(void)
 	fprintf(stdout, "\t-s SPEEDUP  simulation speedup\n");
 	fprintf(stdout, "\t-O ORIGIN   set home location (lat,lng,alt,yaw)\n");
 	fprintf(stdout, "\t-M MODEL    set simulation model\n");
+	fprintf(stdout, "\t-F FDMADDR  set FDM UDP address (IPv4)\n");
 }
 
 static const struct {
@@ -106,8 +107,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _base_port = 5760;
     _rcout_port = 5502;
     _simin_port = 5501;
+    _fdm_address = "127.0.0.1";
 
-	while ((opt = getopt(argc, argv, "s:whr:H:CI:P:SO:M:S:")) != -1) {
+	while ((opt = getopt(argc, argv, "s:whr:H:CI:P:SO:M:S:F:")) != -1) {
 		switch (opt) {
 		case 'w':
 			AP_Param::erase_all();
@@ -143,6 +145,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 's':
             speedup = atof(optarg);
+            break;
+        case 'F':
+            _fdm_address = optarg;
             break;
 		default:
 			_usage();
@@ -228,7 +233,7 @@ void SITL_State::_sitl_setup(void)
 #endif
 	_rcout_addr.sin_family = AF_INET;
 	_rcout_addr.sin_port = htons(_rcout_port);
-	inet_pton(AF_INET, "127.0.0.1", &_rcout_addr.sin_addr);
+	inet_pton(AF_INET, _fdm_address, &_rcout_addr.sin_addr);
 
 #ifndef HIL_MODE
 	_setup_fdm();
