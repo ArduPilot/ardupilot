@@ -510,7 +510,7 @@ static void report_compass()
 
 	// mag declination
 	cliSerial->printf_P(PSTR("Mag Declination: %4.4f\n"),
-							degrees(compass.get_declination()));
+							(double)degrees(compass.get_declination()));
 
 	Vector3f offsets = compass.get_offsets();
 
