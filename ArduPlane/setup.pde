@@ -349,9 +349,9 @@ static void report_compass()
 
     // mag offsets
     cliSerial->printf_P(PSTR("Mag offsets: %4.4f, %4.4f, %4.4f\n"),
-                    offsets.x,
-                    offsets.y,
-                    offsets.z);
+                    (double)offsets.x,
+                    (double)offsets.y,
+                    (double)offsets.z);
     print_blanks(2);
 }
 
@@ -419,12 +419,12 @@ print_accel_offsets_and_scaling(void)
     Vector3f accel_offsets = ins.get_accel_offsets();
     Vector3f accel_scale = ins.get_accel_scale();
     cliSerial->printf_P(PSTR("Accel offsets: %4.2f, %4.2f, %4.2f\tscale: %4.2f, %4.2f, %4.2f\n"),
-                    (float)accel_offsets.x,                           // Pitch
-                    (float)accel_offsets.y,                           // Roll
-                    (float)accel_offsets.z,                           // YAW
-                    (float)accel_scale.x,                             // Pitch
-                    (float)accel_scale.y,                             // Roll
-                    (float)accel_scale.z);                            // YAW
+                    (double)accel_offsets.x,                           // Pitch
+                    (double)accel_offsets.y,                           // Roll
+                    (double)accel_offsets.z,                           // YAW
+                    (double)accel_scale.x,                             // Pitch
+                    (double)accel_scale.y,                             // Roll
+                    (double)accel_scale.z);                            // YAW
 }
 
 static void
@@ -432,9 +432,9 @@ print_gyro_offsets(void)
 {
     Vector3f gyro_offsets = ins.get_gyro_offsets();
     cliSerial->printf_P(PSTR("Gyro offsets: %4.2f, %4.2f, %4.2f\n"),
-                    (float)gyro_offsets.x,
-                    (float)gyro_offsets.y,
-                    (float)gyro_offsets.z);
+                    (double)gyro_offsets.x,
+                    (double)gyro_offsets.y,
+                    (double)gyro_offsets.z);
 }
 
 

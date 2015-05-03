@@ -588,7 +588,7 @@ static bool suppress_throttle(void)
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
         gcs_send_text_fmt(PSTR("Throttle unsuppressed - altitude %.2f"), 
-                          (float)(relative_altitude_abs_cm()*0.01f));
+                          (double)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
 
@@ -600,8 +600,8 @@ static bool suppress_throttle(void)
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             gcs_send_text_fmt(PSTR("Throttle unsuppressed - speed %.2f airspeed %.2f"), 
-                              gps.ground_speed(),
-                              airspeed.get_airspeed());
+                              (double)gps.ground_speed(),
+                              (double)airspeed.get_airspeed());
             throttle_suppressed = false;
             return false;        
         }
