@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <sys/time.h>
 
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 using namespace HALSITL;
 extern const AP_HAL::HAL& hal;
 
