@@ -44,7 +44,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
 OpticalFlow::OpticalFlow(void) :
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     backend(new AP_OpticalFlow_PX4(*this))
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     backend(new AP_OpticalFlow_HIL(*this))
 #else
     backend(NULL)

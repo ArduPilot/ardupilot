@@ -10,7 +10,7 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_SITL.h>
 #include <AP_AHRS.h>
 #include <AP_Compass.h>
 #include <AP_Declination.h>
