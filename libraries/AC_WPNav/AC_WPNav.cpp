@@ -682,7 +682,7 @@ void AC_WPNav::calculate_wp_leash_length()
     }
 
     // calculate the maximum acceleration, maximum velocity, and leash length in the direction of travel
-    if(AP_Math::is_zero(pos_delta_unit_z) &&AP_Math::is_zero(pos_delta_unit_xy)){
+    if(AP_Math::is_zero(pos_delta_unit_z) && AP_Math::is_zero(pos_delta_unit_xy)){
         _track_accel = 0;
         _track_speed = 0;
         _track_leash_length = WPNAV_LEASH_LENGTH_MIN;
