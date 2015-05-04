@@ -16,6 +16,8 @@
 #include <assert.h>
 #include "DataFlash.h"
 
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 16384
 
