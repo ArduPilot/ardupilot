@@ -9,18 +9,7 @@
 
 #define POSHOLD_SPEED_0                          10      // speed below which it is always safe to switch to loiter
 
-#if MAIN_LOOP_RATE == 100
- // definitions for 100hz loop update rate
- # define POSHOLD_BRAKE_TIME_ESTIMATE_MAX        600     // max number of cycles the brake will be applied before we switch to loiter
- # define POSHOLD_BRAKE_TO_LOITER_TIMER          150     // Number of cycles to transition from brake mode to loiter mode.
- # define POSHOLD_WIND_COMP_START_TIMER          150     // Number of cycles to start wind compensation update after loiter is engaged
- # define POSHOLD_CONTROLLER_TO_PILOT_MIX_TIMER  50      // Set it from 100 to 200, the number of centiseconds loiter and manual commands are mixed to make a smooth transition.
- # define POSHOLD_SMOOTH_RATE_FACTOR             0.05f   // filter applied to pilot's roll/pitch input as it returns to center.  A lower number will cause the roll/pitch to return to zero more slowly if the brake_rate is also low.
- # define POSHOLD_WIND_COMP_TIMER_10HZ           10      // counter value used to reduce wind compensation to 10hz
- # define LOOP_RATE_FACTOR                       1       // used to adapt PosHold params to loop_rate
- # define TC_WIND_COMP                          0.01f   // Time constant for poshold_update_wind_comp_estimate()
- #else
- // definitions for 400hz loop update rate
+ // 400hz loop update rate
  # define POSHOLD_BRAKE_TIME_ESTIMATE_MAX        (600*4) // max number of cycles the brake will be applied before we switch to loiter
  # define POSHOLD_BRAKE_TO_LOITER_TIMER          (150*4) // Number of cycles to transition from brake mode to loiter mode.  Must be lower than POSHOLD_LOITER_STAB_TIMER
  # define POSHOLD_WIND_COMP_START_TIMER          (150*4) // Number of cycles to start wind compensation update after loiter is engaged
@@ -29,7 +18,6 @@
  # define POSHOLD_WIND_COMP_TIMER_10HZ           40      // counter value used to reduce wind compensation to 10hz
  # define LOOP_RATE_FACTOR                       4       // used to adapt PosHold params to loop_rate
  # define TC_WIND_COMP                          0.0025f // Time constant for poshold_update_wind_comp_estimate()
- #endif
 
 // definitions that are independent of main loop rate
 #define POSHOLD_STICK_RELEASE_SMOOTH_ANGLE       1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
@@ -572,12 +560,10 @@ static void poshold_update_brake_angle_from_velocity(int16_t &brake_angle, float
     float lean_angle;
     int16_t brake_rate = g.poshold_brake_rate;
 
-#if MAIN_LOOP_RATE == 400
     brake_rate /= 4;
     if (brake_rate <= 0) {
         brake_rate = 1;
     }
-#endif
 
     // calculate velocity-only based lean angle
     if (velocity >= 0) {
