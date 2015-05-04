@@ -70,6 +70,10 @@ static void rtl_run()
         rtl_land_run();
         break;
     }
+
+    // reset wpnav speed to rtl speed
+    // this works around shots using an interface prone to race conditions for cable cam
+    wp_nav.set_speed_xy(g.rtl_speed_cms);
 }
 
 // rtl_climb_start - initialise climb to RTL altitude
@@ -80,6 +84,7 @@ static void rtl_climb_start()
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
+    wp_nav.set_speed_xy(g.rtl_speed_cms);
 
     // get horizontal stopping point
     Vector3f destination;
