@@ -194,11 +194,11 @@ AP_GPS_SBP::_sbp_process_message() {
             break;
 
         case SBP_GPS_TIME_MSGTYPE:
-            last_gps_time = *(struct sbp_gps_time_t*)parser_state.msg_buff;
+            memcpy(&last_gps_time, parser_state.msg_buff, sizeof(last_gps_time));
             break;
 
         case SBP_VEL_NED_MSGTYPE:
-            last_vel_ned = *(struct sbp_vel_ned_t*)parser_state.msg_buff;
+            memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(last_vel_ned));
             break;
 
         case SBP_POS_LLH_MSGTYPE: {
@@ -214,7 +214,7 @@ AP_GPS_SBP::_sbp_process_message() {
         }
 
         case SBP_DOPS_MSGTYPE:
-            last_dops = *(struct sbp_dops_t*)parser_state.msg_buff;
+            memcpy(&last_dops, parser_state.msg_buff, sizeof(last_dops));
             break;
 
         case SBP_TRACKING_STATE_MSGTYPE:
