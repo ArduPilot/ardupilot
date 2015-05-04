@@ -40,7 +40,7 @@ static bool auto_check_trigger(void)
         return true;
     }
 
-    if (g.auto_trigger_pin == -1 && g.auto_kickstart == 0.0f) {
+    if (g.auto_trigger_pin == -1 && AP_Math::is_zero(g.auto_kickstart)) {
         // no trigger configured - let's go!
         auto_triggered = true;
         return true;
@@ -52,10 +52,10 @@ static bool auto_check_trigger(void)
         return true;            
     }
 
-    if (g.auto_kickstart != 0.0f) {
+    if (!AP_Math::is_zero(g.auto_kickstart)) {
         float xaccel = ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
-            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), xaccel);
+            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), (double)xaccel);
             auto_triggered = true;
             return true;            
         }
@@ -97,7 +97,7 @@ static void calc_throttle(float target_speed)
       SPEED_TURN_GAIN percentage.
     */
     float steer_rate = fabsf(lateral_acceleration / (g.turn_max_g*GRAVITY_MSS));
-    steer_rate = constrain_float(steer_rate, 0.0, 1.0);
+    steer_rate = constrain_float(steer_rate, 0.0f, 1.0f);
 
     // use g.speed_turn_gain for a 90 degree turn, and in proportion
     // for other turn angles
@@ -105,11 +105,11 @@ static void calc_throttle(float target_speed)
     float speed_turn_ratio = constrain_float(fabsf(turn_angle / 9000.0f), 0, 1);
     float speed_turn_reduction = (100 - g.speed_turn_gain) * speed_turn_ratio * 0.01f;
 
-    float reduction = 1.0 - steer_rate*speed_turn_reduction;
+    float reduction = 1.0f - steer_rate*speed_turn_reduction;
     
     if (control_mode >= AUTO && wp_distance <= g.speed_turn_dist) {
         // in auto-modes we reduce speed when approaching waypoints
-        float reduction2 = 1.0 - speed_turn_reduction;
+        float reduction2 = 1.0f - speed_turn_reduction;
         if (reduction2 < reduction) {
             reduction = reduction2;
         }
@@ -259,8 +259,8 @@ static void set_servos(void)
         */          
         float steering_scaled = channel_steer->norm_output();
         float throttle_scaled = channel_throttle->norm_output();
-        float motor1 = throttle_scaled + 0.5*steering_scaled;
-        float motor2 = throttle_scaled - 0.5*steering_scaled;
+        float motor1 = throttle_scaled + 0.5f*steering_scaled;
+        float motor2 = throttle_scaled - 0.5f*steering_scaled;
         channel_steer->servo_out = 4500*motor1;
         channel_throttle->servo_out = 100*motor2;
         channel_steer->calc_pwm();

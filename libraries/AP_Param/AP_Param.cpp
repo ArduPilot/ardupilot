@@ -735,7 +735,7 @@ bool AP_Param::save(bool force_save)
         } else {
             v2 = get_default_value(&info->def_value);
         }
-        if (v1 == v2 && !force_save) {
+        if (AP_Math::is_equal(v1,v2) && !force_save) {
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
@@ -1094,7 +1094,7 @@ void AP_Param::show(const AP_Param *ap, const char *s,
         port->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
         break;
     case AP_PARAM_FLOAT:
-        port->printf_P(PSTR("%s: %f\n"), s, ((AP_Float *)ap)->get());
+        port->printf_P(PSTR("%s: %f\n"), s, (double)((AP_Float *)ap)->get());
         break;
     default:
         break;
@@ -1154,7 +1154,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     AP_Param *ap2;
     ap2 = find_P((const prog_char_t *)&info->new_name[0], &ptype);
     if (ap2 == NULL) {
-        hal.console->printf_P(PSTR("Unknown conversion '%S'\n"), info->new_name);
+        hal.console->printf_P("Unknown conversion '%s'\n", info->new_name);
         return;
     }
 
@@ -1177,14 +1177,14 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     } else if (ptype <= AP_PARAM_FLOAT && header.type <= AP_PARAM_FLOAT) {
         // perform scalar->scalar conversion
         float v = ap->cast_to_float((enum ap_var_type)header.type);
-        if (v != ap2->cast_to_float(ptype)) {
+        if (!AP_Math::is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
             set_value(ptype, ap2, v);
             ap2->save();
         }
     } else {
         // can't do vector<->scalar conversion, or different vector types
-        hal.console->printf_P(PSTR("Bad conversion type '%S'\n"), info->new_name);
+        hal.console->printf_P("Bad conversion type '%s'\n", info->new_name);
     }
 }
 #pragma GCC diagnostic pop

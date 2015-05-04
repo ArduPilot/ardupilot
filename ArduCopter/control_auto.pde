@@ -171,7 +171,7 @@ static void auto_wp_run()
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-        if (target_yaw_rate != 0) {
+        if (!AP_Math::is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -227,7 +227,7 @@ static void auto_spline_run()
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-        if (target_yaw_rate != 0) {
+        if (!AP_Math::is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
     }
@@ -550,7 +550,7 @@ static void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, i
     }
 
     // get turn speed
-    if (turn_rate_dps == 0 ) {
+    if (AP_Math::is_zero(turn_rate_dps)) {
         // default to regular auto slew rate
         yaw_look_at_heading_slew = AUTO_YAW_SLEW_RATE;
     }else{

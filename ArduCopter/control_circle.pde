@@ -44,7 +44,7 @@ static void circle_run()
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
-        if (target_yaw_rate != 0) {
+        if (!AP_Math::is_zero(target_yaw_rate)) {
             circle_pilot_yaw_override = true;
         }
 

@@ -52,7 +52,7 @@ static void update_pitch_position_servo(float pitch)
     // pitch argument is -90 to 90, where 0 is horizontal
     // servo_out is in 100ths of a degree
     float ahrs_pitch = ahrs.pitch_sensor*0.01f;
-    int32_t angle_err = -(ahrs_pitch - pitch) * 100.0;
+    int32_t angle_err = -(ahrs_pitch - pitch) * 100.0f;
     int32_t pitch_limit_cd = g.pitch_range*100/2;
     // Need to configure your servo so that increasing servo_out causes increase in pitch/elevation (ie pointing higher into the sky,
     // above the horizon. On my antenna tracker this requires the pitch/elevation servo to be reversed
@@ -234,7 +234,7 @@ static void update_yaw_position_servo(float yaw)
                           (int)slew_dir, (int)new_slew_dir,
                           (long)angle_err,
                           (long)channel_yaw.servo_out,
-                          degrees(ahrs.get_gyro().z));
+                          (double)degrees(ahrs.get_gyro().z));
     }
 
     slew_dir = new_slew_dir;

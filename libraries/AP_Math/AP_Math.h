@@ -20,6 +20,7 @@
 #include "polygon.h"
 #include "edc.h"
 #include "float.h"
+#include "AP_Param.h"
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
@@ -75,11 +76,15 @@
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
-// are two floats equal
-inline bool     is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+class AP_Math {
 
-// are two floats equal
-inline bool     is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+public:
+    // are two floats equal
+    static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+
+    // is a float is zero
+    static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+};
 
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
@@ -89,12 +94,6 @@ float           safe_sqrt(float v);
 
 // a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
 float           fast_atan(float v);
-
-// fast_atan2 - faster version of atan2
-//      126 us on AVR cpu vs 199 for regular atan2
-//      absolute error is < 0.005 radians or 0.28 degrees
-//      origin source: https://gist.github.com/volkansalma/2972237/raw/
-float           fast_atan2(float y, float x);
 
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other

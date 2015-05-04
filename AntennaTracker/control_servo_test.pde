@@ -5,16 +5,6 @@
  */
 
 /*
- * update_servo_test - runs the servo test controller
- *  called at 50hz while control_mode is 'SERVO_TEST' mode
- *  tracker switches into this mode if it ever receives a do-set-servo command from the GCS
- */
-static void update_servo_test(void)
-{
-    // do nothing
-}
-
-/*
  * servo_test_set_servo - sets the yaw or pitch servo pwm directly
  *  servo_num are 1 for yaw, 2 for pitch
  */

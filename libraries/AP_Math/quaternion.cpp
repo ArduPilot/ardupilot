@@ -174,7 +174,7 @@ void Quaternion::to_axis_angle(Vector3f &v) {
     v = Vector3f(q2,q3,q4);
     if(l >= 1.0e-12f) {
         v /= l;
-        v *= wrap_PI(2.0f * atan2(l,q1));
+        v *= wrap_PI(2.0f * atan2f(l,q1));
     }
 }
 

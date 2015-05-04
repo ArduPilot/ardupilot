@@ -32,8 +32,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     case ROTATION_MAX:
         return;
     case ROTATION_YAW_45: {
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -42,8 +42,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_135: {
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -51,8 +51,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = -x; y = -y;
         return;
     case ROTATION_YAW_225: {
-        tmp = HALF_SQRT_2*(y - x);
-        y   = -HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(y - x);
+        y   = -HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -61,8 +61,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_315: {
-        tmp = HALF_SQRT_2*(x + y);
-        y   = HALF_SQRT_2*(y - x);
+        tmp = HALF_SQRT_2*(float)(x + y);
+        y   = HALF_SQRT_2*(float)(y - x);
         x = tmp;
         return;
     }
@@ -71,8 +71,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_45: {
-        tmp = HALF_SQRT_2*(x + y);
-        y   = HALF_SQRT_2*(x - y);
+        tmp = HALF_SQRT_2*(float)(x + y);
+        y   = HALF_SQRT_2*(float)(x - y);
         x = tmp; z = -z;
         return;
     }
@@ -81,8 +81,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_135: {
-        tmp = HALF_SQRT_2*(y - x);
-        y   = HALF_SQRT_2*(y + x);
+        tmp = HALF_SQRT_2*(float)(y - x);
+        y   = HALF_SQRT_2*(float)(y + x);
         x = tmp; z = -z;
         return;
     }
@@ -91,8 +91,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_225: {
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(y - x);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(y - x);
         x = tmp; z = -z;
         return;
     }
@@ -101,8 +101,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_315: {
-        tmp =  HALF_SQRT_2*(x - y);
-        y   = -HALF_SQRT_2*(x + y);
+        tmp =  HALF_SQRT_2*(float)(x - y);
+        y   = -HALF_SQRT_2*(float)(x + y);
         x = tmp; z = -z;
         return;
     }
@@ -112,8 +112,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_45: {
         tmp = z; z = y; y = -tmp;
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -124,8 +124,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_135: {
         tmp = z; z = y; y = -tmp;
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -135,8 +135,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_45: {
         tmp = z; z = -y; y = tmp;
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -147,8 +147,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_135: {
         tmp = z; z = -y; y = tmp;
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -327,19 +327,19 @@ Vector3<T> Vector3<T>::operator -(void) const
 template <typename T>
 bool Vector3<T>::operator ==(const Vector3<T> &v) const
 {
-    return (x==v.x && y==v.y && z==v.z);
+    return (AP_Math::is_equal(x,v.x) && AP_Math::is_equal(y,v.y) && AP_Math::is_equal(z,v.z));
 }
 
 template <typename T>
 bool Vector3<T>::operator !=(const Vector3<T> &v) const
 {
-    return (x!=v.x || y!=v.y || z!=v.z);
+    return (!AP_Math::is_equal(x,v.x) || !AP_Math::is_equal(y,v.y) || !AP_Math::is_equal(z,v.z));
 }
 
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    return acosf(((*this)*v2) / (this->length()*v2.length()));
+    return acosf((*this)*v2) / (float)((this->length()*v2.length()));
 }
 
 // multiplication of transpose by a vector

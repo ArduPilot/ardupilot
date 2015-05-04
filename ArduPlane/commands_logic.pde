@@ -425,8 +425,8 @@ static bool verify_takeoff()
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
             gcs_send_text_fmt(PSTR("Holding course %ld at %.1fm/s (%.1f)"), 
                               steer_state.hold_course_cd,
-                              gps.ground_speed(),
-                              degrees(steer_state.locked_course_err));
+                              (double)gps.ground_speed(),
+                              (double)degrees(steer_state.locked_course_err));
         }
     }
 
@@ -441,7 +441,7 @@ static bool verify_takeoff()
     int32_t relative_alt_cm = adjusted_relative_altitude_cm();
     if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
         gcs_send_text_fmt(PSTR("Takeoff complete at %.2fm"), 
-                          relative_alt_cm*0.01f);
+                          (double)(relative_alt_cm*0.01f));
         steer_state.hold_course_cd = -1;
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;

@@ -480,10 +480,10 @@ void AP_InertialSensor_LSM303D::_register_write_check(uint8_t reg, uint8_t val)
     _register_write(reg, val);
     readed = _register_read(reg);
     if (readed != val){
-	hal.console->printf_P(PSTR("Values doesn't match; written: %02x; read: %02x "), val, readed);
+	hal.console->printf_P("Values doesn't match; written: %02x; read: %02x ", val, readed);
     }
 #if LSM303D_DEBUG
-    hal.console->printf_P(PSTR("Values written: %02x; readed: %02x "), val, readed);
+    hal.console->printf_P("Values written: %02x; readed: %02x ", val, readed);
 #endif
 }
 

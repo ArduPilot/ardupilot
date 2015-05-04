@@ -276,10 +276,10 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 //
 Compass::Compass(void) :
     _last_update_usec(0),
-    _null_init_done(false),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
+    _null_init_done(false),
     _thr_or_curr(0.0f),
     _hil_mode(false)
 {
@@ -533,7 +533,7 @@ bool Compass::configured(uint8_t i)
     }
 
     // exit immediately if all offsets are zero
-    if (get_offsets(i).length() == 0.0f) {
+    if (AP_Math::is_zero(get_offsets(i).length())) {
         return false;
     }
 
@@ -575,7 +575,7 @@ void Compass::setHIL(float roll, float pitch, float yaw)
     // create a rotation matrix for the given attitude
     R.from_euler(roll, pitch, yaw);
 
-    if (_hil.last_declination != get_declination()) {
+    if (!AP_Math::is_equal(_hil.last_declination,get_declination())) {
         _setup_earth_field();
         _hil.last_declination = get_declination();
     }
