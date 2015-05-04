@@ -19,8 +19,12 @@ def get_default_params(atype):
     # use rover simulator so SITL is not starved of input
     from pymavlink import mavutil
     HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=rover --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
-        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    if atype in ['APMrover2', 'ArduPlane']:
+        frame = 'rover'
+    else:
+        frame = 'quad'
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --speedup=100 --home=%f,%f,%u,%u' % (
+        frame, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
     runsim.delaybeforesend = 0
