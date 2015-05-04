@@ -23,7 +23,7 @@ def get_default_params(atype):
         frame = 'rover'
     else:
         frame = 'quad'
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --speedup=100 --home=%f,%f,%u,%u' % (
+    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --speedup=10 --home=%f,%f,%u,%u' % (
         frame, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
 
     runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
