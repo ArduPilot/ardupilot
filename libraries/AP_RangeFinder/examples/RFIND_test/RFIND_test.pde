@@ -12,7 +12,7 @@
 #include <GCS_MAVLink.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_SITL.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_Linux.h>
 #include <DataFlash.h>
