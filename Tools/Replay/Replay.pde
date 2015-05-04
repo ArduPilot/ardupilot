@@ -21,7 +21,7 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_SITL.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 #include <AP_ADC.h>
@@ -79,7 +79,7 @@ static AP_Vehicle::FixedWing aparm;
 static AP_Airspeed airspeed(aparm);
 static DataFlash_File dataflash("logs");
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 SITL sitl;
 #endif
 
