@@ -39,48 +39,6 @@ float fast_atan(float v)
     return (v*(1.6867629106f + v2*0.4378497304f)/(1.6867633134f + v2));
 }
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    #define FAST_ATAN2_PIBY2_FLOAT  1.5707963f
-    // fast_atan2 - faster version of atan2
-    //      126 us on AVR cpu vs 199 for regular atan2
-    //      absolute error is < 0.005 radians or 0.28 degrees
-    //      origin source: https://gist.github.com/volkansalma/2972237/raw/
-    float fast_atan2(float y, float x)
-    {
-        if (AP_Math::is_zero(x)) {
-            if (y > 0.0f) {
-                return FAST_ATAN2_PIBY2_FLOAT;
-            }
-            if (AP_Math::is_zero(y)) {
-                return 0.0f;
-            }
-            return -FAST_ATAN2_PIBY2_FLOAT;
-        }
-        float atan;
-        float z = y/x;
-        if (fabs( z ) < 1.0f) {
-            atan = z / (1.0f + 0.28f * z * z);
-            if (x < 0.0f) {
-                if (y < 0.0f) {
-                    return atan - PI;
-                }
-                return atan + PI;
-            }
-        } else {
-            atan = FAST_ATAN2_PIBY2_FLOAT - (z / (z * z + 0.28f));
-            if (y < 0.0f) {
-                return atan - PI;
-            }
-        }
-        return atan;
-    }
-#else
-    float fast_atan2(float y, float x)
-    {
-        return atan2f(y,x);
-    }
-#endif
-
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
 // rotations. This is used to allow us to add an overall board
