@@ -17,6 +17,8 @@
   rover simulator class
 */
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Rover.h"
 #include <stdio.h>
 #include <string.h>
@@ -155,3 +157,4 @@ void Rover::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
+#endif // CONFIG_HAL_BOARD

@@ -17,6 +17,8 @@
   parent class for aircraft simulators
 */
 
+#include <AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_Common.h>
 #include "SIM_Aircraft.h"
 #include <unistd.h>
@@ -243,3 +245,4 @@ void Aircraft::set_speedup(float speedup)
 {
     setup_frame_time(rate_hz, speedup);
 }
+#endif // CONFIG_HAL_BOARD
