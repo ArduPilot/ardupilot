@@ -23,6 +23,7 @@
 #ifndef __AP_GPS_UBLOX_H__
 #define __AP_GPS_UBLOX_H__
 
+#include <AP_HAL.h>
 #include <AP_GPS.h>
 
 /*
@@ -38,7 +39,13 @@
  * would mean we would never detect it.
  */
 #define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 16
+#else
+#define UBLOX_RXM_RAW_LOGGING 0
+#endif
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
@@ -201,6 +208,7 @@ private:
         uint8_t globalFlags;
         uint16_t reserved;
     };
+#if UBLOX_RXM_RAW_LOGGING
     struct PACKED ubx_rxm_raw {
         int32_t iTOW;
         int16_t week;
@@ -216,6 +224,7 @@ private:
             uint8_t lli;
         } svinfo[UBLOX_MAX_RXM_RAW_SATS];
     };
+#endif
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -228,7 +237,9 @@ private:
         ubx_mon_hw2 mon_hw2;
         ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
+#if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
+#endif
         uint8_t bytes[];
     } _buffer;
 
