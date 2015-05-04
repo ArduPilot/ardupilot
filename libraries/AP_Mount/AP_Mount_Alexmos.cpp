@@ -132,7 +132,7 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
     outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
     outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
-    send_command (CMD_CONTROL,  outgoing_buffer.bytes , sizeof (alexmos_angles_speed));
+    send_command (CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed , sizeof(alexmos_angles_speed));
 }
 
 /*
@@ -151,7 +151,7 @@ void AP_Mount_Alexmos::write_params()
     if (!_param_read_once) {
         return;
     }
-    send_command (CMD_WRITE_PARAMS,  _current_parameters.bytes , sizeof (alexmos_params));
+    send_command (CMD_WRITE_PARAMS,  (uint8_t *)&_current_parameters.params , sizeof(alexmos_params));
 }
 
 /*
