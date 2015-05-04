@@ -174,11 +174,13 @@ uint8_t LinuxI2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
                                               uint8_t len, 
                                               uint8_t count, uint8_t* data)
 {
+    const uint8_t max_count = I2C_RDRW_IOCTL_MAX_MSGS / 2;
+
     if (_fd == -1) {
         return 1;
     }
     while (count > 0) {
-        uint8_t n = count>8?8:count;
+        uint8_t n = count > max_count ? max_count : count;
         struct i2c_msg msgs[2*n];
         struct i2c_rdwr_ioctl_data i2c_data = {
         msgs : msgs,
