@@ -333,6 +333,7 @@ public:
 #endif
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
+    AP_Int8 _raw_data;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
