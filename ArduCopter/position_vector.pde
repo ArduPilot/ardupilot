@@ -52,7 +52,7 @@ float pv_alt_above_home(float alt_above_origin_cm)
 // pv_get_bearing_cd - return bearing in centi-degrees between two positions
 float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
 {
-    float bearing = fast_atan2(destination.y-origin.y, destination.x-origin.x) * DEGX100;
+    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
     if (bearing < 0) {
         bearing += 36000;
     }
