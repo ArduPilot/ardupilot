@@ -36,7 +36,7 @@ ifeq ($(HAL_BOARD),HAL_BOARD_APM2)
 include $(MK_DIR)/board_avr.mk
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_AVR_SITL)
+ifeq ($(HAL_BOARD),HAL_BOARD_SITL)
 include $(MK_DIR)/board_native.mk
 endif
 
