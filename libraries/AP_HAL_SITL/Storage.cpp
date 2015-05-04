@@ -1,5 +1,5 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <assert.h>
 #include <sys/types.h>
@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 #include "Storage.h"
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 void SITLEEPROMStorage::_eeprom_open(void)
 {

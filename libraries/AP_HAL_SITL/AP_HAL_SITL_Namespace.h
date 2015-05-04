@@ -1,8 +1,8 @@
 
-#ifndef __AP_HAL_AVR_SITL_NAMESPACE_H__
-#define __AP_HAL_AVR_SITL_NAMESPACE_H__
+#ifndef __AP_HAL_SITL_NAMESPACE_H__
+#define __AP_HAL_SITL_NAMESPACE_H__
 
-namespace AVR_SITL {
+namespace HALSITL {
     class SITLUARTDriver;
     class SITLScheduler;
     class SITL_State;
@@ -15,4 +15,4 @@ namespace AVR_SITL {
     class SITLUtil;
 }
 
-#endif // __AP_HAL_AVR_SITL_NAMESPACE_H__
+#endif // __AP_HAL_SITL_NAMESPACE_H__

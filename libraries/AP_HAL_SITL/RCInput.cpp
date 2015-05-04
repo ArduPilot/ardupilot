@@ -1,9 +1,9 @@
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "RCInput.h"
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 

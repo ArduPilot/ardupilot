@@ -2,12 +2,11 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL_Namespace.h"
+#include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include "Scheduler.h"
 
@@ -51,7 +50,7 @@ void print_trace() {
 
 extern const AP_HAL::HAL& hal;
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 // catch floating point exceptions
 static void _sig_fpe(int signum)
@@ -122,7 +121,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 			_initial_height = atof(optarg);
 			break;
 		case 'C':
-			AVR_SITL::SITLUARTDriver::_console = true;
+			HALSITL::SITLUARTDriver::_console = true;
 			break;
 		case 'I': {
             uint8_t instance = atoi(optarg);
@@ -298,7 +297,7 @@ void SITL_State::_setup_fdm(void)
 		exit(1);
 	}
 
-	AVR_SITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
+	HALSITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
 }
 #endif
 

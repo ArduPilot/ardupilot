@@ -7,12 +7,11 @@
  */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL_Namespace.h"
+#include "HAL_SITL_Class.h"
 
 #include <AP_Math.h>
 #include "../AP_Compass/AP_Compass.h"
@@ -21,7 +20,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 /*
   setup the compass with new input

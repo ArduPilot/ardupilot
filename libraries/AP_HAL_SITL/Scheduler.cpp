@@ -1,15 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include "AP_HAL_AVR_SITL.h"
+#include "AP_HAL_SITL.h"
 #include "Scheduler.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 

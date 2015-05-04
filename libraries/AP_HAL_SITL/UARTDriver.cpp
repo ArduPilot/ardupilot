@@ -18,7 +18,7 @@
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <limits.h>
 #include <stdlib.h>
@@ -39,7 +39,7 @@
 #include "UARTDriver.h"
 #include "SITL_State.h"
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 bool SITLUARTDriver::_console;
 

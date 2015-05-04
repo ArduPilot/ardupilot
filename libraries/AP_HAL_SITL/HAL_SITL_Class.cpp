@@ -2,13 +2,11 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_private.h>
-#include <AP_HAL_AVR_SITL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL_Namespace.h"
+#include "HAL_SITL_Class.h"
 #include "Scheduler.h"
 #include "AnalogIn.h"
 #include "UARTDriver.h"
@@ -21,7 +19,7 @@
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_Empty_Private.h>
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 
 static SITLEEPROMStorage sitlEEPROMStorage;
 static SITL_State sitlState;
@@ -44,7 +42,7 @@ static SITLUARTDriver sitlUart4Driver(4, &sitlState);
 
 static SITLUtil utilInstance;
 
-HAL_AVR_SITL::HAL_AVR_SITL() :
+HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
 	    &sitlUart0Driver,  /* uartA */
         &sitlUart1Driver,  /* uartB */
@@ -64,7 +62,7 @@ HAL_AVR_SITL::HAL_AVR_SITL() :
     _sitl_state(&sitlState)
 {}
 
-void HAL_AVR_SITL::init(int argc, char * const argv[]) const 
+void HAL_SITL::init(int argc, char * const argv[]) const 
 {
     _sitl_state->init(argc, argv);
     scheduler->init(NULL);
@@ -79,6 +77,6 @@ void HAL_AVR_SITL::init(int argc, char * const argv[]) const
     analogin->init(NULL);
 }
 
-const HAL_AVR_SITL AP_HAL_AVR_SITL;
+const HAL_SITL AP_HAL_SITL;
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -3,14 +3,14 @@
 #define __AP_HAL_SITL_SCHEDULER_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#include "AP_HAL_AVR_SITL_Namespace.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include "AP_HAL_SITL_Namespace.h"
 #include <sys/time.h>
 
 #define SITL_SCHEDULER_MAX_TIMER_PROCS 4
 
 /* Scheduler implementation: */
-class AVR_SITL::SITLScheduler : public AP_HAL::Scheduler {
+class HALSITL::SITLScheduler : public AP_HAL::Scheduler {
 public:
     SITLScheduler(SITL_State *sitlState);
     /* AP_HAL::Scheduler methods */

@@ -1,17 +1,17 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __AP_HAL_AVR_SITL_UART_DRIVER_H__
-#define __AP_HAL_AVR_SITL_UART_DRIVER_H__
+#ifndef __AP_HAL_SITL_UART_DRIVER_H__
+#define __AP_HAL_SITL_UART_DRIVER_H__
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <stdint.h>
 #include <stdarg.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
+#include "AP_HAL_SITL_Namespace.h"
 
-class AVR_SITL::SITLUARTDriver : public AP_HAL::UARTDriver {
+class HALSITL::SITLUARTDriver : public AP_HAL::UARTDriver {
 public:
-    friend class AVR_SITL::SITL_State;
+    friend class HALSITL::SITL_State;
 
 	SITLUARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
 		_portNumber = portNumber;
@@ -83,5 +83,5 @@ private:
 };
 
 #endif
-#endif // __AP_HAL_AVR_SITL_UART_DRIVER_H__
+#endif // __AP_HAL_SITL_UART_DRIVER_H__
 

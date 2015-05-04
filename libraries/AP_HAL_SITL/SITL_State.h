@@ -1,14 +1,14 @@
 
-#ifndef __AP_HAL_AVR_SITL_STATE_H__
-#define __AP_HAL_AVR_SITL_STATE_H__
+#ifndef __AP_HAL_SITL_STATE_H__
+#define __AP_HAL_SITL_STATE_H__
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_AVR_SITL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL_Namespace.h"
+#include "HAL_SITL_Class.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,10 +24,10 @@
 #include "../SITL/SITL.h"
 #include "../SITL/SIM_Multicopter.h"
 
-class HAL_AVR_SITL;
+class HAL_SITL;
 
-class AVR_SITL::SITL_State {
-    friend class AVR_SITL::SITLScheduler;
+class HALSITL::SITL_State {
+    friend class HALSITL::SITLScheduler;
 public:
     void init(int argc, char * const argv[]);
 
@@ -187,6 +187,6 @@ private:
     Aircraft *sitl_model;
 };
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#endif // __AP_HAL_AVR_SITL_STATE_H__
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif // __AP_HAL_SITL_STATE_H__
 

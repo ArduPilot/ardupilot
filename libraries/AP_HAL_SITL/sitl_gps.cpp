@@ -8,12 +8,11 @@
  */
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
-#include "HAL_AVR_SITL_Class.h"
+#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL_Namespace.h"
+#include "HAL_SITL_Class.h"
 
 #include <AP_Math.h>
 #include "../SITL/SITL.h"
@@ -27,7 +26,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-using namespace AVR_SITL;
+using namespace HALSITL;
 extern const AP_HAL::HAL& hal;
 
 static uint8_t next_gps_index;
@@ -72,8 +71,8 @@ int SITL_State::gps_pipe(void)
 	gps_state.gps_fd    = fd[1];
 	gps_state.client_fd = fd[0];
 	gps_state.last_update = _scheduler->millis();
-	AVR_SITL::SITLUARTDriver::_set_nonblocking(gps_state.gps_fd);
-	AVR_SITL::SITLUARTDriver::_set_nonblocking(fd[0]);
+	HALSITL::SITLUARTDriver::_set_nonblocking(gps_state.gps_fd);
+	HALSITL::SITLUARTDriver::_set_nonblocking(fd[0]);
 	return gps_state.client_fd;
 }
 
@@ -90,8 +89,8 @@ int SITL_State::gps2_pipe(void)
 	gps2_state.gps_fd    = fd[1];
 	gps2_state.client_fd = fd[0];
 	gps2_state.last_update = _scheduler->millis();
-	AVR_SITL::SITLUARTDriver::_set_nonblocking(gps2_state.gps_fd);
-	AVR_SITL::SITLUARTDriver::_set_nonblocking(fd[0]);
+	HALSITL::SITLUARTDriver::_set_nonblocking(gps2_state.gps_fd);
+	HALSITL::SITLUARTDriver::_set_nonblocking(fd[0]);
 	return gps2_state.client_fd;
 }
 

@@ -1,12 +1,12 @@
 
-#ifndef __AP_HAL_AVR_SITL_RCINPUT_H__
-#define __AP_HAL_AVR_SITL_RCINPUT_H__
+#ifndef __AP_HAL_SITL_RCINPUT_H__
+#define __AP_HAL_SITL_RCINPUT_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#include <AP_HAL_AVR_SITL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL.h>
 
-class AVR_SITL::SITLRCInput : public AP_HAL::RCInput {
+class HALSITL::SITLRCInput : public AP_HAL::RCInput {
 public:
     SITLRCInput(SITL_State *sitlState) {
 	    _sitlState = sitlState;
@@ -30,5 +30,5 @@ private:
 };
 
 #endif
-#endif // __AP_HAL_AVR_SITL_RCINPUT_H__
+#endif // __AP_HAL_SITL_RCINPUT_H__
 

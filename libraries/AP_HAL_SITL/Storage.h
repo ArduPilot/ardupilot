@@ -1,12 +1,12 @@
 
 
-#ifndef __AP_HAL_AVR_SITL_STORAGE_H__
-#define __AP_HAL_AVR_SITL_STORAGE_H__
+#ifndef __AP_HAL_SITL_STORAGE_H__
+#define __AP_HAL_SITL_STORAGE_H__
 
 #include <AP_HAL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
+#include "AP_HAL_SITL_Namespace.h"
 
-class AVR_SITL::SITLEEPROMStorage : public AP_HAL::Storage {
+class HALSITL::SITLEEPROMStorage : public AP_HAL::Storage {
 public:
     SITLEEPROMStorage() {
 	    _eeprom_fd = -1;
@@ -20,4 +20,4 @@ private:
     void _eeprom_open(void);
 };
 
-#endif // __AP_HAL_AVR_SITL_STORAGE_H__
+#endif // __AP_HAL_SITL_STORAGE_H__

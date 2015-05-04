@@ -1,12 +1,12 @@
 
-#ifndef __AP_HAL_AVR_SITL_RCOUTPUT_H__
-#define __AP_HAL_AVR_SITL_RCOUTPUT_H__
+#ifndef __AP_HAL_SITL_RCOUTPUT_H__
+#define __AP_HAL_SITL_RCOUTPUT_H__
 
 #include <AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#include <AP_HAL_AVR_SITL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL.h>
 
-class AVR_SITL::SITLRCOutput : public AP_HAL::RCOutput {
+class HALSITL::SITLRCOutput : public AP_HAL::RCOutput {
 public:
     SITLRCOutput(SITL_State *sitlState) {
 	    _sitlState = sitlState;
@@ -28,5 +28,5 @@ private:
 };
 
 #endif
-#endif // __AP_HAL_AVR_SITL_RCOUTPUT_H__
+#endif // __AP_HAL_SITL_RCOUTPUT_H__
 

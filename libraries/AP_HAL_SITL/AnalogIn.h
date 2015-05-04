@@ -1,17 +1,16 @@
 
-#ifndef __AP_HAL_AVR_SITL_ANALOG_IN_H__
-#define __AP_HAL_AVR_SITL_ANALOG_IN_H__
+#ifndef __AP_HAL_SITL_ANALOG_IN_H__
+#define __AP_HAL_SITL_ANALOG_IN_H__
 
 #include <AP_HAL.h>
-#include "AP_HAL_AVR_SITL_Namespace.h"
+#include "AP_HAL_SITL_Namespace.h"
 
 #define SITL_INPUT_MAX_CHANNELS 12
 
-class AVR_SITL::ADCSource : public AP_HAL::AnalogSource {
+class HALSITL::ADCSource : public AP_HAL::AnalogSource {
 public:
-    friend class AVR_SITL::SITLAnalogIn;
-    /* pin designates the ADC input number, or when == AVR_ANALOG_PIN_VCC,
-     * board vcc */
+    friend class HALSITL::SITLAnalogIn;
+    /* pin designates the ADC input number */
     ADCSource(SITL_State *sitlState, uint8_t pin);
 
     /* implement AnalogSource virtual api: */
@@ -29,9 +28,9 @@ private:
     uint8_t _pin;
 };
 
-/* AVRAnalogIn : a concrete class providing the implementations of the 
+/* SITLAnalogIn : a concrete class providing the implementations of the 
  * timer event and the AP_HAL::AnalogIn interface */
-class AVR_SITL::SITLAnalogIn : public AP_HAL::AnalogIn {
+class HALSITL::SITLAnalogIn : public AP_HAL::AnalogIn {
 public:
     SITLAnalogIn(SITL_State *sitlState) {
 	_sitlState = sitlState;
@@ -44,4 +43,4 @@ private:
     SITL_State *_sitlState;
 };
 
-#endif // __AP_HAL_AVR_SITL_ANALOG_IN_H__
+#endif // __AP_HAL_SITL_ANALOG_IN_H__
