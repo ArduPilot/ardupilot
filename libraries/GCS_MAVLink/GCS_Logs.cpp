@@ -162,7 +162,7 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
         num_sends = 10;        
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // assume USB speeds in SITL for the purposes of log download
     num_sends = 40;
 #endif
