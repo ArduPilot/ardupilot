@@ -429,7 +429,7 @@ static mavlink_hil_state_t last_hil_state;
 // report simulator state
 static void NOINLINE send_simstate(mavlink_channel_t chan)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.simstate_send(chan);
 #else
     if (g.hil_mode == 1) {

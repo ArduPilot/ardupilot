@@ -186,7 +186,7 @@ static void Log_Write_Attitude(void)
  #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE(DataFlash);
 #endif
 }
