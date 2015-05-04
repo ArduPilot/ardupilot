@@ -483,6 +483,21 @@ struct PACKED log_Ubx3 {
     float sAcc;
 };
 
+struct PACKED log_GPS_RAW {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    int32_t iTOW;
+    int16_t week;
+    uint8_t numSV;
+    uint8_t sv;
+    double cpMes;
+    double prMes;
+    float doMes;
+    int8_t mesQI;
+    int8_t cno;
+    uint8_t lli;
+};
+
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint32_t time_ms;     
@@ -529,7 +544,7 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
+      "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,numSV,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -589,6 +604,8 @@ Format characters in the format string for binary log messages
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
       "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
+    { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
+      "GRAW", "IIHbbddfBbB", "TimeMS,WkMS,Week,NSats,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
@@ -664,6 +681,7 @@ Format characters in the format string for binary log messages
 #define LOG_COMPASS2_MSG  168
 #define LOG_COMPASS3_MSG  169
 #define LOG_MODE_MSG      170
+#define LOG_GPS_RAW_MSG   171
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
