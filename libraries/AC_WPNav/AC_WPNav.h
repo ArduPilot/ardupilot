@@ -33,7 +33,7 @@
 
 #define WPNAV_WP_FAST_OVERSHOOT_MAX     200.0f      // 2m overshoot is allowed during fast waypoints to allow for smooth transitions to next waypoint
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
  # define WPNAV_LOITER_UPDATE_TIME      0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
  # define WPNAV_WP_UPDATE_TIME          0.095f      // 10hz update rate on low speed CPUs (APM1, APM2)
 #else
