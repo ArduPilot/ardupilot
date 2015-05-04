@@ -130,3 +130,13 @@ void AP_BoardConfig::init()
 
 #endif    
 }
+
+
+bool AP_BoardConfig::get_safety_enable()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    return _safety_enable.get();
+#else
+    return false;
+#endif
+}

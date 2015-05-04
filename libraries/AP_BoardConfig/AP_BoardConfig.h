@@ -20,6 +20,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+
+    bool get_safety_enable();
+
 private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 _pwm_count;
