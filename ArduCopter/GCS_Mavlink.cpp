@@ -1479,12 +1479,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             float delay = packet.param4;
 
             if (mag_mask == 0) { // 0 means all
-                compass.start_calibration_all(retry, autosave, delay);
-                break;
-            }
-
-            if(!compass.start_calibration_mask(mag_mask, retry, autosave, delay)) {
-                result = MAV_RESULT_FAILED;
+                if (!compass.start_calibration_all(retry, autosave, delay)) {
+                    result = MAV_RESULT_FAILED;
+                }
+            } else {
+                if (!compass.start_calibration_mask(mag_mask, retry, autosave, delay)) {
+                    result = MAV_RESULT_FAILED;
+                }
             }
 
             break;
