@@ -67,11 +67,6 @@ private:
     static uint8_t _num_io_procs;
     static bool    _in_timer_proc;
     static bool    _in_io_proc;
-#ifdef __CYGWIN__
-    static double _cyg_freq;
-    static long _cyg_start;
-    static double _cyg_sec();
-#endif
 
     void stop_clock(uint64_t time_usec);
 
