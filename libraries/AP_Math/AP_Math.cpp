@@ -39,7 +39,7 @@ float fast_atan(float v)
     return (v*(1.6867629106f + v2*0.4378497304f)/(1.6867633134f + v2));
 }
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #define FAST_ATAN2_PIBY2_FLOAT  1.5707963f
     // fast_atan2 - faster version of atan2
     //      126 us on AVR cpu vs 199 for regular atan2

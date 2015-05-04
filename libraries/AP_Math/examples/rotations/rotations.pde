@@ -8,7 +8,7 @@
 #include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_Linux.h>
