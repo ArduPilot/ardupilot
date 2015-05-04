@@ -103,7 +103,7 @@
 #include <AP_Frsky_Telem.h>
 
 #include <AP_HAL_AVR.h>
-#include <AP_HAL_AVR_SITL.h>
+#include <AP_HAL_SITL.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_VRBRAIN.h>
 #include <AP_HAL_FLYMAPLE.h>
@@ -242,7 +242,7 @@ AP_Mission mission(ahrs, &start_command, &verify_command, &exit_mission);
 
 static OpticalFlow optflow;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 SITL sitl;
 #endif
 
