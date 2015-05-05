@@ -47,7 +47,7 @@ public:
             return _output;
         }
 
-        float rc = 1.0f/(2.0f*M_PI_F*cutoff_freq);
+        float rc = 1.0f/(M_2PI_F*cutoff_freq);
         float alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
         _output += (sample - _output) * alpha;
         return _output;
