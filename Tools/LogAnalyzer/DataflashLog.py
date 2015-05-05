@@ -609,7 +609,7 @@ class DataflashLog(object):
         self._formats = {128:BinaryFormat}
         data = bytearray(f.read())
         offset = 0
-        while len(data) > offset:
+        while len(data) > offset + ctypes.sizeof(logheader):
             h = logheader.from_buffer(data, offset)
             if not (h.head1 == 0xa3 and h.head2 == 0x95):
                 if ignoreBadlines == False:
