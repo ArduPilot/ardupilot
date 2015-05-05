@@ -145,12 +145,12 @@ class BinaryFormat(ctypes.LittleEndianStructure):
             NAME = self.name,
             MSG = self.type,
             SIZE = self.length,
-            labels = self.labels.split(","),
+            labels = self.labels.split(",") if self.labels else [],
             _pack_ = True)
 
         fieldtypes = [i for i in self.types]
         fieldlabels = self.labels.split(",")
-        if len(fieldtypes) != len(fieldlabels):
+        if self.labels and (len(fieldtypes) != len(fieldlabels)):
             print("Broken FMT message for {} .. ignoring".format(self.name), file=sys.stderr)
             return None
 
