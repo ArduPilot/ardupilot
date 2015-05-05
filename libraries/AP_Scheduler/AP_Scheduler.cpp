@@ -73,7 +73,7 @@ void AP_Scheduler::run(uint16_t time_available)
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
                 if (_debug > 1) {
-                    hal.console->printf_P("Scheduler slip task[%u] (%u/%u/%u)\n",
+                    hal.console->printf_P(PSTR("Scheduler slip task[%u] (%u/%u/%u)\n"),
                                           (unsigned)i, 
                                           (unsigned)dt,
                                           (unsigned)interval_ticks,
@@ -100,7 +100,7 @@ void AP_Scheduler::run(uint16_t time_available)
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
                     if (_debug > 2) {
-                        hal.console->printf_P("Scheduler overrun task[%u] (%u/%u)\n",
+                        hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"),
                                               (unsigned)i, 
                                               (unsigned)time_taken,
                                               (unsigned)_task_time_allowed);
