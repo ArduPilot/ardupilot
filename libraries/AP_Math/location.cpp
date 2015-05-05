@@ -128,7 +128,7 @@ void location_update(struct Location &loc, float bearing, float distance)
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
-    if (!AP_Math::is_zero(ofs_north) || !AP_Math::is_zero(ofs_east)) {
+    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
         int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
         loc.lat += dlat;
@@ -254,7 +254,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   const double p = sqrt(ecef[0]*ecef[0] + ecef[1]*ecef[1]);
 
   /* Compute longitude first, this can be done exactly. */
-  if (!AP_Math::is_zero(p))
+  if (!is_zero(p))
     llh[1] = atan2(ecef[1], ecef[0]);
   else
     llh[1] = 0;
