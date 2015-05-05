@@ -37,7 +37,7 @@ void SITL_State::_set_param_default(const char *parm)
     AP_Param *vp = AP_Param::find(parm, &var_type);
     if (vp == NULL) {
         printf("Unknown parameter %s\n", parm);
-        exit(1);        
+        exit(1);
     }
     if (var_type == AP_PARAM_FLOAT) {
         ((AP_Float *)vp)->set_and_save(value);
@@ -62,24 +62,24 @@ void SITL_State::_set_param_default(const char *parm)
 void SITL_State::_sitl_setup(void)
 {
 #ifndef __CYGWIN__
-	_parent_pid = getppid();
+    _parent_pid = getppid();
 #endif
-	_rcout_addr.sin_family = AF_INET;
-	_rcout_addr.sin_port = htons(_rcout_port);
-	inet_pton(AF_INET, _fdm_address, &_rcout_addr.sin_addr);
+    _rcout_addr.sin_family = AF_INET;
+    _rcout_addr.sin_port = htons(_rcout_port);
+    inet_pton(AF_INET, _fdm_address, &_rcout_addr.sin_addr);
 
 #ifndef HIL_MODE
-	_setup_fdm();
+    _setup_fdm();
 #endif
-	fprintf(stdout, "Starting SITL input\n");
+    fprintf(stdout, "Starting SITL input\n");
 
-	// find the barometer object if it exists
-	_sitl = (SITL *)AP_Param::find_object("SIM_");
-	_barometer = (AP_Baro *)AP_Param::find_object("GND_");
-	_ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
-	_compass = (Compass *)AP_Param::find_object("COMPASS_");
-	_terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
-	_optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
+    // find the barometer object if it exists
+    _sitl = (SITL *)AP_Param::find_object("SIM_");
+    _barometer = (AP_Baro *)AP_Param::find_object("GND_");
+    _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
+    _compass = (Compass *)AP_Param::find_object("COMPASS_");
+    _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
 
     if (_sitl != NULL) {
         // setup some initial values
@@ -104,34 +104,34 @@ void SITL_State::_sitl_setup(void)
  */
 void SITL_State::_setup_fdm(void)
 {
-	int one=1, ret;
-	struct sockaddr_in sockaddr;
+    int one=1, ret;
+    struct sockaddr_in sockaddr;
 
-	memset(&sockaddr,0,sizeof(sockaddr));
+    memset(&sockaddr,0,sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
-	sockaddr.sin_len = sizeof(sockaddr);
+    sockaddr.sin_len = sizeof(sockaddr);
 #endif
-	sockaddr.sin_port = htons(_simin_port);
-	sockaddr.sin_family = AF_INET;
+    sockaddr.sin_port = htons(_simin_port);
+    sockaddr.sin_family = AF_INET;
 
-	_sitl_fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if (_sitl_fd == -1) {
-		fprintf(stderr, "SITL: socket failed - %s\n", strerror(errno));
-		exit(1);
-	}
+    _sitl_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (_sitl_fd == -1) {
+        fprintf(stderr, "SITL: socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
 
-	/* we want to be able to re-use ports quickly */
-	setsockopt(_sitl_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    /* we want to be able to re-use ports quickly */
+    setsockopt(_sitl_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-	ret = bind(_sitl_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-	if (ret == -1) {
-		fprintf(stderr, "SITL: bind failed on port %u - %s\n",
-			(unsigned)ntohs(sockaddr.sin_port), strerror(errno));
-		exit(1);
-	}
+    ret = bind(_sitl_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "SITL: bind failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port), strerror(errno));
+        exit(1);
+    }
 
-	HALSITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
+    HALSITL::SITLUARTDriver::_set_nonblocking(_sitl_fd);
 }
 #endif
 
@@ -150,7 +150,7 @@ void SITL_State::_fdm_input_step(void)
     } else {
         tv.tv_sec = 1;
         tv.tv_usec = 0;
-        
+
         FD_ZERO(&fds);
         FD_SET(_sitl_fd, &fds);
         if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
@@ -158,7 +158,7 @@ void SITL_State::_fdm_input_step(void)
             _simulator_output(true);
             return;
         }
-        
+
         /* check for packet from flight sim */
         _fdm_input();
     }
@@ -167,7 +167,7 @@ void SITL_State::_fdm_input_step(void)
     if (kill(_parent_pid, 0) != 0) {
         exit(1);
     }
-        
+
     if (_scheduler->interrupts_are_blocked() || _sitl == NULL) {
         return;
     }
@@ -201,8 +201,8 @@ void SITL_State::_fdm_input_step(void)
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
         _update_flow();
     }
-    
-    // trigger all APM timers. 
+
+    // trigger all APM timers.
     _scheduler->timer_event();
     _scheduler->sitl_end_atomic();
 }
@@ -221,37 +221,37 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
  */
 void SITL_State::_fdm_input(void)
 {
-	ssize_t size;
-	struct pwm_packet {
-		uint16_t pwm[8];
-	};
-	union {
-		struct sitl_fdm fg_pkt;
-		struct pwm_packet pwm_pkt;
-	} d;
+    ssize_t size;
+    struct pwm_packet {
+        uint16_t pwm[8];
+    };
+    union {
+        struct sitl_fdm fg_pkt;
+        struct pwm_packet pwm_pkt;
+    } d;
     bool got_fg_input = false;
 
-	size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
-	switch (size) {
+    size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
+    switch (size) {
     case 148:
-		static uint32_t last_report;
-		static uint32_t count;
+        static uint32_t last_report;
+        static uint32_t count;
 
-		if (d.fg_pkt.magic != 0x4c56414f) {
-			fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
-			return;
-		}
+        if (d.fg_pkt.magic != 0x4c56414f) {
+            fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
+            return;
+        }
 
         hal.scheduler->stop_clock(d.fg_pkt.timestamp_us);
         _synthetic_clock_mode = true;
         got_fg_input = true;
 
-		if (d.fg_pkt.latitude == 0 ||
-		    d.fg_pkt.longitude == 0 ||
-		    d.fg_pkt.altitude <= 0) {
-			// garbage input
-			return;
-		}
+        if (d.fg_pkt.latitude == 0 ||
+                d.fg_pkt.longitude == 0 ||
+                d.fg_pkt.altitude <= 0) {
+            // garbage input
+            return;
+        }
 
         if (_sitl != NULL) {
             _sitl->state = d.fg_pkt;
@@ -263,28 +263,28 @@ void SITL_State::_fdm_input(void)
                 }
             }
         }
-		_update_count++;
+        _update_count++;
 
-		count++;
-		if (hal.scheduler->millis() - last_report > 1000) {
-			//fprintf(stdout, "SIM %u FPS\n", count);
-			count = 0;
-			last_report = hal.scheduler->millis();
-		}
-		break;
+        count++;
+        if (hal.scheduler->millis() - last_report > 1000) {
+            //fprintf(stdout, "SIM %u FPS\n", count);
+            count = 0;
+            last_report = hal.scheduler->millis();
+        }
+        break;
 
-	case 16: {
-		// a packet giving the receiver PWM inputs
-		uint8_t i;
-		for (i=0; i<8; i++) {
-			// setup the pwn input for the RC channel inputs
-			if (d.pwm_pkt.pwm[i] != 0) {
-				pwm_input[i] = d.pwm_pkt.pwm[i];
-			}
-		}
-		break;
-	}
-	}
+    case 16: {
+        // a packet giving the receiver PWM inputs
+        uint8_t i;
+        for (i=0; i<8; i++) {
+            // setup the pwn input for the RC channel inputs
+            if (d.pwm_pkt.pwm[i] != 0) {
+                pwm_input[i] = d.pwm_pkt.pwm[i];
+            }
+        }
+        break;
+    }
+    }
 
     if (got_fg_input) {
         // send RC output to flight sim
@@ -353,74 +353,74 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
 {
     static uint32_t last_update_usec;
 
-	/* this maps the registers used for PWM outputs. The RC
-	 * driver updates these whenever it wants the channel output
-	 * to change */
-	uint8_t i;
+    /* this maps the registers used for PWM outputs. The RC
+     * driver updates these whenever it wants the channel output
+     * to change */
+    uint8_t i;
 
-	if (last_update_usec == 0) {
-		for (i=0; i<11; i++) {
-			pwm_output[i] = 1000;
-		}
-		if (_vehicle == ArduPlane) {
-			pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
-			pwm_output[7] = 1800;
-		}
-		if (_vehicle == APMrover2) {
-			pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
-			pwm_output[7] = 1800;
-		}
-		for (i=0; i<11; i++) {
+    if (last_update_usec == 0) {
+        for (i=0; i<11; i++) {
+            pwm_output[i] = 1000;
+        }
+        if (_vehicle == ArduPlane) {
+            pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
+            pwm_output[7] = 1800;
+        }
+        if (_vehicle == APMrover2) {
+            pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
+            pwm_output[7] = 1800;
+        }
+        for (i=0; i<11; i++) {
             last_pwm_output[i] = pwm_output[i];
         }
-	}
+    }
 
-	// output at chosen framerate
+    // output at chosen framerate
     uint32_t now = hal.scheduler->micros();
     float deltat = (now - last_update_usec) * 1.0e-6f;
-	last_update_usec = now;
+    last_update_usec = now;
 
     _apply_servo_filter(deltat);
 
-	for (i=0; i<11; i++) {
-		if (pwm_output[i] == 0xFFFF) {
-			input.servos[i] = 0;
-		} else {
-			input.servos[i] = pwm_output[i];
-		}
+    for (i=0; i<11; i++) {
+        if (pwm_output[i] == 0xFFFF) {
+            input.servos[i] = 0;
+        } else {
+            input.servos[i] = pwm_output[i];
+        }
         last_pwm_output[i] = pwm_output[i];
-	}
+    }
 
-	if (_vehicle == ArduPlane) {
-		// add in engine multiplier
-		if (input.servos[2] > 1000) {
-			input.servos[2] = ((input.servos[2]-1000) * _sitl->engine_mul) + 1000;
-			if (input.servos[2] > 2000) input.servos[2] = 2000;
-		}
-		_motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
-	} else if (_vehicle == APMrover2) {
-		// add in engine multiplier
-		if (input.servos[2] != 1500) {
-			input.servos[2] = ((input.servos[2]-1500) * _sitl->engine_mul) + 1500;
-			if (input.servos[2] > 2000) input.servos[2] = 2000;
-			if (input.servos[2] < 1000) input.servos[2] = 1000;
-		}
-		_motors_on = ((input.servos[2]-1500)/500.0f) != 0;
-	} else {
-		_motors_on = false;
+    if (_vehicle == ArduPlane) {
+        // add in engine multiplier
+        if (input.servos[2] > 1000) {
+            input.servos[2] = ((input.servos[2]-1000) * _sitl->engine_mul) + 1000;
+            if (input.servos[2] > 2000) input.servos[2] = 2000;
+        }
+        _motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
+    } else if (_vehicle == APMrover2) {
+        // add in engine multiplier
+        if (input.servos[2] != 1500) {
+            input.servos[2] = ((input.servos[2]-1500) * _sitl->engine_mul) + 1500;
+            if (input.servos[2] > 2000) input.servos[2] = 2000;
+            if (input.servos[2] < 1000) input.servos[2] = 1000;
+        }
+        _motors_on = ((input.servos[2]-1500)/500.0f) != 0;
+    } else {
+        _motors_on = false;
         // apply engine multiplier to first motor
         input.servos[0] = ((input.servos[0]-1000) * _sitl->engine_mul) + 1000;
         // run checks on each motor
-		for (i=0; i<4; i++) {
+        for (i=0; i<4; i++) {
             // check motors do not exceed their limits
             if (input.servos[i] > 2000) input.servos[i] = 2000;
             if (input.servos[i] < 1000) input.servos[i] = 1000;
             // update motor_on flag
-			if ((input.servos[i]-1000)/1000.0f > 0) {
+            if ((input.servos[i]-1000)/1000.0f > 0) {
                 _motors_on = true;
-			}
-		}
-	}
+            }
+        }
+    }
 
     float throttle = _motors_on?(input.servos[2]-1000) / 1000.0f:0;
     // lose 0.7V at full throttle
@@ -440,10 +440,10 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
  */
 void SITL_State::_simulator_output(bool synthetic_clock_mode)
 {
-	struct {
-		uint16_t pwm[11];
-		uint16_t speed, direction, turbulance;
-	} control;
+    struct {
+        uint16_t pwm[11];
+        uint16_t speed, direction, turbulance;
+    } control;
     Aircraft::sitl_input input;
 
     _simulator_servos(input);
@@ -454,7 +454,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
 
     memcpy(control.pwm, input.servos, sizeof(control.pwm));
 
-	// setup wind control
+    // setup wind control
     float wind_speed = _sitl->wind_speed * 100;
     float altitude = _barometer?_barometer->get_altitude():0;
     if (altitude < 0) {
@@ -463,20 +463,20 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
     if (altitude < 60) {
         wind_speed *= altitude / 60.0f;
     }
-	control.speed      = wind_speed;
-	float direction = _sitl->wind_direction;
-	if (direction < 0) {
-		direction += 360;
-	}
-	control.direction  = direction * 100;
-	control.turbulance = _sitl->wind_turbulance * 100;
+    control.speed      = wind_speed;
+    float direction = _sitl->wind_direction;
+    if (direction < 0) {
+        direction += 360;
+    }
+    control.direction  = direction * 100;
+    control.turbulance = _sitl->wind_turbulance * 100;
 
-	// zero the wind for the first 15s to allow pitot calibration
-	if (hal.scheduler->millis() < 15000) {
-		control.speed = 0;
-	}
+    // zero the wind for the first 15s to allow pitot calibration
+    if (hal.scheduler->millis() < 15000) {
+        control.speed = 0;
+    }
 
-	sendto(_sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&_rcout_addr, sizeof(_rcout_addr));
+    sendto(_sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&_rcout_addr, sizeof(_rcout_addr));
 }
 
 // generate a random float between -1 and 1
@@ -488,13 +488,13 @@ float SITL_State::_rand_float(void)
 // generate a random Vector3f of size 1
 Vector3f SITL_State::_rand_vec3f(void)
 {
-	Vector3f v = Vector3f(_rand_float(),
+    Vector3f v = Vector3f(_rand_float(),
                           _rand_float(),
                           _rand_float());
-	if (v.length() != 0.0f) {
-		v.normalize();
-	}
-	return v;
+    if (v.length() != 0.0f) {
+        v.normalize();
+    }
+    return v;
 }
 
 
@@ -505,7 +505,7 @@ void SITL_State::init(int argc, char * const argv[])
     pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
 
     _scheduler = (SITLScheduler *)hal.scheduler;
-	_parse_command_line(argc, argv);
+    _parse_command_line(argc, argv);
 }
 
 /*
@@ -513,15 +513,15 @@ void SITL_State::init(int argc, char * const argv[])
  */
 float SITL_State::height_agl(void)
 {
-	static float home_alt = -1;
+    static float home_alt = -1;
 
-	if (home_alt == -1 && _sitl->state.altitude > 0) {
+    if (home_alt == -1 && _sitl->state.altitude > 0) {
         // remember home altitude as first non-zero altitude
-		home_alt = _sitl->state.altitude;
+        home_alt = _sitl->state.altitude;
     }
 
     if (_terrain &&
-        _sitl->terrain_enable) {
+            _sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;

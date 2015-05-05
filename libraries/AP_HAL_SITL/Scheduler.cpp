@@ -34,22 +34,22 @@ SITLScheduler::SITLScheduler(SITL_State *sitlState) :
 {
 }
 
-void SITLScheduler::init(void *unused) 
+void SITLScheduler::init(void *unused)
 {
-	gettimeofday(&_sketch_start_time,NULL);
+    gettimeofday(&_sketch_start_time,NULL);
 }
 
-uint64_t SITLScheduler::_micros64() 
+uint64_t SITLScheduler::_micros64()
 {
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	uint64_t ret = 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    uint64_t ret = 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
                           (_sketch_start_time.tv_sec +
                            (_sketch_start_time.tv_usec*1.0e-6)));
     return ret;
 }
 
-uint64_t SITLScheduler::micros64() 
+uint64_t SITLScheduler::micros64()
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec;
@@ -57,40 +57,40 @@ uint64_t SITLScheduler::micros64()
     return _micros64();
 }
 
-uint32_t SITLScheduler::micros() 
+uint32_t SITLScheduler::micros()
 {
     return micros64() & 0xFFFFFFFF;
 }
 
-uint64_t SITLScheduler::millis64() 
+uint64_t SITLScheduler::millis64()
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec/1000;
     }
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) - 
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
                           (_sketch_start_time.tv_sec +
                            (_sketch_start_time.tv_usec*1.0e-6)));
     return ret;
 }
 
-uint32_t SITLScheduler::millis() 
+uint32_t SITLScheduler::millis()
 {
     return millis64() & 0xFFFFFFFF;
 }
 
-void SITLScheduler::delay_microseconds(uint16_t usec) 
+void SITLScheduler::delay_microseconds(uint16_t usec)
 {
-	uint64_t start = micros64();
+    uint64_t start = micros64();
     uint64_t dtime;
-	while ((dtime=(micros64() - start) < usec)) {
+    while ((dtime=(micros64() - start) < usec)) {
         if (stopped_clock_usec) {
             _sitlState->wait_clock(start+usec);
         } else {
             usleep(usec - dtime);
         }
-	}
+    }
 }
 
 void SITLScheduler::delay(uint16_t ms)
@@ -107,13 +107,13 @@ void SITLScheduler::delay(uint16_t ms)
 }
 
 void SITLScheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms) 
+        uint16_t min_time_ms)
 {
     _delay_cb = proc;
     _min_delay_cb_ms = min_time_ms;
 }
 
-void SITLScheduler::register_timer_process(AP_HAL::MemberProc proc) 
+void SITLScheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -128,7 +128,7 @@ void SITLScheduler::register_timer_process(AP_HAL::MemberProc proc)
 
 }
 
-void SITLScheduler::register_io_process(AP_HAL::MemberProc proc) 
+void SITLScheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -143,7 +143,7 @@ void SITLScheduler::register_io_process(AP_HAL::MemberProc proc)
 
 }
 
-void SITLScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us) 
+void SITLScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
@@ -187,18 +187,18 @@ void SITLScheduler::system_initialized() {
 }
 
 void SITLScheduler::sitl_end_atomic() {
-    if (_nested_atomic_ctr == 0) 
+    if (_nested_atomic_ctr == 0)
         hal.uartA->println_P(PSTR("NESTED ATOMIC ERROR"));
     else
         _nested_atomic_ctr--;
-}   
+}
 
-void SITLScheduler::reboot(bool hold_in_bootloader) 
+void SITLScheduler::reboot(bool hold_in_bootloader)
 {
     hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
 }
 
-void SITLScheduler::_run_timer_procs(bool called_from_isr) 
+void SITLScheduler::_run_timer_procs(bool called_from_isr)
 {
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the
@@ -237,7 +237,7 @@ void SITLScheduler::_run_timer_procs(bool called_from_isr)
     _in_timer_proc = false;
 }
 
-void SITLScheduler::_run_io_procs(bool called_from_isr) 
+void SITLScheduler::_run_io_procs(bool called_from_isr)
 {
     if (_in_io_proc) {
         return;

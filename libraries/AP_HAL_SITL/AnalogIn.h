@@ -19,7 +19,9 @@ public:
     void set_pin(uint8_t p);
     float voltage_average();
     float voltage_latest();
-    float voltage_average_ratiometric() { return voltage_average(); }
+    float voltage_average_ratiometric() {
+        return voltage_average();
+    }
     void set_stop_pin(uint8_t pin) {}
     void set_settle_time(uint16_t settle_time_ms) {}
 
@@ -28,16 +30,18 @@ private:
     uint8_t _pin;
 };
 
-/* SITLAnalogIn : a concrete class providing the implementations of the 
+/* SITLAnalogIn : a concrete class providing the implementations of the
  * timer event and the AP_HAL::AnalogIn interface */
 class HALSITL::SITLAnalogIn : public AP_HAL::AnalogIn {
 public:
     SITLAnalogIn(SITL_State *sitlState) {
-	_sitlState = sitlState;
+        _sitlState = sitlState;
     }
     void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
-    float board_voltage(void) { return 5.0f; }
+    float board_voltage(void) {
+        return 5.0f;
+    }
 private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;

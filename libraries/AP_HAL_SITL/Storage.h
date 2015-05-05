@@ -9,7 +9,7 @@
 class HALSITL::SITLEEPROMStorage : public AP_HAL::Storage {
 public:
     SITLEEPROMStorage() {
-	    _eeprom_fd = -1;
+        _eeprom_fd = -1;
     }
     void init(void* machtnichts) {}
     void read_block(void *dst, uint16_t src, size_t n);

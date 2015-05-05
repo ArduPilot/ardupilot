@@ -33,15 +33,15 @@ using namespace HALSITL;
  */
 uint16_t SITL_State::_airspeed_sensor(float airspeed)
 {
-	const float airspeed_ratio = 1.9936f;
-	const float airspeed_offset = 2013;
-	float airspeed_pressure, airspeed_raw;
+    const float airspeed_ratio = 1.9936f;
+    const float airspeed_offset = 2013;
+    float airspeed_pressure, airspeed_raw;
 
-	airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
-	airspeed_raw = airspeed_pressure + airspeed_offset;
-        if (airspeed_raw/4 > 0xFFFF) {
-            return 0xFFFF;
-        }
+    airspeed_pressure = (airspeed*airspeed) / airspeed_ratio;
+    airspeed_raw = airspeed_pressure + airspeed_offset;
+    if (airspeed_raw/4 > 0xFFFF) {
+        return 0xFFFF;
+    }
     // add delay
     uint32_t now = hal.scheduler->millis();
     uint32_t best_time_delta_wind = 200; // initialise large time representing buffer entry closest to current time - delay.
@@ -73,22 +73,22 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
         airspeed_raw = buffer_wind[best_index_wind].data;
     }
 
-	return airspeed_raw/4;
+    return airspeed_raw/4;
 }
 
 
 float SITL_State::_gyro_drift(void)
 {
     if (_sitl->drift_speed == 0.0f ||
-        _sitl->drift_time == 0.0f) {
-		return 0;
-	}
-	double period  = _sitl->drift_time * 2;
-	double minutes = fmod(_scheduler->_micros64() / 60.0e6, period);
-	if (minutes < period/2) {
-		return minutes * ToRad(_sitl->drift_speed);
-	}
-	return (period - minutes) * ToRad(_sitl->drift_speed);
+            _sitl->drift_time == 0.0f) {
+        return 0;
+    }
+    double period  = _sitl->drift_time * 2;
+    double minutes = fmod(_scheduler->_micros64() / 60.0e6, period);
+    if (minutes < period/2) {
+        return minutes * ToRad(_sitl->drift_speed);
+    }
+    return (period - minutes) * ToRad(_sitl->drift_speed);
 
 }
 
@@ -101,21 +101,21 @@ uint16_t SITL_State::_ground_sonar(void)
 
     float voltage = 5.0f;
     if (fabsf(_sitl->state.rollDeg) < 90 &&
-        fabsf(_sitl->state.pitchDeg) < 90) {
+            fabsf(_sitl->state.pitchDeg) < 90) {
         // adjust for apparent altitude with roll
         altitude /= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
-        
+
         altitude += _sitl->sonar_noise * _rand_float();
 
         // Altitude in in m, scaler in meters/volt
         voltage = altitude / _sitl->sonar_scale;
         voltage = constrain_float(voltage, 0, 5.0f);
-        
+
         if (_sitl->sonar_glitch >= (_rand_float() + 1.0f)/2.0f) {
             voltage = 5.0f;
         }
     }
-    
+
     return 1023*(voltage / 5.0f);
 }
 
@@ -147,68 +147,68 @@ uint16_t SITL_State::_ground_sonar(void)
 
  */
 void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-			     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-			     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-			     float airspeed,	float altitude)
+                             double rollRate, 	double pitchRate,double yawRate,	// Local to plane
+                             double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
+                             float airspeed,	float altitude)
 {
-	double p, q, r;
+    double p, q, r;
 
-	if (_ins == NULL) {
-		// no inertial sensor in this sketch
-		return;
-	}
+    if (_ins == NULL) {
+        // no inertial sensor in this sketch
+        return;
+    }
 
-	SITL::convert_body_frame(roll, pitch,
-				 rollRate, pitchRate, yawRate,
-				 &p, &q, &r);
+    SITL::convert_body_frame(roll, pitch,
+                             rollRate, pitchRate, yawRate,
+                             &p, &q, &r);
 
-	// minimum noise levels are 2 bits, but averaged over many
-	// samples, giving around 0.01 m/s/s
-	float accel_noise = 0.01f;
-        // minimum gyro noise is also less than 1 bit
-	float gyro_noise = ToRad(0.04f);
-	if (_motors_on) {
-		// add extra noise when the motors are on
-		accel_noise += _sitl->accel_noise;
-		gyro_noise += ToRad(_sitl->gyro_noise);
-	}
-	// get accel bias (add only to first accelerometer)
-	Vector3f accel_bias = _sitl->accel_bias.get();
-	float xAccel1 = xAccel + accel_noise * _rand_float() + accel_bias.x;
-	float yAccel1 = yAccel + accel_noise * _rand_float() + accel_bias.y;
-	float zAccel1 = zAccel + accel_noise * _rand_float() + accel_bias.z;
+    // minimum noise levels are 2 bits, but averaged over many
+    // samples, giving around 0.01 m/s/s
+    float accel_noise = 0.01f;
+    // minimum gyro noise is also less than 1 bit
+    float gyro_noise = ToRad(0.04f);
+    if (_motors_on) {
+        // add extra noise when the motors are on
+        accel_noise += _sitl->accel_noise;
+        gyro_noise += ToRad(_sitl->gyro_noise);
+    }
+    // get accel bias (add only to first accelerometer)
+    Vector3f accel_bias = _sitl->accel_bias.get();
+    float xAccel1 = xAccel + accel_noise * _rand_float() + accel_bias.x;
+    float yAccel1 = yAccel + accel_noise * _rand_float() + accel_bias.y;
+    float zAccel1 = zAccel + accel_noise * _rand_float() + accel_bias.z;
 
-	float xAccel2 = xAccel + accel_noise * _rand_float();
-	float yAccel2 = yAccel + accel_noise * _rand_float();
-	float zAccel2 = zAccel + accel_noise * _rand_float();
+    float xAccel2 = xAccel + accel_noise * _rand_float();
+    float yAccel2 = yAccel + accel_noise * _rand_float();
+    float zAccel2 = zAccel + accel_noise * _rand_float();
 
-        if (fabs(_sitl->accel_fail) > 1.0e-6) {
-            xAccel1 = _sitl->accel_fail;
-            yAccel1 = _sitl->accel_fail;
-            zAccel1 = _sitl->accel_fail;
-        }
+    if (fabs(_sitl->accel_fail) > 1.0e-6) {
+        xAccel1 = _sitl->accel_fail;
+        yAccel1 = _sitl->accel_fail;
+        zAccel1 = _sitl->accel_fail;
+    }
 
-	_ins->set_accel(0, Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0));
-	_ins->set_accel(1, Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1));
+    _ins->set_accel(0, Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0));
+    _ins->set_accel(1, Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1));
 
-	p += _gyro_drift();
-	q += _gyro_drift();
-	r += _gyro_drift();
+    p += _gyro_drift();
+    q += _gyro_drift();
+    r += _gyro_drift();
 
-	float p1 = p + gyro_noise * _rand_float();
-	float q1 = q + gyro_noise * _rand_float();
-	float r1 = r + gyro_noise * _rand_float();
+    float p1 = p + gyro_noise * _rand_float();
+    float q1 = q + gyro_noise * _rand_float();
+    float r1 = r + gyro_noise * _rand_float();
 
-	float p2 = p + gyro_noise * _rand_float();
-	float q2 = q + gyro_noise * _rand_float();
-	float r2 = r + gyro_noise * _rand_float();
+    float p2 = p + gyro_noise * _rand_float();
+    float q2 = q + gyro_noise * _rand_float();
+    float r2 = r + gyro_noise * _rand_float();
 
-	_ins->set_gyro(0, Vector3f(p1, q1, r1) + _ins->get_gyro_offsets(0));
-	_ins->set_gyro(1, Vector3f(p2, q2, r2) + _ins->get_gyro_offsets(1));
+    _ins->set_gyro(0, Vector3f(p1, q1, r1) + _ins->get_gyro_offsets(0));
+    _ins->set_gyro(1, Vector3f(p2, q2, r2) + _ins->get_gyro_offsets(1));
 
 
-        sonar_pin_value    = _ground_sonar();
-        airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
+    sonar_pin_value    = _ground_sonar();
+    airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
 }
 
 #endif

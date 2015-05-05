@@ -13,30 +13,34 @@ class HALSITL::SITLUARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class HALSITL::SITL_State;
 
-	SITLUARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
-		_portNumber = portNumber;
+    SITLUARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
+        _portNumber = portNumber;
         _rxSpace = _default_rx_buffer_size;
         _txSpace = _default_tx_buffer_size;
         _sitlState = sitlState;
-        
+
         _fd = -1;
         _listen_fd = -1;
-	}
+    }
 
     /* Implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) { begin(b, 0, 0); }
+    void begin(uint32_t b) {
+        begin(b, 0, 0);
+    }
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void end();
     void flush();
-    bool is_initialized() { return true; }
+    bool is_initialized() {
+        return true;
+    }
 
-    void set_blocking_writes(bool blocking) 
+    void set_blocking_writes(bool blocking)
     {
-		_nonblocking_writes = !blocking;
+        _nonblocking_writes = !blocking;
     }
 
     bool tx_pending() {
-	    return false;
+        return false;
     }
 
     /* Implementations of Stream virtual methods */
@@ -49,15 +53,15 @@ public:
     size_t write(const uint8_t *buffer, size_t size);
 
     // file descriptor, exposed so SITL_State::loop_hook() can use it
-	int _fd;
+    int _fd;
 
 private:
     uint8_t _portNumber;
-	bool _connected; // true if a client has connected
-	int _listen_fd;  // socket we are listening on
-	int _serial_port;
-	static bool _console;
-	bool _nonblocking_writes;
+    bool _connected; // true if a client has connected
+    int _listen_fd;  // socket we are listening on
+    int _serial_port;
+    static bool _console;
+    bool _nonblocking_writes;
     uint16_t _rxSpace;
     uint16_t _txSpace;
 
@@ -66,17 +70,17 @@ private:
     static bool _select_check(int );
     static void _set_nonblocking(int );
 
-	/// default receive buffer size
-	static const uint16_t _default_rx_buffer_size = 128;
+    /// default receive buffer size
+    static const uint16_t _default_rx_buffer_size = 128;
 
-	/// default transmit buffer size
-	static const uint16_t _default_tx_buffer_size = 16;
+    /// default transmit buffer size
+    static const uint16_t _default_tx_buffer_size = 16;
 
-	/// maxium tx/rx buffer size
-	/// @note if we could bring the max size down to 256, the mask and head/tail
-	///       pointers in the buffer could become uint8_t.
-	///
-	static const uint16_t _max_buffer_size = 512;
+    /// maxium tx/rx buffer size
+    /// @note if we could bring the max size down to 256, the mask and head/tail
+    ///       pointers in the buffer could become uint8_t.
+    ///
+    static const uint16_t _max_buffer_size = 512;
 
     SITL_State *_sitlState;
 

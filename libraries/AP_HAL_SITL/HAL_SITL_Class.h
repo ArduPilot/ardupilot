@@ -12,7 +12,7 @@
 
 class HAL_SITL : public AP_HAL::HAL {
 public:
-    HAL_SITL();    
+    HAL_SITL();
     void init(int argc, char * const argv[]) const;
 
 private:

@@ -9,11 +9,13 @@
 class HALSITL::SITLRCInput : public AP_HAL::RCInput {
 public:
     SITLRCInput(SITL_State *sitlState) {
-	    _sitlState = sitlState;
+        _sitlState = sitlState;
     }
     void init(void* machtnichts);
     bool  new_input();
-    uint8_t num_channels() { return 8; }
+    uint8_t num_channels() {
+        return 8;
+    }
     uint16_t read(uint8_t ch);
     uint8_t read(uint16_t* periods, uint8_t len);
 

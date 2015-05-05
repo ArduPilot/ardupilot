@@ -44,7 +44,7 @@ static SITLUtil utilInstance;
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
-	    &sitlUart0Driver,  /* uartA */
+        &sitlUart0Driver,  /* uartA */
         &sitlUart1Driver,  /* uartB */
         &sitlUart2Driver,  /* uartC */
         &sitlUart3Driver,  /* uartD */
@@ -62,7 +62,7 @@ HAL_SITL::HAL_SITL() :
     _sitl_state(&sitlState)
 {}
 
-void HAL_SITL::init(int argc, char * const argv[]) const 
+void HAL_SITL::init(int argc, char * const argv[]) const
 {
     _sitl_state->init(argc, argv);
     scheduler->init(NULL);

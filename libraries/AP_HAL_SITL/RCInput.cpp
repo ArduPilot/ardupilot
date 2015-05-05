@@ -12,7 +12,7 @@ void SITLRCInput::init(void* machtnichts)
     clear_overrides();
 }
 
-bool SITLRCInput::new_input() 
+bool SITLRCInput::new_input()
 {
     if (_sitlState->new_rc_input) {
         _sitlState->new_rc_input = false;
@@ -30,7 +30,7 @@ uint16_t SITLRCInput::read(uint8_t ch) {
 
 uint8_t SITLRCInput::read(uint16_t* periods, uint8_t len) {
     for (uint8_t i=0; i<len; i++) {
-	periods[i] = _override[i]? _override[i] : _sitlState->pwm_input[i];
+        periods[i] = _override[i]? _override[i] : _sitlState->pwm_input[i];
     }
     return 8;
 }
@@ -57,7 +57,7 @@ bool SITLRCInput::set_override(uint8_t channel, int16_t override) {
 void SITLRCInput::clear_overrides()
 {
     for (uint8_t i = 0; i < 8; i++) {
-	_override[i] = 0;
+        _override[i] = 0;
     }
 }
 #endif

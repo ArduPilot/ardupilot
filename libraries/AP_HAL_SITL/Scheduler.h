@@ -39,14 +39,21 @@ public:
     void     reboot(bool hold_in_bootloader);
     void     panic(const prog_char_t *errormsg);
 
-    bool     interrupts_are_blocked(void) { return _nested_atomic_ctr != 0; }
+    bool     interrupts_are_blocked(void) {
+        return _nested_atomic_ctr != 0;
+    }
 
-    void     sitl_begin_atomic() { _nested_atomic_ctr++; }
+    void     sitl_begin_atomic() {
+        _nested_atomic_ctr++;
+    }
     void     sitl_end_atomic();
 
     // callable from interrupt handler
     static uint64_t _micros64();
-    static void timer_event() { _run_timer_procs(true); _run_io_procs(true); }
+    static void timer_event() {
+        _run_timer_procs(true);
+        _run_io_procs(true);
+    }
 
 private:
     SITL_State *_sitlState;

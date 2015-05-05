@@ -30,7 +30,7 @@
 
 #include <errno.h>
 #include <sys/ioctl.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -45,7 +45,7 @@ bool SITLUARTDriver::_console;
 
 /* UARTDriver method implementations */
 
-void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) 
+void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
     if (txSpace != 0) {
         _txSpace = txSpace;
@@ -69,25 +69,25 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _connected = true;
         _fd = _sitlState->gps2_pipe();
         break;
-        
+
     default:
         _tcp_start_connection(false);
         break;
     }
 }
 
-void SITLUARTDriver::end() 
+void SITLUARTDriver::end()
 {
 }
 
-int16_t SITLUARTDriver::available(void) 
+int16_t SITLUARTDriver::available(void)
 {
     _check_connection();
 
     if (!_connected) {
         return 0;
     }
-    
+
     if (_select_check(_fd)) {
 #ifdef FIONREAD
         // use FIONREAD to get exact value if possible
@@ -113,13 +113,13 @@ int16_t SITLUARTDriver::available(void)
 
 
 
-int16_t SITLUARTDriver::txspace(void) 
+int16_t SITLUARTDriver::txspace(void)
 {
     // always claim there is space available
     return _txSpace;
 }
 
-int16_t SITLUARTDriver::read(void) 
+int16_t SITLUARTDriver::read(void)
 {
     char c;
 
@@ -153,11 +153,11 @@ int16_t SITLUARTDriver::read(void)
     return -1;
 }
 
-void SITLUARTDriver::flush(void) 
+void SITLUARTDriver::flush(void)
 {
 }
 
-size_t SITLUARTDriver::write(uint8_t c) 
+size_t SITLUARTDriver::write(uint8_t c)
 {
     int flags = 0;
     _check_connection();
@@ -188,79 +188,79 @@ size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
  */
 void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 {
-	int one=1;
-	struct sockaddr_in sockaddr;
-	int ret;
+    int one=1;
+    struct sockaddr_in sockaddr;
+    int ret;
 
-        if (_connected) {
-            return;
-        }
+    if (_connected) {
+        return;
+    }
 
-	if (_console) {
-            // hack for console access
-            _connected = true;
-            _listen_fd = -1;
-            _fd = 1;
-            return;
-	}
+    if (_console) {
+        // hack for console access
+        _connected = true;
+        _listen_fd = -1;
+        _fd = 1;
+        return;
+    }
 
-        if (_fd != -1) {
-            close(_fd);
-        }
+    if (_fd != -1) {
+        close(_fd);
+    }
 
-        if (_listen_fd == -1) {
-            memset(&sockaddr,0,sizeof(sockaddr));
+    if (_listen_fd == -1) {
+        memset(&sockaddr,0,sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
-            sockaddr.sin_len = sizeof(sockaddr);
+        sockaddr.sin_len = sizeof(sockaddr);
 #endif
-            sockaddr.sin_port = htons(_sitlState->base_port() + _portNumber);
-            sockaddr.sin_family = AF_INET;
+        sockaddr.sin_port = htons(_sitlState->base_port() + _portNumber);
+        sockaddr.sin_family = AF_INET;
 
-            _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-            if (_listen_fd == -1) {
-		fprintf(stderr, "socket failed - %s\n", strerror(errno));
-		exit(1);
-            }
+        _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (_listen_fd == -1) {
+            fprintf(stderr, "socket failed - %s\n", strerror(errno));
+            exit(1);
+        }
 
-            /* we want to be able to re-use ports quickly */
-            setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        /* we want to be able to re-use ports quickly */
+        setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-            fprintf(stderr, "bind port %u for %u\n", 
+        fprintf(stderr, "bind port %u for %u\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                (unsigned)_portNumber),
+
+                ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        if (ret == -1) {
+            fprintf(stderr, "bind failed on port %u - %s\n",
                     (unsigned)ntohs(sockaddr.sin_port),
-                    (unsigned)_portNumber),
-
-            ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-            if (ret == -1) {
-		fprintf(stderr, "bind failed on port %u - %s\n",
-                        (unsigned)ntohs(sockaddr.sin_port),
-                        strerror(errno));
-		exit(1);
-            }
-
-            ret = listen(_listen_fd, 5);
-            if (ret == -1) {
-                fprintf(stderr, "listen failed - %s\n", strerror(errno));
-                exit(1);
-            }
-
-            fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber, 
-                    _sitlState->base_port() + _portNumber);
-            fflush(stdout);
+                    strerror(errno));
+            exit(1);
         }
 
-	if (wait_for_connection) {
-            fprintf(stdout, "Waiting for connection ....\n");
-            fflush(stdout);
-            _fd = accept(_listen_fd, NULL, NULL);
-            if (_fd == -1) {
-                fprintf(stderr, "accept() error - %s", strerror(errno));
-                exit(1);
-            }
-            setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-            setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-            _connected = true;
+        ret = listen(_listen_fd, 5);
+        if (ret == -1) {
+            fprintf(stderr, "listen failed - %s\n", strerror(errno));
+            exit(1);
         }
+
+        fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber,
+                _sitlState->base_port() + _portNumber);
+        fflush(stdout);
+    }
+
+    if (wait_for_connection) {
+        fprintf(stdout, "Waiting for connection ....\n");
+        fflush(stdout);
+        _fd = accept(_listen_fd, NULL, NULL);
+        if (_fd == -1) {
+            fprintf(stderr, "accept() error - %s", strerror(errno));
+            exit(1);
+        }
+        setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        _connected = true;
+    }
 }
 
 /*
@@ -268,20 +268,20 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
  */
 void SITLUARTDriver::_check_connection(void)
 {
-	if (_connected) {
-            // we only want 1 connection at a time
-            return;
-	}
-	if (_select_check(_listen_fd)) {
-            _fd = accept(_listen_fd, NULL, NULL);
-            if (_fd != -1) {
-                int one = 1;
-                _connected = true;
-                setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-                setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-                fprintf(stdout, "New connection on serial port %u\n", _portNumber);
-            }
-	}
+    if (_connected) {
+        // we only want 1 connection at a time
+        return;
+    }
+    if (_select_check(_listen_fd)) {
+        _fd = accept(_listen_fd, NULL, NULL);
+        if (_fd != -1) {
+            int one = 1;
+            _connected = true;
+            setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+            setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+            fprintf(stdout, "New connection on serial port %u\n", _portNumber);
+        }
+    }
 }
 
 /*
@@ -289,26 +289,26 @@ void SITLUARTDriver::_check_connection(void)
  */
 bool SITLUARTDriver::_select_check(int fd)
 {
-	fd_set fds;
-	struct timeval tv;
+    fd_set fds;
+    struct timeval tv;
 
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
 
-	// zero time means immediate return from select()
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
+    // zero time means immediate return from select()
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
 
-	if (select(fd+1, &fds, NULL, NULL, &tv) == 1) {
-		return true;
-	}
-	return false;
+    if (select(fd+1, &fds, NULL, NULL, &tv) == 1) {
+        return true;
+    }
+    return false;
 }
 
 void SITLUARTDriver::_set_nonblocking(int fd)
 {
-	unsigned v = fcntl(fd, F_GETFL, 0);
-	fcntl(fd, F_SETFL, v | O_NONBLOCK);
+    unsigned v = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, v | O_NONBLOCK);
 }
 
 #endif

@@ -9,8 +9,8 @@
 class HALSITL::SITLRCOutput : public AP_HAL::RCOutput {
 public:
     SITLRCOutput(SITL_State *sitlState) {
-	    _sitlState = sitlState;
-	    _freq_hz = 50;
+        _sitlState = sitlState;
+        _freq_hz = 50;
     }
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
@@ -22,7 +22,7 @@ public:
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
 
-private:    
+private:
     SITL_State *_sitlState;
     uint16_t _freq_hz;
 };

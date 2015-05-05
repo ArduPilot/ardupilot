@@ -32,9 +32,9 @@ public:
     void init(int argc, char * const argv[]);
 
     enum vehicle_type {
-	    ArduCopter,
-	    APMrover2,
-	    ArduPlane
+        ArduCopter,
+        APMrover2,
+        ArduPlane
     };
 
     int gps_pipe(void);
@@ -45,7 +45,9 @@ public:
     uint16_t pwm_input[8];
     bool new_rc_input;
     void loop_hook(void);
-    uint16_t base_port(void) const { return _base_port; }
+    uint16_t base_port(void) const {
+        return _base_port;
+    }
 
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
@@ -68,16 +70,16 @@ private:
     void _update_flow(void);
 
     struct gps_data {
-	    double latitude;
-	    double longitude;
-	    float altitude;
-	    double speedN;
-	    double speedE;
-	    double speedD;
-	    bool have_lock;
+        double latitude;
+        double longitude;
+        float altitude;
+        double speedN;
+        double speedE;
+        double speedD;
+        bool have_lock;
     };
 
-    #define MAX_GPS_DELAY 100
+#define MAX_GPS_DELAY 100
     gps_data _gps_data[MAX_GPS_DELAY];
 
     bool _gps_has_basestation_position;
@@ -95,12 +97,12 @@ private:
     void _update_gps_sbp(const struct gps_data *d);
 
     void _update_gps(double latitude, double longitude, float altitude,
-			    double speedN, double speedE, double speedD, bool have_lock);
+                     double speedN, double speedE, double speedD, bool have_lock);
 
     void _update_ins(float roll, 	float pitch, 	float yaw,		// Relative to earth
-			    double rollRate, 	double pitchRate,double yawRate,	// Local to plane
-			    double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
-			    float airspeed,	float altitude);
+                     double rollRate, 	double pitchRate,double yawRate,	// Local to plane
+                     double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
+                     float airspeed,	float altitude);
     void _fdm_input(void);
     void _fdm_input_local(void);
     void _simulator_servos(Aircraft::sitl_input &input);
@@ -112,7 +114,7 @@ private:
     float _rand_float(void);
     Vector3f _rand_vec3f(void);
     void _fdm_input_step(void);
-    
+
     void wait_clock(uint64_t wait_time_usec);
 
     pthread_t _fdm_thread_ctx;

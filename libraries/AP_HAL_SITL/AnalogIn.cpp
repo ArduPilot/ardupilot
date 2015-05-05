@@ -17,22 +17,22 @@ ADCSource::ADCSource(SITL_State *sitlState, uint8_t pin) :
 {}
 
 float ADCSource::read_average() {
-	return read_latest();
+    return read_latest();
 }
 
 float ADCSource::voltage_average() {
-	return (5.0f/1023.0f) * read_average();
+    return (5.0f/1023.0f) * read_average();
 }
 
 float ADCSource::voltage_latest() {
-	return (5.0f/1023.0f) * read_latest();
+    return (5.0f/1023.0f) * read_latest();
 }
 
 float ADCSource::read_latest() {
     switch (_pin) {
     case ANALOG_INPUT_BOARD_VCC:
         return 1023;
-        
+
     case 0:
         return _sitlState->sonar_pin_value;
 
@@ -59,7 +59,7 @@ void SITLAnalogIn::init(void *ap_hal_scheduler) {
 }
 
 AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin) {
-    return new ADCSource(_sitlState, pin);	
+    return new ADCSource(_sitlState, pin);
 }
 
 #endif

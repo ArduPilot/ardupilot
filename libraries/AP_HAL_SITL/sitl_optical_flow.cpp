@@ -38,7 +38,7 @@ void SITL_State::_update_flow(void)
     static uint32_t last_flow_ms;
 
     if (!_optical_flow ||
-        !_sitl->flow_enable) {
+            !_sitl->flow_enable) {
         return;
     }
 
@@ -52,8 +52,8 @@ void SITL_State::_update_flow(void)
     // convert roll rates to body frame
     SITL::convert_body_frame(_sitl->state.rollDeg,
                              _sitl->state.pitchDeg,
-                             _sitl->state.rollRate, 
-                             _sitl->state.pitchRate, 
+                             _sitl->state.rollRate,
+                             _sitl->state.pitchRate,
                              _sitl->state.yawRate,
                              &p, &q, &r);
     gyro(p, q, r);
@@ -61,8 +61,8 @@ void SITL_State::_update_flow(void)
     OpticalFlow::OpticalFlow_state state;
 
     // NED velocity vector in m/s
-    Vector3f velocity(_sitl->state.speedN, 
-                      _sitl->state.speedE, 
+    Vector3f velocity(_sitl->state.speedN,
+                      _sitl->state.speedE,
                       _sitl->state.speedD);
 
     // a rotation matrix following DCM conventions
@@ -70,7 +70,7 @@ void SITL_State::_update_flow(void)
     rotmat.from_euler(radians(_sitl->state.rollDeg),
                       radians(_sitl->state.pitchDeg),
                       radians(_sitl->state.yawDeg));
-                      
+
 
     state.device_id = 1;
     state.surface_quality = 51;

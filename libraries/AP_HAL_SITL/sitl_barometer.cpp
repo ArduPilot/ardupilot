@@ -62,13 +62,13 @@ void SITL_State::_update_barometer(float altitude)
 
     // storing data from sensor to buffer
     if (now - last_store_time_baro >= 10) { // store data every 10 ms.
-            last_store_time_baro = now;
-            if (store_index_baro > baro_buffer_length-1) { // reset buffer index if index greater than size of buffer
-                store_index_baro = 0;
-            }
-            buffer_baro[store_index_baro].data = sim_alt; // add data to current index
-            buffer_baro[store_index_baro].time = last_store_time_baro; // add time_stamp_baro to current index
-            store_index_baro = store_index_baro + 1; // increment index
+        last_store_time_baro = now;
+        if (store_index_baro > baro_buffer_length-1) { // reset buffer index if index greater than size of buffer
+            store_index_baro = 0;
+        }
+        buffer_baro[store_index_baro].data = sim_alt; // add data to current index
+        buffer_baro[store_index_baro].time = last_store_time_baro; // add time_stamp_baro to current index
+        store_index_baro = store_index_baro + 1; // increment index
     }
 
     // return delayed measurement
