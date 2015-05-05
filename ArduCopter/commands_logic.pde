@@ -684,7 +684,7 @@ static bool verify_circle(const AP_Mission::Mission_Command& cmd)
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
 
             // set target altitude if not provided
-            if (AP_Math::is_zero(circle_center.z)) {
+            if (is_zero(circle_center.z)) {
                 circle_center.z = curr_pos.z;
             }
 

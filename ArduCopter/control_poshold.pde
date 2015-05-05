@@ -228,7 +228,7 @@ static void poshold_run()
                 poshold_update_pilot_lean_angle(poshold.pilot_roll, target_roll);
 
                 // switch to BRAKE mode for next iteration if no pilot input
-                if (AP_Math::is_zero(target_roll) && (abs(poshold.pilot_roll) < 2 * g.poshold_brake_rate)) {
+                if (is_zero(target_roll) && (abs(poshold.pilot_roll) < 2 * g.poshold_brake_rate)) {
                     // initialise BRAKE mode
                     poshold.roll_mode = POSHOLD_BRAKE;        // Set brake roll mode
                     poshold.brake_roll = 0;                  // initialise braking angle to zero
@@ -277,7 +277,7 @@ static void poshold_run()
                 poshold.roll = poshold.brake_roll + poshold.wind_comp_roll;
 
                 // check for pilot input
-                if (!AP_Math::is_zero(target_roll)) {
+                if (!is_zero(target_roll)) {
                     // init transition to pilot override
                     poshold_roll_controller_to_pilot_override();
                 }
@@ -322,7 +322,7 @@ static void poshold_run()
                 poshold_update_pilot_lean_angle(poshold.pilot_pitch, target_pitch);
 
                 // switch to BRAKE mode for next iteration if no pilot input
-                if (AP_Math::is_zero(target_pitch) && (abs(poshold.pilot_pitch) < 2 * g.poshold_brake_rate)) {
+                if (is_zero(target_pitch) && (abs(poshold.pilot_pitch) < 2 * g.poshold_brake_rate)) {
                     // initialise BRAKE mode
                     poshold.pitch_mode = POSHOLD_BRAKE;       // set brake pitch mode
                     poshold.brake_pitch = 0;                 // initialise braking angle to zero
@@ -371,7 +371,7 @@ static void poshold_run()
                 poshold.pitch = poshold.brake_pitch + poshold.wind_comp_pitch;
 
                 // check for pilot input
-                if (!AP_Math::is_zero(target_pitch)) {
+                if (!is_zero(target_pitch)) {
                     // init transition to pilot override
                     poshold_pitch_controller_to_pilot_override();
                 }
@@ -453,9 +453,9 @@ static void poshold_run()
                     poshold.pitch = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_pitch + poshold.wind_comp_pitch, wp_nav.get_pitch());
 
                     // check for pilot input
-                    if (!AP_Math::is_zero(target_roll) || !AP_Math::is_zero(target_pitch)) {
+                    if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                         // if roll input switch to pilot override for roll
-                        if (!AP_Math::is_zero(target_roll)) {
+                        if (!is_zero(target_roll)) {
                             // init transition to pilot override
                             poshold_roll_controller_to_pilot_override();
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
@@ -463,10 +463,10 @@ static void poshold_run()
                             poshold.pitch_mode = POSHOLD_BRAKE_READY_TO_LOITER;
                         }
                         // if pitch input switch to pilot override for pitch
-                        if (!AP_Math::is_zero(target_pitch)) {
+                        if (!is_zero(target_pitch)) {
                             // init transition to pilot override
                             poshold_pitch_controller_to_pilot_override();
-                            if (AP_Math::is_zero(target_roll)) {
+                            if (is_zero(target_roll)) {
                                 // switch roll-mode to brake (but ready to go back to loiter anytime)
                                 // no need to reset poshold.brake_roll here as wind comp has not been updated since last brake_roll computation
                                 poshold.roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
@@ -487,9 +487,9 @@ static void poshold_run()
                     poshold_update_wind_comp_estimate();
 
                     // check for pilot input
-                    if (!AP_Math::is_zero(target_roll) || !AP_Math::is_zero(target_pitch)) {
+                    if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                         // if roll input switch to pilot override for roll
-                        if (!AP_Math::is_zero(target_roll)) {
+                        if (!is_zero(target_roll)) {
                             // init transition to pilot override
                             poshold_roll_controller_to_pilot_override();
                             // switch pitch-mode to brake (but ready to go back to loiter anytime)
@@ -498,11 +498,11 @@ static void poshold_run()
                             poshold.brake_pitch = 0;
                         }
                         // if pitch input switch to pilot override for pitch
-                        if (!AP_Math::is_zero(target_pitch)) {
+                        if (!is_zero(target_pitch)) {
                             // init transition to pilot override
                             poshold_pitch_controller_to_pilot_override();
                             // if roll not overriden switch roll-mode to brake (but be ready to go back to loiter any time)
-                            if (AP_Math::is_zero(target_roll)) {
+                            if (is_zero(target_roll)) {
                                 poshold.roll_mode = POSHOLD_BRAKE_READY_TO_LOITER;
                                 poshold.brake_roll = 0;
                             }
@@ -613,14 +613,14 @@ static void poshold_update_wind_comp_estimate()
     const Vector3f& accel_target = pos_control.get_accel_target();
 
     // update wind compensation in earth-frame lean angles
-    if (AP_Math::is_zero(poshold.wind_comp_ef.x)) {
+    if (is_zero(poshold.wind_comp_ef.x)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
         poshold.wind_comp_ef.x = accel_target.x;
     } else {
         // low pass filter the position controller's lean angle output
         poshold.wind_comp_ef.x = (1.0f-TC_WIND_COMP)*poshold.wind_comp_ef.x + TC_WIND_COMP*accel_target.x;
     }
-    if (AP_Math::is_zero(poshold.wind_comp_ef.y)) {
+    if (is_zero(poshold.wind_comp_ef.y)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
         poshold.wind_comp_ef.y = accel_target.y;
     } else {
