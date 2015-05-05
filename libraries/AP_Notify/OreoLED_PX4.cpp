@@ -195,10 +195,8 @@ void OreoLED_PX4::update()
     }
 
     // send colours (later we will set macro if required)
-    if (last_stage < 10) {
-        if (initialization_done) {
-            set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
-        }
+    if (last_stage < 10 && initialization_done) {
+        set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_AUTOMOBILE);
         last_stage = 10;
     } else if (last_stage >= 10) {
         static uint8_t previous_autopilot_mode = -1;
