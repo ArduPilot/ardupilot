@@ -735,7 +735,7 @@ bool AP_Param::save(bool force_save)
         } else {
             v2 = get_default_value(&info->def_value);
         }
-        if (AP_Math::is_equal(v1,v2) && !force_save) {
+        if (is_equal(v1,v2) && !force_save) {
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
@@ -1177,7 +1177,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     } else if (ptype <= AP_PARAM_FLOAT && header.type <= AP_PARAM_FLOAT) {
         // perform scalar->scalar conversion
         float v = ap->cast_to_float((enum ap_var_type)header.type);
-        if (!AP_Math::is_equal(v,ap2->cast_to_float(ptype))) {
+        if (!is_equal(v,ap2->cast_to_float(ptype))) {
             // the value needs to change
             set_value(ptype, ap2, v);
             ap2->save();
