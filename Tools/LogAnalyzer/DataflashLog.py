@@ -501,7 +501,7 @@ class DataflashLog(object):
             else:
                 self.messages[lineNumber] = e.Message
         elif e.NAME == "MODE":
-            if self.vehicleType == "ArduCopter":
+            if self.vehicleType in ["ArduCopter"]:
                 try:
                     modes = {0:'STABILIZE',
                         1:'ACRO',
@@ -521,7 +521,7 @@ class DataflashLog(object):
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ThrCrs)
                 except:
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
-            elif self.vehicleType == "ArduPlane" or self.vehicleType == "ArduRover":
+            elif self.vehicleType in ["ArduPlane", "APM:Plane", "ArduRover", "APM:Rover", "APM:Copter"]:
                 self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
             else:
                 raise Exception("Unknown log type for MODE line {} {}".format(self.vehicleType, repr(e)))
