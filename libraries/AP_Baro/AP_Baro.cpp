@@ -197,7 +197,7 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
 float AP_Baro::get_EAS2TAS(void)
 {
     float altitude = get_altitude();
-    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 100.0f) && !AP_Math::is_zero(_EAS2TAS)) {
+    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 100.0f) && !is_zero(_EAS2TAS)) {
         // not enough change to require re-calculating
         return _EAS2TAS;
     }
@@ -318,13 +318,13 @@ void AP_Baro::update(void)
     // last 0.5 seconds
     uint32_t now = hal.scheduler->millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
-        sensors[i].healthy = (now - sensors[i].last_update_ms < 500) && !AP_Math::is_zero(sensors[i].pressure);
+        sensors[i].healthy = (now - sensors[i].last_update_ms < 500) && !is_zero(sensors[i].pressure);
     }
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
             // update altitude calculation
-            if (AP_Math::is_zero(sensors[i].ground_pressure)) {
+            if (is_zero(sensors[i].ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
             sensors[i].altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
