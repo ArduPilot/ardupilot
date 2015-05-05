@@ -337,7 +337,7 @@ struct PACKED log_Sonar {
 static void Log_Write_Sonar()
 {
     uint16_t turn_time = 0;
-    if (!AP_Math::is_zero(obstacle.turn_angle)) {
+    if (!is_zero(obstacle.turn_angle)) {
         turn_time = hal.scheduler->millis() - obstacle.detected_time_ms;
     }
     struct log_Sonar pkt = {

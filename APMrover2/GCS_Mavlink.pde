@@ -869,7 +869,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
-                if (AP_Math::is_equal(packet.param1,1.0f)) {
+                if (is_equal(packet.param1,1.0f)) {
                     ins.init_gyro();
                     if (ins.gyro_calibrated_ok_all()) {
                         ahrs.reset_gyro_drift();
@@ -877,13 +877,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     } else {
                         result = MAV_RESULT_FAILED;
                     }
-                } else if (AP_Math::is_equal(packet.param3,1.0f)) {
+                } else if (is_equal(packet.param3,1.0f)) {
                     init_barometer();
                     result = MAV_RESULT_ACCEPTED;
-                } else if (AP_Math::is_equal(packet.param4,1.0f)) {
+                } else if (is_equal(packet.param4,1.0f)) {
                     trim_radio();
                     result = MAV_RESULT_ACCEPTED;
-                } else if (AP_Math::is_equal(packet.param5,1.0f)) {
+                } else if (is_equal(packet.param5,1.0f)) {
                     float trim_roll, trim_pitch;
                     AP_InertialSensor_UserInteract_MAVLink interact(this);
                     if (g.skip_gyro_cal) {
@@ -905,12 +905,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-                if (AP_Math::is_equal(packet.param1,2.0f)) {
+                if (is_equal(packet.param1,2.0f)) {
                     // save first compass's offsets
                     compass.set_and_save_offsets(0, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
                 }
-                if (AP_Math::is_equal(packet.param1,5.0f)) {
+                if (is_equal(packet.param1,5.0f)) {
                     // save secondary compass's offsets
                     compass.set_and_save_offsets(1, packet.param2, packet.param3, packet.param4);
                     result = MAV_RESULT_ACCEPTED;
@@ -967,15 +967,15 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (AP_Math::is_equal(packet.param1,1.0f) || AP_Math::is_equal(packet.param1,3.0f)) {
+            if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
                 // when packet.param1 == 3 we reboot to hold in bootloader
-                hal.scheduler->reboot(AP_Math::is_equal(packet.param1,3.0f));
+                hal.scheduler->reboot(is_equal(packet.param1,3.0f));
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
-            if (AP_Math::is_equal(packet.param1,1.0f)) {
+            if (is_equal(packet.param1,1.0f)) {
                 gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                 result = MAV_RESULT_ACCEPTED;
             }
