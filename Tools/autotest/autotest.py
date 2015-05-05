@@ -22,15 +22,10 @@ def get_default_params(atype):
     if atype in ['APMrover2', 'ArduPlane']:
         frame = 'rover'
     else:
-        frame = 'quad'
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=%s --rate=400 --speedup=10 --home=%f,%f,%u,%u' % (
-        frame, HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+        frame = '+'
 
-    runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
-    runsim.delaybeforesend = 0
-    runsim.expect('Starting at lat')
-
-    sil = util.start_SIL(atype, wipe=True)
+    home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    sil = util.start_SIL(atype, wipe=True, model=frame, home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL(atype)
     print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
@@ -38,7 +33,7 @@ def get_default_params(atype):
         # we need to restart it after eeprom erase
         util.pexpect_close(mavproxy)
         util.pexpect_close(sil)
-        sil = util.start_SIL(atype)
+        sil = util.start_SIL(atype, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
@@ -46,7 +41,6 @@ def get_default_params(atype):
     shutil.copy(parmfile, dest)
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
     print("Saved defaults for %s to %s" % (atype, dest))
     return True
 

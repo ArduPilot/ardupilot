@@ -104,9 +104,6 @@ def drive_APMrover2(viewerip=None, map=False):
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=rover --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
-        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-
     buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)
     if os.path.exists(buildlog):
