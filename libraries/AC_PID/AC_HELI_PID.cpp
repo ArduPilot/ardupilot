@@ -56,7 +56,7 @@ float AC_HELI_PID::get_ff(float requested_rate) const
 
 float AC_HELI_PID::get_leaky_i(float leak_rate)
 {
-	if(!AP_Math::is_zero(_ki) && !AP_Math::is_zero(_dt)){
+	if(!is_zero(_ki) && !is_zero(_dt)){
 		_integrator -= (float)_integrator * leak_rate;
 		_integrator += ((float)_input * _ki) * _dt;
 		if (_integrator < -_imax) {
