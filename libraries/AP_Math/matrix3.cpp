@@ -19,8 +19,6 @@
 
 #include "AP_Math.h"
 
-#define HALF_SQRT_2 0.70710678118654757
-
 // create a rotation matrix given some euler angles
 // this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
 template <typename T>
