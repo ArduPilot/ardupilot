@@ -434,7 +434,7 @@ void AC_AttitudeControl::frame_conversion_ef_to_bf(const Vector3f& ef_vector, Ve
 bool AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f& ef_vector)
 {
     // avoid divide by zero
-    if (AP_Math::is_zero(_ahrs.cos_pitch())) {
+    if (is_zero(_ahrs.cos_pitch())) {
         return false;
     }
     // convert earth frame angle or rates to body frame
@@ -672,14 +672,14 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 {
     if (enable_limits) {
         // if enabling limits, reload from eeprom or set to defaults
-        if (AP_Math::is_zero(_accel_roll_max)) {
+        if (is_zero(_accel_roll_max)) {
             _accel_roll_max.load();
         }
         // if enabling limits, reload from eeprom or set to defaults
-        if (AP_Math::is_zero(_accel_pitch_max)) {
+        if (is_zero(_accel_pitch_max)) {
             _accel_pitch_max.load();
         }
-        if (AP_Math::is_zero(_accel_yaw_max)) {
+        if (is_zero(_accel_yaw_max)) {
             _accel_yaw_max.load();
         }
     } else {
@@ -742,7 +742,7 @@ float AC_AttitudeControl::get_boosted_throttle(float throttle_in)
 // sqrt_controller - response based on the sqrt of the error instead of the more common linear response
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
 {
-    if (AP_Math::is_zero(second_ord_lim) || AP_Math::is_zero(p)) {
+    if (is_zero(second_ord_lim) || is_zero(p)) {
         return error*p;
     }
 
