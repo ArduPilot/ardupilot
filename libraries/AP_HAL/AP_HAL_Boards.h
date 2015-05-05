@@ -100,6 +100,7 @@
    to 1 if available
 
   HAL_OS_POSIX_IO    :  has posix-like filesystem IO
+  HAL_OS_SOCKETS     :  has posix-like sockets
  */
 
 
@@ -144,6 +145,7 @@
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_OS_POSIX_IO 1
+#define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
 #define HAL_BOARD_LOG_DIRECTORY "logs"
@@ -190,6 +192,7 @@
 #define HAL_BOARD_NAME "Linux"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_OS_POSIX_IO 1
+#define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
