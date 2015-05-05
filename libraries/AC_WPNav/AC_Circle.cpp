@@ -125,7 +125,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (!AP_Math::is_zero(_radius)) {
+        if (!is_zero(_radius)) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);
@@ -179,7 +179,7 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     float dist = pythagorous2(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (AP_Math::is_zero(dist)) {
+    if (is_zero(dist)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
@@ -243,7 +243,7 @@ void AC_Circle::init_start_angle(bool use_heading)
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         const Vector3f &curr_pos = _inav.get_position();
-        if (AP_Math::is_equal(curr_pos.x,_center.x) && AP_Math::is_equal(curr_pos.y,_center.y)) {
+        if (is_equal(curr_pos.x,_center.x) && is_equal(curr_pos.y,_center.y)) {
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
