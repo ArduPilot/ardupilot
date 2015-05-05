@@ -101,7 +101,7 @@ public:
         k_param_arming_check,
         k_param_sprayer,
         k_param_angle_max,
-        k_param_gps_hdop_good,
+        k_param_gps_hdop_good,              // deprecated - remove
         k_param_battery,
         k_param_fs_batt_mah,
         k_param_angle_rate_max,         // remove
@@ -358,7 +358,6 @@ public:
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
-    AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;
     AP_Int8         super_simple;
