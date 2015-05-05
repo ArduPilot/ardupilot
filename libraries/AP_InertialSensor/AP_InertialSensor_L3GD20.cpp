@@ -194,8 +194,7 @@ uint16_t AP_InertialSensor_L3GD20::_init_sensor( Sample_rate sample_rate )
                 _spi_sem->give();
                 break;
             } else {
-                hal.console->println_P(
-                        PSTR("L3GD20 startup failed: no data ready"));
+                hal.console->println("L3GD20 startup failed: no data ready");
             }
             _spi_sem->give();
         }
@@ -350,8 +349,7 @@ void AP_InertialSensor_L3GD20::_read_data_transaction() {
               we waited for DRDY, but did not see DRDY on all axes
               when we captured. That means a transfer error of some sort
              */
-            hal.console->println_P(
-                    PSTR("L3GD20: DRDY is not on in all axes, transfer error"));
+            hal.console->println("L3GD20: DRDY is not on in all axes, transfer error");
             return;
         }
 #endif
@@ -399,10 +397,10 @@ void AP_InertialSensor_L3GD20::_register_write_check(uint8_t reg, uint8_t val)
     _register_write(reg, val);
     readed = _register_read(reg);
     if (readed != val){
-	hal.console->printf_P("Values doesn't match; written: %02x; read: %02x ", val, readed);
+        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
     }
 #if L3GD20_DEBUG
-    hal.console->printf_P("Values written: %02x; readed: %02x ", val, readed);
+    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
 #endif
 }
 
@@ -610,11 +608,11 @@ bool AP_InertialSensor_L3GD20::_sample_available()
 // dump all config registers - used for debug
 void AP_InertialSensor_L3GD20::_dump_registers(void)
 {
-    hal.console->println_P(PSTR("L3GD20 registers"));
+    hal.console->println("L3GD20 registers");
     if (_spi_sem->take(100)) {
         for (uint8_t reg=ADDR_WHO_AM_I; reg<=56; reg++) { // 0x38 = 56
             uint8_t v = _register_read(reg);
-            hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+            hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
             if ((reg - (ADDR_WHO_AM_I-1)) % 16 == 0) {
                 hal.console->println();
             }
