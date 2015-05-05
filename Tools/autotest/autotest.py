@@ -157,12 +157,10 @@ steps = [
     'build.Examples',
     'build.Parameters',
 
-    'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
 
-    'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
     'drive.APMrover2',
@@ -210,12 +208,6 @@ def run_step(step):
 
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter')
-
-    if step == 'build2560.ArduPlane':
-        return util.build_AVR('ArduPlane', board='mega2560')
-
-    if step == 'build2560.APMrover2':
-        return util.build_AVR('APMrover2', board='mega2560')
 
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')

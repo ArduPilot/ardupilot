@@ -68,20 +68,6 @@ def build_SIL(atype, target='sitl'):
             checkfail=True)
     return True
 
-def build_AVR(atype, board='mega2560'):
-    '''build AVR binaries'''
-    config = open(reltopdir('config.mk'), mode='w')
-    config.write('''
-HAL_BOARD=HAL_BOARD_APM1
-BOARD=%s
-PORT=/dev/null
-''' % board)
-    config.close()
-    run_cmd("make clean", dir=reltopdir(atype),  checkfail=True)
-    run_cmd("make", dir=reltopdir(atype),  checkfail=True)
-    return True
-
-
 # list of pexpect children to close on exit
 close_list = []
 
