@@ -680,12 +680,14 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
 
 /*
   handle an incoming mission item
+  return true if this is the last mission item, otherwise false
  */
-void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &mission)
+bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &mission)
 {
     mavlink_mission_item_t packet;
-    uint8_t result = MAV_MISSION_ACCEPTED;
+    MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
     struct AP_Mission::Mission_Command cmd = {};
+    bool mission_is_complete = false;
 
     mavlink_msg_mission_item_decode(msg, &packet);
 
@@ -701,7 +703,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         handle_guided_request(cmd);
 
         // verify we received the command
-        result = 0;
+        result = MAV_MISSION_ACCEPTED;
         goto mission_ack;
     }
 
@@ -711,7 +713,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         handle_change_alt_request(cmd);
 
         // verify we recevied the command
-        result = 0;
+        result = MAV_MISSION_ACCEPTED;
         goto mission_ack;
     }
 
@@ -763,6 +765,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         
         send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
         waypoint_receiving = false;
+        mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
         // only set WP_RADIUS parameter
     } else {
@@ -775,7 +778,7 @@ void GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             send_message(MSG_NEXT_WAYPOINT);
         }
     }
-    return;
+    return mission_is_complete;
 
 mission_ack:
     // we are rejecting the mission/waypoint
@@ -785,6 +788,8 @@ mission_ack:
         msg->sysid,
         msg->compid,
         result);
+
+    return mission_is_complete;
 }
 
 void 
