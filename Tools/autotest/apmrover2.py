@@ -83,15 +83,9 @@ def drive_APMrover2(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=rover --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
-        HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-
-    sil = util.start_SIL('APMrover2', wipe=True)
+    home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    sil = util.start_SIL('APMrover2', wipe=True, model='rover', home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
-
-    runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
-    runsim.delaybeforesend = 0
-    runsim.expect('Starting at lat')
 
     print("WAITING FOR PARAMETERS")
     mavproxy.expect('Received [0-9]+ parameters')
@@ -103,9 +97,8 @@ def drive_APMrover2(viewerip=None, map=False):
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
 
-    sil = util.start_SIL('APMrover2')
+    sil = util.start_SIL('APMrover2', model='rover', home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
@@ -113,11 +106,6 @@ def drive_APMrover2(viewerip=None, map=False):
 
     sim_cmd = util.reltopdir('Tools/autotest/pysim/sim_wrapper.py') + ' --frame=rover --rate=200 --speedup=100 --home=%f,%f,%u,%u' % (
         HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-
-    runsim = pexpect.spawn(sim_cmd, logfile=sys.stdout, timeout=10)
-    runsim.delaybeforesend = 0
-    util.pexpect_autoclose(runsim)
-    runsim.expect('Starting at lat')
 
     buildlog = util.reltopdir("../buildlogs/APMrover2-test.tlog")
     print("buildlog=%s" % buildlog)
@@ -133,7 +121,7 @@ def drive_APMrover2(viewerip=None, map=False):
     util.expect_setup_callback(mavproxy, expect_callback)
 
     expect_list_clear()
-    expect_list_extend([runsim, sil, mavproxy])
+    expect_list_extend([sil, mavproxy])
 
     print("Started simulator")
 
@@ -176,7 +164,6 @@ def drive_APMrover2(viewerip=None, map=False):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
 
     if os.path.exists('APMrover2-valgrind.log'):
         os.chmod('APMrover2-valgrind.log', 0644)

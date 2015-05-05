@@ -144,6 +144,7 @@ parser.add_option("--viewerip", default=None, help='IP address to send MAVLink a
 parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
+parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
 
@@ -201,13 +202,13 @@ def run_step(step):
         return test_prerequisites()
 
     if step == 'build.ArduPlane':
-        return util.build_SIL('ArduPlane')
+        return util.build_SIL('ArduPlane', j=opts.j)
 
     if step == 'build.APMrover2':
-        return util.build_SIL('APMrover2')
+        return util.build_SIL('APMrover2', j=opts.j)
 
     if step == 'build.ArduCopter':
-        return util.build_SIL('ArduCopter')
+        return util.build_SIL('ArduCopter', j=opts.j)
 
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')
