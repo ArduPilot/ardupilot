@@ -43,7 +43,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     time_now_us(0),
     gyro_noise(radians(0.1f)),
     accel_noise(0.3),
-    rate_hz(400)
+    rate_hz(400),
+    last_time_us(0)
 {
     char *saveptr=NULL;
     char *s = strdup(home_str);
@@ -86,7 +87,11 @@ void Aircraft::update_position(void)
 
     location.alt  = home.alt - position.z*100.0f;
 
-    time_now_us += frame_time_us;
+    // we only advance time if it hasn't been advanced already by the
+    // backend
+    if (last_time_us == time_now_us) {
+        time_now_us += frame_time_us;
+    }
     sync_frame_time();
 }
 

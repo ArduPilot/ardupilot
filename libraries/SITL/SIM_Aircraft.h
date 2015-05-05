@@ -106,6 +106,9 @@ protected:
 
     /* return normal distribution random numbers */
     double rand_normal(double mean, double stddev);
+
+private:
+    uint64_t last_time_us;
 };
 
 #endif // _SIM_AIRCRAFT_H
