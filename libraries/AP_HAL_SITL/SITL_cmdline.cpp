@@ -16,6 +16,7 @@
 #include <SIM_Multicopter.h>
 #include <SIM_Helicopter.h>
 #include <SIM_Rover.h>
+#include <SIM_CRRCSim.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,12 +50,10 @@ static const struct {
     { "+",         MultiCopter::create },
     { "x",         MultiCopter::create },
     { "hexa",      MultiCopter::create },
-    { "hexax",     MultiCopter::create },
     { "octa",      MultiCopter::create },
-    { "octa-quad", MultiCopter::create },
     { "heli",      Helicopter::create },
     { "rover",     Rover::create },
-    { "rover-skid",Rover::create }
+    { "crrcsim",   CRRCSim::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
@@ -144,7 +143,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (model_str && home_str) {
         for (uint8_t i=0; i<sizeof(model_constructors)/sizeof(model_constructors[0]); i++) {
-            if (strcmp(model_constructors[i].name, model_str) == 0) {
+            if (strncmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
                 sitl_model = model_constructors[i].constructor(home_str, model_str);
                 sitl_model->set_speedup(speedup);
                 _synthetic_clock_mode = true;
