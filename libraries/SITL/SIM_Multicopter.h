@@ -35,7 +35,7 @@ public:
         angle(_angle), // angle in degrees from front
         clockwise(_clockwise), // clockwise == true, anti-clockwise == false
         servo(_servo) // what servo output drives this motor
-        {}
+    {}
 };
 
 /*
@@ -67,7 +67,9 @@ public:
     void update(const struct sitl_input &input);
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) { return new MultiCopter(home_str, frame_str); }
+    static Aircraft *create(const char *home_str, const char *frame_str) {
+        return new MultiCopter(home_str, frame_str);
+    }
 
 private:
     const Frame *frame;

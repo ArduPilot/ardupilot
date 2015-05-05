@@ -15,8 +15,7 @@
  */
 
 /*
-	SITL.cpp - software in the loop state
-
+    SITL.cpp - software in the loop state
 */
 
 #include <AP_Common.h>
@@ -77,20 +76,20 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)
 {
-	double p, q, r;
-	float yaw;
+    double p, q, r;
+    float yaw;
 
-	// we want the gyro values to be directly comparable to the
-	// raw_imu message, which is in body frame
-	convert_body_frame(state.rollDeg, state.pitchDeg,
+    // we want the gyro values to be directly comparable to the
+    // raw_imu message, which is in body frame
+    convert_body_frame(state.rollDeg, state.pitchDeg,
                        state.rollRate, state.pitchRate, state.yawRate,
                        &p, &q, &r);
 
-	// convert to same conventions as DCM
-	yaw = state.yawDeg;
-	if (yaw > 180) {
-		yaw -= 360;
-	}
+    // convert to same conventions as DCM
+    yaw = state.yawDeg;
+    if (yaw > 180) {
+        yaw -= 360;
+    }
 
     mavlink_msg_simstate_send(chan,
                               ToRad(state.rollDeg),
@@ -107,30 +106,30 @@ void SITL::simstate_send(mavlink_channel_t chan)
 /* report SITL state to DataFlash */
 void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
 {
-	double p, q, r;
-	float yaw;
+    double p, q, r;
+    float yaw;
 
-	// we want the gyro values to be directly comparable to the
-	// raw_imu message, which is in body frame
-	convert_body_frame(state.rollDeg, state.pitchDeg,
+    // we want the gyro values to be directly comparable to the
+    // raw_imu message, which is in body frame
+    convert_body_frame(state.rollDeg, state.pitchDeg,
                        state.rollRate, state.pitchRate, state.yawRate,
                        &p, &q, &r);
 
-	// convert to same conventions as DCM
-	yaw = state.yawDeg;
-	if (yaw > 180) {
-		yaw -= 360;
-	}
+    // convert to same conventions as DCM
+    yaw = state.yawDeg;
+    if (yaw > 180) {
+        yaw -= 360;
+    }
 
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SIMSTATE_MSG),
         time_ms : hal.scheduler->millis(),
-        roll  : (int16_t)(state.rollDeg*100),
-        pitch : (int16_t)(state.pitchDeg*100),
-        yaw   : (uint16_t)(wrap_360_cd(yaw*100)),
-        alt   : (float)state.altitude,
-        lat   : (int32_t)(state.latitude*1.0e7),
-        lng   : (int32_t)(state.longitude*1.0e7)
+        roll    : (int16_t)(state.rollDeg*100),
+        pitch   : (int16_t)(state.pitchDeg*100),
+        yaw     : (uint16_t)(wrap_360_cd(yaw*100)),
+        alt     : (float)state.altitude,
+        lat     : (int32_t)(state.latitude*1.0e7),
+        lng     : (int32_t)(state.longitude*1.0e7)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -143,24 +142,24 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
                               double rollRate, double pitchRate, double yawRate,
                               double *p, double *q, double *r)
 {
-	double phi, theta, phiDot, thetaDot, psiDot;
+    double phi, theta, phiDot, thetaDot, psiDot;
 
-	phi = ToRad(rollDeg);
-	theta = ToRad(pitchDeg);
-	phiDot = ToRad(rollRate);
-	thetaDot = ToRad(pitchRate);
-	psiDot = ToRad(yawRate);
+    phi = ToRad(rollDeg);
+    theta = ToRad(pitchDeg);
+    phiDot = ToRad(rollRate);
+    thetaDot = ToRad(pitchRate);
+    psiDot = ToRad(yawRate);
 
-	*p = phiDot - psiDot*sinf(theta);
-	*q = cosf(phi)*thetaDot + sinf(phi)*psiDot*cosf(theta);
-	*r = cosf(phi)*psiDot*cosf(theta) - sinf(phi)*thetaDot;    
+    *p = phiDot - psiDot*sinf(theta);
+    *q = cosf(phi)*thetaDot + sinf(phi)*psiDot*cosf(theta);
+    *r = cosf(phi)*psiDot*cosf(theta) - sinf(phi)*thetaDot;
 }
 
 
 /*
   convert angular velocities from body frame to
   earth frame.
-  
+
   all inputs and outputs are in radians/s
 */
 Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)

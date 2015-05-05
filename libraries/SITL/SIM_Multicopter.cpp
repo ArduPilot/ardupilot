@@ -24,23 +24,23 @@
 
 Motor m(90,  false,  1);
 
-static const Motor quad_plus_motors[4] = 
-{ 
+static const Motor quad_plus_motors[4] =
+{
     Motor(90,  false,  1),
     Motor(270, false,  2),
     Motor(0,   true,   3),
     Motor(180, true,   4)
 };
 
-static const Motor quad_x_motors[4] = 
-{ 
+static const Motor quad_x_motors[4] =
+{
     Motor(45,  false,  1),
     Motor(225, false,  2),
     Motor(315, true,   3),
     Motor(135, true,   4)
 };
 
-static const Motor hexa_motors[6] = 
+static const Motor hexa_motors[6] =
 {
     Motor(60,   false, 1),
     Motor(60,   true,  7),
@@ -50,7 +50,7 @@ static const Motor hexa_motors[6] =
     Motor(-60,  false, 3),
 };
 
-static const Motor hexax_motors[6] = 
+static const Motor hexax_motors[6] =
 {
     Motor(30,  false,  7),
     Motor(90,  true,   1),
@@ -60,7 +60,7 @@ static const Motor hexax_motors[6] =
     Motor(330, true,   3)
 };
 
-static const Motor octa_motors[8] = 
+static const Motor octa_motors[8] =
 {
     Motor(0,    true,  1),
     Motor(180,  true,  2),
@@ -72,7 +72,7 @@ static const Motor octa_motors[8] =
     Motor(90,   true,  8)
 };
 
-static const Motor octa_quad_motors[8] = 
+static const Motor octa_quad_motors[8] =
 {
     Motor(  45, false, 1),
     Motor( -45, true,  2),
@@ -87,7 +87,7 @@ static const Motor octa_quad_motors[8] =
 /*
   table of supported frame types
  */
-static const Frame supported_frames[] = 
+static const Frame supported_frames[] =
 {
     Frame("+",         4, quad_plus_motors),
     Frame("x",         4, quad_x_motors),
@@ -101,7 +101,7 @@ static const Frame supported_frames[] =
   constructor
  */
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),    
+    Aircraft(home_str, frame_str),
     frame(NULL),
     hover_throttle(0.51),
     terminal_velocity(15.0),
@@ -116,7 +116,7 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }
-    /* 
+    /*
        scaling from total motor power to Newtons. Allows the copter
        to hover against gravity when each motor is at hover_throttle
     */

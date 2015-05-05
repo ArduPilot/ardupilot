@@ -65,16 +65,16 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     set_speedup(1);
 }
 
-/* 
-   return true if we are on the ground 
+/*
+   return true if we are on the ground
 */
 bool Aircraft::on_ground(const Vector3f &pos) const
 {
     return (-pos.z) + home.alt*0.01f <= ground_level + frame_height;
 }
 
-/* 
-   update location from position 
+/*
+   update location from position
 */
 void Aircraft::update_position(void)
 {
@@ -90,8 +90,8 @@ void Aircraft::update_position(void)
     sync_frame_time();
 }
 
-/* 
-   rotate to the given yaw 
+/*
+   rotate to the given yaw
 */
 void Aircraft::set_yaw_degrees(float yaw_degrees)
 {
@@ -101,7 +101,7 @@ void Aircraft::set_yaw_degrees(float yaw_degrees)
     yaw = radians(yaw_degrees);
     dcm.from_euler(roll, pitch, yaw);
 }
-        
+
 /* advance time by deltat in seconds */
 void Aircraft::time_advance(float deltat)
 {
@@ -202,8 +202,8 @@ double Aircraft::rand_normal(double mean, double stddev)
 
 
 
-/* 
-   fill a sitl_fdm structure from the simulator state 
+/*
+   fill a sitl_fdm structure from the simulator state
 */
 void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
 {
@@ -233,9 +233,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
 
 uint64_t Aircraft::get_wall_time_us() const
 {
-	struct timeval tp;
-	gettimeofday(&tp,NULL);
-	return tp.tv_sec*1.0e6 + tp.tv_usec;
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return tp.tv_sec*1.0e6 + tp.tv_usec;
 }
 
 /*

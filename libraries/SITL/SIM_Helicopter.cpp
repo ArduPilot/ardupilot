@@ -26,7 +26,7 @@
   constructor
  */
 Helicopter::Helicopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),    
+    Aircraft(home_str, frame_str),
     terminal_rotation_rate(4*radians(360.0)),
     hover_throttle(0.65f),
     terminal_velocity(40.0f),
@@ -40,7 +40,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
 {
     mass = 2.13f;
 
-    /* 
+    /*
        scaling from motor power to Newtons. Allows the copter
        to hover against gravity when the motor is at hover_throttle
     */

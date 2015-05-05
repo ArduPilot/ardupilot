@@ -34,7 +34,9 @@ public:
     void update(const struct sitl_input &input);
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) { return new Helicopter(home_str, frame_str); }
+    static Aircraft *create(const char *home_str, const char *frame_str) {
+        return new Helicopter(home_str, frame_str);
+    }
 
 private:
     float terminal_rotation_rate;

@@ -27,7 +27,7 @@
 /*
   parent class for all simulator types
  */
-class Aircraft 
+class Aircraft
 {
 public:
     Aircraft(const char *home_str, const char *frame_str);
@@ -84,7 +84,7 @@ protected:
 
     /* rotate to the given yaw */
     void set_yaw_degrees(float yaw_degrees);
-        
+
     /* advance time by deltat in seconds */
     void time_advance(float deltat);
 

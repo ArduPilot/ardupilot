@@ -27,7 +27,7 @@
   constructor
  */
 Rover::Rover(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),    
+    Aircraft(home_str, frame_str),
     max_speed(20),
     max_accel(30),
     wheelbase(0.335),
@@ -60,7 +60,7 @@ float Rover::turn_circle(float steering)
     return turning_circle * sinf(radians(35)) / sinf(radians(steering*35));
 }
 
-/* 
+/*
    return yaw rate in degrees/second given steering_angle and speed
 */
 float Rover::calc_yaw_rate(float steering, float speed)
