@@ -574,7 +574,7 @@ static void pre_arm_rc_checks()
 static bool pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
-    if(!ahrs.healthy()) {
+    if(!ahrs.get_NavEKF().healthy()) {
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Waiting for Nav Checks"));
         }
