@@ -2600,10 +2600,17 @@ void NavEKF::FuseMagnetometer()
         float minorFramesToGo = float(magUpdateCountMax) - float(magUpdateCount);
         // correct the state vector or store corrections to be applied incrementally
         for (uint8_t j= 0; j<=21; j++) {
-            // If we are forced to use a bad compass, we reduce the weighting by a factor of 4
-            if (!magHealth) {
+            // If we are forced to use a bad compass in flight, we reduce the weighting by a factor of 4
+            if (!magHealth && !constPosMode) {
                 Kfusion[j] *= 0.25f;
             }
+            // If in the air and there is no other form of heading reference, we strengthen the compass attitude correction
+            if (vehicleArmed && constPosMode && j <= 3) {
+                Kfusion[j] *= 4.0f;
+            }
+            // We don't need to spread corrections for non-dynamic states or if we are in a  constant postion mode
+            // We can't spread corrections if there is not enough time remaining
+            // We don't spread corrections to attitude states if we are rotating rapidly
             if ((j <= 3 && highRates) || j >= 10 || constPosMode || minorFramesToGo < 1.5f ) {
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             } else {
@@ -5023,6 +5030,7 @@ void NavEKF::setTouchdownExpected(bool val)
 }
 
 // Monitor GPS data to see if quality is good enough to initialise the EKF
+// Monitor magnetometer innovations to to see if the heading is good enough to use GPS
 // Return true if all criteria pass for 10 seconds
 bool NavEKF::calcGpsGoodToAlign(void)
 {
@@ -5045,9 +5053,17 @@ bool NavEKF::calcGpsGoodToAlign(void)
     } else {
         hAccFail =  false;
     }
+    // fail if magnetometer innovations are outside limits indicating bad yaw
+    // with bad yaw we are unable to use GPS
+    bool yawFail;
+    if (magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) {
+        yawFail = true;
+    } else {
+        yawFail = false;
+    }
     // record time of fail
     // assume  fail first time called
-    if (gpsVelFail || numSatsFail || hAccFail || lastGpsVelFail_ms == 0) {
+    if (gpsVelFail || numSatsFail || hAccFail || yawFail || lastGpsVelFail_ms == 0) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
     // DEBUG PRINT
