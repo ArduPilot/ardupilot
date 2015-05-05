@@ -19,6 +19,8 @@
 #include <AP_HAL.h>
 #if HAL_OS_SOCKETS
 
+#include <unistd.h>
+
 class SocketAPM {
 public:
     SocketAPM(bool _datagram);
