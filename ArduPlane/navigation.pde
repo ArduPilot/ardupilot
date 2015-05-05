@@ -182,7 +182,7 @@ static void update_fbwb_speed_height(void)
     
     change_target_altitude(g.flybywire_climb_rate * elevator_input * delta_us_fast_loop * 0.0001f);
     
-    if (AP_Math::is_zero(elevator_input) && !AP_Math::is_zero(last_elevator_input)) {
+    if (is_zero(elevator_input) && !is_zero(last_elevator_input)) {
         // the user has just released the elevator, lock in
         // the current altitude
         set_target_altitude_current();

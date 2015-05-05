@@ -286,7 +286,7 @@ static void stabilize_acro(float speed_scaler)
     /*
       check for special roll handling near the pitch poles
      */
-    if (g.acro_locking && AP_Math::is_zero(roll_rate)) {
+    if (g.acro_locking && is_zero(roll_rate)) {
         /*
           we have no roll stick input, so we will enter "roll locked"
           mode, and hold the roll we had when the stick was released
@@ -313,7 +313,7 @@ static void stabilize_acro(float speed_scaler)
         channel_roll->servo_out  = rollController.get_rate_out(roll_rate,  speed_scaler);
     }
 
-    if (g.acro_locking && AP_Math::is_zero(pitch_rate)) {
+    if (g.acro_locking && is_zero(pitch_rate)) {
         /*
           user has zero pitch stick input, so we lock pitch at the
           point they release the stick
@@ -459,7 +459,7 @@ static void calc_nav_yaw_ground(void)
     if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
         steer_rate = 0;
     }
-    if (!AP_Math::is_zero(steer_rate)) {
+    if (!is_zero(steer_rate)) {
         // pilot is giving rudder input
         steer_state.locked_course = false;        
     } else if (!steer_state.locked_course) {
