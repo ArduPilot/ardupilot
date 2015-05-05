@@ -23,9 +23,14 @@ static void read_battery(void)
 // RC_CHANNELS_SCALED message
 void read_receiver_rssi(void)
 {
-    rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->voltage_average() * 50;
-    receiver_rssi = constrain_int16(ret, 0, 255);
+    // avoid divide by zero
+    if ((g.rssi_range_max <= 0) || (g.rssi_range_min >= g.rssi_range_max)) {
+        receiver_rssi = 0;
+    }else{
+        rssi_analog_source->set_pin(g.rssi_pin);
+        float ret = ((rssi_analog_source->voltage_average() - g.rssi_range_min) * 255) / (g.rssi_range_max - g.rssi_range_min);
+        receiver_rssi = constrain_int16(ret, 0, 255);
+    }
 }
 
 // read the sonars

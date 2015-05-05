@@ -42,6 +42,22 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: RSSI_RANGE_MAX
+    // @DisplayName: RC Receiver RSSI MAX voltage range
+    // @Description: RC Receiver RSSI MAX voltage range
+    // @Units: Volt
+    // @Values: 3.3:3.3V, 5.0:5V
+    // @User: Standard
+    GSCALAR(rssi_range_max,          "RSSI_RANGE_MAX",         5.0),
+    
+    // @Param: RSSI_RANGE_MIN
+    // @DisplayName: RC Receiver RSSI MIN voltage range
+    // @Description: RC Receiver RSSI MIN voltage range
+    // @Units: Volt
+    // @Values: 0.5:0.5V, 1.2:1.2V
+    // @User: Standard
+    GSCALAR(rssi_range_min,          "RSSI_RANGE_MIN",         0.0),
+    
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID
     // @Description: ID used in MAVLink protocol to identify this vehicle

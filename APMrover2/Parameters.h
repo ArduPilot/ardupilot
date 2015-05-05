@@ -55,7 +55,6 @@ public:
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
 
-
         // 110: Telemetry control
         //
         k_param_gcs0 = 110, // stream rates for uartA
@@ -79,6 +78,8 @@ public:
         k_param_steering_learn, // unused
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_rssi_range_max, // new         
+        k_param_rssi_range_min, // new        
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -220,7 +221,9 @@ public:
 
     // sensor parameters
     AP_Int8	    compass_enabled; 
-
+    AP_Float    rssi_range_min;             // allows to set min voltage for rssi pin such as 0.5, 1.2 etc.  
+    AP_Float    rssi_range_max;             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc.
+    
     // navigation parameters
     //
     AP_Float    speed_cruise;
