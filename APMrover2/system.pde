@@ -112,6 +112,17 @@ static void init_ardupilot()
 
     BoardConfig.init();
 
+	////////////////////////////////////////////////////////////////////////////////
+	// External LEDs & Buzzer
+	////////////////////////////////////////////////////////////////////////////////
+	bool external_ledbuzz = false;
+
+	if (BoardConfig._ext_ledbuzz.get() == 1) {
+		external_ledbuzz = true;
+	}
+
+	notify.init(external_ledbuzz);
+
     ServoRelayEvents.set_channel_mask(0xFFF0);
 
     set_control_channels();

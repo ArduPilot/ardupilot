@@ -19,6 +19,8 @@ public:
     void init(void);
 
     static const struct AP_Param::GroupInfo var_info[];
+	
+	AP_Int8 _ext_ledbuzz;
 
 private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4

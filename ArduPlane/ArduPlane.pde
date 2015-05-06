@@ -818,8 +818,6 @@ void setup() {
 
     AP_Notify::flags.failsafe_battery = false;
 
-    notify.init(false);
-
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
     init_ardupilot();
