@@ -956,7 +956,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     // GCS has sent us a command from GCS, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
     {
-        handle_mission_item(msg, mission);
+        if (handle_mission_item(msg, mission)) {
+            Log_Write_EntireMission();
+        }
         break;
     }
 
