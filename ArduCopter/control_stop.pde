@@ -48,7 +48,7 @@ static void stop_run()
     }
 
     // relax stop target if we might be landed
-    if (land_complete_maybe()) {
+    if (ap.land_complete_maybe) {
         // ToDo: What do we do here?
     }
 

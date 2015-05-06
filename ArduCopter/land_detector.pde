@@ -1,13 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // counter to verify landings
-static uint32_t land_detector = ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE; // we assume we are landed
-
-// land_complete_maybe - return true if we may have landed (used to reset loiter targets during landing)
-static bool land_complete_maybe()
-{
-    return (ap.land_complete || ap.land_complete_maybe);
-}
+uint32_t land_detector_count = 0;
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // called at MAIN_LOOP_RATE
@@ -21,38 +15,62 @@ static void update_land_detector()
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
 
-    // check that the average throttle output is near minimum (less than 12.5% hover throttle)
-    bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
     Vector3f accel_ef = ahrs.get_accel_ef_blended();
     accel_ef.z += GRAVITY_MSS;
 
     // lowpass filter on accel
     accel_ef = land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
 
-    // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-    bool accel_stationary = (accel_ef.length() < 1.0f);
-
-    if ( motor_at_lower_limit && accel_stationary) {
-        if (!ap.land_complete) {
-            // increase counter until we hit the trigger then set land complete flag
-            if( land_detector < ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
-                land_detector++;
-            }else{
-                set_land_complete(true);
-                land_detector = ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE;
-            }
-        }
-    } else {
-        // we've sensed movement up or down so reset land_detector
-        land_detector = 0;
+    if (!motors.armed()) {
+        // if disarmed, always landed.
+        set_land_complete(true);
+    } else if (ap.land_complete) {
         // if throttle output is high then clear landing flag
         if (motors.get_throttle_out() > get_non_takeoff_throttle()) {
             set_land_complete(false);
         }
+    } else {
+        // we are armed and not landed - check for landed criteria
+        // check that the average throttle output is near minimum
+        bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
+
+        // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
+        bool accel_stationary = (accel_ef.length() < 1.0f);
+
+        if (motor_at_lower_limit && accel_stationary) {
+            // landed criteria met - increment the counter and check if we've triggered
+            if( land_detector_count < ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
+                land_detector_count++;
+            } else {
+                set_land_complete(true);
+            }
+        } else {
+            // we've sensed movement up or down so reset land_detector
+            land_detector_count = 0;
+        }
     }
 
-    // set land maybe flag
-    set_land_complete_maybe(land_detector >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE);
+    set_land_complete_maybe(ap.land_complete || (land_detector_count > LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE));
+}
+
+static void set_land_complete(bool b)
+{
+    // if no change, exit immediately
+    if( ap.land_complete == b )
+        return;
+
+    land_detector_count = 0;
+
+    if(b){
+        Log_Write_Event(DATA_LAND_COMPLETE);
+    } else {
+        Log_Write_Event(DATA_NOT_LANDED);
+    }
+    ap.land_complete = b;
+
+    if (ap.land_complete && motors.armed() && mode_disarms_on_land(control_mode)) {
+        init_disarm_motors();
+    }
 }
 
 // update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
