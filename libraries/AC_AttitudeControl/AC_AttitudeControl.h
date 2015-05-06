@@ -16,14 +16,14 @@
 #include <AC_P.h>
 
 // To-Do: change the name or move to AP_Math?
-#define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                 // constant to convert from radians to centi-degrees
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN             36000.0f// minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX             72000.0f// maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN              18000.0f// minimum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX              36000.0f// maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT            1000    // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
-#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT        0       // default maximum acceleration for roll/pitch axis in centi-degrees/sec/sec
-#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT         0       // default maximum acceleration for yaw axis in centi-degrees/sec/sec
+#define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                   // constant to convert from radians to centi-degrees
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN             36000.0f  // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX             72000.0f  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN              9000.0f   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX              36000.0f  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT            1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT        110000.0f // default maximum acceleration for roll/pitch axis in centi-degrees/sec/sec
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT         27000.0f  // default maximum acceleration for yaw axis in centi-degrees/sec/sec
 
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          5000.0f // body-frame rate controller maximum output (for roll-pitch axis)
@@ -78,11 +78,20 @@ public:
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec);
 
+    // get_accel_roll_max - gets the roll acceleration limit
+    float get_accel_roll_max() { return _accel_roll_max; }
+
     // save_accel_roll_max - sets and saves the roll acceleration limit
     void save_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; _accel_roll_max.save(); }
 
+    // get_accel_pitch_max - gets the pitch acceleration limit
+    float get_accel_pitch_max() { return _accel_pitch_max; }
+
     // save_accel_pitch_max - sets and saves the pitch acceleration limit
     void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; _accel_pitch_max.save(); }
+
+    // get_accel_yaw_max - gets the yaw acceleration limit
+    float get_accel_yaw_max() { return _accel_yaw_max; }
 
     // save_accel_yaw_max - sets and saves the yaw acceleration limit
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
@@ -167,6 +176,9 @@ public:
 
     // bf_feedforward - enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
+
+    // bf_feedforward - enable or disable body-frame feed forward and save
+    void bf_feedforward_save(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; _rate_bf_ff_enabled.save(); }
 
     // get_bf_feedforward - return body-frame feed forward setting
     bool get_bf_feedforward() { return _rate_bf_ff_enabled; }
