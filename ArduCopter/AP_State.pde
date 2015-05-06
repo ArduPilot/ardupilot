@@ -93,21 +93,6 @@ static void set_failsafe_gcs(bool b)
 }
 
 // ---------------------------------------------
-void set_land_complete(bool b)
-{
-    // if no change, exit immediately
-    if( ap.land_complete == b )
-        return;
-
-    if(b){
-        Log_Write_Event(DATA_LAND_COMPLETE);
-    }else{
-        Log_Write_Event(DATA_NOT_LANDED);
-    }
-    ap.land_complete = b;
-}
-
-// ---------------------------------------------
 
 // set land complete maybe flag
 void set_land_complete_maybe(bool b)
