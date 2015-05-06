@@ -92,6 +92,7 @@ void Aircraft::update_position(void)
     if (last_time_us == time_now_us) {
         time_now_us += frame_time_us;
     }
+    last_time_us = time_now_us;
     sync_frame_time();
 }
 
