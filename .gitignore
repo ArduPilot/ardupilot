@@ -48,8 +48,8 @@
 /Tools/ArdupilotMegaPlanner/wix/obj
 /Tools/autotest/ch7_mission.txt
 /Tools/autotest/aircraft/Rascal/reset.xml
-/Tools/autotest/jsbsim/fgout.xml
-/Tools/autotest/jsbsim/rascal_test.xml
+/Tools/autotest/jsb_sim/fgout.xml
+/Tools/autotest/jsb_sim/rascal_test.xml
 ArduCopter/Debug/
 ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
