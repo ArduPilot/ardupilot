@@ -294,7 +294,7 @@ void Copter::auto_land_run()
     }
 
     // relax loiter targets if we might be landed
-    if (land_complete_maybe()) {
+    if (ap.land_complete_maybe) {
         wp_nav.loiter_soften_for_landing();
     }
 
