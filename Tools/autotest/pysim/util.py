@@ -127,6 +127,7 @@ def start_SIL(atype, valgrind=False, wipe=False, height=None, synthetic_clock=Tr
         cmd += ' --model=%s' % model
     if speedup != 1:
         cmd += ' --speedup=%f' % speedup
+    print("Running: %s" % cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
