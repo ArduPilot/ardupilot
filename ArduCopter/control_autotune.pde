@@ -502,7 +502,7 @@ static void autotune_attitude_control()
             break;
         case AUTOTUNE_TYPE_SP_DOWN:
         case AUTOTUNE_TYPE_SP_UP:
-            autotune_twitching_test(lean_angle, autotune_target_angle, autotune_test_min, autotune_test_max);
+            autotune_twitching_test(lean_angle, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
             autotune_twitching_measure_acceleration(autotune_test_accel_max, rotation_rate - direction_sign * autotune_start_rate, rate_max);
             break;
         }
@@ -591,10 +591,10 @@ static void autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_DOWN:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_down(tune_yaw_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -605,10 +605,10 @@ static void autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_UP:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_up(tune_yaw_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -1071,7 +1071,7 @@ void autotune_twitching_test(float measurement, float target, float &measurement
     }
 
     // calculate early stopping time based on the time it takes to get to 90%
-    if (measurement_max < target * 0.9f) {
+    if (measurement_max < target * 0.75f) {
         // the measurement not reached the 90% threshold yet
         autotune_step_stop_time = autotune_step_start_time + (millis() - autotune_step_start_time) * 3.0f;
         autotune_step_stop_time = min(autotune_step_stop_time, autotune_step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
