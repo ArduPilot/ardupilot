@@ -945,6 +945,20 @@ static void autotune_save_tuning_gains()
 {
     // if we successfully completed tuning
     if (autotune_state.mode == AUTOTUNE_MODE_SUCCESS) {
+
+        if (attitude_control.get_bf_feedforward()) {
+            attitude_control.bf_feedforward_save(true);
+            if (attitude_control.get_accel_roll_max() < AUTOTUNE_RP_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_roll_max(AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT);
+            }
+            if (attitude_control.get_accel_pitch_max() < AUTOTUNE_RP_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_pitch_max(AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT);
+            }
+            if (attitude_control.get_accel_yaw_max() < AUTOTUNE_Y_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_yaw_max(AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT);
+            }
+        }
+
         // sanity check the rate P values
         if (autotune_roll_enabled() && !is_zero(tune_roll_rp)) {
             // rate roll gains
@@ -952,13 +966,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_roll.kD(tune_roll_rd);
             g.pid_rate_roll.save_gains();
+
             // stabilize roll
             g.p_stabilize_roll.kP(tune_roll_sp);
             g.p_stabilize_roll.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_roll_max(tune_roll_accel);
-            }
+            // acceleration roll
+            attitude_control.save_accel_roll_max(tune_roll_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_roll_rp = g.pid_rate_roll.kP();
@@ -973,13 +987,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_pitch.kD(tune_pitch_rd);
             g.pid_rate_pitch.save_gains();
+
             // stabilize pitch
             g.p_stabilize_pitch.kP(tune_pitch_sp);
             g.p_stabilize_pitch.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_pitch_max(tune_pitch_accel);
-            }
+            // acceleration pitch
+            attitude_control.save_accel_pitch_max(tune_pitch_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_pitch_rp = g.pid_rate_pitch.kP();
@@ -995,13 +1009,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_yaw.kD(0.0f);
             g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
             g.pid_rate_yaw.save_gains();
+
             // stabilize yaw
             g.p_stabilize_yaw.kP(tune_yaw_sp);
             g.p_stabilize_yaw.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_yaw_max(tune_yaw_accel);
-            }
+            // acceleration yaw
+            attitude_control.save_accel_yaw_max(tune_yaw_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_yaw_rp = g.pid_rate_yaw.kP();
