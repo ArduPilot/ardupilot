@@ -77,11 +77,11 @@ static void rudder_arm_check()
     
     static uint32_t rudder_arm_timer;
 
-    if (arming.is_armed()) {
-        //already armed, no need to run remainder of this function
-        rudder_arm_timer = 0;
-        return;
-    } 
+    //if (arming.is_armed()) {
+    //    //already armed, no need to run remainder of this function
+    //    rudder_arm_timer = 0;
+    //    return;
+    //} 
 
     if (! arming.rudder_arming_enabled()) {
         //parameter disallows rudder arming
@@ -100,10 +100,34 @@ static void rudder_arm_check()
         return;      
     }
 
-    // full right rudder starts arming counter
-    if (channel_rudder->control_in > 4000) {
-        uint32_t now = millis();
+    // full left rudder starts disarmarming counter
+	if (channel_rudder->control_in < -4000) {
+		uint32_t now = millis();
+		//gcs_send_text_fmt(PSTR("Rudder=%lu"), (unsigned long)channel_rudder->control_in);
+		if (rudder_arm_timer == 0 ||
+			now - rudder_arm_timer < 3000) {
 
+			if (rudder_arm_timer == 0) rudder_arm_timer = now;
+		}
+		else {
+			//time to disarm!
+			if (arming.disarm()) {
+				if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+					channel_throttle->enable_out();
+				}
+				if (control_mode != AUTO) {
+					// reset the mission on disarm if we are not in auto
+					mission.reset();
+				}
+				// suppress the throttle in auto-throttle modes
+				throttle_suppressed = auto_throttle_mode;
+				//only log if arming/disarming was successful
+				Log_Arm_Disarm();
+			}
+		}
+	}
+    else if (channel_rudder->control_in > 4000) {
+        uint32_t now = millis();
         if (rudder_arm_timer == 0 || 
             now - rudder_arm_timer < 3000) {
 
@@ -111,15 +135,21 @@ static void rudder_arm_check()
         } else {
             //time to arm!
             if (arming.arm(AP_Arming::RUDDER)) {
-                channel_throttle->enable_out();                        
-                //only log if arming was successful
-                Log_Arm_Disarm();
-            }                
+			    if (!arming.is_armed()) {
+				    channel_throttle->enable_out();
+					//only log if arming/disarming was successful
+					Log_Arm_Disarm();
+				}           
+			}                
         }
     } else { 
         // not at full right rudder
         rudder_arm_timer = 0;
     }
+
+	
+	
+	
 }
 
 static void read_radio()
