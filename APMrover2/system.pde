@@ -268,6 +268,12 @@ static void set_mode(enum mode mode)
 {       
 
 	if(control_mode == mode){
+        if (mode == GUIDED) {
+            // if already in GUIDED mode then this must be a request
+            // to navigate to a new waypoint
+            rtl_complete = false;
+            set_guided_WP();
+        }
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
@@ -299,6 +305,7 @@ static void set_mode(enum mode mode)
 			break;
 
         case GUIDED:
+            rtl_complete = false;
             set_guided_WP();
             break;
         

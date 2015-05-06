@@ -223,8 +223,9 @@ static bool verify_RTL()
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(PSTR("Reached Home dist %um"),
+        gcs_send_text_fmt(PSTR("Reached Home: Distance %um"),
                           (unsigned)get_distance(current_loc, next_WP));
+        rtl_complete = true;
         return true;
     }
 
