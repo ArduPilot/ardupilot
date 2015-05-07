@@ -1181,6 +1181,16 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // capture current angular rate to augmented state vector for use by optical flow fusion
     state.omega = correctedDelAng / dtIMUactual;
 
+    // LPF the yaw rate using a 1 second time constant yaw rate and determine if we are doing continual
+    // fast rotations that can cause problems due to gyro scale factor errors.
+    float alphaLPF = constrain_float(dtIMUactual, 0.0f, 1.0f);
+    yawRateFilt += (state.omega.z - yawRateFilt)*alphaLPF;
+    if (fabs(yawRateFilt) > 1.0f) {
+        highYawRate = true;
+    } else {
+        highYawRate = false;
+    }
+
     // limit states to protect against divergence
     ConstrainStates();
 }
@@ -1247,6 +1257,11 @@ void NavEKF::CovariancePrediction()
             processNoise[i] *= gyroBiasNoiseScaler;
         }
     }
+    // if we are yawing rapidly, inhibit yaw gyro bias learning to prevent gyro scale factor errors from corrupting the bias estimate
+    if (highYawRate) {
+        processNoise[12] = 0.0f;
+        P[12][12] = 0.0f;
+    }
     // scale accel bias noise when disarmed to allow for faster bias estimation
     // inhibit bias estimation during takeoff with ground effect to prevent bad bias learning
     if (expectGndEffectTakeoff) {
@@ -1279,7 +1294,8 @@ void NavEKF::CovariancePrediction()
     _gyrNoise = constrain_float(_gyrNoise, 1e-3f, 5e-2f);
     daxCov = sq(dt*_gyrNoise);
     dayCov = sq(dt*_gyrNoise);
-    dazCov = sq(dt*_gyrNoise);
+    // Account for 3% scale factor error on Z angular rate. This reduces chance of continuous fast rotations causing loss of yaw reference.
+    dazCov = sq(dt*_gyrNoise) + sq(dt*0.03f*yawRateFilt);
     _accNoise = constrain_float(_accNoise, 5e-2f, 1.0f);
     dvxCov = sq(dt*_accNoise);
     dvyCov = sq(dt*_accNoise);
@@ -2604,8 +2620,9 @@ void NavEKF::FuseMagnetometer()
             if (!magHealth && !constPosMode) {
                 Kfusion[j] *= 0.25f;
             }
-            // If in the air and there is no other form of heading reference, we strengthen the compass attitude correction
-            if (vehicleArmed && constPosMode && j <= 3) {
+            // If in the air and there is no other form of heading reference or we are yawing rapidly which creates larger inertial yaw errors,
+            // we strengthen the magnetometer attitude correction
+            if (vehicleArmed && (constPosMode || highYawRate) && j <= 3) {
                 Kfusion[j] *= 4.0f;
             }
             // We don't need to spread corrections for non-dynamic states or if we are in a  constant postion mode
@@ -4645,6 +4662,8 @@ void NavEKF::InitialiseVariables()
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     gpsAidingBad = false;
+    highYawRate = false;
+    yawRateFilt = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
