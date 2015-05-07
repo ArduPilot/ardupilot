@@ -1088,6 +1088,9 @@ static void one_hz_loop()
 
     // update position controller alt limits
     update_poscon_alt_max();
+
+    // enable/disable raw gyro/accel logging
+    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 }
 
 // called at 50hz
