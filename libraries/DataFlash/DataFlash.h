@@ -517,6 +517,20 @@ struct PACKED log_AIRSPEED {
     float   offset;
 };
 
+struct PACKED log_ACCEL {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint32_t timestamp_us;
+    float AccX, AccY, AccZ;
+};
+
+struct PACKED log_GYRO {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint32_t timestamp_us;
+    float GyrX, GyrY, GyrZ;
+};
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -627,7 +641,19 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" } \
+      "MAG3","IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+    { LOG_ACC1_MSG, sizeof(log_ACCEL), \
+      "ACC1", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" }, \
+    { LOG_ACC2_MSG, sizeof(log_ACCEL), \
+      "ACC2", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" }, \
+    { LOG_ACC3_MSG, sizeof(log_ACCEL), \
+      "ACC3", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" }, \
+    { LOG_GYR1_MSG, sizeof(log_GYRO), \
+      "GYR1", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" }, \
+    { LOG_GYR2_MSG, sizeof(log_GYRO), \
+      "GYR2", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" }, \
+    { LOG_GYR3_MSG, sizeof(log_GYRO), \
+      "GYR3", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -682,6 +708,12 @@ Format characters in the format string for binary log messages
 #define LOG_COMPASS3_MSG  169
 #define LOG_MODE_MSG      170
 #define LOG_GPS_RAW_MSG   171
+#define LOG_ACC1_MSG      172
+#define LOG_ACC2_MSG      173
+#define LOG_ACC3_MSG      174
+#define LOG_GYR1_MSG      175
+#define LOG_GYR2_MSG      176
+#define LOG_GYR3_MSG      177
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
