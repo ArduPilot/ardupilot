@@ -40,6 +40,7 @@ public:
     void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
     void     panic(const prog_char_t *errormsg);
+    void     warning(const prog_char_t *errormsg);
 
     bool     in_timerprocess();
     bool     system_initializing();

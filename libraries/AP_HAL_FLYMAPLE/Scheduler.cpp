@@ -237,6 +237,10 @@ void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
     for(;;);
 }
 
+void FLYMAPLEScheduler::warning(const prog_char_t *errormsg) {
+    hal.console->println_P(errormsg);
+}
+
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
     hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
     hal.scheduler->delay(100);

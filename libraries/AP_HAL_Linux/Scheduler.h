@@ -44,6 +44,7 @@ public:
     void     system_initialized();
 
     void     panic(const prog_char_t *errormsg);
+    void     warning(const prog_char_t *errormsg);
     void     reboot(bool hold_in_bootloader);
 
     void     stop_clock(uint64_t time_usec);

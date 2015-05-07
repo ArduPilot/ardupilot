@@ -386,6 +386,12 @@ void LinuxScheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
+void LinuxScheduler::warning(const prog_char_t *errormsg) 
+{
+    write(1, errormsg, strlen(errormsg));
+    write(1, "\n", 1);
+}
+
 bool LinuxScheduler::in_timerprocess() 
 {
     return _in_timer_proc;

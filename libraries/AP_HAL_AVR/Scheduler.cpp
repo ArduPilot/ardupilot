@@ -225,6 +225,12 @@ void AVRScheduler::system_initialized() {
     _initialized = true;
 }
 
+void AVRScheduler::warning(const prog_char_t* errormsg) {
+    /* Print the error message on both ports */
+    hal.uartA->println_P(errormsg);
+    hal.uartC->println_P(errormsg);
+}
+
 void AVRScheduler::panic(const prog_char_t* errormsg) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */

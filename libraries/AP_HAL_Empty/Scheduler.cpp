@@ -74,6 +74,10 @@ void EmptyScheduler::panic(const prog_char_t *errormsg) {
     for(;;);
 }
 
+void EmptyScheduler::warning(const prog_char_t *errormsg) {
+    hal.console->println_P(errormsg);
+}
+
 void EmptyScheduler::reboot(bool hold_in_bootloader) {
     for(;;);
 }
