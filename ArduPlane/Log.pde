@@ -353,6 +353,7 @@ struct PACKED log_Sonar {
     uint8_t throttle;
     uint8_t count;
     float correction;
+    float correction_offset;
 };
 
 // Write a sonar packet
@@ -367,7 +368,8 @@ static void Log_Write_Sonar()
         groundspeed : gps.ground_speed(),
         throttle    : (uint8_t)(100 * channel_throttle->norm_output()),
         count       : rangefinder_state.in_range_count,
-        correction  : rangefinder_state.correction
+        correction  : rangefinder_state.correction,
+        correction_offset  : rangefinder_state.correction_offset
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -468,7 +470,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "ICfccccfI",   "TimeMS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "IffffBBf",   "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
+      "SONR", "IffffBBff",  "TimeMS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr,CorrOff" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "IHB", "TimeMS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),

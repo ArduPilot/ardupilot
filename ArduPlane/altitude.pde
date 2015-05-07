@@ -546,12 +546,12 @@ static float rangefinder_correction(void)
  */
 static void rangefinder_height_update(void)
 {
-    uint16_t distance_cm = rangefinder.distance_cm();
-    float height_estimate = 0;
+    float rangefinder_height_estimate = 0;
+
     if ((rangefinder.status() == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        height_estimate = distance_cm * 0.01f * ahrs.get_dcm_matrix().c.z;
+        rangefinder_height_estimate = rangefinder.distance_cm() * 0.01f * ahrs.get_dcm_matrix().c.z;
 
         // we consider ourselves to be fully in range when we have 10
         // good samples (0.2s)
@@ -566,22 +566,42 @@ static void rangefinder_height_update(void)
     }
 
     if (rangefinder_state.in_range) {
-        // base correction is the difference between baro altitude and
-        // rangefinder estimate
-        float correction = relative_altitude() - height_estimate;
+
+        // base correction is the difference between baro altitude and rangefinder estimate
+        float correction;
+        float baro_height = relative_altitude();
+        float baro_minus_rngfndheight = baro_height - rangefinder_height_estimate;
+        int32_t baro_minus_rngfndheight_minus_offset_cm = (baro_minus_rngfndheight - rangefinder_state.correction_offset) * 100;
+
+        if ((g.rangefinder_corr_tolerance_cm <= 0) || // 0 == correction error detection is disabled
+            (g.rangefinder_corr_tolerance_ms <= 0) ||
+            (baro_minus_rngfndheight_minus_offset_cm < g.rangefinder_corr_tolerance_cm)) {
+            // if height correction error is under the corr_tolerance or disabled, everything is normal
+            rangefinder_state.last_good_corr_ms = hal.scheduler->millis();
+            correction = baro_minus_rngfndheight;
+        } else if (hal.scheduler->millis() < (rangefinder_state.last_good_corr_ms + g.rangefinder_corr_tolerance_ms)) {
+            // the correction is too high, it's probably a transient like a tree so let's ignore the correction
+            correction = baro_height - rangefinder_state.correction_offset;
+        } else {
+            // else then enough time has passed so whatever is under us is not a transient so use it as a height so business
+            // as usual. This is a typical scenario of baro drift so lets store this as the new baseline correction using an offset
+            correction = baro_minus_rngfndheight;
+            rangefinder_state.correction_offset = baro_minus_rngfndheight;
+            rangefinder_state.last_good_corr_ms = hal.scheduler->millis();
+        }
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
         if ((target_altitude.terrain_following || g.terrain_follow) && 
             terrain.height_above_terrain(terrain_altitude, true)) {
-            correction = terrain_altitude - height_estimate;
+            correction = terrain_altitude - rangefinder_height_estimate;
         }
 #endif    
 
         // remember the last correction. Use a low pass filter unless
         // the old data is more than 5 seconds old
-        if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        if ((hal.scheduler->millis() - rangefinder_state.last_correction_time_ms) > 5000) {
             rangefinder_state.correction = correction;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
