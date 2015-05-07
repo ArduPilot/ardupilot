@@ -455,7 +455,7 @@ bool AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Ve
 void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
-    angle_ef_error.x = wrap_180_cd(_angle_ef_target.x - _ahrs.roll_sensor);
+    angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
     angle_ef_error.x  = constrain_float(angle_ef_error.x, -overshoot_max, overshoot_max);
 
     // update roll angle target to be within max angle overshoot of our roll angle
@@ -463,7 +463,7 @@ void AC_AttitudeControl::update_ef_roll_angle_and_error(float roll_rate_ef, Vect
 
     // increment the roll angle target
     _angle_ef_target.x += roll_rate_ef * _dt;
-    _angle_ef_target.x = wrap_180_cd(_angle_ef_target.x);
+    _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x);
 }
 
 // update_ef_pitch_angle_and_error - update _angle_ef_target.y using an earth frame pitch rate request
@@ -471,7 +471,7 @@ void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Ve
 {
     // calculate angle error with maximum of +- max angle overshoot
     // To-Do: should we do something better as we cross 90 degrees?
-    angle_ef_error.y = wrap_180_cd(_angle_ef_target.y - _ahrs.pitch_sensor);
+    angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
     angle_ef_error.y  = constrain_float(angle_ef_error.y, -overshoot_max, overshoot_max);
 
     // update pitch angle target to be within max angle overshoot of our pitch angle
@@ -479,22 +479,23 @@ void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Ve
 
     // increment the pitch angle target
     _angle_ef_target.y += pitch_rate_ef * _dt;
-    _angle_ef_target.y = wrap_180_cd(_angle_ef_target.y);
+    _angle_ef_target.y = wrap_180_cd_float(_angle_ef_target.y);
 }
 
 // update_ef_yaw_angle_and_error - update _angle_ef_target.z using an earth frame yaw rate request
 void AC_AttitudeControl::update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
-    angle_ef_error.z = wrap_180_cd(_angle_ef_target.z - _ahrs.get_yaw_for_control_cd());
+    angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.get_yaw_for_control_cd());
     angle_ef_error.z  = constrain_float(angle_ef_error.z, -overshoot_max, overshoot_max);
 
     // update yaw angle target to be within max angle overshoot of our current heading
     _angle_ef_target.z = angle_ef_error.z + _ahrs.get_yaw_for_control_cd();
 
+
     // increment the yaw angle target
     _angle_ef_target.z += yaw_rate_ef * _dt;
-    _angle_ef_target.z = wrap_360_cd(_angle_ef_target.z);
+    _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z);
 }
 
 // update_rate_bf_errors - calculates body frame angle errors
