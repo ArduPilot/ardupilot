@@ -31,7 +31,11 @@ float AP_AHRS_NavEKF::get_yaw_for_control_cd(void) const
     if (!using_EKF()) {
         return AP_AHRS_DCM::get_yaw_for_control_cd();
     }
-    return degrees(attitude_for_control.get_euler_yaw())*100.0f;
+    float ret = degrees(attitude_for_control.get_euler_yaw())*100.0f;
+    if (ret < 0) {
+        ret += 36000;
+    }
+    return ret;
 }
 
 // return the smoothed gyro vector corrected for drift
