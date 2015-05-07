@@ -1045,6 +1045,8 @@ static void one_second_loop()
     if (should_log(MASK_LOG_MODE)) {
         Log_Write_Status();
     }
+
+    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 }
 
 static void log_perf_info()
