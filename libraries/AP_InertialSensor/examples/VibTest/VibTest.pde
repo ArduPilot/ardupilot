@@ -35,6 +35,9 @@
 #include <AP_Notify.h>
 #include <AP_NavEKF.h>
 #include <AP_BattMonitor.h>
+#include <AP_RangeFinder.h>
+#include <AP_Rally.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include <drivers/drv_accel.h>
@@ -95,10 +98,10 @@ static const struct LogStructure log_structure[] PROGMEM = {
 void setup(void)
 {
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        char accel_path[] = ACCEL_DEVICE_PATH "n";
-        char gyro_path[] = GYRO_DEVICE_PATH "n";
-        accel_path[strlen(accel_path)-1] = (i==0?0:'1'+(i-1));
-        gyro_path[strlen(gyro_path)-1] = (i==0?0:'1'+(i-1));
+        char accel_path[] = ACCEL_BASE_DEVICE_PATH "n";
+        char gyro_path[] = GYRO_BASE_DEVICE_PATH "n";
+        accel_path[strlen(accel_path)-1] = '0'+i;
+        gyro_path[strlen(gyro_path)-1] = '0'+i;
         accel_fd[i] = open(accel_path, O_RDONLY);
         gyro_fd[i] = open(gyro_path, O_RDONLY);
     }
@@ -106,19 +109,31 @@ void setup(void)
             hal.scheduler->panic("Failed to open accel/gyro 0");
     }
 
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        // disable software filtering
-        if (accel_fd[i] != -1) {
-            ioctl(accel_fd[i], ACCELIOCSLOWPASS, 0);
-            ioctl(accel_fd[i], SENSORIOCSQUEUEDEPTH, 100);
-            ::printf("Setup accel[%u] OK\n", i);
-        }
-        if (gyro_fd[i] != -1) {
-            ioctl(gyro_fd[i], GYROIOCSLOWPASS, 0);
-            ioctl(gyro_fd[i], SENSORIOCSQUEUEDEPTH, 100);
-            ::printf("Setup gyro[%u] OK\n", i);
-        }
-    }
+    ioctl(gyro_fd[0], SENSORIOCSPOLLRATE, 1000);
+    ioctl(gyro_fd[0], GYROIOCSLOWPASS, 0);
+    ioctl(gyro_fd[0], GYROIOCSHWLOWPASS, 256);
+    ioctl(gyro_fd[0], GYROIOCSSAMPLERATE, 1000);
+    ioctl(gyro_fd[0], SENSORIOCSQUEUEDEPTH, 100);
+
+    ioctl(gyro_fd[1], SENSORIOCSPOLLRATE, 800);
+    ioctl(gyro_fd[1], GYROIOCSLOWPASS, 0);
+    ioctl(gyro_fd[1], GYROIOCSHWLOWPASS, 100);
+    ioctl(gyro_fd[1], GYROIOCSSAMPLERATE, 800);
+    ioctl(gyro_fd[1], SENSORIOCSQUEUEDEPTH, 100);
+
+    ioctl(accel_fd[0], SENSORIOCSPOLLRATE, 1000);
+    ioctl(accel_fd[0], ACCELIOCSLOWPASS, 0);
+    ioctl(accel_fd[0], ACCELIOCSRANGE, 16);
+    ioctl(accel_fd[0], ACCELIOCSHWLOWPASS, 256);
+    ioctl(accel_fd[0], ACCELIOCSSAMPLERATE, 1000);
+    ioctl(accel_fd[0], SENSORIOCSQUEUEDEPTH, 100);
+
+    ioctl(accel_fd[1], SENSORIOCSPOLLRATE, 1600);
+    ioctl(accel_fd[1], ACCELIOCSLOWPASS, 0);
+    ioctl(accel_fd[1], ACCELIOCSRANGE, 16);
+    ioctl(accel_fd[1], ACCELIOCSHWLOWPASS, 194);
+    ioctl(accel_fd[1], ACCELIOCSSAMPLERATE, 1600);
+    ioctl(accel_fd[1], SENSORIOCSQUEUEDEPTH, 100);
 
     DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     DataFlash.StartNewLog();
@@ -187,10 +202,14 @@ void loop(void)
             if (total_samples[0] % 2000 == 0 && last_print != total_samples[0]) {
                 last_print = total_samples[0];
                 hal.console->printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
-                                    hal.scheduler->millis(), 
-                                    total_samples[0], total_samples[1],total_samples[2],
-                                    accel_deltat_min[0], accel_deltat_max[0], 
-                                    accel_deltat_min[1], accel_deltat_max[1], 
+                                    (unsigned long)hal.scheduler->millis(), 
+                                    (unsigned long)total_samples[0], 
+                                    (unsigned long)total_samples[1],
+                                    (unsigned long)total_samples[2],
+                                    accel_deltat_min[0], 
+                                    accel_deltat_max[0], 
+                                    accel_deltat_min[1], 
+                                    accel_deltat_max[1], 
                                     accel_deltat_min[2], accel_deltat_max[2], 
                                     gyro_deltat_min[0], gyro_deltat_max[0], 
                                     gyro_deltat_min[1], gyro_deltat_max[1], 
@@ -214,7 +233,7 @@ void loop(void)
             }
         }
     } while (got_sample);
-    hal.scheduler->delay_microseconds(200);
+    hal.scheduler->delay_microseconds(100);
 }
 
 #else
