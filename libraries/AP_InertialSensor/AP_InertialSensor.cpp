@@ -284,7 +284,9 @@ AP_InertialSensor::AP_InertialSensor() :
     _primary_accel(0),
     _hil_mode(false),
     _have_3D_calibration(false),
-    _calibrating(false)
+    _calibrating(false),
+    _log_raw_data(false),
+    _dataflash(NULL)
 {
     AP_Param::setup_object_defaults(this, var_info);        
     for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {

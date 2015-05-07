@@ -7,6 +7,8 @@
 
 const extern AP_HAL::HAL& hal;
 
+#include <DataFlash.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -389,6 +391,18 @@ bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &ac
         _accel_fd[i] != -1 && 
         ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && 
         accel_report.timestamp != _last_accel_timestamp[i]) {
+        DataFlash_Class *dataflash = get_dataflash();
+        if (dataflash != NULL) {
+            struct log_ACCEL pkt = {
+                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
+                timestamp    : (uint32_t)(accel_report.timestamp/1000),
+                timestamp_us : (uint32_t)accel_report.timestamp,
+                AccX      : accel_report.x,
+                AccY      : accel_report.y,
+                AccZ      : accel_report.z
+            };
+            dataflash->WriteBlock(&pkt, sizeof(pkt));
+        }
         return true;
     }
     return false;
@@ -400,6 +414,18 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         _gyro_fd[i] != -1 && 
         ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && 
         gyro_report.timestamp != _last_gyro_timestamp[i]) {
+        DataFlash_Class *dataflash = get_dataflash();
+        if (dataflash != NULL) {
+            struct log_GYRO pkt = {
+                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
+                timestamp    : (uint32_t)(gyro_report.timestamp/1000),
+                timestamp_us : (uint32_t)gyro_report.timestamp,
+                GyrX      : gyro_report.x,
+                GyrY      : gyro_report.y,
+                GyrZ      : gyro_report.z
+            };
+            dataflash->WriteBlock(&pkt, sizeof(pkt));
+        }
         return true;
     }
     return false;

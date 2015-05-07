@@ -27,6 +27,12 @@
 
 class AP_InertialSensor_Backend;
 
+/*
+  forward declare DataFlash class. We can't include DataFlash.h
+  because of mutual dependencies
+ */
+class DataFlash_Class;
+
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
  *
@@ -208,6 +214,12 @@ public:
     // get the accel filter rate in Hz
     uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
+    // pass in a pointer to DataFlash for raw data logging
+    void set_dataflash(DataFlash_Class *dataflash) { _dataflash = dataflash; }
+
+    // enable/disable raw gyro/accel logging
+    void set_raw_logging(bool enable) { _log_raw_data = enable; }
+
 private:
 
     // load backend drivers
@@ -299,6 +311,9 @@ private:
     // are gyros or accels currently being calibrated
     bool _calibrating:1;
 
+    // should we log raw accel/gyro data?
+    bool _log_raw_data:1;
+
     // the delta time in seconds for the last sample
     float _delta_time;
 
@@ -317,6 +332,8 @@ private:
 
     uint32_t _accel_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_error_count[INS_MAX_INSTANCES];
+
+    DataFlash_Class *_dataflash;
 };
 
 #include "AP_InertialSensor_Backend.h"
