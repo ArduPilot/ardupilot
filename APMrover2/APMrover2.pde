@@ -737,6 +737,8 @@ static void one_second_loop(void)
         }
         counter = 0;
     }
+
+    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 }
 
 static void update_GPS_50Hz(void)

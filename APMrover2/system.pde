@@ -248,6 +248,9 @@ static void startup_ground(void)
     // so set serial ports non-blocking once we are ready to drive
     serial_manager.set_blocking_writes_all(false);
 
+    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+    ins.set_dataflash(&DataFlash);
+
 	gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to drive."));
 }
 
