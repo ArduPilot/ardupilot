@@ -39,7 +39,8 @@ public:
         EKF(this, baro, rng),
         ekf_started(false),
         startup_delay_ms(1000),
-        start_time_ms(0)
+        start_time_ms(0),
+        attitude_for_control()
         {
         }
 

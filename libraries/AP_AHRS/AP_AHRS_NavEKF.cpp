@@ -92,6 +92,10 @@ void AP_AHRS_NavEKF::update(void)
         }
         if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
             ekf_started = EKF.InitialiseFilterDynamic();
+            if (ekf_started) {
+                // initialize attitude_for_control to EKF attitude
+                EKF.getQuaternion(attitude_for_control);
+            }
         }
     }
     if (ekf_started) {
