@@ -62,37 +62,9 @@ static uint32_t gyro_deltat_min[INS_MAX_INSTANCES];
 static uint32_t gyro_deltat_max[INS_MAX_INSTANCES];
 static DataFlash_File DataFlash("/fs/microsd/VIBTEST");
 
-#define LOG_ACC1_MSG 215
-#define LOG_GYR1_MSG 225
-
-struct PACKED log_ACCEL {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint32_t timestamp_us;
-    float AccX, AccY, AccZ;
-};
-
-struct PACKED log_GYRO {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint32_t timestamp_us;
-    float GyrX, GyrY, GyrZ;
-};
-
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
-    { LOG_ACC1_MSG, sizeof(log_ACCEL),       
-      "ACC1", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
-    { LOG_ACC1_MSG+1, sizeof(log_ACCEL),       
-      "ACC2", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
-    { LOG_ACC1_MSG+2, sizeof(log_ACCEL),       
-      "ACC3", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" },
-    { LOG_GYR1_MSG, sizeof(log_GYRO),       
-      "GYR1", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" },
-    { LOG_GYR1_MSG+1, sizeof(log_GYRO),       
-      "GYR2", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" },
-    { LOG_GYR1_MSG+2, sizeof(log_GYRO),       
-      "GYR3", "IIfff",        "TimeMS,TimeUS,GyrX,GyrY,GyrZ" }
+    LOG_EXTRA_STRUCTURES
 };
 
 void setup(void)
