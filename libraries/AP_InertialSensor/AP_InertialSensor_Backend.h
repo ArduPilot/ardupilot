@@ -94,6 +94,11 @@ protected:
     // return the requested sample rate in Hz
     uint16_t get_sample_rate_hz(void) const;
 
+    // access to frontend dataflash
+    DataFlash_Class *get_dataflash(void) const { 
+        return _imu._log_raw_data? _imu._dataflash : NULL; 
+    }
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
