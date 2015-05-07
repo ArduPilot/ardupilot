@@ -3760,6 +3760,7 @@ bool NavEKF::getLLH(struct Location &loc) const
         loc.alt = EKF_origin.alt - state.position.z*100;
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
+
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         nav_filter_status status;
         getFilterStatus(status);
@@ -3774,7 +3775,8 @@ bool NavEKF::getLLH(struct Location &loc) const
             if ((_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
                 const struct Location &gpsloc = _ahrs->get_gps().location();
-                loc = gpsloc;
+                loc.lat = gpsloc.lat;
+                loc.lng = gpsloc.lng;
                 return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
