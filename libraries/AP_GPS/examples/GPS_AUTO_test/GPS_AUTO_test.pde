@@ -38,6 +38,7 @@
 #include <AP_Scheduler.h>
 #include <AP_BattMonitor.h>
 #include <AP_SerialManager.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
