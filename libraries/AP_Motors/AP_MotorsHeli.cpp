@@ -144,6 +144,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @DisplayName: Collective-Yaw Mixing
     // @Description: Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     // @Range: -10 10
+    // @Increment: 0.1
     AP_GROUPINFO("COLYAW",  14,     AP_MotorsHeli,  _collective_yaw_effect, 0),
 
     // @Param: GOV_SETPOINT
@@ -606,6 +607,8 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
         if ((_rotor_desired > 0) && _tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
+            // sanity check collective_yaw_effect
+            _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTOR_HELI_COLYAW_RANGE, AP_MOTOR_HELI_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
         }
     }
