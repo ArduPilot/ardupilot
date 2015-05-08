@@ -188,14 +188,14 @@ static void flip_run()
 
         if (flip_roll_dir != 0) {
             // we are rolling
-            recovery_angle = fabs(flip_orig_attitude.x - (float)ahrs.roll_sensor);
+            recovery_angle = fabsf(flip_orig_attitude.x - (float)ahrs.roll_sensor);
         } else {
             // we are pitching
-            recovery_angle = fabs(flip_orig_attitude.y - (float)ahrs.pitch_sensor);
+            recovery_angle = fabsf(flip_orig_attitude.y - (float)ahrs.pitch_sensor);
         }
 
         // check for successful recovery
-        if (fabs(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
+        if (fabsf(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
             if (!set_mode(flip_orig_control_mode)) {
                 // this should never happen but just in case
