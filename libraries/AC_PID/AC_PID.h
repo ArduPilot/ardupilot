@@ -69,7 +69,7 @@ public:
     void        kP(const float v) { _kp.set(v); }
     void        kI(const float v) { _ki.set(v); }
     void        kD(const float v) { _kd.set(v); }
-    void        imax(const float v) { _imax.set(fabs(v)); }
+    void        imax(const float v) { _imax.set(fabsf(v)); }
     void        filt_hz(const float v);
 
     float       get_integrator() const { return _integrator; }
