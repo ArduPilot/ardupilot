@@ -182,7 +182,7 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     float yAccel2 = yAccel + accel_noise * _rand_float();
     float zAccel2 = zAccel + accel_noise * _rand_float();
 
-    if (fabs(_sitl->accel_fail) > 1.0e-6) {
+    if (fabsf(_sitl->accel_fail) > 1.0e-6f) {
         xAccel1 = _sitl->accel_fail;
         yAccel1 = _sitl->accel_fail;
         zAccel1 = _sitl->accel_fail;
