@@ -176,7 +176,7 @@ public:
     void                set_throttle_mix_max() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MAX_DEFAULT; }
 
     // get_throttle_thr_mix - get low throttle compensation value
-    float               is_throttle_mix_min() { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
+    bool                is_throttle_mix_min() { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
 
     // get_lift_max - get maximum lift ratio
     float               get_lift_max() { return _lift_max; }
