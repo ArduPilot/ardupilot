@@ -178,7 +178,7 @@ public:
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
 
     // bf_feedforward - enable or disable body-frame feed forward and save
-    void bf_feedforward_save(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; _rate_bf_ff_enabled.save(); }
+    void bf_feedforward_save(bool enable_or_disable) { _rate_bf_ff_enabled.set_and_save(enable_or_disable); }
 
     // get_bf_feedforward - return body-frame feed forward setting
     bool get_bf_feedforward() { return _rate_bf_ff_enabled; }
