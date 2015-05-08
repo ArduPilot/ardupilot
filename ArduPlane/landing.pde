@@ -53,7 +53,7 @@ static bool verify_land()
     if (height <= g.land_flare_alt ||
         (aparm.land_flare_sec > 0 && height <= auto_state.land_sink_rate * aparm.land_flare_sec) ||
         (!rangefinder_state.in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
-        (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
+        !is_flying()) {
 
         if (!auto_state.land_complete) {
             if (!is_flying() && (hal.scheduler->millis()-auto_state.last_flying_ms) > 3000) {
