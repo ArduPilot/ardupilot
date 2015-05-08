@@ -1072,16 +1072,18 @@ static void one_hz_loop()
     if (!motors.armed()) {
         static uint8_t pre_arm_display_counter = 0;
         pre_arm_display_counter++;
+
         if (pre_arm_display_counter >= 2) {
-            pre_arm_checks(true);
-            pre_arm_display_counter = 0;
+            set_pre_arm_check(pre_arm_checks(true));
             if (ap.pre_arm_check) {
                 // pre-arm checks have passed, run arming checks in order to display failures
                 // this is a HACK that allows the GCS to display arming failures without attempting to arm
                 arm_checks(true,true);
             }
+
+            pre_arm_display_counter = 0;
         }else{
-            pre_arm_checks(false);
+            set_pre_arm_check(pre_arm_checks(false));
         }
     }
 

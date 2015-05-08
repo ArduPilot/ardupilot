@@ -216,7 +216,6 @@ static bool pre_arm_checks(bool display_failure)
 
     // succeed if pre arm checks are disabled
     if(g.arming_check == ARMING_CHECK_NONE) {
-        set_pre_arm_check(true);
         set_pre_arm_rc_check(true);
         return true;
     }
@@ -467,8 +466,6 @@ static bool pre_arm_checks(bool display_failure)
 #endif
     }
 
-    // if we've gotten this far then pre arm checks have completed
-    set_pre_arm_check(true);
     return true;
 }
 
