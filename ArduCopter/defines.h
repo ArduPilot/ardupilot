@@ -100,16 +100,19 @@ enum aux_sw_func {
 #define LOITER 5                        // Hold a single location
 #define RTL 6                           // AUTO control
 #define CIRCLE 7                        // AUTO control
+//8 deprecated
 #define LAND 9                          // AUTO control
 #define OF_LOITER 10                    // Hold a single location using optical flow sensor
 #define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
+//12 deprecated
 #define SPORT 13                        // earth frame rate control
 #define FLIP        14                  // flip the vehicle on the roll axis
 #define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
 #define POSHOLD     16                  // position hold with manual override
 #define STOP        17                  // Full-Stop using inertial/GPS system, no pilot input
-#define NUM_MODES   18  
+#define NUM_MODES   18
 
+#define DEPRECATED_MODES_MASK ((1UL<<8)|(1UL<<10)|(1UL<<12))
 
 // CH_6 Tuning
 // -----------
