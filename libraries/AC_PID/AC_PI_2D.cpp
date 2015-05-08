@@ -40,7 +40,7 @@ AC_PI_2D::AC_PI_2D(float initial_p, float initial_i, float initial_imax, float i
 
     _kp = initial_p;
     _ki = initial_i;
-    _imax = fabs(initial_imax);
+    _imax = fabsf(initial_imax);
     filt_hz(initial_filt_hz);
 
     // reset input filter to first value received
@@ -58,7 +58,7 @@ void AC_PI_2D::set_dt(float dt)
 // filt_hz - set input filter hz
 void AC_PI_2D::filt_hz(float hz)
 {
-    _filt_hz.set(fabs(hz));
+    _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
     _filt_hz = max(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
@@ -136,7 +136,7 @@ void AC_PI_2D::load_gains()
     _kp.load();
     _ki.load();
     _imax.load();
-    _imax = fabs(_imax);
+    _imax = fabsf(_imax);
     _filt_hz.load();
 
     // calculate the input filter alpha
@@ -157,7 +157,7 @@ void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz,
 {
     _kp = p;
     _ki = i;
-    _imax = fabs(imaxval);
+    _imax = fabsf(imaxval);
     _filt_hz = input_filt_hz;
     _dt = dt;
     // calculate the input filter alpha
