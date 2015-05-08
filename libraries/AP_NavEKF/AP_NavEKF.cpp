@@ -1185,7 +1185,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // fast rotations that can cause problems due to gyro scale factor errors.
     float alphaLPF = constrain_float(dtIMUactual, 0.0f, 1.0f);
     yawRateFilt += (state.omega.z - yawRateFilt)*alphaLPF;
-    if (fabs(yawRateFilt) > 1.0f) {
+    if (fabsf(yawRateFilt) > 1.0f) {
         highYawRate = true;
     } else {
         highYawRate = false;
