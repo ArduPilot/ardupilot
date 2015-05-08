@@ -93,6 +93,13 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MAX", 12, AP_Motors, _batt_current_max, AP_MOTORS_CURR_MAX_DEFAULT),
 
+    // @Param: THR_MIX_MIN
+    // @DisplayName: Throttle Mix Minimum
+    // @Description: Minimum ratio that the average throttle can increase above the desired throttle after roll, pitch and yaw are mixed
+    // @Range: 0.1 0.25
+    // @User: Advanced
+    AP_GROUPINFO("THR_MIX_MIN", 13, AP_Motors, _thr_mix_min, AP_MOTORS_THR_MIX_MIN_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -108,8 +115,8 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _spin_when_armed_ramped(0),
-    _throttle_low_comp(AP_MOTORS_THR_LOW_CMP_DEFAULT),
-    _throttle_low_comp_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    _throttle_thr_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
+    _throttle_thr_mix_desired(AP_MOTORS_THR_LOW_CMP_DEFAULT),
     _batt_voltage(0.0f),
     _batt_voltage_resting(0.0f),
     _batt_current(0.0f),
@@ -187,7 +194,7 @@ void AP_Motors::output()
     update_lift_max_from_batt_voltage();
 
     // move throttle_low_comp towards desired throttle low comp
-    update_throttle_low_comp();
+    update_throttle_thr_mix();
 
     if (_flags.armed) {
         if (!_flags.interlock) {
@@ -354,18 +361,18 @@ void AP_Motors::update_battery_resistance()
     }
 }
 
-// update_throttle_low_comp - slew set_throttle_low_comp to requested value
-void AP_Motors::update_throttle_low_comp()
+// update_throttle_thr_mix - slew set_throttle_thr_mix to requested value
+void AP_Motors::update_throttle_thr_mix()
 {
-    // slew _throttle_low_comp to _throttle_low_comp_desired
-    if (_throttle_low_comp < _throttle_low_comp_desired) {
+    // slew _throttle_thr_mix to _throttle_thr_mix_desired
+    if (_throttle_thr_mix < _throttle_thr_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_low_comp += min(2.0f/_loop_rate, _throttle_low_comp_desired-_throttle_low_comp);
-    } else if (_throttle_low_comp > _throttle_low_comp_desired) {
+        _throttle_thr_mix += min(2.0f/_loop_rate, _throttle_thr_mix_desired-_throttle_thr_mix);
+    } else if (_throttle_thr_mix > _throttle_thr_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_low_comp -= min(0.5f/_loop_rate, _throttle_low_comp-_throttle_low_comp_desired);
+        _throttle_thr_mix -= min(0.5f/_loop_rate, _throttle_thr_mix-_throttle_thr_mix_desired);
     }
-    _throttle_low_comp = constrain_float(_throttle_low_comp, 0.1f, 1.0f);
+    _throttle_thr_mix = constrain_float(_throttle_thr_mix, 0.1f, 1.0f);
 }
 
 float AP_Motors::get_compensation_gain() const

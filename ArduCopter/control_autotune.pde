@@ -52,12 +52,8 @@
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
-#define AUTOTUNE_RD_TEST_NOISE            0.05f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RD_BACKOFF                4.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 60% of their maximum value discovered during tuning
 #define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
-#define AUTOTUNE_PI_RATIO_FINAL            2.5f     // I is set 1x P after testing
+#define AUTOTUNE_PI_RATIO_FINAL            1.0f     // I is set 1x P after testing
 #define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
 #define AUTOTUNE_RD_MIN                  0.004f     // minimum Rate D value
 #define AUTOTUNE_RD_MAX                  0.050f     // maximum Rate D value
@@ -67,13 +63,16 @@
 #define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF          0.75f     // back off from maximum acceleration
 #define AUTOTUNE_RP_ACCEL_MIN          36000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN            9000.0f     // Minimum acceleration for Yaw
 #define AUTOTUNE_Y_FILT_FREQ              10.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_SUCCESS_COUNT                4     // how many successful iterations we need to freeze at current gains
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
+#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
+#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 60% of their maximum value discovered during tuning
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF          0.75f     // back off from maximum acceleration
 
 // roll and pitch axes
 #define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
@@ -495,7 +494,7 @@ static void autotune_attitude_control()
             }
             break;
         case AUTOTUNE_TYPE_RP_UP:
-            autotune_twitching_test(rotation_rate, autotune_target_rate, autotune_test_min, autotune_test_max);
+            autotune_twitching_test(rotation_rate, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
             autotune_twitching_measure_acceleration(autotune_test_accel_max, rotation_rate, rate_max);
             if (lean_angle >= autotune_target_angle) {
                 autotune_state.step = AUTOTUNE_STEP_UPDATE_GAINS;
@@ -503,7 +502,7 @@ static void autotune_attitude_control()
             break;
         case AUTOTUNE_TYPE_SP_DOWN:
         case AUTOTUNE_TYPE_SP_UP:
-            autotune_twitching_test(lean_angle, autotune_target_angle, autotune_test_min, autotune_test_max);
+            autotune_twitching_test(lean_angle, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
             autotune_twitching_measure_acceleration(autotune_test_accel_max, rotation_rate - direction_sign * autotune_start_rate, rate_max);
             break;
         }
@@ -578,13 +577,13 @@ static void autotune_attitude_control()
         case AUTOTUNE_TYPE_RP_UP:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_up_d_down(tune_roll_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_roll_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_up_d_down(tune_pitch_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_pitch_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
-                autotune_updating_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
                 break;
             }
             break;
@@ -592,10 +591,10 @@ static void autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_DOWN:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_down(tune_yaw_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -606,10 +605,10 @@ static void autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_UP:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
+                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_up(tune_yaw_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -633,16 +632,16 @@ static void autotune_attitude_control()
                 autotune_state.tune_type++;
                 switch (autotune_state.axis) {
                 case AUTOTUNE_AXIS_ROLL:
-                    tune_roll_rd = max(AUTOTUNE_RD_MIN, tune_roll_rd * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
-                    tune_roll_rp = max(AUTOTUNE_RP_MIN, tune_roll_rp * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
+                    tune_roll_rd = max(AUTOTUNE_RD_MIN, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
+                    tune_roll_rp = max(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 case AUTOTUNE_AXIS_PITCH:
-                    tune_pitch_rd = max(AUTOTUNE_RD_MIN, tune_pitch_rd * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
-                    tune_pitch_rp = max(AUTOTUNE_RP_MIN, tune_pitch_rp * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
+                    tune_pitch_rd = max(AUTOTUNE_RD_MIN, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
+                    tune_pitch_rp = max(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 case AUTOTUNE_AXIS_YAW:
-                    tune_yaw_rLPF = max(AUTOTUNE_RLPF_MIN, tune_yaw_rLPF * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
-                    tune_yaw_rp = max(AUTOTUNE_RP_MIN, tune_yaw_rp * (1.0f-AUTOTUNE_RD_BACKOFF*max(0.0f,(g.autotune_aggressiveness-AUTOTUNE_RD_TEST_NOISE))));
+                    tune_yaw_rLPF = max(AUTOTUNE_RLPF_MIN, tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
+                    tune_yaw_rp = max(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 }
                 break;
@@ -946,6 +945,20 @@ static void autotune_save_tuning_gains()
 {
     // if we successfully completed tuning
     if (autotune_state.mode == AUTOTUNE_MODE_SUCCESS) {
+
+        if (attitude_control.get_bf_feedforward()) {
+            attitude_control.bf_feedforward_save(true);
+            if (attitude_control.get_accel_roll_max() < AUTOTUNE_RP_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_roll_max(AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT);
+            }
+            if (attitude_control.get_accel_pitch_max() < AUTOTUNE_RP_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_pitch_max(AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT);
+            }
+            if (attitude_control.get_accel_yaw_max() < AUTOTUNE_Y_ACCEL_MIN/2.0f){
+                attitude_control.save_accel_yaw_max(AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT);
+            }
+        }
+
         // sanity check the rate P values
         if (autotune_roll_enabled() && !is_zero(tune_roll_rp)) {
             // rate roll gains
@@ -953,13 +966,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_roll.kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_roll.kD(tune_roll_rd);
             g.pid_rate_roll.save_gains();
+
             // stabilize roll
             g.p_stabilize_roll.kP(tune_roll_sp);
             g.p_stabilize_roll.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_roll_max(tune_roll_accel);
-            }
+            // acceleration roll
+            attitude_control.save_accel_roll_max(tune_roll_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_roll_rp = g.pid_rate_roll.kP();
@@ -974,13 +987,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_pitch.kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
             g.pid_rate_pitch.kD(tune_pitch_rd);
             g.pid_rate_pitch.save_gains();
+
             // stabilize pitch
             g.p_stabilize_pitch.kP(tune_pitch_sp);
             g.p_stabilize_pitch.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_pitch_max(tune_pitch_accel);
-            }
+            // acceleration pitch
+            attitude_control.save_accel_pitch_max(tune_pitch_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_pitch_rp = g.pid_rate_pitch.kP();
@@ -996,13 +1009,13 @@ static void autotune_save_tuning_gains()
             g.pid_rate_yaw.kD(0.0f);
             g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
             g.pid_rate_yaw.save_gains();
+
             // stabilize yaw
             g.p_stabilize_yaw.kP(tune_yaw_sp);
             g.p_stabilize_yaw.save_gains();
 
-            if (attitude_control.get_bf_feedforward()) {
-                attitude_control.save_accel_yaw_max(tune_yaw_accel);
-            }
+            // acceleration yaw
+            attitude_control.save_accel_yaw_max(tune_yaw_accel);
 
             // resave pids to originals in case the autotune is run again
             orig_yaw_rp = g.pid_rate_yaw.kP();
@@ -1072,7 +1085,7 @@ void autotune_twitching_test(float measurement, float target, float &measurement
     }
 
     // calculate early stopping time based on the time it takes to get to 90%
-    if (measurement_max < target * 0.9f) {
+    if (measurement_max < target * 0.75f) {
         // the measurement not reached the 90% threshold yet
         autotune_step_stop_time = autotune_step_start_time + (millis() - autotune_step_start_time) * 3.0f;
         autotune_step_stop_time = min(autotune_step_stop_time, autotune_step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
