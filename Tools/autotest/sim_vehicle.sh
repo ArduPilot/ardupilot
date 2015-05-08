@@ -39,6 +39,7 @@ Options:
     -A               pass arguments to antenna tracker
     -t               set antenna tracker start location
     -L               select start location from Tools/autotest/locations.txt
+    -l               set the custom start location from -L
     -c               do a make clean before building
     -N               don't rebuild before starting ardupilot
     -w               wipe EEPROM and reload parameters
@@ -66,7 +67,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeMS:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -105,6 +106,9 @@ while getopts ":I:VgGcj:TA:t:L:v:hwf:RNHeMS:" opt; do
       ;;
     L)
       LOCATION="$OPTARG"
+      ;;
+    l)
+      CUSTOM_LOCATION="$OPTARG"
       ;;
     f)
       FRAME="$OPTARG"
@@ -268,7 +272,13 @@ popd
 fi
 
 # get the location information
-SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
+if [ -z $CUSTOM_LOCATION ]; then
+    SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
+else
+    SIMHOME=$CUSTOM_LOCATION
+    LOCATION="Custom_Location"
+fi
+
 [ -z "$SIMHOME" ] && {
     echo "Unknown location $LOCATION"
     usage
