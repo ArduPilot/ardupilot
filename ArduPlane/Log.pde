@@ -245,6 +245,13 @@ static void Log_Write_Startup(uint8_t type)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     // write all commands to the dataflash as well
+    Log_Write_EntireMission();
+}
+
+static void Log_Write_EntireMission()
+{
+    gcs_send_text_P(SEVERITY_LOW, PSTR("New mission"));
+
     AP_Mission::Mission_Command cmd;
     for (uint16_t i = 0; i < mission.num_commands(); i++) {
         if (mission.read_cmd_from_storage(i,cmd)) {
@@ -518,6 +525,7 @@ static void start_logging()
 
 // dummy functions
 static void Log_Write_Startup(uint8_t type) {}
+static void Log_Write_EntireMission() {}
 static void Log_Write_Current() {}
 static void Log_Write_Nav_Tuning() {}
 static void Log_Write_TECS_Tuning() {}

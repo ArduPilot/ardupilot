@@ -458,6 +458,20 @@ static void Log_Write_Startup()
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG)
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+    Log_Write_EntireMission();
+}
+
+static void Log_Write_EntireMission()
+{
+    gcs_send_text_P(SEVERITY_LOW, PSTR("New mission"));
+
+    AP_Mission::Mission_Command cmd;
+    for (uint16_t i = 0; i < mission.num_commands(); i++) {
+        if (mission.read_cmd_from_storage(i,cmd)) {
+            Log_Write_Cmd(cmd);
+        }
+    }
 }
 
 struct PACKED log_Event {
@@ -712,6 +726,7 @@ static void start_logging()
 #else // LOGGING_ENABLED
 
 static void Log_Write_Startup() {}
+static void Log_Write_EntireMission() {}
 #if AUTOTUNE_ENABLED == ENABLED
 static void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp) {}
 static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
