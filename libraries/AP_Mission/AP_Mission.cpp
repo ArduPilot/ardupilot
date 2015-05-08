@@ -490,7 +490,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
         copy_location = true;
         num_turns = packet.param1;                      // number of times to circle is held in param1
-        radius_m = fabs(packet.param3);                 // radius in meters is held in high in param3
+        radius_m = fabsf(packet.param3);                // radius in meters is held in high in param3
         cmd.p1 = (((uint16_t)radius_m)<<8) | (uint16_t)num_turns;   // store radius in high byte of p1, num turns in low byte of p1
         cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
         break;
