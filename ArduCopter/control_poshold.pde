@@ -247,7 +247,7 @@ static void poshold_run()
                 }
 
                 // if velocity is very low reduce braking time to 0.5seconds
-                if ((fabs(vel_right) <= POSHOLD_SPEED_0) && (poshold.brake_timeout_roll > 50*LOOP_RATE_FACTOR)) {
+                if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (poshold.brake_timeout_roll > 50*LOOP_RATE_FACTOR)) {
                     poshold.brake_timeout_roll = 50*LOOP_RATE_FACTOR;
                 }
 
@@ -341,7 +341,7 @@ static void poshold_run()
                 }
 
                 // if velocity is very low reduce braking time to 0.5seconds
-                if ((fabs(vel_fw) <= POSHOLD_SPEED_0) && (poshold.brake_timeout_pitch > 50*LOOP_RATE_FACTOR)) {
+                if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (poshold.brake_timeout_pitch > 50*LOOP_RATE_FACTOR)) {
                     poshold.brake_timeout_pitch = 50*LOOP_RATE_FACTOR;
                 }
 
