@@ -258,6 +258,86 @@
         <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
 	</enum>
 
+    <!-- PreArm Safety Check -->
+    <enum name="PREARM_STATUS_FLAGS">
+        <description>These encode the sensors whose status is sent as part of the SAFETY_STATUS message. ArduCopter only.</description>
+        <entry value="1" name="PREARM_RC">
+            <description>PreArm: RC not calibrated</description>
+        </entry>
+        <entry value="2" name="PREARM_BARO">
+            <description>PreArm: Baro not healthy</description>
+        </entry>
+        <entry value="4" name="PREARM_ALT">
+            <description>PreArm: Alt disparity</description>
+        </entry>
+        <entry value="8" name="PREARM_COMPASS_HEALTH">
+            <description>PreArm: Compass not healthy</description>
+        </entry>
+        <entry value="16" name="PREARM_COMPASS_CALIBRATED">
+            <description>PreArm: Compass not calibrated</description>
+        </entry>
+        <entry value="32" name="PREARM_COMPASS_OFFSETS">
+            <description>PreArm: Compass offsets too high</description>
+        </entry>
+        <entry value="64" name="PREARM_MAG_FIELD">
+            <description>PreArm: Check mag field</description>
+        </entry>
+        <entry value="128" name="PREARM_INCOSISTENT_COMPASS">
+            <description>PreArm: inconsistent compasses</description>
+        </entry>
+        <entry value="256" name="PREARM_FENCE">
+            <description>PreArm: check fence</description>
+        </entry>
+        <entry value="512" name="PREARM_INS">
+            <description>PreArm: INS not calibrated</description>
+        </entry>
+        <entry value="1024" name="PREARM_ACCELS_HEALTHY">
+            <description>PreArm: Accelerometers not healthy</description>
+        </entry>
+        <entry value="2048" name="PREARM_INCONSISTENT_ACCELS">
+            <description>PreArm: inconsistent Accelerometers</description>
+        </entry>
+        <entry value="4096" name="PREARM_GYRO_HEALTHY">
+            <description>PreArm: Gyros not healthy</description>
+        </entry>
+        <entry value="8192" name="PREARM_GYRO_CAL">
+            <description>PreArm: Gyro cal failed</description>
+        </entry>
+        <entry value="16384" name="PREARM_INCONSISTENT_GYRO">
+            <description>PreArm: inconsistent Gyros</description>
+        </entry>
+        <entry value="32768" name="PREARM_BOARD_VOLTAGE">
+            <description>PreArm: Check Board Voltage</description>
+        </entry>
+        <entry value="65536" name="PREARM_DUPLICATE_AUX">
+            <description>PreArm: Duplicate Aux Switch Options</description>
+        </entry>
+        <entry value="131072" name="PREARM_FS_THR_VALUE">
+            <description>PreArm: Check FS_THR_VALUE</description>
+        </entry>
+        <entry value="262144" name="PREARM_ANGLE_MAX">
+            <description>PreArm: Check ANGLE_MAX</description>
+        </entry>
+        <entry value="524288" name="PREARM_ACRO_BAL">
+            <description>PreArm: ACRO_BAL_ROLL/PITCH</description>
+        </entry>
+        <entry value="1048576" name="PREARM_RANGE_FINDER">
+            <description>PreArm: check range finder</description>
+        </entry>
+        <entry value="2097152" name="PREARM_WAIT_NAV_CHECKS">
+            <description>PreArm: Waiting for Nav Checks</description>
+        </entry>
+        <entry value="4194304" name="PREARM_NEED_3D_FIX">
+            <description>PreArm: Need 3D Fix</description>
+        </entry>
+        <entry value="8388608" name="PREARM_EKF_HOME">
+            <description>PreArm: EKF-home variance</description>
+        </entry>
+        <entry value="16777216" name="PREARM_HIGH_GPS_HDOP">
+            <description>PreArm: High GPS HDOP</description>
+        </entry>
+    </enum>
+
       </enums>
 
      <messages>
@@ -826,6 +906,12 @@
     </message>
 
     <!-- 219 to 225 RESERVED for more GOPRO-->
+
+    <!-- PreArm Safety Check -->
+    <message id="226" name="SAFETY_STATUS">
+       <description>Prearm and more safety status.</description>
+       <field type="uint64_t" name="prearm" enum="PREARM_STATUS_FLAGS">Prearm</field>
+    </message>  
 
      </messages>
 </mavlink>

@@ -430,6 +430,11 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
         s->text);
 }
 
+static void NOINLINE send_safetystatus(mavlink_channel_t chan)
+{
+    mavlink_msg_safety_status_send(chan, prearmstatus);
+}
+
 // are we still delaying telemetry to try to avoid Xbee bricking?
 static bool telemetry_delayed(mavlink_channel_t chan)
 {
@@ -652,6 +657,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         ahrs.get_NavEKF().send_status_report(chan);
 #endif
+        break;
+
+    case MSG_SAFETY_STATUS:
+        CHECK_PAYLOAD_SIZE(SAFETY_STATUS);
+        send_safetystatus(chan);
         break;
 
     case MSG_FENCE_STATUS:
@@ -882,6 +892,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_SAFETY_STATUS);
     }
 }
 
