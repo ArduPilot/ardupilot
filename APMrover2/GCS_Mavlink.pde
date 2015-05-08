@@ -807,6 +807,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     set_mode(GUIDED);
 
     // make any new wp uploaded instant (in case we are already in Guided mode)
+    rtl_complete = false;
     set_guided_WP();
 }
 
