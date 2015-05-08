@@ -250,12 +250,7 @@ static void Log_Write_Startup(uint8_t type)
 
 static void Log_Write_EntireMission()
 {
-    if (mission.num_commands() > 0) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("New mission"));
-    }
-    else {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("New mission is empty"));
-    }
+    gcs_send_text_P(SEVERITY_LOW, PSTR("New mission"));
 
     AP_Mission::Mission_Command cmd;
     for (uint16_t i = 0; i < mission.num_commands(); i++) {
