@@ -254,7 +254,7 @@ static void test_wrap_cd(void)
 
     for (uint8_t i=0; i<sizeof(wrap_PI_tests)/sizeof(wrap_PI_tests[0]); i++) {
         float r = wrap_PI(wrap_PI_tests[i].v);
-        if (fabs(r - wrap_PI_tests[i].wv) > 0.001f) {
+        if (fabsf(r - wrap_PI_tests[i].wv) > 0.001f) {
             hal.console->printf("wrap_PI: v=%f wv=%f r=%f\n",
                                 wrap_PI_tests[i].v,
                                 wrap_PI_tests[i].wv,
