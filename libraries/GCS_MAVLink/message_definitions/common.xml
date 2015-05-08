@@ -2603,6 +2603,20 @@
             <field type="uint8_t" name="group_mlx">Actuator group. The "_mlx" indicates this is a multi-instance message and a MAVLink parser should use this field to difference between instances.</field>
             <field type="float[8]" name="controls">Actuator controls. Normed to -1..+1 where 0 is neutral position. Throttle for single rotation direction motors is 0..1, negative range for reverse direction. Standard mapping for attitude controls (group 0): (index 0-7): roll, pitch, yaw, throttle, flaps, spoilers, airbrakes, landing gear. Load a pass-through mixer to repurpose them as generic outputs.</field>
         </message>
+        <!-- remote log messages -->
+        <message id="141" name="REMOTE_LOG_DATA_BLOCK">
+            <description>Send a block of log data to remote</description>
+            <field type="uint8_t" name="block_size">size of log data block i.e. being sent</field>
+            <field type="uint32_t" name="block_cnt">log data block count</field>
+            <field type="uint8_t[200]" name="data">log data block</field>
+        </message>
+
+        <message id="142" name="REMOTE_LOG_BLOCK_STATUS">
+            <description>Get log block from autopilot board</description>
+            <field type="uint16_t" name="block_cnt">log data block count</field>
+            <field type="uint8_t" name="block_status">0:log data failed, 1:log received</field>
+        </message>
+
         <message id="147" name="BATTERY_STATUS">
             <description>Battery information</description>
             <field type="uint8_t" name="id">Battery ID</field>
