@@ -10,9 +10,6 @@
 #include <AC_HELI_PID.h>
 #include <Filter.h>
 
-#define AC_ATTITUDE_HELI_ROLL_FF                    0.0f
-#define AC_ATTITUDE_HELI_PITCH_FF                   0.0f
-#define AC_ATTITUDE_HELI_YAW_FF                     0.0f
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
 
