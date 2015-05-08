@@ -657,7 +657,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
     // heli specific arming check
     if (!motors.allow_arming()){
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor not spinning"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: stop Rotor spinning"));
         }
         return false;
     }
