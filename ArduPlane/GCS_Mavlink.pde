@@ -1214,21 +1214,22 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (! geofence_set_enabled(false, GCS_TOGGLED)) {
                         result = MAV_RESULT_FAILED;
                     }
-                break;
+                    break;
                 case 1:
                     if (! geofence_set_enabled(true, GCS_TOGGLED)) {
                         result = MAV_RESULT_FAILED; 
                     }
-                break;
+                    break;
                 case 2: //disable fence floor only 
                     if (! geofence_set_floor_enabled(false)) {
                         result = MAV_RESULT_FAILED;
                     } else {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("Fence floor disabled."));
                     }
+                    break;
                 default:
                     result = MAV_RESULT_FAILED;
-                break;
+                    break;
             }
             break;
 
