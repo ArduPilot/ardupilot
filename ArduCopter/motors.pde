@@ -8,6 +8,7 @@
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint8_t auto_disarming_counter;
+bool flag = true;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -235,6 +236,9 @@ static bool init_arm_motors(bool arming_from_gcs)
 //  return true if the checks pass successfully
 static bool pre_arm_checks(bool display_failure)
 {
+    prearmstatus = 0;
+    flag = true;
+    
     // exit immediately if already armed
     if (motors.armed()) {
         return true;
@@ -288,19 +292,28 @@ static bool pre_arm_checks(bool display_failure)
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
     if(!ap.pre_arm_rc_check) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
+        prearmstatus += PREARM_RC;
+        if (flag) {
+            flag = false;
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: RC not calibrated"));
+            }
         }
-        return false;
+        //return false;
     }
+
     // check Baro
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
         if(!barometer.all_healthy()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy"));
+            prearmstatus += PREARM_BARO;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy"));       
+                }
             }
-            return false;
+            //return false;
         }
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
@@ -309,10 +322,14 @@ static bool pre_arm_checks(bool display_failure)
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
             if (fabs(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
-                if (display_failure) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
+                prearmstatus += PREARM_ALT;
+                if (flag) {
+                    flag = false;
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Altitude disparity"));
+                    }
                 }
-                return false;
+                //return false;
             }
         }
     }
@@ -321,36 +338,51 @@ static bool pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
         // check the primary compass is healthy
         if(!compass.healthy()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
+            prearmstatus += PREARM_COMPASS_HEALTH;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy"));
+                }
             }
-            return false;
         }
+        //return false;
+    }
 
         // check compass learning is on or offsets have been set
         if(!compass.configured()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+            prearmstatus += PREARM_COMPASS_CALIBRATED;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+                }
             }
-            return false;
+            //return false;
         }
 
         // check for unreasonable compass offsets
         Vector3f offsets = compass.get_offsets();
         if(offsets.length() > COMPASS_OFFSETS_MAX) {
+            prearmstatus += PREARM_COMPASS_OFFSETS;
+            flag = false;
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
-            return false;
+            //return false;
         }
 
         // check for unreasonable mag field length
         float mag_field = compass.get_field().length();
-        if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65f || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35f) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
+        if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65 || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35) {
+            prearmstatus += PREARM_MAG_FIELD;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
+                }
             }
-            return false;
+            //return false;
         }
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -364,29 +396,36 @@ static bool pre_arm_checks(bool display_failure)
                 mag_vec.normalize();
                 Vector3f vec_diff = mag_vec - prime_mag_vec;
                 if (vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
+                    prearmstatus += PREARM_INCOSISTENT_COMPASS;
+                    if (flag) {
+                        flag = false;
+                        if (display_failure) {
+                            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
+                        }
                     }
-                    return false;
+                    //return false;
                 }
             }
         }
 #endif
 
-    }
-
     // check GPS
-    if (!pre_arm_gps_checks(display_failure)) {
-        return false;
-    }
+    pre_arm_gps_checks(display_failure);
+    //if (!pre_arm_gps_checks(display_failure)) {
+    //    return false;
+    //}
 
 #if AC_FENCE == ENABLED
     // check fence is initialised
     if(!fence.pre_arm_check()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check fence"));
+        prearmstatus += PREARM_FENCE;
+        if (flag) {
+            flag = false;
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check fence"));
+            }
         }
-        return false;
+        //return false;
     }
 #endif
 
@@ -394,18 +433,26 @@ static bool pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
         if(!ins.calibrated()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+            prearmstatus += PREARM_INS;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+                }
             }
-            return false;
+            //return false;
         }
 
         // check accels are healthy
         if(!ins.get_accel_health_all()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accelerometers not healthy"));
+            prearmstatus += PREARM_ACCELS_HEALTHY;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accelerometers not healthy"));
+                }
             }
-            return false;
+            //return false;
         }
 
 #if INS_MAX_INSTANCES > 1
@@ -417,10 +464,14 @@ static bool pre_arm_checks(bool display_failure)
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
                 if (vec_diff.length() > PREARM_MAX_ACCEL_VECTOR_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
+                    prearmstatus += PREARM_INCONSISTENT_ACCELS;
+                    if (flag) {
+                        flag = false;
+                        if (display_failure) {
+                            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
+                        }
                     }
-                    return false;
+                    //return false;
                 }
             }
         }
@@ -428,10 +479,14 @@ static bool pre_arm_checks(bool display_failure)
 
         // check gyros are healthy
         if(!ins.get_gyro_health_all()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros not healthy"));
+            prearmstatus += PREARM_GYRO_HEALTHY;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Gyros not healthy"));
+                }
             }
-            return false;
+            //return false;
         }
 
 #if INS_MAX_INSTANCES > 1
@@ -441,10 +496,14 @@ static bool pre_arm_checks(bool display_failure)
                 // get rotation rate difference between gyro #i and primary gyro
                 Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
                 if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Gyros"));
+                    prearmstatus += PREARM_GYRO_HEALTHY;
+                    if (flag) {
+                        flag = false;
+                        if (display_failure) {
+                            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Gyros"));
+                        }
                     }
-                    return false;
+                    //return false;
                 }
             }
         }
@@ -455,10 +514,14 @@ static bool pre_arm_checks(bool display_failure)
     // check board voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if(hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
+            prearmstatus += PREARM_BOARD_VOLTAGE;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Board Voltage"));
+                }
             }
-            return false;
+            //return false;
         }
     }
 #endif
@@ -469,53 +532,79 @@ static bool pre_arm_checks(bool display_failure)
 
         // ensure ch7 and ch8 have different functions
         if (check_duplicate_auxsw()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Duplicate Aux Switch Options"));
+            prearmstatus += PREARM_DUPLICATE_AUX;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Duplicate Aux Switch Options"));
+                }
             }
-            return false;
+            //return false;
         }
 
         // failsafe parameter checks
         if (g.failsafe_throttle) {
             // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
             if (g.rc_3.radio_min <= g.failsafe_throttle_value+10 || g.failsafe_throttle_value < 910) {
-                if (display_failure) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+                prearmstatus += PREARM_FS_THR_VALUE;
+                if (flag) {
+                    flag = false;
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check FS_THR_VALUE"));
+                    }
                 }
-                return false;
+                //return false;
             }
         }
 
         // lean angle parameter check
         if (aparm.angle_max < 1000 || aparm.angle_max > 8000) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
+            prearmstatus += PREARM_ANGLE_MAX;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check ANGLE_MAX"));
+                }
             }
-            return false;
+            //return false;
         }
 
         // acro balance parameter check
         if ((g.acro_balance_roll > g.p_stabilize_roll.kP()) || (g.acro_balance_pitch > g.p_stabilize_pitch.kP())) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: ACRO_BAL_ROLL/PITCH"));
+            prearmstatus += PREARM_ACRO_BAL;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: ACRO_BAL_ROLL/PITCH"));
+                }
             }
-            return false;
+            //return false;
         }
 
 #if CONFIG_SONAR == ENABLED
         // check range finder
         if (!sonar.pre_arm_check()) {
-            if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check range finder"));
+            prearmstatus += PREARM_RANGE_FINDER;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check range finder"));
+                }
             }
-            return false;
+            //return false;
         }
 #endif
     }
 
+    ////For test
+    //char str[30];
+    //sprintf(str,"%llu",prearmstatus);
+    //gcs_send_text_P(SEVERITY_HIGH,PSTR(str));
+
     // if we've gotten this far then pre arm checks have completed
-    set_pre_arm_check(true);
-    return true;
+    if (prearmstatus == 0)
+        set_pre_arm_check(true);
+    return flag;
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
@@ -566,8 +655,12 @@ static bool pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Waiting for Nav Checks"));
+        prearmstatus += PREARM_WAIT_NAV_CHECKS;
+        if (flag) {
+            flag = false;
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Waiting for Nav Checks"));
+            }
         }
         return false;
     }
@@ -596,8 +689,12 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // ensure GPS is ok
     if (!position_ok()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
+        prearmstatus += PREARM_NEED_3D_FIX;
+        if (flag) {
+            flag = false;
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
+            }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
@@ -605,8 +702,12 @@ static bool pre_arm_gps_checks(bool display_failure)
 
     // check home and EKF origin are not too far
     if (far_from_EKF_origin(ahrs.get_home())) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: EKF-home variance"));
+        prearmstatus += PREARM_EKF_HOME;
+        if (flag) {
+            flag = false;
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: EKF-home variance"));
+            }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
@@ -615,7 +716,13 @@ static bool pre_arm_gps_checks(bool display_failure)
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (gps.get_hdop() > g.gps_hdop_good) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: High GPS HDOP"));
+            prearmstatus += PREARM_HIGH_GPS_HDOP;
+            if (flag) {
+                flag = false;
+                if (display_failure) {
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: High GPS HDOP"));
+                }
+            }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
