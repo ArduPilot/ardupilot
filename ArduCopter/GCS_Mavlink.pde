@@ -669,6 +669,10 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_MAG_CAL_REPORT:
         compass.send_mag_cal_report(chan);
         break;
+
+    case MSG_ARMMASK:
+        mavlink_msg_named_value_int_send(chan, millis(), "ARMMASK", get_ready_to_arm_mode_mask());
+        break;
     }
 
     return true;
