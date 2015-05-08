@@ -216,15 +216,16 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 static bool verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached Destination"));
                 rtl_complete = true;
 		return true;
 	}
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(PSTR("Reached Home dist %um"),
+        gcs_send_text_fmt(PSTR("Reached Destination: Distance away %um"),
                           (unsigned)get_distance(current_loc, next_WP));
+        rtl_complete = true;
         return true;
     }
 
