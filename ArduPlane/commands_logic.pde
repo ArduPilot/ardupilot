@@ -565,7 +565,7 @@ static bool verify_loiter_to_alt()
 
     //has target altitude been reached?
     if (condition_value != 0) {
-        if (fabs(condition_value - current_loc.alt) < 500) {
+        if (labs(condition_value - current_loc.alt) < 500) {
             //Only have to reach the altitude once -- that's why I need
             //this global condition variable.
             //
