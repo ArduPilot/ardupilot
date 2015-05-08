@@ -1068,7 +1068,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 	// XXX receive a WP from GCS and store in EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
         {
-            handle_mission_item(msg, mission);
+            if (handle_mission_item(msg, mission)) {
+                Log_Write_EntireMission();
+            }
             break;
         }
 

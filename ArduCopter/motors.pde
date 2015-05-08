@@ -416,7 +416,16 @@ static bool pre_arm_checks(bool display_failure)
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
-                if (vec_diff.length() > PREARM_MAX_ACCEL_VECTOR_DIFF) {
+                float threshold = PREARM_MAX_ACCEL_VECTOR_DIFF;
+                if (i >= 2) {
+                    /*
+                      for boards with 3 IMUs we only use the first two
+                      in the EKF. Allow for larger accel discrepancy
+                      for IMU3 as it may be running at a different temperature
+                     */
+                    threshold *= 2;
+                }
+                if (vec_diff.length() > threshold) {
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
                     }
