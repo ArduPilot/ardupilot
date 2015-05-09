@@ -101,11 +101,13 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     // value
     _omega.zero();
 
-    // average across all healthy gyros. This reduces noise on systems
-    // with more than one gyro    
+    // average across first two healthy gyros. This reduces noise on
+    // systems with more than one gyro. We don't use the 3rd gyro
+    // unless another is unhealthy as 3rd gyro on PH2 has a lot more
+    // noise
     uint8_t healthy_count = 0;    
     for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-        if (_ins.get_gyro_health(i)) {
+        if (_ins.get_gyro_health(i) && healthy_count < 2) {
             _omega += _ins.get_gyro(i);
             healthy_count++;
         }
