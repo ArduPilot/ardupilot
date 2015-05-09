@@ -3700,11 +3700,11 @@ uint8_t NavEKF::setInhibitGPS(void)
         return 0;
     }
     if (optFlowDataPresent()) {
+        _fusionModeGPS = 3;
         return 2;
     } else {
         return 1;
     }
-    _fusionModeGPS = 3;
 }
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
