@@ -40,6 +40,7 @@
 #include <AP_BattMonitor.h>
 #include <AP_SerialManager.h>
 #include <RC_Channel.h>
+#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
