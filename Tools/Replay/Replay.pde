@@ -64,6 +64,8 @@
 
 #include "LogReader.h"
 
+#define streq(x, y) (!strcmp(x, y))
+
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static Parameters g;
@@ -199,10 +201,10 @@ void setup()
     dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     dataflash.StartNewLog();
 
-    LogReader.wait_type(LOG_GPS_MSG);
-    LogReader.wait_type(LOG_IMU_MSG);
-    LogReader.wait_type(LOG_GPS_MSG);
-    LogReader.wait_type(LOG_IMU_MSG);
+    LogReader.wait_type("GPS");
+    LogReader.wait_type("IMU");
+    LogReader.wait_type("GPS");
+    LogReader.wait_type("IMU");
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
 
@@ -257,10 +259,10 @@ void setup()
 
     ::printf("Waiting for InertialNav to start\n");
     while (!ahrs.have_inertial_nav()) {
-        uint8_t type;
-        if (!LogReader.update(type)) break;
+        const char *type;
+        if (!LogReader.update(&type)) break;
         read_sensors(type);
-        if (type == LOG_GPS_MSG && 
+        if (streq(type, "GPS") &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
             done_baro_init && !done_home_init) {
             const Location &loc = gps.location();
@@ -297,28 +299,26 @@ static void set_user_parameters(void)
     }
 }
 
-static void read_sensors(uint8_t type)
+static void read_sensors(const char *type)
 {
-    if (!done_parameters && type != LOG_FORMAT_MSG && type != LOG_PARAMETER_MSG) {
+    if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
         done_parameters = true;
         set_user_parameters();
     }
-    if (type == LOG_IMU2_MSG) {
+    if (streq(type,"IMU2")) {
         have_imu2 = true;
     }
 
-    if (type == LOG_GPS_MSG) {
+    if (streq(type,"GPS")) {
         gps.update();
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             ahrs.estimate_wind();
         }
-    } else if ((type == LOG_PLANE_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) ||
-               (type == LOG_COPTER_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_COPTER) ||
-               (type == LOG_ROVER_COMPASS_MSG && LogReader.vehicle == VehicleType::VEHICLE_ROVER)) {
+    } else if (streq(type,"MAG")) {
         compass.read();
-    } else if (type == LOG_PLANE_AIRSPEED_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) {
+    } else if (streq(type,"ARSP")) {
         ahrs.set_airspeed(&airspeed);
-    } else if (type == LOG_BARO_MSG) {
+    } else if (streq(type,"BARO")) {
         barometer.update();
         if (!done_baro_init) {
             done_baro_init = true;
@@ -328,7 +328,7 @@ static void read_sensors(uint8_t type)
     }
 
     // special handling of IMU messages as these trigger an ahrs.update()
-    if ((type == LOG_IMU_MSG && !have_imu2) || (type == LOG_IMU2_MSG && have_imu2)) {
+    if ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2)) {
         uint32_t imu_deltat_usec = LogReader.last_timestamp_us() - last_imu_usec;
         uint32_t update_delta_usec = 1e6 / update_rate;
         if (imu_deltat_usec < update_delta_usec/2) {
@@ -364,7 +364,7 @@ static void read_sensors(uint8_t type)
 void loop()
 {
     while (true) {
-        uint8_t type;
+        const char *type;
 
         if (arm_time_ms != 0 && hal.scheduler->millis() > arm_time_ms) {
             if (!hal.util->get_soft_armed()) {
@@ -373,18 +373,14 @@ void loop()
             }
         }
 
-        if (!LogReader.update(type)) {
+        if (!LogReader.update(&type)) {
             ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
             fclose(plotf);
             exit(0);
         }
         read_sensors(type);
 
-        if ((type == LOG_ATTITUDE_MSG) ||
-            (type == LOG_PLANE_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_PLANE) ||
-            (type == LOG_COPTER_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_COPTER) ||
-            (type == LOG_ROVER_ATTITUDE_MSG && LogReader.vehicle == VehicleType::VEHICLE_ROVER)) {
-
+        if (streq(type,"ATT")) {
             Vector3f ekf_euler;
             Vector3f velNED;
             Vector3f posNED;

@@ -1,31 +1,12 @@
 #include <VehicleType.h>
 
-// we don't use these.  but Replay.pde currently does
-enum log_messages {
-    // plane specific messages
-    LOG_PLANE_ATTITUDE_MSG = 9,
-    LOG_PLANE_COMPASS_MSG  = 11,
-    LOG_PLANE_COMPASS2_MSG  = 15,
-    LOG_PLANE_AIRSPEED_MSG  = 17,
-
-    // copter specific messages
-    LOG_COPTER_ATTITUDE_MSG = 1,
-    LOG_COPTER_COMPASS_MSG  = 15,
-    LOG_COPTER_NAV_TUNING_MSG = 5,
-
-    // rover specific messages
-    LOG_ROVER_ATTITUDE_MSG = 8,
-    LOG_ROVER_COMPASS_MSG  = 10,
-};
-
-
 class LogReader
 {
 public:
     LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash);
     bool open_log(const char *logfile);
-    bool update(uint8_t &type);
-    bool wait_type(uint8_t type);
+    bool update(const char **type);
+    bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
     const Vector3f &get_ahr2_attitude(void) const { return ahr2_attitude; }

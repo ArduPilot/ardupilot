@@ -94,7 +94,7 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 
 MsgHandler_PARM *parameter_handler;
 
-bool LogReader::update(uint8_t &type)
+bool LogReader::update(const char **type)
 {
     uint8_t hdr[3];
     if (::read(fd, hdr, 3) != 3) {
@@ -112,7 +112,7 @@ bool LogReader::update(uint8_t &type)
             return false;
         }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
-        type = f.type;
+        *type = f.name;
 
 	char name[5];
 	memset(name, '\0', 5);
@@ -204,9 +204,9 @@ bool LogReader::update(uint8_t &type)
         return false;
     }
 
-    type = f.type;
+    *type = f.name;
 
-    MsgHandler *p = msgparser[type];
+    MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
 	// I guess this wasn't as self-describing as it could have been....
 	// ::printf("No format message received for type %d; ignoring message\n",
@@ -221,14 +221,14 @@ bool LogReader::update(uint8_t &type)
     return true;
 }
 
-bool LogReader::wait_type(uint8_t wtype)
+bool LogReader::wait_type(const char *wtype)
 {
     while (true) {
-        uint8_t type;
-        if (!update(type)) {
+        const char *type;
+        if (!update(&type)) {
             return false;
         }
-        if (wtype == type) {
+        if (streq(type,wtype)) {
             break;
         }
     }
