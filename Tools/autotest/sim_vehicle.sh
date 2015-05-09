@@ -313,7 +313,7 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     popd
 fi
 
-cmd="/tmp/$VEHICLE.build/$VEHICLE.elf -S -I$INSTANCE"
+cmd="/tmp/$VEHICLE.build/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
 if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
@@ -351,7 +351,8 @@ EOF
         PARMS="copter_params.parm"
         ;;
     APMrover2)
-        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        RUNSIM=""
+        cmd="$cmd --model $FRAME"
         PARMS="Rover.parm"
         ;;
     *)
@@ -379,22 +380,24 @@ fi
 
 trap kill_tasks SIGINT
 
-sleep 2
-rm -f $tfile
-if [ $EXTERNAL_SIM == 0 ]; then
-    $autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
-        echo "Failed to start simulator: $RUNSIM"
-        exit 1
-    }
+if test -n "$RUNSIM"; then
     sleep 2
-else
-    echo "Using external ROS simulator"
-    RUNSIM="$autotest/ROS/runsim.py --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
-    $autotest/run_in_terminal_window.sh "ROS Simulator" $RUNSIM || {
-        echo "Failed to start simulator: $RUNSIM"
-        exit 1
-    }
-    sleep 2
+    rm -f $tfile
+    if [ $EXTERNAL_SIM == 0 ]; then
+        $autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
+            echo "Failed to start simulator: $RUNSIM"
+            exit 1
+        }
+        sleep 2
+    else
+        echo "Using external ROS simulator"
+        RUNSIM="$autotest/ROS/runsim.py --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        $autotest/run_in_terminal_window.sh "ROS Simulator" $RUNSIM || {
+            echo "Failed to start simulator: $RUNSIM"
+            exit 1
+        }
+        sleep 2
+    fi
 fi
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
