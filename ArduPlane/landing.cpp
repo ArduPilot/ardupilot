@@ -211,6 +211,35 @@ void Plane::setup_landing_glide_slope(void)
         constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
+/*
+     Restart a landing by first checking for a DO_LAND_START and
+     jump there. Otherwise decrement waypoint so we would re-start
+     from the top with same glide slope. Return true if successful.
+ */
+void Plane::restart_landing_sequence()
+{
+    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
+        return;
+    }
+
+
+    uint16_t do_land_start_index = mission.get_landing_sequence_start();
+    uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
+
+    if (do_land_start_index != 0 &&
+        mission.set_current_cmd(do_land_start_index))
+    {
+        // look for a DO_LAND_START and use that index
+        gcs_send_text_fmt(PSTR("Restarted landing via DO_LAND_START: %d"),do_land_start_index);
+    } else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
+               mission.set_current_cmd(prev_cmd_with_wp_index))
+    {
+        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
+        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
+        gcs_send_text_fmt(PSTR("Restarted landing sequence at waypoint %d"), prev_cmd_with_wp_index);
+    }
+}
+
 /* 
    find the nearest landing sequence starting point (DO_LAND_START) and
    switch to that mission item.  Returns false if no DO_LAND_START
