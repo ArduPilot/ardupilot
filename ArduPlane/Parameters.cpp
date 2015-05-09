@@ -260,6 +260,14 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  20),
 
+    // @Param: LAND_ABORT_THR
+    // @DisplayName: Landing abort using throttle
+    // @Description: Allow a landing abort to trigger with a throttle > 95%
+    // @Units: boolean
+    // @Range: 0 1
+    // @User: Advanced
+    GSCALAR(land_abort_throttle_enable,       "LAND_ABORT_THR",  0),
+
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
 	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
