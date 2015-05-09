@@ -167,7 +167,7 @@ bool LogReader::update(uint8_t &type)
 	  // and also the rover/copter/plane-specific (old) messages
 	  msgparser[f.type] = new MsgHandler_ATT(formats[f.type], dataflash,
 						 last_timestamp_usec,
-                                                 ahr2_attitude);
+                                                 attitude);
 	} else if (streq(name, "MAG")) {
 	  msgparser[f.type] = new MsgHandler_MAG(formats[f.type], dataflash,
 						 last_timestamp_usec, compass);
