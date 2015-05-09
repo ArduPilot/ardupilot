@@ -455,6 +455,11 @@ static void exit_mode(enum FlightMode mode)
     if (mode == AUTO) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
+
+            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
+            {
+                restart_landing_sequence();
+            }
         }
     }
 }
