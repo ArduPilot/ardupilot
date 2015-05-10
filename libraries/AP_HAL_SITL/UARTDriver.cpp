@@ -64,6 +64,14 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _fd = _sitlState->gps_pipe();
         break;
 
+    case 2:
+        if (_sitlState->get_client_address() != NULL) {
+            _tcp_start_client(_sitlState->get_client_address());
+        } else {
+            _tcp_start_connection(false);
+        }
+        break;
+
     case 4:
         /* gps2 */
         _connected = true;
@@ -228,9 +236,9 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 
         fprintf(stderr, "bind port %u for %u\n",
                 (unsigned)ntohs(sockaddr.sin_port),
-                (unsigned)_portNumber),
+                (unsigned)_portNumber);
 
-                ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
         if (ret == -1) {
             fprintf(stderr, "bind failed on port %u - %s\n",
                     (unsigned)ntohs(sockaddr.sin_port),
@@ -261,6 +269,66 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         _connected = true;
     }
+}
+
+
+/*
+  start a TCP client connection for the serial port. 
+ */
+void SITLUARTDriver::_tcp_start_client(const char *address)
+{
+    int one=1;
+    struct sockaddr_in sockaddr;
+    int ret;
+
+    if (_connected) {
+        return;
+    }
+
+    if (_fd != -1) {
+        close(_fd);
+    }
+
+    char *addr2 = strdup(address);
+    char *p = strchr(addr2, ':');
+    if (p == NULL) {
+        fprintf(stderr, "need IP:port\n");
+        exit(1);
+    }
+    *p = 0;
+    uint16_t port = htons(atoi(p+1));
+
+    memset(&sockaddr,0,sizeof(sockaddr));
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = port;
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = inet_addr(addr2);
+
+    free(addr2);
+
+    _fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+
+    /* we want to be able to re-use ports quickly */
+    setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "connect failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    _connected = true;
 }
 
 /*

@@ -75,6 +75,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _rcout_port = 5502;
     _simin_port = 5501;
     _fdm_address = "127.0.0.1";
+    _client_address = NULL;
+
+    enum long_options {
+        CMDLINE_CLIENT=0
+    };
 
     const struct GetOptLong::option options[] = {
         {"help",            false,  0, 'h'},
@@ -89,6 +94,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"frame",           true,   0, 'F'},
+        {"client",          true,   0, CMDLINE_CLIENT},
         {0, false, 0, 0}
     };
 
@@ -134,6 +140,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'F':
             _fdm_address = gopt.optarg;
+            break;
+        case CMDLINE_CLIENT:
+            _client_address = gopt.optarg;
             break;
         default:
             _usage();

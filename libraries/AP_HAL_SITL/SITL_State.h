@@ -55,6 +55,9 @@ public:
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
 
+    // return TCP client address for uartC
+    const char *get_client_address(void) const { return _client_address; }
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -187,6 +190,9 @@ private:
 
     // internal SITL model
     Aircraft *sitl_model;
+
+    // TCP address to connect uartC to
+    const char *_client_address;
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

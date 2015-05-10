@@ -65,7 +65,11 @@ private:
     uint16_t _rxSpace;
     uint16_t _txSpace;
 
+    // IPv4 address of target for uartC
+    const char *_tcp_client_addr;
+
     void _tcp_start_connection(bool wait_for_connection);
+    void _tcp_start_client(const char *address);
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
