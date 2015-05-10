@@ -619,7 +619,7 @@ Format characters in the format string for binary log messages
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
       "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
-      "GRAW", "IIHbbddfBbB", "TimeMS,WkMS,Week,NSats,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
+      "GRAW", "IIHBBddfBbB", "TimeMS,WkMS,Week,NSats,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
