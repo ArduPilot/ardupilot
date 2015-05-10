@@ -32,16 +32,15 @@ static void _sig_fpe(int signum)
 
 void SITL_State::_usage(void)
 {
-    fprintf(stdout, "Options:\n");
-    fprintf(stdout, "\t-w          wipe eeprom and dataflash\n");
-    fprintf(stdout, "\t-r RATE     set SITL framerate\n");
-    fprintf(stdout, "\t-H HEIGHT   initial barometric height\n");
-    fprintf(stdout, "\t-C          use console instead of TCP ports\n");
-    fprintf(stdout, "\t-I          set instance of SITL (adds 10*instance to all port numbers)\n");
-    fprintf(stdout, "\t-s SPEEDUP  simulation speedup\n");
-    fprintf(stdout, "\t-O ORIGIN   set home location (lat,lng,alt,yaw)\n");
-    fprintf(stdout, "\t-M MODEL    set simulation model\n");
-    fprintf(stdout, "\t-F FDMADDR  set FDM UDP address (IPv4)\n");
+    printf("Options:\n"
+           "\t--home HOME        set home location (lat,lng,alt,yaw)\n"
+           "\t--model MODEL      set simulation model\n"
+           "\t--wipe             wipe eeprom and dataflash\n"
+           "\t--rate RATE        set SITL framerate\n"
+           "\t--console          use console instead of TCP ports\n"
+           "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
+           "\t--speedup SPEEDUP  set simulation speedup\n"
+        );
 }
 
 static const struct {
@@ -49,6 +48,8 @@ static const struct {
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
     { "+",         MultiCopter::create },
+    { "quad",      MultiCopter::create },
+    { "copter",    MultiCopter::create },
     { "x",         MultiCopter::create },
     { "hexa",      MultiCopter::create },
     { "octa",      MultiCopter::create },
@@ -89,19 +90,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"wipe",            false,  0, 'w'},
         {"speedup",         true,   0, 's'},
         {"rate",            true,   0, 'r'},
-        {"height",          true,   0, 'H'},
         {"console",         false,  0, 'C'},
         {"instance",        true,   0, 'I'},
         {"param",           true,   0, 'P'},
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
-        {"frame",           true,   0, 'F'},
         {"client",          true,   0, CMDLINE_CLIENT},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "hws:r:H:CI:P:SO:M:F:",
+    GetOptLong gopt(argc, argv, "hws:r:CI:P:SO:M:F:",
                     options);
 
     while ((opt = gopt.getoption()) != -1) {
@@ -112,9 +111,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'r':
             _framerate = (unsigned)atoi(gopt.optarg);
-            break;
-        case 'H':
-            _initial_height = atof(gopt.optarg);
             break;
         case 'C':
             HALSITL::SITLUARTDriver::_console = true;

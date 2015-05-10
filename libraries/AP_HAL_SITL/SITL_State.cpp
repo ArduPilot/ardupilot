@@ -84,8 +84,8 @@ void SITL_State::_sitl_setup(void)
     if (_sitl != NULL) {
         // setup some initial values
 #ifndef HIL_MODE
-        _update_barometer(_initial_height);
-        _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, _initial_height);
+        _update_barometer(100);
+        _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
         _update_compass(0, 0, 0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif

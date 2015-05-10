@@ -128,7 +128,6 @@ private:
     uint16_t _framerate;
     uint8_t _instance;
     uint16_t _base_port;
-    float _initial_height;
     struct sockaddr_in _rcout_addr;
     pid_t _parent_pid;
     uint32_t _update_count;
