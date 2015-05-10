@@ -60,7 +60,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     location = home;
     ground_level = home.alt*0.01;
 
-    dcm.from_euler(0, 0, atof(yaw_s));
+    dcm.from_euler(0, 0, radians(atof(yaw_s)));
     free(s);
 
     set_speedup(1);
