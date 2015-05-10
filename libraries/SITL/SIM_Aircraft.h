@@ -46,6 +46,13 @@ public:
     void set_speedup(float speedup);
 
     /*
+      set instance number
+     */
+    void set_instance(uint8_t _instance) {
+        instance = _instance;
+    }
+
+    /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;
@@ -76,6 +83,7 @@ protected:
     uint64_t frame_time_us;
     float scaled_frame_time_us;
     uint64_t last_wall_time_us;
+    uint8_t instance;
 
     bool on_ground(const Vector3f &pos) const;
 
