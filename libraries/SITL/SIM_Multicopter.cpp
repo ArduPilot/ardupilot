@@ -90,6 +90,8 @@ static const Motor octa_quad_motors[8] =
 static const Frame supported_frames[] =
 {
     Frame("+",         4, quad_plus_motors),
+    Frame("quad",      4, quad_plus_motors),
+    Frame("copter",    4, quad_plus_motors),
     Frame("x",         4, quad_x_motors),
     Frame("hexa",      6, hexa_motors),
     Frame("hexax",     6, hexax_motors),
