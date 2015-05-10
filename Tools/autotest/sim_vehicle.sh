@@ -343,7 +343,8 @@ EOF
         if [ "$FRAME" = "CRRCSim" ]; then
             RUNSIM="nice $autotest/pysim/sim_wrapper.py --frame=CRRCSim --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
         else
-            RUNSIM="nice $autotest/jsb_sim/runsim.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+            RUNSIM=""
+            cmd="$cmd --model jsbsim --speedup=$SPEEDUP"
         fi
         ;;
     ArduCopter)
@@ -352,7 +353,7 @@ EOF
         ;;
     APMrover2)
         RUNSIM=""
-        cmd="$cmd --model $FRAME"
+        cmd="$cmd --model $FRAME --speedup=$SPEEDUP"
         PARMS="Rover.parm"
         ;;
     *)
