@@ -16,6 +16,9 @@
   simple socket handling class for systems with BSD socket API
  */
 
+#ifndef HAL_SOCKET_H
+#define HAL_SOCKET_H
+
 #include <AP_HAL.h>
 #if HAL_OS_SOCKETS
 
@@ -38,3 +41,4 @@ private:
 };
 
 #endif // HAL_OS_SOCKETS
+#endif // HAL_SOCKET_H
