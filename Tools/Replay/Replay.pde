@@ -405,7 +405,7 @@ void loop()
             Vector2f offset;
             uint8_t faultStatus;
 
-            const Matrix3f &dcm_matrix = ((AP_AHRS_DCM)ahrs).get_dcm_matrix();
+            const Matrix3f &dcm_matrix = ahrs.AP_AHRS_DCM::get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
             NavEKF.getEulerAngles(ekf_euler);
             NavEKF.getVelNED(velNED);
