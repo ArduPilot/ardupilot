@@ -168,6 +168,7 @@ void AP_AHRS_NavEKF::update(void)
     last_update_ms = tnow;
 
     update_attitude_for_control(dt);
+    update_gyro3_bias(dt);
 }
 
 // update an attitude reference that filters out correction steps from the EKF
@@ -205,6 +206,31 @@ void AP_AHRS_NavEKF::update_attitude_for_control(float dt)
 
     attitude_for_control.rotate(attitude_adj);
     attitude_for_control.normalize();
+}
+
+Vector3f AP_AHRS_NavEKF::get_gyro_for_control() const
+{
+    if (_ins.get_gyro_health(2)) {
+        return _ins.get_gyro(2)-_gyro3_bias;
+    } else {
+        return get_gyro();
+    }
+}
+
+// update _gyro3_bias by comparing ins.get_gyro(2) with get_gyro
+void AP_AHRS_NavEKF::update_gyro3_bias(float dt)
+{
+    static const float gyro3BiasFiltTC = 20.0f;
+
+    if (!_ins.get_gyro_health(2)) {
+        return;
+    }
+
+    // compute alpha
+    float alpha = constrain_float(dt / (dt+gyro3BiasFiltTC),0.0f,1.0f);
+
+    Vector3f gyro3_bias_unfiltered = _ins.get_gyro(2) - get_gyro();
+    _gyro3_bias += (gyro3_bias_unfiltered-_gyro3_bias)*alpha;
 }
 
 // accelerometer values in the earth frame in m/s/s

@@ -40,7 +40,8 @@ public:
         ekf_started(false),
         startup_delay_ms(1000),
         start_time_ms(0),
-        attitude_for_control()
+        attitude_for_control(),
+        _gyro3_bias(0,0,0)
         {
         }
 
@@ -121,6 +122,8 @@ public:
 
     float get_yaw_for_control_cd() const;
 
+    Vector3f get_gyro_for_control() const;
+
     // is the AHRS subsystem healthy?
     bool healthy(void) const;
 
@@ -137,6 +140,9 @@ private:
     // update an attitude reference that filters out correction steps from the EKF
     void update_attitude_for_control(float dt);
 
+    // update _gyro3_bias by comparing ins.get_gyro(2) with get_gyro
+    void update_gyro3_bias(float dt);
+
     NavEKF EKF;
     bool ekf_started;
     Matrix3f _dcm_matrix;
@@ -149,6 +155,7 @@ private:
     uint32_t start_time_ms;
 
     Quaternion attitude_for_control;
+    Vector3f _gyro3_bias;
 };
 #endif
 
