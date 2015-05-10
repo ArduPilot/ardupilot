@@ -17,6 +17,7 @@
 #include <SIM_Helicopter.h>
 #include <SIM_Rover.h>
 #include <SIM_CRRCSim.h>
+#include <SIM_JSBSim.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,7 +54,8 @@ static const struct {
     { "octa",      MultiCopter::create },
     { "heli",      Helicopter::create },
     { "rover",     Rover::create },
-    { "crrcsim",   CRRCSim::create }
+    { "crrcsim",   CRRCSim::create },
+    { "jsbsim",    JSBSim::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
@@ -76,6 +78,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _simin_port = 5501;
     _fdm_address = "127.0.0.1";
     _client_address = NULL;
+    _instance = 0;
 
     enum long_options {
         CMDLINE_CLIENT=0
@@ -117,10 +120,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             HALSITL::SITLUARTDriver::_console = true;
             break;
         case 'I': {
-            uint8_t instance = atoi(gopt.optarg);
-            _base_port  += instance * 10;
-            _rcout_port += instance * 10;
-            _simin_port += instance * 10;
+            _instance = atoi(gopt.optarg);
+            _base_port  += _instance * 10;
+            _rcout_port += _instance * 10;
+            _simin_port += _instance * 10;
         }
         break;
         case 'P':
@@ -155,6 +158,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (strncmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
                 sitl_model = model_constructors[i].constructor(home_str, model_str);
                 sitl_model->set_speedup(speedup);
+                sitl_model->set_instance(_instance);
                 _synthetic_clock_mode = true;
                 printf("Started model %s at %s at speed %.1f\n", model_str, home_str, speedup);
                 break;

@@ -126,6 +126,7 @@ private:
     // internal state
     enum vehicle_type _vehicle;
     uint16_t _framerate;
+    uint8_t _instance;
     uint16_t _base_port;
     float _initial_height;
     struct sockaddr_in _rcout_addr;
