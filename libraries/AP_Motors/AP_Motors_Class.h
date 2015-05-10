@@ -75,6 +75,10 @@
 #define AP_MOTORS_COAX_MIX_LOWER    1.0 // coax lower motors 100% scaling by default (this should probably default to 1.05 or 1.1 after testing with a wider range of copters)
 
 
+#define AP_MOTORS_COAX_MIX_UPPER    1.0 // coax upper motors 100% scaling by default
+#define AP_MOTORS_COAX_MIX_LOWER    1.0 // coax lower motors 100% scaling by default (this should probably default to 1.05 or 1.1 after testing with a wider range of copters)
+
+
 // bit mask for recording which limits we have reached when outputting to motors
 #define AP_MOTOR_NO_LIMITS_REACHED  0x00
 #define AP_MOTOR_ROLLPITCH_LIMIT    0x01
