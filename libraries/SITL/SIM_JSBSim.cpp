@@ -178,6 +178,9 @@ bool JSBSim::start_JSBSim(void)
         dup2(devnull, 0);
         dup2(p[1], 1);
         close(p[0]);
+        for (uint8_t i=3; i<100; i++) {
+            close(i);
+        }
         char *logdirective;
         char *script;
 
