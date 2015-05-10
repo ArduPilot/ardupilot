@@ -37,6 +37,7 @@ SocketAPM::SocketAPM(bool _datagram) :
 datagram(_datagram)
 {
     fd = socket(AF_INET, datagram?SOCK_DGRAM:SOCK_STREAM, 0);
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
 /*
