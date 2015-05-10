@@ -355,9 +355,9 @@ static void autotune_attitude_control()
         if ((labs(ahrs.roll_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
                 (labs(ahrs.pitch_sensor) > AUTOTUNE_LEVEL_ANGLE_CD) ||
                 (labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_desired_yaw)) > AUTOTUNE_LEVEL_ANGLE_CD) ||
-                ((ToDeg(ahrs.get_gyro().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-                ((ToDeg(ahrs.get_gyro().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
-                ((ToDeg(ahrs.get_gyro().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
+                ((ToDeg(ahrs.get_gyro_for_control().x) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                ((ToDeg(ahrs.get_gyro_for_control().y) * 100.0f) > AUTOTUNE_LEVEL_RATE_RP_CD) ||
+                ((ToDeg(ahrs.get_gyro_for_control().z) * 100.0f) > AUTOTUNE_LEVEL_RATE_Y_CD) ) {
             autotune_step_start_time = millis();
         }
 
@@ -379,7 +379,7 @@ static void autotune_attitude_control()
         case AUTOTUNE_AXIS_ROLL:
             autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_roll(), AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_roll(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
-            autotune_start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
+            autotune_start_rate = ToDeg(ahrs.get_gyro_for_control().x) * 100.0f;
             autotune_start_angle = ahrs.roll_sensor;
             rotation_rate_filt.set_cutoff_frequency(g.pid_rate_roll.filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
@@ -391,7 +391,7 @@ static void autotune_attitude_control()
         case AUTOTUNE_AXIS_PITCH:
             autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_pitch(), AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_pitch(), AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
-            autotune_start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
+            autotune_start_rate = ToDeg(ahrs.get_gyro_for_control().y) * 100.0f;
             autotune_start_angle = ahrs.pitch_sensor;
             rotation_rate_filt.set_cutoff_frequency(g.pid_rate_pitch.filt_hz()*2.0f);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
@@ -403,7 +403,7 @@ static void autotune_attitude_control()
         case AUTOTUNE_AXIS_YAW:
             autotune_target_rate = constrain_float(attitude_control.max_rate_step_bf_yaw()/1.5f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
             autotune_target_angle = constrain_float(attitude_control.max_angle_step_bf_yaw(), AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
-            autotune_start_rate = ToDeg(ahrs.get_gyro().z) * 100.0f;
+            autotune_start_rate = ToDeg(ahrs.get_gyro_for_control().z) * 100.0f;
             autotune_start_angle = ahrs.yaw_sensor;
             rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
@@ -464,25 +464,25 @@ static void autotune_attitude_control()
         switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().x) * 100.0f), MAIN_LOOP_SECONDS);
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().x) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().x) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
             }
             lean_angle = direction_sign * (ahrs.roll_sensor - (int32_t)autotune_start_angle);
             break;
         case AUTOTUNE_AXIS_PITCH:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().y) * 100.0f), MAIN_LOOP_SECONDS);
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().y) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().y) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
             }
             lean_angle = direction_sign * (ahrs.pitch_sensor - (int32_t)autotune_start_angle);
             break;
         case AUTOTUNE_AXIS_YAW:
             if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().z) * 100.0f), MAIN_LOOP_SECONDS);
             } else {
-                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro().z) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
+                rotation_rate = rotation_rate_filt.apply(direction_sign * (ToDeg(ahrs.get_gyro_for_control().z) * 100.0f - autotune_start_rate), MAIN_LOOP_SECONDS);
             }
             lean_angle = direction_sign * wrap_180_cd(ahrs.yaw_sensor-(int32_t)autotune_start_angle);
             break;
