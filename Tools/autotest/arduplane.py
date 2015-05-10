@@ -440,17 +440,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    cmd = util.reltopdir("Tools/autotest/jsb_sim/runsim.py")
-    cmd += " --speedup=100 --home=%s --wind=%s" % (HOME_LOCATION, WIND)
-    if viewerip:
-        cmd += " --fgout=%s:5503" % viewerip
-
-    runsim = pexpect.spawn(cmd, timeout=10)
-    runsim.delaybeforesend = 0
-    util.pexpect_autoclose(runsim)
-    runsim.expect('Simulator ready to fly')
-
-    sil = util.start_SIL('ArduPlane', wipe=True)
+    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
     print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
@@ -467,14 +457,8 @@ def fly_ArduPlane(viewerip=None, map=False):
     # restart with new parms
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
 
-    runsim = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
-    runsim.delaybeforesend = 0
-    util.pexpect_autoclose(runsim)
-    runsim.expect('Simulator ready to fly')
-
-    sil = util.start_SIL('ArduPlane')
+    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     mavproxy.expect('Logging to (\S+)')
     logfile = mavproxy.match.group(1)
@@ -494,7 +478,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     mavproxy.expect('Received [0-9]+ parameters')
 
     expect_list_clear()
-    expect_list_extend([runsim, sil, mavproxy])
+    expect_list_extend([sil, mavproxy])
 
     print("Started simulator")
 
@@ -568,7 +552,6 @@ def fly_ArduPlane(viewerip=None, map=False):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
 
     if os.path.exists('ArduPlane-valgrind.log'):
         os.chmod('ArduPlane-valgrind.log', 0644)

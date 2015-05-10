@@ -257,6 +257,7 @@ pushd $autotest/../../$VEHICLE || {
     usage
     exit 1
 }
+VEHICLEDIR=$(pwd)
 if [ ! -f $autotest/../../config.mk ]; then
     echo Generating a default configuration
     make configure
@@ -313,7 +314,7 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     popd
 fi
 
-cmd="/tmp/$VEHICLE.build/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
+cmd="$VEHICLEDIR/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
 if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
