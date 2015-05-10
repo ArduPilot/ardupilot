@@ -29,7 +29,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+// the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
+
+#define DEBUG_JSBSIM 1
 
 /*
   constructor
@@ -44,8 +47,16 @@ JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     created_templates(false),
     started_jsbsim(false),
     opened_control_socket(false),
-    opened_fdm_socket(false)
+    opened_fdm_socket(false),
+    frame(FRAME_NORMAL)
 {
+    if (strstr(frame_str, "elevon")) {
+        frame = FRAME_ELEVON;
+    } else if (strstr(frame_str, "vtail")) {
+        frame = FRAME_VTAIL;
+    } else {
+        frame = FRAME_NORMAL;
+    }
 }
 
 /*
@@ -112,6 +123,31 @@ bool JSBSim::create_templates(void)
     fprintf(f, "<?xml version=\"1.0\"?>\n" 
             "<output name=\"localhost\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
             fdm_port);
+    fclose(f);
+
+    char *jsbsim_reset;
+    asprintf(&jsbsim_reset, "%s/aircraft/Rascal/reset.xml", autotest_dir);
+    f = fopen(jsbsim_reset, "w");
+    if (f == NULL) {
+        hal.scheduler->panic("Unable to create jsbsim Rascal reset script");
+    }
+    float r, p, y;
+    dcm.to_euler(&r, &p, &y);
+    fprintf(f, 
+            "<?xml version=\"1.0\"?>\n"
+            "<initialize name=\"Start up location\">\n"
+            "  <latitude unit=\"DEG\"> %f </latitude>\n"
+            "  <longitude unit=\"DEG\"> %f </longitude>\n"
+            "  <altitude unit=\"M\"> 1.3 </altitude>\n"
+            "  <vt unit=\"FT/SEC\"> 0.0 </vt>\n"
+            "  <gamma unit=\"DEG\"> 0.0 </gamma>\n"
+            "  <phi unit=\"DEG\"> 0.0 </phi>\n"
+            "  <theta unit=\"DEG\"> 13.0 </theta>\n"
+            "  <psi unit=\"DEG\"> %f </psi>\n"
+            "</initialize>\n",
+            home.lat*1.0e-7,
+            home.lng*1.0e-7,
+            degrees(y));
     fclose(f);
 
     created_templates = true;
@@ -198,7 +234,9 @@ void JSBSim::check_stdout(void)
     char line[100];
     ssize_t ret = ::read(jsbsim_stdout, line, sizeof(line));
     if (ret > 0) {
+#if DEBUG_JSBSIM
         write(1, line, ret);
+#endif
     }
 }
 
@@ -218,7 +256,9 @@ bool JSBSim::expect(const char *str)
         } else {
             str = basestr;
         }
+#if DEBUG_JSBSIM
         write(1, &c, 1);
+#endif
     }
     return true;
 }
@@ -272,6 +312,21 @@ void JSBSim::send_servos(const struct sitl_input &input)
     float elevator = (input.servos[1]-1500)/500.0f;
     float throttle = (input.servos[2]-1000)/1000.0;
     float rudder   = (input.servos[3]-1500)/500.0f;
+    if (frame == FRAME_ELEVON) {
+        // fake an elevon plane
+        float ch1 = aileron;
+        float ch2 = elevator;
+        aileron  = (ch2-ch1)/2.0f;
+        // the minus does away with the need for RC2_REV=-1
+        elevator = -(ch2+ch1)/2.0f;
+    } else if (frame == FRAME_VTAIL) {
+        // fake a vtail plane
+        float ch1 = elevator;
+        float ch2 = rudder;
+        // this matches VTAIL_OUTPUT==2
+        elevator = (ch2-ch1)/2.0f;
+        rudder   = (ch2+ch1)/2.0f;
+    }
     asprintf(&buf, 
              "set fcs/aileron-cmd-norm %f\n"
              "set fcs/elevator-cmd-norm %f\n"
@@ -285,12 +340,16 @@ void JSBSim::send_servos(const struct sitl_input &input)
 
 #define FEET_TO_METERS 0.3048f
 
-// nasty hack ....
-void FGNetFDM::ByteSwap(void) {
+/* nasty hack ....
+   JSBSim sends in little-endian
+ */
+void FGNetFDM::ByteSwap(void) 
+{
     uint32_t *buf = (uint32_t *)this;
     for (uint16_t i=0; i<sizeof(*this)/4; i++) {
         buf[i] = ntohl(buf[i]);
     }
+    // fixup the 3 doubles
     buf = (uint32_t *)&longitude;
     uint32_t tmp;
     for (uint8_t i=0; i<3; i++) {
@@ -308,6 +367,7 @@ void FGNetFDM::ByteSwap(void) {
 void JSBSim::recv_fdm(const struct sitl_input &input)
 {
     FGNetFDM fdm;
+    check_stdout();
     while (sock_fgfdm.recv(&fdm, sizeof(fdm), 100) != sizeof(fdm)) {
         send_servos(input);
         check_stdout();
@@ -325,7 +385,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     velocity_ef = Vector3f(fdm.v_north, fdm.v_east, fdm.v_down) * FEET_TO_METERS;
     location.lat = degrees(fdm.latitude) * 1.0e7;
     location.lng = degrees(fdm.longitude) * 1.0e7;
-    location.alt = fdm.altitude*100;
+    location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
 
     // assume 1kHz for now

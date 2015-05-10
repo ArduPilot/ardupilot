@@ -60,6 +60,12 @@ private:
     bool opened_control_socket;
     bool opened_fdm_socket;
 
+    enum {
+        FRAME_NORMAL,
+        FRAME_ELEVON,
+        FRAME_VTAIL
+    } frame;
+
     bool create_templates(void);
     bool start_JSBSim(void);
     bool open_control_socket(void);
