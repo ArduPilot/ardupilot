@@ -7,11 +7,11 @@ name="$1"
 shift
 echo "Starting $name : $*"
 # default to xterm as it has the most consistent options and can start minimised
-if [ -x /usr/bin/xterm ]; then
+if [ -n "$DISPLAY" -a -x /usr/bin/xterm ]; then
   /usr/bin/xterm -iconic -xrm 'XTerm*selectToClipboard: true' -n "$name" -name "$name" -T "$name" -hold -e $* &
-elif [ -x /usr/bin/konsole ]; then
+elif [ -n "$DISPLAY" -a -x /usr/bin/konsole ]; then
   /usr/bin/konsole --hold -e $*
-elif [ -x /usr/bin/gnome-terminal ]; then
+elif [ -n "$DISPLAY" -a -x /usr/bin/gnome-terminal ]; then
   /usr/bin/gnome-terminal -e "$*"
 elif [ -n "$STY" ]; then
   # We are running inside of screen, try to start it there
