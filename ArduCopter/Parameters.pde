@@ -40,8 +40,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
-    // @DisplayName: Mavlink version
-    // @Description: Allows reconising the mavlink version
+    // @DisplayName: Vehicle ID
+    // @Description: Identifies vehicle for use with mutiple UAV control. Will display as "MAV00X", where X is the unique vehicle ID
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
