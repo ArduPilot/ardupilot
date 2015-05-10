@@ -960,6 +960,10 @@ GCS_MAVLINK::data_stream_send(void)
  */
 void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
+    if (control_mode != GUIDED) {
+        // only accept position updates when in GUIDED mode
+        return;
+    }
     guided_WP_loc = cmd.content.location;
     
     // add home alt if needed
@@ -968,9 +972,6 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
         guided_WP_loc.flags.relative_alt = 0;
     }
 
-    set_mode(GUIDED);
-
-    // make any new wp uploaded instant (in case we are already in Guided mode)
     set_guided_WP();
 }
 

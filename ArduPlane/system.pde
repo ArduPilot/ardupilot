@@ -410,6 +410,11 @@ static void set_mode(enum FlightMode mode)
     case GUIDED:
         auto_throttle_mode = true;
         guided_throttle_passthru = false;
+        /*
+          when entering guided mode we set the target as the current
+          location. This matches the behaviour of the copter code
+        */
+        guided_WP_loc = current_loc;
         set_guided_WP();
         break;
     }
@@ -442,6 +447,7 @@ static bool mavlink_set_mode(uint8_t mode)
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CRUISE:
+    case GUIDED:
     case AUTO:
     case RTL:
     case LOITER:

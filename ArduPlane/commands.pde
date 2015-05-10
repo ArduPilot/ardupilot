@@ -111,11 +111,6 @@ static void init_home()
     // Save prev loc
     // -------------
     next_WP_loc = prev_WP_loc = home;
-
-    // Load home for a default guided_WP
-    // -------------
-    guided_WP_loc = home;
-    guided_WP_loc.alt += g.RTL_altitude_cm;
 }
 
 /*
