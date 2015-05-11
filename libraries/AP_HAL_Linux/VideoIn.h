@@ -51,6 +51,11 @@ public:
                   uint32_t width, uint32_t height);
     void prepare_capture();
 
+    static void shrink_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                            uint32_t width, uint32_t height, uint32_t left,
+                            uint32_t selection_width, uint32_t top,
+                            uint32_t selection_height, uint32_t fx, uint32_t fy);
+
     static void crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
                           uint32_t width, uint32_t left,
                           uint32_t crop_width, uint32_t top,
