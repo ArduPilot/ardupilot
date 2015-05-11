@@ -36,25 +36,25 @@ extern const AP_HAL::HAL& hal;
 
 const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK 0
-    { "MFT200L4<<<B#A#2", false },
+    { "MFMLT100L64Ob>gP64<g>f", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_NEG_FEEDBACK 1
-    { "MFT100L4>B#A#2P8B#A#2", false },
+    { "MFMLT100L64Ob>gP64<g>f", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK 2
-    { "MFT200L4<B#", false },
+    { "MFMLT200L64O3f>c<P32f>c", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_NEU_FEEDBACK 3
-    { "MFT100L4>B#", false },
+    { "MFMLT200L64O3f>c<P32f>c", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_POS_FEEDBACK 4
-    { "MFT200L4<A#B#", false },
+    { "MFMST200L32O2g>cef#gb", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK 5
-    { "MFT100L4>A#B#", false },
+    { "MFMST200L32O2g>cef#gb", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_READY_OR_FINISHED 6
-    { "MFT100L4>G#6A#6B#4", false },
+    { "MFMLT200L32O3cdef#gf#P32g>c<P64g>c", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED 7
-    { "MFT200L4<G#6A#6B#4", false },
+    { "MFMLT200L32O3cdef#gf#P32g>c<P64g>c", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED 8
     { "MFT100L4>B#B#B#B#", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING 9
-    { "MNT75L1O2G", false },
+    { "MFMLT200L64O2dgdgdgP16eaeaeaP16fb-fb-fb-fb-fb->P16gcgP16cgc", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 10
     { "MFT200L8G>C3", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 11
@@ -64,7 +64,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
-    { "MBNT255<C16P2", true },
+    { "MBMLT100O3L512eP4eP16bP16bP2", true },
 };
 
 bool ToneAlarm_PX4::init()
