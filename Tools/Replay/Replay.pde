@@ -257,10 +257,12 @@ void setup()
 
     ahrs.set_ekf_use(true);
 
-    ::printf("Waiting for InertialNav to start\n");
-    while (!ahrs.have_inertial_nav()) {
-        const char *type;
-        if (!LogReader.update(&type)) break;
+    ::printf("Waiting for GPS\n");
+    while (!done_home_init) {
+        char type[5];
+        if (!LogReader.update(type)) {
+            break;
+        }
         read_sensors(type);
         if (streq(type, "GPS") &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
@@ -275,13 +277,6 @@ void setup()
             compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
         }
-    }
-
-    ::printf("InertialNav started\n");
-
-    if (!ahrs.have_inertial_nav()) {
-        ::printf("Failed to start NavEKF\n");
-        exit(1);
     }
 }
 
@@ -364,7 +359,7 @@ static void read_sensors(const char *type)
 void loop()
 {
     while (true) {
-        const char *type;
+        char type[5];
 
         if (arm_time_ms != 0 && hal.scheduler->millis() > arm_time_ms) {
             if (!hal.util->get_soft_armed()) {
@@ -373,7 +368,7 @@ void loop()
             }
         }
 
-        if (!LogReader.update(&type)) {
+        if (!LogReader.update(type)) {
             ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
             fclose(plotf);
             exit(0);

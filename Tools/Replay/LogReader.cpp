@@ -94,7 +94,7 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 
 MsgHandler_PARM *parameter_handler;
 
-bool LogReader::update(const char **type)
+bool LogReader::update(char type[5])
 {
     uint8_t hdr[3];
     if (::read(fd, hdr, 3) != 3) {
@@ -112,7 +112,8 @@ bool LogReader::update(const char **type)
             return false;
         }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
-        *type = f.name;
+        strncpy(type, f.name, 4);
+        type[4] = 0;
 
 	char name[5];
 	memset(name, '\0', 5);
@@ -204,7 +205,8 @@ bool LogReader::update(const char **type)
         return false;
     }
 
-    *type = f.name;
+    strncpy(type, f.name, 4);
+    type[4] = 0;
 
     MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
@@ -224,8 +226,8 @@ bool LogReader::update(const char **type)
 bool LogReader::wait_type(const char *wtype)
 {
     while (true) {
-        const char *type;
-        if (!update(&type)) {
+        char type[5];
+        if (!update(type)) {
             return false;
         }
         if (streq(type,wtype)) {

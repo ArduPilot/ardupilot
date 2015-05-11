@@ -5,7 +5,7 @@ class LogReader
 public:
     LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash);
     bool open_log(const char *logfile);
-    bool update(const char **type);
+    bool update(char type[5]);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
