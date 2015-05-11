@@ -142,7 +142,12 @@ static void read_battery(void)
 
     // check for low voltage or current if the low voltage check hasn't already been triggered
     // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
+    float fs_dist_ofs = 0.0f;
+    if(g.fs_batt_curr_rtl != 0.0f && ap.home_state != HOME_UNSET){
+        fs_dist_ofs = (home_distance) * (g.fs_batt_curr_rtl*1000.0f) / (3600*g.rtl_speed_cms);
+    }
+
+    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah + fs_dist_ofs)) {
         failsafe_battery_event();
     }
 

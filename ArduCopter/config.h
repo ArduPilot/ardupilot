@@ -199,7 +199,11 @@
 #endif
 
 #ifndef FS_BATT_MAH_DEFAULT
- # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
+ # define FS_BATT_MAH_DEFAULT           0         // default battery capacity (in mah) below which failsafe will be triggered
+#endif
+
+#ifndef FS_BATT_CURR_DEFAULT
+ # define FS_BATT_CURR_RTL_DEFAULT      0       // default Worst case maximum current drawn from the battery during RTLing with RTL_SPEED
 #endif
 
 #ifndef BOARD_VOLTAGE_MIN

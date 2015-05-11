@@ -104,6 +104,7 @@ public:
         k_param_gps_hdop_good,              // deprecated - remove
         k_param_battery,
         k_param_fs_batt_mah,
+        k_param_fs_batt_curr_rtl,
         k_param_angle_rate_max,         // remove
         k_param_rssi_range,
         k_param_rc_feel_rp,
@@ -356,6 +357,7 @@ public:
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
+    AP_Float        fs_batt_curr_rtl;        // Worst case maximum current drawn from the battery during RTLing with RTL_SPEED
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
 

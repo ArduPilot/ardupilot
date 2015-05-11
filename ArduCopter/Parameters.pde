@@ -157,6 +157,14 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
 
+    // @Param: FS_BATT_CURR_RTL
+    // @DisplayName: Failsafe battery maximum current to RTL
+    // @Description: Worst case maximum current drawn from the battery during RTL. Set to 0 to disable energy(calculated using this worst case current value) required to reach home based failsafe. If its discovered that there is not enough energy remaining to reach home calculated based on this max current when RTLing, home distance and RTL Speed scenario then the copter will RTL
+    // @Units: A
+    // @Increment: 0.1
+    // @User: Standard
+    GSCALAR(fs_batt_curr_rtl,            "FS_BATT_CURR_RTL", FS_BATT_CURR_RTL_DEFAULT),
+
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. NB. The GCS Failsafe is only active when RC_OVERRIDE is being used to control the vehicle.
