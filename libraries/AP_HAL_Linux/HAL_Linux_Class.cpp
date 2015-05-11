@@ -175,7 +175,8 @@ static Empty::RCOutput rcoutDriver;
 
 static Scheduler schedulerInstance;
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 static OpticalFlow_Onboard opticalFlow;
 #else
 static Empty::OpticalFlow opticalFlow;
