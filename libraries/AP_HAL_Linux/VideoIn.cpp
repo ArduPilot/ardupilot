@@ -159,6 +159,20 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
     return true;
 }
 
+void VideoIn::get_pixel_formats(std::vector<uint32_t> *formats)
+{
+    struct v4l2_fmtdesc fmtdesc;
+
+    memset(&fmtdesc, 0, sizeof fmtdesc);
+
+    fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+    while (ioctl(_fd, VIDIOC_ENUM_FMT, &fmtdesc) == 0) {
+        formats->insert(formats->begin(), fmtdesc.pixelformat);
+        fmtdesc.index++;
+    }
+}
+
 bool VideoIn::set_format(uint32_t *width, uint32_t *height, uint32_t *format,
                          uint32_t *bytesperline, uint32_t *sizeimage)
 {
