@@ -1271,7 +1271,7 @@ def fly_CopterAVC(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', height=HOME.alt, model='+', home=home, speedup=10)
+    sil = util.start_SIL('ArduCopter', model='+', home=home, speedup=10)
     options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip

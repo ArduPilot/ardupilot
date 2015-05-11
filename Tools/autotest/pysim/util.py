@@ -105,7 +105,7 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, height=None, synthetic_clock=True, home=None, model=None, speedup=1):
+def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
@@ -117,8 +117,6 @@ def start_SIL(atype, valgrind=False, wipe=False, height=None, synthetic_clock=Tr
     cmd += executable
     if wipe:
         cmd += ' -w'
-    if height is not None:
-        cmd += ' -H %u' % height
     if synthetic_clock:
         cmd += ' -S'
     if home is not None:
