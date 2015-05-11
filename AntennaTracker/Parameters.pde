@@ -16,8 +16,8 @@ const AP_Param::Info var_info[] PROGMEM = {
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
     // @Param: SYSID_THISMAV
-    // @DisplayName: MAVLink system ID
-    // @Description: The identifier of this device in the MAVLink protocol
+    // @DisplayName: MAVLink system ID of this vehicle
+    // @Description: Allows setting an individual system id for this vehicle to distinguish it from others on the same network
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
