@@ -51,6 +51,14 @@ public:
                   uint32_t width, uint32_t height);
     void prepare_capture();
 
+    static void crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                          uint32_t width, uint32_t left,
+                          uint32_t crop_width, uint32_t top,
+                          uint32_t crop_height);
+
+    static void yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
+                             uint8_t *new_buffer);
+
 private:
     void _queue_buffer(int index);
     bool _set_streaming(bool enable);

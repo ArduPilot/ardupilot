@@ -249,6 +249,32 @@ void VideoIn::prepare_capture()
     }
 }
 
+void VideoIn::crop_8bpp(uint8_t *buffer, uint8_t *new_buffer,
+                        uint32_t width, uint32_t left, uint32_t crop_width,
+                        uint32_t top, uint32_t crop_height)
+{
+    for (uint32_t j = top; j < top + crop_height; j++) {
+        for (uint32_t i = left; i < left + crop_width; i++) {
+            new_buffer[(i - left) + (j - top) * crop_width] = 
+                buffer[i + j * width];
+        }
+    }
+}
+
+void VideoIn::yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size,
+                           uint8_t *new_buffer)
+{
+    uint32_t i;
+    uint32_t new_buffer_position = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (i % 2 == 0) {
+            new_buffer[new_buffer_position] = buffer[i];
+            new_buffer_position++;
+        }
+    }
+}
+
 uint32_t VideoIn::_timeval_to_us(struct timeval& tv)
 {
     return (1.0e6 * tv.tv_sec + tv.tv_usec);
