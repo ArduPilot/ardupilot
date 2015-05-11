@@ -52,6 +52,9 @@ public:
                   uint32_t width, uint32_t height);
     void prepare_capture();
 
+    static void crop_image_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer, uint32_t width, uint32_t height, uint32_t cropLeft, uint32_t cropRight, uint32_t cropTop, uint32_t cropBottom);
+    static void convert_from_yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer);
+
 private:
     void _queue_buffer(int index);
     bool _set_streaming(bool enable);

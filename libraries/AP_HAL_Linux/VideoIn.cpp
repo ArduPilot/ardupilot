@@ -254,6 +254,48 @@ void VideoIn::prepare_capture()
     }
 }
 
+void VideoIn::crop_image_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer, uint32_t width,
+    uint32_t height, uint32_t cropLeft, uint32_t cropRight, uint32_t cropTop, uint32_t cropBottom)
+{
+    uint32_t i, new_buffer_position = 0, columnCount = 0, lineCount = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (columnCount == width) {
+            columnCount = 0;
+            lineCount++;
+        }
+
+        if (columnCount < cropLeft || columnCount >= (width - cropRight)) {
+            columnCount++;
+            continue;
+        }
+
+        if (lineCount < cropTop || lineCount >= (height - cropBottom)) {
+            columnCount++;
+            continue;
+        }
+
+        columnCount++;
+
+        new_buffer[new_buffer_position] = buffer[i];
+
+        new_buffer_position++;
+    }
+}
+
+void VideoIn::convert_from_yuyv_to_grey(uint8_t *buffer, uint32_t buffer_size, uint8_t *new_buffer)
+{
+    uint32_t i;
+    uint32_t new_buffer_position = 0;
+
+    for (i = 0; i < buffer_size; i++) {
+        if (i % 2 == 0) {
+            new_buffer[new_buffer_position] = buffer[i];
+            new_buffer_position++;
+        }
+    }
+}
+
 uint32_t VideoIn::_timeval_to_us(struct timeval& tv)
 {
     return (1.0e6 * tv.tv_sec + tv.tv_usec);
