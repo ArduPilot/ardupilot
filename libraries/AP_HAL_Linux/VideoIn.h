@@ -30,6 +30,7 @@ public:
     class Frame {
     friend class VideoIn;
     public:
+        uint32_t bytesused;
         uint32_t timestamp;
         uint32_t sequence;
         void *data;
@@ -37,6 +38,8 @@ public:
         uint32_t buf_index;
     };
 
+    int get_fd(void);
+    bool get_capabilities_flags(uint32_t *flags);
     bool get_frame(Frame &frame);
     void put_frame(Frame &frame);
     void set_device_path(const char* path);
