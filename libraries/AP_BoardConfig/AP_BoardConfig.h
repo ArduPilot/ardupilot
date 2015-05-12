@@ -27,6 +27,7 @@ private:
     AP_Int8 _ser2_rtscts;
     AP_Int8 _safety_enable;
     AP_Int8 _sbus_out_enable;
+    AP_Str8 _vehicle_name;
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 

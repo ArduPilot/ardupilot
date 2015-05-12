@@ -75,6 +75,12 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Enabling this option on a Pixhawk enables SBUS servo output from the SBUS output connector
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_enable, 0),
+
+    // @Param: VEHICLE_NAME
+    // @DisplayName:  A tag describing the current vehicle
+    // @Description: This tag is an identifier for the current vehicle, that will e.g. found in dataflash logs. Max length: 8 characters.
+    // @Values: String[8]
+    AP_GROUPINFO_STR("VEHICLE_NAME",   5, AP_BoardConfig, _vehicle_name, "12345678"),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
