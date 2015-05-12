@@ -12,22 +12,11 @@ typedef struct {
     char c;
 } prog_char_t;
 
-#undef PROGMEM
-#define PROGMEM __attribute__(( section(".progmem.data") ))
+typedef char prog_char;
 
 #undef PSTR
-/* need to define prog_char in avr-gcc 4.7 */
-#if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR__ > 6
-typedef char prog_char;
-#endif
-/* Need const type for progmem - new for avr-gcc 4.6 */
-#if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR__ > 5
 #define PSTR(s) (__extension__({static const prog_char __c[] PROGMEM = (s); \
                                   (const prog_char_t *)&__c[0]; }))
-#else
-#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
-                                  (prog_char_t *)&__c[0]; }))
-#endif
 
 
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
