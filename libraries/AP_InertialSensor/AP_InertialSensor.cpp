@@ -283,6 +283,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _have_3D_calibration(false),
     _calibrating(false),
     _startup_error_counts_set(false),
+    _startup_ms(0),
     _log_raw_data(false),
     _dataflash(NULL)
 {
@@ -1086,7 +1087,12 @@ void AP_InertialSensor::update(void)
                 _accel_startup_error_count[i] = _accel_error_count[i];
                 _gyro_startup_error_count[i] = _gyro_error_count[i];
             }
-            _startup_error_counts_set = true;
+
+            if (_startup_ms == 0) {
+                _startup_ms = hal.scheduler->millis();
+            } else if (hal.scheduler->millis()-_startup_ms > 2000) {
+                _startup_error_counts_set = true;
+            }
         }
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {

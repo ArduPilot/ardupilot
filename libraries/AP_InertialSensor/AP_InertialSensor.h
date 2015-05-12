@@ -336,6 +336,8 @@ private:
     uint32_t _accel_startup_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
+    uint32_t _startup_ms;
+
     DataFlash_Class *_dataflash;
 };
 
