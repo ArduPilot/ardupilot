@@ -393,9 +393,9 @@ static bool pre_arm_checks(bool display_failure)
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
-        if(!ins.calibrated()) {
+        if(!ins.accel_calibrated_ok_all()) {
             if (display_failure) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: INS not calibrated"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accels not calibrated"));
             }
             return false;
         }
