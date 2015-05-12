@@ -46,7 +46,7 @@
 #define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
 
 // declare a group var_info line of non-numeric type
-#define AP_GROUPINFO_STR(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), def}
+#define AP_GROUPINFO_STR(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), { def } }
 
 // declare a nested group entry in a group var_info
 #ifdef AP_NESTED_GROUPS_ENABLED
@@ -66,7 +66,7 @@ enum ap_var_type {
     AP_PARAM_VECTOR6F,
     AP_PARAM_MATRIX3F,
     AP_PARAM_GROUP,
-    AP_PARAM_STR8,
+    AP_PARAM_STR8
 };
 
 /// Base class for variables.
