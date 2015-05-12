@@ -56,7 +56,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
 
     // check throttle is at zero
     read_radio();
-    if (g.rc_3.control_in != 0) {
+    if (channel_throttle->control_in != 0) {
         gcs[chan-MAVLINK_COMM_0].send_text_P(SEVERITY_HIGH, PSTR("thr not zero"));
         ap.compass_mot = false;
         return 1;
@@ -146,7 +146,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         read_radio();
         
         // pass through throttle to motors
-        motors.throttle_pass_through(g.rc_3.radio_in);
+        motors.throttle_pass_through(channel_throttle->radio_in);
         
         // read some compass values
         compass.read();
@@ -155,7 +155,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         read_battery();
         
         // calculate scaling for throttle
-        throttle_pct = (float)g.rc_3.control_in / 1000.0f;
+        throttle_pct = (float)channel_throttle->control_in / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
         // if throttle is near zero, update base x,y,z values
@@ -218,7 +218,7 @@ static uint8_t mavlink_compassmot(mavlink_channel_t chan)
         if (hal.scheduler->millis() - last_send_time > 500) {
             last_send_time = hal.scheduler->millis();
             mavlink_msg_compassmot_status_send(chan, 
-                                               g.rc_3.control_in,
+                                               channel_throttle->control_in,
                                                battery.current_amps(),
                                                interference_pct[compass.get_primary()],
                                                motor_compensation[compass.get_primary()].x,

@@ -230,7 +230,7 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     // smooth throttle transition when switching from manual to automatic flight modes
     if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
-        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(g.rc_3.control_in));
+        set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->control_in));
     }
 
     // cancel any takeoffs in progress

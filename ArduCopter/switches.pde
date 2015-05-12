@@ -288,7 +288,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             break;
 
         case AUXSW_SAVE_TRIM:
-            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (g.rc_3.control_in == 0)) {
+            if ((ch_flag == AUX_SWITCH_HIGH) && (control_mode <= ACRO) && (channel_throttle->control_in == 0)) {
                 save_trim();
             }
             break;
@@ -332,7 +332,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 cmd.content.location = current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if(g.rc_3.control_in > 0) {
+                if(channel_throttle->control_in > 0) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 }else{
                     // with zero throttle, create LAND command
@@ -591,8 +591,8 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 static void save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)g.rc_1.control_in/100.0f);
-    float pitch_trim = ToRad((float)g.rc_2.control_in/100.0f);
+    float roll_trim = ToRad((float)channel_roll->control_in/100.0f);
+    float pitch_trim = ToRad((float)channel_pitch->control_in/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
     gcs_send_text_P(SEVERITY_HIGH, PSTR("Trim saved"));
@@ -609,10 +609,10 @@ static void auto_trim()
         AP_Notify::flags.save_trim = true;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)g.rc_1.control_in / 4000.0f);
+        float roll_trim_adjustment = ToRad((float)channel_roll->control_in / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)g.rc_2.control_in / 4000.0f);
+        float pitch_trim_adjustment = ToRad((float)channel_pitch->control_in / 4000.0f);
 
         // add trim to ahrs object
         // save to eeprom on last iteration
