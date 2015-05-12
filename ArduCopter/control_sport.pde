@@ -38,8 +38,8 @@ static void sport_run()
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
-    target_roll_rate = g.rc_1.control_in * g.acro_rp_p;
-    target_pitch_rate = g.rc_2.control_in * g.acro_rp_p;
+    target_roll_rate = channel_roll->control_in * g.acro_rp_p;
+    target_pitch_rate = channel_pitch->control_in * g.acro_rp_p;
 
     int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
     target_roll_rate -= constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
@@ -85,8 +85,8 @@ static void sport_run()
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
+        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
     }else{
 
         // call attitude controller

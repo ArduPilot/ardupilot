@@ -21,7 +21,7 @@ static void heli_init()
     motors.recalc_scalers();
 }
 
-// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the g.rc_3.servo_out function
+// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
 static int16_t get_pilot_desired_collective(int16_t control_in)
 {
     // return immediately if reduce collective range for manual flight has not been configured
@@ -56,7 +56,7 @@ static void check_dynamic_flight(void)
         moving = (velocity >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     }else{
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (g.rc_3.servo_out > 800 || ahrs.pitch_sensor < -1500);
+        moving = (channel_throttle->servo_out > 800 || ahrs.pitch_sensor < -1500);
     }
 
     if (moving) {

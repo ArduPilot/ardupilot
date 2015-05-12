@@ -5,30 +5,35 @@
 
 static void default_dead_zones()
 {
-    g.rc_1.set_default_dead_zone(30);
-    g.rc_2.set_default_dead_zone(30);
+    channel_roll->set_default_dead_zone(30);
+    channel_pitch->set_default_dead_zone(30);
 #if FRAME_CONFIG == HELI_FRAME
-    g.rc_3.set_default_dead_zone(10);
-    g.rc_4.set_default_dead_zone(15);
+    channel_throttle->set_default_dead_zone(10);
+    channel_yaw->set_default_dead_zone(15);
     g.rc_8.set_default_dead_zone(10);
 #else
-    g.rc_3.set_default_dead_zone(30);
-    g.rc_4.set_default_dead_zone(40);
+    channel_throttle->set_default_dead_zone(30);
+    channel_yaw->set_default_dead_zone(40);
 #endif
     g.rc_6.set_default_dead_zone(0);
 }
 
 static void init_rc_in()
 {
-    // set rc channel ranges
-    g.rc_1.set_angle(ROLL_PITCH_INPUT_MAX);
-    g.rc_2.set_angle(ROLL_PITCH_INPUT_MAX);
-    g.rc_3.set_range(g.throttle_min, THR_MAX);
-    g.rc_4.set_angle(4500);
+    channel_roll     = RC_Channel::rc_channel(rcmap.roll()-1);
+    channel_pitch    = RC_Channel::rc_channel(rcmap.pitch()-1);
+    channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
+    channel_yaw      = RC_Channel::rc_channel(rcmap.yaw()-1);
 
-    g.rc_1.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    g.rc_2.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
-    g.rc_4.set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    // set rc channel ranges
+    channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
+    channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
+    channel_yaw->set_angle(4500);
+    channel_throttle->set_range(g.throttle_min, THR_MAX);
+
+    channel_roll->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    channel_pitch->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
+    channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     //set auxiliary servo ranges
     g.rc_5.set_range(0,1000);
@@ -57,7 +62,7 @@ static void init_rc_out()
     }
 
     // we want the input to be scaled correctly
-    g.rc_3.set_range_out(0,1000);
+    channel_throttle->set_range_out(0,1000);
 
     // check if we should enter esc calibration mode
     esc_calibration_startup_check();
@@ -69,9 +74,8 @@ static void init_rc_out()
     }
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed. Note: this assumes rc_3 is
-    // throttle and should really use rcmap.
-    hal.rcout->set_esc_scaling(g.rc_3.radio_min, g.rc_3.radio_max);
+    // take a proportion of speed. 
+    hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
 }
 
 // enable_motor_output() - enable and output lowest possible value to motors
@@ -90,26 +94,10 @@ static void read_radio()
     if (hal.rcin->new_input()) {
         last_update_ms = tnow_ms;
         ap.new_radio_frame = true;
-        uint16_t periods[8];
-        hal.rcin->read(periods,8);
-        g.rc_1.set_pwm(periods[rcmap.roll()-1]);
-        g.rc_2.set_pwm(periods[rcmap.pitch()-1]);
+        RC_Channel::set_pwm_all();
 
-        set_throttle_and_failsafe(periods[rcmap.throttle()-1]);
-        set_throttle_zero_flag(g.rc_3.control_in);
-
-        g.rc_4.set_pwm(periods[rcmap.yaw()-1]);
-        g.rc_5.set_pwm(periods[4]);
-        g.rc_6.set_pwm(periods[5]);
-        g.rc_7.set_pwm(periods[6]);
-        g.rc_8.set_pwm(periods[7]);
-
-        // read channels 9 ~ 14
-        for (uint8_t i=8; i<RC_MAX_CHANNELS; i++) {
-            if (RC_Channel::rc_channel(i) != NULL) {
-                RC_Channel::rc_channel(i)->set_pwm(RC_Channel::rc_channel(i)->read());
-            }
-        }
+        set_throttle_and_failsafe(channel_throttle->radio_in);
+        set_throttle_zero_flag(channel_throttle->control_in);
 
         // flag we must have an rc receiver attached
         if (!failsafe.rc_override_active) {
@@ -134,7 +122,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
     if(g.failsafe_throttle == FS_THR_DISABLED) {
-        g.rc_3.set_pwm(throttle_pwm);
+        channel_throttle->set_pwm(throttle_pwm);
         return;
     }
 
@@ -143,7 +131,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
         if (failsafe.radio || !(ap.rc_receiver_present || motors.armed())) {
-            g.rc_3.set_pwm(throttle_pwm);
+            channel_throttle->set_pwm(throttle_pwm);
             return;
         }
 
@@ -153,7 +141,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
         if( failsafe.radio_counter >= FS_COUNTER ) {
             failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
             set_failsafe_radio(true);
-            g.rc_3.set_pwm(throttle_pwm);   // pass through failsafe throttle
+            channel_throttle->set_pwm(throttle_pwm);   // pass through failsafe throttle
         }
     }else{
         // we have a good throttle so reduce failsafe counter
@@ -167,7 +155,7 @@ static void set_throttle_and_failsafe(uint16_t throttle_pwm)
             }
         }
         // pass through throttle
-        g.rc_3.set_pwm(throttle_pwm);
+        channel_throttle->set_pwm(throttle_pwm);
     }
 }
 

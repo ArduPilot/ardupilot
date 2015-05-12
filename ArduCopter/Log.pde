@@ -216,7 +216,7 @@ static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 // Write a Current data packet
 static void Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, g.rc_3.servo_out);
+    DataFlash.Log_Write_Current(battery, channel_throttle->servo_out);
 
     // also write power status
     DataFlash.Log_Write_Power();
@@ -317,9 +317,9 @@ static void Log_Write_Control_Tuning()
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
         time_ms             : hal.scheduler->millis(),
-        throttle_in         : g.rc_3.control_in,
+        throttle_in         : channel_throttle->control_in,
         angle_boost         : attitude_control.angle_boost(),
-        throttle_out        : g.rc_3.servo_out,
+        throttle_out        : channel_throttle->servo_out,
         desired_alt         : pos_control.get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
