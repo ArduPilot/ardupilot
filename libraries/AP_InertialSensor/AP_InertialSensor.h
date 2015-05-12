@@ -89,12 +89,6 @@ public:
                          float& trim_pitch);
 #endif
 
-    /// calibrated - returns true if the accelerometers have been calibrated
-    ///
-    /// @note this should not be called while flying because it reads from the eeprom which can be slow
-    ///
-    bool calibrated() const;
-
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const { return _calibrating; }
 
@@ -160,6 +154,7 @@ public:
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
     bool get_accel_health_all(void) const;
     uint8_t get_accel_count(void) const { return _accel_count; };
+    bool accel_calibrated_ok_all() const;
 
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
@@ -244,9 +239,6 @@ private:
     void _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
-    // check if we have 3D accel calibration
-    void check_3D_calibration(void);
-
     // save parameters to eeprom
     void  _save_parameters();
 
@@ -304,9 +296,6 @@ private:
 
     // are we in HIL mode?
     bool _hil_mode:1;
-
-    // do we have offsets/scaling from a 3D calibration?
-    bool _have_3D_calibration:1;
 
     // are gyros or accels currently being calibrated
     bool _calibrating:1;

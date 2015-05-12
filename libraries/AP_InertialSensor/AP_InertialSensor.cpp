@@ -283,7 +283,6 @@ AP_InertialSensor::AP_InertialSensor() :
     _primary_gyro(0),
     _primary_accel(0),
     _hil_mode(false),
-    _have_3D_calibration(false),
     _calibrating(false),
     _log_raw_data(false),
     _dataflash(NULL)
@@ -342,10 +341,6 @@ AP_InertialSensor::init( Start_style style,
             _accel_scale[i].set(Vector3f(1,1,1));
         }
     }
-
-    // remember whether we have 3D calibration so this can be used for
-    // AHRS health
-    check_3D_calibration();
 
     if (WARM_START != style) {
         // do cold-start calibration for gyro only
@@ -575,9 +570,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             _accel_offset[k].set(new_offsets[k]);
             _accel_scale[k].set(new_scaling[k]);
         }
+        for (uint8_t k=num_accels; k<INS_MAX_INSTANCES; k++) {
+            // clear unused accelerometer's scaling and offsets
+            _accel_offset[k] = Vector3f(0,0,0);
+            _accel_scale[k] = Vector3f(0,0,0);
+        }
         _save_parameters();
-
-        check_3D_calibration();
 
         /*
           calculate the trims as well from primary accels 
@@ -606,39 +604,6 @@ failed:
     return false;
 }
 #endif
-
-/*
-  check if the accelerometers are calibrated in 3D. Called on startup
-  and any accel cal
- */
-void AP_InertialSensor::check_3D_calibration()
-{
-    _have_3D_calibration = false;
-    // check each accelerometer has offsets saved
-    for (uint8_t i=0; i<get_accel_count(); i++) {
-        // exactly 0.0 offset is extremely unlikely
-        if (_accel_offset[i].get().is_zero()) {
-            return;
-        }
-        // exactly 1.0 scaling is extremely unlikely
-        const Vector3f &scaling = _accel_scale[i].get();
-        if (fabsf(scaling.x - 1.0f) < 0.00001f &&
-            fabsf(scaling.y - 1.0f) < 0.00001f &&
-            fabsf(scaling.z - 1.0f) < 0.00001f) {
-            return;
-        }
-    }
-    // if we got this far the accelerometers must have been calibrated
-    _have_3D_calibration = true;
-}
-
-/*
-  return true if we have 3D calibration values
- */
-bool AP_InertialSensor::calibrated() const
-{
-    return _have_3D_calibration;
-}
 
 void
 AP_InertialSensor::init_gyro()
@@ -682,6 +647,44 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     }
     // return true if we have at least one accel
     return (get_accel_count() > 0);
+}
+
+/*
+  check if the accelerometers are calibrated in 3D and that current number of accels matched number when calibrated
+ */
+bool AP_InertialSensor::accel_calibrated_ok_all() const
+{
+    // check each accelerometer has offsets saved
+    for (uint8_t i=0; i<get_accel_count(); i++) {
+        // exactly 0.0 offset is extremely unlikely
+        if (_accel_offset[i].get().is_zero()) {
+            return false;
+        }
+        // exactly 1.0 scaling is extremely unlikely
+        const Vector3f &scaling = _accel_scale[i].get();
+        if (is_equal(scaling.x,1.0f) && is_equal(scaling.y,1.0f) && is_equal(scaling.z,1.0f)) {
+            return false;
+        }
+        // zero scaling also indicates not calibrated
+        if (_accel_scale[i].get().is_zero()) {
+            return false;
+        }
+    }
+
+    // check calibrated accels matches number of accels (no unused accels should have offsets or scaling)
+    if (get_accel_count() < INS_MAX_INSTANCES) {
+        for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
+            const Vector3f &scaling = _accel_scale[i].get();
+            bool have_scaling = (!is_zero(scaling.x) && !is_equal(scaling.x,1.0f)) || (!is_zero(scaling.y) && !is_equal(scaling.y,1.0f)) || (!is_zero(scaling.z) && !is_equal(scaling.z,1.0f));
+            bool have_offsets = !_accel_offset[i].get().is_zero();
+            if (have_scaling || have_offsets) {
+                return false;
+            }
+        }
+    }
+
+    // if we got this far the accelerometers must have been calibrated
+    return true;
 }
 
 void
