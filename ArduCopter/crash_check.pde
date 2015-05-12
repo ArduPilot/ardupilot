@@ -176,8 +176,18 @@ static void parachute_manual_release()
         return;
     }
 
+    // do not release if vehicle is landed
     // do not release if we are landed or below the minimum altitude above home
-    if (ap.land_complete || (parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100))) {
+    if (ap.land_complete) {
+        // warn user of reason for failure
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Landed"));
+        // log an error in the dataflash
+        Log_Write_Error(ERROR_SUBSYSTEM_PARACHUTE, ERROR_CODE_PARACHUTE_LANDED);
+        return;
+    }
+
+    // do not release if we are landed or below the minimum altitude above home
+    if ((parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100))) {
         // warn user of reason for failure
         gcs_send_text_P(SEVERITY_HIGH,PSTR("Parachute: Too Low"));
         // log an error in the dataflash
