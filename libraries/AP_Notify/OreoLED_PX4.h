@@ -53,14 +53,18 @@ private:
     // set_rgb - set color as a combination of red, green and blue values for one or all LEDs
     void set_rgb(uint8_t instance, uint8_t red, uint8_t green, uint8_t blue);
 
-    // set_macrxo - set macro for one or all LEDs
+    // set_macro - set macro for one or all LEDs
     void set_macro(uint8_t instance, enum oreoled_macro macro);
+
+    // send_sync - force a syncronisation of the LEDs
+    void send_sync(void);
 
     // oreo led modes (pattern, macro or rgb)
     enum oreoled_mode {
         OREOLED_MODE_PATTERN,
         OREOLED_MODE_MACRO,
-        OREOLED_MODE_RGB
+        OREOLED_MODE_RGB,
+        OREOLED_MODE_SYNC
     };
 
     // oreo_state structure holds possible state of an led

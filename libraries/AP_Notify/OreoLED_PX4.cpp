@@ -89,6 +89,8 @@ void OreoLED_PX4::update()
 
     // handle firmware update event
     if (AP_Notify::flags.firmware_update) {
+        // Force a syncronisation before setting the free-running colour cycle macro
+        send_sync();
         set_macro(OREOLED_INSTANCE_ALL, OREOLED_PARAM_MACRO_COLOUR_CYCLE);
         return;
     }
@@ -290,6 +292,28 @@ void OreoLED_PX4::set_macro(uint8_t instance, oreoled_macro macro)
     _state_desired_semaphore = false;
 }
 
+// set_macro - set macro for one or all LEDs
+void OreoLED_PX4::send_sync(void)
+{
+    // return immediately if no healthy leds
+    if (!_overall_health) {
+        return;
+    }
+
+    // set semaphore
+    _state_desired_semaphore = true;
+
+    for (uint8_t i=0; i<OREOLED_NUM_LEDS; i++) {
+        if (_state_desired[i].mode != OREOLED_MODE_SYNC) {
+            _state_desired[i].mode = OREOLED_MODE_SYNC;
+            _send_required = true;
+        }
+    }  
+
+    // release semaphore
+    _state_desired_semaphore = false;
+}
+
 // update_timer - called by scheduler and updates PX4 driver with commands
 void OreoLED_PX4::update_timer(void)
 {
@@ -322,6 +346,11 @@ void OreoLED_PX4::update_timer(void)
                     {
                     oreoled_rgbset_t rgb_set = {i, OREOLED_PATTERN_SOLID, _state_desired[i].red, _state_desired[i].green, _state_desired[i].blue};
                     ioctl(_oreoled_fd, OREOLED_SET_RGB, (unsigned long)&rgb_set);
+                    }
+                    break;
+                case OREOLED_MODE_SYNC:
+                    {
+                    ioctl(_oreoled_fd, OREOLED_FORCE_SYNC, 0);
                     }
                     break;
             }
