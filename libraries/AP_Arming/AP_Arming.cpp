@@ -155,7 +155,7 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        if (!ins.calibrated()) {
+        if (!ins.accel_calibrated_ok_all()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: 3D accel cal needed"));
             }
