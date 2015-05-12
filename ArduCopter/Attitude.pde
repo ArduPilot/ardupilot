@@ -94,7 +94,7 @@ static void update_thr_average()
     }
 
     // get throttle output
-    int16_t throttle = g.rc_3.servo_out;
+    int16_t throttle = channel_throttle->servo_out;
 
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
@@ -122,7 +122,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
     int16_t throttle_out;
 
-    int16_t mid_stick = g.rc_3.get_control_mid();
+    int16_t mid_stick = channel_throttle->get_control_mid();
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);

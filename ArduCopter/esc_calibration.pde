@@ -31,7 +31,7 @@ static void esc_calibration_startup_check()
     switch (g.esc_calibrate) {
         case ESCCAL_NONE:
             // check if throttle is high
-            if (g.rc_3.control_in >= ESC_CALIBRATION_HIGH_THROTTLE) {
+            if (channel_throttle->control_in >= ESC_CALIBRATION_HIGH_THROTTLE) {
                 // we will enter esc_calibrate mode on next reboot
                 g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
                 // send message to gcs
@@ -44,7 +44,7 @@ static void esc_calibration_startup_check()
             break;
         case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
             // check if throttle is high
-            if (g.rc_3.control_in >= ESC_CALIBRATION_HIGH_THROTTLE) {
+            if (channel_throttle->control_in >= ESC_CALIBRATION_HIGH_THROTTLE) {
                 // pass through pilot throttle to escs
                 esc_calibration_passthrough();
             }
@@ -90,7 +90,7 @@ static void esc_calibration_passthrough()
         delay(10);
 
         // pass through to motors
-        motors.throttle_pass_through(g.rc_3.radio_in);
+        motors.throttle_pass_through(channel_throttle->radio_in);
     }
 }
 
@@ -114,7 +114,7 @@ static void esc_calibration_auto()
 
     // raise throttle to maximum
     delay(10);
-    motors.throttle_pass_through(g.rc_3.radio_max);
+    motors.throttle_pass_through(channel_throttle->radio_max);
 
     // wait for safety switch to be pressed
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
@@ -129,7 +129,7 @@ static void esc_calibration_auto()
     delay(5000);
 
     // reduce throttle to minimum
-    motors.throttle_pass_through(g.rc_3.radio_min);
+    motors.throttle_pass_through(channel_throttle->radio_min);
 
     // clear esc parameter
     g.esc_calibrate.set_and_save(ESCCAL_NONE);

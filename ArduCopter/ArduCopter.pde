@@ -210,6 +210,12 @@ static uint8_t command_ack_counter;
 // has a log download started?
 static bool in_log_download;
 
+// primary input control channels
+static RC_Channel *channel_roll;
+static RC_Channel *channel_pitch;
+static RC_Channel *channel_throttle;
+static RC_Channel *channel_yaw;
+
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 ////////////////////////////////////////////////////////////////////////////////
@@ -422,15 +428,15 @@ static struct {
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.rc_7, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.rc_7, MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == COAX_FRAME  // single constructor requires extra servos for flaps
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE);
 #else
-static MOTOR_CLASS motors(g.rc_1, g.rc_2, g.rc_3, g.rc_4, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, MAIN_LOOP_RATE);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -949,7 +955,7 @@ static void update_batt_compass(void)
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle((float)g.rc_3.servo_out/1000.0f);
+        compass.set_throttle((float)channel_throttle->servo_out/1000.0f);
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS)) {
@@ -1157,17 +1163,17 @@ void update_simple_mode(void)
 
     if (ap.simple_mode == 1) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = g.rc_1.control_in*simple_cos_yaw - g.rc_2.control_in*simple_sin_yaw;
-        pitchx = g.rc_1.control_in*simple_sin_yaw + g.rc_2.control_in*simple_cos_yaw;
+        rollx = channel_roll->control_in*simple_cos_yaw - channel_pitch->control_in*simple_sin_yaw;
+        pitchx = channel_roll->control_in*simple_sin_yaw + channel_pitch->control_in*simple_cos_yaw;
     }else{
         // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = g.rc_1.control_in*super_simple_cos_yaw - g.rc_2.control_in*super_simple_sin_yaw;
-        pitchx = g.rc_1.control_in*super_simple_sin_yaw + g.rc_2.control_in*super_simple_cos_yaw;
+        rollx = channel_roll->control_in*super_simple_cos_yaw - channel_pitch->control_in*super_simple_sin_yaw;
+        pitchx = channel_roll->control_in*super_simple_sin_yaw + channel_pitch->control_in*super_simple_cos_yaw;
     }
 
     // rotate roll, pitch input from north facing to vehicle's perspective
-    g.rc_1.control_in = rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw();
-    g.rc_2.control_in = -rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw();
+    channel_roll->control_in = rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw();
+    channel_pitch->control_in = -rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw();
 }
 
 // update_super_simple_bearing - adjusts simple bearing based on location

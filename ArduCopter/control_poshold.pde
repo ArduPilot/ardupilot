@@ -146,7 +146,7 @@ static void poshold_run()
     if(!ap.auto_armed || !motors.get_interlock()) {
         wp_nav.init_loiter_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
     }
 
@@ -187,12 +187,12 @@ static void poshold_run()
     if (ap.land_complete) {
         wp_nav.init_loiter_target();
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
+        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
     }else{
         // convert pilot input to lean angles
-        get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+        get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
 
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
