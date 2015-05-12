@@ -38,6 +38,8 @@ datagram(_datagram)
 {
     fd = socket(AF_INET, datagram?SOCK_DGRAM:SOCK_STREAM, 0);
     fcntl(fd, F_SETFD, FD_CLOEXEC);
+    int one = 1;
+    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 }
 
 /*
