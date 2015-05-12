@@ -224,7 +224,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
-    if (ahrs.have_inertial_nav() && !ins.calibrated()) {
+    if (ahrs.have_inertial_nav() && !ins.accel_calibrated_ok_all()) {
         // trying to use EKF without properly calibrated accelerometers
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
