@@ -26,15 +26,13 @@ class AP_Gimbal
 {
 public:
     //Constructor
-    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, uint8_t compid, const AP_Mount::gimbal_params &gimbalParams) :
+    AP_Gimbal(const AP_AHRS_NavEKF &ahrs) :
         _ekf(ahrs),
         _ahrs(ahrs),
-        _gimbalParams(gimbalParams),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
         yawErrorLimit(0.1f)
     {
-        _compid = compid;
     }
 
     void    update_target(Vector3f newTarget);
@@ -55,7 +53,7 @@ public:
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 
 private:
-    const AP_Mount::gimbal_params &_gimbalParams;
+    
 
     // filtered yaw rate from the vehicle
     float vehicleYawRateFilt;
@@ -70,7 +68,7 @@ private:
     // reducing this makes the gimbal respond more to vehicle yaw disturbances
     float const yawErrorLimit;
 
-    uint8_t _compid;
+    static const uint8_t _compid = MAV_COMP_ID_GIMBAL;
 
     void send_control(mavlink_channel_t chan);
     void update_state();
