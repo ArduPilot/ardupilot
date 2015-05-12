@@ -1,15 +1,15 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 // forward declarations to make compiler happy
-static void do_nav_wp(const AP_Mission::Mission_Command& cmd);
-static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-static void do_within_distance(const AP_Mission::Mission_Command& cmd);
-static void do_change_speed(const AP_Mission::Mission_Command& cmd);
-static void do_set_home(const AP_Mission::Mission_Command& cmd);
-static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd);
+void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd);
+void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd);
+void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd);
+void Rover::do_set_home(const AP_Mission::Mission_Command& cmd);
+bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd);
 #if CAMERA == ENABLED
-static void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-static void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd);
+void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd);
 #endif
 
 /********************************************************************************/
@@ -125,7 +125,7 @@ start_command(const AP_Mission::Mission_Command& cmd)
 
 // exit_mission - callback function called from ap-mission when the mission has completed
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-static void exit_mission()
+void Rover::exit_mission()
 {
     if (control_mode == AUTO) {
         gcs_send_text_fmt(PSTR("No commands. Can't set AUTO - setting HOLD"));
@@ -138,7 +138,7 @@ static void exit_mission()
 //      Returns true if command complete
 /********************************************************************************/
 
-static bool verify_command(const AP_Mission::Mission_Command& cmd)
+bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     // exit immediately if not in AUTO mode
     // we return true or we will continue to be called by ap-mission
@@ -178,14 +178,14 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)
 //  Nav (Must) commands
 /********************************************************************************/
 
-static void do_RTL(void)
+void Rover::do_RTL(void)
 {
     prev_WP = current_loc;
 	control_mode 	= RTL;
 	next_WP = home;
 }
 
-static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
+void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
 	set_next_WP(cmd.content.location);
 }
@@ -193,7 +193,7 @@ static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
-static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
+bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
         gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
@@ -213,7 +213,7 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-static bool verify_RTL()
+bool Rover::verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
 		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached Destination"));
@@ -236,13 +236,13 @@ static bool verify_RTL()
 //  Condition (May) commands
 /********************************************************************************/
 
-static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
+void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
 	condition_start = millis();
 	condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
-static void do_within_distance(const AP_Mission::Mission_Command& cmd)
+void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
 	condition_value  = cmd.content.distance.meters;
 }
@@ -251,7 +251,7 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 // Verify Condition (May) commands
 /********************************************************************************/
 
-static bool verify_wait_delay()
+bool Rover::verify_wait_delay()
 {
 	if ((uint32_t)(millis() - condition_start) > (uint32_t)condition_value){
 		condition_value 	= 0;
@@ -260,7 +260,7 @@ static bool verify_wait_delay()
 	return false;
 }
 
-static bool verify_within_distance()
+bool Rover::verify_within_distance()
 {
 	if (wp_distance < condition_value){
 		condition_value = 0;
@@ -273,7 +273,7 @@ static bool verify_within_distance()
 //  Do (Now) commands
 /********************************************************************************/
 
-static void do_change_speed(const AP_Mission::Mission_Command& cmd)
+void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
 	switch (cmd.p1)
 	{
@@ -291,7 +291,7 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-static void do_set_home(const AP_Mission::Mission_Command& cmd)
+void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
 	if(cmd.p1 == 1 && have_position) {
 		init_home();
@@ -302,7 +302,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_digicam_configure Send Digicam Configure message with the camera library
-static void do_digicam_configure(const AP_Mission::Mission_Command& cmd)
+void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
     camera.configure_cmd(cmd);
@@ -310,7 +310,7 @@ static void do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
-static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
+void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
     camera.control_cmd(cmd);
@@ -319,7 +319,7 @@ static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_take_picture - take a picture with the camera library
-static void do_take_picture()
+void Rover::do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic(true);
@@ -328,7 +328,7 @@ static void do_take_picture()
 }
 
 // log_picture - log picture taken and send feedback to GCS
-static void log_picture()
+void Rover::log_picture()
 {
     gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {

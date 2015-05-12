@@ -2,7 +2,7 @@
 
 // called by update navigation at 10Hz
 // --------------------
-static void update_commands(void)
+void Rover::update_commands(void)
 {
     if(control_mode == AUTO) {
         if(home_is_set == true && mission.num_commands() > 1) {

@@ -160,7 +160,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 #endif // CLI_ENABLED == ENABLED
 
-static void do_erase_logs(void)
+void Rover::do_erase_logs(void)
 {
 	cliSerial->printf_P(PSTR("\nErasing log...\n"));
     DataFlash.EraseAll();
@@ -182,7 +182,7 @@ struct PACKED log_Performance {
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
-static void Log_Write_Performance()
+void Rover::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
@@ -200,7 +200,7 @@ static void Log_Write_Performance()
 }
 
 // Write a mission command. Total length : 36 bytes
-static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
+void Rover::Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
@@ -215,7 +215,7 @@ struct PACKED log_Steering {
 };
 
 // Write a steering packet
-static void Log_Write_Steering()
+void Rover::Log_Write_Steering()
 {
     struct log_Steering pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
@@ -233,7 +233,7 @@ struct PACKED log_Startup {
     uint16_t command_total;
 };
 
-static void Log_Write_Startup(uint8_t type)
+void Rover::Log_Write_Startup(uint8_t type)
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
@@ -247,7 +247,7 @@ static void Log_Write_Startup(uint8_t type)
     Log_Write_EntireMission();
 }
 
-static void Log_Write_EntireMission()
+void Rover::Log_Write_EntireMission()
 {
     DataFlash.Log_Write_Message_P(PSTR("New mission"));
 
@@ -270,7 +270,7 @@ struct PACKED log_Control_Tuning {
 };
 
 // Write a control tuning packet. Total length : 22 bytes
-static void Log_Write_Control_Tuning()
+void Rover::Log_Write_Control_Tuning()
 {
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
@@ -296,7 +296,7 @@ struct PACKED log_Nav_Tuning {
 };
 
 // Write a navigation tuning packet. Total length : 18 bytes
-static void Log_Write_Nav_Tuning()
+void Rover::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
@@ -311,7 +311,7 @@ static void Log_Write_Nav_Tuning()
 }
 
 // Write an attitude packet
-static void Log_Write_Attitude()
+void Rover::Log_Write_Attitude()
 {
     Vector3f targets(0,0,0);       // Rover does not have attitude targets, use place-holder for commonality with Dataflash Log_Write_Attitude message
 
@@ -342,7 +342,7 @@ struct PACKED log_Sonar {
 };
 
 // Write a sonar packet
-static void Log_Write_Sonar()
+void Rover::Log_Write_Sonar()
 {
     uint16_t turn_time = 0;
     if (!is_zero(obstacle.turn_angle)) {
@@ -363,7 +363,7 @@ static void Log_Write_Sonar()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-static void Log_Write_Current()
+void Rover::Log_Write_Current()
 {
     DataFlash.Log_Write_Current(battery, channel_throttle->control_in);
 
@@ -371,13 +371,13 @@ static void Log_Write_Current()
     DataFlash.Log_Write_Power();
 }
 
-static void Log_Write_RC(void)
+void Rover::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
     DataFlash.Log_Write_RCOUT();
 }
 
-static void Log_Write_Baro(void)
+void Rover::Log_Write_Baro(void)
 {
     DataFlash.Log_Write_Baro(barometer);
 }
@@ -401,7 +401,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
 
 #if CLI_ENABLED == ENABLED
 // Read the DataFlash log memory : Packet Parser
-static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
+void Rover::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
@@ -416,7 +416,7 @@ static void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 #endif // CLI_ENABLED
 
 // start a new log
-static void start_logging() 
+void Rover::start_logging() 
 {
     in_mavlink_delay = true;
     DataFlash.StartNewLog();
@@ -437,18 +437,18 @@ static void start_logging()
 #else // LOGGING_ENABLED
 
 // dummy functions
-static void Log_Write_Startup(uint8_t type) {}
-static void Log_Write_EntireMission() {}
-static void Log_Write_Current() {}
-static void Log_Write_Nav_Tuning() {}
-static void Log_Write_Performance() {}
-static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
-static int8_t process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
-static void Log_Write_Control_Tuning() {}
-static void Log_Write_Sonar() {}
-static void Log_Write_Attitude() {}
-static void start_logging() {}
-static void Log_Write_RC(void) {}
+void Rover::Log_Write_Startup(uint8_t type) {}
+void Rover::Log_Write_EntireMission() {}
+void Rover::Log_Write_Current() {}
+void Rover::Log_Write_Nav_Tuning() {}
+void Rover::Log_Write_Performance() {}
+void Rover::Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
+int8_t Rover::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+void Rover::Log_Write_Control_Tuning() {}
+void Rover::Log_Write_Sonar() {}
+void Rover::Log_Write_Attitude() {}
+void Rover::start_logging() {}
+void Rover::Log_Write_RC(void) {}
 
 #endif // LOGGING_ENABLED
 

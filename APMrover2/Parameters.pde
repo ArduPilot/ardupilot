@@ -550,7 +550,7 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
 };
 
-static void load_parameters(void)
+void Rover::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf_P(PSTR("Bad var table\n"));        

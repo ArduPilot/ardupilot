@@ -17,11 +17,11 @@ static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
 static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
 static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
+int8_t Rover::  test_shell(uint8_t argc,              const Menu::arg *argv);
 #endif
 
 // forward declaration to keep the compiler happy
-static void test_wp_print(const AP_Mission::Mission_Command& cmd);
+void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd);
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
@@ -59,7 +59,7 @@ test_mode(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static void print_hit_enter()
+void Rover::print_hit_enter()
 {
 	cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }

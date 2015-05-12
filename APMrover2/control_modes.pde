@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void read_control_switch()
+void Rover::read_control_switch()
 {
 	
 	uint8_t switchPosition = readSwitch();
@@ -35,7 +35,7 @@ static void read_control_switch()
 
 }
 
-static uint8_t readSwitch(void){
+uint8_t Rover::readSwitch(void){
     uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
 	if (pulsewidth <= 900 || pulsewidth >= 2200) 	return 255;	// This is an error condition
 	if (pulsewidth > 1230 && pulsewidth <= 1360) 	return 1;
@@ -46,7 +46,7 @@ static uint8_t readSwitch(void){
 	return 0;
 }
 
-static void reset_control_switch()
+void Rover::reset_control_switch()
 {
 	oldSwitchPosition = 0;
 	read_control_switch();
@@ -56,7 +56,7 @@ static void reset_control_switch()
 
 // read at 10 hz
 // set this to your trainer switch
-static void read_trim_switch()
+void Rover::read_trim_switch()
 {
     switch ((enum ch7_option)g.ch7_option.get()) {
     case CH7_DO_NOTHING:

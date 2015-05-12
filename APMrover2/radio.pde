@@ -3,7 +3,7 @@
 /*
   allow for runtime change of control channel ordering
  */
-static void set_control_channels(void)
+void Rover::set_control_channels(void)
 {
     channel_steer    = RC_Channel::rc_channel(rcmap.roll()-1);
     channel_throttle = RC_Channel::rc_channel(rcmap.throttle()-1);
@@ -18,7 +18,7 @@ static void set_control_channels(void)
     hal.rcout->set_esc_scaling(channel_throttle->radio_min, channel_throttle->radio_max);
 }
 
-static void init_rc_in()
+void Rover::init_rc_in()
 {
 	// set rc dead zones
 	channel_steer->set_default_dead_zone(30);
@@ -28,7 +28,7 @@ static void init_rc_in()
     update_aux();
 }
 
-static void init_rc_out()
+void Rover::init_rc_out()
 {
     RC_Channel::rc_channel(CH_1)->enable_out();
     RC_Channel::rc_channel(CH_3)->enable_out();
@@ -38,7 +38,7 @@ static void init_rc_out()
     RC_Channel::setup_failsafe_trim_all();  
 }
 
-static void read_radio()
+void Rover::read_radio()
 {
     if (!hal.rcin->new_input()) {
         control_failsafe(channel_throttle->radio_in);
@@ -90,7 +90,7 @@ static void read_radio()
     }
 }
 
-static void control_failsafe(uint16_t pwm)
+void Rover::control_failsafe(uint16_t pwm)
 {
 	if (!g.fs_throttle_enabled) {
         // no throttle failsafe
@@ -109,7 +109,7 @@ static void control_failsafe(uint16_t pwm)
 	}
 }
 
-static void trim_control_surfaces()
+void Rover::trim_control_surfaces()
 {
 	read_radio();
 	// Store control surface trim values
@@ -121,7 +121,7 @@ static void trim_control_surfaces()
     }
 }
 
-static void trim_radio()
+void Rover::trim_radio()
 {
 	for (int y = 0; y < 30; y++) {
 		read_radio();

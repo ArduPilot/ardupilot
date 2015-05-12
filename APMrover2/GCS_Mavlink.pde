@@ -4,7 +4,7 @@
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
 // use this to prevent recursion during sensor init
-static bool in_mavlink_delay;
+bool Rover::in_mavlink_delay;
 
 // true if we are out of time in our event timeslice
 static bool	gcs_out_of_time;
@@ -12,17 +12,7 @@ static bool	gcs_out_of_time;
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_## id ##_LEN) return false
 
-/*
- *  !!NOTE!!
- *
- *  the use of NOINLINE separate functions for each message type avoids
- *  a compiler bug in gcc that would cause it to use far more stack
- *  space than is needed. Without the NOINLINE we use the sum of the
- *  stack needed for each message type. Please be careful to follow the
- *  pattern below when adding any new messages
- */
-
-static NOINLINE void send_heartbeat(mavlink_channel_t chan)
+void Rover::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     uint8_t system_status = MAV_STATE_ACTIVE;
@@ -91,7 +81,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
         system_status);
 }
 
-static NOINLINE void send_attitude(mavlink_channel_t chan)
+void Rover::send_attitude(mavlink_channel_t chan)
 {
     Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
@@ -105,7 +95,7 @@ static NOINLINE void send_attitude(mavlink_channel_t chan)
         omega.z);
 }
 
-static NOINLINE void send_extended_status1(mavlink_channel_t chan)
+void Rover::send_extended_status1(mavlink_channel_t chan)
 {
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
@@ -203,7 +193,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
 
 }
 
-static void NOINLINE send_location(mavlink_channel_t chan)
+void Rover:: send_location(mavlink_channel_t chan)
 {
     uint32_t fix_time;
     // if we have a GPS fix, take the time as the last fix time. That
@@ -230,7 +220,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         ahrs.yaw_sensor);
 }
 
-static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
+void Rover:: send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
         chan,
@@ -244,7 +234,7 @@ static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-static void NOINLINE send_servo_out(mavlink_channel_t chan)
+void Rover:: send_servo_out(mavlink_channel_t chan)
 {
 #if HIL_MODE != HIL_MODE_DISABLED
     // normalized values scaled to -10000 to 10000
@@ -266,7 +256,7 @@ static void NOINLINE send_servo_out(mavlink_channel_t chan)
 #endif
 }
 
-static void NOINLINE send_radio_out(mavlink_channel_t chan)
+void Rover:: send_radio_out(mavlink_channel_t chan)
 {
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
     mavlink_msg_servo_output_raw_send(
@@ -297,7 +287,7 @@ static void NOINLINE send_radio_out(mavlink_channel_t chan)
 #endif
 }
 
-static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
+void Rover:: send_vfr_hud(mavlink_channel_t chan)
 {
     mavlink_msg_vfr_hud_send(
         chan,
@@ -310,14 +300,14 @@ static void NOINLINE send_vfr_hud(mavlink_channel_t chan)
 }
 
 // report simulator state
-static void NOINLINE send_simstate(mavlink_channel_t chan)
+void Rover:: send_simstate(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.simstate_send(chan);
 #endif
 }
 
-static void NOINLINE send_hwstatus(mavlink_channel_t chan)
+void Rover:: send_hwstatus(mavlink_channel_t chan)
 {
     mavlink_msg_hwstatus_send(
         chan,
@@ -325,7 +315,7 @@ static void NOINLINE send_hwstatus(mavlink_channel_t chan)
         hal.i2c->lockup_count());
 }
 
-static void NOINLINE send_rangefinder(mavlink_channel_t chan)
+void Rover:: send_rangefinder(mavlink_channel_t chan)
 {
     if (!sonar.has_data(0) && !sonar.has_data(1)) {
         // no sonar to report
@@ -364,12 +354,12 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
         voltage);
 }
 
-static void NOINLINE send_current_waypoint(mavlink_channel_t chan)
+void Rover:: send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
 }
 
-static void NOINLINE send_statustext(mavlink_channel_t chan)
+void Rover:: send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
     mavlink_msg_statustext_send(
@@ -379,7 +369,7 @@ static void NOINLINE send_statustext(mavlink_channel_t chan)
 }
 
 // are we still delaying telemetry to try to avoid Xbee bricking?
-static bool telemetry_delayed(mavlink_channel_t chan)
+bool Rover::telemetry_delayed(mavlink_channel_t chan)
 {
     uint32_t tnow = millis() >> 10;
     if (tnow > (uint32_t)g.telem_delay) {
@@ -1241,9 +1231,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
  *  MAVLink to process packets while waiting for the initialisation to
  *  complete
  */
-static void mavlink_delay_cb()
+void Rover::mavlink_delay_cb()
 {
-    static uint32_t last_1hz, last_50hz, last_5s;
+    uint32_t Rover::last_1hz, last_50hz, last_5s;
     if (!gcs[0].initialised || in_mavlink_delay) return;
 
     in_mavlink_delay = true;
@@ -1272,7 +1262,7 @@ static void mavlink_delay_cb()
 /*
  *  send a message on both GCS links
  */
-static void gcs_send_message(enum ap_message id)
+void Rover::gcs_send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1284,7 +1274,7 @@ static void gcs_send_message(enum ap_message id)
 /*
  *  send data streams in the given rate range on both links
  */
-static void gcs_data_stream_send(void)
+void Rover::gcs_data_stream_send(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1296,7 +1286,7 @@ static void gcs_data_stream_send(void)
 /*
  *  look for incoming commands on the GCS links
  */
-static void gcs_update(void)
+void Rover::gcs_update(void)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1309,7 +1299,7 @@ static void gcs_update(void)
     }
 }
 
-static void gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+void Rover::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1350,7 +1340,7 @@ void gcs_send_text_fmt(const prog_char_t *fmt, ...)
 /**
    retry any deferred messages
  */
-static void gcs_retry_deferred(void)
+void Rover::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
 }

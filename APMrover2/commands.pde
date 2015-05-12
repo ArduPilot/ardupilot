@@ -12,7 +12,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-static void set_next_WP(const struct Location& loc)
+void Rover::set_next_WP(const struct Location& loc)
 {
 	// copy the current WP into the OldWP slot
 	// ---------------------------------------
@@ -37,7 +37,7 @@ static void set_next_WP(const struct Location& loc)
 	wp_distance 		= wp_totalDistance;
 }
 
-static void set_guided_WP(void)
+void Rover::set_guided_WP(void)
 {
 	// copy the current location into the OldWP slot
 	// ---------------------------------------
@@ -78,7 +78,7 @@ void init_home()
 	guided_WP = home;
 }
 
-static void restart_nav()
+void Rover::restart_nav()
 {  
     g.pidSpeedThrottle.reset_I();
     prev_WP = current_loc;

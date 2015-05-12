@@ -3,7 +3,7 @@
 /*****************************************
 * Throttle slew limit
 *****************************************/
-static void throttle_slew_limit(int16_t last_throttle)
+void Rover::throttle_slew_limit(int16_t last_throttle)
 {
     // if slew limit rate is set to zero then do not slew limit
     if (g.throttle_slewrate && last_throttle != 0) {                   
@@ -20,7 +20,7 @@ static void throttle_slew_limit(int16_t last_throttle)
 /*
   check for triggering of start of auto mode
  */
-static bool auto_check_trigger(void)
+bool Rover::auto_check_trigger(void)
 {
     // only applies to AUTO mode
     if (control_mode != AUTO) {
@@ -67,7 +67,7 @@ static bool auto_check_trigger(void)
 /*
   work out if we are going to use pivot steering
  */
-static bool use_pivot_steering(void)
+bool Rover::use_pivot_steering(void)
 {
     if (control_mode >= AUTO && g.skid_steer_out && g.pivot_turn_angle != 0) {
         int16_t bearing_error = wrap_180_cd(nav_controller->target_bearing_cd() - ahrs.yaw_sensor) / 100;
@@ -82,7 +82,7 @@ static bool use_pivot_steering(void)
 /*
   calculate the throtte for auto-throttle modes
  */
-static void calc_throttle(float target_speed)
+void Rover::calc_throttle(float target_speed)
 {  
     if (!auto_check_trigger()) {
         channel_throttle->servo_out = g.throttle_min.get();
@@ -158,7 +158,7 @@ static void calc_throttle(float target_speed)
  * Calculate desired turn angles (in medium freq loop)
  *****************************************/
 
-static void calc_lateral_acceleration()
+void Rover::calc_lateral_acceleration()
 {
     switch (control_mode) {
     case AUTO:
@@ -192,7 +192,7 @@ static void calc_lateral_acceleration()
 /*
   calculate steering angle given lateral_acceleration
  */
-static void calc_nav_steer()
+void Rover::calc_nav_steer()
 {
     // add in obstacle avoidance
     lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
@@ -206,7 +206,7 @@ static void calc_nav_steer()
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
-static void set_servos(void)
+void Rover::set_servos(void)
 {
     static int16_t last_throttle;
 

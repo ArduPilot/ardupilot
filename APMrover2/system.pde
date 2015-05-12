@@ -12,7 +12,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
 static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
 static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
-static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
+int8_t Rover::  reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
@@ -43,14 +43,14 @@ static const struct Menu::command main_menu_commands[] PROGMEM = {
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
-static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->reboot(false);
     return 0;
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(AP_HAL::UARTDriver *port)
+void Rover::run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
     hal.scheduler->register_timer_failsafe(NULL,1);
@@ -69,7 +69,7 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 #endif // CLI_ENABLED
 
-static void init_ardupilot()
+void Rover::init_ardupilot()
 {
     // initialise console serial port
     serial_manager.init_console();
@@ -225,7 +225,7 @@ static void init_ardupilot()
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //********************************************************************************
-static void startup_ground(void)
+void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
 
@@ -263,7 +263,7 @@ static void startup_ground(void)
   set the in_reverse flag
   reset the throttle integrator if this changes in_reverse
  */
-static void set_reverse(bool reverse)
+void Rover::set_reverse(bool reverse)
 {
     if (in_reverse == reverse) {
         return;
@@ -272,7 +272,7 @@ static void set_reverse(bool reverse)
     in_reverse = reverse;
 }
 
-static void set_mode(enum mode mode)
+void Rover::set_mode(enum mode mode)
 {       
 
 	if(control_mode == mode){
@@ -324,7 +324,7 @@ static void set_mode(enum mode mode)
 /*
   set_mode() wrapper for MAVLink SET_MODE
  */
-static bool mavlink_set_mode(uint8_t mode)
+bool Rover::mavlink_set_mode(uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
@@ -342,7 +342,7 @@ static bool mavlink_set_mode(uint8_t mode)
 /*
   called to set/unset a failsafe event. 
  */
-static void failsafe_trigger(uint8_t failsafe_type, bool on)
+void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 {
     uint8_t old_bits = failsafe.bits;
     if (on) {
@@ -381,7 +381,7 @@ static void failsafe_trigger(uint8_t failsafe_type, bool on)
     }
 }
 
-static void startup_INS_ground(void)
+void Rover::startup_INS_ground(void)
 {
     gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Warming up ADC..."));
  	mavlink_delay(500);
@@ -409,19 +409,19 @@ static void startup_INS_ground(void)
 
 // updates the notify state
 // should be called at 50hz
-static void update_notify()
+void Rover::update_notify()
 {
     notify.update();
 }
 
-static void resetPerfData(void) {
+void Rover::resetPerfData(void) {
 	mainLoop_count 			= 0;
 	G_Dt_max 				= 0;
 	perf_mon_timer 			= millis();
 }
 
 
-static void check_usb_mux(void)
+void Rover::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == usb_connected) {
@@ -476,7 +476,7 @@ print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 /*
   check a digitial pin for high,low (1/0)
  */
-static uint8_t check_digital_pin(uint8_t pin)
+uint8_t Rover::check_digital_pin(uint8_t pin)
 {
     int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
     if (dpin == -1) {
@@ -494,7 +494,7 @@ static uint8_t check_digital_pin(uint8_t pin)
 /*
   should we log a message type now?
  */
-static bool should_log(uint32_t mask)
+bool Rover::should_log(uint32_t mask)
 {
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
@@ -514,7 +514,7 @@ static bool should_log(uint32_t mask)
   send FrSky telemetry. Should be called at 5Hz by scheduler
  */
 #if FRSKY_TELEM_ENABLED == ENABLED
-static void frsky_telemetry_send(void)
+void Rover::frsky_telemetry_send(void)
 {
     frsky_telemetry.send_frames((uint8_t)control_mode);
 }

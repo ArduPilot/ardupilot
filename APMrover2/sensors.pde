@@ -1,20 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void init_barometer(void)
+void Rover::init_barometer(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
     barometer.calibrate();
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static void init_sonar(void)
+void Rover::init_sonar(void)
 {
     sonar.init();
 }
 
 // read_battery - reads battery voltage and current and invokes failsafe
 // should be called at 10hz
-static void read_battery(void)
+void Rover::read_battery(void)
 {
     battery.read();
 }
@@ -29,7 +29,7 @@ void read_receiver_rssi(void)
 }
 
 // read the sonars
-static void read_sonars(void)
+void Rover::read_sonars(void)
 {
     sonar.update();
 

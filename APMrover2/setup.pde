@@ -8,8 +8,8 @@ static int8_t	setup_show			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_factory		(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_flightmodes	(uint8_t argc, const Menu::arg *argv);
 #if !defined( __AVR_ATmega1280__ )
-static int8_t   setup_accel_scale   (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_set           (uint8_t argc, const Menu::arg *argv);
+int8_t Rover::  setup_accel_scale   (uint8_t argc, const Menu::arg *argv);
+int8_t Rover::  setup_set           (uint8_t argc, const Menu::arg *argv);
 #endif
 static int8_t	setup_erase			(uint8_t argc, const Menu::arg *argv);
 static int8_t	setup_compass		(uint8_t argc, const Menu::arg *argv);
@@ -122,7 +122,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 
 //Set a parameter to a specified value. It will cast the value to the current type of the
 //parameter and make sure it fits in case of INT8 and INT16
-static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::setup_set(uint8_t argc, const Menu::arg *argv)
 {
 	int8_t value_int8;
 	int16_t value_int16;
@@ -446,7 +446,7 @@ setup_compass(uint8_t argc, const Menu::arg *argv)
 // CLI reports
 /***************************************************************************/
 
-static void report_batt_monitor()
+void Rover::report_batt_monitor()
 {
     //print_blanks(2);
     cliSerial->printf_P(PSTR("Batt Mointor\n"));
@@ -460,7 +460,7 @@ static void report_batt_monitor()
     }
     print_blanks(2);
 }
-static void report_radio()
+void Rover::report_radio()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Radio\n"));
@@ -470,7 +470,7 @@ static void report_radio()
 	print_blanks(2);
 }
 
-static void report_gains()
+void Rover::report_gains()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Gains\n"));
@@ -482,7 +482,7 @@ static void report_gains()
 	print_blanks(2);
 }
 
-static void report_throttle()
+void Rover::report_throttle()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Throttle\n"));
@@ -501,7 +501,7 @@ static void report_throttle()
 	print_blanks(2);
 }
 
-static void report_compass()
+void Rover::report_compass()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Compass: "));
@@ -522,7 +522,7 @@ static void report_compass()
 	print_blanks(2);
 }
 
-static void report_modes()
+void Rover::report_modes()
 {
 	//print_blanks(2);
 	cliSerial->printf_P(PSTR("Flight modes\n"));
@@ -597,7 +597,7 @@ print_divider(void)
 static int8_t
 radio_input_switch(void)
 {
-	static int8_t bouncer = 0;
+	int8_t Rover::bouncer = 0;
 
 
 	if (int16_t(channel_steer->radio_in - channel_steer->radio_trim) > 100) {
@@ -621,14 +621,14 @@ radio_input_switch(void)
 }
 
 
-static void zero_eeprom(void)
+void Rover::zero_eeprom(void)
 {
 	cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
     StorageManager::erase();
 	cliSerial->printf_P(PSTR("done\n"));
 }
 
-static void print_enabled(bool b)
+void Rover::print_enabled(bool b)
 {
 	if(b)
 		cliSerial->printf_P(PSTR("en"));

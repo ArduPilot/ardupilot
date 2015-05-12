@@ -13,11 +13,11 @@
   this failsafe_check function is called from the core timer interrupt
   at 1kHz.
  */
-static void failsafe_check()
+void Rover::failsafe_check()
 {
     static uint16_t last_mainLoop_count;
-    static uint32_t last_timestamp;
-    static bool in_failsafe;
+    uint32_t Rover::last_timestamp;
+    bool Rover::in_failsafe;
     uint32_t tnow = hal.scheduler->micros();
 
     if (mainLoop_count != last_mainLoop_count) {

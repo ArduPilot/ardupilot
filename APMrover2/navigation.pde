@@ -3,7 +3,7 @@
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
-static void navigate()
+void Rover::navigate()
 {
 	// do not navigate with corrupt data
 	// ---------------------------------
