@@ -277,7 +277,7 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
   read and print a log entry using the format strings from the given structure
  */
 void DataFlash_Class::_print_log_entry(uint8_t msg_type,
-                                       void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
+                                       print_mode_fn print_mode,
                                        AP_HAL::BetterStream *port)
 {
     uint8_t i;
@@ -439,7 +439,7 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 */
 void DataFlash_Block::LogReadProcess(uint16_t log_num,
                                      uint16_t start_page, uint16_t end_page,
-                                     void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
+                                     print_mode_fn print_mode,
                                      AP_HAL::BetterStream *port)
 {
     uint8_t log_step = 0;

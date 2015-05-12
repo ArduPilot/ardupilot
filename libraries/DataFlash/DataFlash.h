@@ -6,12 +6,14 @@
 #ifndef DataFlash_h
 #define DataFlash_h
 
+#include <AP_HAL.h>
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
+#include <AP_Vehicle.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
@@ -28,6 +30,12 @@
 class DataFlash_Class
 {
 public:
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    typedef DELEGATE_FUNCTION2(void, AP_HAL::BetterStream*, uint8_t) print_mode_fn;
+#else
+    typedef void (*print_mode_fn)(AP_HAL::BetterStream *, uint8_t);
+#endif
+
     // initialisation
     virtual void Init(const struct LogStructure *structure, uint8_t num_types);
     virtual bool CardInserted(void) = 0;
@@ -48,7 +56,7 @@ public:
 #ifndef DATAFLASH_NO_CLI
     virtual void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
-                                void (*printMode)(AP_HAL::BetterStream *port, uint8_t mode),
+                                print_mode_fn printMode,
                                 AP_HAL::BetterStream *port) = 0;
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
@@ -98,7 +106,7 @@ protected:
     read and print a log entry using the format strings from the given structure
     */
     void _print_log_entry(uint8_t msg_type, 
-                          void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
+                          print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
     
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
