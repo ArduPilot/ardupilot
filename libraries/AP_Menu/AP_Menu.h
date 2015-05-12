@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 #include <AP_HAL.h>
+#include <AP_Vehicle.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
 #define MENU_ARGS_MAX           3       ///< maximum number of arguments
@@ -55,7 +56,11 @@ public:
     ///						command, so that the same function can be used
     ///						to handle more than one command.
     ///
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    typedef DELEGATE_FUNCTION2(int8_t, uint8_t, const struct arg *) func;
+#else
     typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
+#endif
 
 	static void set_port(AP_HAL::BetterStream *port) {
 		_port = port;
@@ -68,7 +73,11 @@ public:
     ///
     /// If this function returns false, the menu exits.
     ///
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    typedef DELEGATE_FUNCTION0(bool) preprompt;
+#else
     typedef bool (*preprompt)(void);
+#endif
 
     /// menu command description
     ///
@@ -89,7 +98,11 @@ public:
         /// The "?", "help" and "exit" commands are always defined, but
         /// can be overridden by explicit entries in the command array.
         ///
-        int8_t (*func)(uint8_t argc, const struct arg *argv);                   ///< callback function
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+        DELEGATE_FUNCTION2(int8_t, uint8_t, const struct arg *) func;
+#else
+        int8_t (*func)(uint8_t argc, const struct arg *argv);
+#endif
     };
 
     /// constructor

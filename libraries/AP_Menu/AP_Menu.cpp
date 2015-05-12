@@ -241,7 +241,7 @@ Menu::_call(uint8_t n, uint8_t argc)
 {
     func fn;
 
-    fn = (func)pgm_read_pointer(&_commands[n].func);
+    pgm_read_block(&_commands[n].func, &fn, sizeof(fn));
     return(fn(argc, &_argv[0]));
 }
 
