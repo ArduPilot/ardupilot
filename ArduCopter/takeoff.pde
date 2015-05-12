@@ -80,16 +80,17 @@ static void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_clim
         return;
     }
 
-    static const float takeoff_accel = 75.0f;
+    float takeoff_minspeed = min(50.0f,takeoff_state.max_speed);
+    static const float takeoff_accel = 50.0f;
     float time_elapsed = (millis()-takeoff_state.start_ms)*1.0e-3f;
-    float speed = min(time_elapsed*takeoff_accel, takeoff_state.max_speed);
+    float speed = min(time_elapsed*takeoff_accel+takeoff_minspeed, takeoff_state.max_speed);
 
-    float time_to_max_speed = takeoff_state.max_speed/takeoff_accel;
+    float time_to_max_speed = (takeoff_state.max_speed-takeoff_minspeed)/takeoff_accel;
     float height_gained;
     if (time_elapsed <= time_to_max_speed) {
-        height_gained = 0.5f*takeoff_accel*sq(time_elapsed);
+        height_gained = 0.5f*takeoff_accel*sq(time_elapsed) + takeoff_minspeed*time_elapsed;
     } else {
-        height_gained = 0.5f*takeoff_accel*sq(time_to_max_speed) +
+        height_gained = 0.5f*takeoff_accel*sq(time_to_max_speed) + takeoff_minspeed*time_to_max_speed +
                         (time_elapsed-time_to_max_speed)*takeoff_state.max_speed;
     }
 
