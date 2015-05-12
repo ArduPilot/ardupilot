@@ -45,6 +45,9 @@
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
 
+// declare a group var_info line of non-numeric type
+#define AP_GROUPINFO_STR(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), def}
+
 // declare a nested group entry in a group var_info
 #ifdef AP_NESTED_GROUPS_ENABLED
  #define AP_NESTEDGROUPINFO(class, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : class::var_info } }
@@ -62,7 +65,8 @@ enum ap_var_type {
     AP_PARAM_VECTOR3F,
     AP_PARAM_VECTOR6F,
     AP_PARAM_MATRIX3F,
-    AP_PARAM_GROUP
+    AP_PARAM_GROUP,
+    AP_PARAM_STR8,
 };
 
 /// Base class for variables.
@@ -81,6 +85,7 @@ public:
         const char name[AP_MAX_NAME_SIZE+1];
         uintptr_t offset; // offset within the object
         union {
+            const char def_str[9];
             const struct GroupInfo *group_info;
             const float def_value;
         };
@@ -611,6 +616,7 @@ AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
+AP_PARAMDEF(char[9], Str8, AP_PARAM_STR8);    // defines AP_Str8, which allows for 8 chars plus terminating zero byte (9 bytes total)
 
 // declare an array type
 // _t is the base type
