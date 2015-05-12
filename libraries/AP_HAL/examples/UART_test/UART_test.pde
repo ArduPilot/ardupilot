@@ -34,6 +34,7 @@
 #include <AP_Scheduler.h>
 #include <UARTDriver.h>
 #include <AP_BattMonitor.h>
+#include <AP_RangeFinder.h>
 
 #if HAL_OS_POSIX_IO
 #include <stdio.h>
