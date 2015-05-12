@@ -35,10 +35,23 @@
   the scheduler is allowed to use before it must return
  */
 
+#include <AP_HAL.h>
+#include <AP_Vehicle.h>
+
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2) && defined(__AVR__)
+#define AP_SCHEDULER_USE_DELEGATE_PTR 1
+#else
+#define AP_SCHEDULER_USE_DELEGATE_PTR 0
+#endif
+
 class AP_Scheduler
 {
 public:
-	typedef void (*task_fn_t)(void);
+#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    DELEGATE_FUNCTION_VOID_TYPEDEF(task_fn_t);
+#else
+    typedef void (*task_fn_t)(void);
+#endif
 
 	struct Task {
 		task_fn_t function;
@@ -47,7 +60,7 @@ public:
 	};
 
 	// initialise scheduler
-	void init(const Task *tasks, uint8_t num_tasks);
+	void init(const Task *tasks, uint8_t num_tasks, void *classptr);
 
 	// call when one tick has passed
 	void tick(void);
@@ -101,6 +114,9 @@ private:
 
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
+
+    // class pointer for use on AVR
+    void *_classptr;
 };
 
 #endif // AP_SCHEDULER_H
