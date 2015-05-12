@@ -2,57 +2,35 @@
 
 #if CLI_ENABLED == ENABLED
 
-// These are function definitions so the Menu can be constructed before the functions
-// are defined below. Order matters to the compiler.
-static int8_t	test_radio_pwm(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_radio(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_passthru(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_failsafe(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_gps(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_ins(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_relay(uint8_t argc,	 	const Menu::arg *argv);
-static int8_t	test_wp(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_sonar(uint8_t argc, 	const Menu::arg *argv);
-static int8_t	test_mag(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	test_modeswitch(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	test_logging(uint8_t argc, 		const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-int8_t Rover::  test_shell(uint8_t argc,              const Menu::arg *argv);
-#endif
-
-// forward declaration to keep the compiler happy
-void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd);
-
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] PROGMEM = {
-	{"pwm",				test_radio_pwm},
-	{"radio",			test_radio},
-	{"passthru",		test_passthru},
-	{"failsafe",		test_failsafe},
-	{"relay",			test_relay},
-	{"waypoints",		test_wp},
-	{"modeswitch",		test_modeswitch},
+	{"pwm",				MENU_FUNC(test_radio_pwm)},
+	{"radio",			MENU_FUNC(test_radio)},
+	{"passthru",		MENU_FUNC(test_passthru)},
+	{"failsafe",		MENU_FUNC(test_failsafe)},
+	{"relay",			MENU_FUNC(test_relay)},
+	{"waypoints",		MENU_FUNC(test_wp)},
+	{"modeswitch",		MENU_FUNC(test_modeswitch)},
 
 	// Tests below here are for hardware sensors only present
 	// when real sensors are attached or they are emulated
-	{"gps",			test_gps},
-	{"ins",			test_ins},
-	{"sonartest",	test_sonar},
-	{"compass",		test_mag},
-	{"logging",		test_logging},
+	{"gps",			MENU_FUNC(test_gps)},
+	{"ins",			MENU_FUNC(test_ins)},
+	{"sonartest",	MENU_FUNC(test_sonar)},
+	{"compass",		MENU_FUNC(test_mag)},
+	{"logging",		MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				test_shell},
+    {"shell", 				MENU_FUNC(test_shell)},
 #endif
 };
 
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
-static int8_t
-test_mode(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_mode(uint8_t argc, const Menu::arg *argv)
 {
 	cliSerial->printf_P(PSTR("Test Mode\n\n"));
 	test_menu.run();
@@ -64,8 +42,7 @@ void Rover::print_hit_enter()
 	cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
-static int8_t
-test_radio_pwm(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -94,8 +71,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 }
 
 
-static int8_t
-test_passthru(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -120,8 +96,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-test_radio(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -157,8 +132,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-static int8_t
-test_failsafe(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
 	uint8_t fail_test;
 	print_hit_enter();
@@ -212,8 +186,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-static int8_t
-test_relay(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_relay(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -235,8 +208,7 @@ test_relay(uint8_t argc, const Menu::arg *argv)
 	}
 }
 
-static int8_t
-test_wp(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
 
@@ -253,8 +225,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
 	return (0);
 }
 
-static void
-test_wp_print(const AP_Mission::Mission_Command& cmd)
+void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
     cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
                     (int)cmd.index,
@@ -266,8 +237,7 @@ test_wp_print(const AP_Mission::Mission_Command& cmd)
                     (long)cmd.content.location.lng);
 }
 
-static int8_t
-test_modeswitch(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 {
 	print_hit_enter();
 	delay(1000);
@@ -292,8 +262,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 /*
   test the dataflash is working
  */
-static int8_t
-test_logging(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_logging(uint8_t argc, const Menu::arg *argv)
 {
 	cliSerial->println_P(PSTR("Testing dataflash logging"));
     DataFlash.ShowDeviceInfo(cliSerial);
@@ -304,8 +273,7 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
 
-static int8_t
-test_gps(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     delay(1000);
@@ -333,8 +301,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_ins(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
 	//cliSerial->printf_P(PSTR("Calibrating."));
 	ahrs.init();
@@ -377,9 +344,16 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     }
 }
 
+void Rover::print_enabled(bool b)
+{
+       if(b)
+               cliSerial->printf_P(PSTR("en"));
+       else
+               cliSerial->printf_P(PSTR("dis"));
+       cliSerial->printf_P(PSTR("abled\n"));
+}
 
-static int8_t
-test_mag(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 {
 	if (!g.compass_enabled) {
         cliSerial->printf_P(PSTR("Compass: "));
@@ -394,7 +368,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     ahrs.init();
     ahrs.set_fly_forward(true);
     ahrs.set_compass(&compass);
-    report_compass();
 
     // we need the AHRS initialised for this test
 	ins.init(AP_InertialSensor::COLD_START, 
@@ -452,8 +425,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-static int8_t
-test_sonar(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
 {
     init_sonar();
     delay(20);
@@ -527,8 +499,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 /*
  *  run a debug shell
  */
-static int8_t
-test_shell(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::test_shell(uint8_t argc, const Menu::arg *argv)
 {
     hal.util->run_debug_shell(cliSerial);
     return 0;

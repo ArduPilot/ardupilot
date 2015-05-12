@@ -16,8 +16,8 @@
 void Rover::failsafe_check()
 {
     static uint16_t last_mainLoop_count;
-    uint32_t Rover::last_timestamp;
-    bool Rover::in_failsafe;
+    static uint32_t last_timestamp;
+    static bool in_failsafe;
     uint32_t tnow = hal.scheduler->micros();
 
     if (mainLoop_count != last_mainLoop_count) {
@@ -47,4 +47,9 @@ void Rover::failsafe_check()
         }
         RC_Channel_aux::copy_radio_in_out(RC_Channel_aux::k_manual, true);
     }
+}
+
+static void failsafe_check_static()
+{
+    rover.failsafe_check();
 }

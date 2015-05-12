@@ -8,16 +8,10 @@ The init_ardupilot function processes everything we need for an in - air restart
 
 #if CLI_ENABLED == ENABLED
 
-// Functions called from the top-level menu
-static int8_t	process_logs(uint8_t argc, const Menu::arg *argv);	// in Log.pde
-static int8_t	setup_mode(uint8_t argc, const Menu::arg *argv);	// in setup.pde
-static int8_t	test_mode(uint8_t argc, const Menu::arg *argv);		// in test.cpp
-int8_t Rover::  reboot_board(uint8_t argc, const Menu::arg *argv);
-
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of print_f that reads from flash memory
-static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
 	cliSerial->printf_P(PSTR("Commands:\n"
 						 "  logs        log readback/setup mode\n"
@@ -33,11 +27,11 @@ static int8_t	main_menu_help(uint8_t argc, const Menu::arg *argv)
 static const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-	{"logs",		process_logs},
-	{"setup",		setup_mode},
-	{"test",		test_mode},
-    {"reboot",      reboot_board},
-	{"help",		main_menu_help}
+	{"logs",		MENU_FUNC(process_logs)},
+	{"setup",		MENU_FUNC(setup_mode)},
+	{"test",		MENU_FUNC(test_mode)},
+    {"reboot",      MENU_FUNC(reboot_board)},
+	{"help",		MENU_FUNC(main_menu_help)}
 };
 
 // Create the top-level menu object.
@@ -146,7 +140,7 @@ void Rover::init_ardupilot()
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
     apm1_adc.Init();      // APM ADC library initialization
@@ -187,7 +181,7 @@ void Rover::init_ardupilot()
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
-    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 
 #if CLI_ENABLED == ENABLED
@@ -445,8 +439,7 @@ void Rover::check_usb_mux(void)
 }
 
 
-static void
-print_mode(AP_HAL::BetterStream *port, uint8_t mode)
+void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:

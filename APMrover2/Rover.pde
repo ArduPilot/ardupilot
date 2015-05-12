@@ -1,0 +1,61 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/* 
+   main Rover class, containing all vehicle specific state
+*/
+
+Rover::Rover(void) :
+    param_loader(var_info),
+    ins_sample_rate(AP_InertialSensor::RATE_50HZ),
+    channel_steer(NULL),
+    channel_throttle(NULL),
+    channel_learn(NULL),
+    in_log_download(false),
+#if defined(HAL_BOARD_LOG_DIRECTORY)
+    DataFlash(HAL_BOARD_LOG_DIRECTORY),
+#endif
+    modes(&g.mode1),
+#if AP_AHRS_NAVEKF_AVAILABLE
+    ahrs(ins, barometer, gps, sonar),
+#else
+    ahrs(ins, barometer, gps),
+#endif
+    L1_controller(ahrs),
+    nav_controller(&L1_controller),
+    steerController(ahrs),
+    mission(ahrs, 
+            AP_HAL_MEMBERPROC(&Rover::start_command), 
+            AP_HAL_MEMBERPROC(&Rover::verify_command), 
+            AP_HAL_MEMBERPROC(&Rover::exit_mission)),
+    ServoRelayEvents(relay),
+    num_gcs(MAVLINK_COMM_NUM_BUFFERS),
+#if CAMERA == ENABLED
+    camera(&relay),
+#endif
+#if MOUNT == ENABLED
+    camera_mount(ahrs, current_loc),
+#endif
+    control_mode(INITIALISING),
+    ground_start_count(20),
+    throttle(500),
+#if FRSKY_TELEM_ENABLED == ENABLED
+    frsky_telemetry(ahrs, battery),
+#endif
+    home(ahrs.get_home()),
+    G_Dt(0.02),
+    radius_of_earth(6378100)
+{
+}

@@ -1,22 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// forward declarations to make compiler happy
-void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd);
-void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd);
-void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd);
-void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd);
-void Rover::do_set_home(const AP_Mission::Mission_Command& cmd);
-bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-void Rover::do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-static bool
-start_command(const AP_Mission::Mission_Command& cmd)
+bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {

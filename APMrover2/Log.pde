@@ -4,31 +4,23 @@
 
 #if CLI_ENABLED == ENABLED
 
-// Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
-
-// These are function definitions so the Menu can be constructed before the functions
-// are defined below. Order matters to the compiler.
-static int8_t	dump_log(uint8_t argc, 			const Menu::arg *argv);
-static int8_t	erase_logs(uint8_t argc, 		const Menu::arg *argv);
-static int8_t	select_logs(uint8_t argc, 		const Menu::arg *argv);
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 static const struct Menu::command log_menu_commands[] PROGMEM = {
-	{"dump",	dump_log},
-	{"erase",	erase_logs},
-	{"enable",	select_logs},
-	{"disable",	select_logs}
+	{"dump",	MENU_FUNC(dump_log)},
+	{"erase",	MENU_FUNC(erase_logs)},
+	{"enable",	MENU_FUNC(select_logs)},
+	{"disable",	MENU_FUNC(select_logs)}
 };
 
 // A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
+MENU2(log_menu, "Log", log_menu_commands, MENU_FUNC(print_log_menu));
 
-static bool
-print_log_menu(void)
+bool Rover::print_log_menu(void)
 {
 	cliSerial->printf_P(PSTR("logs enabled: "));
 
@@ -63,40 +55,38 @@ print_log_menu(void)
 	return(true);
 }
 
-static int8_t
-dump_log(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::dump_log(uint8_t argc, const Menu::arg *argv)
 {
-    int16_t dump_log;
+    int16_t dump_log_num;
     uint16_t dump_log_start;
     uint16_t dump_log_end;
     uint16_t last_log_num;
 
     // check that the requested log number can be read
-    dump_log = argv[1].i;
+    dump_log_num = argv[1].i;
     last_log_num = DataFlash.find_last_log();
 
-    if (dump_log == -2) {
+    if (dump_log_num == -2) {
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
-    } else if (dump_log <= 0) {
+    } else if (dump_log_num <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2)
-               || ((uint16_t)dump_log > last_log_num))
+               || ((uint16_t)dump_log_num > last_log_num))
     {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
 
-    DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
+    DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
+    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
     return 0;
 }
 
 
-static int8_t
-erase_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
     in_mavlink_delay = true;
     do_erase_logs();
@@ -104,8 +94,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-select_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 {
 	uint16_t	bits;
 
@@ -151,8 +140,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
 	return(0);
 }
 
-static int8_t
-process_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Rover::process_logs(uint8_t argc, const Menu::arg *argv)
 {
 	log_menu.run();
 	return 0;
@@ -410,7 +398,7 @@ void Rover::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 	DataFlash.LogReadProcess(log_num, start_page, end_page, 
-                             print_mode,
+                             AP_HAL_MEMBERPROC(&Rover::print_mode),
                              cliSerial);
 }
 #endif // CLI_ENABLED

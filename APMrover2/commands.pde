@@ -54,7 +54,7 @@ void Rover::set_guided_WP(void)
 
 // run this at setup on the ground
 // -------------------------------
-void init_home()
+void Rover::init_home()
 {
     if (!have_position) {
         // we need position information

@@ -32,31 +32,6 @@
    Please contribute your ideas! See http://dev.ardupilot.com for details
 */
 
-// Radio setup:
-// APM INPUT (Rec = receiver)
-// Rec ch1: Steering
-// Rec ch2: not used
-// Rec ch3: Throttle
-// Rec ch4: not used
-// Rec ch5: not used
-// Rec ch6: not used
-// Rec ch7: Option channel to 2 position switch
-// Rec ch8: Mode channel to 6 position switch
-// APM OUTPUT
-// Ch1: Wheel servo (direction)
-// Ch2: not used
-// Ch3: to the motor ESC
-// Ch4: not used
-
-////////////////////////////////////////////////////////////////////////////////
-// Header includes
-////////////////////////////////////////////////////////////////////////////////
-
-#include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
-
-// Libraries
 #include <AP_Common.h>
 #include <AP_Progmem.h>
 #include <AP_HAL.h>
@@ -126,10 +101,56 @@
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 #include "Rover.h"
+#include "utility/FastDelegate.h"
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 static Rover rover;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpmf-conversions"
+
+#define SCHED_TASK(func) AP_HAL_CLASSPROC_VOID(&rover, &Rover::func)
+
+/*
+  scheduler table - all regular tasks should be listed here, along
+  with how often they should be called (in 20ms units) and the maximum
+  time they are expected to take (in microseconds)
+*/
+const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
+	{ SCHED_TASK(read_radio),             1,   1000 },
+    { SCHED_TASK(ahrs_update),            1,   6400 },
+    { SCHED_TASK(read_sonars),            1,   2000 },
+    { SCHED_TASK(update_current_mode),    1,   1500 },
+    { SCHED_TASK(set_servos),             1,   1500 },
+    { SCHED_TASK(update_GPS_50Hz),        1,   2500 },
+    { SCHED_TASK(update_GPS_10Hz),        5,   2500 },
+    { SCHED_TASK(update_alt),             5,   3400 },
+    { SCHED_TASK(navigate),               5,   1600 },
+    { SCHED_TASK(update_compass),         5,   2000 },
+    { SCHED_TASK(update_commands),        5,   1000 },
+    { SCHED_TASK(update_logging1),        5,   1000 },
+    { SCHED_TASK(update_logging2),        5,   1000 },
+    { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
+    { SCHED_TASK(gcs_update),             1,   1700 },
+    { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
+    { SCHED_TASK(read_control_switch),   15,   1000 },
+    { SCHED_TASK(read_trim_switch),       5,   1000 },
+    { SCHED_TASK(read_battery),           5,   1000 },
+    { SCHED_TASK(read_receiver_rssi),     5,   1000 },
+    { SCHED_TASK(update_events),          1,   1000 },
+    { SCHED_TASK(check_usb_mux),         15,   1000 },
+    { SCHED_TASK(mount_update),           1,    600 },
+    { SCHED_TASK(gcs_failsafe_check),     5,    600 },
+    { SCHED_TASK(compass_accumulate),     1,    900 },
+    { SCHED_TASK(update_notify),          1,    300 },
+    { SCHED_TASK(one_second_loop),       50,   3000 },
+#if FRSKY_TELEM_ENABLED == ENABLED
+    { SCHED_TASK(frsky_telemetry_send),  10,    100 }
+#endif
+};
+#pragma GCC diagnostic pop
+
 
 /*
   setup is called when the sketch starts
@@ -154,7 +175,7 @@ void Rover::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]), this);
 }
 
 /*
@@ -178,7 +199,6 @@ void Rover::loop()
 
     // tell the scheduler one tick has passed
     scheduler.tick();
-
     scheduler.run(19500U);
 }
 
@@ -331,7 +351,7 @@ void Rover::one_second_loop(void)
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    uint8_t Rover::counter;
+    static uint8_t counter;
 
     counter++;
 
@@ -359,7 +379,7 @@ void Rover::one_second_loop(void)
 
 void Rover::update_GPS_50Hz(void)
 {        
-    uint32_t Rover::last_gps_reading[GPS_MAX_INSTANCES];
+    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
 	gps.update();
 
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
@@ -538,6 +558,15 @@ void Rover::update_navigation()
         }
         break;
 	}
+}
+
+void setup(void)
+{
+    rover.setup();
+}
+void loop(void)
+{
+    rover.loop();
 }
 
 AP_HAL_MAIN();
