@@ -163,7 +163,6 @@ private:
 
     // Sensors
     AP_GPS gps;
-    RangeFinder rng;
 
     // flight modes convenience array
     AP_Int8 *flight_modes;

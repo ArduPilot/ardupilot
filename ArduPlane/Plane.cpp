@@ -29,7 +29,7 @@ Plane::Plane(void) :
 #endif
     flight_modes(&g.flight_mode1),
 #if AP_AHRS_NAVEKF_AVAILABLE
-    ahrs(ins, barometer, gps, rng),
+    ahrs(ins, barometer, gps, rangefinder),
 #else
     ahrs(ins, barometer, gps),
 #endif
