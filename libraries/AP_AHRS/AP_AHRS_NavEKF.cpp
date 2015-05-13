@@ -312,7 +312,12 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 
 bool AP_AHRS_NavEKF::using_EKF(void) const
 {
-    bool ret = ekf_started && _ekf_use && EKF.healthy();
+    uint8_t ekf_faults;
+    EKF.getFilterFaults(ekf_faults);
+    // If EKF is started we switch away if it reports unhealthy. This could be due to bad
+    // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
+    // an internal processing error, but not for bad sensor data.
+    bool ret = ekf_started && ((_ekf_use == EKF_USE_WITH_FALLBACK && EKF.healthy()) || (_ekf_use == EKF_USE_WITHOUT_FALLBACK && ekf_faults == 0));
     if (!ret) {
         return false;
     }
@@ -338,7 +343,10 @@ bool AP_AHRS_NavEKF::using_EKF(void) const
 */
 bool AP_AHRS_NavEKF::healthy(void) const
 {
-    if (_ekf_use) {
+    // If EKF is started we switch away if it reports unhealthy. This could be due to bad
+    // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
+    // an internal processing error, but not for bad sensor data.
+    if (_ekf_use != EKF_DO_NOT_USE) {
         return ekf_started && EKF.healthy();
     }
     return AP_AHRS_DCM::healthy();    
