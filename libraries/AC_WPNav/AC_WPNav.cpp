@@ -802,7 +802,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // code below ensures we don't get too much overshoot when the next segment is short
-    float vel_len = (_spline_origin_vel + _spline_destination_vel).length();
+    float vel_len = _spline_origin_vel.length() + _spline_destination_vel.length();
     float pos_len = (destination - origin).length() * 4.0f;
     if (vel_len > pos_len) {
         // if total start+stop velocity is more than twice position difference
@@ -854,12 +854,12 @@ void AC_WPNav::set_spline_dest_and_vel(const Vector3f& dest_pos, const Vector3f&
 
     _flags.fast_waypoint = _spline_destination_vel.length() > 0.0f;
 
-    float vel_len = (_spline_origin_vel + _spline_destination_vel).length();
+    float vel_len = _spline_origin_vel.length() + _spline_destination_vel.length();
     float pos_len = (_destination - _origin).length() * 4.0f;
 
     if (vel_len > pos_len) {
         // if total start+stop velocity is more than twice position difference
-        // use a scaled down start and stop velocityscale the  start and stop velocities down
+        // use a scaled down start and stop velocity
         float vel_scaling = pos_len / vel_len;
         // update spline calculator
         update_spline_solution(_origin, _destination, _spline_origin_vel * vel_scaling, _spline_destination_vel * vel_scaling);
