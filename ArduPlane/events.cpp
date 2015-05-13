@@ -1,11 +1,12 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
 
-static void failsafe_short_on_event(enum failsafe_state fstype)
+void Plane::failsafe_short_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
-    failsafe.ch3_timer_ms = millis();
+    failsafe.ch3_timer_ms = hal.scheduler->millis();
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
     switch(control_mode)
     {
@@ -48,7 +49,7 @@ static void failsafe_short_on_event(enum failsafe_state fstype)
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
-static void failsafe_long_on_event(enum failsafe_state fstype)
+void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
@@ -93,7 +94,7 @@ static void failsafe_long_on_event(enum failsafe_state fstype)
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
 
-static void failsafe_short_off_event()
+void Plane::failsafe_short_off_event()
 {
     // We're back in radio contact
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event off"));
@@ -107,7 +108,7 @@ static void failsafe_short_off_event()
     }
 }
 
-void low_battery_event(void)
+void Plane::low_battery_event(void)
 {
     if (failsafe.low_battery) {
         return;
@@ -120,7 +121,7 @@ void low_battery_event(void)
     AP_Notify::flags.failsafe_battery = true;
 }
 
-static void update_events(void)
+void Plane::update_events(void)
 {
     ServoRelayEvents.update_events();
 }

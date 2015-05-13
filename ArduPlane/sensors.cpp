@@ -1,6 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void init_barometer(void)
+#include "Plane.h"
+
+void Plane::init_barometer(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
     barometer.calibrate();
@@ -8,7 +10,7 @@ static void init_barometer(void)
     gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
 }
 
-static void init_rangefinder(void)
+void Plane::init_rangefinder(void)
 {
     rangefinder.init();
 }
@@ -16,7 +18,7 @@ static void init_rangefinder(void)
 /*
   read the rangefinder and update height estimate
  */
-static void read_rangefinder(void)
+void Plane::read_rangefinder(void)
 {
     rangefinder.update();
 
@@ -29,7 +31,7 @@ static void read_rangefinder(void)
 /*
   ask airspeed sensor for a new value
  */
-static void read_airspeed(void)
+void Plane::read_airspeed(void)
 {
     if (airspeed.enabled()) {
         airspeed.read();
@@ -53,7 +55,7 @@ static void read_airspeed(void)
     }
 }
 
-static void zero_airspeed(bool in_startup)
+void Plane::zero_airspeed(bool in_startup)
 {
     airspeed.calibrate(in_startup);
     read_airspeed();
@@ -64,7 +66,7 @@ static void zero_airspeed(bool in_startup)
 
 // read_battery - reads battery voltage and current and invokes failsafe
 // should be called at 10hz
-static void read_battery(void)
+void Plane::read_battery(void)
 {
     battery.read();
     compass.set_current(battery.current_amps());
@@ -77,7 +79,7 @@ static void read_battery(void)
 
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
-void read_receiver_rssi(void)
+void Plane::read_receiver_rssi(void)
 {
     // avoid divide by zero
     if (g.rssi_range <= 0) {

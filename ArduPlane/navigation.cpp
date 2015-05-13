@@ -1,8 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
 
 // set the nav_controller pointer to the right controller
-static void set_nav_controller(void)
+void Plane::set_nav_controller(void)
 {
     switch ((AP_Navigation::ControllerType)g.nav_controller.get()) {
     case AP_Navigation::CONTROLLER_L1:
@@ -14,7 +15,7 @@ static void set_nav_controller(void)
 /*
   reset the total loiter angle
  */
-static void loiter_angle_reset(void)
+void Plane::loiter_angle_reset(void)
 {
     loiter.sum_cd = 0;
     loiter.total_cd = 0;
@@ -24,7 +25,7 @@ static void loiter_angle_reset(void)
   update the total angle we have covered in a loiter. Used to support
   commands to do N circles of loiter
  */
-static void loiter_angle_update(void)
+void Plane::loiter_angle_update(void)
 {
     int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
@@ -43,7 +44,7 @@ static void loiter_angle_update(void)
 //****************************************************************
 // Function that will calculate the desired direction to fly and distance
 //****************************************************************
-static void navigate()
+void Plane::navigate()
 {
     // allow change of nav controller mid-flight
     set_nav_controller();
@@ -72,7 +73,7 @@ static void navigate()
     update_navigation();
 }
 
-static void calc_airspeed_errors()
+void Plane::calc_airspeed_errors()
 {
     float aspeed_cm = airspeed.get_airspeed_cm();
 
@@ -111,7 +112,7 @@ static void calc_airspeed_errors()
     airspeed_error_cm = SpdHgt_Controller->get_target_airspeed()*100 - aspeed_cm;
 }
 
-static void calc_gndspeed_undershoot()
+void Plane::calc_gndspeed_undershoot()
 {
  	// Use the component of ground speed in the forward direction
 	// This prevents flyaway if wind takes plane backwards
@@ -125,7 +126,7 @@ static void calc_gndspeed_undershoot()
     }
 }
 
-static void update_loiter()
+void Plane::update_loiter()
 {
     nav_controller->update_loiter(next_WP_loc, abs(g.loiter_radius), loiter.direction);
 }
@@ -134,7 +135,7 @@ static void update_loiter()
   handle CRUISE mode, locking heading to GPS course when we have
   sufficient ground speed, and no aileron or rudder input
  */
-static void update_cruise()
+void Plane::update_cruise()
 {
     if (!cruise_state.locked_heading &&
         channel_roll->control_in == 0 &&
@@ -170,7 +171,7 @@ static void update_cruise()
   In this mode the elevator is used to change target altitude. The
   throttle is used to change target airspeed or throttle
  */
-static void update_fbwb_speed_height(void)
+void Plane::update_fbwb_speed_height(void)
 {
     static float last_elevator_input;
     float elevator_input;
@@ -202,7 +203,7 @@ static void update_fbwb_speed_height(void)
 /*
   calculate the turn angle for the next leg of the mission
  */
-static void setup_turn_angle(void)
+void Plane::setup_turn_angle(void)
 {
     int32_t next_ground_course_cd = mission.get_next_ground_course_cd(-1);
     if (next_ground_course_cd == -1) {

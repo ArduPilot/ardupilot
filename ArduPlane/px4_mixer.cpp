@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 /*
   handle creation of PX4 mixer file, for failover to direct RC control
   on failure of FMU
@@ -23,7 +25,7 @@
 /*
   create a mixer file given key fixed wing parameters
  */
-static bool create_mixer_file(const char *filename)
+bool Plane::create_mixer_file(const char *filename)
 {
     int mix_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
     if (mix_fd == -1) {
@@ -185,7 +187,7 @@ static bool create_mixer_file(const char *filename)
 /*
   setup mixer on PX4 so that if FMU dies the pilot gets manual control
  */
-static bool setup_failsafe_mixing(void)
+bool Plane::setup_failsafe_mixing(void)
 {
     // we create MIXER.MIX regardless of whether we will be using it,
     // as it gives a template for the user to modify to create their

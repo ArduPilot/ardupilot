@@ -1,12 +1,14 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
 /*
   allow for runtime change of control channel ordering
  */
-static void set_control_channels(void)
+void Plane::set_control_channels(void)
 {
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
@@ -37,7 +39,7 @@ static void set_control_channels(void)
 /*
   initialise RC input channels
  */
-static void init_rc_in()
+void Plane::init_rc_in()
 {
     // set rc dead zones
     channel_roll->set_default_dead_zone(30);
@@ -51,7 +53,7 @@ static void init_rc_in()
 /*
   initialise RC output channels
  */
-static void init_rc_out()
+void Plane::init_rc_out()
 {
     channel_roll->enable_out();
     channel_pitch->enable_out();
@@ -75,7 +77,7 @@ static void init_rc_out()
 }
 
 // check for pilot input on rudder stick for arming
-static void rudder_arm_check() 
+void Plane::rudder_arm_check() 
 {
     //TODO: ensure rudder arming disallowed during radio calibration
 
@@ -108,7 +110,7 @@ static void rudder_arm_check()
 
     // full right rudder starts arming counter
     if (channel_rudder->control_in > 4000) {
-        uint32_t now = millis();
+        uint32_t now = hal.scheduler->millis();
 
         if (rudder_arm_timer == 0 || 
             now - rudder_arm_timer < 3000) {
@@ -124,7 +126,7 @@ static void rudder_arm_check()
     }
 }
 
-static void read_radio()
+void Plane::read_radio()
 {
     if (!hal.rcin->new_input()) {
         control_failsafe(channel_throttle->radio_in);
@@ -186,7 +188,7 @@ static void read_radio()
     }
 }
 
-static void control_failsafe(uint16_t pwm)
+void Plane::control_failsafe(uint16_t pwm)
 {
     if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
@@ -238,7 +240,7 @@ static void control_failsafe(uint16_t pwm)
     }
 }
 
-static void trim_control_surfaces()
+void Plane::trim_control_surfaces()
 {
     read_radio();
     int16_t trim_roll_range = (channel_roll->radio_max - channel_roll->radio_min)/5;
@@ -292,7 +294,7 @@ static void trim_control_surfaces()
     channel_rudder->save_eeprom();
 }
 
-static void trim_radio()
+void Plane::trim_radio()
 {
     for (uint8_t y = 0; y < 30; y++) {
         read_radio();
@@ -305,7 +307,7 @@ static void trim_radio()
   return true if throttle level is below throttle failsafe threshold
   or RC input is invalid
  */
-static bool rc_failsafe_active(void)
+bool Plane::rc_failsafe_active(void)
 {
     if (!g.throttle_fs_enabled) {
         return false;

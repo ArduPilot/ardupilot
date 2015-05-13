@@ -1,7 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
 
-static void read_control_switch()
+void Plane::read_control_switch()
 {
     static bool switch_debouncer;
     uint8_t switchPosition = readSwitch();
@@ -101,7 +102,7 @@ static void read_control_switch()
 #endif // CONFIG_HAL_BOARD
 }
 
-static uint8_t readSwitch(void)
+uint8_t Plane::readSwitch(void)
 {
     uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
@@ -113,7 +114,7 @@ static uint8_t readSwitch(void)
     return 0;
 }
 
-static void reset_control_switch()
+void Plane::reset_control_switch()
 {
     oldSwitchPosition = 254;
     read_control_switch();
@@ -122,7 +123,7 @@ static void reset_control_switch()
 /*
   called when entering autotune
  */
-static void autotune_start(void)
+void Plane::autotune_start(void)
 {
     rollController.autotune_start();
     pitchController.autotune_start();
@@ -131,7 +132,7 @@ static void autotune_start(void)
 /*
   called when exiting autotune
  */
-static void autotune_restore(void)
+void Plane::autotune_restore(void)
 {
     rollController.autotune_restore();
     pitchController.autotune_restore();
@@ -140,7 +141,7 @@ static void autotune_restore(void)
 /*
   are we flying inverted?
  */
-static bool fly_inverted(void)
+bool Plane::fly_inverted(void)
 {
     if (g.inverted_flight_ch != 0 && inverted_flight) {
         // controlled with INVERTED_FLIGHT_CH

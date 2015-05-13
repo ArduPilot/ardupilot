@@ -1,33 +1,28 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 #if LOGGING_ENABLED == ENABLED
 
 #if CLI_ENABLED == ENABLED
 // Code to Write and Read packets from DataFlash.log memory
 // Code to interact with the user to dump or erase logs
 
-// These are function definitions so the Menu can be constructed before the functions
-// are defined below. Order matters to the compiler.
-static int8_t   dump_log(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   erase_logs(uint8_t argc,                const Menu::arg *argv);
-static int8_t   select_logs(uint8_t argc,               const Menu::arg *argv);
-
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
 static const struct Menu::command log_menu_commands[] PROGMEM = {
-    {"dump",        dump_log},
-    {"erase",       erase_logs},
-    {"enable",      select_logs},
-    {"disable",     select_logs}
+    {"dump",        MENU_FUNC(dump_log)},
+    {"erase",       MENU_FUNC(erase_logs)},
+    {"enable",      MENU_FUNC(select_logs)},
+    {"disable",     MENU_FUNC(select_logs)}
 };
 
 // A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, print_log_menu);
+MENU2(log_menu, "Log", log_menu_commands, MENU_FUNC(print_log_menu));
 
-static bool
-print_log_menu(void)
+bool Plane::print_log_menu(void)
 {
     cliSerial->println_P(PSTR("logs enabled: "));
 
@@ -63,39 +58,37 @@ print_log_menu(void)
     return(true);
 }
 
-static int8_t
-dump_log(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
 {
-    int16_t dump_log;
+    int16_t dump_log_num;
     uint16_t dump_log_start;
     uint16_t dump_log_end;
     uint16_t last_log_num;
 
     // check that the requested log number can be read
-    dump_log = argv[1].i;
+    dump_log_num = argv[1].i;
     last_log_num = DataFlash.find_last_log();
 
-    if (dump_log == -2) {
+    if (dump_log_num == -2) {
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
-    } else if (dump_log <= 0) {
+    } else if (dump_log_num <= 0) {
         cliSerial->printf_P(PSTR("dumping all\n"));
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2)
-               || ((uint16_t)dump_log > last_log_num))
+               || ((uint16_t)dump_log_num > last_log_num))
     {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
 
-    DataFlash.get_log_boundaries(dump_log, dump_log_start, dump_log_end);
-    Log_Read((uint16_t)dump_log, dump_log_start, dump_log_end);
+    DataFlash.get_log_boundaries(dump_log_num, dump_log_start, dump_log_end);
+    Log_Read((uint16_t)dump_log_num, dump_log_start, dump_log_end);
     return 0;
 }
 
-static int8_t
-erase_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv)
 {
     in_mavlink_delay = true;
     do_erase_logs();
@@ -103,8 +96,7 @@ erase_logs(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-select_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
 {
     uint32_t bits;
 
@@ -151,8 +143,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 
-static int8_t
-process_logs(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv)
 {
     log_menu.run();
     return 0;
@@ -160,7 +151,7 @@ process_logs(uint8_t argc, const Menu::arg *argv)
 
 #endif // CLI_ENABLED == ENABLED
 
-static void do_erase_logs(void)
+void Plane::do_erase_logs(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Erasing logs"));
     DataFlash.EraseAll();
@@ -169,7 +160,7 @@ static void do_erase_logs(void)
 
 
 // Write an attitude packet
-static void Log_Write_Attitude(void)
+void Plane::Log_Write_Attitude(void)
 {
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
@@ -206,11 +197,11 @@ struct PACKED log_Performance {
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
-static void Log_Write_Performance()
+void Plane::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        loop_time       : millis() - perf_mon_timer,
+        loop_time       : hal.scheduler->millis() - perf_mon_timer,
         main_loop_count : mainLoop_count,
         g_dt_max        : G_Dt_max,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
@@ -223,7 +214,7 @@ static void Log_Write_Performance()
 }
 
 // Write a mission command. Total length : 36 bytes
-static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
+void Plane::Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
@@ -236,7 +227,7 @@ struct PACKED log_Startup {
     uint16_t command_total;
 };
 
-static void Log_Write_Startup(uint8_t type)
+void Plane::Log_Write_Startup(uint8_t type)
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
@@ -249,7 +240,7 @@ static void Log_Write_Startup(uint8_t type)
     Log_Write_EntireMission();
 }
 
-static void Log_Write_EntireMission()
+void Plane::Log_Write_EntireMission()
 {
     DataFlash.Log_Write_Message_P(PSTR("New mission"));
 
@@ -274,7 +265,7 @@ struct PACKED log_Control_Tuning {
 };
 
 // Write a control tuning packet. Total length : 22 bytes
-static void Log_Write_Control_Tuning()
+void Plane::Log_Write_Control_Tuning()
 {
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
@@ -292,7 +283,7 @@ static void Log_Write_Control_Tuning()
 }
 
 // Write a TECS tuning packet
-static void Log_Write_TECS_Tuning(void)
+void Plane::Log_Write_TECS_Tuning(void)
 {
     SpdHgt_Controller->log_data(DataFlash, LOG_TECS_MSG);
 }
@@ -311,7 +302,7 @@ struct PACKED log_Nav_Tuning {
 };
 
 // Write a navigation tuning packe
-static void Log_Write_Nav_Tuning()
+void Plane::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
@@ -337,7 +328,7 @@ struct PACKED log_Status {
     uint8_t safety;
 };
 
-static void Log_Write_Status()
+void Plane::Log_Write_Status()
 {
     struct log_Status pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG)
@@ -364,7 +355,7 @@ struct PACKED log_Sonar {
 };
 
 // Write a sonar packet
-static void Log_Write_Sonar()
+void Plane::Log_Write_Sonar()
 {
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
@@ -392,7 +383,7 @@ struct PACKED log_Optflow {
 
 #if OPTFLOW == ENABLED
 // Write an optical flow packet
-static void Log_Write_Optflow()
+void Plane::Log_Write_Optflow()
 {
     // exit immediately if not enabled
     if (!optflow.enabled()) {
@@ -420,7 +411,7 @@ struct PACKED log_Arm_Disarm {
     uint16_t arm_checks;
 };
 
-static void Log_Write_Current()
+void Plane::Log_Write_Current()
 {
     DataFlash.Log_Write_Current(battery, channel_throttle->control_in);
 
@@ -428,7 +419,7 @@ static void Log_Write_Current()
     DataFlash.Log_Write_Power();
 }
 
-static void Log_Arm_Disarm() {
+void Plane::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
         time_ms                 : hal.scheduler->millis(),
@@ -438,29 +429,29 @@ static void Log_Arm_Disarm() {
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-static void Log_Write_GPS(uint8_t instance)
+void Plane::Log_Write_GPS(uint8_t instance)
 {
     DataFlash.Log_Write_GPS(gps, instance, current_loc.alt - ahrs.get_home().alt);
 }
 
-static void Log_Write_IMU() 
+void Plane::Log_Write_IMU() 
 {
     DataFlash.Log_Write_IMU(ins);
 }
 
-static void Log_Write_RC(void)
+void Plane::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
     DataFlash.Log_Write_RCOUT();
 }
 
-static void Log_Write_Baro(void)
+void Plane::Log_Write_Baro(void)
 {
     DataFlash.Log_Write_Baro(barometer);
 }
 
 // Write a AIRSPEED packet
-static void Log_Write_Airspeed(void)
+void Plane::Log_Write_Airspeed(void)
 {
     DataFlash.Log_Write_Airspeed(airspeed);
 }
@@ -492,7 +483,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
 
 #if CLI_ENABLED == ENABLED
 // Read the DataFlash.log memory : Packet Parser
-static void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
+void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"),
@@ -501,13 +492,13 @@ static void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
 	DataFlash.LogReadProcess(log_num, start_page, end_page, 
-                             print_flight_mode,
+                             AP_HAL_MEMBERPROC(&Plane::print_flight_mode),
                              cliSerial);
 }
 #endif // CLI_ENABLED
 
 // start a new log
-static void start_logging() 
+void Plane::start_logging() 
 {
     DataFlash.StartNewLog();
     DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
@@ -522,31 +513,29 @@ static void start_logging()
     }
 }
 
+/*
+  initialise logging subsystem
+ */
+void Plane::log_init(void)
+{
+    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    if (!DataFlash.CardInserted()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
+        g.log_bitmask.set(0);
+    } else if (DataFlash.NeedErase()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        do_erase_logs();
+        for (uint8_t i=0; i<num_gcs; i++) {
+            gcs[i].reset_cli_timeout();
+        }
+    }
+    arming.set_logging_available(DataFlash.CardInserted());
+}
+
 #else // LOGGING_ENABLED
 
-// dummy functions
-static void Log_Write_Startup(uint8_t type) {}
-static void Log_Write_EntireMission() {}
-static void Log_Write_Current() {}
-static void Log_Write_Nav_Tuning() {}
-static void Log_Write_TECS_Tuning() {}
-static void Log_Write_Performance() {}
-static void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd) {}
-static void Log_Write_Attitude() {}
-static void Log_Write_Control_Tuning() {}
-static void Log_Write_GPS(uint8_t instance) {}
-static void Log_Write_IMU() {}
-static void Log_Write_RC() {}
-static void Log_Write_Airspeed(void) {}
-static void Log_Write_Baro(void) {}
-static void Log_Write_Status() {}
-static void Log_Write_Sonar() {}
-#if OPTFLOW == ENABLED
-static void Log_Write_Optflow() {}
-#endif
-static void Log_Arm_Disarm() {}
-
-static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
+int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) 
+{
     return 0;
 }
 

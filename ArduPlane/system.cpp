@@ -1,4 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#include "Plane.h"
+
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
@@ -8,16 +11,10 @@
 
 #if CLI_ENABLED == ENABLED
 
-// Functions called from the top-level menu
-static int8_t   process_logs(uint8_t argc, const Menu::arg *argv);      // in Log.pde
-static int8_t   setup_mode(uint8_t argc, const Menu::arg *argv);        // in setup.pde
-static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in test.cpp
-static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
-
 // This is the help function
 // PSTR is an AVR macro to read strings from flash memory
 // printf_P is a version of print_f that reads from flash memory
-static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Commands:\n"
                          "  logs        log readback/setup mode\n"
@@ -32,24 +29,24 @@ static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 static const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-    {"logs",                process_logs},
-    {"setup",               setup_mode},
-    {"test",                test_mode},
-    {"reboot",              reboot_board},
-    {"help",                main_menu_help},
+    {"logs",        MENU_FUNC(process_logs)},
+    {"setup",       MENU_FUNC(setup_mode)},
+    {"test",        MENU_FUNC(test_mode)},
+    {"reboot",      MENU_FUNC(reboot_board)},
+    {"help",        MENU_FUNC(main_menu_help)},
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
-static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->reboot(false);
     return 0;
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(AP_HAL::UARTDriver *port)
+void Plane::run_cli(AP_HAL::UARTDriver *port)
 {
     // disable the failsafe code in the CLI
     hal.scheduler->register_timer_failsafe(NULL,1);
@@ -68,7 +65,18 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 #endif // CLI_ENABLED
 
-static void init_ardupilot()
+
+static void mavlink_delay_cb_static()
+{
+    plane.mavlink_delay_cb();
+}
+
+static void failsafe_check_static()
+{
+    plane.failsafe_check();
+}
+
+void Plane::init_ardupilot()
 {
     // initialise serial port
     serial_manager.init_console();
@@ -148,18 +156,7 @@ static void init_ardupilot()
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
-        g.log_bitmask.set(0);
-    } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
-        do_erase_logs();
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs[i].reset_cli_timeout();
-        }
-    }
-    arming.set_logging_available(DataFlash.CardInserted());
+    log_init();
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
@@ -183,7 +180,7 @@ static void init_ardupilot()
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // give AHRS the airspeed sensor
     ahrs.set_airspeed(&airspeed);
@@ -210,7 +207,7 @@ static void init_ardupilot()
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
-    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled == 1) {
@@ -248,7 +245,7 @@ static void init_ardupilot()
 //********************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //********************************************************************************
-static void startup_ground(void)
+void Plane::startup_ground(void)
 {
     set_mode(INITIALISING);
 
@@ -292,7 +289,7 @@ static void startup_ground(void)
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    failsafe.last_heartbeat_ms = millis();
+    failsafe.last_heartbeat_ms = hal.scheduler->millis();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -305,11 +302,11 @@ static void startup_ground(void)
     gcs_send_text_P(SEVERITY_LOW,PSTR("\n\n Ready to FLY."));
 }
 
-static enum FlightMode get_previous_mode() {
+enum FlightMode Plane::get_previous_mode() {
     return previous_mode; 
 }
 
-static void set_mode(enum FlightMode mode)
+void Plane::set_mode(enum FlightMode mode)
 {
     if(control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
@@ -440,7 +437,7 @@ static void set_mode(enum FlightMode mode)
 /*
   set_mode() wrapper for MAVLink SET_MODE
  */
-static bool mavlink_set_mode(uint8_t mode)
+bool Plane::mavlink_set_mode(uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
@@ -463,7 +460,7 @@ static bool mavlink_set_mode(uint8_t mode)
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode
-static void exit_mode(enum FlightMode mode)
+void Plane::exit_mode(enum FlightMode mode)
 {
     // stop mission when we leave auto
     if (mode == AUTO) {
@@ -473,9 +470,9 @@ static void exit_mode(enum FlightMode mode)
     }
 }
 
-static void check_long_failsafe()
+void Plane::check_long_failsafe()
 {
-    uint32_t tnow = millis();
+    uint32_t tnow = hal.scheduler->millis();
     // only act on changes
     // -------------------
     if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
@@ -503,7 +500,7 @@ static void check_long_failsafe()
     }
 }
 
-static void check_short_failsafe()
+void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
@@ -521,7 +518,7 @@ static void check_short_failsafe()
 }
 
 
-static void startup_INS_ground(void)
+void Plane::startup_INS_ground(void)
 {
     if (g.hil_mode == 1) {
         while (barometer.get_last_update() == 0) {
@@ -542,7 +539,7 @@ static void startup_INS_ground(void)
 
     if (style == AP_InertialSensor::COLD_START) {
         gcs_send_text_P(SEVERITY_MEDIUM, PSTR("Beginning INS calibration; do not move plane"));
-        mavlink_delay(100);
+        hal.scheduler->delay(100);
     }
 
     ahrs.init();
@@ -568,21 +565,21 @@ static void startup_INS_ground(void)
 
 // updates the status of the notify objects
 // should be called at 50hz
-static void update_notify()
+void Plane::update_notify()
 {
     notify.update();
 }
 
-static void resetPerfData(void) 
+void Plane::resetPerfData(void) 
 {
     mainLoop_count                  = 0;
     G_Dt_max                        = 0;
     G_Dt_min                        = 0;
-    perf_mon_timer                  = millis();
+    perf_mon_timer                  = hal.scheduler->millis();
 }
 
 
-static void check_usb_mux(void)
+void Plane::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == usb_connected) {
@@ -606,8 +603,7 @@ static void check_usb_mux(void)
 }
 
 
-static void
-print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
+void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
@@ -656,7 +652,7 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 }
 
 #if CLI_ENABLED == ENABLED
-static void print_comma(void)
+void Plane::print_comma(void)
 {
     cliSerial->print_P(PSTR(","));
 }
@@ -665,7 +661,7 @@ static void print_comma(void)
 /*
   write to a servo
  */
-static void servo_write(uint8_t ch, uint16_t pwm)
+void Plane::servo_write(uint8_t ch, uint16_t pwm)
 {
     if (g.hil_mode==1 && !g.hil_servos) {
         if (ch < 8) {
@@ -680,7 +676,7 @@ static void servo_write(uint8_t ch, uint16_t pwm)
 /*
   should we log a message type now?
  */
-static bool should_log(uint32_t mask)
+bool Plane::should_log(uint32_t mask)
 {
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
@@ -702,7 +698,7 @@ static bool should_log(uint32_t mask)
   send FrSky telemetry. Should be called at 5Hz by scheduler
  */
 #if FRSKY_TELEM_ENABLED == ENABLED
-static void frsky_telemetry_send(void)
+void Plane::frsky_telemetry_send(void)
 {
     frsky_telemetry.send_frames((uint8_t)control_mode);
 }
@@ -712,7 +708,7 @@ static void frsky_telemetry_send(void)
 /*
   return throttle percentage from 0 to 100
  */
-static uint8_t throttle_percentage(void)
+uint8_t Plane::throttle_percentage(void)
 {
     // to get the real throttle we need to use norm_output() which
     // returns a number from -1 to 1.
@@ -722,7 +718,7 @@ static uint8_t throttle_percentage(void)
 /*
   update AHRS soft arm state and log as needed
  */
-static void change_arm_state(void)
+void Plane::change_arm_state(void)
 {
     Log_Arm_Disarm();
     hal.util->set_soft_armed(arming.is_armed() &&
@@ -737,7 +733,7 @@ static void change_arm_state(void)
 /*
   arm motors
  */
-static bool arm_motors(AP_Arming::ArmingMethod method)
+bool Plane::arm_motors(AP_Arming::ArmingMethod method)
 {
     if (!arming.arm(method)) {
         return false;
@@ -752,7 +748,7 @@ static bool arm_motors(AP_Arming::ArmingMethod method)
 /*
   disarm motors
  */
-static bool disarm_motors(void)
+bool Plane::disarm_motors(void)
 {
     if (!arming.disarm()) {
         return false;

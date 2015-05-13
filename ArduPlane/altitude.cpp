@@ -14,6 +14,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Plane.h"
+
 /*
   altitude handling routines. These cope with both barometric control
   and terrain following control
@@ -22,7 +24,7 @@
 /*
   adjust altitude target depending on mode
  */
-static void adjust_altitude_target()
+void Plane::adjust_altitude_target()
 {
     if (control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE) {
@@ -55,7 +57,7 @@ static void adjust_altitude_target()
 /*
   setup for a gradual glide slope to the next waypoint, if appropriate
  */
-static void setup_glide_slope(void)
+void Plane::setup_glide_slope(void)
 {
     // establish the distance we are travelling to the next waypoint,
     // for calculating out rate of change of altitude
@@ -102,7 +104,7 @@ static void setup_glide_slope(void)
 /*
   return RTL altitude as AMSL altitude
  */
-static int32_t get_RTL_altitude()
+int32_t Plane::get_RTL_altitude()
 {
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
@@ -114,7 +116,7 @@ static int32_t get_RTL_altitude()
 /*
   return relative altitude in meters (relative to home)
  */
-static float relative_altitude(void)
+float Plane::relative_altitude(void)
 {
     return (current_loc.alt - home.alt) * 0.01f;
 }
@@ -122,7 +124,7 @@ static float relative_altitude(void)
 /*
   return relative altitude in centimeters, absolute value
  */
-static int32_t relative_altitude_abs_cm(void)
+int32_t Plane::relative_altitude_abs_cm(void)
 {
     return labs(current_loc.alt - home.alt);
 }
@@ -133,7 +135,7 @@ static int32_t relative_altitude_abs_cm(void)
   setting up for altitude hold, such as when releasing elevator in
   CRUISE mode.
  */
-static void set_target_altitude_current(void)
+void Plane::set_target_altitude_current(void)
 {
     // record altitude above sea level at the current time as our
     // target altitude
@@ -160,7 +162,7 @@ static void set_target_altitude_current(void)
 /*
   set the target altitude to the current altitude, with ALT_OFFSET adjustment
  */
-static void set_target_altitude_current_adjusted(void)
+void Plane::set_target_altitude_current_adjusted(void)
 {
     set_target_altitude_current();
 
@@ -171,7 +173,7 @@ static void set_target_altitude_current_adjusted(void)
 /*
   set target altitude based on a location structure
  */
-static void set_target_altitude_location(const Location &loc)
+void Plane::set_target_altitude_location(const Location &loc)
 {
     target_altitude.amsl_cm = loc.alt;
     if (loc.flags.relative_alt) {
@@ -201,7 +203,7 @@ static void set_target_altitude_location(const Location &loc)
   return relative to home target altitude in centimeters. Used for
   altitude control libraries
  */
-static int32_t relative_target_altitude_cm(void)
+int32_t Plane::relative_target_altitude_cm(void)
 {
 #if AP_TERRAIN_AVAILABLE
     float relative_home_height;
@@ -230,7 +232,7 @@ static int32_t relative_target_altitude_cm(void)
   change the current target altitude by an amount in centimeters. Used
   to cope with changes due to elevator in CRUISE or FBWB
  */
-static void change_target_altitude(int32_t change_cm)
+void Plane::change_target_altitude(int32_t change_cm)
 {
     target_altitude.amsl_cm += change_cm;
 #if AP_TERRAIN_AVAILABLE
@@ -251,7 +253,7 @@ static void change_target_altitude(int32_t change_cm)
   Note that target_altitude is setup initially based on the
   destination waypoint
  */
-static void set_target_altitude_proportion(const Location &loc, float proportion)
+void Plane::set_target_altitude_proportion(const Location &loc, float proportion)
 {
     set_target_altitude_location(loc);
     proportion = constrain_float(proportion, 0.0f, 1.0f);
@@ -273,7 +275,7 @@ static void set_target_altitude_proportion(const Location &loc, float proportion
   constrain target altitude to be between two locations. Used to
   ensure we stay within two waypoints in altitude
  */
-static void constrain_target_altitude_location(const Location &loc1, const Location &loc2)
+void Plane::constrain_target_altitude_location(const Location &loc1, const Location &loc2)
 {
     if (loc1.alt > loc2.alt) {
         target_altitude.amsl_cm = constrain_int32(target_altitude.amsl_cm, loc2.alt, loc1.alt);
@@ -285,7 +287,7 @@ static void constrain_target_altitude_location(const Location &loc1, const Locat
 /*
   return error between target altitude and current altitude
  */
-static int32_t calc_altitude_error_cm(void)
+int32_t Plane::calc_altitude_error_cm(void)
 {
 #if AP_TERRAIN_AVAILABLE
     float terrain_height;
@@ -300,7 +302,7 @@ static int32_t calc_altitude_error_cm(void)
 /*
   check for FBWB_min_altitude_cm violation
  */
-static void check_minimum_altitude(void)
+void Plane::check_minimum_altitude(void)
 {
     if (g.FBWB_min_altitude_cm == 0) {
         return;
@@ -324,7 +326,7 @@ static void check_minimum_altitude(void)
 /*
   reset the altitude offset used for glide slopes
  */
-static void reset_offset_altitude(void)
+void Plane::reset_offset_altitude(void)
 {
     target_altitude.offset_cm = 0;
 }
@@ -336,7 +338,7 @@ static void reset_offset_altitude(void)
   destination is above the current altitude then the result is
   positive.
  */
-static void set_offset_altitude_location(const Location &loc)
+void Plane::set_offset_altitude_location(const Location &loc)
 {
     target_altitude.offset_cm = loc.alt - current_loc.alt;
 
@@ -381,7 +383,7 @@ static void set_offset_altitude_location(const Location &loc)
   lower pressure altitude, if current_loc is in a low part of the
   terrain
  */
-static bool above_location_current(const Location &loc)
+bool Plane::above_location_current(const Location &loc)
 {
 #if AP_TERRAIN_AVAILABLE
     float terrain_alt;
@@ -406,7 +408,7 @@ static bool above_location_current(const Location &loc)
   modify a destination to be setup for terrain following if
   TERRAIN_FOLLOW is enabled
  */
-static void setup_terrain_target_alt(Location &loc)
+void Plane::setup_terrain_target_alt(Location &loc)
 {
 #if AP_TERRAIN_AVAILABLE
     if (g.terrain_follow) {
@@ -420,7 +422,7 @@ static void setup_terrain_target_alt(Location &loc)
   This is useful during long flights to account for barometer changes
   from the GCS, or to adjust the flying height of a long mission
  */
-static int32_t adjusted_altitude_cm(void)
+int32_t Plane::adjusted_altitude_cm(void)
 {
     return current_loc.alt - (g.alt_offset*100);
 }
@@ -430,7 +432,7 @@ static int32_t adjusted_altitude_cm(void)
   during long flights to account for barometer changes from the GCS,
   or to adjust the flying height of a long mission
  */
-static int32_t adjusted_relative_altitude_cm(void)
+int32_t Plane::adjusted_relative_altitude_cm(void)
 {
     return adjusted_altitude_cm() - home.alt;
 }
@@ -438,7 +440,7 @@ static int32_t adjusted_relative_altitude_cm(void)
 /*
   return the height in meters above the next_WP_loc altitude
  */
-static float height_above_target(void)
+float Plane::height_above_target(void)
 {
     float target_alt = next_WP_loc.alt*0.01;
     if (!next_WP_loc.flags.relative_alt) {
@@ -460,7 +462,7 @@ static float height_above_target(void)
 /*
   work out target altitude adjustment from terrain lookahead
  */
-static float lookahead_adjustment(void)
+float Plane::lookahead_adjustment(void)
 {
 #if AP_TERRAIN_AVAILABLE
     int32_t bearing_cd;
@@ -521,7 +523,7 @@ static float lookahead_adjustment(void)
   meters to correct target altitude. A positive number means we need
   to ask the speed/height controller to fly higher
  */
-static float rangefinder_correction(void)
+float Plane::rangefinder_correction(void)
 {
     if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
         // we haven't had any rangefinder data for 5s - don't use it
@@ -544,7 +546,7 @@ static float rangefinder_correction(void)
 /*
   update the offset between rangefinder height and terrain height
  */
-static void rangefinder_height_update(void)
+void Plane::rangefinder_height_update(void)
 {
     uint16_t distance_cm = rangefinder.distance_cm();
     float height_estimate = 0;

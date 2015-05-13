@@ -3,10 +3,12 @@
  *  logic for dealing with the current command in the mission and home location
  */
 
+#include "Plane.h"
+
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-static void set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const struct Location &loc)
 {
     if (auto_state.next_wp_no_crosstrack) {
         // we should not try to cross-track for this waypoint
@@ -67,7 +69,7 @@ static void set_next_WP(const struct Location &loc)
     loiter_angle_reset();
 }
 
-static void set_guided_WP(void)
+void Plane::set_guided_WP(void)
 {
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -96,7 +98,7 @@ static void set_guided_WP(void)
 
 // run this at setup on the ground
 // -------------------------------
-static void init_home()
+void Plane::init_home()
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
 
@@ -118,7 +120,7 @@ static void init_home()
   this is called as long as we have 3D lock and the arming switch is
   not pushed
 */
-static void update_home()
+void Plane::update_home()
 {
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         ahrs.set_home(gps.location());

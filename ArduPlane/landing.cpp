@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 /*
   landing logic
  */
@@ -8,7 +10,7 @@
   update navigation for landing. Called when on landing approach or
   final flare
  */
-static bool verify_land()
+bool Plane::verify_land()
 {
     // we don't 'verify' landing in the sense that it never completes,
     // so we don't verify command completion. Instead we use this to
@@ -102,7 +104,7 @@ static bool verify_land()
 /*
     If land_DisarmDelay is enabled (non-zero), check for a landing then auto-disarm after time expires
  */
-static void disarm_if_autoland_complete()
+void Plane::disarm_if_autoland_complete()
 {
     if (g.land_disarm_delay > 0 && 
         auto_state.land_complete && 
@@ -128,7 +130,7 @@ static void disarm_if_autoland_complete()
   itself as that leads to discontinuities close to the landing point,
   which can lead to erratic pitch control
  */
-static void setup_landing_glide_slope(void)
+void Plane::setup_landing_glide_slope(void)
 {
         Location loc = next_WP_loc;
 
@@ -209,7 +211,7 @@ static void setup_landing_glide_slope(void)
    switch to that mission item.  Returns false if no DO_LAND_START
    available.
  */
-static bool jump_to_landing_sequence(void) 
+bool Plane::jump_to_landing_sequence(void) 
 {
     uint16_t land_idx = mission.get_landing_sequence_start();
     if (land_idx != 0) {
@@ -233,7 +235,7 @@ static bool jump_to_landing_sequence(void)
 /*
   the height above field elevation that we pass to TECS
  */
-static float tecs_hgt_afe(void)
+float Plane::tecs_hgt_afe(void)
 {
     /*
       pass the height above field elevation as the height above

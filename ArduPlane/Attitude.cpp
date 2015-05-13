@@ -1,16 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-//****************************************************************
-// Function that controls aileron/rudder, elevator, rudder (if 4 channel control) and throttle to produce desired attitude and airspeed.
-//****************************************************************
-
+#include "Plane.h"
 
 /*
   get a speed scaling number for control surfaces. This is applied to
   PIDs to change the scaling of the PID with speed. At high speed we
   move the surfaces less, and at low speeds we move them more.
  */
-static float get_speed_scaler(void)
+float Plane::get_speed_scaler(void)
 {
     float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(&aspeed)) {
@@ -39,7 +36,7 @@ static float get_speed_scaler(void)
 /*
   return true if the current settings and mode should allow for stick mixing
  */
-static bool stick_mixing_enabled(void)
+bool Plane::stick_mixing_enabled(void)
 {
     if (auto_throttle_mode) {
         // we're in an auto mode. Check the stick mixing flag
@@ -69,7 +66,7 @@ static bool stick_mixing_enabled(void)
   previously set nav_roll calculates roll servo_out to try to
   stabilize the plane at the given roll
  */
-static void stabilize_roll(float speed_scaler)
+void Plane::stabilize_roll(float speed_scaler)
 {
     if (fly_inverted()) {
         // we want to fly upside down. We need to cope with wrap of
@@ -95,7 +92,7 @@ static void stabilize_roll(float speed_scaler)
   previously set nav_pitch and calculates servo_out values to try to
   stabilize the plane at the given attitude.
  */
-static void stabilize_pitch(float speed_scaler)
+void Plane::stabilize_pitch(float speed_scaler)
 {
     int8_t force_elevator = takeoff_tail_hold();
     if (force_elevator != 0) {
@@ -120,7 +117,7 @@ static void stabilize_pitch(float speed_scaler)
   controller as it increases the influence of the users stick input,
   allowing the user full deflection if needed
  */
-static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
+void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
 {
     float ch_inf;
         
@@ -135,7 +132,7 @@ static void stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
 /*
   this gives the user control of the aircraft in stabilization modes
  */
-static void stabilize_stick_mixing_direct()
+void Plane::stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
@@ -154,7 +151,7 @@ static void stabilize_stick_mixing_direct()
   this gives the user control of the aircraft in stabilization modes
   using FBW style controls
  */
-static void stabilize_stick_mixing_fbw()
+void Plane::stabilize_stick_mixing_fbw()
 {
     if (!stick_mixing_enabled() ||
         control_mode == ACRO ||
@@ -204,7 +201,7 @@ static void stabilize_stick_mixing_fbw()
     - rate controlled with ground steering
     - yaw control for coordinated flight    
  */
-static void stabilize_yaw(float speed_scaler)
+void Plane::stabilize_yaw(float speed_scaler)
 {
     if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
         // in land final setup for ground steering
@@ -245,7 +242,7 @@ static void stabilize_yaw(float speed_scaler)
 /*
   a special stabilization function for training mode
  */
-static void stabilize_training(float speed_scaler)
+void Plane::stabilize_training(float speed_scaler)
 {
     if (training_manual_roll) {
         channel_roll->servo_out = channel_roll->control_in;
@@ -278,7 +275,7 @@ static void stabilize_training(float speed_scaler)
   this is the ACRO mode stabilization function. It does rate
   stabilization on roll and pitch axes
  */
-static void stabilize_acro(float speed_scaler)
+void Plane::stabilize_acro(float speed_scaler)
 {
     float roll_rate = (channel_roll->control_in/4500.0f) * g.acro_roll_rate;
     float pitch_rate = (channel_pitch->control_in/4500.0f) * g.acro_pitch_rate;
@@ -345,7 +342,7 @@ static void stabilize_acro(float speed_scaler)
 /*
   main stabilization function for all 3 axes
  */
-static void stabilize()
+void Plane::stabilize()
 {
     if (control_mode == MANUAL) {
         // nothing to do
@@ -391,7 +388,7 @@ static void stabilize()
 }
 
 
-static void calc_throttle()
+void Plane::calc_throttle()
 {
     if (aparm.throttle_cruise <= 1) {
         // user has asked for zero throttle - this may be done by a
@@ -411,7 +408,7 @@ static void calc_throttle()
 /*
   calculate yaw control for coordinated flight
  */
-static void calc_nav_yaw_coordinated(float speed_scaler)
+void Plane::calc_nav_yaw_coordinated(float speed_scaler)
 {
     bool disable_integrator = false;
     if (control_mode == STABILIZE && rudder_input != 0) {
@@ -428,7 +425,7 @@ static void calc_nav_yaw_coordinated(float speed_scaler)
 /*
   calculate yaw control for ground steering with specific course
  */
-static void calc_nav_yaw_course(void)
+void Plane::calc_nav_yaw_course(void)
 {
     // holding a specific navigation course on the ground. Used in
     // auto-takeoff and landing
@@ -443,7 +440,7 @@ static void calc_nav_yaw_course(void)
 /*
   calculate yaw control for ground steering
  */
-static void calc_nav_yaw_ground(void)
+void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         channel_throttle->control_in == 0 &&
@@ -484,7 +481,7 @@ static void calc_nav_yaw_ground(void)
 /*
   calculate a new nav_pitch_cd from the speed height controller
  */
-static void calc_nav_pitch()
+void Plane::calc_nav_pitch()
 {
     // Calculate the Pitch of the plane
     // --------------------------------
@@ -496,7 +493,7 @@ static void calc_nav_pitch()
 /*
   calculate a new nav_roll_cd from the navigation controller
  */
-static void calc_nav_roll()
+void Plane::calc_nav_roll()
 {
     nav_roll_cd = nav_controller->nav_roll_cd();
     update_load_factor();
@@ -507,7 +504,7 @@ static void calc_nav_roll()
 /*****************************************
 * Throttle slew limit
 *****************************************/
-static void throttle_slew_limit(int16_t last_throttle)
+void Plane::throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
@@ -528,7 +525,7 @@ static void throttle_slew_limit(int16_t last_throttle)
 /*****************************************
 Flap slew limit
 *****************************************/
-static void flap_slew_limit(int8_t &last_value, int8_t &new_value)
+void Plane::flap_slew_limit(int8_t &last_value, int8_t &new_value)
 {
     uint8_t slewrate = g.flap_slewrate;
     // if slew limit rate is set to zero then do not slew limit
@@ -556,7 +553,7 @@ static void flap_slew_limit(int8_t &last_value, int8_t &new_value)
    *       OR
    *       5 - Home location is not set
 */
-static bool suppress_throttle(void)
+bool Plane::suppress_throttle(void)
 {
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
@@ -614,7 +611,7 @@ static bool suppress_throttle(void)
 /*
   implement a software VTail or elevon mixer. There are 4 different mixing modes
  */
-static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
+void Plane::channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_t &chan2_out)
 {
     int16_t c1, c2;
     int16_t v1, v2;
@@ -659,7 +656,7 @@ static void channel_output_mixer(uint8_t mixing_type, int16_t &chan1_out, int16_
 /*
   setup flaperon output channels
  */
-static void flaperon_update(int8_t flap_percent)
+void Plane::flaperon_update(int8_t flap_percent)
 {
     if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_flaperon1) ||
         !RC_Channel_aux::function_assigned(RC_Channel_aux::k_flaperon2)) {
@@ -688,7 +685,7 @@ static void flaperon_update(int8_t flap_percent)
 /*****************************************
 * Set the flight control servos based on the current calculated values
 *****************************************/
-static void set_servos(void)
+void Plane::set_servos(void)
 {
     int16_t last_throttle = channel_throttle->radio_out;
 
@@ -980,20 +977,18 @@ static void set_servos(void)
     RC_Channel_aux::output_ch_all();
 }
 
-static bool demoing_servos;
-
-static void demo_servos(uint8_t i) 
+void Plane::demo_servos(uint8_t i) 
 {
     while(i > 0) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
         demoing_servos = true;
         servo_write(1, 1400);
-        mavlink_delay(400);
+        hal.scheduler->delay(400);
         servo_write(1, 1600);
-        mavlink_delay(200);
+        hal.scheduler->delay(200);
         servo_write(1, 1500);
         demoing_servos = false;
-        mavlink_delay(400);
+        hal.scheduler->delay(400);
         i--;
     }
 }
@@ -1004,7 +999,7 @@ static void demo_servos(uint8_t i)
   automatically pitch down a little when at low throttle. It makes
   FBWA landings without stalling much easier.
  */
-static void adjust_nav_pitch_throttle(void)
+void Plane::adjust_nav_pitch_throttle(void)
 {
     uint8_t throttle = throttle_percentage();
     if (throttle < aparm.throttle_cruise) {
@@ -1019,7 +1014,7 @@ static void adjust_nav_pitch_throttle(void)
   ensure that the load factor does not take us below the sustainable
   airspeed
  */
-static void update_load_factor(void)
+void Plane::update_load_factor(void)
 {
     float demanded_roll = fabsf(nav_roll_cd*0.01f);
     if (demanded_roll > 85) {

@@ -1,4 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#include "Plane.h"
+
 /*
  *  failsafe support
  *  Andrew Tridgell, December 2011
@@ -13,7 +16,7 @@
  *  this failsafe_check function is called from the core timer interrupt
  *  at 1kHz.
  */
-void failsafe_check(void)
+void Plane::failsafe_check(void)
 {
     static uint16_t last_mainLoop_count;
     static uint32_t last_timestamp;

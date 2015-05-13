@@ -1,60 +1,36 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 #if CLI_ENABLED == ENABLED
-
-// These are function definitions so the Menu can be constructed before the functions
-// are defined below. Order matters to the compiler.
-static int8_t   test_radio_pwm(uint8_t argc,    const Menu::arg *argv);
-static int8_t   test_radio(uint8_t argc,                const Menu::arg *argv);
-static int8_t   test_passthru(uint8_t argc,     const Menu::arg *argv);
-static int8_t   test_failsafe(uint8_t argc,     const Menu::arg *argv);
-static int8_t   test_gps(uint8_t argc,                  const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-static int8_t   test_adc(uint8_t argc,                  const Menu::arg *argv);
-#endif
-static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
-static int8_t   test_wp(uint8_t argc,                   const Menu::arg *argv);
-static int8_t   test_airspeed(uint8_t argc,     const Menu::arg *argv);
-static int8_t   test_pressure(uint8_t argc,     const Menu::arg *argv);
-static int8_t   test_mag(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_xbee(uint8_t argc,                 const Menu::arg *argv);
-static int8_t   test_modeswitch(uint8_t argc,           const Menu::arg *argv);
-static int8_t   test_logging(uint8_t argc,              const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-static int8_t   test_shell(uint8_t argc,              const Menu::arg *argv);
-#endif
-
-// forward declaration to keep the compiler happy
-static void test_wp_print(const AP_Mission::Mission_Command& cmd);
 
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
 static const struct Menu::command test_menu_commands[] PROGMEM = {
-    {"pwm",                         test_radio_pwm},
-    {"radio",                       test_radio},
-    {"passthru",            test_passthru},
-    {"failsafe",            test_failsafe},
-    {"relay",                       test_relay},
-    {"waypoints",           test_wp},
-    {"xbee",                        test_xbee},
-    {"modeswitch",          test_modeswitch},
+    {"pwm",                 MENU_FUNC(test_radio_pwm)},
+    {"radio",               MENU_FUNC(test_radio)},
+    {"passthru",            MENU_FUNC(test_passthru)},
+    {"failsafe",            MENU_FUNC(test_failsafe)},
+    {"relay",               MENU_FUNC(test_relay)},
+    {"waypoints",           MENU_FUNC(test_wp)},
+    {"xbee",                MENU_FUNC(test_xbee)},
+    {"modeswitch",          MENU_FUNC(test_modeswitch)},
 
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    {"adc",                 test_adc},
+    {"adc",                 MENU_FUNC(test_adc)},
 #endif
-    {"gps",                 test_gps},
-    {"ins",                 test_ins},
-    {"airspeed",    test_airspeed},
-    {"airpressure", test_pressure},
-    {"compass",             test_mag},
-    {"logging",             test_logging},
+    {"gps",                 MENU_FUNC(test_gps)},
+    {"ins",                 MENU_FUNC(test_ins)},
+    {"airspeed",            MENU_FUNC(test_airspeed)},
+    {"airpressure",         MENU_FUNC(test_pressure)},
+    {"compass",             MENU_FUNC(test_mag)},
+    {"logging",             MENU_FUNC(test_logging)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				test_shell},
+    {"shell", 				MENU_FUNC(test_shell)},
 #endif
 
 };
@@ -62,21 +38,19 @@ static const struct Menu::command test_menu_commands[] PROGMEM = {
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
-static int8_t
-test_mode(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_mode(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Test Mode\n\n"));
     test_menu.run();
     return 0;
 }
 
-static void print_hit_enter()
+void Plane::print_hit_enter()
 {
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }
 
-static int8_t
-test_radio_pwm(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -105,8 +79,7 @@ test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 }
 
 
-static int8_t
-test_passthru(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_passthru(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -131,8 +104,7 @@ test_passthru(uint8_t argc, const Menu::arg *argv)
     return 0;
 }
 
-static int8_t
-test_radio(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_radio(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -170,8 +142,7 @@ test_radio(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_failsafe(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_failsafe(uint8_t argc, const Menu::arg *argv)
 {
     uint8_t fail_test;
     print_hit_enter();
@@ -225,8 +196,7 @@ test_failsafe(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_relay(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_relay(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -248,8 +218,7 @@ test_relay(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_wp(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_wp(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->delay(1000);
 
@@ -274,8 +243,7 @@ test_wp(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-static void
-test_wp_print(const AP_Mission::Mission_Command& cmd)
+void Plane::test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
     cliSerial->printf_P(PSTR("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n"),
                     (int)cmd.index,
@@ -287,8 +255,7 @@ test_wp_print(const AP_Mission::Mission_Command& cmd)
                     (long)cmd.content.location.lng);
 }
 
-static int8_t
-test_xbee(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_xbee(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -306,8 +273,7 @@ test_xbee(uint8_t argc, const Menu::arg *argv)
 }
 
 
-static int8_t
-test_modeswitch(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -332,8 +298,7 @@ test_modeswitch(uint8_t argc, const Menu::arg *argv)
 /*
  *  test the dataflash is working
  */
-static int8_t
-test_logging(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_logging(uint8_t argc, const Menu::arg *argv)
 {
     DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
@@ -343,8 +308,7 @@ test_logging(uint8_t argc, const Menu::arg *argv)
 /*
  *  run a debug shell
  */
-static int8_t
-test_shell(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_shell(uint8_t argc, const Menu::arg *argv)
 {
     hal.util->run_debug_shell(cliSerial);
     return 0;
@@ -355,8 +319,7 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 // tests in this section are for real sensors or sensors that have been simulated
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-static int8_t
-test_adc(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_adc(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     apm1_adc.Init();
@@ -375,8 +338,7 @@ test_adc(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-static int8_t
-test_gps(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     hal.scheduler->delay(1000);
@@ -404,8 +366,7 @@ test_gps(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_ins(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_ins(uint8_t argc, const Menu::arg *argv)
 {
     //cliSerial->printf_P(PSTR("Calibrating."));
     ahrs.init();
@@ -456,8 +417,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
 }
 
 
-static int8_t
-test_mag(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
 {
     if (!g.compass_enabled) {
         cliSerial->printf_P(PSTR("Compass: "));
@@ -473,7 +433,6 @@ test_mag(uint8_t argc, const Menu::arg *argv)
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
     ahrs.set_compass(&compass);
-    report_compass();
 
     // we need the AHRS initialised for this test
     ins.init(AP_InertialSensor::COLD_START, 
@@ -533,8 +492,7 @@ test_mag(uint8_t argc, const Menu::arg *argv)
 //-------------------------------------------------------------------------------------------
 // real sensors that have not been simulated yet go here
 
-static int8_t
-test_airspeed(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_airspeed(uint8_t argc, const Menu::arg *argv)
 {
     if (!airspeed.enabled()) {
         cliSerial->printf_P(PSTR("airspeed: "));
@@ -559,8 +517,7 @@ test_airspeed(uint8_t argc, const Menu::arg *argv)
 }
 
 
-static int8_t
-test_pressure(uint8_t argc, const Menu::arg *argv)
+int8_t Plane::test_pressure(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Uncalibrated relative airpressure\n"));
     print_hit_enter();
@@ -584,6 +541,16 @@ test_pressure(uint8_t argc, const Menu::arg *argv)
             return (0);
         }
     }
+}
+
+void Plane::print_enabled(bool b)
+{
+    if (b) {
+        cliSerial->printf_P(PSTR("en"));
+    } else {
+        cliSerial->printf_P(PSTR("dis"));
+    }
+    cliSerial->printf_P(PSTR("abled\n"));
 }
 
 #endif // CLI_ENABLED

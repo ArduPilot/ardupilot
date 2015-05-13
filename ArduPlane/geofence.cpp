@@ -4,6 +4,8 @@
  *  Andrew Tridgell, December 2011
  */
 
+#include "Plane.h"
+
 #if GEOFENCE_ENABLED == ENABLED
 
 #define MIN_GEOFENCE_POINTS 5 // 3 to define a minimal polygon (triangle)
@@ -45,7 +47,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
 /*
   maximum number of fencepoints
  */
-static uint8_t max_fencepoints(void)
+uint8_t Plane::max_fencepoints(void)
 {
     return min(255, fence_storage.size() / sizeof(Vector2l));
 }
@@ -53,7 +55,7 @@ static uint8_t max_fencepoints(void)
 /*
  *  fence boundaries fetch/store
  */
-static Vector2l get_fence_point_with_index(unsigned i)
+Vector2l Plane::get_fence_point_with_index(unsigned i)
 {
     Vector2l ret;
 
@@ -69,7 +71,7 @@ static Vector2l get_fence_point_with_index(unsigned i)
 }
 
 // save a fence point
-static void set_fence_point_with_index(Vector2l &point, unsigned i)
+void Plane::set_fence_point_with_index(Vector2l &point, unsigned i)
 {
     if (i >= (unsigned)g.fence_total.get() || i >= max_fencepoints()) {
         // not allowed
@@ -87,7 +89,7 @@ static void set_fence_point_with_index(Vector2l &point, unsigned i)
 /*
  *  allocate and fill the geofence state structure
  */
-static void geofence_load(void)
+void Plane::geofence_load(void)
 {
     uint8_t i;
 
@@ -147,7 +149,7 @@ failed:
  * return true if a geo-fence has been uploaded and
  * FENCE_ACTION is 1 (not necessarily enabled)
  */
-static bool geofence_present(void)
+bool Plane::geofence_present(void)
 {
     //require at least a return point and a triangle
     //to define a geofence area:
@@ -160,7 +162,7 @@ static bool geofence_present(void)
 /*
   check FENCE_CHANNEL and update the is_pwm_enabled state
  */
-static void geofence_update_pwm_enabled_state() 
+void Plane::geofence_update_pwm_enabled_state() 
 {
     bool is_pwm_enabled;
     if (g.fence_channel == 0) {
@@ -188,7 +190,7 @@ static void geofence_update_pwm_enabled_state()
 }
 
 //return true on success, false on failure
-static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) 
+bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) 
 {
     if (geofence_state == NULL && enable) {
         geofence_load();
@@ -210,7 +212,7 @@ static bool geofence_set_enabled(bool enable, GeofenceEnableReason r)
 /*
  *  return true if geo-fencing is enabled
  */
-static bool geofence_enabled(void)
+bool Plane::geofence_enabled(void)
 {
     geofence_update_pwm_enabled_state();
 
@@ -234,7 +236,7 @@ static bool geofence_enabled(void)
  * Set floor state IF the fence is present.
  * Return false on failure to set floor state.
  */
-static bool geofence_set_floor_enabled(bool floor_enable) {
+bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     if (geofence_state == NULL) {
         return false;
     }
@@ -246,7 +248,7 @@ static bool geofence_set_floor_enabled(bool floor_enable) {
 /*
  *  return true if we have breached the geo-fence minimum altiude
  */
-static bool geofence_check_minalt(void)
+bool Plane::geofence_check_minalt(void)
 {
     if (g.fence_maxalt <= g.fence_minalt) {
         return false;
@@ -260,7 +262,7 @@ static bool geofence_check_minalt(void)
 /*
  *  return true if we have breached the geo-fence maximum altiude
  */
-static bool geofence_check_maxalt(void)
+bool Plane::geofence_check_maxalt(void)
 {
     if (g.fence_maxalt <= g.fence_minalt) {
         return false;
@@ -275,7 +277,7 @@ static bool geofence_check_maxalt(void)
 /*
  *  check if we have breached the geo-fence
  */
-static void geofence_check(bool altitude_check_only)
+void Plane::geofence_check(bool altitude_check_only)
 {
     if (!geofence_enabled()) {
         // switch back to the chosen control mode if still in
@@ -354,7 +356,7 @@ static void geofence_check(bool altitude_check_only)
     // we are outside, and have not previously triggered.
     geofence_state->fence_triggered = true;
     geofence_state->breach_count++;
-    geofence_state->breach_time = millis();
+    geofence_state->breach_time = hal.scheduler->millis();
     geofence_state->breach_type = breach_type;
 
  #if FENCE_TRIGGERED_PIN > 0
@@ -420,7 +422,7 @@ static void geofence_check(bool altitude_check_only)
  *  disabled. Otherwise the aircraft may not be able to recover from
  *  a breach of the geo-fence
  */
-static bool geofence_stickmixing(void) {
+bool Plane::geofence_stickmixing(void) {
     if (geofence_enabled() &&
         geofence_state != NULL &&
         geofence_state->fence_triggered &&
@@ -435,7 +437,7 @@ static bool geofence_stickmixing(void) {
 /*
  *
  */
-static void geofence_send_status(mavlink_channel_t chan)
+void Plane::geofence_send_status(mavlink_channel_t chan)
 {
     if (geofence_enabled() && geofence_state != NULL) {
         mavlink_msg_fence_status_send(chan,
@@ -449,7 +451,7 @@ static void geofence_send_status(mavlink_channel_t chan)
 /*
   return true if geofence has been breached
  */
-static bool geofence_breached(void)
+bool Plane::geofence_breached(void)
 {
     return geofence_state ? geofence_state->fence_triggered : false;
 }
@@ -457,24 +459,24 @@ static bool geofence_breached(void)
 
 #else // GEOFENCE_ENABLED
 
-static void geofence_check(bool altitude_check_only) {
+void Plane::geofence_check(bool altitude_check_only) {
 }
-static bool geofence_stickmixing(void) {
+bool Plane::geofence_stickmixing(void) {
     return true;
 }
-static bool geofence_enabled(void) {
+bool Plane::geofence_enabled(void) {
     return false;
 }
 
-static bool geofence_present(void) {
+bool Plane::geofence_present(void) {
     return false;
 }
 
-static bool geofence_set_enabled(bool enable, GeofenceEnableReason r) {
+bool Plane::geofence_set_enabled(bool enable, GeofenceEnableReason r) {
     return false;
 }
 
-static bool geofence_set_floor_enabled(bool floor_enable) {
+bool Plane::geofence_set_floor_enabled(bool floor_enable) {
     return false;
 }
 

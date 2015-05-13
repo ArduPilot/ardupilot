@@ -1,35 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-// forward declarations to make compiler happy
-static void do_takeoff(const AP_Mission::Mission_Command& cmd);
-static void do_nav_wp(const AP_Mission::Mission_Command& cmd);
-static void do_land(const AP_Mission::Mission_Command& cmd);
-static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-static void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
-static void do_loiter_time(const AP_Mission::Mission_Command& cmd);
-static void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-static void do_within_distance(const AP_Mission::Mission_Command& cmd);
-static void do_change_alt(const AP_Mission::Mission_Command& cmd);
-static void do_change_speed(const AP_Mission::Mission_Command& cmd);
-static void do_set_home(const AP_Mission::Mission_Command& cmd);
-static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
-static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
-static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-static void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-static void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
-
+#include "Plane.h"
 
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-
-/********************************************************************************/
-// Command Event Handlers
-/********************************************************************************/
-static bool
-start_command(const AP_Mission::Mission_Command& cmd)
+bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
@@ -213,7 +189,7 @@ operation returns true when the mission element has completed and we
 should move onto the next mission element.
 *******************************************************************************/
 
-static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
+bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
 {
     switch(cmd.id) {
 
@@ -293,7 +269,7 @@ static bool verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 //  Nav (Must) commands
 /********************************************************************************/
 
-static void do_RTL(void)
+void Plane::do_RTL(void)
 {
     auto_state.next_wp_no_crosstrack = true;
     auto_state.no_crosstrack = true;
@@ -316,7 +292,7 @@ static void do_RTL(void)
         DataFlash.Log_Write_Mode(control_mode);
 }
 
-static void do_takeoff(const AP_Mission::Mission_Command& cmd)
+void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     prev_WP_loc = current_loc;
     set_next_WP(cmd.content.location);
@@ -334,18 +310,18 @@ static void do_takeoff(const AP_Mission::Mission_Command& cmd)
     
 }
 
-static void do_nav_wp(const AP_Mission::Mission_Command& cmd)
+void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
 }
 
-static void do_land(const AP_Mission::Mission_Command& cmd)
+void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
     auto_state.commanded_go_around = false;
     set_next_WP(cmd.content.location);
 }
 
-static void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
+void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.location.flags.loiter_ccw) {
         loiter.direction = -1;
@@ -354,20 +330,20 @@ static void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-static void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     loiter_set_direction_wp(cmd);
 }
 
-static void do_loiter_turns(const AP_Mission::Mission_Command& cmd)
+void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
     loiter_set_direction_wp(cmd);
 }
 
-static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
+void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // we set start_time_ms when we reach the waypoint
@@ -376,13 +352,13 @@ static void do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_set_direction_wp(cmd);
 }
 
-static void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
+void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
     reset_offset_altitude();
 }
 
-static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
+void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
 {
     //set target alt  
     next_WP_loc.alt = cmd.content.location.alt;
@@ -411,7 +387,7 @@ static void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
-static bool verify_takeoff()
+bool Plane::verify_takeoff()
 {
     if (ahrs.yaw_initialised() && steer_state.hold_course_cd == -1) {
         const float min_gps_speed = 5;
@@ -477,7 +453,7 @@ static bool verify_takeoff()
   update navigation for normal mission waypoints. Return true when the
   waypoint is complete
  */
-static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
+bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     steer_state.hold_course_cd = -1;
 
@@ -521,28 +497,28 @@ static bool verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-static bool verify_loiter_unlim()
+bool Plane::verify_loiter_unlim()
 {
     update_loiter();
     return false;
 }
 
-static bool verify_loiter_time()
+bool Plane::verify_loiter_time()
 {
     update_loiter();
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
-            loiter.start_time_ms = millis();
+            loiter.start_time_ms = hal.scheduler->millis();
         }
-    } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
+    } else if ((hal.scheduler->millis() - loiter.start_time_ms) > loiter.time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
     return false;
 }
 
-static bool verify_loiter_turns()
+bool Plane::verify_loiter_turns()
 {
     update_loiter();
     if (loiter.sum_cd > loiter.total_cd) {
@@ -559,7 +535,7 @@ static bool verify_loiter_turns()
   reached both the desired altitude and desired heading. The desired
   altitude only needs to be reached once.
  */
-static bool verify_loiter_to_alt() 
+bool Plane::verify_loiter_to_alt() 
 {
     update_loiter();
 
@@ -618,7 +594,7 @@ static bool verify_loiter_to_alt()
     return true;
 }
 
-static bool verify_RTL()
+bool Plane::verify_RTL()
 {
     update_loiter();
 	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
@@ -630,7 +606,7 @@ static bool verify_RTL()
 	}
 }
 
-static bool verify_continue_and_change_alt()
+bool Plane::verify_continue_and_change_alt()
 {
     if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
@@ -653,16 +629,16 @@ static bool verify_continue_and_change_alt()
 //  Condition (May) commands
 /********************************************************************************/
 
-static void do_wait_delay(const AP_Mission::Mission_Command& cmd)
+void Plane::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    condition_start = millis();
+    condition_start = hal.scheduler->millis();
     condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
 /*
   process a DO_CHANGE_ALT request
  */
-static void do_change_alt(const AP_Mission::Mission_Command& cmd)
+void Plane::do_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     condition_rate = labs((int)cmd.content.location.lat);   // climb rate in cm/s
     condition_value = cmd.content.location.alt;             // To-Do: ensure this altitude is an absolute altitude?
@@ -676,7 +652,7 @@ static void do_change_alt(const AP_Mission::Mission_Command& cmd)
     setup_glide_slope();
 }
 
-static void do_within_distance(const AP_Mission::Mission_Command& cmd)
+void Plane::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value  = cmd.content.distance.meters;
 }
@@ -685,16 +661,16 @@ static void do_within_distance(const AP_Mission::Mission_Command& cmd)
 // Verify Condition (May) commands
 /********************************************************************************/
 
-static bool verify_wait_delay()
+bool Plane::verify_wait_delay()
 {
-    if ((unsigned)(millis() - condition_start) > (unsigned)condition_value) {
+    if ((unsigned)(hal.scheduler->millis() - condition_start) > (unsigned)condition_value) {
         condition_value         = 0;
         return true;
     }
     return false;
 }
 
-static bool verify_change_alt()
+bool Plane::verify_change_alt()
 {
     if( (condition_rate>=0 && adjusted_altitude_cm() >= condition_value) || 
         (condition_rate<=0 && adjusted_altitude_cm() <= condition_value)) {
@@ -707,7 +683,7 @@ static bool verify_change_alt()
     return false;
 }
 
-static bool verify_within_distance()
+bool Plane::verify_within_distance()
 {
     if (auto_state.wp_distance < max(condition_value,0)) {
         condition_value = 0;
@@ -720,7 +696,7 @@ static bool verify_within_distance()
 //  Do (Now) commands
 /********************************************************************************/
 
-static void do_loiter_at_location()
+void Plane::do_loiter_at_location()
 {
     if (g.loiter_radius < 0) {
         loiter.direction = -1;
@@ -730,7 +706,7 @@ static void do_loiter_at_location()
     next_WP_loc = current_loc;
 }
 
-static void do_change_speed(const AP_Mission::Mission_Command& cmd)
+void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.content.speed.speed_type)
     {
@@ -752,7 +728,7 @@ static void do_change_speed(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-static void do_set_home(const AP_Mission::Mission_Command& cmd)
+void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         init_home();
@@ -763,7 +739,7 @@ static void do_set_home(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_digicam_configure Send Digicam Configure message with the camera library
-static void do_digicam_configure(const AP_Mission::Mission_Command& cmd)
+void Plane::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
     camera.configure_cmd(cmd);
@@ -771,7 +747,7 @@ static void do_digicam_configure(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_digicam_control Send Digicam Control message with the camera library
-static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
+void Plane::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 {
 #if CAMERA == ENABLED
     camera.control_cmd(cmd);
@@ -780,7 +756,7 @@ static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_take_picture - take a picture with the camera library
-static void do_take_picture()
+void Plane::do_take_picture()
 {
 #if CAMERA == ENABLED
     camera.trigger_pic(true);
@@ -789,7 +765,7 @@ static void do_take_picture()
 }
 
 // log_picture - log picture taken and send feedback to GCS
-static void log_picture()
+void Plane::log_picture()
 {
     gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {
@@ -799,7 +775,7 @@ static void log_picture()
 
 // start_command_callback - callback function called from ap-mission when it begins a new mission command
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-static bool start_command_callback(const AP_Mission::Mission_Command &cmd)
+bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
 {
     if (control_mode == AUTO) {
         return start_command(cmd);
@@ -809,7 +785,7 @@ static bool start_command_callback(const AP_Mission::Mission_Command &cmd)
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-static bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
+bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
         return verify_command(cmd);
@@ -819,7 +795,7 @@ static bool verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
 // exit_mission_callback - callback function called from ap-mission when the mission has completed
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-static void exit_mission_callback()
+void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
         gcs_send_text_fmt(PSTR("Returning to Home"));

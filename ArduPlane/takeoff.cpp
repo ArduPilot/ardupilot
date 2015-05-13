@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 /*   Check for automatic takeoff conditions being met using the following sequence:
  *   1) Check for adequate GPS lock - if not return false
  *   2) Check the gravity compensated longitudinal acceleration against the threshold and start the timer if true
@@ -9,7 +11,7 @@
  *   6) If the time lapsed since the last timecheck is greater than 0.2 seconds, return false and reset the timer
  *   NOTE : This function relies on the TECS 50Hz processing for its acceleration measure.
  */
-static bool auto_takeoff_check(void)
+bool Plane::auto_takeoff_check(void)
 {
     // this is a more advanced check that relies on TECS
     uint32_t now = hal.scheduler->millis();
@@ -85,7 +87,7 @@ no_launch:
 /*
   calculate desired bank angle during takeoff, setting nav_roll_cd
  */
-static void takeoff_calc_roll(void)
+void Plane::takeoff_calc_roll(void)
 {
     if (steer_state.hold_course_cd == -1) {
         // we don't yet have a heading to hold - just level
@@ -105,7 +107,7 @@ static void takeoff_calc_roll(void)
 /*
   calculate desired pitch angle during takeoff, setting nav_pitch_cd
  */
-static void takeoff_calc_pitch(void)
+void Plane::takeoff_calc_pitch(void)
 {
     if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
         // we have not reached rotate speed, use a target pitch of 5
@@ -134,7 +136,7 @@ static void takeoff_calc_pitch(void)
   This can be used either in auto-takeoff or in FBWA mode with
   FBWA_TDRAG_CHAN enabled
  */
-static int8_t takeoff_tail_hold(void)
+int8_t Plane::takeoff_tail_hold(void)
 {
     bool in_takeoff = ((control_mode == AUTO && !auto_state.takeoff_complete) ||
                        (control_mode == FLY_BY_WIRE_A && auto_state.fbwa_tdrag_takeoff_mode));

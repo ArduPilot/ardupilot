@@ -1,17 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Plane.h"
+
 /*
  *  ArduPlane parameter definitions
  *
  */
 
-#define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
+#define GSCALAR(v, name, def) { plane.g.v.vtype, name, Parameters::k_param_ ## v, &plane.g.v, {def_value : def} }
+#define ASCALAR(v, name, def) { plane.aparm.v.vtype, name, Parameters::k_param_ ## v, &plane.aparm.v, {def_value : def} }
+#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &plane.g.v, {group_info : class::var_info} }
+#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &plane.v, {group_info : class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &plane.v, {group_info : class::var_info} }
 
-const AP_Param::Info var_info[] PROGMEM = {
+const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
@@ -1224,7 +1226,7 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
 };
 
-static void load_parameters(void)
+void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf_P(PSTR("Bad parameter table\n"));        
@@ -1241,10 +1243,10 @@ static void load_parameters(void)
         g.format_version.set_and_save(Parameters::k_format_version);
         cliSerial->println_P(PSTR("done."));
     } else {
-        uint32_t before = micros();
+        uint32_t before = hal.scheduler->micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
-        cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
+        cliSerial->printf_P(PSTR("load_all took %luus\n"), hal.scheduler->micros() - before);
     }
 }
