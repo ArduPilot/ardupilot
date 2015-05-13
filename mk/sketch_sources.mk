@@ -4,17 +4,26 @@
 
 SRCSUFFIXES = *.cpp *.c *.S
 
+MAKE_INC=$(wildcard $(SRCROOT)/make.inc)
+
 # Sketch source files
 SKETCHPDESRCS  := $(wildcard $(SRCROOT)/*.pde $(SRCROOT)/*.ino)
 SKETCHSRCS     := $(wildcard $(addprefix $(SRCROOT)/,$(SRCSUFFIXES)))
 SKETCHPDE      := $(wildcard $(SRCROOT)/$(SKETCH).pde $(SRCROOT)/$(SKETCH).ino)
-SKETCHCPP      := $(BUILDROOT)/$(SKETCH).cpp
-ifneq ($(words $(SKETCHPDE)),1)
-$(error ERROR: sketch $(SKETCH) must contain exactly one of $(SKETCH).pde or $(SKETCH).ino)
+ifeq (,$(MAKE_INC))
+ SKETCHCPP      := $(BUILDROOT)/$(SKETCH).cpp
+ ifneq ($(words $(SKETCHPDE)),1)
+  $(error ERROR: sketch $(SKETCH) must contain exactly one of $(SKETCH).pde or $(SKETCH).ino)
+ endif
+else
+ SKETCHCPP      := $(SRCROOT)/$(SKETCH).cpp
 endif
 
 # Sketch object files
-SKETCHOBJS := $(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS)) $(SKETCHCPP)
+SKETCHOBJS := $(subst $(SRCROOT),$(BUILDROOT),$(SKETCHSRCS))
+ifeq (,$(MAKE_INC))
+ SKETCHOBJS += $(SKETCHCPP)
+endif
 SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 
 # List of input files to the sketch.cpp file in the order they should
@@ -37,10 +46,15 @@ SKETCHCPP_SRC := $(SKETCHPDE) $(sort $(filter-out $(SKETCHPDE),$(SKETCHPDESRCS))
 # make.
 #
 SEXPR = 's/^[[:space:]]*\#include[[:space:]][<\"]([^>\"./]+).*$$/\1/p'
+ifneq (,$(MAKE_INC))
+ include $(MAKE_INC)
+ LIBTOKENS := $(LIBRARIES)
+else
 ifeq ($(SYSTYPE),Darwin)
   LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nEe $(SEXPR)))
 else
   LIBTOKENS        :=    $(sort $(shell cat $(SKETCHPDESRCS) $(SKETCHSRCS) | sed -nre $(SEXPR)))
+endif
 endif
 
 #
@@ -69,7 +83,8 @@ $(BUILDROOT)/make.flags:
 	@echo "// BUILDROOT=$(BUILDROOT) HAL_BOARD=$(HAL_BOARD) HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE) TOOLCHAIN=$(TOOLCHAIN) EXTRAFLAGS=$(EXTRAFLAGS)" > $(BUILDROOT)/make.flags
 	@cat $(BUILDROOT)/make.flags
 
-#
+
+ifeq (,$(MAKE_INC))
 # Build the sketch.cpp file
 $(SKETCHCPP): $(BUILDROOT)/make.flags $(SKETCHCPP_SRC)
 	@echo "building $(SKETCHCPP)"
@@ -84,6 +99,7 @@ $(SKETCHCPP): $(BUILDROOT)/make.flags $(SKETCHCPP_SRC)
 
 # delete the sketch.cpp file if a processing error occurs
 .DELETE_ON_ERROR: $(SKETCHCPP)
+endif
 
 #
 # The sketch splitter is an awk script used to split off the
