@@ -20,7 +20,7 @@ void fence_check()
     fence.set_home_distance(home_distance*0.01f);
 
     // check for a breach
-    new_breaches = fence.check_fence(pv_alt_above_home(inertial_nav.get_altitude())/100.0f);
+    new_breaches = fence.check_fence(current_loc.alt/100.0f);
 
     // if there is a new breach take action
     if( new_breaches != AC_FENCE_TYPE_NONE ) {
