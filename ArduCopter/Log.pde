@@ -464,7 +464,7 @@ static void Log_Write_Startup()
 
 static void Log_Write_EntireMission()
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("New mission"));
+    DataFlash.Log_Write_Message_P(PSTR("New mission"));
 
     AP_Mission::Mission_Command cmd;
     for (uint16_t i = 0; i < mission.num_commands(); i++) {
