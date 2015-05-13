@@ -191,7 +191,6 @@ static int32_t pitch_limit_min_cd;
 
 // GPS driver
 static AP_GPS gps;
-static RangeFinder rng;
 
 // flight modes convenience array
 static AP_Int8          *flight_modes = &g.flight_mode1;
@@ -206,9 +205,11 @@ AP_ADC_ADS7844 apm1_adc;
 
 AP_InertialSensor ins;
 
+static RangeFinder rangefinder;
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-AP_AHRS_NavEKF ahrs(ins, barometer, gps, rng);
+AP_AHRS_NavEKF ahrs(ins, barometer, gps, rangefinder);
 #else
 AP_AHRS_DCM ahrs(ins, barometer, gps);
 #endif
@@ -267,11 +268,6 @@ static AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
 // a pin for reading the receiver RSSI voltage. 
 static AP_HAL::AnalogSource *rssi_analog_source;
-
-////////////////////////////////////////////////////////////////////////////////
-// rangefinder
-////////////////////////////////////////////////////////////////////////////////
-static RangeFinder rangefinder;
 
 static struct {
     bool in_range;
