@@ -30,6 +30,11 @@ public:
      */
     virtual uint8_t  num_channels() = 0;
 
+    /**
+     * Return the rssi-value from rc-input (like sbus)
+     */
+    virtual uint8_t  rssi() = 0;
+
     /* Read a single channel at a time */
     virtual uint16_t read(uint8_t ch) = 0;
 
