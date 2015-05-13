@@ -143,21 +143,21 @@ class Matrix3:
     def from_euler(self, roll, pitch, yaw):
         '''fill the matrix from Euler angles in radians'''
         cp = cos(pitch)
-	sp = sin(pitch)
-	sr = sin(roll)
-	cr = cos(roll)
-	sy = sin(yaw)
-	cy = cos(yaw)
+        sp = sin(pitch)
+        sr = sin(roll)
+        cr = cos(roll)
+        sy = sin(yaw)
+        cy = cos(yaw)
 
-	self.a.x = cp * cy
-	self.a.y = (sr * sp * cy) - (cr * sy)
-	self.a.z = (cr * sp * cy) + (sr * sy)
-	self.b.x = cp * sy
-	self.b.y = (sr * sp * sy) + (cr * cy)
-	self.b.z = (cr * sp * sy) - (sr * cy)
-	self.c.x = -sp
-	self.c.y = sr * cp
-	self.c.z = cr * cp
+        self.a.x = cp * cy
+        self.a.y = (sr * sp * cy) - (cr * sy)
+        self.a.z = (cr * sp * cy) + (sr * sy)
+        self.b.x = cp * sy
+        self.b.y = (sr * sp * sy) + (cr * cy)
+        self.b.z = (cr * sp * sy) - (sr * cy)
+        self.c.x = -sp
+        self.c.y = sr * cp
+        self.c.z = cr * cp
 
 
     def to_euler(self):
@@ -190,11 +190,11 @@ class Matrix3:
     def from_euler312(self, roll, pitch, yaw):
         '''fill the matrix from Euler angles in radians in 312 convention'''
         c3 = cos(pitch)
-	s3 = sin(pitch)
-	s2 = sin(roll)
-	c2 = cos(roll)
-	s1 = sin(yaw)
-	c1 = cos(yaw)
+        s3 = sin(pitch)
+        s2 = sin(roll)
+        c2 = cos(roll)
+        s1 = sin(yaw)
+        c1 = cos(yaw)
 
         self.a.x = c1 * c3 - s1 * s2 * s3
         self.b.y = c1 * c2
@@ -250,29 +250,29 @@ class Matrix3:
 
     def rotate(self, g):
         '''rotate the matrix by a given amount on 3 axes'''
-	temp_matrix = Matrix3()
+        temp_matrix = Matrix3()
         a = self.a
         b = self.b
         c = self.c
-	temp_matrix.a.x = a.y * g.z - a.z * g.y
-	temp_matrix.a.y = a.z * g.x - a.x * g.z
-	temp_matrix.a.z = a.x * g.y - a.y * g.x
-	temp_matrix.b.x = b.y * g.z - b.z * g.y
-	temp_matrix.b.y = b.z * g.x - b.x * g.z
-	temp_matrix.b.z = b.x * g.y - b.y * g.x
-	temp_matrix.c.x = c.y * g.z - c.z * g.y
-	temp_matrix.c.y = c.z * g.x - c.x * g.z
-	temp_matrix.c.z = c.x * g.y - c.y * g.x
+        temp_matrix.a.x = a.y * g.z - a.z * g.y
+        temp_matrix.a.y = a.z * g.x - a.x * g.z
+        temp_matrix.a.z = a.x * g.y - a.y * g.x
+        temp_matrix.b.x = b.y * g.z - b.z * g.y
+        temp_matrix.b.y = b.z * g.x - b.x * g.z
+        temp_matrix.b.z = b.x * g.y - b.y * g.x
+        temp_matrix.c.x = c.y * g.z - c.z * g.y
+        temp_matrix.c.y = c.z * g.x - c.x * g.z
+        temp_matrix.c.z = c.x * g.y - c.y * g.x
         self.a += temp_matrix.a
         self.b += temp_matrix.b
         self.c += temp_matrix.c
 
     def normalize(self):
         '''re-normalise a rotation matrix'''
-	error = self.a * self.b
-	t0 = self.a - (self.b * (0.5 * error))
-	t1 = self.b - (self.a * (0.5 * error))
-	t2 = t0 % t1
+        error = self.a * self.b
+        t0 = self.a - (self.b * (0.5 * error))
+        t1 = self.b - (self.a * (0.5 * error))
+        t2 = t0 % t1
         self.a = t0 * (1.0 / t0.length())
         self.b = t1 * (1.0 / t1.length())
         self.c = t2 * (1.0 / t2.length())
