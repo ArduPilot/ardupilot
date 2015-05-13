@@ -6,6 +6,8 @@ The init_ardupilot function processes everything we need for an in - air restart
 
 *****************************************************************************/
 
+#include "Rover.h"
+
 #if CLI_ENABLED == ENABLED
 
 // This is the help function
@@ -62,6 +64,16 @@ void Rover::run_cli(AP_HAL::UARTDriver *port)
 }
 
 #endif // CLI_ENABLED
+
+static void mavlink_delay_cb_static()
+{
+    rover.mavlink_delay_cb();
+}
+
+static void failsafe_check_static()
+{
+    rover.failsafe_check();
+}
 
 void Rover::init_ardupilot()
 {
@@ -125,17 +137,7 @@ void Rover::init_ardupilot()
 	mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-	DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
-        g.log_bitmask.set(0);
-    } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
-		do_erase_logs();
-    }
-	if (g.log_bitmask != 0) {
-		start_logging();
-	}
+    log_init();
 #endif
 
     // Register mavlink_delay_cb, which will run anytime you have

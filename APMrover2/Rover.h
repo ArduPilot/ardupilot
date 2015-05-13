@@ -17,6 +17,11 @@
    main Rover class, containing all vehicle specific state
 */
 
+#ifndef _ROVER_H_
+#define _ROVER_H_
+
+#define THISFIRMWARE "ArduRover v2.49"
+
 #include <math.h>
 #include <stdarg.h>
 
@@ -365,6 +370,7 @@ private:
     bool gcs_out_of_time;
 
     static const AP_Param::Info var_info[];
+    static const LogStructure log_structure[];
 
 private:
     // private member functions
@@ -414,6 +420,7 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Baro(void);
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
+    void log_init(void);
     void start_logging() ;
     void load_parameters(void);
     void throttle_slew_limit(int16_t last_throttle);
@@ -534,3 +541,8 @@ public:
 };
 
 #define MENU_FUNC(func) AP_HAL_CLASSPROC(&rover, &Rover::func)
+
+extern const AP_HAL::HAL& hal;
+extern Rover rover;
+
+#endif // _ROVER_H_

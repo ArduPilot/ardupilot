@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Rover.h"
+
 #if LOGGING_ENABLED == ENABLED
 
 #if CLI_ENABLED == ENABLED
@@ -370,7 +372,7 @@ void Rover::Log_Write_Baro(void)
     DataFlash.Log_Write_Baro(barometer);
 }
 
-static const struct LogStructure log_structure[] PROGMEM = {
+const LogStructure Rover::log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "IIHIhhhBH", "TimeMS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
@@ -386,6 +388,20 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "STER", "Iff",   "TimeMS,Demanded,Achieved" },
 };
 
+void Rover::log_init(void)
+{
+	DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    if (!DataFlash.CardInserted()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
+        g.log_bitmask.set(0);
+    } else if (DataFlash.NeedErase()) {
+        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+		do_erase_logs();
+    }
+	if (g.log_bitmask != 0) {
+		start_logging();
+	}
+}
 
 #if CLI_ENABLED == ENABLED
 // Read the DataFlash log memory : Packet Parser

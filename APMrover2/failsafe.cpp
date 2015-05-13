@@ -4,6 +4,8 @@
   Andrew Tridgell, December 2011
  */
 
+#include "Rover.h"
+
 /*
   our failsafe strategy is to detect main loop lockup and switch to
   passing inputs straight from the RC inputs to RC outputs.
@@ -49,7 +51,3 @@ void Rover::failsafe_check()
     }
 }
 
-static void failsafe_check_static()
-{
-    rover.failsafe_check();
-}

@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Rover.h"
+
 /* Functions in this file:
 	void set_next_WP(const AP_Mission::Mission_Command& cmd)
 	void set_guided_WP(void)

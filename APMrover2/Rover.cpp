@@ -17,6 +17,8 @@
    main Rover class, containing all vehicle specific state
 */
 
+#include "Rover.h"
+
 Rover::Rover(void) :
     param_loader(var_info),
     ins_sample_rate(AP_InertialSensor::RATE_50HZ),
