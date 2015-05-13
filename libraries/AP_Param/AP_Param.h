@@ -89,7 +89,7 @@ public:
         uint8_t type; // AP_PARAM_*
         const char name[AP_MAX_NAME_SIZE+1];
         uint8_t key; // k_param_*
-        void *ptr;    // pointer to the variable in memory
+        const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
             const float def_value;
