@@ -454,6 +454,8 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
         return 6*4;
     case AP_PARAM_MATRIX3F:
         return 3*3*4;
+    case AP_PARAM_STR8:
+        return 9*1;
     }
     Debug("unknown type %u\n", type);
     return 0;
