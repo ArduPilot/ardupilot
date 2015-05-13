@@ -19,6 +19,7 @@
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
 #include "RCInput_Navio.h"
+#include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Raspilot.h"
 #include "RCOutput_PRU.h"
