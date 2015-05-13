@@ -118,8 +118,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 #if AP_AHRS_NAVEKF_AVAILABLE && !AHRS_EKF_USE_ALWAYS
     // @Param: EKF_USE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
-    // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This controls whether the NavEKF Kalman filter is used for attitude and position estimation and whether fallback to the DCM algorithm is allowed
+    // @Values: 0:Disabled,1:Enabled, 2:Enabled - No Fallback
     // @User: Advanced
     AP_GROUPINFO("EKF_USE",  13, AP_AHRS, _ekf_use, AHRS_EKF_USE_DEFAULT),
 #endif
