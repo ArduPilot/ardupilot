@@ -24,7 +24,7 @@ static void update_home_from_EKF()
     }
 }
 
-// set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin+ takeoff_alt_above_origin
+// set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
 static void set_home_to_current_location_inflight() {
     // get current location from EKF
     Location temp_loc;
