@@ -216,7 +216,7 @@ public:
     };
 
     // main program function pointers
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#if APM_BUILD_DELEGATES
     typedef DELEGATE_FUNCTION1(bool, const Mission_Command&) mission_cmd_fn_t;
     typedef DELEGATE_FUNCTION0(void) mission_complete_fn_t;
 #else
