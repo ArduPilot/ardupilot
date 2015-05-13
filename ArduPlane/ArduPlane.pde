@@ -276,8 +276,10 @@ static RangeFinder rangefinder;
 static struct {
     bool in_range;
     float correction;
+    float correction_offset;
     uint32_t last_correction_time_ms;
     uint8_t in_range_count;
+    uint32_t last_good_corr_ms;
 } rangefinder_state;
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -116,6 +116,8 @@ public:
         k_param_takeoff_throttle_slewrate,
         k_param_takeoff_throttle_max,
         k_param_rangefinder,
+        k_param_rangefinder_corr_tolerance_cm,
+        k_param_rangefinder_corr_tolerance_ms,
         k_param_terrain,
         k_param_terrain_follow,
         k_param_stab_pitch_down_cd_old, // deprecated
@@ -477,6 +479,8 @@ public:
     AP_Float glide_slope_threshold;
     AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
+    AP_Int16 rangefinder_corr_tolerance_cm;
+    AP_Int32 rangefinder_corr_tolerance_ms;
     AP_Int8 flap_slewrate;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 override_channel;

@@ -996,6 +996,23 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rangefinder_landing,    "RNGFND_LANDING",   0),
 
+    // @Param: RNGFND_CORR_CM
+    // @DisplayName: Allowable baro height minus rangefinder correction height that is allowed.
+    // @Description: Amount of allowable altitude error correction when compared to the barometer. Set to zero to always accept rangefinder data regardless of what the baro data is. This helps reject rangefinder data when crossing over objects such as trees
+    // @Units: centimeters
+    // @Increment: 10
+    // @User: Advanced
+    GSCALAR(rangefinder_corr_tolerance_cm,    "RNGFND_CORR_CM",   100),
+
+    // @Param: RNGFND_CORR_MS
+    // @DisplayName: Duration to reject rangefinder data when above ERROR_CM height.
+    // @Description: Duration to reject rangefinder data when beyond ERROR_CM height. Once this time has expired then range finder height is accepted as-is.
+    // @Units: milliseconds
+    // @Range: 0 10000
+    // @Increment: 100
+    // @User: Advanced
+    GSCALAR(rangefinder_corr_tolerance_ms,    "RNGFND_CORR_MS",   2000),
+
 #if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
