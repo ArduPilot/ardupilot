@@ -233,6 +233,7 @@ private:
     // a pin for reading the receiver RSSI voltage. 
     AP_HAL::AnalogSource *rssi_analog_source;
 
+#if RANGEFINDER_ENABLED == ENABLED
     // rangefinder
     RangeFinder rangefinder;
 
@@ -242,6 +243,7 @@ private:
         uint32_t last_correction_time_ms;
         uint8_t in_range_count;
     } rangefinder_state;
+#endif
 
     // Relay
     AP_Relay relay;

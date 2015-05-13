@@ -12,7 +12,9 @@ void Plane::init_barometer(void)
 
 void Plane::init_rangefinder(void)
 {
+#if RANGEFINDER_ENABLED == ENABLED
     rangefinder.init();
+#endif
 }
 
 /*
@@ -20,12 +22,14 @@ void Plane::init_rangefinder(void)
  */
 void Plane::read_rangefinder(void)
 {
+#if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
     if (should_log(MASK_LOG_SONAR))
         Log_Write_Sonar();
 
     rangefinder_height_update();
+#endif
 }
 
 /*

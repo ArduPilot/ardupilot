@@ -525,6 +525,7 @@ float Plane::lookahead_adjustment(void)
  */
 float Plane::rangefinder_correction(void)
 {
+#if RANGEFINDER_ENABLED == ENABLED
     if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
         // we haven't had any rangefinder data for 5s - don't use it
         return 0;
@@ -540,9 +541,12 @@ float Plane::rangefinder_correction(void)
     }
 
     return rangefinder_state.correction;
+#else
+    return 0;
+#endif
 }
 
-
+#if RANGEFINDER_ENABLED == ENABLED
 /*
   update the offset between rangefinder height and terrain height
  */
@@ -591,3 +595,4 @@ void Plane::rangefinder_height_update(void)
         rangefinder_state.last_correction_time_ms = millis();    
     }
 }
+#endif

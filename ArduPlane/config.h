@@ -63,10 +63,10 @@
 //
 
 #ifndef FRSKY_TELEM_ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define FRSKY_TELEM_ENABLED DISABLED
-#else
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
  # define FRSKY_TELEM_ENABLED ENABLED
+#else
+ # define FRSKY_TELEM_ENABLED DISABLED
 #endif
 #endif
 
@@ -80,6 +80,12 @@
 #else
  # define OPTFLOW DISABLED
 #endif
+#endif
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+# define RANGEFINDER_ENABLED ENABLED
+#else
+# define RANGEFINDER_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -266,6 +266,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     }
 #endif
 
+#if RANGEFINDER_ENABLED == ENABLED
     if (rangefinder.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         if (g.rangefinder_landing) {
@@ -275,6 +276,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
+#endif
 
     if (AP_Notify::flags.initialising) {
         // while initialising the gyros and accels are not enabled
@@ -456,6 +458,7 @@ void Plane::send_wind(mavlink_channel_t chan)
 
 void Plane::send_rangefinder(mavlink_channel_t chan)
 {
+#if RANGEFINDER_ENABLED == ENABLED
     if (!rangefinder.has_data()) {
         // no sonar to report
         return;
@@ -464,6 +467,7 @@ void Plane::send_rangefinder(mavlink_channel_t chan)
         chan,
         rangefinder.distance_cm() * 0.01f,
         rangefinder.voltage_mv()*0.001f);
+#endif
 }
 
 void Plane::send_current_waypoint(mavlink_channel_t chan)

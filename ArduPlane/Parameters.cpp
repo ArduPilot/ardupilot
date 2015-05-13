@@ -987,9 +987,11 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
+#if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
+#endif
 
     // @Param: RNGFND_LANDING
     // @DisplayName: Enable rangefinder for landing

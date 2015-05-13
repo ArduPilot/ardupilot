@@ -357,6 +357,7 @@ struct PACKED log_Sonar {
 // Write a sonar packet
 void Plane::Log_Write_Sonar()
 {
+#if RANGEFINDER_ENABLED == ENABLED
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         timestamp   : millis(),
@@ -369,6 +370,7 @@ void Plane::Log_Write_Sonar()
         correction  : rangefinder_state.correction
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 struct PACKED log_Optflow {
