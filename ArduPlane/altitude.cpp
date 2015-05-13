@@ -525,7 +525,7 @@ float Plane::lookahead_adjustment(void)
  */
 float Plane::rangefinder_correction(void)
 {
-    if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+    if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
         // we haven't had any rangefinder data for 5s - don't use it
         return 0;
     }
@@ -583,11 +583,11 @@ void Plane::rangefinder_height_update(void)
 
         // remember the last correction. Use a low pass filter unless
         // the old data is more than 5 seconds old
-        if (hal.scheduler->millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
         }
-        rangefinder_state.last_correction_time_ms = hal.scheduler->millis();    
+        rangefinder_state.last_correction_time_ms = millis();    
     }
 }

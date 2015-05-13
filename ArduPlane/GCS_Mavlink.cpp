@@ -93,7 +93,7 @@ void Plane::send_attitude(mavlink_channel_t chan)
     Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
-        hal.scheduler->millis(),
+        millis(),
         ahrs.roll,
         ahrs.pitch - radians(g.pitch_trim_cd*0.01f),
         ahrs.yaw,
@@ -307,7 +307,7 @@ void Plane::send_location(mavlink_channel_t chan)
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
         fix_time_ms = gps.last_fix_time_ms();
     } else {
-        fix_time_ms = hal.scheduler->millis();
+        fix_time_ms = millis();
     }
     const Vector3f &vel = gps.velocity();
     mavlink_msg_global_position_int_send(
@@ -345,7 +345,7 @@ void Plane::send_servo_out(mavlink_channel_t chan)
     // HIL maintainers
     mavlink_msg_rc_channels_scaled_send(
         chan,
-        hal.scheduler->millis(),
+        millis(),
         0, // port 0
         10000 * channel_roll->norm_output() * (channel_roll->get_reverse()?-1:1),
         10000 * channel_pitch->norm_output() * (channel_pitch->get_reverse()?-1:1),
@@ -363,7 +363,7 @@ void Plane::send_radio_out(mavlink_channel_t chan)
     if (g.hil_mode==1 && !g.hil_servos) {
         mavlink_msg_servo_output_raw_send(
             chan,
-            hal.scheduler->micros(),
+            micros(),
             0,     // port
             RC_Channel::rc_channel(0)->radio_out,
             RC_Channel::rc_channel(1)->radio_out,
@@ -377,7 +377,7 @@ void Plane::send_radio_out(mavlink_channel_t chan)
     }
     mavlink_msg_servo_output_raw_send(
         chan,
-        hal.scheduler->micros(),
+        micros(),
         0,     // port
         hal.rcout->read(0),
         hal.rcout->read(1),
@@ -483,7 +483,7 @@ void Plane::send_statustext(mavlink_channel_t chan)
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool Plane::telemetry_delayed(mavlink_channel_t chan)
 {
-    uint32_t tnow = hal.scheduler->millis() >> 10;
+    uint32_t tnow = millis() >> 10;
     if (tnow > (uint32_t)g.telem_delay) {
         return false;
     }
@@ -520,7 +520,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        plane.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();
+        plane.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = plane.millis();
         plane.send_heartbeat(chan);
         return true;
 
@@ -1470,12 +1470,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[7] = packet.chan8_raw;
 
         if (hal.rcin->set_overrides(v, 8)) {
-            plane.failsafe.last_valid_rc_ms = hal.scheduler->millis();
+            plane.failsafe.last_valid_rc_ms = plane.millis();
         }
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = hal.scheduler->millis();
+        plane.failsafe.last_heartbeat_ms = plane.millis();
         break;
     }
 
@@ -1484,7 +1484,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // We keep track of the last time we received a heartbeat from
         // our GCS for failsafe purposes
         if (msg->sysid != plane.g.sysid_my_gcs) break;
-        plane.failsafe.last_heartbeat_ms = hal.scheduler->millis();
+        plane.failsafe.last_heartbeat_ms = plane.millis();
         break;
     }
 
@@ -1632,7 +1632,7 @@ void Plane::mavlink_delay_cb()
 
     in_mavlink_delay = true;
 
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_message(MSG_HEARTBEAT);

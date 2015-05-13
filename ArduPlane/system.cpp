@@ -289,7 +289,7 @@ void Plane::startup_ground(void)
 
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
-    failsafe.last_heartbeat_ms = hal.scheduler->millis();
+    failsafe.last_heartbeat_ms = millis();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -472,7 +472,7 @@ void Plane::exit_mode(enum FlightMode mode)
 
 void Plane::check_long_failsafe()
 {
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = millis();
     // only act on changes
     // -------------------
     if(failsafe.state != FAILSAFE_LONG && failsafe.state != FAILSAFE_GCS) {
@@ -575,7 +575,7 @@ void Plane::resetPerfData(void)
     mainLoop_count                  = 0;
     G_Dt_max                        = 0;
     G_Dt_min                        = 0;
-    perf_mon_timer                  = hal.scheduler->millis();
+    perf_mon_timer                  = millis();
 }
 
 
@@ -768,4 +768,17 @@ bool Plane::disarm_motors(void)
     change_arm_state();
 
     return true;
+}
+
+/*
+  having local millis() and micros() reduces code size a bit on AVR
+ */
+uint32_t Plane::millis(void) const
+{
+    return hal.scheduler->millis();
+}
+
+uint32_t Plane::micros(void) const
+{
+    return hal.scheduler->micros();
 }

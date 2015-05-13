@@ -14,7 +14,7 @@
 bool Plane::auto_takeoff_check(void)
 {
     // this is a more advanced check that relies on TECS
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = millis();
     static bool launchTimerStarted;
     static uint32_t last_tkoff_arm_time;
     static uint32_t last_check_ms;

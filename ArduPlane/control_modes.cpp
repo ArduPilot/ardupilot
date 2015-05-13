@@ -17,7 +17,7 @@ void Plane::read_control_switch()
         return;
     }
 
-    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 100) {
+    if (millis() - failsafe.last_valid_rc_ms > 100) {
         // only use signals that are less than 0.1s old.
         return;
     }

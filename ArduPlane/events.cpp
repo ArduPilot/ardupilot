@@ -6,7 +6,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
-    failsafe.ch3_timer_ms = hal.scheduler->millis();
+    failsafe.ch3_timer_ms = millis();
     gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
     switch(control_mode)
     {

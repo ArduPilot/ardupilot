@@ -201,7 +201,7 @@ void Plane::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        loop_time       : hal.scheduler->millis() - perf_mon_timer,
+        loop_time       : millis() - perf_mon_timer,
         main_loop_count : mainLoop_count,
         g_dt_max        : G_Dt_max,
         gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
@@ -270,7 +270,7 @@ void Plane::Log_Write_Control_Tuning()
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_ms         : millis(),
         nav_roll_cd     : (int16_t)nav_roll_cd,
         roll            : (int16_t)ahrs.roll_sensor,
         nav_pitch_cd    : (int16_t)nav_pitch_cd,
@@ -306,7 +306,7 @@ void Plane::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
-        time_ms             : hal.scheduler->millis(),
+        time_ms             : millis(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : auto_state.wp_distance,
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
@@ -332,7 +332,7 @@ void Plane::Log_Write_Status()
 {
     struct log_Status pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STATUS_MSG)
-        ,timestamp   : hal.scheduler->millis()
+        ,timestamp   : millis()
         ,is_flying   : is_flying()
         ,is_flying_probability : isFlyingProbability
         ,armed       : hal.util->get_soft_armed()
@@ -359,7 +359,7 @@ void Plane::Log_Write_Sonar()
 {
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
-        timestamp   : hal.scheduler->millis(),
+        timestamp   : millis(),
         distance    : (float)rangefinder.distance_cm(),
         voltage     : rangefinder.voltage_mv()*0.001f,
         baro_alt    : barometer.get_altitude(),
@@ -393,7 +393,7 @@ void Plane::Log_Write_Optflow()
     const Vector2f &bodyRate = optflow.bodyRate();
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_ms         : millis(),
         surface_quality : optflow.quality(),
         flow_x           : flowRate.x,
         flow_y           : flowRate.y,
@@ -422,7 +422,7 @@ void Plane::Log_Write_Current()
 void Plane::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
-        time_ms                 : hal.scheduler->millis(),
+        time_ms                 : millis(),
         arm_state               : arming.is_armed(),
         arm_checks              : arming.get_enabled_checks()      
     };

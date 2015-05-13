@@ -1243,10 +1243,10 @@ void Plane::load_parameters(void)
         g.format_version.set_and_save(Parameters::k_format_version);
         cliSerial->println_P(PSTR("done."));
     } else {
-        uint32_t before = hal.scheduler->micros();
+        uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
-        cliSerial->printf_P(PSTR("load_all took %luus\n"), hal.scheduler->micros() - before);
+        cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

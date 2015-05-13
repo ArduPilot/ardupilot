@@ -110,7 +110,7 @@ void Plane::rudder_arm_check()
 
     // full right rudder starts arming counter
     if (channel_rudder->control_in > 4000) {
-        uint32_t now = hal.scheduler->millis();
+        uint32_t now = millis();
 
         if (rudder_arm_timer == 0 || 
             now - rudder_arm_timer < 3000) {
@@ -133,7 +133,7 @@ void Plane::read_radio()
         return;
     }
 
-    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+    failsafe.last_valid_rc_ms = millis();
 
     elevon.ch1_temp = channel_roll->read();
     elevon.ch2_temp = channel_pitch->read();
@@ -190,7 +190,7 @@ void Plane::read_radio()
 
 void Plane::control_failsafe(uint16_t pwm)
 {
-    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
+    if (millis() - failsafe.last_valid_rc_ms > 1000 || rc_failsafe_active()) {
         // we do not have valid RC input. Set all primary channel
         // control inputs to the trim value and throttle to min
         channel_roll->radio_in     = channel_roll->radio_trim;
@@ -312,7 +312,7 @@ bool Plane::rc_failsafe_active(void)
     if (!g.throttle_fs_enabled) {
         return false;
     }
-    if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 1000) {
+    if (millis() - failsafe.last_valid_rc_ms > 1000) {
         // we haven't had a valid RC frame for 1 seconds
         return true;
     }

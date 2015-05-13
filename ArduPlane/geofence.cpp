@@ -356,7 +356,7 @@ void Plane::geofence_check(bool altitude_check_only)
     // we are outside, and have not previously triggered.
     geofence_state->fence_triggered = true;
     geofence_state->breach_count++;
-    geofence_state->breach_time = hal.scheduler->millis();
+    geofence_state->breach_time = millis();
     geofence_state->breach_type = breach_type;
 
  #if FENCE_TRIGGERED_PIN > 0

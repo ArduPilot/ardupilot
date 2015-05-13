@@ -104,7 +104,7 @@ void Plane::loop()
     // wait for an INS sample
     ins.wait_for_sample();
 
-    uint32_t timer = hal.scheduler->micros();
+    uint32_t timer = micros();
 
     delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
@@ -128,7 +128,7 @@ void Plane::loop()
     // in multiples of the main loop tick. So if they don't run on
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
-    uint32_t remaining = (timer + 20000) - hal.scheduler->micros();
+    uint32_t remaining = (timer + 20000) - micros();
     if (remaining > 19500) {
         remaining = 19500;
     }
@@ -869,7 +869,7 @@ void Plane::determine_is_flying(void)
       been flying for. This helps for crash detection and auto-disarm
      */
     if (is_flying()) {
-        auto_state.last_flying_ms = hal.scheduler->millis();
+        auto_state.last_flying_ms = millis();
     }
 }
 

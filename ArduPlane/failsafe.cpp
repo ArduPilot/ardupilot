@@ -21,7 +21,7 @@ void Plane::failsafe_check(void)
     static uint16_t last_mainLoop_count;
     static uint32_t last_timestamp;
     static bool in_failsafe;
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = micros();
 
     if (mainLoop_count != last_mainLoop_count) {
         // the main loop is running, all is OK

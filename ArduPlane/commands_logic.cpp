@@ -394,10 +394,10 @@ bool Plane::verify_takeoff()
         if (auto_state.takeoff_speed_time_ms == 0 && 
             gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
             gps.ground_speed() > min_gps_speed) {
-            auto_state.takeoff_speed_time_ms = hal.scheduler->millis();
+            auto_state.takeoff_speed_time_ms = millis();
         }
         if (auto_state.takeoff_speed_time_ms != 0 &&
-            hal.scheduler->millis() - auto_state.takeoff_speed_time_ms >= 2000) {
+            millis() - auto_state.takeoff_speed_time_ms >= 2000) {
             // once we reach sufficient speed for good GPS course
             // estimation we save our current GPS ground course
             // corrected for summed yaw to set the take off
@@ -509,9 +509,9 @@ bool Plane::verify_loiter_time()
     if (loiter.start_time_ms == 0) {
         if (nav_controller->reached_loiter_target()) {
             // we've reached the target, start the timer
-            loiter.start_time_ms = hal.scheduler->millis();
+            loiter.start_time_ms = millis();
         }
-    } else if ((hal.scheduler->millis() - loiter.start_time_ms) > loiter.time_max_ms) {
+    } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
         gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
@@ -631,7 +631,7 @@ bool Plane::verify_continue_and_change_alt()
 
 void Plane::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    condition_start = hal.scheduler->millis();
+    condition_start = millis();
     condition_value  = cmd.content.delay.seconds * 1000;    // convert seconds to milliseconds
 }
 
@@ -663,7 +663,7 @@ void Plane::do_within_distance(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_wait_delay()
 {
-    if ((unsigned)(hal.scheduler->millis() - condition_start) > (unsigned)condition_value) {
+    if ((unsigned)(millis() - condition_start) > (unsigned)condition_value) {
         condition_value         = 0;
         return true;
     }

@@ -144,10 +144,10 @@ void Plane::update_cruise()
         gps.ground_speed() >= 3 &&
         cruise_state.lock_timer_ms == 0) {
         // user wants to lock the heading - start the timer
-        cruise_state.lock_timer_ms = hal.scheduler->millis();
+        cruise_state.lock_timer_ms = millis();
     }
     if (cruise_state.lock_timer_ms != 0 &&
-        (hal.scheduler->millis() - cruise_state.lock_timer_ms) > 500) {
+        (millis() - cruise_state.lock_timer_ms) > 500) {
         // lock the heading after 0.5 seconds of zero heading input
         // from user
         cruise_state.locked_heading = true;
