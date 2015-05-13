@@ -38,7 +38,7 @@
 #include <AP_HAL.h>
 #include <AP_Vehicle.h>
 
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2) && defined(__AVR__)
+#if APM_BUILD_DELEGATES && defined(__AVR__)
 #define AP_SCHEDULER_USE_DELEGATE_PTR 1
 #else
 #define AP_SCHEDULER_USE_DELEGATE_PTR 0
@@ -47,7 +47,7 @@
 class AP_Scheduler
 {
 public:
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#if APM_BUILD_DELEGATES
     DELEGATE_FUNCTION_VOID_TYPEDEF(task_fn_t);
 #else
     typedef void (*task_fn_t)(void);
