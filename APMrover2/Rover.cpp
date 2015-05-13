@@ -25,10 +25,10 @@ Rover::Rover(void) :
     channel_steer(NULL),
     channel_throttle(NULL),
     channel_learn(NULL),
-    in_log_download(false),
 #if defined(HAL_BOARD_LOG_DIRECTORY)
     DataFlash(HAL_BOARD_LOG_DIRECTORY),
 #endif
+    in_log_download(false),
     modes(&g.mode1),
 #if AP_AHRS_NAVEKF_AVAILABLE
     ahrs(ins, barometer, gps, sonar),
@@ -42,8 +42,8 @@ Rover::Rover(void) :
             AP_HAL_MEMBERPROC(&Rover::start_command), 
             AP_HAL_MEMBERPROC(&Rover::verify_command), 
             AP_HAL_MEMBERPROC(&Rover::exit_mission)),
-    ServoRelayEvents(relay),
     num_gcs(MAVLINK_COMM_NUM_BUFFERS),
+    ServoRelayEvents(relay),
 #if CAMERA == ENABLED
     camera(&relay),
 #endif
@@ -57,7 +57,6 @@ Rover::Rover(void) :
     frsky_telemetry(ahrs, battery),
 #endif
     home(ahrs.get_home()),
-    G_Dt(0.02),
-    radius_of_earth(6378100)
+    G_Dt(0.02)
 {
 }

@@ -888,9 +888,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (is_equal(packet.param5,2.0f)) {
                     // accel trim
                     float trim_roll, trim_pitch;
-                    if(ins.calibrate_trim(trim_roll, trim_pitch)) {
+                    if(rover.ins.calibrate_trim(trim_roll, trim_pitch)) {
                         // reset ahrs's trim to suggested values from calibration routine
-                        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                        rover.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                         result = MAV_RESULT_ACCEPTED;
                     } else {
                         result = MAV_RESULT_FAILED;

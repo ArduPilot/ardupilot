@@ -32,8 +32,3 @@ void Rover::navigate()
 }
 
 
-void reached_waypoint()
-{       
-
-}
-

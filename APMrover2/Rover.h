@@ -249,9 +249,6 @@ private:
     // before recording our home position (and executing a ground start if we booted with an air start)
     uint8_t ground_start_count;
 
-    // Location & Navigation
-    const float radius_of_earth;	// meters
-
     // true if we have a position estimate from AHRS
     bool have_position;
 
@@ -452,7 +449,6 @@ private:
     void read_trim_switch();
     void update_events(void);
     void navigate();
-    void reached_waypoint();
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();

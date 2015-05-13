@@ -490,6 +490,9 @@ void Rover::update_navigation()
 	}
 }
 
+void setup(void);
+void loop(void);
+
 void setup(void)
 {
     rover.setup();
