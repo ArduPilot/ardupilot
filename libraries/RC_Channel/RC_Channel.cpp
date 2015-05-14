@@ -77,7 +77,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
 
     // @Param: DZ
     // @DisplayName: RC dead-zone
-    // @Description: dead zone around trim.
+    // @Description: dead zone around trim or bottom
     // @Units: pwm
     // @Range: 0 200
     // @User: Advanced
