@@ -257,6 +257,10 @@
   #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
 #endif
 
+#ifndef MAX_GYR_CAL_TIME_MS
+  #define MAX_GYR_CAL_TIME_MS 2000
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Checker
 #ifndef EKFCHECK_THRESHOLD_DEFAULT
