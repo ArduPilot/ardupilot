@@ -442,8 +442,9 @@ bool NavEKF::healthy(void) const
     if ((imuSampleTime_ms - ekfStartTime_ms) < 1000 ) {
         return false;
     }
-    // barometer innovations must be within limits when on-ground
-    if (!vehicleArmed && (fabsf(innovVelPos[5]) > 1.0f)) {
+    // barometer and position innovations must be within limits when on-ground
+    float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
+    if (!vehicleArmed && (fabsf(innovVelPos[5]) > 1.0f || horizErrSq > 1.0f)) {
         return false;
     }
 
