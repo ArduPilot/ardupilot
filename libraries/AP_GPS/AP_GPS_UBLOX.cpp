@@ -337,10 +337,11 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
             iTOW       : raw.iTOW,
             week       : raw.week,
             numSV      : raw.numSV,
-            sv         : raw.svinfo[i].sv,
+            reserved1  : raw.reserved1,
             cpMes      : raw.svinfo[i].cpMes,
             prMes      : raw.svinfo[i].prMes,
             doMes      : raw.svinfo[i].doMes,
+            sv         : raw.svinfo[i].sv,
             mesQI      : raw.svinfo[i].mesQI,
             cno        : raw.svinfo[i].cno,
             lli        : raw.svinfo[i].lli
