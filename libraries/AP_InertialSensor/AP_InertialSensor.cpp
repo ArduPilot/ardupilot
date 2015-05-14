@@ -454,13 +454,6 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
     _calibrating = true;
 
-    /*
-      we do the accel calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
-
     for (uint8_t k=0; k<num_accels; k++) {
         // backup original offsets and scaling
         orig_offset[k] = _accel_offset[k].get();
@@ -530,6 +523,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 } else {
                     samp = get_accel(k);
                 }
+                samp.rotate_inverse(_board_orientation);
                 samples[k][i] += samp;
                 if (!get_accel_health(k)) {
                     interact->printf_P(PSTR("accel[%u] not healthy"), (unsigned)k);
@@ -546,12 +540,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
     // run the calibration routine
     for (uint8_t k=0; k<num_accels; k++) {
-        if (!_check_sample_range(samples[k], saved_orientation, interact)) {
+        if (!_check_sample_range(samples[k], _board_orientation, interact)) {
             interact->printf_P(PSTR("Insufficient accel range"));
             continue;
         }
 
-        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k], saved_orientation);
+        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k], _board_orientation);
 
         interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
                             (unsigned)k,
@@ -582,11 +576,9 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
           We use the original board rotation for this sample
         */
         Vector3f level_sample = samples[0][0];
-        level_sample.rotate(saved_orientation);
+        level_sample.rotate(_board_orientation);
 
         _calculate_trim(level_sample, trim_roll, trim_pitch);
-
-        _board_orientation = saved_orientation;
 
         _calibrating = false;
         return true;
@@ -599,7 +591,6 @@ failed:
         _accel_offset[k].set(orig_offset[k]);
         _accel_scale[k].set(orig_scale[k]);
     }
-    _board_orientation = saved_orientation;
     _calibrating = false;
     return false;
 }
@@ -710,13 +701,6 @@ AP_InertialSensor::_init_gyro()
     // cold start
     hal.console->print_P(PSTR("Init Gyro"));
 
-    /*
-      we do the gyro calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
-
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
         _gyro_offset[k].set(Vector3f());
@@ -756,7 +740,9 @@ AP_InertialSensor::_init_gyro()
         for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
-                gyro_sum[k] += get_gyro(k);
+                Vector3f gyro = get_gyro(k);
+                gyro.rotate_inverse(_board_orientation);
+                gyro_sum[k] += gyro;
             }
             hal.scheduler->delay(5);
         }
@@ -814,9 +800,6 @@ AP_InertialSensor::_init_gyro()
         }
     }
 
-    // restore orientation
-    _board_orientation = saved_orientation;
-
     // record calibration complete
     _calibrating = false;
 
@@ -836,7 +819,7 @@ AP_InertialSensor::_init_gyro()
   board orientations which could result in smaller ranges. The sample
   inputs are in sensor frame
  */
-bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
+bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation,
                                             AP_InertialSensor_UserInteract* interact)
 {
     // we want at least 12 m/s/s range on all axes. This should be

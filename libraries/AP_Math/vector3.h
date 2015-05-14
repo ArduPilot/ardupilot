@@ -161,6 +161,7 @@ public:
 
     // rotate by a standard rotation
     void rotate(enum Rotation rotation);
+    void rotate_inverse(enum Rotation rotation);
 
     // gets the length of this vector squared
     T  length_squared() const
