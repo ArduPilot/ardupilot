@@ -22,6 +22,7 @@
 #ifndef __AP_MOUNT_H__
 #define __AP_MOUNT_H__
 
+#include <AP_Gimbal_Parameters.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_GPS.h>
@@ -29,6 +30,7 @@
 #include <GCS_MAVLink.h>
 #include "../RC_Channel/RC_Channel.h"
 #include "../AP_SerialManager/AP_SerialManager.h"
+
 
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
@@ -124,6 +126,8 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
+    AP_Gimbal_Parameters _externalParameters;
+
 protected:
 
     // private members
@@ -171,5 +175,4 @@ protected:
         
     } state[AP_MOUNT_MAX_INSTANCES];
 };
-
 #endif // __AP_MOUNT_H__

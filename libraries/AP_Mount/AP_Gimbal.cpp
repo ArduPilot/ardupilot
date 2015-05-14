@@ -11,6 +11,11 @@
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
+    if(!_gimbalParams.received_all()){
+        _gimbalParams.receive_missing_parameters(chan);
+        return;
+    }
+
     decode_feedback(msg);
     update_state();
     if (_ekf.getStatus() && !isCopterFlipped() && _gimbalParams.K_gimbalRate!=0.0f){

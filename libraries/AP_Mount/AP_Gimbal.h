@@ -26,9 +26,10 @@ class AP_Gimbal
 {
 public:
     //Constructor
-    AP_Gimbal(const AP_AHRS_NavEKF &ahrs) :
+    AP_Gimbal(const AP_AHRS_NavEKF &ahrs, AP_Gimbal_Parameters &parameters) :
         _ekf(ahrs),
         _ahrs(ahrs),
+        _gimbalParams(parameters),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
         yawErrorLimit(0.1f)
@@ -49,6 +50,8 @@ public:
 
     SmallEKF    _ekf;                   // state of small EKF for gimbal
     const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF
+    AP_Gimbal_Parameters &_gimbalParams;
+
     Vector3f    gimbalRateDemVec;       // degrees/s
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 

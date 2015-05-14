@@ -13,7 +13,7 @@
 AP_Mount_MAVLink::AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
     _initialised(false),
-    _gimbal(frontend._ahrs)
+    _gimbal(frontend._ahrs,frontend._externalParameters)
 {}
 
 // init - performs any required initialisation for this instance
