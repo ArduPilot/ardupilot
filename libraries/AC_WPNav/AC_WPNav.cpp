@@ -290,7 +290,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
         float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
         if (_pilot_accel_fwd_cms == 0 && _pilot_accel_rgt_cms == 0) {
-            drag_speed_delta = min(drag_speed_delta,-_loiter_accel_min_cmss*nav_dt);
+            drag_speed_delta = min(drag_speed_delta,max(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
         }
 
         desired_speed = max(desired_speed+drag_speed_delta,0.0f);
