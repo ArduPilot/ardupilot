@@ -39,6 +39,12 @@ void AP_Mount_MAVLink::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
+            {
+            const Vector3f &target = _state._neutral_angles.get();
+            _angle_ef_target_rad.x = ToRad(target.x);
+            _angle_ef_target_rad.y = ToRad(target.y);
+            _angle_ef_target_rad.z = ToRad(target.z);
+            }
             break;
 
         // point to the angles given by a mavlink message
