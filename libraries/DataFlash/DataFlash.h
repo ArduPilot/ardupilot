@@ -558,7 +558,7 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "Nf",        "Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,numSV,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
+      "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -619,7 +619,7 @@ Format characters in the format string for binary log messages
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
       "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
-      "GRAW", "IIHBBddfBbB", "TimeMS,WkMS,Week,NSats,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
+      "GRAW", "IIHBBddfBbB", "TimeMS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
