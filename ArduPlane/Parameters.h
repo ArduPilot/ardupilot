@@ -137,6 +137,7 @@ public:
         k_param_land_disarm_delay,
         k_param_glide_slope_threshold,
         k_param_rudder_only,
+        k_param_gcs3,            // 93
 
         // 100: Arming parameters
         k_param_arming = 100,

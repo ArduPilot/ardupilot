@@ -135,6 +135,11 @@ static void init_ardupilot()
     gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
 #endif
 
+#if MAVLINK_COMM_NUM_BUFFERS > 3
+    // setup serial port for fourth telemetry port (not used by default)
+    gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
+#endif
+
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager);
