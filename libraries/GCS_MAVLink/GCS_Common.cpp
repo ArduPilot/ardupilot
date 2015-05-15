@@ -34,34 +34,16 @@ GCS_MAVLINK::GCS_MAVLINK() :
 void
 GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 {
+    // sanity check chan
+    if (mav_chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return;
+    }
+
     _port = port;
     chan = mav_chan;
 
-    switch (chan) {
-        case MAVLINK_COMM_0:
-            mavlink_comm_0_port = _port;
-            initialised = true;
-            break;
-        case MAVLINK_COMM_1:
-            mavlink_comm_1_port = _port;
-            initialised = true;
-            break;
-        case MAVLINK_COMM_2:
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-            mavlink_comm_2_port = _port;
-            initialised = true;
-            break;
-#endif
-        case MAVLINK_COMM_3:
-#if MAVLINK_COMM_NUM_BUFFERS > 3
-            mavlink_comm_3_port = _port;
-            initialised = true;
-            break;
-#endif
-        default:
-            // do nothing for unsupport mavlink channels
-            break;
-    }
+    mavlink_comm_port[chan] = _port;
+    initialised = true;
     _queued_parameter = NULL;
     reset_cli_timeout();
 }
@@ -419,48 +401,17 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
  */
 bool GCS_MAVLINK::have_flow_control(void)
 {
-    switch (chan) {
-    case MAVLINK_COMM_0:
-        if (mavlink_comm_0_port == NULL) {
-            return false;
-        } else {
-            // assume USB has flow control
-            return hal.gpio->usb_connected() || mavlink_comm_0_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
-        }
-        break;
-
-    case MAVLINK_COMM_1:
-        if (mavlink_comm_1_port == NULL) {
-            return false;
-        } else {
-            return mavlink_comm_1_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
-        }
-        break;
-
-    case MAVLINK_COMM_2:
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-        if (mavlink_comm_2_port == NULL) {
-            return false;
-        } else {
-            return mavlink_comm_2_port != NULL && mavlink_comm_2_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
-        }
-        break;
-#endif
-
-    case MAVLINK_COMM_3:
-#if MAVLINK_COMM_NUM_BUFFERS > 3
-        if (mavlink_comm_3_port == NULL) {
-            return false;
-        } else {
-            return mavlink_comm_3_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
-        }
-        break;
-#endif
-
-    default:
-        break;
+    // sanity check chan
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return false;
     }
-    return false;
+
+    if (mavlink_comm_port[chan] == NULL) {
+        return false;
+    } else {
+        // assume USB has flow control
+        return hal.gpio->usb_connected() || mavlink_comm_port[chan]->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE;
+    }
 }
 
 

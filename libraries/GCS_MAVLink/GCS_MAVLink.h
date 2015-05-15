@@ -51,19 +51,7 @@
 #include "include/mavlink/v1.0/mavlink_types.h"
 
 /// MAVLink stream used for uartA
-extern AP_HAL::UARTDriver	*mavlink_comm_0_port;
-
-/// MAVLink stream used for uartC
-extern AP_HAL::UARTDriver	*mavlink_comm_1_port;
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-/// MAVLink stream used for uartD
-extern AP_HAL::UARTDriver	*mavlink_comm_2_port;
-#endif
-
-#if MAVLINK_COMM_NUM_BUFFERS > 3
-extern AP_HAL::UARTDriver   *mavlink_comm_3_port;
-#endif
+extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
@@ -75,26 +63,11 @@ extern mavlink_system_t mavlink_system;
 ///
 static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		mavlink_comm_0_port->write(ch);
-		break;
-	case MAVLINK_COMM_1:
-		mavlink_comm_1_port->write(ch);
-		break;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-	case MAVLINK_COMM_2:
-		mavlink_comm_2_port->write(ch);
-		break;
-#endif
-#if MAVLINK_COMM_NUM_BUFFERS > 3
-    case MAVLINK_COMM_3:
-        mavlink_comm_3_port->write(ch);
-        break;
-#endif
-	default:
-		break;
-	}
+    // sanity check chan
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return;
+    }
+    mavlink_comm_port[chan]->write(ch);
 }
 
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
