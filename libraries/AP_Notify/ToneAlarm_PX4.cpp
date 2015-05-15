@@ -36,9 +36,9 @@ extern const AP_HAL::HAL& hal;
 
 const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_QUIET_NEG_FEEDBACK 0
-    { "MFMLT100L64Ob>gP64<g>f", false },
+    { "MFMST100L64O2gg-feP64ee-dd-", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_NEG_FEEDBACK 1
-    { "MFMLT100L64Ob>gP64<g>f", false },
+    { "MFMST100L64O2gg-feP64ee-dd-", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK 2
     { "MFMLT200L64O3f>c<P32f>c", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_NEU_FEEDBACK 3
@@ -54,7 +54,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED 8
     { "MFT100L4>B#B#B#B#", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING 9
-    { "MFMLT200L64O2dgdgdgP16eaeaeaP16fb-fb-fb-fb-fb->P16gcgP16cgc", false },
+    { "MFMLT110O2L256bP128bP128bP16bP128bP128bP16bP128bP128bP16bP128bP128bP16bP128>bP128bP128>b<P128bP128>b<P128b", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 10
     { "MFT200L8G>C3", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 11
