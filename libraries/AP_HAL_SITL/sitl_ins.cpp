@@ -103,7 +103,7 @@ uint16_t SITL_State::_ground_sonar(void)
     if (fabsf(_sitl->state.rollDeg) < 90 &&
             fabsf(_sitl->state.pitchDeg) < 90) {
         // adjust for apparent altitude with roll
-        altitude /= cos(radians(_sitl->state.rollDeg)) * cos(radians(_sitl->state.pitchDeg));
+        altitude /= cosf(radians(_sitl->state.rollDeg)) * cosf(radians(_sitl->state.pitchDeg));
 
         altitude += _sitl->sonar_noise * _rand_float();
 
