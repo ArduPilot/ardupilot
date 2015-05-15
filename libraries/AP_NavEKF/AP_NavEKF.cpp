@@ -851,15 +851,19 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
     } else if (constPosMode && covPredStep) {
-        // in constant position mode use synthetic position measurements set to zero
-        // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
-        // do not use velocity fusion to reduce the effect of movement on attitude
+        // In constant position mode use synthetic position and velocity measurements set to zero
+        // Only fuse synthetic position measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
+        // Only fuse synthetic velocity measurements when on the ground to reduce attitude errors due to short term manoeuvres
+        if (!vehicleArmed) {
+            fuseVelData = true;
+        } else {
+            fuseVelData = false;
+        }
         if (accNavMag < 4.9f) {
             fusePosData = true;
         } else {
             fusePosData = false;
         }
-        fuseVelData = false;
     } else if (constVelMode && covPredStep) {
         // In constant velocity mode we fuse the last valid velocity vector
         // Reset the stored velocity vector when we enter the mode
@@ -1924,6 +1928,7 @@ void NavEKF::FuseVelPosNED()
         // because there may be no stored states due to lack of real measurements.
         if (constPosMode) {
             statesAtPosTime = state;
+            statesAtVelTime = state;
         } else if (constVelMode) {
             statesAtVelTime = state;
         }
@@ -1956,7 +1961,7 @@ void NavEKF::FuseVelPosNED()
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
         // if the GPS is able to report a speed error, we use it to adjust the observation noise for GPS velocity
         // otherwise we scale it using manoeuvre acceleration
-        if (gpsSpdAccuracy > 0.0f) {
+        if (gpsSpdAccuracy > 0.0f && !constPosMode && !constVelMode) {
             // use GPS receivers reported speed accuracy - floor at value set by gps noise parameter
             R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, _gpsHorizVelNoise, 50.0f));
             R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, _gpsVertVelNoise, 50.0f));
@@ -1976,7 +1981,7 @@ void NavEKF::FuseVelPosNED()
         }
 
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
-        // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
+        // For horizontal GPS velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPS perfomrance
         // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
         for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(gpsNEVelVarAccScale * accNavMag);
         for (uint8_t i=2; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
@@ -2093,8 +2098,8 @@ void NavEKF::FuseVelPosNED()
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - lastVelPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
-            // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || velTimeout || constVelMode) {
+            // if data is healthy  or in constant velocity or position mode we fuse it
+            if (velHealth || velTimeout || constVelMode || constPosMode) {
                 velHealth = true;
                 // restart the timeout count
                 lastVelPassTime = imuSampleTime_ms;
@@ -2135,25 +2140,22 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && useGpsVertVel && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
-            fuseData[0] = true;
-            fuseData[1] = true;
-            fuseData[2] = true;
+        if (fuseVelData && velHealth) {
+            if (PV_AidingMode == AID_ABSOLUTE && _fusionModeGPS == 0) {
+                fuseData[0] = true;
+                fuseData[1] = true;
+                fuseData[2] = true;
+            } else {
+                fuseData[0] = true;
+                fuseData[1] = true;
+            }
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
-            fuseData[0] = true;
-            fuseData[1] = true;
-        }
-        if ((fusePosData && posHealth && PV_AidingMode == AID_ABSOLUTE) || constPosMode) {
+        if (fusePosData && posHealth) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if ((fuseHgtData && hgtHealth) || constPosMode) {
+        if (fuseHgtData && hgtHealth) {
             fuseData[5] = true;
-        }
-        if (constVelMode) {
-            fuseData[0] = true;
-            fuseData[1] = true;
         }
 
         // fuse measurements sequentially
