@@ -107,6 +107,7 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     }
     if (_writebuf != NULL) {
         free(_writebuf);
+        _writebuf = NULL;
     }
 
     /*
