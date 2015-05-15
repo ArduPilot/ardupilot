@@ -110,7 +110,11 @@ public:
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).distance_cm;
+        if (_RangeFinder_STATE(instance).status == RangeFinder_Good) {
+            return _RangeFinder_STATE(instance).distance_cm;
+        } else {
+            return 0;
+        }
     }
     uint16_t distance_cm() const {
         return distance_cm(primary_instance);
