@@ -193,6 +193,7 @@ public:
         k_param_ch11_option,
         k_param_ch12_option,     // 123
         k_param_takeoff_trigger_dz,
+        k_param_gcs3,            // 125
 
         //
         // 140: Sensor parameters
