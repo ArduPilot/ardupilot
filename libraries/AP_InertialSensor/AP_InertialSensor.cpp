@@ -582,9 +582,14 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
           We use the original board rotation for this sample
         */
         Vector3f level_sample = samples[0][0];
+        level_sample.x *= new_scaling[0].x;
+        level_sample.y *= new_scaling[0].y;
+        level_sample.z *= new_scaling[0].z;
+        level_sample += new_offsets[0];
         level_sample.rotate(saved_orientation);
 
-        _calculate_trim(level_sample, trim_roll, trim_pitch);
+        trim_pitch = atan2(level_sample.x,pythagorous2(level_sample.y,level_sample.z));
+        trim_roll = atan2(-level_sample.y,-level_sample.z);
 
         _board_orientation = saved_orientation;
 
@@ -1017,33 +1022,6 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
 
     for( i=0; i<6; i++ ) {
         delta[i] = dS[i];
-    }
-}
-
-// _calculate_trim  - calculates the x and y trim angles (in radians) given a raw accel sample (i.e. no scaling or offsets applied) taken when the vehicle was level
-void AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
-{
-    // scale sample and apply offsets
-    const Vector3f &accel_scale = _accel_scale[0].get();
-    const Vector3f &accel_offsets = _accel_offset[0].get();
-    Vector3f scaled_accels_x( accel_sample.x * accel_scale.x - accel_offsets.x,
-                              0,
-                              accel_sample.z * accel_scale.z - accel_offsets.z );
-    Vector3f scaled_accels_y( 0,
-                              accel_sample.y * accel_scale.y - accel_offsets.y,
-                              accel_sample.z * accel_scale.z - accel_offsets.z );
-
-    // calculate x and y axis angle (i.e. roll and pitch angles)
-    Vector3f vertical = Vector3f(0,0,-1);
-    trim_roll = scaled_accels_y.angle(vertical);
-    trim_pitch = scaled_accels_x.angle(vertical);
-
-    // angle call doesn't return the sign so take care of it here
-    if( scaled_accels_y.y > 0 ) {
-        trim_roll = -trim_roll;
-    }
-    if( scaled_accels_x.x < 0 ) {
-        trim_pitch = -trim_pitch;
     }
 }
 
