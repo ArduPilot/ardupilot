@@ -727,7 +727,7 @@ void SmallEKF::fuseCompass()
     float t5757 = magX*t5756;
     float t5758 = t5747-t5752+t5757;
     float t5759 = t5742*t5758;
-    float t5723 = tan(t5759);
+    float t5723 = tanf(t5759);
     float t5760 = sq(t5723);
     float t5761 = t5760+1.0f;
     float t5762 = 1.0f/sq(t5741);
