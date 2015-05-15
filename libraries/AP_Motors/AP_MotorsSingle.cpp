@@ -126,7 +126,7 @@ void AP_MotorsSingle::output_min()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_trim);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_trim);
 	hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_trim);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _rc_throttle.radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), _throttle_radio_min);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -139,9 +139,8 @@ uint16_t AP_MotorsSingle::get_motor_mask()
 
 void AP_MotorsSingle::output_armed_not_stabilizing()
 {
-    int16_t out_min = _rc_throttle.radio_min + _min_throttle;
-    int16_t motor_out;
-
+    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    int16_t out_min = _throttle_radio_min + _min_throttle;
     int16_t min_thr = rel_pwm_to_thr_range(_spin_when_armed_ramped);
 
     // initialize limits flags
@@ -150,18 +149,16 @@ void AP_MotorsSingle::output_armed_not_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    if (_rc_throttle.servo_out <= min_thr) {
-        _rc_throttle.servo_out = min_thr;
+    if (_throttle_control_input <= min_thr) {
+        _throttle_control_input = min_thr;
         limit.throttle_lower = true;
     }
-    if (_rc_throttle.servo_out >= _max_throttle) {
-        _rc_throttle.servo_out = _max_throttle;
+    if (_throttle_control_input >= _max_throttle) {
+        _throttle_control_input = _max_throttle;
         limit.throttle_upper = true;
     }
 
-    _rc_throttle.calc_pwm();
-
-    motor_out = _rc_throttle.radio_out;
+    throttle_radio_output = calc_throttle_radio_output();
 
     // front servo
     _servo1.servo_out = 0;
@@ -177,23 +174,23 @@ void AP_MotorsSingle::output_armed_not_stabilizing()
     _servo3.calc_pwm();
     _servo4.calc_pwm();
 
-    if (motor_out >= out_min) {
-        motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _rc_throttle.radio_max);
+    if (throttle_radio_output >= out_min) {
+        throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
     }
 
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), motor_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), throttle_radio_output);
 }
 
 // sends commands to the motors
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
 void AP_MotorsSingle::output_armed_stabilizing()
 {
-    int16_t out_min = _rc_throttle.radio_min + _min_throttle;
-    int16_t motor_out;  // main motor output
+    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    int16_t out_min = _throttle_radio_min + _min_throttle;
 
     // initialize limits flags
     limit.roll_pitch = false;
@@ -202,37 +199,34 @@ void AP_MotorsSingle::output_armed_stabilizing()
     limit.throttle_upper = false;
 
     // Throttle is 0 to 1000 only
-    if (_rc_throttle.servo_out <= _min_throttle) {
-        _rc_throttle.servo_out = _min_throttle;
+    if (_throttle_control_input <= _min_throttle) {
+        _throttle_control_input = _min_throttle;
             limit.throttle_lower = true;
         }
-    if (_rc_throttle.servo_out >= _max_throttle) {
-        _rc_throttle.servo_out = _max_throttle;
+    if (_throttle_control_input >= _max_throttle) {
+        _throttle_control_input = _max_throttle;
         limit.throttle_upper = true;
     }
 
-    // capture desired throttle from receiver
-    _rc_throttle.calc_pwm();
-
-    //motor
-    motor_out = _rc_throttle.radio_out;
+    // calculate throttle PWM
+    throttle_radio_output = calc_throttle_radio_output();
 
     // adjust for thrust curve and voltage scaling
-    motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _rc_throttle.radio_max);
+    throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
 
     // ensure motor doesn't drop below a minimum value and stop
-    motor_out = max(motor_out, out_min);
+    throttle_radio_output = max(throttle_radio_output, out_min);
 
     // TODO: set limits.roll_pitch and limits.yaw
 
     // front servo
-    _servo1.servo_out = _rev_roll*_rc_roll.servo_out + _rev_yaw*_rc_yaw.servo_out;
+    _servo1.servo_out = _rev_roll*_roll_control_input + _rev_yaw*_yaw_control_input;
     // right servo
-    _servo2.servo_out = _rev_pitch*_rc_pitch.servo_out + _rev_yaw*_rc_yaw.servo_out;
+    _servo2.servo_out = _rev_pitch*_pitch_control_input + _rev_yaw*_yaw_control_input;
     // rear servo
-    _servo3.servo_out = -_rev_roll*_rc_roll.servo_out + _rev_yaw*_rc_yaw.servo_out;
+    _servo3.servo_out = -_rev_roll*_roll_control_input + _rev_yaw*_yaw_control_input;
     // left servo
-    _servo4.servo_out = -_rev_pitch*_rc_pitch.servo_out + _rev_yaw*_rc_yaw.servo_out;
+    _servo4.servo_out = -_rev_pitch*_pitch_control_input + _rev_yaw*_yaw_control_input;
 
     _servo1.calc_pwm();
     _servo2.calc_pwm();
@@ -244,7 +238,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo3.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo4.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), motor_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_7]), throttle_radio_output);
 }
 
 // output_disarmed - sends commands to the motors

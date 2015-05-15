@@ -25,6 +25,48 @@
 
 extern const AP_HAL::HAL& hal;
 
+const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
+    // variables from parent vehicle
+    AP_NESTEDGROUPINFO(AP_Motors, 0),
+
+    // @Param: YAW_SV_REV
+    // @DisplayName: Yaw Servo Reverse
+    // @Description: Yaw servo signal reversing
+    // @Range: 0, 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_SV_REV", 1,      AP_MotorsTri,  _yaw_servo_reverse, 0),
+
+    // @Param: YAW_SV_TRIM
+    // @DisplayName: Yaw Servo Trim/Center
+    // @Description: Trim or center position of yaw servo
+    // @Range: 1250 1750
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_SV_TRIM", 2,      AP_MotorsTri,  _yaw_servo_trim, 1500),
+
+    // @Param: YAW_SV_MIN
+    // @DisplayName: Yaw Servo Min Position
+    // @Description: Minimum angle limit of yaw servo
+    // @Range: 1000 1400
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_SV_MIN", 3,      AP_MotorsTri,  _yaw_servo_min, 1250),
+
+    // @Param: YAW_SV_MAX
+    // @DisplayName: Yaw Servo Max Position
+    // @Description: Maximum angle limit of yaw servo
+    // @Range: 1600 2000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("YAW_SV_MAX", 4,      AP_MotorsTri,  _yaw_servo_max, 1750),
+
+
+    AP_GROUPEND
+};
+
 // init
 void AP_MotorsTri::Init()
 {
@@ -74,17 +116,17 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _rc_throttle.radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _rc_throttle.radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _rc_throttle.radio_min);
-    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _throttle_radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _throttle_radio_min);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _throttle_radio_min);
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsTri::get_motor_mask()
 {
-    // tri copter uses channels 1,2,4 and 7
+    // tri copter uses channels 1,2,3 and 4
     return (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])) |
         (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])) |
         (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])) |
@@ -93,8 +135,9 @@ uint16_t AP_MotorsTri::get_motor_mask()
 
 void AP_MotorsTri::output_armed_not_stabilizing()
 {
-    int16_t out_min = _rc_throttle.radio_min + _min_throttle;
-    int16_t out_max = _rc_throttle.radio_max;
+    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    int16_t out_min = _throttle_radio_min + _min_throttle;
+    int16_t out_max = _throttle_radio_max;
     int16_t motor_out[AP_MOTORS_MOT_4+1];
 
     // initialize limits flags
@@ -105,26 +148,23 @@ void AP_MotorsTri::output_armed_not_stabilizing()
 
     int16_t min_thr = rel_pwm_to_thr_range(_spin_when_armed_ramped);
 
-    if (_rc_throttle.servo_out <= min_thr) {
-        _rc_throttle.servo_out = min_thr;
+    if (_throttle_control_input <= min_thr) {
+        _throttle_control_input = min_thr;
         limit.throttle_lower = true;
     }
 
-    if (_rc_throttle.servo_out >= _hover_out) {
-        _rc_throttle.servo_out = _hover_out;
+    if (_throttle_control_input >= _hover_out) {
+        _throttle_control_input = _hover_out;
         limit.throttle_upper = true;
     }
 
-    _rc_yaw.servo_out=0;
-    _rc_yaw.calc_pwm();
+    throttle_radio_output = calc_throttle_radio_output();
 
-    _rc_throttle.calc_pwm();
+    motor_out[AP_MOTORS_MOT_1] = throttle_radio_output;
+    motor_out[AP_MOTORS_MOT_2] = throttle_radio_output;
+    motor_out[AP_MOTORS_MOT_4] = throttle_radio_output;
 
-    motor_out[AP_MOTORS_MOT_1] = _rc_throttle.radio_out;
-    motor_out[AP_MOTORS_MOT_2] = _rc_throttle.radio_out;
-    motor_out[AP_MOTORS_MOT_4] = _rc_throttle.radio_out;
-
-    if(_rc_throttle.radio_out >= out_min) {
+    if(throttle_radio_output >= out_min) {
         // adjust for thrust curve and voltage scaling
         motor_out[AP_MOTORS_MOT_1] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_1], out_min, out_max);
         motor_out[AP_MOTORS_MOT_2] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_2], out_min, out_max);
@@ -136,19 +176,20 @@ void AP_MotorsTri::output_armed_not_stabilizing()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), motor_out[AP_MOTORS_MOT_2]);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out[AP_MOTORS_MOT_4]);
 
-    if( _rc_tail.get_reverse() == true ) {
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim - (_rc_yaw.radio_out - _rc_yaw.radio_trim));
-    }else{
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_out);
-    }
+    // send centering signal to yaw servo
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
 }
 
 // sends commands to the motors
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
 void AP_MotorsTri::output_armed_stabilizing()
 {
-    int16_t out_min = _rc_throttle.radio_min + _min_throttle;
-    int16_t out_max = _rc_throttle.radio_max;
+    int16_t roll_pwm;                                               // roll pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
+    int16_t pitch_pwm;                                              // pitch pwm value, initially calculated by calc_roll_pwm() but may be modified after, +/- 400
+    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
+    int16_t yaw_radio_output;                                       // final yaw pwm value sent to motors, typically ~1100-1900
+    int16_t out_min = _throttle_radio_min + _min_throttle;
+    int16_t out_max = _throttle_radio_max;
     int16_t motor_out[AP_MOTORS_MOT_4+1];
 
     // initialize limits flags
@@ -158,30 +199,29 @@ void AP_MotorsTri::output_armed_stabilizing()
     limit.throttle_upper = false;
 
     // Throttle is 0 to 1000 only
-    if (_rc_throttle.servo_out <= 0) {
-        _rc_throttle.servo_out = 0;
+    if (_throttle_control_input <= 0) {
+        _throttle_control_input = 0;
         limit.throttle_lower = true;
     }
-    if (_rc_throttle.servo_out >= _max_throttle) {
-        _rc_throttle.servo_out = _max_throttle;
+    if (_throttle_control_input >= _max_throttle) {
+        _throttle_control_input = _max_throttle;
         limit.throttle_upper = true;
     }
 
     // tricopters limit throttle to 80%
     // To-Do: implement improved stability patch and remove this limit
-    if (_rc_throttle.servo_out > 800) {
-        _rc_throttle.servo_out = 800;
+    if (_throttle_control_input > 800) {
+        _throttle_control_input = 800;
         limit.throttle_upper = true;
     }
 
-    // capture desired roll, pitch, yaw and throttle from receiver
-    _rc_roll.calc_pwm();
-    _rc_pitch.calc_pwm();
-    _rc_throttle.calc_pwm();
-    _rc_yaw.calc_pwm();
+    roll_pwm = calc_roll_pwm();
+    pitch_pwm = calc_pitch_pwm();
+    throttle_radio_output = calc_throttle_radio_output();
+    yaw_radio_output = calc_yaw_radio_output();
 
     // if we are not sending a throttle output, we cut the motors
-    if(_rc_throttle.servo_out == 0) {
+    if(_throttle_control_input == 0) {
         // range check spin_when_armed
         if (_spin_when_armed_ramped < 0) {
             _spin_when_armed_ramped = 0;
@@ -189,29 +229,29 @@ void AP_MotorsTri::output_armed_stabilizing()
         if (_spin_when_armed_ramped > _min_throttle) {
             _spin_when_armed_ramped = _min_throttle;
         }
-        motor_out[AP_MOTORS_MOT_1] = _rc_throttle.radio_min + _spin_when_armed_ramped;
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle.radio_min + _spin_when_armed_ramped;
-        motor_out[AP_MOTORS_MOT_4] = _rc_throttle.radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_1] = _throttle_radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_2] = _throttle_radio_min + _spin_when_armed_ramped;
+        motor_out[AP_MOTORS_MOT_4] = _throttle_radio_min + _spin_when_armed_ramped;
 
     }else{
-        int16_t roll_out            = (float)_rc_roll.pwm_out * 0.866f;
-        int16_t pitch_out           = _rc_pitch.pwm_out / 2;
+        int16_t roll_out            = (float)(roll_pwm * 0.866f);
+        int16_t pitch_out           = pitch_pwm / 2;
 
         // check if throttle is below limit
-        if (_rc_throttle.servo_out <= _min_throttle) {
+        if (_throttle_control_input <= _min_throttle) {
             limit.throttle_lower = true;
-            _rc_throttle.servo_out = _min_throttle;
-            _rc_throttle.calc_pwm();    // recalculate radio.out
+            _throttle_control_input = _min_throttle;
+            throttle_radio_output = calc_throttle_radio_output();
         }
 
         // TODO: set limits.roll_pitch and limits.yaw
 
         //left front
-        motor_out[AP_MOTORS_MOT_2] = _rc_throttle.radio_out + roll_out + pitch_out;
+        motor_out[AP_MOTORS_MOT_2] = throttle_radio_output + roll_out + pitch_out;
         //right front
-        motor_out[AP_MOTORS_MOT_1] = _rc_throttle.radio_out - roll_out + pitch_out;
+        motor_out[AP_MOTORS_MOT_1] = throttle_radio_output - roll_out + pitch_out;
         // rear
-        motor_out[AP_MOTORS_MOT_4] = _rc_throttle.radio_out - _rc_pitch.pwm_out;
+        motor_out[AP_MOTORS_MOT_4] = throttle_radio_output - pitch_pwm;
 
         // Tridge's stability patch
         if(motor_out[AP_MOTORS_MOT_1] > out_max) {
@@ -248,15 +288,8 @@ void AP_MotorsTri::output_armed_stabilizing()
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), motor_out[AP_MOTORS_MOT_2]);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out[AP_MOTORS_MOT_4]);
 
-    // also send out to tail command (we rely on any auto pilot to have updated the rc_yaw->radio_out to the correct value)
-    // note we do not save the radio_out to the motor_out array so it may not appear in the ch7out in the status screen of the mission planner
-    // note: we use _rc_tail's (aka channel 7's) REV parameter to control whether the servo is reversed or not but this is a bit nonsensical.
-    //       a separate servo object (including min, max settings etc) would be better or at least a separate parameter to specify the direction of the tail servo
-    if( _rc_tail.get_reverse() == true ) {
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_trim - (_rc_yaw.radio_out - _rc_yaw.radio_trim));
-    }else{
-        hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _rc_yaw.radio_out);
-    }
+    // send out to yaw command to tail servo
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, yaw_radio_output);
 }
 
 // output_disarmed - sends commands to the motors
@@ -298,4 +331,26 @@ void AP_MotorsTri::output_test(uint8_t motor_seq, int16_t pwm)
             // do nothing
             break;
     }
+}
+
+// calc_yaw_radio_output - calculate final radio output for yaw channel
+int16_t AP_MotorsTri::calc_yaw_radio_output()
+{
+    int16_t ret;
+
+    if (_yaw_servo_reverse){
+        if (_yaw_control_input >= 0){
+            ret = (_yaw_servo_trim - (_yaw_control_input/4500 * (_yaw_servo_trim - _yaw_servo_min)));
+        } else {
+            ret = (_yaw_servo_trim - (_yaw_control_input/4500 * (_yaw_servo_max - _yaw_servo_trim)));
+        }
+    } else {
+        if (_yaw_control_input >= 0){
+            ret = ((_yaw_control_input/4500 * (_yaw_servo_max - _yaw_servo_trim)) + _yaw_servo_trim);
+        } else {
+            ret = ((_yaw_control_input/4500 * (_yaw_servo_trim - _yaw_servo_min)) + _yaw_servo_trim);
+        }
+    }
+
+    return ret;
 }

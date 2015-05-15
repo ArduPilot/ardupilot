@@ -104,11 +104,7 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 };
 
 // Constructor
-AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz) :
-    _rc_roll(rc_roll),
-    _rc_pitch(rc_pitch),
-    _rc_throttle(rc_throttle),
-    _rc_yaw(rc_yaw),
+AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
@@ -152,16 +148,20 @@ void AP_Motors::armed(bool arm)
     AP_Notify::flags.armed = arm;
 };
 
-// set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-void AP_Motors::set_min_throttle(uint16_t min_throttle)
+// set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
+// also sets throttle channel minimum and maximum pwm
+void AP_Motors::set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max)
 {
-    _min_throttle = (float)min_throttle * (_rc_throttle.radio_max - _rc_throttle.radio_min) / 1000.0f;
+    _throttle_radio_min = radio_min;
+    _throttle_radio_max = radio_max;
+    _throttle_pwm_scalar = (_throttle_radio_max - _throttle_radio_min) / 1000.0f;
+    _min_throttle = (float)min_throttle * _throttle_pwm_scalar;   
 }
 
 // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
 int16_t AP_Motors::get_hover_throttle_as_pwm() const
 {
-    return (_rc_throttle.radio_min + (float)(_rc_throttle.radio_max - _rc_throttle.radio_min) * _hover_out / 1000.0f);
+    return (_throttle_radio_min + (float)(_throttle_radio_max - _throttle_radio_min) * _hover_out / 1000.0f);
 }
 
 // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
@@ -217,7 +217,7 @@ void AP_Motors::slow_start(bool true_false)
     _flags.slow_start = true;
 
     // initialise maximum throttle to current throttle
-    _max_throttle = constrain_int16(_rc_throttle.servo_out, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
+    _max_throttle = constrain_int16(_throttle_control_input, 0, AP_MOTORS_DEFAULT_MAX_THROTTLE);
 }
 
 // update the throttle input filter
@@ -229,8 +229,8 @@ void AP_Motors::update_throttle_filter()
         _throttle_filter.reset(0.0f);
     }
 
-    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
-    _rc_throttle.servo_out = constrain_float(_throttle_filter.get(),-32000,32000);
+    // prevent _throttle_control_input from wrapping at int16 max or min
+    _throttle_control_input = constrain_float(_throttle_filter.get(),-32000,32000);
 }
 
 // update_max_throttle - updates the limits on _max_throttle if necessary taking into account slow_start_throttle flag
@@ -251,7 +251,7 @@ void AP_Motors::update_max_throttle()
     _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
 
     // turn off slow start if we've reached max throttle
-    if (_max_throttle >= _rc_throttle.servo_out) {
+    if (_max_throttle >= _throttle_control_input) {
         _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
         _flags.slow_start = false;
     }
@@ -273,7 +273,7 @@ void AP_Motors::current_limit_max_throttle()
     }
 
     // remove throttle limit if throttle is at zero or disarmed
-    if(_rc_throttle.servo_out <= 0 || !_flags.armed) {
+    if(_throttle_control_input <= 0 || !_flags.armed) {
         _throttle_limit = 1.0f;
     }
 
@@ -342,14 +342,14 @@ void AP_Motors::update_lift_max_from_batt_voltage()
 void AP_Motors::update_battery_resistance()
 {
     // if motors are stopped, reset resting voltage and current
-    if (_rc_throttle.servo_out <= 0 || !_flags.armed) {
+    if (_throttle_control_input <= 0 || !_flags.armed) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
     } else {
         // update battery resistance when throttle is over hover throttle
         if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (_rc_throttle.servo_out >= _hover_out) {
+            if (_throttle_control_input >= _hover_out) {
                 // filter reaches 90% in 1/4 the test time
                 _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
                 _batt_timer += 1;
@@ -393,10 +393,10 @@ float AP_Motors::get_compensation_gain() const
 
 float AP_Motors::rel_pwm_to_thr_range(float pwm) const
 {
-    return 1000.0f*pwm/(_rc_throttle.radio_max-_rc_throttle.radio_min);
+    return pwm/_throttle_pwm_scalar;
 }
 
 float AP_Motors::thr_range_to_rel_pwm(float thr) const
 {
-    return (_rc_throttle.radio_max-_rc_throttle.radio_min)*thr/1000.0f;
+    return _throttle_pwm_scalar*thr;
 }

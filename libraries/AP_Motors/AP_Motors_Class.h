@@ -89,7 +89,7 @@ class AP_Motors {
 public:
 
     // Constructor
-    AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
     virtual void        Init() {}
@@ -113,8 +113,9 @@ public:
     // get motor interlock status.  true means motors run, false motors don't run
     bool                get_interlock() const { return _flags.interlock; };
 
-    // set_min_throttle - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    void                set_min_throttle(uint16_t min_throttle);
+    // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
+    // also sets throttle channel minimum and maximum pwm
+    void                set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max);
 
     // set_hover_throttle - sets the mid throttle which is close to the hover throttle of the copter
     // this is used to limit the amount that the stability patch will increase the throttle to give more room for roll, pitch and yaw control
@@ -127,17 +128,17 @@ public:
     int16_t             throttle_max() const { return _max_throttle;}
 
     // set_roll, set_pitch, set_yaw, set_throttle
-    void                set_roll(int16_t roll_in) { _rc_roll.servo_out = roll_in; };                    // range -4500 ~ 4500
-    void                set_pitch(int16_t pitch_in) { _rc_pitch.servo_out = pitch_in; };                // range -4500 ~ 4500
-    void                set_yaw(int16_t yaw_in) { _rc_yaw.servo_out = yaw_in; };                        // range -4500 ~ 4500
-    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };    // range 0 ~ 1000
+    void                set_roll(int16_t roll_in) { _roll_control_input = roll_in; };                   // range -4500 ~ 4500
+    void                set_pitch(int16_t pitch_in) { _pitch_control_input = pitch_in; };               // range -4500 ~ 4500
+    void                set_yaw(int16_t yaw_in) { _yaw_control_input = yaw_in; };                       // range -4500 ~ 4500
+    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };                // range 0 ~ 1000
     void                set_stabilizing(bool stabilizing) { _flags.stabilizing = stabilizing; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
-    int16_t             get_roll() const { return _rc_roll.servo_out; }
-    int16_t             get_pitch() const { return _rc_pitch.servo_out; }
-    int16_t             get_yaw() const { return _rc_yaw.servo_out; }
-    int16_t             get_throttle_out() const { return _rc_throttle.servo_out; }
+    float               get_roll() const { return _roll_control_input; }
+    float               get_pitch() const { return _pitch_control_input; }
+    float               get_yaw() const { return _yaw_control_input; }
+    float               get_throttle() const { return _throttle_control_input; }
 
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
@@ -249,6 +250,15 @@ protected:
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;
 
+    // convert RPY and Throttle servo ranges from legacy controller scheme back into PWM values
+    // RPY channels typically +/-45 degrees servo travel between +/-400 PWM
+    // Throttle channel typically 0-1000 range converts to 1100-1900 PWM for final output signal to motors
+    // ToDo: this should all be handled as floats +/- 1.0 instead of PWM and fake angle ranges
+    int16_t             calc_roll_pwm() { return (_roll_control_input / 11.25);}
+    int16_t             calc_pitch_pwm() { return (_pitch_control_input / 11.25);}
+    int16_t             calc_yaw_pwm() { return (_yaw_control_input / 11.25);}
+    int16_t             calc_throttle_radio_output() { return (_throttle_control_input * _throttle_pwm_scalar) + _throttle_radio_min;}
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
@@ -274,18 +284,21 @@ protected:
     AP_Float            _thr_mix_min;           // current over which maximum throttle is limited
 
     // internal variables
-    RC_Channel&         _rc_roll;               // roll input in from users is held in servo_out
-    RC_Channel&         _rc_pitch;              // pitch input in from users is held in servo_out
-    RC_Channel&         _rc_throttle;           // throttle input in from users is held in servo_out
-    RC_Channel&         _rc_yaw;                // yaw input in from users is held in servo_out
-    uint16_t            _loop_rate;             // rate at which output() function is called (normally 400hz)
-    uint16_t            _speed_hz;              // speed in hz to send updates to motors
-    int16_t             _min_throttle;          // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
-    int16_t             _max_throttle;          // the maximum throttle to be sent to the motors (sometimes limited by slow start)
-    int16_t             _hover_out;             // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
-    int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
-    float               _throttle_thr_mix;      // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
-    float               _throttle_thr_mix_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _roll_control_input;        // desired roll control from attitude controllers, +/- 4500
+    float               _pitch_control_input;       // desired pitch control from attitude controller, +/- 4500
+    float               _throttle_control_input;    // desired throttle (thrust) control from attitude controller, 0-1000
+    float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
+    float               _throttle_pwm_scalar;       // scalar used to convert throttle channel pwm range into 0-1000 range, ~0.8 - 1.0
+    uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
+    uint16_t            _speed_hz;                  // speed in hz to send updates to motors
+    int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
+    int16_t             _max_throttle;              // the maximum throttle to be sent to the motors (sometimes limited by slow start)
+    int16_t             _throttle_radio_min;        // minimum radio channel pwm
+    int16_t             _throttle_radio_max;        // maximum radio channel pwm
+    int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
+    int16_t             _spin_when_armed_ramped;    // equal to _spin_when_armed parameter but slowly ramped up from zero
+    float               _throttle_thr_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
+    float               _throttle_thr_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
 
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading

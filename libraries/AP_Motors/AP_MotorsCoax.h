@@ -25,8 +25,8 @@ class AP_MotorsCoax : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsCoax( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& servo1, RC_Channel& servo2, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz),
+    AP_MotorsCoax(RC_Channel& servo1, RC_Channel& servo2, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(loop_rate, speed_hz),
         _servo1(servo1),
         _servo2(servo2)
     {
