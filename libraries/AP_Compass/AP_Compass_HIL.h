@@ -4,6 +4,12 @@
 
 #include "Compass.h"
 
+#if COMPASS_MAX_INSTANCES == 1
+# define HIL_NUM_COMPASSES 1
+#else
+# define HIL_NUM_COMPASSES 2
+#endif
+
 class AP_Compass_HIL : public AP_Compass_Backend
 {
 public:
@@ -15,7 +21,7 @@ public:
     static AP_Compass_Backend *detect(Compass &compass);
 
 private:
-    uint8_t     _compass_instance[COMPASS_MAX_INSTANCES];
+    uint8_t     _compass_instance[HIL_NUM_COMPASSES];
 };
 
 #endif

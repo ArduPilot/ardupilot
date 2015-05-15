@@ -51,7 +51,7 @@ bool
 AP_Compass_HIL::init(void)
 {
     // register two compass instances
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<HIL_NUM_COMPASSES; i++) {
         _compass_instance[i] = register_compass();
     }
     return true;
