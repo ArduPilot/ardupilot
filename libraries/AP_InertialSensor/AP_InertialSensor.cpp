@@ -435,8 +435,8 @@ AP_InertialSensor::_detect_backends(void)
 */
 bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
 {
-    trim_roll = -asinf(accel_sample.y/GRAVITY_MSS);
-    trim_pitch = asinf(accel_sample.x/GRAVITY_MSS);
+    trim_pitch = atan2f(accel_sample.x, pythagorous2(accel_sample.y, accel_sample.z));
+    trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
     if (fabsf(trim_roll) > radians(10) || 
         fabsf(trim_pitch) > radians(10)) {
         hal.console->println_P(PSTR("trim over maximum of 10 degrees"));
