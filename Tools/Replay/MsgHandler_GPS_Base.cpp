@@ -29,6 +29,6 @@ void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, 
         rel_altitude = 0.01f * require_field_int32_t(msg, "RelAlt");
     }
 
-    dataflash.Log_Write_GPS(gps, gps_offset, rel_altitude);
+    dataflash.WriteBlock(msg, f.length);
 }
 

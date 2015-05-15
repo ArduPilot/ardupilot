@@ -1,3 +1,6 @@
+#ifndef MSGHANDLER_MAG_BASE_H
+#define MSGHANDLER_MAG_BASE_H
+
 #include "MsgHandler.h"
 
 class MsgHandler_MAG_Base : public MsgHandler
@@ -13,3 +16,5 @@ protected:
 private:
     Compass &compass;
 };
+
+#endif // MSGHANDLER_MAG_BASE

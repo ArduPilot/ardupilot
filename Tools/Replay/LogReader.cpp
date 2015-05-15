@@ -31,6 +31,7 @@
 #include "MsgHandler_AHR2.h"
 #include "MsgHandler_ATT.h"
 #include "MsgHandler_MAG.h"
+#include "MsgHandler_MAG2.h"
 #include "MsgHandler_NTUN_Copter.h"
 #include "MsgHandler_ARSP.h"
 
@@ -181,6 +182,9 @@ bool LogReader::update(char type[5])
                                                  attitude);
 	} else if (streq(name, "MAG")) {
 	  msgparser[f.type] = new MsgHandler_MAG(formats[f.type], dataflash,
+						 last_timestamp_usec, compass);
+	} else if (streq(name, "MAG2")) {
+	  msgparser[f.type] = new MsgHandler_MAG2(formats[f.type], dataflash,
 						 last_timestamp_usec, compass);
 	} else if (streq(name, "NTUN")) {
 	    // the label "NTUN" is used by rover, copter and plane -

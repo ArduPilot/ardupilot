@@ -14,6 +14,6 @@ void MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_
     // mag_offset is a vector indicating the compass' calibration...
     compass.set_offsets(compass_offset, mag_offset);
 
-    dataflash.Log_Write_Compass(compass);
+    dataflash.WriteBlock(msg, f.length);
 }
 

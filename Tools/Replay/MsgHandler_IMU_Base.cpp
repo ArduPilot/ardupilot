@@ -17,5 +17,5 @@ void MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
         ins.set_accel(imu_offset, accel2);
     }
 
-    dataflash.Log_Write_IMU(ins);
+    dataflash.WriteBlock(msg, f.length);
 }

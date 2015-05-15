@@ -7,6 +7,5 @@ void MsgHandler_ARSP::process_message(uint8_t *msg)
     airspeed.setHIL(require_field_float(msg, "Airspeed"),
 		    require_field_float(msg, "DiffPress"),
 		    require_field_float(msg, "Temp"));
-
-    dataflash.Log_Write_Airspeed(airspeed);
+    dataflash.WriteBlock(msg, f.length);
 }
