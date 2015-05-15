@@ -1492,7 +1492,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         ins.set_accel(0, accels);
 
         barometer.setHIL(packet.alt*0.001f);
-        compass.setHIL(packet.roll, packet.pitch, packet.yaw);
+        compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
+        compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
 
         break;
     }
