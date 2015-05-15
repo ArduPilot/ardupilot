@@ -325,6 +325,7 @@ static void Log_Write_Attitude()
  #endif
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
+    DataFlash.Log_Write_POS(ahrs);
 }
 
 struct PACKED log_Sonar {
