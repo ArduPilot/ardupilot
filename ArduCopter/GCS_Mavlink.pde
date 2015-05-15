@@ -1188,6 +1188,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else {
                     result = MAV_RESULT_FAILED;
                 }
+            } else if (is_equal(packet.param5,2.0f)) {
+                // accel trim
+                float trim_roll, trim_pitch;
+                if(ins.calibrate_trim(trim_roll, trim_pitch)) {
+                    // reset ahrs's trim to suggested values from calibration routine
+                    ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+                    result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
+                }
             } else if (is_equal(packet.param6,1.0f)) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
