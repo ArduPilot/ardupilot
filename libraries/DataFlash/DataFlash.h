@@ -611,7 +611,7 @@ Format characters in the format string for binary log messages
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
-      "POS","IIIff","TimeMS,Lat,Lng,Alt,RelAlt" }, \
+      "POS","IiIff","TimeMS,Lat,Lng,Alt,RelAlt" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_EKF1_MSG, sizeof(log_EKF1), \
