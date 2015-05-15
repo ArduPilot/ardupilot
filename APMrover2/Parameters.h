@@ -71,6 +71,7 @@ public:
         k_param_serial2_protocol,   // deprecated, can be deleted
         k_param_serial_manager,     // serial manager library
         k_param_cli_enabled,
+        k_param_gcs3,
 
         //
         // 130: Sensor parameters
