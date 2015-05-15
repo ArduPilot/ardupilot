@@ -550,6 +550,7 @@ Format characters in the format string for binary log messages
   i   : int32_t
   I   : uint32_t
   f   : float
+  d   : double
   n   : char[4]
   N   : char[16]
   Z   : char[64]
