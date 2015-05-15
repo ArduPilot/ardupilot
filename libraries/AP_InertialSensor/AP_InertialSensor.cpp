@@ -581,12 +581,10 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
           calculate the trims as well from primary accels 
           We use the original board rotation for this sample
         */
-        Vector3f level_sample = samples[0][0];
-        level_sample.rotate(saved_orientation);
 
-        _calculate_trim(level_sample, trim_roll, trim_pitch);
+        _board_orientation = saved_orientation; // used by _calculate_trim()
 
-        _board_orientation = saved_orientation;
+        _calculate_trim(samples[0][0], trim_roll, trim_pitch);
 
         _calibrating = false;
         return true;
@@ -1023,17 +1021,24 @@ void AP_InertialSensor::_calibrate_find_delta(float dS[6], float JS[6][6], float
 // _calculate_trim  - calculates the x and y trim angles (in radians) given a raw accel sample (i.e. no scaling or offsets applied) taken when the vehicle was level
 void AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
 {
-    // scale sample and apply offsets
     const Vector3f &accel_scale = _accel_scale[0].get();
     const Vector3f &accel_offsets = _accel_offset[0].get();
+
+    // first, scale sample and apply offsets
     Vector3f scaled_accels_x( accel_sample.x * accel_scale.x - accel_offsets.x,
-                              0,
-                              accel_sample.z * accel_scale.z - accel_offsets.z );
-    Vector3f scaled_accels_y( 0,
                               accel_sample.y * accel_scale.y - accel_offsets.y,
                               accel_sample.z * accel_scale.z - accel_offsets.z );
 
-    // calculate x and y axis angle (i.e. roll and pitch angles)
+    // then, rotate
+    scaled_accels_x.rotate(_board_orientation);
+
+    Vector3f scaled_accels_y = scaled_accels_x;
+
+    // and project to axis planes
+    scaled_accels_x.y=0;
+    scaled_accels_y.x=0;
+
+    // finally, calculate x and y axis angle (i.e. roll and pitch angles)
     Vector3f vertical = Vector3f(0,0,-1);
     trim_roll = scaled_accels_y.angle(vertical);
     trim_pitch = scaled_accels_x.angle(vertical);
