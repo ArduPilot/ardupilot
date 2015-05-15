@@ -216,7 +216,7 @@ static void poshold_run()
                 poshold_update_pilot_lean_angle(poshold.pilot_roll, target_roll);
 
                 // switch to BRAKE mode for next iteration if no pilot input
-                if (is_zero(target_roll) && (abs(poshold.pilot_roll) < 2 * g.poshold_brake_rate)) {
+                if (is_zero(target_roll) && (fabsf(poshold.pilot_roll) < 2 * g.poshold_brake_rate)) {
                     // initialise BRAKE mode
                     poshold.roll_mode = POSHOLD_BRAKE;        // Set brake roll mode
                     poshold.brake_roll = 0;                  // initialise braking angle to zero
@@ -310,7 +310,7 @@ static void poshold_run()
                 poshold_update_pilot_lean_angle(poshold.pilot_pitch, target_pitch);
 
                 // switch to BRAKE mode for next iteration if no pilot input
-                if (is_zero(target_pitch) && (abs(poshold.pilot_pitch) < 2 * g.poshold_brake_rate)) {
+                if (is_zero(target_pitch) && (fabsf(poshold.pilot_pitch) < 2 * g.poshold_brake_rate)) {
                     // initialise BRAKE mode
                     poshold.pitch_mode = POSHOLD_BRAKE;       // set brake pitch mode
                     poshold.brake_pitch = 0;                 // initialise braking angle to zero
@@ -527,7 +527,7 @@ static void poshold_run()
 static void poshold_update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw)
 {
     // if raw input is large or reversing the vehicle's lean angle immediately set the fitlered angle to the new raw angle
-    if ((lean_angle_filtered > 0 && lean_angle_raw < 0) || (lean_angle_filtered < 0 && lean_angle_raw > 0) || (abs(lean_angle_raw) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE)) {
+    if ((lean_angle_filtered > 0 && lean_angle_raw < 0) || (lean_angle_filtered < 0 && lean_angle_raw > 0) || (fabsf(lean_angle_raw) > POSHOLD_STICK_RELEASE_SMOOTH_ANGLE)) {
         lean_angle_filtered = lean_angle_raw;
     } else {
         // lean_angle_raw must be pulling lean_angle_filtered towards zero, smooth the decrease

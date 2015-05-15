@@ -132,7 +132,7 @@ static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int
             rate_bf_request.x = constrain_float(rate_bf_request.x, -rate_limit, rate_limit);
 
             // Calculate rate limit to prevent change of rate through inverted
-            rate_limit = fabsf(fabs(rate_bf_request.y)-fabsf(rate_bf_level.y));
+            rate_limit = fabsf(fabsf(rate_bf_request.y)-fabsf(rate_bf_level.y));
             rate_bf_request.y += rate_bf_level.y;
             rate_bf_request.y = constrain_float(rate_bf_request.y, -rate_limit, rate_limit);
 
