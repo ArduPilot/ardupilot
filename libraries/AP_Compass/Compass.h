@@ -35,7 +35,7 @@
    maximum number of compass instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3   
 #else
@@ -223,9 +223,9 @@ public:
     uint8_t get_primary(void) const { return _primary; }
 
     // HIL methods
-    void        setHIL(float roll, float pitch, float yaw);
-    void        setHIL(const Vector3f &mag);
-    const Vector3f&   getHIL() const;
+    void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
+    void        setHIL(uint8_t instance, const Vector3f &mag);
+    const Vector3f&   getHIL(uint8_t instance) const;
     void        _setup_earth_field();
 
     // enable HIL mode
@@ -240,7 +240,8 @@ public:
     struct {
         Vector3f Bearth;
         float last_declination;
-        Vector3f field;
+        bool healthy[COMPASS_MAX_INSTANCES];
+        Vector3f field[COMPASS_MAX_INSTANCES];
     } _hil;
 
 private:

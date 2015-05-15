@@ -15,7 +15,7 @@ public:
     static AP_Compass_Backend *detect(Compass &compass);
 
 private:
-    uint8_t     _compass_instance;    
+    uint8_t     _compass_instance[COMPASS_MAX_INSTANCES];
 };
 
 #endif

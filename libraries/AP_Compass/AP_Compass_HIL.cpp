@@ -27,9 +27,9 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
-    AP_Compass_Backend(compass),
-    _compass_instance(0)
+    AP_Compass_Backend(compass)
 {
+    memset(_compass_instance, 0, sizeof(_compass_instance));
     _compass._setup_earth_field();
 }
 
@@ -50,12 +50,18 @@ AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
 bool
 AP_Compass_HIL::init(void)
 {
-    // register the compass instance in the frontend
-    _compass_instance = register_compass();
+    // register two compass instances
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        _compass_instance[i] = register_compass();
+    }
     return true;
 }
 
 void AP_Compass_HIL::read()
 {
-    publish_field(_compass._hil.field, _compass_instance);
+    for (uint8_t i=0; i<sizeof(_compass_instance)/sizeof(_compass_instance[0]); i++) {
+        if (_compass._hil.healthy[i]) {
+            publish_field(_compass._hil.field[_compass_instance[i]], _compass_instance[i]);
+        }
+    }
 }
