@@ -26,6 +26,7 @@
 #include "MsgHandler_IMU3.h"
 #include "MsgHandler_SIM.h"
 #include "MsgHandler_BARO.h"
+#include "MsgHandler_ARM.h"
 #include "MsgHandler_AHR2.h"
 #include "MsgHandler_ATT.h"
 #include "MsgHandler_MAG.h"
@@ -120,6 +121,8 @@ bool LogReader::update(char type[5])
 	memcpy(name, f.name, 4);
 	::printf("Defining log format for type (%d) (%s)\n", f.type, name);
 
+        dataflash.WriteBlock(&f, sizeof(f));
+
 	// map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
             parameter_handler = new MsgHandler_PARM(formats[f.type], dataflash,
@@ -159,6 +162,9 @@ bool LogReader::update(char type[5])
 	} else if (streq(name, "BARO")) {
 	  msgparser[f.type] = new MsgHandler_BARO(formats[f.type], dataflash,
                                                   last_timestamp_usec, baro);
+	} else if (streq(name, "ARM")) {
+	  msgparser[f.type] = new MsgHandler_ARM(formats[f.type], dataflash,
+                                                  last_timestamp_usec);
 	} else if (streq(name, "AHR2")) {
 	  msgparser[f.type] = new MsgHandler_AHR2(formats[f.type], dataflash,
 						  last_timestamp_usec,
