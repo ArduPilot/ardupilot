@@ -1150,7 +1150,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             ins.set_gyro(0, gyros);
 
             ins.set_accel(0, accels);
-            compass.setHIL(packet.roll, packet.pitch, packet.yaw);
+            compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
+            compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
             break;
 		}
 #endif // HIL_MODE
