@@ -27,6 +27,7 @@
 #include "MsgHandler_SIM.h"
 #include "MsgHandler_BARO.h"
 #include "MsgHandler_ARM.h"
+#include "MsgHandler_Event.h"
 #include "MsgHandler_AHR2.h"
 #include "MsgHandler_ATT.h"
 #include "MsgHandler_MAG.h"
@@ -164,6 +165,9 @@ bool LogReader::update(char type[5])
                                                   last_timestamp_usec, baro);
 	} else if (streq(name, "ARM")) {
 	  msgparser[f.type] = new MsgHandler_ARM(formats[f.type], dataflash,
+                                                  last_timestamp_usec);
+	} else if (streq(name, "EV")) {
+	  msgparser[f.type] = new MsgHandler_Event(formats[f.type], dataflash,
                                                   last_timestamp_usec);
 	} else if (streq(name, "AHR2")) {
 	  msgparser[f.type] = new MsgHandler_AHR2(formats[f.type], dataflash,

@@ -213,11 +213,8 @@ void setup()
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
 
-    if (arm_time_ms != 0) {
-        hal.util->set_soft_armed(false);
-    } else {
-        hal.util->set_soft_armed(true);
-    }
+    printf("Starting disarmed\n");
+    hal.util->set_soft_armed(false);
 
     barometer.init();
     barometer.setHIL(0);
