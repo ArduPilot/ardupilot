@@ -150,9 +150,6 @@ private:
     AP_GPS gps;
     AP_Baro barometer;
     Compass compass;
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    AP_ADC_ADS7844 apm1_adc;
-#endif
     AP_InertialSensor ins;
     RangeFinder sonar;
 

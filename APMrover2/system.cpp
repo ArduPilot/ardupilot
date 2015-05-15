@@ -75,6 +75,10 @@ static void failsafe_check_static()
     rover.failsafe_check();
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    AP_ADC_ADS7844 apm1_adc;
+#endif
+
 void Rover::init_ardupilot()
 {
     // initialise console serial port
