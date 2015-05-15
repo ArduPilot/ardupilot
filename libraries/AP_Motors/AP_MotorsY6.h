@@ -18,8 +18,9 @@ class AP_MotorsY6 : public AP_MotorsMatrix {
 public:
 
     /// Constructor
-    AP_MotorsY6(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) : AP_MotorsMatrix(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz) {
-    };
+    AP_MotorsY6(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMatrix(loop_rate, speed_hz)
+    { };
 
     // setup_motors - configures the motors for a Y6
     virtual void        setup_motors();
