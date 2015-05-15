@@ -653,7 +653,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         ahrs.get_NavEKF().send_status_report(chan);
 #endif
         break;
-
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -1734,6 +1733,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // send message to Notify
         AP_Notify::handle_led_control(msg);
         break;
+
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS: {
+        mavlink_remote_log_block_status_t packet;
+        mavlink_msg_remote_log_block_status_decode(msg, &packet);
+        if(packet.block_status == 0){
+            DataFlash.handle_retry(packet.block_cnt);
+        } else{
+            //printf("%d\n", packet.block_cnt);
+            DataFlash.handle_ack(packet.block_cnt);
+        }
+        break;
+    }
+
 
     }     // end switch
 } // end handle mavlink
