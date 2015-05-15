@@ -411,16 +411,16 @@ static void Log_Write_Rate()
         time_ms         : hal.scheduler->millis(),
         control_roll    : (float)rate_targets.x,
         roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
-        roll_out        : (float)(motors.get_roll()),
+        roll_out        : (motors.get_roll()),
         control_pitch   : (float)rate_targets.y,
         pitch           : (float)(ahrs.get_gyro().y * AC_ATTITUDE_CONTROL_DEGX100),
-        pitch_out       : (float)(motors.get_pitch()),
+        pitch_out       : (motors.get_pitch()),
         control_yaw     : (float)rate_targets.z,
         yaw             : (float)(ahrs.get_gyro().z * AC_ATTITUDE_CONTROL_DEGX100),
-        yaw_out         : (float)(motors.get_yaw()),
+        yaw_out         : (motors.get_yaw()),
         control_accel   : (float)accel_target.z,
         accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
-        accel_out       : (float)(motors.get_throttle_out())
+        accel_out       : (motors.get_throttle())
     };
     DataFlash.WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
