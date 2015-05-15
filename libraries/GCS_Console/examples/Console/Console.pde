@@ -49,7 +49,7 @@ void setup(void) {
     hal.uartA->begin(115200, 128, 256);
 
     /* Setup GCS_Mavlink library's comm 0 port. */
-    mavlink_comm_0_port = hal.uartA;
+    mavlink_comm_port[0] = hal.uartA;
     
     char hello[] = "Hello statustext\r\n";
     try_send_statustext(MAVLINK_COMM_0, hello, strlen(hello));
