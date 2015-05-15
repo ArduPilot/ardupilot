@@ -428,6 +428,26 @@ AP_InertialSensor::_detect_backends(void)
     _product_id.set(_backends[0]->product_id());
 }
 
+/*
+  _calculate_trim - calculates the x and y trim angles. The
+  accel_sample must be correctly scaled, offset and oriented for the
+  board 
+*/
+bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch)
+{
+    trim_roll = -asinf(accel_sample.y/GRAVITY_MSS);
+    trim_pitch = asinf(accel_sample.x/GRAVITY_MSS);
+    if (fabsf(trim_roll) > radians(10) || 
+        fabsf(trim_pitch) > radians(10)) {
+        hal.console->println_P(PSTR("trim over maximum of 10 degrees"));
+        return false;
+    }
+    hal.console->printf_P(PSTR("Trim OK: roll=%.2f pitch=%.2f\n"),
+                          degrees(trim_roll),
+                          degrees(trim_pitch));
+    return true;
+}
+
 #if !defined( __AVR_ATmega1280__ )
 // calibrate_accel - perform accelerometer calibration including providing user
 // instructions and feedback Gauss-Newton accel calibration routines borrowed
@@ -585,11 +605,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         level_sample.x *= new_scaling[0].x;
         level_sample.y *= new_scaling[0].y;
         level_sample.z *= new_scaling[0].z;
-        level_sample += new_offsets[0];
+        level_sample -= new_offsets[0];
         level_sample.rotate(saved_orientation);
 
-        trim_pitch = atan2(level_sample.x,pythagorous2(level_sample.y,level_sample.z));
-        trim_roll = atan2(-level_sample.y,-level_sample.z);
+        if (!_calculate_trim(level_sample, trim_roll, trim_pitch)) {
+            goto failed;
+        }
 
         _board_orientation = saved_orientation;
 

@@ -236,6 +236,7 @@ private:
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
+    bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
     // save parameters to eeprom
