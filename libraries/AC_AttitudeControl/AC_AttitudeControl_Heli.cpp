@@ -245,8 +245,8 @@ static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
         piro_pitch_i = pitch_i;
 
         Vector2f yawratevector;
-        yawratevector.x     = cos(-omega.z/100);
-        yawratevector.y     = sin(-omega.z/100);
+        yawratevector.x     = cosf(-omega.z/100.0f);
+        yawratevector.y     = sinf(-omega.z/100.0f);
         yawratevector.normalize();
 
         roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
