@@ -46,7 +46,7 @@ static void update_land_detector()
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         // if throttle output is high then clear landing flag
-        if (motors.get_throttle_out() > get_non_takeoff_throttle()) {
+        if (motors.get_throttle() > get_non_takeoff_throttle()) {
             set_land_complete(false);
         }
     }

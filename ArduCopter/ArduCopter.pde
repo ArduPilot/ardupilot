@@ -428,15 +428,15 @@ static struct {
 #endif
 
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
-static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.rc_7, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
-static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(g.single_servo_1, g.single_servo_2, g.single_servo_3, g.single_servo_4, MAIN_LOOP_RATE);
 #elif FRAME_CONFIG == COAX_FRAME  // single constructor requires extra servos for flaps
-static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(g.single_servo_1, g.single_servo_2, MAIN_LOOP_RATE);
 #else
-static MOTOR_CLASS motors(*channel_roll, *channel_pitch, *channel_throttle, *channel_yaw, MAIN_LOOP_RATE);
+static MOTOR_CLASS motors(MAIN_LOOP_RATE);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1065,6 +1065,9 @@ static void one_hz_loop()
 
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
+
+        // set all throttle channel settings
+        motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
     }
 
     // update assigned functions and enable auxiliar servos
