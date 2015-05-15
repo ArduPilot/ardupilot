@@ -9,7 +9,7 @@ void MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_
     Vector3f mag_offset;
     require_field(msg, "Ofs", mag_offset);
 
-    compass.setHIL(mag - mag_offset);
+    compass.setHIL(compass_offset, mag - mag_offset);
     // compass_offset is which compass we are setting info for;
     // mag_offset is a vector indicating the compass' calibration...
     compass.set_offsets(compass_offset, mag_offset);
