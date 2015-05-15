@@ -68,6 +68,7 @@ public:
     void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
+    void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
@@ -260,6 +261,15 @@ struct PACKED log_AHRS {
     float alt;
     int32_t lat;
     int32_t lng;
+};
+
+struct PACKED log_POS {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int32_t lat;
+    int32_t lng;
+    float alt;
+    float rel_alt;
 };
 
 struct PACKED log_POWR {
@@ -600,6 +610,8 @@ Format characters in the format string for binary log messages
       "IMU3",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+    { LOG_POS_MSG, sizeof(log_POS), \
+      "POS","IIIff","TimeMS,Lat,Lng,Alt,RelAlt" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_EKF1_MSG, sizeof(log_EKF1), \
@@ -714,6 +726,7 @@ Format characters in the format string for binary log messages
 #define LOG_GYR1_MSG      175
 #define LOG_GYR2_MSG      176
 #define LOG_GYR3_MSG      177
+#define LOG_POS_MSG       178
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

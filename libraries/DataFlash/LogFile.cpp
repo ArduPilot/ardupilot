@@ -904,6 +904,26 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a POS packet
+void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
+{
+    Location loc;
+    if (!ahrs.get_position(loc)) {
+        return;
+    }
+    Vector3f pos;
+    ahrs.get_relative_position_NED(pos);
+    struct log_POS pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
+        time_ms : hal.scheduler->millis(),
+        lat     : loc.lat,
+        lng     : loc.lng,
+        alt     : loc.alt*1.0e-2f,
+        rel_alt : -pos.z
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 #if AP_AHRS_NAVEKF_AVAILABLE
 void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 {
