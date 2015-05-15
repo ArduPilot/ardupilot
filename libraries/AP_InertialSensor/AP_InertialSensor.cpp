@@ -588,8 +588,8 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         level_sample += new_offsets[0];
         level_sample.rotate(saved_orientation);
 
-        trim_pitch = atan2(level_sample.x,pythagorous2(level_sample.y,level_sample.z));
-        trim_roll = atan2(-level_sample.y,-level_sample.z);
+        trim_pitch = atan2f(level_sample.x,pythagorous2(level_sample.y,level_sample.z));
+        trim_roll = atan2f(-level_sample.y,-level_sample.z);
 
         _board_orientation = saved_orientation;
 

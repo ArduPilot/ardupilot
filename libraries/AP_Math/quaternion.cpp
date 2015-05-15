@@ -157,7 +157,7 @@ void Quaternion::from_axis_angle(const Vector3f &axis, float theta) {
     }
     float st2 = sinf(theta/2.0f);
 
-    q1 = cos(theta/2.0f);
+    q1 = cosf(theta/2.0f);
     q2 = axis.x * st2;
     q3 = axis.y * st2;
     q4 = axis.z * st2;

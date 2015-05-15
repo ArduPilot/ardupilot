@@ -1026,7 +1026,7 @@ static void update_load_factor(void)
         // limit to 85 degrees to prevent numerical errors
         demanded_roll = 85;
     }
-    aerodynamic_load_factor = 1.0f / safe_sqrt(cos(radians(demanded_roll)));
+    aerodynamic_load_factor = 1.0f / safe_sqrt(cosf(radians(demanded_roll)));
 
     if (!aparm.stall_prevention) {
         // stall prevention is disabled
