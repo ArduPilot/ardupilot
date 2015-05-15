@@ -39,10 +39,11 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     if (yawDeg < -180.0f) {
         yawDeg += 360.0f;
     }
-    _compass->setHIL(radians(rollDeg), radians(pitchDeg), radians(yawDeg));
+    _compass->setHIL(0, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
+    _compass->setHIL(1, radians(rollDeg), radians(pitchDeg), radians(yawDeg));
     Vector3f noise = _rand_vec3f() * _sitl->mag_noise;
     Vector3f motor = _sitl->mag_mot.get() * _current;
-    Vector3f new_mag_data = _compass->getHIL() + noise + motor;
+    Vector3f new_mag_data = _compass->getHIL(0) + noise + motor;
 
     uint32_t now = hal.scheduler->millis();
     // add delay
@@ -77,7 +78,8 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 
     new_mag_data -= _sitl->mag_ofs.get();
 
-    _compass->setHIL(new_mag_data);
+    _compass->setHIL(0, new_mag_data);
+    _compass->setHIL(1, new_mag_data);
 }
 
 #endif
