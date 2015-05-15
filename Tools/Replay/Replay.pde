@@ -343,6 +343,7 @@ static void read_sensors(const char *type)
             hal.scheduler->stop_clock(hal.scheduler->micros() + update_delta_usec);
             dataflash.Log_Write_EKF(ahrs,false);
             dataflash.Log_Write_AHRS2(ahrs);
+            dataflash.Log_Write_POS(ahrs);
             ins.set_gyro(0, ins.get_gyro());
             ins.set_accel(0, ins.get_accel());
             if (ahrs.healthy() != ahrs_healthy) {
