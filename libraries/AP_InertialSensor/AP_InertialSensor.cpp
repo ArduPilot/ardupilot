@@ -675,6 +675,60 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     return (get_accel_count() > 0);
 }
 
+
+/*
+  calculate the trim_roll and trim_pitch. This is used for redoing the
+  trim without needing a full accel cal
+ */
+bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
+{
+    Vector3f level_sample;
+
+    // exit immediately if calibration is already in progress
+    if (_calibrating) {
+        return false;
+    }
+
+    _calibrating = true;
+
+    const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_sample_rate()+0.5f);
+
+    // wait 100ms for ins filter to rise
+    for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
+        wait_for_sample();
+        update();
+        hal.scheduler->delay(update_dt_milliseconds);
+    }
+
+    uint32_t num_samples = 0;
+    while (num_samples < 400/update_dt_milliseconds) {
+        wait_for_sample();
+        // read samples from ins
+        update();
+        // capture sample
+        Vector3f samp;
+        samp = get_accel(0);
+        level_sample += samp;
+        if (!get_accel_health(0)) {
+            goto failed;
+        }
+        hal.scheduler->delay(update_dt_milliseconds);
+        num_samples++;
+    }
+    level_sample /= num_samples;
+
+    if (!_calculate_trim(level_sample, trim_roll, trim_pitch)) {
+        goto failed;
+    }
+
+    _calibrating = false;
+    return true;
+
+failed:
+    _calibrating = false;
+    return false;    
+}
+
 /*
   check if the accelerometers are calibrated in 3D and that current number of accels matched number when calibrated
  */

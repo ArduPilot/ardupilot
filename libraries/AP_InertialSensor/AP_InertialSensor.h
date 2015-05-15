@@ -88,6 +88,7 @@ public:
                          float& trim_roll,
                          float& trim_pitch);
 #endif
+    bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const { return _calibrating; }
