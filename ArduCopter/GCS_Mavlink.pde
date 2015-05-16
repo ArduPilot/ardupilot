@@ -1642,6 +1642,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         camera_mount.control_msg(msg);
+        // check if mount type requires us to rotate the quad
+        if(!camera_mount.has_pan_control()) {
+            set_auto_yaw_look_at_heading(mavlink_msg_mount_control_get_input_c(msg)/100.0f, 0.0f, 0, 0);
+        }
         break;
 #endif // MOUNT == ENABLED
 
