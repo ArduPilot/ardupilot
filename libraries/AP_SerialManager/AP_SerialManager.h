@@ -75,7 +75,8 @@ public:
         SerialProtocol_FRSky_SPort = 4,
         SerialProtocol_GPS = 5,
         SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
-        SerialProtocol_AlexMos = 7
+        SerialProtocol_AlexMos = 7,
+        SerialProtocol_SToRM32 = 8,
     };
 
     // Constructor
