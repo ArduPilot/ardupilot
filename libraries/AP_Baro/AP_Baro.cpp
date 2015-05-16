@@ -173,16 +173,15 @@ void AP_Baro::update_calibration()
 float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
 {
     float ret;
+    float temp    = get_ground_temperature() + 273.15f;
 #if HAL_CPU_CLASS <= HAL_CPU_CLASS_16
     // on slower CPUs use a less exact, but faster, calculation
     float scaling = base_pressure / pressure;
-    float temp    = get_calibration_temperature() + 273.15f;
     ret = logf(scaling) * temp * 29.271267f;
 #else
     // on faster CPUs use a more exact calculation
     float scaling = pressure / base_pressure;
-    float temp    = get_calibration_temperature() + 273.15f;
-
+    
     // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
     // in the troposphere (up to 11,000 m amsl).
 	ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
