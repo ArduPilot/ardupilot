@@ -1,5 +1,29 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc4 17-May-2015
+Changes from 3.3-rc3
+1) AutoTune:
+    a) save roll, pitch, yaw rate acceleration limits along with gains
+    b) more conservative gains 
+2) Roll, pitch rate control feed-forward now on by default (set ATC_RATE_FF_ENAB to "0" to disable)
+3) Serial ports increased to maximum of 4 (set SERIALX_PROTOCOL to 1)
+4) MOT_THR_MIX_MIN param to control minimum throttle vs attitude during landing (higher = more attitude control but bumpier landing) 
+5) EKF fixes/improvements
+    a) prevent yaw errors during fast spins
+    b) bug fix preventing external selection of optical flow mode
+6) Parachute:
+    a) servo/relay held open for 2sec when deploying (was 1sec)
+    b) fix altitude check to be alt-above-home (was alt-above ekf origin which could be slightly different)
+7) TradHeli:
+    a) parameters moved to stop possibility of corruption if board is switched between tradheli and multicopter firmware.  Heli users may need to re-setup some heli-specific params.
+    b) H_COLYAW param can be float 
+8) Small Improvements / Bug Fixes:
+    a) reduced spline overshoot after very long track followed by very short track
+    b) log entire mission to dataflash whenver it's uploaded
+    c) altitude reported if vehicle takes off before GPS lock
+    d) high speed logging of IMU
+    e) STOP flight mode renamed to BRAKE and aux switch option added
+------------------------------------------------------------------
 Copter 3.3-rc2/rc3 02-May-2015
 Changes from 3.3-rc1
 1) AutoTune reliability fixes (improved filtering to reduce noise interference)
