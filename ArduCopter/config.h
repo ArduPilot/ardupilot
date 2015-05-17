@@ -580,8 +580,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
-#ifndef STOP_MODE_DECEL_RATE
- # define STOP_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Stop Mode
+#ifndef BRAKE_MODE_DECEL_RATE
+ # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

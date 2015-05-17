@@ -89,8 +89,8 @@ static bool set_mode(uint8_t mode)
             break;
 #endif
 
-        case STOP:
-            success = stop_init(ignore_checks);
+        case BRAKE:
+            success = brake_init(ignore_checks);
             break;
 
         default:
@@ -202,8 +202,8 @@ static void update_flight_mode()
             break;
 #endif
 
-        case STOP:
-            stop_run();
+        case BRAKE:
+            brake_run();
             break;
     }
 }
@@ -254,7 +254,7 @@ static bool mode_requires_GPS(uint8_t mode) {
         case CIRCLE:
         case DRIFT:
         case POSHOLD:
-        case STOP:
+        case BRAKE:
             return true;
         default:
             return false;
@@ -354,6 +354,9 @@ print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case POSHOLD:
         port->print_P(PSTR("POSHOLD"));
+        break;
+    case BRAKE:
+        port->print_P(PSTR("BRAKE"));
         break;
     default:
         port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
