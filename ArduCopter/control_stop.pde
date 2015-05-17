@@ -47,13 +47,14 @@ static void stop_run()
         return;
     }
 
-    if (ap.land_complete) {
-        // ToDo: What do we do if we are landed?  Disarm?)
-    }
-
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
-        // ToDo: What do we do here?
+        wp_nav.loiter_soften_for_landing();
+    }
+
+    // if landed immediately disarm
+    if (ap.land_complete) {
+        init_disarm_motors();
     }
 
     // run stop controller
