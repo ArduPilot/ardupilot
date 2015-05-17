@@ -272,7 +272,7 @@ static bool setup_failsafe_mixing(void)
             // by small numbers near RC3_MIN
             config.rc_trim = 1500;
         } else {
-            config.rc_trim = ch->radio_trim;
+            config.rc_trim = constrain_int16(ch->radio_trim, config.rc_min, config.rc_max);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
         config.rc_assignment = i;
