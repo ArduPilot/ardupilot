@@ -221,7 +221,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     yaw_radio_output = calc_yaw_radio_output();
 
     // if we are not sending a throttle output, we cut the motors
-    if(_throttle_control_input == 0) {
+    if( is_zero(_throttle_control_input) ) {
         // range check spin_when_armed
         if (_spin_when_armed_ramped < 0) {
             _spin_when_armed_ramped = 0;
