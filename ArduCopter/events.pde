@@ -208,7 +208,7 @@ static void failsafe_gcs_check()
         case ACRO:
         case SPORT:
             // if throttle is zero disarm motors
-            if (ap.throttle_zero) {
+            if (ap.throttle_zero || ap.land_complete) {
                 init_disarm_motors();
             }else if(home_distance > wp_nav.get_wp_radius()) {
                 // switch to RTL or if that fails, LAND
@@ -219,8 +219,11 @@ static void failsafe_gcs_check()
             }
             break;
         case AUTO:
+            // if mission has not started AND vehicle is landed, disarm motors
+            if (!ap.auto_armed && ap.land_complete) {
+                init_disarm_motors();
             // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
-            if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
+            } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
                 if (home_distance > wp_nav.get_wp_radius()) {
                     // switch to RTL or if that fails, LAND
                     set_mode_RTL_or_land_with_pause();
@@ -232,7 +235,11 @@ static void failsafe_gcs_check()
             // if failsafe_throttle is 2 (i.e. FS_THR_ENABLED_CONTINUE_MISSION) no need to do anything
             break;
         default:
-            if(home_distance > wp_nav.get_wp_radius()) {
+            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+            // if landed disarm
+            if (ap.land_complete) {
+                init_disarm_motors();
+            } else if (home_distance > wp_nav.get_wp_radius()) {
                 // switch to RTL or if that fails, LAND
                 set_mode_RTL_or_land_with_pause();
             }else{
