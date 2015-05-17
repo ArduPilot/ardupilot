@@ -572,7 +572,18 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 Log_Write_Event(DATA_MOTORS_INTERLOCK_DISABLED);
             }
             break;
-                
+
+        case AUXSW_BRAKE:
+            // brake flight mode
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                set_mode(BRAKE);
+            }else{
+                // return to flight mode switch's flight mode if we are currently in BRAKE
+                if (control_mode == BRAKE) {
+                    reset_control_switch();
+                }
+            }
+            break;
     }
 }
 
