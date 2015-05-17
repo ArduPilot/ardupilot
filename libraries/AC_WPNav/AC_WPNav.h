@@ -95,13 +95,13 @@ public:
     void update_loiter(float ekfGndSpdLimit, float ekfNavVelGainScaler);
 
     ///
-    /// stop controller
+    /// brake controller
     ///
-    /// init_stop_target - initialize's loiter position and feed-forward velocity from current pos and velocity
-    void init_stop_target(float accel_cmss);
+    /// init_brake_target - initialize's position and feed-forward velocity from current pos and velocity
+    void init_brake_target(float accel_cmss);
     ///
-    /// update_stop - run the stop controller - should be called at 400hz
-    void update_stop(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+    /// update_brake - run the brake controller - should be called at 400hz
+    void update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler);
 
     ///
     /// waypoint controller
