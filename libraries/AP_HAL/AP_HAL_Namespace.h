@@ -6,7 +6,7 @@
 #include "string.h"
 #include "utility/FastDelegate.h"
 
-#if defined(__AVR__) 
+#if defined(__AVR__)
 /*
   gcc on AVR doesn't allow for delegates in progmem. It gives a
   warning that the progmem area is uninitialised, and fills the area
@@ -24,8 +24,10 @@
 #define AP_HAL_MEMBERPROC(func) AP_HAL_CLASSPROC(this, func)
 
 #define DELEGATE_FUNCTION0(rettype)          fastdelegate::FastDelegate0<rettype>
-#define DELEGATE_FUNCTION1(rettype, args...) fastdelegate::FastDelegate1<args, rettype>
-#define DELEGATE_FUNCTION2(rettype, args...) fastdelegate::FastDelegate2<args, rettype>
+#define DELEGATE_FUNCTION1(rettype, args...) fastdelegate::FastDelegate0<rettype, args>
+#define DELEGATE_FUNCTION2(rettype, args...) fastdelegate::FastDelegate0<rettype, args>
+
+#define DELEGATE_FUNCTION(rettype, ...) fastdelegate::FastDelegate0<rettype, ## __VA_ARGS__>
 
 #ifndef APM_BUILD_FUNCTOR
 #define APM_BUILD_FUNCTOR 0
