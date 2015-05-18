@@ -17,23 +17,6 @@
 #include <fcntl.h>
 
 #include "MsgHandler.h"
-#include "MsgHandler_PARM.h"
-#include "MsgHandler_GPS.h"
-#include "MsgHandler_GPS2.h"
-#include "MsgHandler_MSG.h"
-#include "MsgHandler_IMU.h"
-#include "MsgHandler_IMU2.h"
-#include "MsgHandler_IMU3.h"
-#include "MsgHandler_SIM.h"
-#include "MsgHandler_BARO.h"
-#include "MsgHandler_ARM.h"
-#include "MsgHandler_Event.h"
-#include "MsgHandler_AHR2.h"
-#include "MsgHandler_ATT.h"
-#include "MsgHandler_MAG.h"
-#include "MsgHandler_MAG2.h"
-#include "MsgHandler_NTUN_Copter.h"
-#include "MsgHandler_ARSP.h"
 
 #define streq(x, y) (!strcmp(x, y))
 
