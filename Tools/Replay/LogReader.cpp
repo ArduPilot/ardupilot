@@ -97,6 +97,13 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 
 MsgHandler_PARM *parameter_handler;
 
+/*
+  list of message types to be passed through to output log
+ */
+static const char *passthrough_types[] = { "MODE", "EV", "POWR", "RCIN", "RCOU", "MSG", 
+                                           "CMD", "CAM", "CURR", "SIM", "TERR", "STRT", "PM", 
+                                           "STAT", NULL };
+
 bool LogReader::update(char type[5])
 {
     uint8_t hdr[3];
@@ -224,9 +231,12 @@ bool LogReader::update(char type[5])
 
     MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
-	// I guess this wasn't as self-describing as it could have been....
-	// ::printf("No format message received for type %d; ignoring message\n",
-	// 	 type);
+        for (uint8_t i=0; passthrough_types[i]; i++) {
+            if (strcmp(passthrough_types[i], type) == 0) {
+                dataflash.WriteBlock(msg, f.length);
+                break;
+            }
+        }
 	return true;
     }
 
