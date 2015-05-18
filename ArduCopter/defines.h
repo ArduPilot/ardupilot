@@ -195,11 +195,11 @@ enum GuidedMode {
 
 // RTL states
 enum RTLState {
-    InitialClimb,
-    ReturnHome,
-    LoiterAtHome,
-    FinalDescent,
-    Land
+    RTL_InitialClimb,
+    RTL_ReturnHome,
+    RTL_LoiterAtHome,
+    RTL_FinalDescent,
+    RTL_Land
 };
 
 // Flip states

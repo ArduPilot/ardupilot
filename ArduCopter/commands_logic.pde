@@ -712,7 +712,7 @@ extern bool rtl_state_complete;
 // returns true with RTL has completed successfully
 static bool verify_RTL()
 {
-    return (rtl_state_complete && (rtl_state == FinalDescent || rtl_state == Land));
+    return (rtl_state_complete && (rtl_state == RTL_FinalDescent || rtl_state == RTL_Land));
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

@@ -25,23 +25,23 @@ static void rtl_run()
     // check if we need to move to next state
     if (rtl_state_complete) {
         switch (rtl_state) {
-        case InitialClimb:
+        case RTL_InitialClimb:
             rtl_return_start();
             break;
-        case ReturnHome:
+        case RTL_ReturnHome:
             rtl_loiterathome_start();
             break;
-        case LoiterAtHome:
+        case RTL_LoiterAtHome:
             if (g.rtl_alt_final > 0 && !failsafe.radio) {
                 rtl_descent_start();
             }else{
                 rtl_land_start();
             }
             break;
-        case FinalDescent:
+        case RTL_FinalDescent:
             // do nothing
             break;
-        case Land:
+        case RTL_Land:
             // do nothing - rtl_land_run will take care of disarming motors
             break;
         }
@@ -50,23 +50,23 @@ static void rtl_run()
     // call the correct run function
     switch (rtl_state) {
 
-    case InitialClimb:
+    case RTL_InitialClimb:
         rtl_climb_return_run();
         break;
 
-    case ReturnHome:
+    case RTL_ReturnHome:
         rtl_climb_return_run();
         break;
 
-    case LoiterAtHome:
+    case RTL_LoiterAtHome:
         rtl_loiterathome_run();
         break;
 
-    case FinalDescent:
+    case RTL_FinalDescent:
         rtl_descent_run();
         break;
 
-    case Land:
+    case RTL_Land:
         rtl_land_run();
         break;
     }
@@ -75,7 +75,7 @@ static void rtl_run()
 // rtl_climb_start - initialise climb to RTL altitude
 static void rtl_climb_start()
 {
-    rtl_state = InitialClimb;
+    rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
 
     // initialise waypoint and spline controller
@@ -106,7 +106,7 @@ static void rtl_climb_start()
 // rtl_return_start - initialise return to home
 static void rtl_return_start()
 {
-    rtl_state = ReturnHome;
+    rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
 
     // set target to above home/rally point
@@ -171,7 +171,7 @@ static void rtl_climb_return_run()
 // rtl_return_start - initialise return to home
 static void rtl_loiterathome_start()
 {
-    rtl_state = LoiterAtHome;
+    rtl_state = RTL_LoiterAtHome;
     rtl_state_complete = false;
     rtl_loiter_start_time = millis();
 
@@ -237,7 +237,7 @@ static void rtl_loiterathome_run()
 // rtl_descent_start - initialise descent to final alt
 static void rtl_descent_start()
 {
-    rtl_state = FinalDescent;
+    rtl_state = RTL_FinalDescent;
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
@@ -300,7 +300,7 @@ static void rtl_descent_run()
 // rtl_loiterathome_start - initialise controllers to loiter over home
 static void rtl_land_start()
 {
-    rtl_state = Land;
+    rtl_state = RTL_Land;
     rtl_state_complete = false;
 
     // Set wp navigation target to above home
