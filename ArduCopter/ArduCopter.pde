@@ -717,64 +717,61 @@ AP_Param param_loader(var_info);
   
  */
 static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
-    { rc_loop,               4,     10 },
-    { throttle_loop,         8,     45 },
-    { update_GPS,            8,     90 },
+    { rc_loop,               4,    130 },   // 0
+    { throttle_loop,         8,     75 },   // 1
+    { update_GPS,            8,    200 },   // 2
 #if OPTFLOW == ENABLED
-    { update_optical_flow,   2,     20 },
+    { update_optical_flow,   2,    160 },   // 3
 #endif
-    { update_batt_compass,  40,     72 },
-    { read_aux_switches,    40,      5 },
-    { arm_motors_check,     40,      1 },
-    { auto_trim,            40,     14 },
-    { update_altitude,      40,    100 },
-    { run_nav_updates,       8,     80 },
-    { update_thr_average,    4,     10 },
-    { three_hz_loop,       133,      9 },
-    { compass_accumulate,    8,     42 },
-    { barometer_accumulate,  8,     25 },
+    { update_batt_compass,  40,    120 },   // 4
+    { read_aux_switches,    40,     50 },   // 5
+    { arm_motors_check,     40,     50 },   // 6
+    { auto_trim,            40,     75 },   // 7
+    { run_nav_updates,       8,    100 },   // 8
+    { update_altitude,      40,    140 },   // 9
+    { update_thr_average,    4,     90 },   // 10
+    { three_hz_loop,       133,     75 },   // 11
+    { compass_accumulate,    8,    100 },   // 12
+    { barometer_accumulate,  8,     90 },   // 13
 #if FRAME_CONFIG == HELI_FRAME
-    { check_dynamic_flight,  8,     10 },
+    { check_dynamic_flight,  8,     75 },
 #endif
-    { update_notify,         8,     10 },
-    { one_hz_loop,         400,     42 },
-    { ekf_check,            40,      2 },
-    { crash_check,          40,      2 },
-    { landinggear_update,   40,      1 },
-    { lost_vehicle_check,   40,      2 },
-    { gcs_check_input,       1,    550 },
-    { gcs_send_heartbeat,  400,    150 },
-    { gcs_send_deferred,     8,    720 },
-    { gcs_data_stream_send,  8,    950 },
-#if COPTER_LEDS == ENABLED
-    { update_copter_leds,   40,      5 },
-#endif
-    { update_mount,          8,     45 },
-    { ten_hz_logging_loop,  40,     30 },
-    { fifty_hz_logging_loop, 8,     22 },
-    { full_rate_logging_loop,1,     22 },
-    { perf_update,        4000,     20 },
-    { read_receiver_rssi,   40,      5 },
+    { update_notify,         8,     90 },   // 14
+    { one_hz_loop,         400,    100 },   // 15
+    { ekf_check,            40,     75 },   // 16
+    { crash_check,          40,     75 },   // 17
+    { landinggear_update,   40,     75 },   // 18
+    { lost_vehicle_check,   40,     50 },   // 19
+    { gcs_check_input,       1,    180 },   // 20
+    { gcs_send_heartbeat,  400,    110 },   // 21
+    { gcs_send_deferred,     8,    120 },   // 22
+    { gcs_data_stream_send,  8,    550 },   // 23
+    { update_mount,          8,     75 },   // 24
+    { ten_hz_logging_loop,  40,    350 },   // 25
+    { fifty_hz_logging_loop, 8,    110 },   // 26
+    { full_rate_logging_loop,1,    100 },   // 27
+    { perf_update,        4000,     75 },   // 28
+    { read_receiver_rssi,   40,     75 },   // 29
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { frsky_telemetry_send, 80,     10 },
+    { frsky_telemetry_send, 80,     75 },   // 30
 #endif
 #if EPM_ENABLED == ENABLED
-    { epm_update,           40,     10 },
+    { epm_update,           40,     75 },   // 31
 #endif
 #ifdef USERHOOK_FASTLOOP
-    { userhook_FastLoop,     4,     10 },
+    { userhook_FastLoop,     4,     75 },
 #endif
 #ifdef USERHOOK_50HZLOOP
-    { userhook_50Hz,         8,     10 },
+    { userhook_50Hz,         8,     75 },
 #endif
 #ifdef USERHOOK_MEDIUMLOOP
-    { userhook_MediumLoop,  40,     10 },
+    { userhook_MediumLoop,  40,     75 },
 #endif
 #ifdef USERHOOK_SLOWLOOP
-    { userhook_SlowLoop,    120,    10 },
+    { userhook_SlowLoop,    120,    75 },
 #endif
 #ifdef USERHOOK_SUPERSLOWLOOP
-    { userhook_SuperSlowLoop,400,   10 },
+    { userhook_SuperSlowLoop,400,   75 },
 #endif
 };
 
