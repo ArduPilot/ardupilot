@@ -14,7 +14,7 @@ AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &st
     _last_send(0),
     _reply_length(0),
     _reply_counter(0),
-    _reply_type(ReplyType::UNKNOWN)
+    _reply_type(ReplyType_UNKNOWN)
 {}
 
 // init - performs any required initialisation for this instance
@@ -92,18 +92,18 @@ void AP_Mount_SToRM32::update()
     resend_now = resend_now || ((hal.scheduler->millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS);
 
     if ((hal.scheduler->millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS*2) {
-        _reply_type = ReplyType::UNKNOWN;
+        _reply_type = ReplyType_UNKNOWN;
     }
     if (can_send(resend_now)) {
         if (resend_now) {
             send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
             get_angles();
-            _reply_type = ReplyType::ACK;
+            _reply_type = ReplyType_ACK;
             _reply_counter = 0;
             _reply_length = get_reply_size(_reply_type);
         } else {
             get_angles();
-            _reply_type = ReplyType::DATA;
+            _reply_type = ReplyType_DATA;
             _reply_counter = 0;
             _reply_length = get_reply_size(_reply_type);
         }
@@ -141,7 +141,7 @@ bool AP_Mount_SToRM32::can_send(bool with_control) {
     if (with_control) {
         required_tx += sizeof(AP_Mount_SToRM32::cmd_set_angles_struct);
     }
-    return (_reply_type == ReplyType::UNKNOWN) && (_port->txspace() >= required_tx);
+    return (_reply_type == ReplyType_UNKNOWN) && (_port->txspace() >= required_tx);
 }
 
 
@@ -210,10 +210,10 @@ void AP_Mount_SToRM32::get_angles() {
 
 uint8_t AP_Mount_SToRM32::get_reply_size(ReplyType reply_type) {
     switch (reply_type) {
-        case ReplyType::DATA:
+        case ReplyType_DATA:
             return sizeof(SToRM32_reply_data_struct);
             break;
-        case ReplyType::ACK:
+        case ReplyType_ACK:
             return sizeof(SToRM32_reply_ack_struct);
             break;
         default:
@@ -234,7 +234,7 @@ void AP_Mount_SToRM32::read_incoming() {
 
     for (int16_t i = 0; i < numc; i++) {        // Process bytes received
         data = _port->read();
-        if (_reply_type == ReplyType::UNKNOWN) {
+        if (_reply_type == ReplyType_UNKNOWN) {
             continue;
         }
 
@@ -243,13 +243,13 @@ void AP_Mount_SToRM32::read_incoming() {
             parse_reply();
 
             switch (_reply_type) {
-                case ReplyType::ACK:
-                    _reply_type = ReplyType::DATA;
+                case ReplyType_ACK:
+                    _reply_type = ReplyType_DATA;
                     _reply_length = get_reply_size(_reply_type);
                     _reply_counter = 0;
                     break;
-                case ReplyType::DATA:
-                    _reply_type = ReplyType::UNKNOWN;
+                case ReplyType_DATA:
+                    _reply_type = ReplyType_UNKNOWN;
                     _reply_length = get_reply_size(_reply_type);
                     _reply_counter = 0;
                     break;
@@ -266,7 +266,7 @@ void AP_Mount_SToRM32::parse_reply() {
     bool crc_ok;
 
     switch (_reply_type) {
-        case ReplyType::DATA:
+        case ReplyType_DATA:
             crc = crc_calculate(_buffer.bytes, sizeof(_buffer.data)-3);
             crc_ok = crc == _buffer.data.crc;
             if (!crc_ok) {
@@ -277,7 +277,7 @@ void AP_Mount_SToRM32::parse_reply() {
             _current_angle.y = _buffer.data.imu1_pitch;
             _current_angle.z = _buffer.data.imu1_yaw;
             break;
-        case ReplyType::ACK:
+        case ReplyType_ACK:
             crc = crc_calculate(&_buffer.bytes[1], sizeof(SToRM32_reply_ack_struct)-3);
             crc_ok = crc == _buffer.ack.crc;
             break;

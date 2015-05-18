@@ -57,10 +57,10 @@ private:
     void read_incoming();
     void parse_reply();
 
-    enum ReplyType : uint8_t {
-        UNKNOWN = 0,
-        DATA,
-        ACK
+    enum ReplyType {
+        ReplyType_UNKNOWN = 0,
+        ReplyType_DATA,
+        ReplyType_ACK
     };
 
     //void add_next_reply(ReplyType reply_type);
