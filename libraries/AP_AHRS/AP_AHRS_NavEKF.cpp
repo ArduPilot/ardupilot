@@ -321,27 +321,29 @@ bool AP_AHRS_NavEKF::using_EKF(void) const
     if (!ret) {
         return false;
     }
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_APMrover2)
-    nav_filter_status filt_state;
-    EKF.getFilterStatus(filt_state);
-    if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // if the EKF is not fusing GPS and we have a 3D lock, then
-        // plane and rover would prefer to use the GPS position from
-        // DCM. This is a safety net while some issues with the EKF
-        // get sorted out
-        return false;
+
+    if (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+        _vehicle_class == AHRS_VEHICLE_GROUND) {
+        nav_filter_status filt_state;
+        EKF.getFilterStatus(filt_state);
+        if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            // if the EKF is not fusing GPS and we have a 3D lock, then
+            // plane and rover would prefer to use the GPS position from
+            // DCM. This is a safety net while some issues with the EKF
+            // get sorted out
+            return false;
+        }
+        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+            return false;
+        }
+        if (!filt_state.flags.attitude ||
+            !filt_state.flags.horiz_vel ||
+            !filt_state.flags.vert_vel ||
+            !filt_state.flags.horiz_pos_abs ||
+            !filt_state.flags.vert_pos) {
+            return false;
+        }
     }
-    if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
-        return false;
-    }
-    if (!filt_state.flags.attitude ||
-        !filt_state.flags.horiz_vel ||
-        !filt_state.flags.vert_vel ||
-        !filt_state.flags.horiz_pos_abs ||
-        !filt_state.flags.vert_pos) {
-        return false;
-    }
-#endif
     return ret;
 }
 
