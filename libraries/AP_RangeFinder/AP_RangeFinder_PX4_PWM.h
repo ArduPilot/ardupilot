@@ -35,6 +35,8 @@ public:
     // update state
     void update(void);
 
+    bool SetPoweredDown(bool powerDown);
+
 private:
     int _fd;
     uint64_t _last_timestamp;

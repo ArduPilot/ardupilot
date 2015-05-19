@@ -77,6 +77,8 @@ public:
         bool                   pre_arm_check;   // true if sensor has passed pre-arm checks
         uint16_t               pre_arm_distance_min;    // min distance captured during pre-arm checks
         uint16_t               pre_arm_distance_max;    // max distance captured during pre-arm checks
+        bool                   healthy;     // sensor is communicating correctly
+        bool                   poweredDown;  // powered up or powered down
     };
 
     // parameters for each instance
@@ -107,6 +109,8 @@ public:
     // 10Hz from main loop
     void update(void);
     
+    bool SetPoweredDown(bool powerDown);
+
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {

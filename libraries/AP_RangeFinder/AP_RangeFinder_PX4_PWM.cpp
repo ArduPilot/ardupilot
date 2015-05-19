@@ -47,6 +47,8 @@ AP_RangeFinder_PX4_PWM::AP_RangeFinder_PX4_PWM(RangeFinder &_ranger, uint8_t ins
     _good_sample_count(0),
     _last_sample_distance_cm(0)
 {
+    state.healthy = false;
+    state.poweredDown = false;
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
     if (_fd == -1) {
         hal.console->printf("Unable to open PX4 PWM rangefinder\n");
@@ -136,8 +138,8 @@ void AP_RangeFinder_PX4_PWM::update(void)
     int8_t stop_pin = ranger._stop_pin[state.instance];
     uint16_t settle_time_ms = (uint16_t)ranger._settle_time_ms[state.instance];
 
-    if (stop_pin != -1 && out_of_range()) {
-        // we are above the power saving range. Disable the sensor
+    if ((stop_pin != -1) && (state.poweredDown || out_of_range())) {
+        // we are above the power saving range or want to power down. Disable the sensor
         hal.gpio->pinMode(stop_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(stop_pin, false);
         set_status(RangeFinder::RangeFinder_NoData);
@@ -188,5 +190,19 @@ void AP_RangeFinder_PX4_PWM::update(void)
         update_status();
     }
 }
+
+bool AP_RangeFinder_PX4_PWM::SetPoweredDown(bool powerDown)
+{
+    int8_t stop_pin = ranger._stop_pin[state.instance];
+
+    // success if a powerdown is possible and the state changed
+    if ((stop_pin == -1) || (state.poweredDown == powerDown)) {
+        return false;
+    }
+
+    state.poweredDown = powerDown;
+    return true;
+}
+
 
 #endif // CONFIG_HAL_BOARD

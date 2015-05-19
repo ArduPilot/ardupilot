@@ -88,7 +88,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("_RMETRIC", 9, RangeFinder, _ratiometric[0], 1),
 
-    // @Param: RNGFND_PWRRNG
+    // @Param: _PWRRNG
     // @DisplayName: Powersave range
     // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
     // @Units: meters
@@ -103,8 +103,6 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, _ground_clearance_cm[0], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
-
-    // 10..12 left for future expansion
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
@@ -212,6 +210,17 @@ void RangeFinder::init(void)
         state[i].status = RangeFinder_NotConnected;
         state[i].range_valid_count = 0;
     }
+}
+
+bool RangeFinder::SetPoweredDown(bool powerDown)
+{
+    bool success = false;
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != NULL) {
+            success |= drivers[i]->SetPoweredDown(powerDown);
+        }
+    }
+    return success;
 }
 
 /*

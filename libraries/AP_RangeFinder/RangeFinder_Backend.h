@@ -38,6 +38,8 @@ public:
     bool out_of_range(void) const {
         return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
     }
+    
+    virtual bool SetPoweredDown(bool powerDown) { return false; };
 
 protected:
 
