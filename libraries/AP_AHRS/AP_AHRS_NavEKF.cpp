@@ -354,7 +354,18 @@ bool AP_AHRS_NavEKF::healthy(void) const
     // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
     // an internal processing error, but not for bad sensor data.
     if (_ekf_use != EKF_DO_NOT_USE) {
-        return ekf_started && EKF.healthy();
+        bool ret = ekf_started && EKF.healthy();
+        if (!ret) {
+            return false;
+        }
+        if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+             _vehicle_class == AHRS_VEHICLE_GROUND) &&
+            !using_EKF()) {
+            // on fixed wing we want to be using EKF to be considered
+            // healthy if EKF is enabled
+            return false;
+        }
+        return true;
     }
     return AP_AHRS_DCM::healthy();    
 }
