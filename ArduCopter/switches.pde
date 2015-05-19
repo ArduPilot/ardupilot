@@ -303,7 +303,7 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if((mission.num_commands() == 0) && (g.rc_3.control_in == 0)){
+                if((mission.num_commands() == 0) && (channel_throttle->control_in == 0)){
                     return;
                 }
 

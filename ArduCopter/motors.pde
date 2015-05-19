@@ -719,14 +719,14 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         // check throttle is not too high - skips checks if arming from GCS in Guided
         if (!(arming_from_gcs && control_mode == GUIDED)) {
             // above top of deadband is too always high
-            if (g.rc_3.control_in > get_takeoff_trigger_throttle()) {
+            if (channel_throttle->control_in > get_takeoff_trigger_throttle()) {
                 if (display_failure) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
                 }
                 return false;
             }
             // in manual modes throttle must be at zero
-            if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && g.rc_3.control_in > 0) {
+            if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && channel_throttle->control_in > 0) {
                 if (display_failure) {
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
                 }
@@ -822,7 +822,7 @@ static void lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (g.rc_1.control_in > 4000) && (g.rc_2.control_in > 4000)) {
+    if (ap.throttle_zero && !motors.armed() && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;
