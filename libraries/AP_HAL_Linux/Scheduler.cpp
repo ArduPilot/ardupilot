@@ -125,7 +125,6 @@ void LinuxScheduler::_microsleep(uint32_t usec)
 void LinuxScheduler::delay(uint16_t ms)
 {
     if (stopped_clock_usec) {
-        stopped_clock_usec += 1000UL*ms;
         return;
     }
     uint64_t start = millis64();
@@ -178,7 +177,6 @@ uint32_t LinuxScheduler::micros()
 void LinuxScheduler::delay_microseconds(uint16_t us)
 {
     if (stopped_clock_usec) {
-        stopped_clock_usec += us;
         return;
     }
     _microsleep(us);
