@@ -106,6 +106,7 @@ void AC_PosControl::set_speed_z(float speed_down, float speed_up)
         _speed_down_cms = speed_down;
         _speed_up_cms = speed_up;
         _flags.recalc_leash_z = true;
+        calc_leash_length_z();
     }
 }
 
@@ -115,6 +116,7 @@ void AC_PosControl::set_accel_z(float accel_cmss)
     if (fabsf(_accel_z_cms-accel_cmss) > 1.0f) {
         _accel_z_cms = accel_cmss;
         _flags.recalc_leash_z = true;
+        calc_leash_length_z();
     }
 }
 
@@ -440,6 +442,7 @@ void AC_PosControl::set_accel_xy(float accel_cmss)
     if (fabsf(_accel_cms-accel_cmss) > 1.0f) {
         _accel_cms = accel_cmss;
         _flags.recalc_leash_xy = true;
+        calc_leash_length_xy();
     }
 }
 
@@ -450,6 +453,7 @@ void AC_PosControl::set_speed_xy(float speed_cms)
     if (fabsf(_speed_cms-speed_cms) > 1.0f) {
         _speed_cms = speed_cms;
         _flags.recalc_leash_xy = true;
+        calc_leash_length_xy();
     }
 }
 
