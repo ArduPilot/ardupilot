@@ -329,7 +329,9 @@ static void read_sensors(const char *type)
         dataflash.Log_Write_POS(ahrs);
         if (ahrs.healthy() != ahrs_healthy) {
             ahrs_healthy = ahrs.healthy();
-            printf("AHRS health: %u\n", (unsigned)ahrs_healthy);
+            printf("AHRS health: %u at %lu\n", 
+                   (unsigned)ahrs_healthy,
+                   (unsigned long)hal.scheduler->millis());
         }
     }
 }
