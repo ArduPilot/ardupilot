@@ -399,6 +399,24 @@ static void frsky_telemetry_send(void)
 #endif
 
 /*
+  check a digitial pin for high,low (1/0)
+ */
+static uint8_t check_digital_pin(uint8_t pin)
+{
+    int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
+    if (dpin == -1) {
+        return 0;
+    }
+    // ensure we are in input mode
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+
+    // enable pullup
+    hal.gpio->write(dpin, 1);
+
+    return hal.gpio->read(dpin);
+}
+
+/*
   should we log a message type now?
  */
 static bool should_log(uint32_t mask)
