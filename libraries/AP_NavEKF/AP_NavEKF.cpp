@@ -3857,63 +3857,41 @@ void NavEKF::SetFlightAndFusionModes()
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
         float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
-        uint8_t inAirSum = 0;
-        bool highGndSpdStage2 = false;
+        bool highGndSpd = false;
+        bool highAirSpd = false;
+        bool largeHgtChange = false;
 
         // trigger at 8 m/s airspeed
         if (_ahrs->airspeed_sensor_enabled()) {
             const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 8.0f) {
-                inAirSum++;
+            if (airspeed->get_airspeed() * airspeed->get_EAS2TAS() > 10.0f) {
+                highAirSpd = true;
             }
         }
 
-        // this will trigger during change in baro height
-        if (fabsf(_baro.get_climb_rate()) > 0.5f) {
-
-            inAirSum++;
+        // trigger at 10 m/s GPS velocity, but not if GPS is reporting bad velocity errors
+        if (gndSpdSq > 100.0f && gpsSpdAccuracy < 1.0f) {
+            highGndSpd = true;
         }
 
-        // trigger at 3 m/s GPS velocity
-        if (gndSpdSq > 9.0f) {
-            inAirSum++;
+        // trigger if more than 10m away from initial height
+        if (fabsf(hgtMea) > 10.0f) {
+            largeHgtChange = true;
         }
 
-        // trigger at 6 m/s GPS velocity
-        if (gndSpdSq > 36.0f) {
-            highGndSpdStage2 = true;
-            inAirSum++;
-        }
-
-        // trigger at 9 m/s GPS velocity
-        if (gndSpdSq > 81.0f) {
-            inAirSum++;
-        }
-
-        // trigger if more than 15m away from initial height
-        if (fabsf(hgtMea) > 15.0f) {
-            inAirSum++;
-        }
-
-        // this will trigger due to air turbulence during flight
-        if (accNavMag > 0.5f) {
-            inAirSum++;
-        }
-
-        // if we on-ground then 4 or more out of 7 criteria are required to transition to the
-        // in-air mode and we also need enough GPS velocity to be able to calculate a reliable ground track heading
-        if (onGround && (inAirSum >= 4) && highGndSpdStage2) {
+        // to go to in-air mode we also need enough GPS velocity to be able to calculate a reliable ground track heading and either a lerge height or airspeed change
+        if (onGround && highGndSpd && (highAirSpd || largeHgtChange)) {
             onGround = false;
         }
         // if is possible we are in flight, set the time this condition was last detected
-        if (inAirSum >= 1) {
+        if (highGndSpd || highAirSpd || largeHgtChange) {
             airborneDetectTime_ms = imuSampleTime_ms;
         }
         // after 5 seconds of not detecting a possible flight condition, we transition to on-ground mode
         if(!onGround && ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
             onGround = true;
         }
-        // perform a yaw alignment check against GPS if exiting on-ground mode
+        // perform a yaw alignment check against GPS if exiting on-ground mode, bu tonly if we have enough ground speed
         // this is done to protect against unrecoverable heading alignment errors due to compass faults
         if (!onGround && prevOnGround) {
             alignYawGPS();
