@@ -87,4 +87,6 @@ private:
 
     bool installed_vehicle_specific_parsers;
     void maybe_install_vehicle_specific_parsers();
+
+    bool in_list(const char *type, const char *list[]);
 };
