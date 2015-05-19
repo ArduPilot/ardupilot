@@ -2,6 +2,7 @@
 #define AP_MSGHANDLER_H
 
 #include <DataFlash.h>
+#include <VehicleType.h>
 
 #include <stdio.h>
 
@@ -157,5 +158,304 @@ inline void MsgHandler::field_value_for_type_at_offset(uint8_t *msg,
         exit(1);
     }
 }
+
+
+/* subclasses below this point */
+
+class MsgHandler_AHR2 : public MsgHandler
+{
+public:
+    MsgHandler_AHR2(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec, Vector3f &_ahr2_attitude)
+        : MsgHandler(_f, _dataflash,_last_timestamp_usec),
+          ahr2_attitude(_ahr2_attitude) { };
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    Vector3f &ahr2_attitude;
+};
+
+
+class MsgHandler_ARM : public MsgHandler
+{
+public:
+    MsgHandler_ARM(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
+
+    virtual void process_message(uint8_t *msg);
+};
+
+
+class MsgHandler_ARSP : public MsgHandler
+{
+public:
+    MsgHandler_ARSP(log_Format &_f, DataFlash_Class &_dataflash,
+		    uint64_t &_last_timestamp_usec, AP_Airspeed &_airspeed) :
+	MsgHandler(_f, _dataflash, _last_timestamp_usec), airspeed(_airspeed) { };
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    AP_Airspeed &airspeed;
+};
+
+
+class MsgHandler_ATT : public MsgHandler
+{
+public:
+    MsgHandler_ATT(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec, Vector3f &_attitude)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec), attitude(_attitude)
+        { };
+    virtual void process_message(uint8_t *msg);
+
+private:
+    Vector3f &attitude;
+};
+
+
+class MsgHandler_BARO : public MsgHandler
+{
+public:
+    MsgHandler_BARO(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec, AP_Baro &_baro)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec), baro(_baro) { };
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    AP_Baro &baro;
+};
+
+
+class MsgHandler_Event : public MsgHandler
+{
+public:
+    MsgHandler_Event(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
+
+    virtual void process_message(uint8_t *msg);
+};
+
+
+
+
+class MsgHandler_GPS_Base : public MsgHandler
+{
+
+public:
+    MsgHandler_GPS_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                        uint64_t &_last_timestamp_usec, AP_GPS &_gps,
+                        uint32_t &_ground_alt_cm, float &_rel_altitude)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec),
+          gps(_gps), ground_alt_cm(_ground_alt_cm),
+          rel_altitude(_rel_altitude) { };
+
+protected:
+    void update_from_msg_gps(uint8_t imu_offset, uint8_t *data, bool responsible_for_relalt);
+
+private:
+    AP_GPS &gps;
+    uint32_t &ground_alt_cm;
+    float &rel_altitude;
+};
+
+
+class MsgHandler_GPS : public MsgHandler_GPS_Base
+{
+public:
+    MsgHandler_GPS(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec, AP_GPS &_gps,
+                   uint32_t &_ground_alt_cm, float &_rel_altitude)
+        : MsgHandler_GPS_Base(_f, _dataflash,_last_timestamp_usec,
+                              _gps, _ground_alt_cm, _rel_altitude),
+          gps(_gps), ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
+
+    void process_message(uint8_t *msg);
+
+private:
+    AP_GPS &gps;
+    uint32_t &ground_alt_cm;
+    float &rel_altitude;
+};
+
+// it would be nice to use the same parser for both GPS message types
+// (and other packets, too...).  I*think* the contructor can simply
+// take e.g. &gps[1]... problems are going to arise if we don't
+// actually have that many gps' compiled in!
+class MsgHandler_GPS2 : public MsgHandler_GPS_Base
+{
+public:
+    MsgHandler_GPS2(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec, AP_GPS &_gps,
+                    uint32_t &_ground_alt_cm, float &_rel_altitude)
+        : MsgHandler_GPS_Base(_f, _dataflash, _last_timestamp_usec,
+                              _gps, _ground_alt_cm,
+                              _rel_altitude), gps(_gps),
+          ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
+    virtual void process_message(uint8_t *msg);
+private:
+    AP_GPS &gps;
+    uint32_t &ground_alt_cm;
+    float &rel_altitude;
+};
+
+
+
+class MsgHandler_IMU_Base : public MsgHandler
+{
+public:
+    MsgHandler_IMU_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                        uint64_t &_last_timestamp_usec,
+                        uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                        AP_InertialSensor &_ins) :
+        MsgHandler(_f, _dataflash, _last_timestamp_usec),
+        accel_mask(_accel_mask),
+        gyro_mask(_gyro_mask),
+        ins(_ins) { };
+    void update_from_msg_imu(uint8_t gps_offset, uint8_t *msg);
+
+private:
+    uint8_t &accel_mask;
+    uint8_t &gyro_mask;
+    AP_InertialSensor &ins;
+};
+
+class MsgHandler_IMU : public MsgHandler_IMU_Base
+{
+public:
+    MsgHandler_IMU(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec,
+                   uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                   AP_InertialSensor &_ins)
+        : MsgHandler_IMU_Base(_f, _dataflash, _last_timestamp_usec,
+                              _accel_mask, _gyro_mask, _ins) { };
+
+    void process_message(uint8_t *msg);
+};
+
+class MsgHandler_IMU2 : public MsgHandler_IMU_Base
+{
+public:
+    MsgHandler_IMU2(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec,
+                    uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                    AP_InertialSensor &_ins)
+        : MsgHandler_IMU_Base(_f, _dataflash, _last_timestamp_usec,
+                              _accel_mask, _gyro_mask, _ins) {};
+
+    virtual void process_message(uint8_t *msg);
+};
+
+class MsgHandler_IMU3 : public MsgHandler_IMU_Base
+{
+public:
+    MsgHandler_IMU3(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec,
+                    uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                    AP_InertialSensor &_ins)
+        : MsgHandler_IMU_Base(_f, _dataflash, _last_timestamp_usec,
+                              _accel_mask, _gyro_mask, _ins) {};
+
+    virtual void process_message(uint8_t *msg);
+};
+
+
+
+class MsgHandler_MAG_Base : public MsgHandler
+{
+public:
+    MsgHandler_MAG_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                        uint64_t &_last_timestamp_usec, Compass &_compass)
+	: MsgHandler(_f, _dataflash, _last_timestamp_usec), compass(_compass) { };
+
+protected:
+    void update_from_msg_compass(uint8_t compass_offset, uint8_t *msg);
+
+private:
+    Compass &compass;
+};
+
+class MsgHandler_MAG : public MsgHandler_MAG_Base
+{
+public:
+    MsgHandler_MAG(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec, Compass &_compass)
+        : MsgHandler_MAG_Base(_f, _dataflash, _last_timestamp_usec,_compass) {};
+
+    virtual void process_message(uint8_t *msg);
+};
+
+class MsgHandler_MAG2 : public MsgHandler_MAG_Base
+{
+public:
+    MsgHandler_MAG2(log_Format &_f, DataFlash_Class &_dataflash,
+                    uint64_t &_last_timestamp_usec, Compass &_compass)
+        : MsgHandler_MAG_Base(_f, _dataflash, _last_timestamp_usec,_compass) {};
+
+    virtual void process_message(uint8_t *msg);
+};
+
+
+
+class MsgHandler_MSG : public MsgHandler
+{
+public:
+    MsgHandler_MSG(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec,
+                   VehicleType::vehicle_type &_vehicle, AP_AHRS &_ahrs) :
+        MsgHandler(_f, _dataflash, _last_timestamp_usec),
+        vehicle(_vehicle), ahrs(_ahrs) { }
+
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    VehicleType::vehicle_type &vehicle;
+    AP_AHRS &ahrs;
+};
+
+
+class MsgHandler_NTUN_Copter : public MsgHandler
+{
+public:
+    MsgHandler_NTUN_Copter(log_Format &_f, DataFlash_Class &_dataflash,
+			   uint64_t &_last_timestamp_usec, Vector3f &_inavpos)
+	: MsgHandler(_f, _dataflash, _last_timestamp_usec), inavpos(_inavpos) {};
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    Vector3f &inavpos;
+};
+
+
+class MsgHandler_PARM : public MsgHandler
+{
+public:
+    MsgHandler_PARM(log_Format &_f, DataFlash_Class &_dataflash, uint64_t _last_timestamp_usec) : MsgHandler(_f, _dataflash, _last_timestamp_usec) {};
+
+    virtual void process_message(uint8_t *msg);
+};
+
+
+class MsgHandler_SIM : public MsgHandler
+{
+public:
+    MsgHandler_SIM(log_Format &_f, DataFlash_Class &_dataflash,
+                   uint64_t &_last_timestamp_usec,
+                   Vector3f &_sim_attitude)
+        : MsgHandler(_f, _dataflash, _last_timestamp_usec),
+          sim_attitude(_sim_attitude)
+        { };
+
+    virtual void process_message(uint8_t *msg);
+
+private:
+    Vector3f &sim_attitude;
+};
 
 #endif
