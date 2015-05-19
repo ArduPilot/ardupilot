@@ -519,7 +519,9 @@ void MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 
 bool MsgHandler::set_parameter(const char *name, float value)
 {
-    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE" };
+    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
+                                   "COMPASS_ORIENT", "COMPASS_ORIENT2",
+                                   "COMPASS_ORIENT3"};
     for (uint8_t i=0; i<sizeof(ignore_parms)/sizeof(ignore_parms[0]); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
