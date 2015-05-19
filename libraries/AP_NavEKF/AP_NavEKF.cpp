@@ -4163,6 +4163,8 @@ void NavEKF::readGpsData()
         } else if (goodToAlign){
             // Set the NE origin to the current GPS position
             setOrigin();
+            // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
+            alignMagStateDeclination();
             // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
             EKF_origin.alt = gpsloc.alt - hgtMea;
             // We are by definition at the origin at the instant of alignment so set NE position to zero
