@@ -381,6 +381,9 @@ static AP_BoardConfig BoardConfig;
 // receiver RSSI
 static uint8_t receiver_rssi;
 
+// this is set to true when camera really has been triggered
+static bool camera_triggered;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Failsafe
 ////////////////////////////////////////////////////////////////////////////////
@@ -937,6 +940,13 @@ static void update_mount()
 
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if(camera_triggered == false && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+      camera_triggered = true;
+    }    
 #endif
 }
 
@@ -1214,4 +1224,3 @@ static void update_altitude()
 }
 
 AP_HAL_MAIN();
-
