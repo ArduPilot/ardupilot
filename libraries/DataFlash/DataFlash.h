@@ -205,6 +205,7 @@ struct PACKED log_IMU {
     float accel_x, accel_y, accel_z;
     uint32_t gyro_error, accel_error;
     float temperature;
+    uint8_t gyro_health, accel_health;
 };
 
 struct PACKED log_RCIN {
@@ -571,7 +572,7 @@ Format characters in the format string for binary log messages
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
+      "IMU",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "Z",     "Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -606,9 +607,9 @@ Format characters in the format string for binary log messages
     { LOG_GPS2_MSG, sizeof(log_GPS2), \
       "GPS2",  "BIHBcLLeEefIBI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,T,DSc,DAg" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
+      "IMU2",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  "IffffffIIf",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp" }, \
+      "IMU3",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
