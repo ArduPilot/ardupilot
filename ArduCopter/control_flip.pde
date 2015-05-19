@@ -50,7 +50,7 @@ static bool flip_init(bool ignore_checks)
     }
 
     // ensure roll input is less than 40deg
-    if (abs(g.rc_1.control_in) >= 4000) {
+    if (abs(channel_roll->control_in) >= 4000) {
         return false;
     }
 

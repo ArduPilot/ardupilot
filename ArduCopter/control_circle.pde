@@ -43,13 +43,13 @@ static void circle_run()
     // process pilot inputs
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
         if (!is_zero(target_yaw_rate)) {
             circle_pilot_yaw_override = true;
         }
 
         // get pilot desired climb rate
-        target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
 
         // check for pilot requested take-off
         if (ap.land_complete && target_climb_rate > 0) {
