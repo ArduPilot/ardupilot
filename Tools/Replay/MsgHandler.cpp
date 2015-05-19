@@ -198,7 +198,6 @@ extern uint64_t last_timestamp_usec; // fixme!
 void MsgHandler::wait_timestamp(uint32_t timestamp)
 {
     uint64_t timestamp_usec = timestamp*1000UL;
-    timestamp_usec = ((timestamp_usec + 1000) / 2500) * 2500;
     last_timestamp_usec = timestamp_usec;
     hal.scheduler->stop_clock(timestamp_usec);
 }
