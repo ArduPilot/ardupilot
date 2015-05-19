@@ -25,10 +25,10 @@ static void acro_run()
     }
 
     // convert the input to the desired body frame rate
-    get_pilot_desired_angle_rates(g.rc_1.control_in, g.rc_2.control_in, g.rc_4.control_in, target_roll, target_pitch, target_yaw);
+    get_pilot_desired_angle_rates(channel_roll->control_in, channel_pitch->control_in, channel_yaw->control_in, target_roll, target_pitch, target_yaw);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(g.rc_3.control_in);
+    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
     // run attitude controller
     attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);

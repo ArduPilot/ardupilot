@@ -28,7 +28,7 @@ static void sport_run()
     // if not armed or throttle at zero, set throttle to zero and exit immediately
     if(!motors.armed() || ap.throttle_zero) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
     }
 
@@ -61,17 +61,17 @@ static void sport_run()
     }
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
 
     // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
     target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
     // get takeoff adjusted pilot and takeoff climb rates
     takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
     // check for take-off
-    if (ap.land_complete && (takeoff_state.running || g.rc_3.control_in > get_takeoff_trigger_throttle())) {
+    if (ap.land_complete && (takeoff_state.running || (channel_throttle->control_in > get_takeoff_trigger_throttle()))) {
         if (!takeoff_state.running) {
             takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }

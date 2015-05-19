@@ -62,7 +62,7 @@ static void update_throttle_thr_mix()
 {
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
-        if(!motors.armed() || g.rc_3.control_in <= 0) {
+        if(!motors.armed() || channel_throttle->control_in <= 0) {
             motors.set_throttle_mix_min();
         } else {
             motors.set_throttle_mix_mid();
