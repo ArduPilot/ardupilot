@@ -520,7 +520,7 @@ void AC_AttitudeControl::integrate_bf_rate_error_to_angle_errors()
     // yaw - limit maximum error
     _angle_bf_error.z = constrain_float(_angle_bf_error.z, -AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX);
 
-    // To-Do: handle case of motors being disarmed or g.rc_3.servo_out == 0 and set error to zero
+    // To-Do: handle case of motors being disarmed or channel_throttle == 0 and set error to zero
 }
 
 // update_rate_bf_targets - converts body-frame angle error to body-frame rate targets for roll, pitch and yaw axis
