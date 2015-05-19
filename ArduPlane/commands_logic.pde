@@ -783,8 +783,14 @@ static void do_digicam_control(const AP_Mission::Mission_Command& cmd)
 static void do_take_picture()
 {
 #if CAMERA == ENABLED
-    camera.trigger_pic(true);
-    log_picture();
+    camera.trigger_pic();
+    if(camera._feedback_pin == -1 ){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+    }
+    else camera_triggered = false;
 #endif
 }
 
