@@ -360,6 +360,9 @@ static int16_t     throttle_nudge = 0;
 // receiver RSSI
 static uint8_t receiver_rssi;
 
+// this is set to true when camera really has been triggered
+static bool camera_triggered;
+
 // the time when the last HEARTBEAT message arrived from a GCS
 static uint32_t last_heartbeat_ms;
 
@@ -607,6 +610,13 @@ static void mount_update(void)
 #endif
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if(camera_triggered == false && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+      camera_triggered = true;
+    }    
 #endif
 }
 
