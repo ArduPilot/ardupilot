@@ -169,9 +169,6 @@ enum log_messages {
 // to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)
 
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
-
 // altitude control algorithms
 enum {
     ALT_CONTROL_DEFAULT      = 0,
