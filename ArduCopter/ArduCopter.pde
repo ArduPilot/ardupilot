@@ -727,8 +727,8 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { read_aux_switches,    40,     50 },   // 5
     { arm_motors_check,     40,     50 },   // 6
     { auto_trim,            40,     75 },   // 7
-    { run_nav_updates,       8,    100 },   // 8
-    { update_altitude,      40,    140 },   // 9
+    { update_altitude,      40,    140 },   // 8
+    { run_nav_updates,       8,    100 },   // 9
     { update_thr_average,    4,     90 },   // 10
     { three_hz_loop,       133,     75 },   // 11
     { compass_accumulate,    8,    100 },   // 12
@@ -744,7 +744,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { lost_vehicle_check,   40,     50 },   // 19
     { gcs_check_input,       1,    180 },   // 20
     { gcs_send_heartbeat,  400,    110 },   // 21
-    { gcs_send_deferred,     8,    120 },   // 22
+    { gcs_send_deferred,     8,    550 },   // 22
     { gcs_data_stream_send,  8,    550 },   // 23
     { update_mount,          8,     75 },   // 24
     { ten_hz_logging_loop,  40,    350 },   // 25
