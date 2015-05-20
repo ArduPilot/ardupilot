@@ -316,9 +316,6 @@ enum FlipState {
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
 
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
-
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_RADIO               2
