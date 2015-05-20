@@ -1,8 +1,144 @@
-Release 3.3.0beta2, 30th April 2015
------------------------------------
+Release 3.3.0, 20th May 2015
+----------------------------
 
-Changes in this release:
+The ardupilot development team is proud to announce the release of
+version 3.3.0 of APM:Plane. This is a major release with a lot of
+changes. Please read the release notes carefully!
 
+The last stable release was 3 months ago, and since that time we have
+applied over 1200 changes to the code. It has been a period of very
+rapid development for ArduPilot. Explaining all of the changes that
+have been made would take far too long, so I've chosen some key
+changes to explain in detail, and listed the most important secondary
+changes in a short form. Please ask for details if there is a change
+you see listed that you want some more information on.
+
+Arming Changes
+--------------
+
+This is the first release of APM:Plane where ARMING_CHECK and
+ARMING_REQUIRE both default to enabled. That means when you upgrade if
+you didn't previously have arming enabled you will need to learn about
+arming your plane.
+
+Please see this page for more information on arming:
+
+  http://plane.ardupilot.com/wiki/arming-your-plane/
+
+I know many users will be tempted to disable the arming checks, but
+please don't do that without careful thought. The arming checks are an
+important part of ensuring the aircraft is ready to fly, and a common
+cause of flight problems is to takeoff before ArduPilot is ready.
+
+Re-do Accelerometer Calibration
+-------------------------------
+
+Due to a change in the maximum accelerometer range on the Pixhawk all
+users must re-do their accelerometer calibration for this release. If
+you don't then your plane will fail to arm with a message saying that
+you have not calibrated the accelerometers.
+
+Only 3D accel calibration
+-------------------------
+
+The old "1D" accelerometer calibration method has now been removed, so
+you must use the 3D accelerometer calibration method. The old method
+was removed because a significant number of users had poor flights due
+to scaling and offset errors on their accelerometers when they used
+the 1D method. My apologies for people with very large aircraft who
+find the 3D method difficult.
+
+Note that you can do the accelerometer calibration with the autopilot
+outside the aircraft which can make things easier for large aircraft.
+
+Auto-disarm
+-----------
+
+After an auto-landing the autopilot will now by default disarm after
+LAND_DISARMDELAY seconds (with a default of 20 seconds). This feature
+is to prevent the motor from spinning up unexpectedly on the ground
+after a landing.
+
+HIL_MODE parameter
+------------------
+
+It is now possible to configure your autopilot for hardware in the
+loop simulation without loading a special firmware. Just set the
+parameter HIL_MODE to 1 and this will enable HIL for any
+autopilot. This is designed to make it easier for users to try HIL
+without having to find a HIL firmware.
+
+SITL on Windows
+---------------
+
+The SITL software in the loop simulation system has been completely
+rewritten for this release. A major change is to make it possible to
+run SITL on native windows without needing a Linux virtual
+machine. There should be a release of MissionPlanner for Windows soon
+which will make it easy to launch a SITL instance.
+
+The SITL changes also include new backends, including the CRRCSim
+flight simulator. This gives us a much wider range of aircraft we can
+use for SITL. See http://dev.ardupilot.com/wiki/simulation-2/ for more
+information.
+
+Throttle control on takeoff
+---------------------------
+
+A number of users had problems with pitch control on auto-takeoff, and
+with the aircraft exceeding its target speed during takeoff. The
+auto-takeoff code has now been changed to use the normal TECS throttle
+control which should solve this problem.
+
+Rudder only support
+-------------------
+
+There is a new RUDDER_ONLY parameter for aircraft without ailerons,
+where roll is controlled by the rudder. Please see the documentation
+for more information on flying with a rudder only aircraft:
+
+  http://plane.ardupilot.com/wiki/arduplane-parameters/#rudder_only_aircraft_arduplanerudder_only
+
+APM1/APM2 Support
+-----------------
+
+We have managed to keep support for the APM1 and APM2 in this release,
+but in order to fit it in the limited flash space we had to disable
+some more features when building for those boards. For this release
+the AP_Mount code for controlling camera mounts is disabled on
+APM1/APM2.
+
+At some point soon it will become impractical to keep supporting the
+APM1/APM2 for planes. Please consider moving to a 32 bit autopilot
+soon if you are still using an APM1 or APM2.
+
+New INS code
+------------
+
+There have been a lot of changes to the gyro and accelerometer
+handling for this release. The accelerometer range on the Pixhawk has
+been changed to 16g from 8g to prevent clipping on high vibration
+aircraft, and the sampling rate on the lsm303d has been increased to
+1600Hz. 
+
+An important bug has also been fixed which caused aliasing in the
+sampling process from the accelerometers. That bug could cause 
+attitude errors in high vibration environments.
+
+Numerous Landing Changes
+------------------------
+
+Once again there have been a lot of improvements to the automatic
+landing support. Perhaps most important is the introduction of a
+smooth transition from landing approach to the flare, which reduces
+the tendency to pitch up too much on flare. 
+
+There is also a new parameter TECS_LAND_PMAX which controls the
+maximum pitch during landing. This defaults to 10 degrees, but for
+many aircraft a smaller value may be appropriate. Reduce it to 5
+degrees if you find you still get too much pitch up during the flare.
+
+Other secondary changes in this release include:
 
  - a new SerialManager library which gives much more flexible management of serial port assignment
  - changed the default FS_LONG_TIMEOUT to 5 seconds
@@ -61,7 +197,15 @@ Changes in this release:
  - support CRRCSim FDM backend in SITL
  - new general purpose replay parsing code
  - switched to 16g accel range in Pixhawk
+ - added FENCE_AUTOENABLE=2 for disabling just fence floor
+ - added POS dataflash log message
+ - changed GUIDED behaviour to match copter
+ - added support for a 4th MAVLink channel
+ - support setting AHRS_TRIM in preflight calibration
+ - fixed a PX4 mixer out of range error
 
+Best wishes to all APM:Plane users from the dev team, and happy
+flying!
 
 
 Release 3.2.2, February 10th 2015
