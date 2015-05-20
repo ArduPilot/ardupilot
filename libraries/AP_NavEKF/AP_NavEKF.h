@@ -456,6 +456,9 @@ private:
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
 
+    // calculate filtered offset between baro height measurement and EKF height estimate
+    void calcFiltBaroOffset();
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s

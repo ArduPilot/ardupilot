@@ -365,8 +365,8 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls which height sensor is used by the EKF during optical flow navigation (when EKF_GPS_TYPE = 3). A value of will 0 cause it to always use baro altitude. A value of 1 will casue it to use range finder if available.
-    // @Values: 0:Use Baro, 1:Use Range Finder
+    // @Description: This parameter controls which height sensor is used by the EKF. A value of will 0 cause it to always use baro altitude. A value of 1 will use the baro sensor, but switch to the range finder during optical flow navigation. A value of 2 will cause it to use GPS and switch to the baro sensor if GPS is not available.
+    // @Values: 0:Baro, 1:Range Finder, 2:GPS
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE",    32, NavEKF, _altSource, 1),
 
@@ -1974,7 +1974,8 @@ void NavEKF::FuseVelPosNED()
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtMeasTime) <  (2 * msecHgtAvg)) {
+        // We can't perform this check if using GPS for height GPS height and velocity errors are correlated
+        if (_fusionModeGPS == 0 && fuseVelData && _altSource != 2) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = statesAtHgtTime.position.z - observation[5];
             float velDErr = statesAtVelTime.velocity.z - observation[2];
@@ -4161,13 +4162,25 @@ void NavEKF::readGpsData()
         const struct Location &gpsloc = _ahrs->get_gps().location();
         if (validOrigin) {
             gpsPosNE = location_diff(EKF_origin, gpsloc);
+            // Use height from GPS if selected
+            if (_altSource == 2) {
+                // calculate height above origin
+                hgtMea = 0.01f * (gpsloc.alt - EKF_origin.alt);
+                // get states that were stored at the time closest to the measurement time, taking measurement delay into account
+                RecallStates(statesAtHgtTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
+                // flag that we have new height data to fuse
+                newDataHgt = true;
+                // time stamp used to check for stale data
+                lastHgtMeasTime = lastFixTime_ms;
+            }
         } else if (goodToAlign){
             // Set the NE origin to the current GPS position
             setOrigin();
             // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
             alignMagStateDeclination();
-            // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-            EKF_origin.alt = gpsloc.alt - hgtMea;
+            // Set the height of the NED origin to the current GPS height with an offset to allow for baro and GPS drift since startup
+            // The offset avoids steps in height when switching from baro to GPS height sources
+            EKF_origin.alt = gpsloc.alt - 100.0f * hgtMea;
             // We are by definition at the origin at the instant of alignment so set NE position to zero
             gpsPosNE.zero();
             // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
@@ -4206,8 +4219,7 @@ void NavEKF::readHgtData()
                 // get states that were stored at the time closest to the measurement time, taking measurement delay into account
                 statesAtHgtTime = statesAtFlowTime;
                 // calculate offset to baro data that enables baro to be used as a backup
-                // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (_baro.get_altitude() + state.position.z) + 0.9f * baroHgtOffset;
+                calcFiltBaroOffset();
             } else if (vehicleArmed && takeOffDetected) {
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
                 hgtMea = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
@@ -4219,14 +4231,37 @@ void NavEKF::readHgtData()
                 // get states that were stored at the time closest to the measurement time, taking measurement delay into account
                 statesAtHgtTime = state;
                 // calculate offset to baro data that enables baro to be used as a backup
-                // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (_baro.get_altitude() + state.position.z) + 0.9f * baroHgtOffset;
+                calcFiltBaroOffset();
+            }
+            // flag that we have new height data to fuse
+            newDataHgt = true;
+            // time stamp used to check for new measurement
+            lastHgtMeasTime = _baro.get_last_update();
+        } else if (_altSource == 2 && validOrigin) {
+            // If GPS altitude is healthy we calculate a baro offset to keep the baro consistent with the GPS so that it can be used as a backup
+            // If GPS altitude is unhealthy we use the corrected baro alt
+            if(imuSampleTime_ms - lastFixTime_ms < 1000) {
+                // calculate offset to baro data that enables baro to be used as a backup
+                calcFiltBaroOffset();
+            } else {
+                // use baro measurement and correct for baro offset
+                hgtMea = _baro.get_altitude() - baroHgtOffset;
+                // get states that were stored at the time closest to the measurement time, taking measurement delay into account
+                RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
+                // flag that we have new height data to fuse
+                newDataHgt = true;
+                // time stamp used to check for new measurement
+                lastHgtMeasTime = _baro.get_last_update();
             }
         } else {
             // use baro measurement and correct for baro offset
-            hgtMea = _baro.get_altitude();
+            hgtMea = _baro.get_altitude() - baroHgtOffset;
             // get states that were stored at the time closest to the measurement time, taking measurement delay into account
             RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
+            // flag that we have new height data to fuse
+            newDataHgt = true;
+            // time stamp used to check for new measurement
+            lastHgtMeasTime = _baro.get_last_update();
         }
 
         // filtered baro data used to provide a reference for takeoff
@@ -4241,13 +4276,6 @@ void NavEKF::readHgtData()
             // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
             hgtMea = max(hgtMea, meaHgtAtTakeOff);
         }
-
-        // set flag to let other functions know new data has arrived
-        newDataHgt = true;
-        // time stamp used to check for new measurement
-        lastHgtMeasTime = _baro.get_last_update();
-    } else {
-        newDataHgt = false;
     }
 }
 
@@ -4789,6 +4817,8 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
     bool filterHealthy = healthy();
+    // If GPS height useage is specified, height is considered to be inaccurate until the GPS passes all checks
+    bool hgtNotAccurate = (_altSource == 2) && !validOrigin;
 
     // set individual flags
     status.flags.attitude = !state.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -4796,7 +4826,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
-    status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
+    status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
@@ -5199,5 +5229,13 @@ void NavEKF::alignMagStateDeclination()
     state.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }
 
+// calculate filtered offset between baro height measurement and EKF height estimate
+// offset should be subtracted from baro measurement to match filter estimate
+// offset is used to enable reversion to baro if alternate height data sources fail
+void NavEKF::calcFiltBaroOffset()
+{
+    // Apply a first order LPF with spike protection
+    baroHgtOffset = 0.1f * constrain_float(_baro.get_altitude() + state.position.z, -5.0f, 5.0f) + 0.9f * baroHgtOffset;
+}
 
 #endif // HAL_CPU_CLASS
