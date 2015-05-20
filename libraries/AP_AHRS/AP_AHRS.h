@@ -354,6 +354,9 @@ public:
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const { return true; };
 
+    // time that the AHRS has been up
+    virtual uint32_t uptime_ms(void) const = 0;
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 

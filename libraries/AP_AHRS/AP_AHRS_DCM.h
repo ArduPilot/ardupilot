@@ -110,6 +110,9 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy(void) const;
 
+    // time that the AHRS has been up
+    uint32_t uptime_ms(void) const;
+
 private:
     float _ki;
     float _ki_yaw;
