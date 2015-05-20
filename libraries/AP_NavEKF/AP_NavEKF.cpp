@@ -526,8 +526,9 @@ bool NavEKF::InitialiseFilterDynamic(void)
         return false;
     }
 
-    // If the DCM solution has not converged, then don't initialise
-    if (_ahrs->get_error_rp() > 0.05f) {
+    // If the DCM solution has not converged, then don't initialise,
+    // unless at least 30s has passed
+    if (_ahrs->get_error_rp() > 0.05f && _ahrs->uptime_ms() < 30000U) {
         return false;
     }
 
