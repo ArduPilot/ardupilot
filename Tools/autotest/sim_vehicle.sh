@@ -258,10 +258,6 @@ pushd $autotest/../../$VEHICLE || {
     exit 1
 }
 VEHICLEDIR=$(pwd)
-if [ ! -f $autotest/../../config.mk ]; then
-    echo Generating a default configuration
-    make configure
-fi
 if [ $CLEAN_BUILD == 1 ]; then
     make clean
 fi
