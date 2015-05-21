@@ -24,7 +24,9 @@ static void read_rangefinder(void)
     bool powerDown = false;
 
     if (g.rangefinder_landing == 2) {
-        powerDown = (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND);
+        // power up if landing and also below 20m above the max range
+        powerDown = (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) ||
+                    (adjusted_altitude_cm() > rangefinder.max_distance_cm() + 200);
     }
 
     if (rangefinder.SetPoweredDown(powerDown)) {
