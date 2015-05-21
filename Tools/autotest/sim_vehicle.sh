@@ -339,9 +339,11 @@ EOF
         PARMS="ArduPlane.parm"
         if [ "$FRAME" = "CRRCSim" ]; then
             RUNSIM="nice $autotest/pysim/sim_wrapper.py --frame=CRRCSim --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
-        else
+        elif [ $EXTERNAL_SIM == 0 ]; then
             RUNSIM=""
             cmd="$cmd --model jsbsim --speedup=$SPEEDUP"
+        else
+            echo "Using external plane simulator"
         fi
         ;;
     ArduCopter)
@@ -378,7 +380,9 @@ fi
 
 trap kill_tasks SIGINT
 
-if test -n "$RUNSIM"; then
+echo "RUNSIM: $RUNSIM"
+
+if [ -n "$RUNSIM" -o "$EXTERNAL_SIM" == 1 ]; then
     sleep 2
     rm -f $tfile
     if [ $EXTERNAL_SIM == 0 ]; then
@@ -396,6 +400,8 @@ if test -n "$RUNSIM"; then
         }
         sleep 2
     fi
+else
+    echo "not running external simulator"
 fi
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
