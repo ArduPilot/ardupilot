@@ -292,7 +292,10 @@ fi
 echo "Building $BUILD_TARGET"
 make $BUILD_TARGET -j$NUM_PROCS || {
     make clean
-    make $BUILD_TARGET -j$NUM_PROCS
+    make $BUILD_TARGET -j$NUM_PROCS || {
+	echo >&2 "$0: Build failed"
+	exit 1
+    }
 }
 fi
 popd
