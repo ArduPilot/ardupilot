@@ -66,7 +66,6 @@ build_devrelease() {
         }
 
         mkdir -p $SUBDIR || return 1
-        make configure || return 1
         make px4-clean || return 1
         make clean || return 1
         make "$make_target" || return 1

@@ -12,7 +12,6 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-make configure
 for b in all apm2 sitl linux; do
     pwd
     make clean
