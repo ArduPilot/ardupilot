@@ -120,6 +120,7 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 
 #if GPS_MAX_INSTANCES > 1
     _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
+    _last_instance_swap_ms = 0;
 #endif
 }
 
@@ -380,14 +381,24 @@ AP_GPS::update(void)
                 primary_instance = i;
                 continue;
             }
-            if (state[i].status == state[primary_instance].status &&
-                state[i].num_sats >= state[primary_instance].num_sats + 2) {
-                // this GPS has at least 2 more satellites than the
+
+            bool another_gps_has_1_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 1);
+
+            if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
+
+                uint32_t now = hal.scheduler->millis();
+                bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
+
+                if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
+                     (another_gps_has_2_or_more_sats && (now - _last_instance_swap_ms) >= 5000 ) ) {
+                // this GPS has more satellites than the
                 // current primary, switch primary. Once we switch we will
                 // then tend to stick to the new GPS as primary. We don't
                 // want to switch too often as it will look like a
                 // position shift to the controllers.
                 primary_instance = i;
+                _last_instance_swap_ms = now;
+                }
             }
         } else {
             primary_instance = 0;
