@@ -258,6 +258,25 @@ void AP_MotorsHeli::enable()
     hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
 }
 
+// output - sends commands to the servos
+void AP_MotorsHeli::output()
+{
+    // update throttle filter
+    update_throttle_filter();
+
+    if (_flags.armed) {
+        if (!_flags.interlock) {
+            output_armed_zero_throttle();
+        } else if (_flags.stabilizing) {
+            output_armed_stabilizing();
+        } else {
+            output_armed_not_stabilizing();
+        }
+    } else {
+        output_disarmed();
+    }
+};
+
 // output_min - sets servos to neutral point
 void AP_MotorsHeli::output_min()
 {

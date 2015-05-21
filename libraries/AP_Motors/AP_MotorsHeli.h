@@ -207,6 +207,9 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask();
 
+    // output - sends commands to the motors
+    void    output();
+
 protected:
 
     // output - sends commands to the motors
