@@ -82,7 +82,7 @@ def process_sitl_input(buf):
         if e.errno not in [ errno.ECONNREFUSED ]:
             raise
 
-def process_ros_input(buf,frame_count):
+def process_ros_input(buf,frame_count, timestamp):
     '''process FG FDM input from ROS Simulator'''
     global fdm, fg_out, sim_out
     FG_FDM_FPS = 30
@@ -98,7 +98,9 @@ def process_ros_input(buf,frame_count):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    simbuf = struct.pack('<17dI',
+    print('timestamp=', timestamp)
+    simbuf = struct.pack('<Q17dI',
+                         timestamp,
                          fdm.get('latitude', units='degrees'),
                          fdm.get('longitude', units='degrees'),
                          fdm.get('altitude', units='meters'),
@@ -208,6 +210,7 @@ def main_loop():
     last_wind_update = tnow
     frame_count = 0
     paused = False
+    timestamp = 0
 
     while True:
         rin = [ros_in.fileno(), sim_in.fileno()]
@@ -222,11 +225,13 @@ def main_loop():
 
         if ros_in.fileno() in rin:
             buf = ros_in.recv(fdm.packet_size())
-            process_ros_input(buf,frame_count)
+            process_ros_input(buf,frame_count, timestamp)
             frame_count += 1
+            timestamp += 1000
 
         if sim_in.fileno() in rin:
             simbuf = sim_in.recv(28)
+            print(len(simbuf))
             process_sitl_input(simbuf)
             last_sim_input = tnow
 
