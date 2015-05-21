@@ -39,26 +39,7 @@ mavlink_system_t mavlink_system = {7,1};
 static uint8_t mavlink_locked_mask;
 
 // routing table
-MAVLink_routing GCS_MAVLINK::routing;
-
-// snoop function for vehicle types that want to see messages for
-// other targets
-void (*GCS_MAVLINK::msg_snoop)(const mavlink_message_t* msg) = NULL;
-
-/*
-  lock a channel, preventing use by MAVLink
- */
-void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
-{
-    if (_chan >= MAVLINK_COMM_NUM_BUFFERS) {
-        return;
-    }
-    if (lock) {
-        mavlink_locked_mask |= (1U<<(unsigned)_chan);
-    } else {
-        mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
-    }
-}
+MAVLink_routing GCS_private::routing;
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t)
@@ -74,6 +55,18 @@ uint8_t mav_var_type(enum ap_var_type t)
     }
     // treat any others as float
     return MAVLINK_TYPE_FLOAT;
+}
+
+void lock_channel(mavlink_channel_t _chan, bool lock)
+{
+    if (_chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return;
+    }
+    if (lock) {
+        mavlink_locked_mask |= (1U<<(unsigned)_chan);
+    } else {
+        mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
+    }
 }
 
 

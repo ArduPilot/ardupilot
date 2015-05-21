@@ -22,6 +22,7 @@
 #include <AP_HAL.h>
 #include <GCS.h>
 #include <DataFlash.h>
+#include "GCS_MAVLink.h"
 
 extern const AP_HAL::HAL& hal;
 

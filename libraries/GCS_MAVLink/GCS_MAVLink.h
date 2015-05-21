@@ -56,6 +56,9 @@ extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
 
+
+inline void lock_channel(mavlink_channel_t _chan, bool lock);
+
 /// Send a byte to the nominated MAVLink channel
 ///
 /// @param chan		Channel to send to
@@ -70,7 +73,7 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
     mavlink_comm_port[chan]->write(ch);
 }
 
-void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
+inline void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 
 /// Read a byte from the nominated MAVLink channel
 ///
@@ -114,7 +117,7 @@ bool comm_is_idle(mavlink_channel_t chan);
 uint8_t mav_var_type(enum ap_var_type t);
 
 // return CRC byte for a mavlink message ID
-uint8_t mavlink_get_message_crc(uint8_t msgid);
+inline uint8_t mavlink_get_message_crc(uint8_t msgid);
 
 // severity levels used in STATUSTEXT messages
 enum gcs_severity {
