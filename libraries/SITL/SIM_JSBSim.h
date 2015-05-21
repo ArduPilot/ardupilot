@@ -74,6 +74,8 @@ private:
     void recv_fdm(const struct sitl_input &input);
     void check_stdout(void);
     bool expect(const char *str);
+
+    void drain_control_socket();
 };
 
 /*

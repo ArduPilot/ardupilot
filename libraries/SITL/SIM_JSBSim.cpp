@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -337,8 +338,19 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set fcs/throttle-cmd-norm %f\n"
              "step\n",
              aileron, elevator, rudder, throttle);
-    sock_control.send(buf, strlen(buf));
+    ssize_t buflen = strlen(buf);
+    ssize_t sent = sock_control.send(buf, buflen);
     free(buf);
+    if (sent < 0) {
+        if (errno != EAGAIN) {
+            fprintf(stderr, "Fatal: Failed to send on control socket: %s\n",
+                    strerror(errno));
+            exit(1);
+        }
+    }
+    if (sent < buflen) {
+        fprintf(stderr, "Failed to send all bytes on control socket\n");
+    }
 }
 
 #define FEET_TO_METERS 0.3048f
@@ -395,6 +407,24 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     time_now_us += 1000;
 }
 
+void JSBSim::drain_control_socket()
+{
+    const uint16_t buflen = 1024;
+    char buf[buflen];
+    ssize_t received;
+    do {
+        received = sock_control.recv(buf, buflen, 0);
+        if (received < 0) {
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                fprintf(stderr, "error recv on control socket: %s",
+                        strerror(errno));
+                exit(1);
+            }
+        } else {
+            // fprintf(stderr, "received from control socket: %s\n", buf);
+        }
+    } while (received > 0);
+}
 /*
   update the JSBSim simulation by one time step
  */
@@ -414,5 +444,6 @@ void JSBSim::update(const struct sitl_input &input)
     recv_fdm(input);
     adjust_frame_time(1000);
     sync_frame_time();
+    drain_control_socket();
 }
 #endif // CONFIG_HAL_BOARD
