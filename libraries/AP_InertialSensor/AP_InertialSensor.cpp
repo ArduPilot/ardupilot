@@ -797,6 +797,10 @@ failed:
  */
 bool AP_InertialSensor::accel_calibrated_ok_all() const
 {
+    // calibration is not applicable for HIL mode
+    if (_hil_mode)
+        return true;
+
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
         // exactly 0.0 offset is extremely unlikely
