@@ -142,7 +142,7 @@ public:
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     // output - sends commands to the motors
-    void                output();
+    virtual void        output();
 
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
@@ -223,7 +223,7 @@ protected:
     virtual void        output_disarmed()=0;
 
     // update the throttle input filter
-    void                update_throttle_filter();
+    virtual void        update_throttle_filter();
 
     // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
     void                update_max_throttle();

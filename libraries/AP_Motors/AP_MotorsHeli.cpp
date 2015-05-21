@@ -258,6 +258,25 @@ void AP_MotorsHeli::enable()
     hal.rcout->enable_ch(AP_MOTORS_HELI_RSC);                               // output for main rotor esc
 }
 
+// output - sends commands to the servos
+void AP_MotorsHeli::output()
+{
+    // update throttle filter
+    update_throttle_filter();
+
+    if (_flags.armed) {
+        if (!_flags.interlock) {
+            output_armed_zero_throttle();
+        } else if (_flags.stabilizing) {
+            output_armed_stabilizing();
+        } else {
+            output_armed_not_stabilizing();
+        }
+    } else {
+        output_disarmed();
+    }
+};
+
 // output_min - sets servos to neutral point
 void AP_MotorsHeli::output_min()
 {
@@ -819,4 +838,13 @@ void AP_MotorsHeli::set_delta_phase_angle(int16_t angle)
     angle = constrain_int16(angle, -90, 90);
     _delta_phase_angle = angle;
     calculate_roll_pitch_collective_factors();
+}
+
+// update the throttle input filter
+void AP_MotorsHeli::update_throttle_filter()
+{
+    _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+
+    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
+    _rc_throttle.servo_out = constrain_float(_throttle_filter.get(),-32000,32000);
 }

@@ -207,6 +207,9 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask();
 
+    // output - sends commands to the motors
+    void    output();
+
 protected:
 
     // output - sends commands to the motors
@@ -214,6 +217,9 @@ protected:
     void                output_armed_not_stabilizing();
     void                output_armed_zero_throttle();
     void                output_disarmed();
+
+    // update the throttle input filter
+    void                update_throttle_filter();
 
 private:
 

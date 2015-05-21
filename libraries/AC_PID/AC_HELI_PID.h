@@ -18,7 +18,7 @@ class AC_HELI_PID : public AC_PID {
 public:
 
     /// Constructor for PID
-    AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt);
+    AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff);
 
     /// get_ff - return FeedForward Term 
     float       get_ff(float requested_rate) const;

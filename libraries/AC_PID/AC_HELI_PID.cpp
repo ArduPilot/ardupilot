@@ -23,8 +23,8 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
     AP_GROUPINFO("D",    2, AC_HELI_PID, _kd, 0),
 
     // @Param: FC
-    // @DisplayName: PID+FF FeedForward Gain
-    // @Description: FF Gain which produces an output value that is proportional to the current error value
+    // @DisplayName: FF FeedForward Gain
+    // @Description: FF Gain which produces an output value that is proportional to the demanded input
     AP_GROUPINFO("FF",    4, AC_HELI_PID, _ff, 0),
 
     // @Param: IMAX
@@ -40,10 +40,10 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
 };
 
 /// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt) :
+AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff) :
     AC_PID(initial_p, initial_i, initial_d, initial_imax, initial_filt_hz, dt)
 {
-     _ff = 0.0f;
+    _ff = initial_ff;
 }
 
 float AC_HELI_PID::get_ff(float requested_rate) const
