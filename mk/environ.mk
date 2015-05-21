@@ -107,19 +107,6 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
-# Jump over the next makefile sections when runing a "make configure"
-ifneq ($(MAKECMDGOALS),configure)
-
-################################################################################
-# Config options
-#
-# The Makefile calling us must specify BOARD
-#
-include $(SKETCHBOOK)/config.mk
-ifeq ($(PORT),)
-$(error ERROR: could not locate $(SKETCHBOOK)/config.mk, please run 'make configure' first and edit config.mk)
-endif
-
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
@@ -194,20 +181,9 @@ ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
-# default to APM2
+# default to SITL
 ifeq ($(HAL_BOARD),)
-#$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
-HAL_BOARD = HAL_BOARD_APM2
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
+HAL_BOARD = HAL_BOARD_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
-HARDWARE		?=	arduino
-ifeq ($(BOARD),)
-BOARD = mega2560
-endif
-
-ifneq ($(findstring apm1-1280, $(MAKECMDGOALS)),)
-BOARD = mega
-endif
-
-endif

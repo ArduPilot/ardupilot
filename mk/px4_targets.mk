@@ -1,6 +1,6 @@
 # PX4 build is via external build system
 
-ifneq ($(PX4_ROOT),)
+PX4_ROOT=../PX4Firmware
 
 # cope with relative paths
 ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
@@ -171,13 +171,3 @@ $(PX4_ROOT)/Archives/px4io-v2.export:
 px4-archives:
 	$(v) $(PX4_MAKE_ARCHIVES)
 
-else
-
-px4:
-	$(error ERROR: You need to add PX4_ROOT to your config.mk)
-
-px4-clean: px4
-
-px4-upload: px4
-
-endif

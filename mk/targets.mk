@@ -1,4 +1,4 @@
-default: all
+default: help
 
 # convenient targets for our supported boards
 sitl: HAL_BOARD = HAL_BOARD_SITL
@@ -16,6 +16,7 @@ apm1: all
 apm1-1280: HAL_BOARD = HAL_BOARD_APM1
 apm1-1280: TOOLCHAIN = AVR
 apm1-1280: all
+apm1-1280: BOARD = mega
 
 apm2: HAL_BOARD = HAL_BOARD_APM2
 apm2: TOOLCHAIN = AVR
