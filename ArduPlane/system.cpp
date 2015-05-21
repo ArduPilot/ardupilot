@@ -178,7 +178,7 @@ void Plane::init_ardupilot()
     airspeed.init();
 
     if (g.compass_enabled==true) {
-        if (!compass.init() || !compass.read()) {
+        if (!compass.init() || (!g.hil_mode && !compass.read())) {
             cliSerial->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
         } else {
