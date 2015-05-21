@@ -242,16 +242,16 @@ void SITL_State::_fdm_input(void)
             return;
         }
 
-        hal.scheduler->stop_clock(d.fg_pkt.timestamp_us);
-        _synthetic_clock_mode = true;
-        got_fg_input = true;
-
         if (d.fg_pkt.latitude == 0 ||
                 d.fg_pkt.longitude == 0 ||
                 d.fg_pkt.altitude <= 0) {
             // garbage input
             return;
         }
+
+        hal.scheduler->stop_clock(d.fg_pkt.timestamp_us);
+        _synthetic_clock_mode = true;
+        got_fg_input = true;
 
         if (_sitl != NULL) {
             _sitl->state = d.fg_pkt;
