@@ -223,7 +223,7 @@ protected:
     virtual void        output_disarmed()=0;
 
     // update the throttle input filter
-    void                update_throttle_filter();
+    virtual void        update_throttle_filter();
 
     // update_max_throttle - updates the limits on _max_throttle for slow_start and current limiting flag
     void                update_max_throttle();
