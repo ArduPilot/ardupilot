@@ -820,3 +820,12 @@ void AP_MotorsHeli::set_delta_phase_angle(int16_t angle)
     _delta_phase_angle = angle;
     calculate_roll_pitch_collective_factors();
 }
+
+// update the throttle input filter
+void AP_MotorsHeli::update_throttle_filter()
+{
+    _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+
+    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
+    _rc_throttle.servo_out = constrain_float(_throttle_filter.get(),-32000,32000);
+}

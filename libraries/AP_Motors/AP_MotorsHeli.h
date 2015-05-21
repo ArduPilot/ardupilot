@@ -215,6 +215,9 @@ protected:
     void                output_armed_zero_throttle();
     void                output_disarmed();
 
+    // update the throttle input filter
+    void                update_throttle_filter();
+
 private:
 
     // heli_move_swash - moves swash plate to attitude of parameters passed in
