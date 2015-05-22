@@ -58,6 +58,7 @@ enum ap_message {
     MSG_GIMBAL_REPORT,
     MSG_EKF_STATUS_REPORT,
     MSG_LOCAL_POSITION,
+    MSG_PID_TUNING,
     MSG_RETRY_DEFERRED // this must be last
 };
 

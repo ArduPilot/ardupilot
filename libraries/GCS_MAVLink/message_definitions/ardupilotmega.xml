@@ -258,6 +258,12 @@
         <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
 	</enum>
 
+        <enum name="PID_TUNING_AXIS">
+          <entry name="PID_TUNING_ROLL"  value="1"></entry>
+          <entry name="PID_TUNING_PITCH" value="2"></entry>
+          <entry name="PID_TUNING_YAW"   value="3"></entry>
+        </enum>
+
       </enums>
 
      <messages>
@@ -649,6 +655,18 @@
         <field name="pos_vert_variance" type="float">Vertical Position variance</field>
         <field name="compass_variance" type="float">Compass variance</field>
         <field name="terrain_alt_variance" type="float">Terrain Altitude variance</field>
+    </message>
+
+    <!-- realtime PID tuning message -->
+    <message name="PID_TUNING" id="194">
+        <description>PID tuning information</description>
+        <field name="axis" type="uint8_t" enum="PID_TUNING_AXIS">axis</field>
+        <field name="desired" type="float">desired rate (degrees/s)</field>
+        <field name="achieved" type="float">achieved rate (degrees/s)</field>
+        <field name="FF" type="float">FF component</field>
+        <field name="P" type="float">P component</field>
+        <field name="I" type="float">I component</field>
+        <field name="D" type="float">D component</field>
     </message>
 
     <message name="GIMBAL_REPORT" id="200">
