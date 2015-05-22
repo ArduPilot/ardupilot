@@ -88,13 +88,23 @@ public:
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
-	void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
+    void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
 
+    // This structure provides information on the internal member data of a PID for logging purposes
+    struct PID_Info {
+        float P;
+        float I;
+        float D;
+        float FF;
+    };
+
+    void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
+
     bool logging_started(void) const { return log_write_started; }
 
-	/*
+    /*
       every logged packet starts with 3 bytes
     */
     struct log_Header {
@@ -424,6 +434,15 @@ struct PACKED log_Attitude {
     uint16_t error_yaw;
 };
 
+struct PACKED log_PID {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   P;
+    float   I;
+    float   D;
+    float   FF;
+};
+
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -432,7 +451,7 @@ struct PACKED log_Current {
     int16_t  current_amps;
     uint16_t board_voltage;
     float    current_total;
-	int16_t  battery2_voltage;
+    int16_t  battery2_voltage;
 };
 
 struct PACKED log_Compass {
@@ -614,6 +633,12 @@ Format characters in the format string for binary log messages
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
+    { LOG_PIDR_MSG, sizeof(log_PID), \
+      "PIDR", "Qffff",  "TimeUS,P,I,D,FF" }, \
+    { LOG_PIDP_MSG, sizeof(log_PID), \
+      "PIDP", "Qffff",  "TimeUS,P,I,D,FF" }, \
+    { LOG_PIDY_MSG, sizeof(log_PID), \
+      "PIDY", "Qffff",  "TimeUS,P,I,D,FF" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -742,6 +767,9 @@ Format characters in the format string for binary log messages
 #define LOG_GYR2_MSG      176
 #define LOG_GYR3_MSG      177
 #define LOG_POS_MSG       178
+#define LOG_PIDR_MSG      179
+#define LOG_PIDP_MSG      180
+#define LOG_PIDY_MSG      181
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
