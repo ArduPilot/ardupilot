@@ -1708,6 +1708,55 @@ static void mavlink_test_ekf_status_report(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_pid_tuning(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_pid_tuning_t packet_in = {
+		17.0,45.0,73.0,101.0,129.0,157.0,77
+    };
+	mavlink_pid_tuning_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.desired = packet_in.desired;
+        	packet1.achieved = packet_in.achieved;
+        	packet1.FF = packet_in.FF;
+        	packet1.P = packet_in.P;
+        	packet1.I = packet_in.I;
+        	packet1.D = packet_in.D;
+        	packet1.axis = packet_in.axis;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_pid_tuning_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_pid_tuning_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_pid_tuning_pack(system_id, component_id, &msg , packet1.axis , packet1.desired , packet1.achieved , packet1.FF , packet1.P , packet1.I , packet1.D );
+	mavlink_msg_pid_tuning_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_pid_tuning_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.axis , packet1.desired , packet1.achieved , packet1.FF , packet1.P , packet1.I , packet1.D );
+	mavlink_msg_pid_tuning_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_pid_tuning_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_pid_tuning_send(MAVLINK_COMM_1 , packet1.axis , packet1.desired , packet1.achieved , packet1.FF , packet1.P , packet1.I , packet1.D );
+	mavlink_msg_pid_tuning_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_gimbal_report(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -2611,6 +2660,7 @@ static void mavlink_test_ardupilotmega(uint8_t system_id, uint8_t component_id, 
 	mavlink_test_autopilot_version_request(system_id, component_id, last_msg);
 	mavlink_test_led_control(system_id, component_id, last_msg);
 	mavlink_test_ekf_status_report(system_id, component_id, last_msg);
+	mavlink_test_pid_tuning(system_id, component_id, last_msg);
 	mavlink_test_gimbal_report(system_id, component_id, last_msg);
 	mavlink_test_gimbal_control(system_id, component_id, last_msg);
 	mavlink_test_gimbal_reset(system_id, component_id, last_msg);
