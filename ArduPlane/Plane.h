@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "ArduPlane V3.3.0beta2"
+#define THISFIRMWARE "ArduPlane V3.3.1beta1"
 /*
    Lead developer: Andrew Tridgell
  
@@ -917,8 +917,6 @@ public:
     int8_t test_pressure(uint8_t argc, const Menu::arg *argv);
     int8_t test_shell(uint8_t argc, const Menu::arg *argv);
 };
-
-#define THISFIRMWARE "ArduPlane V3.3.0beta2"
 
 #define MENU_FUNC(func) AP_HAL_CLASSPROC(&plane, &Plane::func)
 
