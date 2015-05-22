@@ -17,6 +17,7 @@
 #include <SIM_Helicopter.h>
 #include <SIM_Rover.h>
 #include <SIM_CRRCSim.h>
+#include <SIM_last_letter.h>
 #include <SIM_JSBSim.h>
 
 extern const AP_HAL::HAL& hal;
@@ -56,7 +57,8 @@ static const struct {
     { "heli",      Helicopter::create },
     { "rover",     Rover::create },
     { "crrcsim",   CRRCSim::create },
-    { "jsbsim",    JSBSim::create }
+    { "jsbsim",    JSBSim::create },
+    { "last_letter", last_letter::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
