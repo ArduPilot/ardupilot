@@ -1149,7 +1149,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            if (set_mode(AUTO)) {
+            if (motors.armed() && set_mode(AUTO)) {
+                set_auto_armed(true);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
