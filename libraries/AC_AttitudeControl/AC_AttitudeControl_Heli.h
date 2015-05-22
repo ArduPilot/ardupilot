@@ -11,7 +11,8 @@
 #include <Filter.h>
 
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
-#define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
+#define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          5.0f
+#define AC_ATTITUDE_HELI_RATE_Y_FF_FILTER           10.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
@@ -25,9 +26,9 @@ public:
                            p_angle_roll, p_angle_pitch, p_angle_yaw,
                            pid_rate_roll, pid_rate_pitch, pid_rate_yaw),
         _passthrough_roll(0), _passthrough_pitch(0),
-        pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_FF_FILTER),
-        roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_FF_FILTER),
-        yaw_feedforward_filter(AC_ATTITUDE_HELI_RATE_FF_FILTER)
+        pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
+        roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
+        yaw_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_FF_FILTER)
 		{
             AP_Param::setup_object_defaults(this, var_info);
 		}
