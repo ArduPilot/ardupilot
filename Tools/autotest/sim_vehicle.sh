@@ -14,6 +14,7 @@ INSTANCE=0
 USE_VALGRIND=0
 USE_GDB=0
 USE_GDB_STOPPED=0
+DEBUG_BUILD=0
 USE_MAVLINK_GIMBAL=0
 CLEAN_BUILD=0
 START_ANTENNA_TRACKER=0
@@ -44,6 +45,7 @@ Options:
     -N               don't rebuild before starting ardupilot
     -w               wipe EEPROM and reload parameters
     -R               reverse throttle in plane
+    -D               build with debugging
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
@@ -67,7 +69,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:D" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -96,6 +98,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:" opt; do
       ;;
     G)
       USE_GDB=1
+      ;;
+    D)
+      DEBUG_BUILD=1
       ;;
     M)
       USE_MAVLINK_GIMBAL=1
@@ -180,6 +185,10 @@ set -x
     FRAME="rover"
 }
 
+[ -z "$FRAME" -a "$VEHICLE" = "ArduPlane" ] && {
+    FRAME="jsbsim"
+}
+
 EXTRA_PARM=""
 EXTRA_SIM=""
 
@@ -218,17 +227,9 @@ case $FRAME in
 	BUILD_TARGET="sitl-heli"
         EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim-heli"
 	;;
-    CRRCSim)
+    CRRCSim|last_letter*|jsbsim*)
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim"
-	;;
-    elevon*)
-        EXTRA_PARM="param set ELEVON_OUTPUT 4;"
-        EXTRA_SIM="$EXTRA_SIM --elevon"
-	;;
-    vtail)
-        EXTRA_PARM="param set VTAIL_OUTPUT 4;"
-        EXTRA_SIM="$EXTRA_SIM --vtail"
 	;;
     rover|rover-skid)
         EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
@@ -244,6 +245,10 @@ case $FRAME in
         exit 1
         ;;
 esac
+
+if [ $DEBUG_BUILD == 1 ]; then
+    BUILD_TARGET="$BUILD_TARGET-debug"
+fi
 
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     echo "Using MAVLink gimbal"
@@ -337,14 +342,8 @@ EOF
             exit 1
         fi
         PARMS="ArduPlane.parm"
-        if [ "$FRAME" = "CRRCSim" ]; then
-            RUNSIM="nice $autotest/pysim/sim_wrapper.py --frame=CRRCSim --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
-        elif [ $EXTERNAL_SIM == 0 ]; then
-            RUNSIM=""
-            cmd="$cmd --model jsbsim --speedup=$SPEEDUP"
-        else
-            echo "Using external plane simulator"
-        fi
+        RUNSIM=""
+        cmd="$cmd --model $FRAME --speedup=$SPEEDUP"
         ;;
     ArduCopter)
         RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
