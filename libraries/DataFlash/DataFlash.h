@@ -99,6 +99,7 @@ public:
         float I;
         float D;
         float FF;
+        float AFF;
     };
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
@@ -442,6 +443,7 @@ struct PACKED log_PID {
     float   I;
     float   D;
     float   FF;
+    float   AFF;
 };
 
 struct PACKED log_Current {
@@ -635,11 +637,11 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
     { LOG_PIDR_MSG, sizeof(log_PID), \
-      "PIDR", "Qffff",  "TimeUS,P,I,D,FF" }, \
+      "PIDR", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
-      "PIDP", "Qffff",  "TimeUS,P,I,D,FF" }, \
+      "PIDP", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", "Qffff",  "TimeUS,P,I,D,FF" }
+      "PIDY", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
