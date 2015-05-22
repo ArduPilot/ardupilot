@@ -28,6 +28,8 @@ public:
     void autotune_start(void) { autotune.start(); }
     void autotune_restore(void) { autotune.stop(); }
 
+    const DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
+
 	static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -39,7 +41,7 @@ private:
 	uint32_t _last_t;
 	float _last_out;
 	
-	float _integrator;
+    DataFlash_Class::PID_Info _pid_info;
 
 	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;

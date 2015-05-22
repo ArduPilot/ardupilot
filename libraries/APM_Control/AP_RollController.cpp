@@ -133,23 +133,27 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
                  integrator_delta = min(integrator_delta, 0);
             }
-			_integrator += integrator_delta;
+			_pid_info.I += integrator_delta;
 		}
 	} else {
-		_integrator = 0;
+		_pid_info.I = 0;
 	}
 	
     // Scale the integration limit
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * gains.D) + (desired_rate * kp_ff) ) * scaler;
+    _pid_info.D = rate_error * gains.D * scaler;
+    _pid_info.FF = desired_rate * kp_ff * scaler;
+    _pid_info.desired = desired_rate;
+
+	_last_out = _pid_info.FF + _pid_info.D;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
@@ -159,7 +163,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
         autotune.update(desired_rate, achieved_rate, _last_out);
     }
 
-	_last_out += _integrator;
+	_last_out += _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -201,6 +205,6 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
 
 void AP_RollController::reset_I()
 {
-	_integrator = 0;
+	_pid_info.I = 0;
 }
 
