@@ -116,7 +116,7 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (!sock.recv(&pkt, sizeof(pkt), 100)) {
+    while (sock.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
         send_servos(input);
     }
 
