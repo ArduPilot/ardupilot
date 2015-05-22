@@ -98,7 +98,6 @@ def process_ros_input(buf,frame_count, timestamp):
             if e.errno not in [ errno.ECONNREFUSED ]:
                 raise
 
-    print('timestamp=', timestamp)
     simbuf = struct.pack('<Q17dI',
                          timestamp,
                          fdm.get('latitude', units='degrees'),
@@ -223,15 +222,19 @@ def main_loop():
 
         tnow = time.time()
 
+        try:
+            ros.read_nonblocking(size=1000, timeout=0)
+        except Exception as ex:
+            pass
+
         if ros_in.fileno() in rin:
             buf = ros_in.recv(fdm.packet_size())
             process_ros_input(buf,frame_count, timestamp)
             frame_count += 1
-            timestamp += 1000
+            timestamp += 2000
 
         if sim_in.fileno() in rin:
             simbuf = sim_in.recv(28)
-            print(len(simbuf))
             process_sitl_input(simbuf)
             last_sim_input = tnow
 
