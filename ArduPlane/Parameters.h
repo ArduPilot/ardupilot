@@ -138,6 +138,7 @@ public:
         k_param_glide_slope_threshold,
         k_param_rudder_only,
         k_param_gcs3,            // 93
+        k_param_gcs_pid_mask,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -482,6 +483,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 override_channel;
 #endif
+    AP_Int8 gcs_pid_mask;
 
     // RC channels
     RC_Channel rc_1;

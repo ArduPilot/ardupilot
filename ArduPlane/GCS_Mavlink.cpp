@@ -5,6 +5,8 @@
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
+
 void Plane::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
@@ -90,7 +92,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
 
 void Plane::send_attitude(mavlink_channel_t chan)
 {
-    Vector3f omega = ahrs.get_gyro();
+    const Vector3f &omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
         millis(),
@@ -456,6 +458,40 @@ void Plane::send_wind(mavlink_channel_t chan)
         wind.z);
 }
 
+/*
+  send PID tuning message
+ */
+void Plane::send_pid_tuning(mavlink_channel_t chan)
+{
+    const Vector3f &gyro = ahrs.get_gyro();
+    if (g.gcs_pid_mask & 1) {
+        const DataFlash_Class::PID_Info &pid_info = rollController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 1, 
+                                    pid_info.desired,
+                                    degrees(gyro.x),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+    if (g.gcs_pid_mask & 2) {
+        const DataFlash_Class::PID_Info &pid_info = pitchController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 2, 
+                                    pid_info.desired,
+                                    degrees(gyro.y),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+}
+
 void Plane::send_rangefinder(mavlink_channel_t chan)
 {
 #if RANGEFINDER_ENABLED == ENABLED
@@ -502,7 +538,6 @@ bool Plane::telemetry_delayed(mavlink_channel_t chan)
 
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
-
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
@@ -716,6 +751,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_LIMITS_STATUS:
         // unused
         break;
+
+    case MSG_PID_TUNING:
+        CHECK_PAYLOAD_SIZE(PID_TUNING);
+        plane.send_pid_tuning(chan);
+        break;
     }
     return true;
 }
@@ -923,6 +963,9 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
+        if (plane.control_mode != MANUAL) {
+            send_message(MSG_PID_TUNING);
+        }
     }
 
     if (plane.gcs_out_of_time) return;
