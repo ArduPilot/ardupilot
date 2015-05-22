@@ -402,7 +402,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
 
 struct PACKED log_SbpLLH {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint32_t tow;
     int32_t  lat;
     int32_t  lon;
