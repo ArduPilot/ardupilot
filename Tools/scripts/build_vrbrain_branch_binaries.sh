@@ -80,7 +80,8 @@ addfwversion() {
     destdir="$1"
     git log -1 > "$destdir/git-version.txt"
     [ -f APM_Config.h ] && {
-	version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
+        shopt -s nullglob
+	version=$(grep 'define.THISFIRMWARE' *.pde *.h 2> /dev/null | cut -d'"' -f2)
 	echo >> "$destdir/git-version.txt"
 	echo "APMVERSION: $version" >> "$destdir/git-version.txt"
     }    

@@ -72,7 +72,8 @@ build_devrelease() {
         /bin/cp "$RELEASE_FILE" "$SUBDIR" || return 1
         git log -1 > "$SUBDIR/git-version.txt" || return 1
         [ -f APM_Config.h ] && {
-            version=$(grep 'define.THISFIRMWARE' *.pde 2> /dev/null | cut -d'"' -f2)
+            shopt -s nullglob
+            version=$(grep 'define.THISFIRMWARE' *.pde *.h 2> /dev/null | cut -d'"' -f2)
             echo >> "$SUBDIR/git-version.txt"
             echo "APMVERSION: $version" >> "$SUBDIR/git-version.txt"
         }
