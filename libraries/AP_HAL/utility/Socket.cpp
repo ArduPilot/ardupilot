@@ -19,15 +19,6 @@
 #include <AP_HAL.h>
 #if HAL_OS_SOCKETS
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
-
 #include "Socket.h"
 
 /*
@@ -42,12 +33,8 @@ datagram(_datagram)
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 }
 
-/*
-  connect the socket
- */
-bool SocketAPM::connect(const char *address, uint16_t port)
+void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
-    struct sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
@@ -56,6 +43,15 @@ bool SocketAPM::connect(const char *address, uint16_t port)
     sockaddr.sin_port = htons(port);
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = inet_addr(address);
+}
+
+/*
+  connect the socket
+ */
+bool SocketAPM::connect(const char *address, uint16_t port)
+{
+    struct sockaddr_in sockaddr;
+    make_sockaddr(address, port, sockaddr);
 
     if (::connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
         return false;
@@ -69,14 +65,7 @@ bool SocketAPM::connect(const char *address, uint16_t port)
 bool SocketAPM::bind(const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
-    memset(&sockaddr, 0, sizeof(sockaddr));
-
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(port);
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(address);
+    make_sockaddr(address, port, sockaddr);
 
     if (::bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
         return false;
@@ -112,6 +101,16 @@ void SocketAPM::set_blocking(bool blocking)
 ssize_t SocketAPM::send(void *buf, size_t size)
 {
     return ::send(fd, buf, size, 0);
+}
+
+/*
+  send some data
+ */
+ssize_t SocketAPM::sendto(void *buf, size_t size, const char *address, uint16_t port)
+{
+    struct sockaddr_in sockaddr;
+    make_sockaddr(address, port, sockaddr);
+    return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
 }
 
 /*

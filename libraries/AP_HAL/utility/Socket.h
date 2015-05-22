@@ -22,7 +22,14 @@
 #include <AP_HAL.h>
 #if HAL_OS_SOCKETS
 
+#include <fcntl.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/select.h>
 
 class SocketAPM {
 public:
@@ -33,11 +40,14 @@ public:
     void set_blocking(bool blocking);
 
     ssize_t send(void *pkt, size_t size);
+    ssize_t sendto(void *buf, size_t size, const char *address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
 private:
     bool datagram;
     int fd;
+
+    void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };
 
 #endif // HAL_OS_SOCKETS
