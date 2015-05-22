@@ -162,6 +162,7 @@ struct PACKED log_Format {
 
 struct PACKED log_Parameter {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     char name[16];
     float value;
 };
@@ -203,12 +204,13 @@ struct PACKED log_GPS2 {
 
 struct PACKED log_Message {
     LOG_PACKET_HEADER;
+    uint64_t time_us;
     char msg[64];
 };
 
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
     uint32_t gyro_error, accel_error;
@@ -218,7 +220,7 @@ struct PACKED log_IMU {
 
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint16_t chan1;
     uint16_t chan2;
     uint16_t chan3;
@@ -237,7 +239,7 @@ struct PACKED log_RCIN {
 
 struct PACKED log_RCOUT {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint16_t chan1;
     uint16_t chan2;
     uint16_t chan3;
@@ -254,7 +256,7 @@ struct PACKED log_RCOUT {
 
 struct PACKED log_BARO {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     float   altitude;
     float   pressure;
     int16_t temperature;
@@ -263,7 +265,7 @@ struct PACKED log_BARO {
 
 struct PACKED log_AHRS {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
@@ -274,7 +276,7 @@ struct PACKED log_AHRS {
 
 struct PACKED log_POS {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int32_t lat;
     int32_t lng;
     float alt;
@@ -283,7 +285,7 @@ struct PACKED log_POS {
 
 struct PACKED log_POWR {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint16_t Vcc;
     uint16_t Vservo;
     uint16_t flags;
@@ -291,7 +293,7 @@ struct PACKED log_POWR {
 
 struct PACKED log_EKF1 {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t roll;
     int16_t pitch;
     uint16_t yaw;
@@ -308,7 +310,7 @@ struct PACKED log_EKF1 {
 
 struct PACKED log_EKF2 {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int8_t Ratio;
     int8_t AZ1bias;
     int8_t AZ2bias;
@@ -324,7 +326,7 @@ struct PACKED log_EKF2 {
 
 struct PACKED log_EKF3 {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t innovVN;
     int16_t innovVE;
     int16_t innovVD;
@@ -339,7 +341,7 @@ struct PACKED log_EKF3 {
 
 struct PACKED log_EKF4 {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t sqrtvarV;
     int16_t sqrtvarP;
     int16_t sqrtvarH;
@@ -356,7 +358,7 @@ struct PACKED log_EKF4 {
 
 struct PACKED log_EKF5 {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t normInnov;
     int16_t FIX;
     int16_t FIY;
@@ -370,7 +372,7 @@ struct PACKED log_EKF5 {
 
 struct PACKED log_Cmd {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint16_t command_total;
     uint16_t sequence;
     uint16_t command;
@@ -385,7 +387,7 @@ struct PACKED log_Cmd {
 
 struct PACKED log_Radio {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t rssi;
     uint8_t remrssi;
     uint8_t txbuf;
@@ -410,7 +412,7 @@ struct PACKED log_Camera {
 
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t  control_roll;
     int16_t  roll;
     int16_t  control_pitch;
@@ -423,7 +425,7 @@ struct PACKED log_Attitude {
 
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t  throttle;
     int16_t  battery_voltage;
     int16_t  current_amps;
@@ -434,7 +436,7 @@ struct PACKED log_Current {
 
 struct PACKED log_Compass {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     int16_t  mag_x;
     int16_t  mag_y;
     int16_t  mag_z;
@@ -449,7 +451,7 @@ struct PACKED log_Compass {
 
 struct PACKED log_Mode {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t mode;
     uint8_t mode_num;
 };
@@ -459,7 +461,7 @@ struct PACKED log_Mode {
  */
 struct PACKED log_TERRAIN {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;
+    uint64_t time_us;
     uint8_t status;
     int32_t lat;
     int32_t lng;
@@ -475,7 +477,7 @@ struct PACKED log_TERRAIN {
  */
 struct PACKED log_Ubx1 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint8_t  instance;
     uint16_t noisePerMS;
     uint8_t  jamInd;
@@ -485,7 +487,7 @@ struct PACKED log_Ubx1 {
 
 struct PACKED log_Ubx2 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint8_t  instance;
     int8_t   ofsI;
     uint8_t  magI;
@@ -495,7 +497,7 @@ struct PACKED log_Ubx2 {
 
 struct PACKED log_Ubx3 {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     uint8_t  instance;
     float hAcc;
     float vAcc;
@@ -504,7 +506,7 @@ struct PACKED log_Ubx3 {
 
 struct PACKED log_GPS_RAW {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     int32_t iTOW;
     int16_t week;
     uint8_t numSV;
@@ -519,7 +521,7 @@ struct PACKED log_GPS_RAW {
 
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
-    uint32_t time_ms;     
+    uint64_t time_us;     
     int16_t rpm;
     int16_t voltage;
     int16_t current;
@@ -528,7 +530,7 @@ struct PACKED log_Esc {
 
 struct PACKED log_AIRSPEED {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
+    uint64_t time_us;
     float   airspeed;
     float   diffpressure;
     int16_t temperature;
@@ -569,6 +571,8 @@ Format characters in the format string for binary log messages
   E   : uint32_t * 100
   L   : int32_t latitude/longitude
   M   : uint8_t flight mode
+  q   : int64_t
+  Q   : uint64_t
  */
 
 // messages for all boards
@@ -576,94 +580,94 @@ Format characters in the format string for binary log messages
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
-      "PARM", "Nf",        "Name,Value" },    \
+      "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "BIHBcLLeeEefI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,RelAlt,Alt,Spd,GCrs,VZ,T" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
-      "MSG",  "Z",     "Message"}, \
+      "MSG",  "QZ",     "TimeUS,Message"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
-      "RCIN",  "Ihhhhhhhhhhhhhh",     "TimeMS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
+      "RCIN",  "Qhhhhhhhhhhhhhh",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
-      "RCOU",  "Ihhhhhhhhhhhh",     "TimeMS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
+      "RCOU",  "Qhhhhhhhhhhhh",     "TimeUS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
+      "BARO",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  "Iffcf", "TimeMS,Alt,Press,Temp,CRt" }, \
+      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","ICCH","TimeMS,Vcc,VServo,Flags" },  \
+      "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "IHHHfffffff","TimeMS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
+      "CMD", "QHHHfffffff","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
-      "RAD", "IBBBBBHH", "TimeMS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
+      "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
       "CAM", "IHLLeeccC","GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
-      "ARSP",  "Iffcff",   "TimeMS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
+      "ARSP",  "Qffcff",   "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
-      "CURR", "IhhhHfh","TimeMS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
+      "CURR", "QhhhHfh","TimeUS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-      "ATT", "IccccCCCC", "TimeMS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
+      "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", "IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
     { LOG_GPS2_MSG, sizeof(log_GPS2), \
       "GPS2",  "BIHBcLLeEefIBI", "Status,TimeMS,Week,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,T,DSc,DAg" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU2",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  "IffffffIIfBB",     "TimeMS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
+      "IMU3",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
-      "AHR2","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+      "AHR2","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
-      "POS","ILLff","TimeMS,Lat,Lng,Alt,RelAlt" }, \
+      "POS","QLLff","TimeUS,Lat,Lng,Alt,RelAlt" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
-      "SIM","IccCfLL","TimeMS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
+      "SIM","QccCfLL","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng" }, \
     { LOG_EKF1_MSG, sizeof(log_EKF1), \
-      "EKF1","IccCffffffccc","TimeMS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
+      "EKF1","QccCffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
     { LOG_EKF2_MSG, sizeof(log_EKF2), \
-      "EKF2","Ibbbcchhhhhh","TimeMS,Ratio,AZ1bias,AZ2bias,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+      "EKF2","Qbbbcchhhhhh","TimeUS,Ratio,AZ1bias,AZ2bias,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
     { LOG_EKF3_MSG, sizeof(log_EKF3), \
-      "EKF3","Icccccchhhc","TimeMS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
+      "EKF3","Qcccccchhhc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
-      "EKF4","IcccccccbbBBH","TimeMS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,TS,SS" }, \
+      "EKF4","QcccccccbbBBH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,TS,SS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
-      "TERR","IBLLHffHH","TimeMS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
+      "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "IBHBBH",  "TimeMS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
+      "UBX1", "QBHBBH",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
     { LOG_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
+      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
-      "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
+      "UBX3", "QBfff", "TimeUS,Instance,hAcc,vAcc,sAcc" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
-      "GRAW", "IIHBBddfBbB", "TimeMS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
+      "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
-      "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC1",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
-      "ESC2",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC2",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC3_MSG, sizeof(log_Esc), \
-      "ESC3",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC3",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC4_MSG, sizeof(log_Esc), \
-      "ESC4",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC4",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC5_MSG, sizeof(log_Esc), \
-      "ESC5",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC5",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC6_MSG, sizeof(log_Esc), \
-      "ESC6",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC6",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC7_MSG, sizeof(log_Esc), \
-      "ESC7",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC7",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
-      "ESC8",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
+      "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","IBhhhcccCC","TimeMS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+      "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2","IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3","IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
+      "MAG3","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
       "ACC1", "IIfff",        "TimeMS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \

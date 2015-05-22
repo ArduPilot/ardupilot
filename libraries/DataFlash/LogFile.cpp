@@ -621,6 +621,7 @@ void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
 {
     struct log_Parameter pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
+        time_us : hal.scheduler->micros64(),
         name  : {},
         value : value
     };
@@ -711,10 +712,9 @@ void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relati
 // Write an RCIN packet
 void DataFlash_Class::Log_Write_RCIN(void)
 {
-    uint32_t timestamp = hal.scheduler->millis();
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
-        timestamp     : timestamp,
+        time_us       : hal.scheduler->micros64(),
         chan1         : hal.rcin->read(0),
         chan2         : hal.rcin->read(1),
         chan3         : hal.rcin->read(2),
@@ -738,7 +738,7 @@ void DataFlash_Class::Log_Write_RCOUT(void)
 {
     struct log_RCOUT pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
-        timestamp     : hal.scheduler->millis(),
+        time_us       : hal.scheduler->micros64(),
         chan1         : hal.rcout->read(0),
         chan2         : hal.rcout->read(1),
         chan3         : hal.rcout->read(2),
@@ -759,10 +759,10 @@ void DataFlash_Class::Log_Write_RCOUT(void)
 // Write a BARO packet
 void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 {
-    uint32_t now = hal.scheduler->millis();
+    uint64_t time_us = hal.scheduler->micros64();
     struct log_BARO pkt = {
         LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
-        timestamp     : now,
+        time_us       : time_us,
         altitude      : baro.get_altitude(0),
         pressure      : baro.get_pressure(0),
         temperature   : (int16_t)(baro.get_temperature(0) * 100),
@@ -773,7 +773,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
     if (baro.num_instances() > 1 && baro.healthy(1)) {
         struct log_BARO pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
-            timestamp     : now,
+            time_us       : time_us,
             altitude      : baro.get_altitude(1),
             pressure	  : baro.get_pressure(1),
             temperature   : (int16_t)(baro.get_temperature(1) * 100),
@@ -787,12 +787,12 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
 // Write an raw accel/gyro data packet
 void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 {
-    uint32_t tstamp = hal.scheduler->millis();
+    uint64_t time_us = hal.scheduler->micros64();
     const Vector3f &gyro = ins.get_gyro(0);
     const Vector3f &accel = ins.get_accel(0);
     struct log_IMU pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-        timestamp : tstamp,
+        time_us : time_us,
         gyro_x  : gyro.x,
         gyro_y  : gyro.y,
         gyro_z  : gyro.z,
@@ -814,7 +814,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     const Vector3f &accel2 = ins.get_accel(1);
     struct log_IMU pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_IMU2_MSG),
-        timestamp : tstamp,
+        time_us : time_us,
         gyro_x  : gyro2.x,
         gyro_y  : gyro2.y,
         gyro_z  : gyro2.z,
@@ -835,7 +835,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     const Vector3f &accel3 = ins.get_accel(2);
     struct log_IMU pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_IMU3_MSG),
-        timestamp : tstamp,
+        time_us : time_us,
         gyro_x  : gyro3.x,
         gyro_y  : gyro3.y,
         gyro_z  : gyro3.z,
@@ -857,6 +857,7 @@ void DataFlash_Class::Log_Write_Message(const char *message)
 {
     struct log_Message pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+        time_us : hal.scheduler->micros64(),
         msg  : {}
     };
     strncpy(pkt.msg, message, sizeof(pkt.msg));
@@ -868,6 +869,7 @@ void DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
 {
     struct log_Message pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+        time_us : hal.scheduler->micros64(),
         msg  : {}
     };
     strncpy_P(pkt.msg, message, sizeof(pkt.msg));
@@ -880,7 +882,7 @@ void DataFlash_Class::Log_Write_Power(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     struct log_POWR pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         Vcc     : (uint16_t)(hal.analogin->board_voltage() * 100),
         Vservo  : (uint16_t)(hal.analogin->servorail_voltage() * 100),
         flags   : hal.analogin->power_status_flags()
@@ -899,7 +901,7 @@ void DataFlash_Class::Log_Write_AHRS2(AP_AHRS &ahrs)
     }
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         roll  : (int16_t)(degrees(euler.x)*100),
         pitch : (int16_t)(degrees(euler.y)*100),
         yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
@@ -921,7 +923,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
     ahrs.get_relative_position_NED(pos);
     struct log_POS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         lat     : loc.lat,
         lng     : loc.lng,
         alt     : loc.alt*1.0e-2f,
@@ -946,7 +948,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF().getGyroBias(gyroBias);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
         pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
         yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -975,7 +977,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF().getMagXYZ(magXYZ);
     struct log_EKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         Ratio   : (int8_t)(100*ratio),
         AZ1bias : (int8_t)(100*az1bias),
         AZ2bias : (int8_t)(100*az2bias),
@@ -998,7 +1000,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
     struct log_EKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         innovVN : (int16_t)(100*velInnov.x),
         innovVE : (int16_t)(100*velInnov.y),
         innovVD : (int16_t)(100*velInnov.z),
@@ -1027,7 +1029,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF().getFilterStatus(solutionStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         sqrtvarV : (int16_t)(100*velVar),
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
@@ -1057,7 +1059,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
-            time_ms : hal.scheduler->millis(),
+            time_us : hal.scheduler->micros64(),
             normInnov : (uint8_t)(min(100*normInnov,255)),
             FIX : (int16_t)(1000*flowInnovX),
             FIY : (int16_t)(1000*flowInnovY),
@@ -1078,7 +1080,7 @@ void DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         command_total   : (uint16_t)cmd_total,
         sequence        : (uint16_t)mav_cmd.seq,
         command         : (uint16_t)mav_cmd.command,
@@ -1097,7 +1099,7 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 {
     struct log_Radio pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RADIO_MSG),
-        time_ms      : hal.scheduler->millis(),
+        time_us      : hal.scheduler->micros64(),
         rssi         : packet.rssi,
         remrssi      : packet.remrssi,
         txbuf        : packet.txbuf,
@@ -1141,7 +1143,7 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
 {
     struct log_Attitude pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         control_roll    : (int16_t)targets.x,
         roll            : (int16_t)ahrs.roll_sensor,
         control_pitch   : (int16_t)targets.y,
@@ -1160,7 +1162,7 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery, int16_t t
     float voltage2 = battery.voltage2();
     struct log_Current pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        time_ms             : hal.scheduler->millis(),
+        time_us             : hal.scheduler->micros64(),
         throttle        	: throttle,
         battery_voltage     : (int16_t) (battery.voltage() * 100.0f),
         current_amps        : (int16_t) (battery.current_amps() * 100.0f),
@@ -1179,7 +1181,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);   
     struct log_Compass pkt = {
         LOG_PACKET_HEADER_INIT(LOG_COMPASS_MSG),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
         mag_z           : (int16_t)mag_field.z,
@@ -1200,7 +1202,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         const Vector3f &mag_motor_offsets2 = compass.get_motor_offsets(1);   
         struct log_Compass pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_COMPASS2_MSG),
-            time_ms         : hal.scheduler->millis(),
+            time_us         : hal.scheduler->micros64(),
             mag_x           : (int16_t)mag_field2.x,
             mag_y           : (int16_t)mag_field2.y,
             mag_z           : (int16_t)mag_field2.z,
@@ -1222,7 +1224,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);   
         struct log_Compass pkt3 = {
             LOG_PACKET_HEADER_INIT(LOG_COMPASS3_MSG),
-            time_ms         : hal.scheduler->millis(),
+            time_us         : hal.scheduler->micros64(),
             mag_x           : (int16_t)mag_field3.x,
             mag_y           : (int16_t)mag_field3.y,
             mag_z           : (int16_t)mag_field3.z,
@@ -1244,7 +1246,7 @@ void DataFlash_Class::Log_Write_Mode(uint8_t mode)
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        time_ms  : hal.scheduler->millis(),
+        time_us  : hal.scheduler->micros64(),
         mode     : mode,
         mode_num : mode
     };
@@ -1270,7 +1272,7 @@ void DataFlash_Class::Log_Write_ESC(void)
         if (esc_status.esc_count > 8) {
             esc_status.esc_count = 8;
         }
-        uint32_t time_ms = hal.scheduler->millis();
+        uint64_t time_us = hal.scheduler->micros64();
         for (uint8_t i = 0; i < esc_status.esc_count; i++) {
             // skip logging ESCs with a esc_address of zero, and this
             // are probably not populated. The Pixhawk itself should
@@ -1278,7 +1280,7 @@ void DataFlash_Class::Log_Write_ESC(void)
             if (esc_status.esc[i].esc_address != 0) {
                 struct log_Esc pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
-                    time_ms     : time_ms,
+                    time_us     : time_us,
                     rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
                     voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
                     current     : (int16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
@@ -1301,7 +1303,7 @@ void DataFlash_Class::Log_Write_Airspeed(AP_Airspeed &airspeed)
     }
     struct log_AIRSPEED pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARSP_MSG),
-        timestamp     : hal.scheduler->millis(),
+        time_us       : hal.scheduler->micros64(),
         airspeed      : airspeed.get_raw_airspeed(),
         diffpressure  : airspeed.get_differential_pressure(),
         temperature   : (int16_t)(temperature * 100.0f),
