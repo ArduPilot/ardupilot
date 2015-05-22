@@ -38,10 +38,6 @@ CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
     sock.bind("127.0.0.1", 9003);
 
     sock.reuseaddress();
-
-    if (!sock.connect("127.0.0.1", 9002)) {
-        hal.scheduler->panic(PSTR("Unable to connect to CRRCSim on port 9002"));
-    }
     sock.set_blocking(false);
     heli_servos = (strstr(frame_str,"heli") != NULL);
 }
@@ -69,7 +65,7 @@ void CRRCSim::send_servos_heli(const struct sitl_input &input)
     pkt.yaw_rate   = constrain_float(yaw_rate, -0.5, 0.5);
     pkt.col_pitch  = constrain_float(col_pitch, -0.5, 0.5);
 
-    sock.send(&pkt, sizeof(pkt));
+    sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
 }
 
 /*
@@ -89,7 +85,7 @@ void CRRCSim::send_servos_fixed_wing(const struct sitl_input &input)
     pkt.yaw_rate   = constrain_float(yaw_rate, -0.5, 0.5);
     pkt.col_pitch  = 0;
 
-    sock.send(&pkt, sizeof(pkt));
+    sock.sendto(&pkt, sizeof(pkt), "127.0.0.1", 9002);
 }
 
 /*
