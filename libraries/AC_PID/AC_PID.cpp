@@ -57,6 +57,8 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
 
     // reset input filter to first value received
     _flags._reset_filter = true;
+
+    memset(&_pid_info, 0, sizeof(_pid_info));
 }
 
 // set_dt - set time step in seconds
@@ -125,9 +127,10 @@ void AC_PID::set_input_filter_d(float input)
     _input = input;
 }
 
-float AC_PID::get_p() const
+float AC_PID::get_p()
 {
-    return (_input * _kp);
+    _pid_info.P = (_input * _kp);
+    return _pid_info.P;
 }
 
 float AC_PID::get_i()
@@ -139,15 +142,17 @@ float AC_PID::get_i()
         } else if (_integrator > _imax) {
             _integrator = _imax;
         }
+        _pid_info.I = _integrator;
         return _integrator;
     }
     return 0;
 }
 
-float AC_PID::get_d() const
+float AC_PID::get_d()
 {
-    // add in derivative component
-    return (_kd * _derivative);
+    // derivative component
+    _pid_info.D = (_kd * _derivative);
+    return _pid_info.D;
 }
 
 float AC_PID::get_pi()

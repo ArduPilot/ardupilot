@@ -21,7 +21,7 @@ public:
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff);
 
     /// get_ff - return FeedForward Term 
-    float       get_ff(float requested_rate) const;
+    float       get_ff(float requested_rate);
     
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate
     float       get_leaky_i(float leak_rate);

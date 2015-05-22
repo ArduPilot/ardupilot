@@ -46,9 +46,10 @@ AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, floa
     _ff = initial_ff;
 }
 
-float AC_HELI_PID::get_ff(float requested_rate) const
+float AC_HELI_PID::get_ff(float requested_rate)
 {
-    return (float)requested_rate * _ff;
+    _pid_info.FF = (float)requested_rate * _ff;
+    return _pid_info.FF;
 }
 
 // This is an integrator which tends to decay to zero naturally
@@ -56,16 +57,17 @@ float AC_HELI_PID::get_ff(float requested_rate) const
 
 float AC_HELI_PID::get_leaky_i(float leak_rate)
 {
-	if(!is_zero(_ki) && !is_zero(_dt)){
-		_integrator -= (float)_integrator * leak_rate;
-		_integrator += ((float)_input * _ki) * _dt;
-		if (_integrator < -_imax) {
-			_integrator = -_imax;
-		} else if (_integrator > _imax) {
-			_integrator = _imax;
-		}
+    if(!is_zero(_ki) && !is_zero(_dt)){
+        _integrator -= (float)_integrator * leak_rate;
+        _integrator += ((float)_input * _ki) * _dt;
+        if (_integrator < -_imax) {
+            _integrator = -_imax;
+            } else if (_integrator > _imax) {
+            _integrator = _imax;
+        }
 
-		return _integrator;
-	}
-	return 0;
+        _pid_info.I = _integrator;
+        return _integrator;
+    }
+    return 0;
 }
