@@ -593,8 +593,6 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
-
-    // To-Do: allow logging of PIDs?
 }
 
 // rate_bf_to_motor_pitch - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
@@ -628,8 +626,6 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX);
-
-    // To-Do: allow logging of PIDs?
 }
 
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
@@ -663,8 +659,6 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // constrain output and return
     return constrain_float((p+i+d), -AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX, AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX);
-
-    // To-Do: allow logging of PIDs?
 }
 
 // accel_limiting - enable or disable accel limiting
