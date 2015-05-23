@@ -20,20 +20,26 @@ public:
     /// Constructor for PID
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff);
 
-    /// get_ff - return FeedForward Term 
-    float       get_ff(float requested_rate);
+    /// get_vff - return Velocity FeedForward Term 
+    float       get_vff(float requested_rate);
+
+    /// get_avff - return Acceleration FeedForward Term 
+    float       get_aff(float requested_rate);
     
     /// get_leaky_i - replacement for get_i but output is leaded at leak_rate
     float       get_leaky_i(float leak_rate);
     
     // accessors
-    float       ff() const { return _ff.get(); }
-    void        ff(const float v) { _ff.set(v); }
+    float       ff() const { return _vff.get(); }
+    void        ff(const float v) { _vff.set(v); }
 
     static const struct AP_Param::GroupInfo        var_info[];
     
 private:
-    AP_Float        _ff;
+    AP_Float        _vff;
+    AP_Float        _aff;
+
+    float           _last_requested_rate;       // Requested rate from last iteration, used to calculate rate change of requested rate
     
 };
 

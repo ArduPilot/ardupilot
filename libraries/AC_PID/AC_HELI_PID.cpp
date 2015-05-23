@@ -22,10 +22,10 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
     AP_GROUPINFO("D",    2, AC_HELI_PID, _kd, 0),
 
-    // @Param: FC
-    // @DisplayName: FF FeedForward Gain
-    // @Description: FF Gain which produces an output value that is proportional to the demanded input
-    AP_GROUPINFO("FF",    4, AC_HELI_PID, _ff, 0),
+    // @Param: VFF
+    // @DisplayName: Velocity FF FeedForward Gain
+    // @Description: Velocity FF Gain which produces an output value that is proportional to the demanded input
+    AP_GROUPINFO("VFF",    4, AC_HELI_PID, _vff, 0),
 
     // @Param: IMAX
     // @DisplayName: PID Integral Maximum
@@ -36,21 +36,44 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] PROGMEM = {
     // @DisplayName: PID Input filter frequency in Hz
     // @Description:
     AP_GROUPINFO("FILT_HZ", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
+
+    // @Param: AFF
+    // @DisplayName: Acceleration FF FeedForward Gain
+    // @Description: Acceleration FF Gain which produces an output value that is proportional to the change in demanded input
+    AP_GROUPINFO("AFF",    7, AC_HELI_PID, _aff, 0),
     AP_GROUPEND
 };
 
 /// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff) :
+AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_vff) :
     AC_PID(initial_p, initial_i, initial_d, initial_imax, initial_filt_hz, dt)
 {
-    _ff = initial_ff;
+    _vff = initial_vff;
+    _aff = 0;
+    _last_requested_rate = 0;
 }
 
-float AC_HELI_PID::get_ff(float requested_rate)
+float AC_HELI_PID::get_vff(float requested_rate)
 {
-    _pid_info.FF = (float)requested_rate * _ff;
-    _pid_info.desired = requested_rate;
+    _pid_info.FF = (float)requested_rate * _vff;
     return _pid_info.FF;
+}
+
+float AC_HELI_PID::get_aff(float requested_rate)
+{
+    float derivative;
+
+    // calculate derivative
+    if (_dt > 0.0f) {
+        derivative = (requested_rate - _last_requested_rate) / _dt;
+    } else {
+        derivative = 0;
+    }
+
+    _pid_info.AFF = derivative * _aff;
+    _last_requested_rate = requested_rate;
+    _pid_info.desired = requested_rate;
+    return _pid_info.AFF;
 }
 
 // This is an integrator which tends to decay to zero naturally
