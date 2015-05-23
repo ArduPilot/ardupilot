@@ -93,6 +93,14 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",      7, AP_PitchController, gains.imax,     3000),
 
+	// @Param: FF
+	// @DisplayName: Feed forward Gain
+	// @Description: This is the gain from demanded rate to elevator output. 
+	// @Range: 0.1 4.0
+	// @Increment: 0.1
+	// @User: User
+	AP_GROUPINFO("FF",        8, AP_PitchController, gains.FF,       0.0f),
+
 	AP_GROUPEND
 };
 
@@ -155,15 +163,18 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / _ahrs.get_EAS2TAS();
+    float eas2tas = _ahrs.get_EAS2TAS();
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+    float k_ff = gains.FF / eas2tas;
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-    _pid_info.FF = desired_rate * kp_ff * scaler;
+    _pid_info.P = desired_rate * kp_ff * scaler;
+    _pid_info.FF = desired_rate * k_ff * scaler;
     _pid_info.D = rate_error * gains.D * scaler;
-	_last_out = _pid_info.D + _pid_info.FF;
+	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
     _pid_info.desired = desired_rate;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {

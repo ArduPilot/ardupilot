@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 
 	// @Param: P
 	// @DisplayName: Proportional Gain
-	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
+	// @Description: This is the gain from bank angle error to aileron.
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
 	// @User: User
@@ -75,6 +75,14 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        3000),
 
+	// @Param: FF
+	// @DisplayName: Feed forward Gain
+	// @Description: This is the gain from demanded rate to aileron output. 
+	// @Range: 0.1 4.0
+	// @Increment: 0.1
+	// @User: User
+	AP_GROUPINFO("FF",        6, AP_RollController, gains.FF,          0.0f),
+
 	AP_GROUPEND
 };
 
@@ -95,7 +103,9 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = gains.I * gains.tau;
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0)/_ahrs.get_EAS2TAS();
+    float eas2tas = _ahrs.get_EAS2TAS();
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+    float k_ff = gains.FF / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
@@ -150,10 +160,11 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
     _pid_info.D = rate_error * gains.D * scaler;
-    _pid_info.FF = desired_rate * kp_ff * scaler;
+    _pid_info.P = desired_rate * kp_ff * scaler;
+    _pid_info.FF = desired_rate * k_ff * scaler;
     _pid_info.desired = desired_rate;
 
-	_last_out = _pid_info.FF + _pid_info.D;
+	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 

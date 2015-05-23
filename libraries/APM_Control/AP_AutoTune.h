@@ -14,6 +14,7 @@ public:
         AP_Float P;
         AP_Float I;
         AP_Float D;
+        AP_Float FF;
         AP_Int16 rmax;
         AP_Int16 imax;
     };
