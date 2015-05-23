@@ -38,6 +38,11 @@ public:
      */
     struct sitl_input {
         uint16_t servos[16];
+        struct {
+            float speed;      // m/s
+            float direction;  // degrees 0..360
+            float turbulance;
+        } wind;
     };
 
     /*

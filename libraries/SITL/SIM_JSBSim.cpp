@@ -34,6 +34,7 @@ extern const AP_HAL::HAL& hal;
 #pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DEBUG_JSBSIM 1
+#define FEET_TO_METERS 0.3048f
 
 /*
   constructor
@@ -336,8 +337,12 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set fcs/elevator-cmd-norm %f\n"
              "set fcs/rudder-cmd-norm %f\n"
              "set fcs/throttle-cmd-norm %f\n"
+             "set atmosphere/psiw-rad %f\n"
+             "set atmosphere/wind-mag-fps %f\n"
              "step\n",
-             aileron, elevator, rudder, throttle);
+             aileron, elevator, rudder, throttle,
+             radians(input.wind.direction),
+             input.wind.speed / FEET_TO_METERS);
     ssize_t buflen = strlen(buf);
     ssize_t sent = sock_control.send(buf, buflen);
     free(buf);
@@ -352,8 +357,6 @@ void JSBSim::send_servos(const struct sitl_input &input)
         fprintf(stderr, "Failed to send all bytes on control socket\n");
     }
 }
-
-#define FEET_TO_METERS 0.3048f
 
 /* nasty hack ....
    JSBSim sends in little-endian
