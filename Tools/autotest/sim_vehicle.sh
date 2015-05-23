@@ -46,6 +46,7 @@ Options:
     -N               don't rebuild before starting ardupilot
     -w               wipe EEPROM and reload parameters
     -R               reverse throttle in plane
+    -M               enable MAVLink gimbal
     -D               build with debugging
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
