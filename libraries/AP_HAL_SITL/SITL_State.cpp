@@ -382,6 +382,18 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
 
     _apply_servo_filter(deltat);
 
+    // pass wind into simulators, using a wind gradient below 60m
+    float altitude = _barometer?_barometer->get_altitude():0;
+    float wind_speed = _sitl->wind_speed;
+    if (altitude < 0) {
+        altitude = 0;
+    }
+    if (altitude < 60) {
+        wind_speed *= altitude / 60;
+    }
+    input.wind.speed = wind_speed;
+    input.wind.direction = _sitl->wind_direction;
+
     for (i=0; i<11; i++) {
         if (pwm_output[i] == 0xFFFF) {
             input.servos[i] = 0;
