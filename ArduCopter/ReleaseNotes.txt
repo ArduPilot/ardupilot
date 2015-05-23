@@ -3,7 +3,9 @@ APM:Copter Release Notes:
 Copter 3.3-rc5 23-May-2015
 Changes from 3.3-rc4
 1) Fix AHRS bad gyro health message caused by timing jitter and log IMU health
-2) TradHeli gets better default rate PIDs 
+2) TradHeli:
+    a) better default rate PIDs
+    b) Collective pitch output now operates even when disarmed 
 3) Small changes/fixes:
     a) GCS can use MAV_CMD_MISSION_START to start mission in AUTO even without pilot raising throttle 
     b) GCS can force disarming even in flight by setting param2 to "21196"
