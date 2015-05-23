@@ -395,8 +395,8 @@ bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &ac
         if (dataflash != NULL) {
             struct log_ACCEL pkt = {
                 LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                timestamp    : (uint32_t)(accel_report.timestamp/1000),
-                timestamp_us : (uint32_t)accel_report.timestamp,
+                time_us   : hal.scheduler->micros64(),
+                sample_us : accel_report.timestamp,
                 AccX      : accel_report.x,
                 AccY      : accel_report.y,
                 AccZ      : accel_report.z
@@ -418,8 +418,8 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         if (dataflash != NULL) {
             struct log_GYRO pkt = {
                 LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                timestamp    : (uint32_t)(gyro_report.timestamp/1000),
-                timestamp_us : (uint32_t)gyro_report.timestamp,
+                time_us   : hal.scheduler->micros64(),
+                sample_us : gyro_report.timestamp,
                 GyrX      : gyro_report.x,
                 GyrY      : gyro_report.y,
                 GyrZ      : gyro_report.z
