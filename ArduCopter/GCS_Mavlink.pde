@@ -14,6 +14,7 @@ static bool	gcs_out_of_time;
 
 
 // check if a message will fit in the payload space available
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
 static void gcs_send_heartbeat(void)
@@ -421,6 +422,55 @@ static void NOINLINE send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
+
+/*
+  send PID tuning message
+ */
+static void send_pid_tuning(mavlink_channel_t chan)
+{
+    const Vector3f &gyro = ahrs.get_gyro();
+    if (g.gcs_pid_mask & 1) {
+        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_roll.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 1, 
+                                    pid_info.desired*0.01f,
+                                    degrees(gyro.x),
+                                    pid_info.FF*0.01,
+                                    pid_info.P*0.01,
+                                    pid_info.I*0.01,
+                                    pid_info.D*0.01);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+    if (g.gcs_pid_mask & 2) {
+        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_pitch.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 2, 
+                                    pid_info.desired*0.01f,
+                                    degrees(gyro.y),
+                                    pid_info.FF*0.01f,
+                                    pid_info.P*0.01f,
+                                    pid_info.I*0.01f,
+                                    pid_info.D*0.01f);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+    if (g.gcs_pid_mask & 4) {
+        const DataFlash_Class::PID_Info &pid_info = g.pid_rate_yaw.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 3, 
+                                    pid_info.desired*0.01f,
+                                    degrees(gyro.z),
+                                    pid_info.FF*0.01f,
+                                    pid_info.P*0.01f,
+                                    pid_info.I*0.01f,
+                                    pid_info.D*0.01f);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+}
+
+
 static void NOINLINE send_statustext(mavlink_channel_t chan)
 {
     mavlink_statustext_t *s = &gcs[chan-MAVLINK_COMM_0].pending_status;
@@ -659,6 +709,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         // unused
         break;
 
+    case MSG_PID_TUNING:
+        CHECK_PAYLOAD_SIZE(PID_TUNING);
+        send_pid_tuning(chan);
+        break;
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
     }
@@ -859,6 +914,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
+        send_message(MSG_PID_TUNING);
     }
 
     if (gcs_out_of_time) return;

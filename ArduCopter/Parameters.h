@@ -194,6 +194,7 @@ public:
         k_param_ch12_option,     // 123
         k_param_takeoff_trigger_dz,
         k_param_gcs3,            // 125
+        k_param_gcs_pid_mask,
 
         //
         // 140: Sensor parameters
@@ -414,6 +415,7 @@ public:
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_thresh;
+    AP_Int8         gcs_pid_mask;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
