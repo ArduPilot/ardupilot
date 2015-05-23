@@ -24,6 +24,7 @@ NO_REBUILD=0
 START_HIL=0
 TRACKER_ARGS=""
 EXTERNAL_SIM=0
+MODEL=""
 
 usage()
 {
@@ -196,6 +197,27 @@ EXTRA_SIM=""
     EXTRA_SIM="$EXTRA_SIM --speedup=$SPEEDUP"
 }
 
+check_jsbsim_version()
+{
+    jsbsim_version=$(JSBSim --version)
+    if [[ $jsbsim_version != *"ArduPilot"* ]]
+    then
+        cat <<EOF
+=========================================================
+You need the latest ArduPilot version of JSBSim installed
+and in your \$PATH
+
+Please get it from git://github.com/tridge/jsbsim.git
+See 
+  http://dev.ardupilot.com/wiki/simulation-2/sitl-simulator-software-in-the-loop/setting-up-sitl-on-linux/ 
+for more details
+=========================================================
+EOF
+        exit 1
+    fi
+}
+
+
 # modify build target based on copter frame type
 case $FRAME in
     +|quad)
@@ -218,6 +240,7 @@ case $FRAME in
     heli)
 	BUILD_TARGET="sitl-heli"
         EXTRA_SIM="$EXTRA_SIM --frame=heli"
+        MODEL="heli"
 	;;
     IrisRos)
 	BUILD_TARGET="sitl"
@@ -226,16 +249,22 @@ case $FRAME in
     CRRCSim-heli)
 	BUILD_TARGET="sitl-heli"
         EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim-heli"
+        MODEL="$FRAME"
 	;;
-    CRRCSim|last_letter*|jsbsim*)
+    CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim"
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
+        MODEL="$FRAME"
+	;;
+    jsbsim*)
+	BUILD_TARGET="sitl"
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
+        MODEL="$FRAME"
+        check_jsbsim_version
 	;;
     rover|rover-skid)
         EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
-	;;
-    obc)
-        BUILD_TARGET="sitl-obc"
+        MODEL="$FRAME"
 	;;
     "")
         ;;
@@ -322,36 +351,22 @@ fi
 
 case $VEHICLE in
     ArduPlane)
-        [ "$REVERSE_THROTTLE" == 1 ] && {
-            EXTRA_SIM="$EXTRA_SIM --revthr"
-        }
-        jsbsim_version=$(JSBSim --version)
-        if [[ $jsbsim_version != *"ArduPilot"* ]]
-        then
-            cat <<EOF
-=========================================================
-You need the latest ArduPilot version of JSBSim installed
-and in your \$PATH
-
-Please get it from git://github.com/tridge/jsbsim.git
-See 
-  http://dev.ardupilot.com/wiki/simulation-2/sitl-simulator-software-in-the-loop/setting-up-sitl-on-linux/ 
-for more details
-=========================================================
-EOF
-            exit 1
-        fi
         PARMS="ArduPlane.parm"
         RUNSIM=""
-        cmd="$cmd --model $FRAME --speedup=$SPEEDUP"
+        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         ;;
     ArduCopter)
-        RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        if [ -n "$MODEL" ]; then
+            RUNSIM=""
+            cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
+        else
+            RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
+        fi
         PARMS="copter_params.parm"
         ;;
     APMrover2)
         RUNSIM=""
-        cmd="$cmd --model $FRAME --speedup=$SPEEDUP"
+        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         PARMS="Rover.parm"
         ;;
     *)
