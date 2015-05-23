@@ -541,15 +541,15 @@ struct PACKED log_AIRSPEED {
 
 struct PACKED log_ACCEL {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint32_t timestamp_us;
+    uint64_t time_us;
+    uint64_t sample_us;
     float AccX, AccY, AccZ;
 };
 
 struct PACKED log_GYRO {
     LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    uint32_t timestamp_us;
+    uint64_t time_us;
+    uint64_t sample_us;
     float GyrX, GyrY, GyrZ;
 };
 
@@ -670,17 +670,17 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
       "MAG3","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
-      "ACC1", "IIfff",        "TimeMS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC1", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \
-      "ACC2", "IIfff",        "TimeMS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC2", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_ACC3_MSG, sizeof(log_ACCEL), \
-      "ACC3", "IIfff",        "TimeMS,SampleUS,AccX,AccY,AccZ" }, \
+      "ACC3", "QQfff",        "TimeUS,SampleUS,AccX,AccY,AccZ" }, \
     { LOG_GYR1_MSG, sizeof(log_GYRO), \
-      "GYR1", "IIfff",        "TimeMS,SampleUS,GyrX,GyrY,GyrZ" }, \
+      "GYR1", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
     { LOG_GYR2_MSG, sizeof(log_GYRO), \
-      "GYR2", "IIfff",        "TimeMS,SampleUS,GyrX,GyrY,GyrZ" }, \
+      "GYR2", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
     { LOG_GYR3_MSG, sizeof(log_GYRO), \
-      "GYR3", "IIfff",        "TimeMS,SampleUS,GyrX,GyrY,GyrZ" }
+      "GYR3", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
