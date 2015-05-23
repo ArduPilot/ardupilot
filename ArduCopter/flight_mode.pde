@@ -241,6 +241,9 @@ static void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     if (old_control_mode == ACRO) {
         attitude_control.use_flybar_passthrough(false);
     }
+
+    // reset RC Passthrough to motors
+    motors.reset_radio_passthrough();
 #endif //HELI_FRAME
 }
 
