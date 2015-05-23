@@ -39,6 +39,7 @@ public:
 
     void    update_target(Vector3f newTarget);
     void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
+    void    send_report(mavlink_channel_t chan) const;
 
     Vector3f getGimbalEstimateEF();
 
@@ -71,6 +72,8 @@ private:
     float const yawErrorLimit;
 
     uint8_t _compid;
+
+    mavlink_gimbal_report_t _report_msg;
 
     void send_control(mavlink_channel_t chan);
     void update_state();

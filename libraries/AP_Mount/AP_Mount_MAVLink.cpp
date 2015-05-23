@@ -105,6 +105,7 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
  */
 void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
 {
+    _gimbal.send_report(chan);
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
