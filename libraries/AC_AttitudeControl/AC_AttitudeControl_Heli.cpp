@@ -154,8 +154,8 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
         }
     }
     
-    roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_ff(rate_roll_target_cds), _dt);
-    pitch_ff = pitch_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_pitch).get_ff(rate_pitch_target_cds), _dt);
+    roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_vff(rate_roll_target_cds), _dt);
+    pitch_ff = pitch_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_pitch).get_vff(rate_pitch_target_cds), _dt);
 
     // add feed forward and final output
     roll_out = roll_pd + roll_i + roll_ff;
@@ -262,7 +262,7 @@ static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
 float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 {
-    float pd,i,ff;            // used to capture pid values for logging
+    float pd,i,vff,aff;     // used to capture pid values for logging
     float current_rate;     // this iteration's rate
     float rate_error;       // simply target_rate - current_rate
     float yaw_out;
@@ -292,10 +292,11 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
         }
     }
     
-    ff = yaw_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_ff(rate_target_cds), _dt);
+    vff = yaw_velocity_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_vff(rate_target_cds), _dt);
+    aff = yaw_acceleration_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_yaw).get_aff(rate_target_cds), _dt);
     
     // add feed forward
-    yaw_out = pd + i + ff;
+    yaw_out = pd + i + vff + aff;
 
     // constrain output and update limit flag
     if (fabsf(yaw_out) > AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX) {
