@@ -157,4 +157,10 @@ static void heli_update_rotor_speed_targets()
     }
 }
 
+// heli_radio_passthrough send RC inputs direct into motors library for use during manual passthrough for helicopter setup
+static void heli_radio_passthrough()
+{
+    motors.set_radio_passthrough(channel_roll->control_in, channel_pitch->control_in, channel_throttle->control_in, channel_yaw->control_in);
+}
+
 #endif  // FRAME_CONFIG == HELI_FRAME
