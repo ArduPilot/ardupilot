@@ -40,7 +40,11 @@
  # define AHRS_EKF_USE_ALWAYS     0
 #endif
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AHRS_EKF_USE_DEFAULT    1
+#else
 #define AHRS_EKF_USE_DEFAULT    0
+#endif
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
