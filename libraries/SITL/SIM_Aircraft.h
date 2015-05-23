@@ -77,6 +77,7 @@ protected:
     Vector3f position; // meters, NED from origin
     float mass; // kg
     Vector3f accel_body; // m/s/s NED, body frame
+    float airspeed; // m/s, apparent airspeed
 
     uint64_t time_now_us;
 

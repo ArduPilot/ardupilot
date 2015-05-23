@@ -131,6 +131,9 @@ void Helicopter::update(const struct sitl_input &input)
     Vector3f old_position = position;
     position += velocity_ef * delta_time;
 
+    // assume zero wind for now
+    airspeed = velocity_ef.length();
+
     // constrain height to the ground
     if (on_ground(position)) {
         if (!on_ground(old_position)) {

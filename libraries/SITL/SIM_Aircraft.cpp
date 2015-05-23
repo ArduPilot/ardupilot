@@ -233,7 +233,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.rollDeg  = degrees(r);
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
-    fdm.airspeed = velocity_ef.length();
+    fdm.airspeed = airspeed;
     fdm.magic = 0x4c56414f;
 }
 

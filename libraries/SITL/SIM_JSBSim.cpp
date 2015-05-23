@@ -405,6 +405,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     location.lng = degrees(fdm.longitude) * 1.0e7;
     location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
+    airspeed = fdm.vcas * FEET_TO_METERS;
 
     // assume 1kHz for now
     time_now_us += 1000;

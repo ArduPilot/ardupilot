@@ -107,6 +107,9 @@ void last_letter::recv_fdm(const struct sitl_input &input)
     location.alt = pkt.altitude*1.0e2;
     dcm.from_euler(pkt.roll, pkt.pitch, pkt.yaw);
 
+    // assume zero wind for now
+    airspeed = velocity_ef.length();
+
     // auto-adjust to last_letter frame rate
     uint64_t deltat_us = pkt.timestamp_us - last_timestamp_us;
     time_now_us += deltat_us;
