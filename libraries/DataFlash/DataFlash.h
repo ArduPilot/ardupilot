@@ -439,6 +439,7 @@ struct PACKED log_Attitude {
 struct PACKED log_PID {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    float   desired;
     float   P;
     float   I;
     float   D;
@@ -635,13 +636,13 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" } \
     { LOG_PIDR_MSG, sizeof(log_PID), \
-      "PIDR", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }, \
+      "PIDR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
-      "PIDP", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }, \
+      "PIDP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", "Qfffff",  "TimeUS,P,I,D,FF,AFF" }
+      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
