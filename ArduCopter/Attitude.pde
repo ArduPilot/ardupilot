@@ -94,11 +94,11 @@ static void update_thr_average()
     }
 
     // get throttle output
-    int16_t throttle = channel_throttle->servo_out;
+    float throttle = motors.get_throttle();
 
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + (float)throttle * 0.01f;
+        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
         // update position controller
         pos_control.set_throttle_hover(throttle_average);
     }

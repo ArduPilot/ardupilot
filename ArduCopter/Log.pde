@@ -216,7 +216,7 @@ static void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 // Write a Current data packet
 static void Log_Write_Current()
 {
-    DataFlash.Log_Write_Current(battery, channel_throttle->servo_out);
+    DataFlash.Log_Write_Current(battery, (int16_t)(motors.get_throttle()));
 
     // also write power status
     DataFlash.Log_Write_Power();
@@ -301,7 +301,7 @@ struct PACKED log_Control_Tuning {
     uint32_t time_ms;
     int16_t  throttle_in;
     int16_t  angle_boost;
-    int16_t  throttle_out;
+    float    throttle_out;
     float    desired_alt;
     float    inav_alt;
     int32_t  baro_alt;
@@ -319,7 +319,7 @@ static void Log_Write_Control_Tuning()
         time_ms             : hal.scheduler->millis(),
         throttle_in         : channel_throttle->control_in,
         angle_boost         : attitude_control.angle_boost(),
-        throttle_out        : channel_throttle->servo_out,
+        throttle_out        : motors.get_throttle(),
         desired_alt         : pos_control.get_alt_target() / 100.0f,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
@@ -652,7 +652,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Iffffffffff", "TimeMS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Ihhhffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
+      "CTUN", "Ihhfffecchh", "TimeMS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "HHIhBH",    "NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
