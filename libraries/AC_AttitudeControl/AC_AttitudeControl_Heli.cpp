@@ -112,7 +112,9 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // input to PID controller
     _pid_rate_roll.set_input_filter_all(rate_roll_error);
+    _pid_rate_roll.set_desired_rate(rate_roll_target_cds);
     _pid_rate_pitch.set_input_filter_all(rate_pitch_error);
+    _pid_rate_pitch.set_desired_rate(rate_pitch_target_cds);
 
     // call p and d controllers
     roll_pd = _pid_rate_roll.get_p() + _pid_rate_roll.get_d();
@@ -276,6 +278,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // send input to PID controller
     _pid_rate_yaw.set_input_filter_all(rate_error);
+    _pid_rate_yaw.set_desired_rate(rate_target_cds);
 
     // get p and d
     pd = _pid_rate_yaw.get_p() + _pid_rate_yaw.get_d();
