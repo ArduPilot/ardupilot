@@ -40,7 +40,7 @@ Rover rover;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
 
-#define SCHED_TASK(func) AP_HAL_CLASSPROC_VOID(&rover, &Rover::func)
+#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&rover, &Rover::func, void)
 
 /*
   scheduler table - all regular tasks should be listed here, along

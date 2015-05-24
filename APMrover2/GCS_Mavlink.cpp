@@ -995,7 +995,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_SET_MODE:
 		{
-            handle_set_mode(msg, AP_HAL_CLASSPROC(&rover, &Rover::mavlink_set_mode));
+            handle_set_mode(msg, FUNCTOR_BIND(&rover, &Rover::mavlink_set_mode, bool, uint8_t));
             break;
         }
 
@@ -1287,7 +1287,7 @@ void Rover::gcs_update(void)
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
 #if CLI_ENABLED == ENABLED
-            gcs[i].update(g.cli_enabled==1?AP_HAL_MEMBERPROC(&Rover::run_cli):NULL);
+            gcs[i].update(g.cli_enabled == 1 ? FUNCTOR_BIND_MEMBER(&Rover::run_cli, void, AP_HAL::UARTDriver *) : NULL);
 #else
             gcs[i].update(NULL);
 #endif
