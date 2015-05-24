@@ -586,8 +586,16 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         default:
-            motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
-            motors_var_info = AP_MotorsMatrix::var_info;
+            if (g.motors_limit_slew_rate)
+            {
+                motors = new AP_MotorsMatrixSlewRateLimited(MAIN_LOOP_RATE);
+                motors_var_info = AP_MotorsMatrixSlewRateLimited::var_info;
+            }
+            else
+            {
+                motors = new AP_MotorsMatrix(MAIN_LOOP_RATE);
+                motors_var_info = AP_MotorsMatrix::var_info;
+            }
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
             motors = new AP_MotorsTri(MAIN_LOOP_RATE);

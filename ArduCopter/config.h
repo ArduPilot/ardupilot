@@ -1,4 +1,3 @@
-//
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////////
@@ -631,6 +630,11 @@
 #endif
 #if AC_AVOID_ENABLED && !AC_FENCE
   #error AC_Avoidance relies on AC_FENCE which is disabled
+#endif
+
+// Default value for enabling slew rate limiter for motor outputs
+#ifndef MOT_SLW_LMT_EN_DEFAULT
+# define MOT_SLW_LMT_EN_DEFAULT       0       // disabled by default
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
