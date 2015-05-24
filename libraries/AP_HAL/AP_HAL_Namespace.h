@@ -35,6 +35,33 @@
 
 #if APM_BUILD_FUNCTOR
 #include "utility/functor.h"
+
+// Also add the hacks for the delegate implementation. Here it's just an alias
+#define FUNCTOR_BIND_VOID(obj, func, rettype, ...) \
+    FUNCTOR_BIND(obj, func, rettype, ## __VA_ARGS__)
+
+#define FUNCTOR_TYPEDEF_VOID(name, rettype, ...) \
+    FUNCTOR_TYPEDEF(name, rettype, ## __VA_ARGS__)
+
+#else
+#define FUNCTOR_TYPEDEF(name, rettype, ...) \
+    typedef DELEGATE_FUNCTION(rettype, ## __VA_ARGS__) name
+
+#define FUNCTOR_DECLARE(name, rettype, ...) \
+    DELEGATE_FUNCTION(rettype, ## __VA_ARGS__) name
+
+#define FUNCTOR_BIND(obj, func, rettype, ...) \
+    AP_HAL_CLASSPROC(obj, func)
+
+#define FUNCTOR_BIND_MEMBER(func, rettype, ...) \
+    AP_HAL_MEMBERPROC(func)
+
+#define FUNCTOR_BIND_VOID(obj, func, rettype, ...) \
+    AP_HAL_CLASSPROC_VOID(obj, func)
+
+#define FUNCTOR_TYPEDEF_VOID(name, rettype, ...) \
+    DELEGATE_FUNCTION_VOID_TYPEDEF(name)
+
 #endif
 
 namespace AP_HAL {
