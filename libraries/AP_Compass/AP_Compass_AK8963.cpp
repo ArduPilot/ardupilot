@@ -438,7 +438,7 @@ bool AP_Compass_AK8963::init()
     _compass_instance = register_compass();    
 
     hal.scheduler->resume_timer_procs();
-    hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Compass_AK8963::_update));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
     _start_conversion();
 
