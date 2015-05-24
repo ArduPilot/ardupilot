@@ -431,7 +431,7 @@ static void send_pid_tuning(mavlink_channel_t chan)
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
         const DataFlash_Class::PID_Info &pid_info = g.pid_rate_roll.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 1, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.x),
                                     pid_info.FF*0.01,
@@ -444,7 +444,7 @@ static void send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 2) {
         const DataFlash_Class::PID_Info &pid_info = g.pid_rate_pitch.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 2, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.y),
                                     pid_info.FF*0.01f,
@@ -457,9 +457,22 @@ static void send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 4) {
         const DataFlash_Class::PID_Info &pid_info = g.pid_rate_yaw.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 3, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.z),
+                                    pid_info.FF*0.01f,
+                                    pid_info.P*0.01f,
+                                    pid_info.I*0.01f,
+                                    pid_info.D*0.01f);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+    if (g.gcs_pid_mask & 8) {
+        const DataFlash_Class::PID_Info &pid_info = g.pid_accel_z.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ, 
+                                    pid_info.desired*0.01f,
+                                    -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
                                     pid_info.FF*0.01f,
                                     pid_info.P*0.01f,
                                     pid_info.I*0.01f,
