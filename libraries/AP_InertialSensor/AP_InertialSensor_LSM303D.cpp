@@ -258,7 +258,7 @@ uint16_t AP_InertialSensor_LSM303D::_init_sensor( Sample_rate sample_rate )
     }
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_LSM303D::_poll_data));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM303D::_poll_data, void));
 
 #if LSM303D_DEBUG
     _dump_registers();

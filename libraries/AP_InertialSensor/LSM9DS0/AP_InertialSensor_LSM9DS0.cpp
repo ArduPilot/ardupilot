@@ -181,7 +181,7 @@ uint16_t AP_InertialSensor_LSM9DS0::_init_sensor( Sample_rate sample_rate)
     }
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_LSM9DS0::_poll_data));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS0::_poll_data, void));
 
 #if LSM9DS0_DEBUG
     _dump_registers();

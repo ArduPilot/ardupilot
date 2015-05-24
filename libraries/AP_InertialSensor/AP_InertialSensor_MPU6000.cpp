@@ -254,7 +254,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
     hal.scheduler->resume_timer_procs();
     
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU6000::_poll_data));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, void));
 
 #if MPU6000_DEBUG
     _dump_registers();

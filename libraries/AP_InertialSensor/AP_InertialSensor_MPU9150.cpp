@@ -469,7 +469,7 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
     _accel_instance = _imu.register_accel();
 
     // start the timer process to read samples    
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9150::_accumulate));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9150::_accumulate, void));
 
     return true;
 

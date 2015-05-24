@@ -249,7 +249,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
     _product_id = AP_PRODUCT_ID_MPU9250;
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_MPU9250::_poll_data));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
 
 #if MPU9250_DEBUG
     _dump_registers();
