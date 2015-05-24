@@ -70,7 +70,9 @@ class GCS_MAVLINK
 {
 public:
     GCS_MAVLINK();
-#if APM_BUILD_DELEGATES
+#if APM_BUILD_FUNCTOR
+    FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
+#elif APM_BUILD_DELEGATES
     typedef DELEGATE_FUNCTION1(void, AP_HAL::UARTDriver*) run_cli_fn;
 #else
     typedef void (*run_cli_fn)(AP_HAL::UARTDriver *);
@@ -299,7 +301,9 @@ private:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
-#if APM_BUILD_DELEGATES
+#if APM_BUILD_FUNCTOR
+    FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
+#elif APM_BUILD_DELEGATES
     typedef DELEGATE_FUNCTION1(bool, uint8_t) set_mode_fn;
 #else    
     typedef bool (*set_mode_fn)(uint8_t);
