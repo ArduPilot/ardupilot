@@ -56,6 +56,7 @@ AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, floa
 float AC_HELI_PID::get_vff(float requested_rate)
 {
     _pid_info.FF = (float)requested_rate * _vff;
+    _pid_info.desired = requested_rate;
     return _pid_info.FF;
 }
 
