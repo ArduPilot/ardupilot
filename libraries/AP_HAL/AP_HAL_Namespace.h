@@ -27,6 +27,14 @@
 #define DELEGATE_FUNCTION1(rettype, args...) fastdelegate::FastDelegate1<args, rettype>
 #define DELEGATE_FUNCTION2(rettype, args...) fastdelegate::FastDelegate2<args, rettype>
 
+#ifndef APM_BUILD_FUNCTOR
+#define APM_BUILD_FUNCTOR 0
+#endif
+
+#if APM_BUILD_FUNCTOR
+#include "utility/functor.h"
+#endif
+
 namespace AP_HAL {
 
     /* Toplevel pure virtual class Hal.*/

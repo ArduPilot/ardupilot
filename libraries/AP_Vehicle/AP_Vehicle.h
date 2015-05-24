@@ -74,6 +74,9 @@ public:
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
 #endif
 
+#ifndef APM_BUILD_FUNCTOR
+#define APM_BUILD_FUNCTOR 0
+#endif
 
 #if APM_BUILD_TYPE(APM_BUILD_APMrover2) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 # define APM_BUILD_DELEGATES 1
