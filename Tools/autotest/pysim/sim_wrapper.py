@@ -11,7 +11,6 @@ def sim_send(m, a):
     global fdm
     from math import degrees
 
-    earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
     (roll, pitch, yaw) = a.dcm.to_euler()
 
     fdm.set('latitude', a.latitude, units='degrees')
@@ -20,9 +19,9 @@ def sim_send(m, a):
     fdm.set('phi', roll, units='radians')
     fdm.set('theta', pitch, units='radians')
     fdm.set('psi', yaw, units='radians')
-    fdm.set('phidot', earth_rates.x, units='rps')
-    fdm.set('thetadot', earth_rates.y, units='rps')
-    fdm.set('psidot', earth_rates.z, units='rps')
+    fdm.set('phidot', a.gyro.x, units='rps')
+    fdm.set('thetadot', a.gyro.y, units='rps')
+    fdm.set('psidot', a.gyro.z, units='rps')
     fdm.set('vcas', math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y), units='mps')
     fdm.set('v_north', a.velocity.x, units='mps')
     fdm.set('v_east', a.velocity.y, units='mps')

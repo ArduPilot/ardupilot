@@ -12,14 +12,13 @@ def sim_send(a):
     '''send flight information to mavproxy'''
     from math import degrees
 
-    earth_rates = util.BodyRatesToEarthRates(a.dcm, a.gyro)
     (roll, pitch, yaw) = a.dcm.to_euler()
 
     buf = struct.pack('<17dI',
                       a.latitude, a.longitude, a.altitude, degrees(yaw),
                       a.velocity.x, a.velocity.y, a.velocity.z,
                       a.accelerometer.x, a.accelerometer.y, a.accelerometer.z,
-                      degrees(earth_rates.x), degrees(earth_rates.y), degrees(earth_rates.z),
+                      degrees(a.gyro.x), degrees(a.gyro.y), degrees(a.gyro.z),
                       degrees(roll), degrees(pitch), degrees(yaw),
                       math.sqrt(a.velocity.x*a.velocity.x + a.velocity.y*a.velocity.y),
                       0x4c56414f)
