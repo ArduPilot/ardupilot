@@ -1025,6 +1025,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
 
+    AP_SUBGROUPINFO(motors_slew_rate_parameters, "MOT_SLW", 25, ParametersG2, AP_MotorsSlewRateParameters),
+
     AP_GROUPEND
 };
 

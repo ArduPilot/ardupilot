@@ -577,6 +577,9 @@ public:
 
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn;
+
+    // motor slew rate limiter parameters
+    AP_MotorsSlewRateParameters motors_slew_rate_parameters;
 };
 
 extern const AP_Param::Info        var_info[];

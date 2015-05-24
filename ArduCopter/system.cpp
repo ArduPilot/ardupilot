@@ -528,7 +528,14 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
         default:
-            motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
+            if (g2.motors_slew_rate_parameters._enabled)
+            {
+                motors = new AP_MotorsMatrixSlewRateLimited(g2.motors_slew_rate_parameters, copter.scheduler.get_loop_rate_hz());
+            }
+            else
+            {
+                motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
+            }
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
