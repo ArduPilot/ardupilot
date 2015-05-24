@@ -20,7 +20,7 @@ static const struct Menu::command log_menu_commands[] PROGMEM = {
 };
 
 // A Macro to create the Menu
-MENU2(log_menu, "Log", log_menu_commands, MENU_FUNC(print_log_menu));
+MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&plane, &Plane::print_log_menu, bool));
 
 bool Plane::print_log_menu(void)
 {
@@ -493,8 +493,8 @@ void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
-	DataFlash.LogReadProcess(log_num, start_page, end_page, 
-                             AP_HAL_MEMBERPROC(&Plane::print_flight_mode),
+	DataFlash.LogReadProcess(log_num, start_page, end_page,
+                             FUNCTOR_BIND_MEMBER(&Plane::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }
 #endif // CLI_ENABLED

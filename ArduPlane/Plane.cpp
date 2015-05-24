@@ -58,9 +58,9 @@ Plane::Plane(void) :
     flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL),
     aerodynamic_load_factor(1.0f),
     mission(ahrs, 
-            AP_HAL_MEMBERPROC(&Plane::start_command_callback), 
-            AP_HAL_MEMBERPROC(&Plane::verify_command_callback), 
-            AP_HAL_MEMBERPROC(&Plane::exit_mission_callback)),
+            FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)),
 #if AP_TERRAIN_AVAILABLE
     terrain(ahrs, mission, rally),
 #endif
@@ -72,7 +72,7 @@ Plane::Plane(void) :
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
 #endif
-    arming(ahrs, barometer, compass, home_is_set, AP_HAL_MEMBERPROC(&Plane::gcs_send_text_P)),
+    arming(ahrs, barometer, compass, home_is_set, FUNCTOR_BIND_MEMBER(&Plane::gcs_send_text_P, void, gcs_severity, const prog_char_t *)),
     param_loader(var_info)
 {
     elevon.trim1 = 1500;

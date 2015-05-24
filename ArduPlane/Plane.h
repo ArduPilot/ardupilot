@@ -918,7 +918,7 @@ public:
     int8_t test_shell(uint8_t argc, const Menu::arg *argv);
 };
 
-#define MENU_FUNC(func) AP_HAL_CLASSPROC(&plane, &Plane::func)
+#define MENU_FUNC(func) FUNCTOR_BIND(&plane, &Plane::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
 extern Plane plane;
