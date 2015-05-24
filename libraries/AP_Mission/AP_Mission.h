@@ -216,7 +216,10 @@ public:
     };
 
     // main program function pointers
-#if APM_BUILD_DELEGATES
+#if APM_BUILD_FUNCTOR
+    FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
+    FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
+#elif APM_BUILD_DELEGATES
     typedef DELEGATE_FUNCTION1(bool, const Mission_Command&) mission_cmd_fn_t;
     typedef DELEGATE_FUNCTION0(void) mission_complete_fn_t;
 #else
