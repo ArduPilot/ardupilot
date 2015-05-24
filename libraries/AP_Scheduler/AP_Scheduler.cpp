@@ -88,7 +88,9 @@ void AP_Scheduler::run(uint16_t time_available)
                 task_fn_t func;
                 pgm_read_block(&_tasks[i].function, &func, sizeof(func));
                 current_task = i;
-#if AP_SCHEDULER_USE_DELEGATE_PTR
+#if APM_BUILD_FUNCTOR
+                func();
+#elif AP_SCHEDULER_USE_DELEGATE_PTR
                 func(_classptr);
 #else
                 func();

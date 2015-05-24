@@ -47,7 +47,9 @@
 class AP_Scheduler
 {
 public:
-#if APM_BUILD_DELEGATES
+#if APM_BUILD_FUNCTOR
+    FUNCTOR_TYPEDEF(task_fn_t, void);
+#elif APM_BUILD_DELEGATES
     DELEGATE_FUNCTION_VOID_TYPEDEF(task_fn_t);
 #else
     typedef void (*task_fn_t)(void);
