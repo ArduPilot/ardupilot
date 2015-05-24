@@ -374,6 +374,12 @@ void Plane::geofence_check(bool altitude_check_only)
 
     case FENCE_ACTION_GUIDED:
     case FENCE_ACTION_GUIDED_THR_PASS:
+        // make sure we don't auto trim the surfaces on this mode change
+        int8_t saved_auto_trim = g.auto_trim;
+        g.auto_trim.set(0);
+        set_mode(GUIDED);
+        g.auto_trim.set(saved_auto_trim);
+
         if (g.fence_ret_rally != 0) { //return to a rally point
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
@@ -400,13 +406,6 @@ void Plane::geofence_check(bool altitude_check_only)
         setup_terrain_target_alt(guided_WP_loc);
 
         set_guided_WP();
-
-        // make sure we don't auto trim the surfaces on this mode change
-        int8_t saved_auto_trim = g.auto_trim;
-        g.auto_trim.set(0);
-
-        set_mode(GUIDED);
-        g.auto_trim.set(saved_auto_trim);
 
         if (g.fence_action == FENCE_ACTION_GUIDED_THR_PASS) {
             guided_throttle_passthru = true;
