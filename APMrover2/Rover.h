@@ -533,7 +533,7 @@ public:
 #endif
 };
 
-#define MENU_FUNC(func) AP_HAL_CLASSPROC(&rover, &Rover::func)
+#define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)
 
 extern const AP_HAL::HAL& hal;
 extern Rover rover;
