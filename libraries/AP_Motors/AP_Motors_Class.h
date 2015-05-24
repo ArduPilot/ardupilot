@@ -190,6 +190,8 @@ public:
     // 1 if motor is enabled, 0 otherwise
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];
 
+    float               get_motor_out_pct(uint8_t mot) { return (mot<AP_MOTORS_MAX_NUM_MOTORS) ? _motor_out_pct[mot] : 0.0f; }
+
     // slow_start - set to true to slew motors from current speed to maximum
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
@@ -290,6 +292,7 @@ protected:
     int16_t             _spin_when_armed_ramped;// equal to _spin_when_armed parameter but slowly ramped up from zero
     float               _throttle_thr_mix;      // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     float               _throttle_thr_mix_desired; // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
+    float               _motor_out_pct[AP_MOTORS_MAX_NUM_MOTORS];
 
     // battery voltage compensation variables
     float               _batt_voltage;          // latest battery voltage reading

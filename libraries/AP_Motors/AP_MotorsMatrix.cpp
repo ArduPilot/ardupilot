@@ -101,6 +101,7 @@ void AP_MotorsMatrix::output_min()
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
             hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _rc_throttle.radio_min);
+            _motor_out_pct[i] = 0.0f;
         }
     }
 }
@@ -354,7 +355,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
+            _motor_out_pct[i] = (float)(motor_out[i]-out_min_pwm) / (out_max_pwm-out_min_pwm);
             hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
+        } else {
+            _motor_out_pct[i] = 0.0f;
         }
     }
 }
