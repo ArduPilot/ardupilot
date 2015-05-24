@@ -118,23 +118,8 @@ void Quaternion::from_euler(float roll, float pitch, float yaw)
 // create a quaternion from Euler angles
 void Quaternion::from_vector312(float roll ,float pitch, float yaw)
 {
-    float c3 = cosf(pitch);
-    float s3 = sinf(pitch);
-    float s2 = sinf(roll);
-    float c2 = cosf(roll);
-    float s1 = sinf(yaw);
-    float c1 = cosf(yaw);
-
     Matrix3f m;
-    m.a.x = c1 * c3 - s1 * s2 * s3;
-    m.b.y = c1 * c2;
-    m.c.z = c3 * c2;
-    m.a.y = -c2*s1;
-    m.a.z = s3*c1 + c3*s2*s1;
-    m.b.x = c3*s1 + s3*s2*c1;
-    m.b.z = s1*s3 - s2*c1*c3;
-    m.c.x = -s3*c2;
-    m.c.y = s2;
+    m.from_euler312(roll, pitch, yaw);
 
     from_rotation_matrix(m);
 }
@@ -253,18 +238,11 @@ void Quaternion::to_euler(float &roll, float &pitch, float &yaw) const
 }
 
 // create eulers from a quaternion
-void Quaternion::to_vector312(float &roll, float &pitch, float &yaw) const
+Vector3f Quaternion::to_vector312(void) const
 {    
     Matrix3f m;
     rotation_matrix(m);
-    float T21 = m.a.y;
-    float T22 = m.b.y;
-    float T23 = m.c.y;
-    float T13 = m.c.x;
-    float T33 = m.c.z;
-    yaw = atan2f(-T21, T22);
-    roll = safe_asin(T23);
-    pitch = atan2f(-T13, T33);
+    return m.to_euler312();
 }
 
 float Quaternion::length(void) const

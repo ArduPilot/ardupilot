@@ -93,7 +93,7 @@ public:
     void        to_euler(float &roll, float &pitch, float &yaw) const;
 
     // create eulers from a quaternion
-    void        to_vector312(float &roll, float &pitch, float &yaw) const;
+    Vector3f    to_vector312(void) const;
 
     float length(void) const;
     void normalize();
