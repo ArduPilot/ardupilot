@@ -20,8 +20,8 @@ AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &st
 // init - performs any required initialisation for this instance
 void AP_Mount_SToRM32::init(const AP_SerialManager& serial_manager)
 {
-    // get_mavlink_channel for MAVLink2
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0))) {
+    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0);
+    if (_port) {
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
     }
