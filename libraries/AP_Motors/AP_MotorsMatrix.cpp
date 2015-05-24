@@ -341,10 +341,13 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
-    // clip motor output if required (shouldn't be)
+    // apply thrust curve to out_max_pwm for constraint
+    out_max_pwm = apply_thrust_curve_and_volt_scaling(out_max_pwm, out_min_pwm, out_max_pwm);
+
+    // clip motor output if required (shouldn't be unless we're doing a recovery)
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            motor_out[i] = constrain_int16(motor_out[i], out_min_pwm, out_max_pwm);
+            motor_out[i] = constrain_int16(motor_out[i], out_min_pwm, out_min_pwm+(out_max_pwm-out_min_pwm)*get_motor_recovery_pct(i));
         }
     }
 

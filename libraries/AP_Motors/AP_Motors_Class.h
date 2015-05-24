@@ -194,6 +194,12 @@ public:
     // Note: this must be set immediately before a step up in throttle
     void                slow_start(bool true_false);
 
+    // begin a motor recovery
+    void                do_motor_recovery(uint8_t motor_mask, float initial_pct, float ramp_time_s);
+
+    // check if a motor recovery is running
+    bool                motor_recovery_running() { return _recovery_pct < 1.0f && _recovery_motor_mask != 0; }
+
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask() = 0;
@@ -224,6 +230,9 @@ protected:
     // current_limit_max_throttle - current limit maximum throttle (called from update_max_throttle)
     void                current_limit_max_throttle();
 
+    // update _recovery_pct
+    void                update_recovery_pct();
+
     // apply_thrust_curve_and_volt_scaling - thrust curve and voltage adjusted pwm value (i.e. 1000 ~ 2000)
     int16_t             apply_thrust_curve_and_volt_scaling(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const;
 
@@ -238,6 +247,9 @@ protected:
 
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
+
+    // return maximum throttle for motor recovery for a given motor
+    float               get_motor_recovery_pct(uint8_t mot) { return (mot<8 && _recovery_motor_mask&(1<<mot)) ? _recovery_pct : 1.0f; }
 
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;
@@ -292,5 +304,10 @@ protected:
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_in;           // last throttle input from set_throttle caller
     LowPassFilterFloat  _throttle_filter;       // throttle input filter
+
+    // recovery state variables
+    uint8_t _recovery_motor_mask;
+    float _recovery_pct;
+    float _recovery_ramp_time;
 };
 #endif  // __AP_MOTORS_CLASS_H__

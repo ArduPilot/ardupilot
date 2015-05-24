@@ -127,7 +127,10 @@ AP_Motors::AP_Motors(RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_t
     _lift_max(1.0f),
     _throttle_limit(1.0f),
     _throttle_in(0.0f),
-    _throttle_filter()
+    _throttle_filter(),
+    _recovery_pct(1.0f),
+    _recovery_motor_mask(0),
+    _recovery_ramp_time(0.25f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -186,6 +189,9 @@ void AP_Motors::output()
 
     // update max throttle
     update_max_throttle();
+
+    // update _recovery_pct
+    update_recovery_pct();
 
     // update battery resistance
     update_battery_resistance();
@@ -292,6 +298,22 @@ void AP_Motors::current_limit_max_throttle()
 
     // limit max throttle
     _max_throttle = _hover_out + ((1000-_hover_out)*_throttle_limit);
+}
+
+// begin a motor recovery
+void AP_Motors::do_motor_recovery(uint8_t motor_mask, float initial_pct, float ramp_time_s)
+{
+    _recovery_motor_mask = motor_mask;
+    _recovery_pct = initial_pct;
+    _recovery_ramp_time = ramp_time_s;
+}
+
+// update _recovery_pct
+void AP_Motors::update_recovery_pct()
+{
+    float dt = 1.0f/_loop_rate;
+    _recovery_pct += dt/max(_recovery_ramp_time,0.0025f);
+    _recovery_pct = constrain_float(_recovery_pct, 0.0f, 1.0f);
 }
 
 // apply_thrust_curve_and_volt_scaling - returns throttle curve adjusted pwm value (i.e. 1000 ~ 2000)
