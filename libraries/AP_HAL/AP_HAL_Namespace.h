@@ -2,6 +2,7 @@
 #ifndef __AP_HAL_NAMESPACE_H__
 #define __AP_HAL_NAMESPACE_H__
 
+#include <AP_Vehicle_Type.h>
 
 #include "string.h"
 #include "utility/FastDelegate.h"
@@ -28,10 +29,6 @@
 #define DELEGATE_FUNCTION2(rettype, args...) fastdelegate::FastDelegate0<rettype, args>
 
 #define DELEGATE_FUNCTION(rettype, ...) fastdelegate::FastDelegate0<rettype, ## __VA_ARGS__>
-
-#ifndef APM_BUILD_FUNCTOR
-#define APM_BUILD_FUNCTOR 0
-#endif
 
 #if APM_BUILD_FUNCTOR
 #include "utility/functor.h"

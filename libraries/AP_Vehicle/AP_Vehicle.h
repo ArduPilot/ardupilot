@@ -51,37 +51,7 @@ public:
     };
 };
 
-/*
-  define common vehicle build types. Note that the APM_BUILD_DIRECTORY
-  define is only available with makefile based build, not with
-  arduino.
-  Also note that code needs to support other APM_BUILD_DIRECTORY
-  values for example sketches
- */
-#define APM_BUILD_APMrover2      1
-#define APM_BUILD_ArduCopter     2
-#define APM_BUILD_ArduPlane      3
-#define APM_BUILD_AntennaTracker 4
-#define APM_BUILD_UNKNOWN        5
 
-/*
-  using this macro catches cases where we try to check vehicle type on
-  build systems that don't support it
- */
-#ifdef APM_BUILD_DIRECTORY
-#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
-#else
-#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
-#endif
-
-#ifndef APM_BUILD_FUNCTOR
-#define APM_BUILD_FUNCTOR 0
-#endif
-
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-# define APM_BUILD_DELEGATES 1
-#else
-# define APM_BUILD_DELEGATES 0
-#endif
+#include "AP_Vehicle_Type.h"
 
 #endif // AP_VEHICLE_H
