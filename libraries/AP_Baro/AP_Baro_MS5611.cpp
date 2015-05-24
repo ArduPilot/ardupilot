@@ -197,7 +197,7 @@ AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _serial->sem_give();
 
     if (_use_timer) {
-        hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_timer));
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS5611::_timer, void));
     }
 }
 
