@@ -58,6 +58,43 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
     }
 }
 
+/*
+  calculate Euler angles (312 convention) for the matrix.
+  See http://www.atacolorado.com/eulersequences.doc
+  vector is returned in r, p, y order
+*/
+template <typename T>
+Vector3<T> Matrix3<T>::to_euler312() const
+{
+    return Vector3<T>(asinf(c.y),
+                      atan2f(-c.x, c.z),
+                      atan2f(-a.y, b.y));
+}
+
+/*
+  fill the matrix from Euler angles in radians in 312 convention
+*/
+template <typename T>
+void Matrix3<T>::from_euler312(float roll, float pitch, float yaw)
+{
+    float c3 = cosf(pitch);
+    float s3 = sinf(pitch);
+    float s2 = sinf(roll);
+    float c2 = cosf(roll);
+    float s1 = sinf(yaw);
+    float c1 = cosf(yaw);
+
+    a.x = c1 * c3 - s1 * s2 * s3;
+    b.y = c1 * c2;
+    c.z = c3 * c2;
+    a.y = -c2*s1;
+    a.z = s3*c1 + c3*s2*s1;
+    b.x = c3*s1 + s3*s2*c1;
+    b.z = s1*s3 - s2*c1*c3;
+    c.x = -s3*c2;
+    c.y = s2;
+}
+
 // apply an additional rotation from a body frame gyro vector
 // to a rotation matrix.
 template <typename T>
@@ -197,6 +234,8 @@ template void Matrix3<float>::rotateXYinv(const Vector3<float> &g);
 template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
+template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
+template Vector3<float> Matrix3<float>::to_euler312(void) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
