@@ -224,10 +224,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.xAccel    = accel_body.x;
     fdm.yAccel    = accel_body.y;
     fdm.zAccel    = accel_body.z;
-    Vector3f gyro_ef = SITL::convert_earth_frame(dcm, gyro);
-    fdm.rollRate  = degrees(gyro_ef.x);
-    fdm.pitchRate = degrees(gyro_ef.y);
-    fdm.yawRate   = degrees(gyro_ef.z);
+    fdm.rollRate  = degrees(gyro.x);
+    fdm.pitchRate = degrees(gyro.y);
+    fdm.yawRate   = degrees(gyro.z);
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
     fdm.rollDeg  = degrees(r);

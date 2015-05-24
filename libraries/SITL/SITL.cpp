@@ -76,14 +76,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
 /* report SITL state via MAVLink */
 void SITL::simstate_send(mavlink_channel_t chan)
 {
-    double p, q, r;
     float yaw;
-
-    // we want the gyro values to be directly comparable to the
-    // raw_imu message, which is in body frame
-    convert_body_frame(state.rollDeg, state.pitchDeg,
-                       state.rollRate, state.pitchRate, state.yawRate,
-                       &p, &q, &r);
 
     // convert to same conventions as DCM
     yaw = state.yawDeg;
@@ -98,7 +91,9 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
-                              p, q, r,
+                              radians(state.rollRate), 
+                              radians(state.pitchRate), 
+                              radians(state.yawRate), 
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
 }
@@ -106,14 +101,7 @@ void SITL::simstate_send(mavlink_channel_t chan)
 /* report SITL state to DataFlash */
 void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
 {
-    double p, q, r;
     float yaw;
-
-    // we want the gyro values to be directly comparable to the
-    // raw_imu message, which is in body frame
-    convert_body_frame(state.rollDeg, state.pitchDeg,
-                       state.rollRate, state.pitchRate, state.yawRate,
-                       &p, &q, &r);
 
     // convert to same conventions as DCM
     yaw = state.yawDeg;

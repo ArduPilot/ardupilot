@@ -19,7 +19,7 @@ struct PACKED sitl_fdm {
     double heading;   // degrees
     double speedN, speedE, speedD; // m/s
     double xAccel, yAccel, zAccel;       // m/s/s in body frame
-    double rollRate, pitchRate, yawRate; // degrees/s/s in earth frame
+    double rollRate, pitchRate, yawRate; // degrees/s/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     double airspeed; // m/s
     uint32_t magic; // 0x4c56414f
