@@ -181,7 +181,7 @@ Menu::run(void)
     for (;;) {
 
         // run the pre-prompt function, if one is defined
-        if (NULL != _ppfunc) {
+        if (_ppfunc) {
             if (!_ppfunc())
                 return;
             _display_prompt();
