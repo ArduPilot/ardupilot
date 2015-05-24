@@ -120,7 +120,7 @@ bool AP_ADC_ADS1115::init()
     _gain = ADS1115_PGA_4P096; 
     _i2c_sem = hal.i2c->get_semaphore();
 
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_ADC_ADS1115::_update));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
     hal.scheduler->resume_timer_procs();
 
     return true;
