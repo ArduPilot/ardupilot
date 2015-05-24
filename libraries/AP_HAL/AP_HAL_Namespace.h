@@ -99,7 +99,7 @@ namespace AP_HAL {
        which allows us to encapculate a member function as a type
      */
     typedef void(*Proc)(void);
-    typedef DELEGATE_FUNCTION0(void) MemberProc;
+    FUNCTOR_TYPEDEF(MemberProc, void);
 
     /**
      * Global names for all of the existing SPI devices on all platforms.
