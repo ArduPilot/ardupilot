@@ -15,7 +15,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* 
+/*
    This is the APMrover2 firmware. It was originally derived from
    ArduPlane by Jean-Louis Naudin (JLN), and then rewritten after the
    AP_HAL merge by Andrew Tridgell
@@ -26,7 +26,7 @@
 
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 
-   APMrover alpha version tester: Franco Borasio, Daniel Chapelat... 
+   APMrover alpha version tester: Franco Borasio, Daniel Chapelat...
 
    Please contribute your ideas! See http://dev.ardupilot.com for details
 */
@@ -48,7 +48,7 @@ Rover rover;
   time they are expected to take (in microseconds)
 */
 const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
-	{ SCHED_TASK(read_radio),             1,   1000 },
+    { SCHED_TASK(read_radio),             1,   1000 },
     { SCHED_TASK(ahrs_update),            1,   6400 },
     { SCHED_TASK(read_sonars),            1,   2000 },
     { SCHED_TASK(update_current_mode),    1,   1500 },
@@ -118,12 +118,12 @@ void Rover::loop()
 
     uint32_t timer = hal.scheduler->micros();
 
-    delta_us_fast_loop	= timer - fast_loopTimer_us;
+    delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
     fast_loopTimer_us   = timer;
 
-	if (delta_us_fast_loop > G_Dt_max)
-		G_Dt_max = delta_us_fast_loop;
+    if (delta_us_fast_loop > G_Dt_max)
+        G_Dt_max = delta_us_fast_loop;
 
     mainLoop_count++;
 
@@ -169,7 +169,7 @@ void Rover::ahrs_update()
 void Rover::mount_update(void)
 {
 #if MOUNT == ENABLED
-	camera_mount.update();
+    camera_mount.update();
 #endif
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
@@ -189,7 +189,7 @@ void Rover::update_alt()
  */
 void Rover::gcs_failsafe_check(void)
 {
-	if (g.fs_gcs_enabled) {
+    if (g.fs_gcs_enabled) {
         failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
     }
 }
@@ -201,7 +201,7 @@ void Rover::compass_accumulate(void)
 {
     if (g.compass_enabled) {
         compass.accumulate();
-    }    
+    }
 }
 
 /*
@@ -228,7 +228,7 @@ void Rover::update_logging1(void)
 {
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
-    
+
     if (should_log(MASK_LOG_CTUN))
         Log_Write_Control_Tuning();
 
@@ -265,10 +265,10 @@ void Rover::update_aux(void)
  */
 void Rover::one_second_loop(void)
 {
-	if (should_log(MASK_LOG_CURRENT))
-		Log_Write_Current();
-	// send a heartbeat
-	gcs_send_message(MSG_HEARTBEAT);
+    if (should_log(MASK_LOG_CURRENT))
+        Log_Write_Current();
+    // send a heartbeat
+    gcs_send_message(MSG_HEARTBEAT);
 
     // allow orientation change at runtime to aid config
     ahrs.set_orientation();
@@ -297,7 +297,7 @@ void Rover::one_second_loop(void)
     }
 
     // save compass offsets once a minute
-    if (counter >= 60) {				
+    if (counter >= 60) {
         if (g.compass_enabled) {
             compass.save_offsets();
         }
@@ -308,9 +308,9 @@ void Rover::one_second_loop(void)
 }
 
 void Rover::update_GPS_50Hz(void)
-{        
+{
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];
-	gps.update();
+    gps.update();
 
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
@@ -324,33 +324,33 @@ void Rover::update_GPS_50Hz(void)
 
 
 void Rover::update_GPS_10Hz(void)
-{        
+{
     have_position = ahrs.get_position(current_loc);
 
-	if (have_position && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (have_position && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
-		if (ground_start_count > 1){
-			ground_start_count--;
+        if (ground_start_count > 1){
+            ground_start_count--;
 
-		} else if (ground_start_count == 1) {
-			// We countdown N number of good GPS fixes
-			// so that the altitude is more accurate
-			// -------------------------------------
-			if (current_loc.lat == 0) {
-				ground_start_count = 20;
-			} else {
+        } else if (ground_start_count == 1) {
+            // We countdown N number of good GPS fixes
+            // so that the altitude is more accurate
+            // -------------------------------------
+            if (current_loc.lat == 0) {
+                ground_start_count = 20;
+            } else {
                 init_home();
 
                 // set system clock for log timestamps
                 hal.util->set_system_clock(gps.time_epoch_usec());
 
-				if (g.compass_enabled) {
-					// Set compass declination automatically
-					compass.set_initial_location(gps.location().lat, gps.location().lng);
-				}
-				ground_start_count = 0;
-			}
-		}
+                if (g.compass_enabled) {
+                    // Set compass declination automatically
+                    compass.set_initial_location(gps.location().lat, gps.location().lng);
+                }
+                ground_start_count = 0;
+            }
+        }
         Vector3f velocity;
         if (ahrs.get_velocity_NED(velocity)) {
             ground_speed = pythagorous2(velocity.x, velocity.y);
@@ -362,12 +362,12 @@ void Rover::update_GPS_10Hz(void)
         if (camera.update_location(current_loc) == true) {
             do_take_picture();
         }
-#endif        
-	}
+#endif
+    }
 }
 
 void Rover::update_current_mode(void)
-{ 
+{
     switch (control_mode){
     case AUTO:
     case RTL:
@@ -447,7 +447,7 @@ void Rover::update_current_mode(void)
 
     case INITIALISING:
         break;
-	}
+    }
 }
 
 void Rover::update_navigation()
@@ -461,14 +461,14 @@ void Rover::update_navigation()
         break;
 
     case AUTO:
-		mission.update();
+        mission.update();
         break;
 
     case RTL:
         // no loitering around the wp with the rover, goes direct to the wp position
         calc_lateral_acceleration();
         calc_nav_steer();
-        if (verify_RTL()) {  
+        if (verify_RTL()) {
             channel_throttle->servo_out = g.throttle_min.get();
             set_mode(HOLD);
         }
@@ -487,7 +487,7 @@ void Rover::update_navigation()
             }
         }
         break;
-	}
+    }
 }
 
 void setup(void);
