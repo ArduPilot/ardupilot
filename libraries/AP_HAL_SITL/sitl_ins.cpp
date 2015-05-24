@@ -151,16 +151,10 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
                              double xAccel, 	double yAccel, 	double zAccel,		// Local to plane
                              float airspeed,	float altitude)
 {
-    double p, q, r;
-
     if (_ins == NULL) {
         // no inertial sensor in this sketch
         return;
     }
-
-    SITL::convert_body_frame(roll, pitch,
-                             rollRate, pitchRate, yawRate,
-                             &p, &q, &r);
 
     // minimum noise levels are 2 bits, but averaged over many
     // samples, giving around 0.01 m/s/s
@@ -191,9 +185,9 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     _ins->set_accel(0, Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0));
     _ins->set_accel(1, Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1));
 
-    p += _gyro_drift();
-    q += _gyro_drift();
-    r += _gyro_drift();
+    float p = radians(rollRate) + _gyro_drift();
+    float q = radians(pitchRate) + _gyro_drift();
+    float r = radians(yawRate) + _gyro_drift();
 
     float p1 = p + gyro_noise * _rand_float();
     float q1 = q + gyro_noise * _rand_float();
