@@ -51,7 +51,11 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     rate_hz(400),
     last_time_us(0),
     autotest_dir(NULL),
+#ifdef __CYGWIN__
     min_sleep_time(20000)
+#else
+    min_sleep_time(5000)
+#endif
 {
     char *saveptr=NULL;
     char *s = strdup(home_str);
@@ -136,9 +140,11 @@ void Aircraft::setup_frame_time(float new_rate, float new_speedup)
 /* adjust frame_time calculation */
 void Aircraft::adjust_frame_time(float new_rate)
 {
-    rate_hz = new_rate;
-    frame_time_us = 1.0e6f/rate_hz;
-    scaled_frame_time_us = frame_time_us/target_speedup;
+    if (rate_hz != new_rate) {
+        rate_hz = new_rate;
+        frame_time_us = 1.0e6f/rate_hz;
+        scaled_frame_time_us = frame_time_us/target_speedup;
+    }
 }
 
 /* 
@@ -151,17 +157,25 @@ void Aircraft::sync_frame_time(void)
 {
     frame_counter++;
     uint64_t now = get_wall_time_us();
-    if (frame_counter >= 10 && now > last_wall_time_us) {
+    if (frame_counter >= 40 &&
+        now > last_wall_time_us) {
         float rate = frame_counter * 1.0e6f/(now - last_wall_time_us);
-        achieved_rate_hz = (0.98f*achieved_rate_hz) + (0.02f*rate);
+        achieved_rate_hz = (0.99f*achieved_rate_hz) + (0.01f*rate);
         if (achieved_rate_hz < rate_hz * target_speedup) {
-            scaled_frame_time_us *= 0.99;
+            scaled_frame_time_us *= 0.999f;
         } else {
-            scaled_frame_time_us *= 1.01;
+            scaled_frame_time_us /= 0.999f;
         }
+#if 0
+        ::printf("achieved_rate_hz=%.3f rate=%.2f rate_hz=%.3f sft=%.1f\n",
+                 (double)achieved_rate_hz, 
+                 (double)rate,
+                 (double)rate_hz,
+                 (double)scaled_frame_time_us);
+#endif
         uint32_t sleep_time = scaled_frame_time_us*frame_counter;
-        if (sleep_time >= min_sleep_time) {
-            usleep(scaled_frame_time_us*frame_counter);
+        if (sleep_time > min_sleep_time) {
+            usleep(sleep_time);
         }
         last_wall_time_us = now;
         frame_counter = 0;
