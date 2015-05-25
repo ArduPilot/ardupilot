@@ -105,10 +105,17 @@ const AP_Param::GroupInfo AP_Motors::var_info[] PROGMEM = {
 
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
+    _roll_control_input(0.0f),
+    _pitch_control_input(0.0f),
+    _throttle_control_input(0.0f),
+    _yaw_control_input(0.0f),
+    _throttle_pwm_scalar(1.0f),
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
     _min_throttle(AP_MOTORS_DEFAULT_MIN_THROTTLE),
     _max_throttle(AP_MOTORS_DEFAULT_MAX_THROTTLE),
+    _throttle_radio_min(1100),
+    _throttle_radio_max(1900),
     _hover_out(AP_MOTORS_DEFAULT_MID_THROTTLE),
     _spin_when_armed_ramped(0),
     _throttle_thr_mix(AP_MOTORS_THR_LOW_CMP_DEFAULT),
