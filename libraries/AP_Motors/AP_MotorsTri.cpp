@@ -29,12 +29,16 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_Motors, 0),
 
+    // parameters 1 ~ 29 reserved for tradheli
+    // parameters 30 ~ 39 reserved for tricopter
+    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
+
     // @Param: YAW_SV_REV
     // @DisplayName: Yaw Servo Reverse
-    // @Description: Yaw servo signal reversing
-    // @Range: 0, 1
+    // @Description: Yaw servo reversing. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
+    // @Values: -1:Reversed,1:Normal
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_REV", 1,      AP_MotorsTri,  _yaw_servo_reverse, 0),
+    AP_GROUPINFO("YAW_SV_REV", 31,     AP_MotorsTri,  _yaw_servo_reverse, 1),
 
     // @Param: YAW_SV_TRIM
     // @DisplayName: Yaw Servo Trim/Center
@@ -43,7 +47,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_TRIM", 2,      AP_MotorsTri,  _yaw_servo_trim, 1500),
+    AP_GROUPINFO("YAW_SV_TRIM", 32,     AP_MotorsTri,  _yaw_servo_trim, 1500),
 
     // @Param: YAW_SV_MIN
     // @DisplayName: Yaw Servo Min Position
@@ -52,7 +56,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_MIN", 3,      AP_MotorsTri,  _yaw_servo_min, 1250),
+    AP_GROUPINFO("YAW_SV_MIN", 33,     AP_MotorsTri,  _yaw_servo_min, 1250),
 
     // @Param: YAW_SV_MAX
     // @DisplayName: Yaw Servo Max Position
@@ -61,7 +65,7 @@ const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("YAW_SV_MAX", 4,      AP_MotorsTri,  _yaw_servo_max, 1750),
+    AP_GROUPINFO("YAW_SV_MAX", 34,     AP_MotorsTri,  _yaw_servo_max, 1750),
 
 
     AP_GROUPEND
@@ -338,7 +342,7 @@ int16_t AP_MotorsTri::calc_yaw_radio_output()
 {
     int16_t ret;
 
-    if (_yaw_servo_reverse){
+    if (_yaw_servo_reverse < 0) {
         if (_yaw_control_input >= 0){
             ret = (_yaw_servo_trim - (_yaw_control_input/4500 * (_yaw_servo_trim - _yaw_servo_min)));
         } else {
