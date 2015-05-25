@@ -41,6 +41,9 @@ LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
 LIBS ?= -lm -lpthread
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+LIBS += -lwinmm
+endif
 
 ifeq ($(VERBOSE),)
 v = @

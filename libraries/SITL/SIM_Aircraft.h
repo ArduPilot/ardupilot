@@ -131,6 +131,8 @@ protected:
 
 private:
     uint64_t last_time_us;
+    uint32_t frame_counter;
+    const uint32_t min_sleep_time;
 };
 
 #endif // _SIM_AIRCRAFT_H

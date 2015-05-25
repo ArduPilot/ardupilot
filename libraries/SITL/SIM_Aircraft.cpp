@@ -24,6 +24,11 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdio.h>
+#ifdef __CYGWIN__
+#include <windows.h>
+#include <time.h>
+#include <Mmsystem.h>
+#endif
 
 /*
   parent class for all simulator types
@@ -45,7 +50,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     accel_noise(0.3),
     rate_hz(400),
     last_time_us(0),
-    autotest_dir(NULL)
+    autotest_dir(NULL),
+    min_sleep_time(20000)
 {
     char *saveptr=NULL;
     char *s = strdup(home_str);
@@ -135,28 +141,31 @@ void Aircraft::adjust_frame_time(float new_rate)
     scaled_frame_time_us = frame_time_us/target_speedup;
 }
 
-/* try to synchronise simulation time with wall clock time, taking
-   into account desired speedup */
+/* 
+   try to synchronise simulation time with wall clock time, taking
+   into account desired speedup 
+   This tries to take account of possible granularity of
+   get_wall_time_us() so it works reasonably well on windows
+*/
 void Aircraft::sync_frame_time(void)
 {
+    frame_counter++;
     uint64_t now = get_wall_time_us();
-    uint64_t dt_us = now - last_wall_time_us;
-    if (dt_us < scaled_frame_time_us) {
-        usleep(scaled_frame_time_us - dt_us);
-        now = get_wall_time_us();
-
-        if (now > last_wall_time_us && now - last_wall_time_us < 1.0e5) {
-            float rate = 1.0e6f/(now - last_wall_time_us);
-            achieved_rate_hz = (0.98f*achieved_rate_hz) + (0.02f*rate);
-            if (achieved_rate_hz < rate_hz * target_speedup) {
-                scaled_frame_time_us *= 0.999;
-            } else {
-                scaled_frame_time_us *= 1.001;
-            }
+    if (frame_counter >= 10 && now > last_wall_time_us) {
+        float rate = frame_counter * 1.0e6f/(now - last_wall_time_us);
+        achieved_rate_hz = (0.98f*achieved_rate_hz) + (0.02f*rate);
+        if (achieved_rate_hz < rate_hz * target_speedup) {
+            scaled_frame_time_us *= 0.99;
+        } else {
+            scaled_frame_time_us *= 1.01;
         }
-
+        uint32_t sleep_time = scaled_frame_time_us*frame_counter;
+        if (sleep_time >= min_sleep_time) {
+            usleep(scaled_frame_time_us*frame_counter);
+        }
+        last_wall_time_us = now;
+        frame_counter = 0;
     }
-    last_wall_time_us = now;
 }
 
 /* add noise based on throttle level (from 0..1) */
@@ -239,9 +248,22 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
 
 uint64_t Aircraft::get_wall_time_us() const
 {
+#ifdef __CYGWIN__
+    static DWORD tPrev;
+    static uint64_t last_ret_us;
+    if (tPrev == 0) {
+        tPrev = timeGetTime();
+        return 0;
+    }
+    DWORD now = timeGetTime();
+    last_ret_us += (uint64_t)((now - tPrev)*1000UL);
+    tPrev = now;
+    return last_ret_us;
+#else
     struct timeval tp;
     gettimeofday(&tp,NULL);
     return tp.tv_sec*1.0e6 + tp.tv_usec;
+#endif
 }
 
 /*
