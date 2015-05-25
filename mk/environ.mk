@@ -53,6 +53,11 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
     SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
 
+ifneq ($(wildcard $(SKETCHBOOK)/config.mk),)
+$(warning Reading $(SKETCHBOOK)/config.mk)
+include $(SKETCHBOOK)/config.mk
+endif
+
 #
 # Work out the sketch name from the name of the source directory.
 #
