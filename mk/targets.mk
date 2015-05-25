@@ -83,17 +83,21 @@ $(1)-$(2)-debug : $(1)-$(2)
 $(1)-$(2)-hilsensors : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-$(2)
 $(1)-$(2)-upload : $(1)-upload
+endef
+
+define board_template
 $(1)-hil : $(1)
 $(1)-debug : $(1)
 $(1)-hilsensors : $(1)
 endef
 
-ifneq ($(findstring -, $(MAKECMDGOALS)),)
-ifneq (px4-v2,$(MAKECMDGOALS))
+USED_BOARDS := $(foreach board,$(BOARDS), $(findstring $(board), $(MAKECMDGOALS)))
+USED_FRAMES := $(foreach frame,$(FRAMES), $(findstring $(frame), $(MAKECMDGOALS)))
+#$(warning $(USED_BOARDS))
+#$(warning $(USED_FRAMES))
 # generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
-$(foreach board,$(BOARDS),$(foreach frame,$(FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
-endif
-endif
+$(foreach board,$(USED_BOARDS),$(eval $(call board_template,$(board))))
+$(foreach board,$(USED_BOARDS),$(foreach frame,$(USED_FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
 
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
