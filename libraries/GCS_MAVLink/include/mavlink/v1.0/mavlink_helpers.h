@@ -204,19 +204,12 @@ MAVLINK_HELPER void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c)
 }
 
 /**
- * This is a convenience function which handles the complete MAVLink parsing.
- * the function will parse one byte at a time and return the complete packet once
- * it could be successfully decoded. This function will return 0, 1 or
- * 2 (MAVLINK_FRAMING_INCOMPLETE, MAVLINK_FRAMING_OK or MAVLINK_FRAMING_BAD_CRC)
+ * This is a varient of mavlink_frame_char() but with caller supplied
+ * parsing buffers. It is useful when you want to create a MAVLink
+ * parser in a library that doesn't use any global variables
  *
- * Messages are parsed into an internal buffer (one for each channel). When a complete
- * message is received it is copies into *returnMsg and the channel's status is
- * copied into *returnStats.
- *
- * @param chan     ID of the current channel. This allows to parse different channels with this function.
- *                 a channel is not a physical message channel like a serial port, but a logic partition of
- *                 the communication streams in this case. COMM_NB is the limit for the number of channels
- *                 on MCU (e.g. ARM7), while COMM_NB_HIGH is the limit for the number of channels in Linux/Windows
+ * @param rxmsg    parsing message buffer
+ * @param status   parsing starus buffer 
  * @param c        The char to parse
  *
  * @param returnMsg NULL if no message could be decoded, the message data else
@@ -244,7 +237,11 @@ MAVLINK_HELPER void mavlink_update_checksum(mavlink_message_t* msg, uint8_t c)
  *
  * @endcode
  */
-MAVLINK_HELPER uint8_t mavlink_frame_char(uint8_t chan, uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status)
+MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg, 
+                                                 mavlink_status_t* status,
+                                                 uint8_t c, 
+                                                 mavlink_message_t* r_message, 
+                                                 mavlink_status_t* r_mavlink_status)
 {
         /*
 	  default message crc function. You can override this per-system to
@@ -257,12 +254,12 @@ MAVLINK_HELPER uint8_t mavlink_frame_char(uint8_t chan, uint8_t c, mavlink_messa
 #endif
 #endif
 
-/* Enable this option to check the length of each message.
- This allows invalid messages to be caught much sooner. Use if the transmission
- medium is prone to missing (or extra) characters (e.g. a radio that fades in
- and out). Only use if the channel will only contain messages types listed in
- the headers.
-*/
+	/* Enable this option to check the length of each message.
+	   This allows invalid messages to be caught much sooner. Use if the transmission
+	   medium is prone to missing (or extra) characters (e.g. a radio that fades in
+	   and out). Only use if the channel will only contain messages types listed in
+	   the headers.
+	*/
 #ifdef MAVLINK_CHECK_MESSAGE_LENGTH
 #ifndef MAVLINK_MESSAGE_LENGTH
 	static const uint8_t mavlink_message_lengths[256] = MAVLINK_MESSAGE_LENGTHS;
@@ -270,8 +267,6 @@ MAVLINK_HELPER uint8_t mavlink_frame_char(uint8_t chan, uint8_t c, mavlink_messa
 #endif
 #endif
 
-	mavlink_message_t* rxmsg = mavlink_get_channel_buffer(chan); ///< The currently decoded message
-	mavlink_status_t* status = mavlink_get_channel_status(chan); ///< The current decode status
 	int bufferIndex = 0;
 
 	status->msg_received = MAVLINK_FRAMING_INCOMPLETE;
@@ -424,6 +419,56 @@ MAVLINK_HELPER uint8_t mavlink_frame_char(uint8_t chan, uint8_t c, mavlink_messa
 	}
 
 	return status->msg_received;
+}
+
+/**
+ * This is a convenience function which handles the complete MAVLink parsing.
+ * the function will parse one byte at a time and return the complete packet once
+ * it could be successfully decoded. This function will return 0, 1 or
+ * 2 (MAVLINK_FRAMING_INCOMPLETE, MAVLINK_FRAMING_OK or MAVLINK_FRAMING_BAD_CRC)
+ *
+ * Messages are parsed into an internal buffer (one for each channel). When a complete
+ * message is received it is copies into *returnMsg and the channel's status is
+ * copied into *returnStats.
+ *
+ * @param chan     ID of the current channel. This allows to parse different channels with this function.
+ *                 a channel is not a physical message channel like a serial port, but a logic partition of
+ *                 the communication streams in this case. COMM_NB is the limit for the number of channels
+ *                 on MCU (e.g. ARM7), while COMM_NB_HIGH is the limit for the number of channels in Linux/Windows
+ * @param c        The char to parse
+ *
+ * @param returnMsg NULL if no message could be decoded, the message data else
+ * @param returnStats if a message was decoded, this is filled with the channel's stats
+ * @return 0 if no message could be decoded, 1 on good message and CRC, 2 on bad CRC
+ *
+ * A typical use scenario of this function call is:
+ *
+ * @code
+ * #include <mavlink.h>
+ *
+ * mavlink_message_t msg;
+ * int chan = 0;
+ *
+ *
+ * while(serial.bytesAvailable > 0)
+ * {
+ *   uint8_t byte = serial.getNextByte();
+ *   if (mavlink_frame_char(chan, byte, &msg) != MAVLINK_FRAMING_INCOMPLETE)
+ *     {
+ *     printf("Received message with ID %d, sequence: %d from component %d of system %d", msg.msgid, msg.seq, msg.compid, msg.sysid);
+ *     }
+ * }
+ *
+ *
+ * @endcode
+ */
+MAVLINK_HELPER uint8_t mavlink_frame_char(uint8_t chan, uint8_t c, mavlink_message_t* r_message, mavlink_status_t* r_mavlink_status)
+{
+	return mavlink_frame_char_buffer(mavlink_get_channel_buffer(chan),
+					 mavlink_get_channel_status(chan),
+					 c,
+					 r_message,
+					 r_mavlink_status);
 }
 
 
