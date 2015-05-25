@@ -334,6 +334,12 @@ void VRBRAINScheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
+void VRBRAINScheduler::warning(const prog_char_t *errormsg)
+{
+    write(1, errormsg, strlen(errormsg));
+    write(1, "\n", 1);
+}
+
 bool VRBRAINScheduler::in_timerprocess()
 {
     return getpid() != _main_task_pid;

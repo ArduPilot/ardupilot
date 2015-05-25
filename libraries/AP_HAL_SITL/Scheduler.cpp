@@ -263,6 +263,10 @@ void SITLScheduler::panic(const prog_char_t *errormsg) {
     for(;;);
 }
 
+void SITLScheduler::warning(const prog_char_t *errormsg) {
+    hal.console->println_P(errormsg);
+}
+
 /*
   set simulation timestamp
  */

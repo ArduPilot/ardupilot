@@ -383,6 +383,12 @@ void PX4Scheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
+void PX4Scheduler::warning(const prog_char_t *errormsg) 
+{
+    write(1, errormsg, strlen(errormsg));
+    write(1, "\n", 1);
+}
+
 bool PX4Scheduler::in_timerprocess() 
 {
     return getpid() != _main_task_pid;
