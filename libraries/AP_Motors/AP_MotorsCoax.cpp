@@ -28,39 +28,36 @@ extern const AP_HAL::HAL& hal;
 
 
 const AP_Param::GroupInfo AP_MotorsCoax::var_info[] PROGMEM = {
-    // 0 was used by TB_RATIO
-    // 1,2,3 were used by throttle curve
+    // variables from parent vehicle
+    AP_NESTEDGROUPINFO(AP_Motors, 0),
 
-    // @Param: SPIN_ARMED
-    // @DisplayName: Motors always spin when armed
-    // @Description: Controls whether motors always spin when armed (must be below THR_MIN)
-    // @Values: 0:Do Not Spin,70:VerySlow,100:Slow,130:Medium,150:Fast
-    // @User: Standard
-    AP_GROUPINFO("SPIN_ARMED", 5, AP_MotorsCoax, _spin_when_armed, AP_MOTORS_SPIN_WHEN_ARMED),
+    // parameters 1 ~ 29 reserved for tradheli
+    // parameters 30 ~ 39 reserved for tricopter
+    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
 
-    // @Param: REV_ROLL
+    // @Param: ROLL_SV_REV
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
-    // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_ROLL", 6, AP_MotorsCoax, _rev_roll, AP_MOTORS_COAX_POSITIVE),
+    // @Values: -1:Reversed,1:Normal
+    AP_GROUPINFO("ROLL_SV_REV", 40, AP_MotorsCoax, _rev_roll, AP_MOTORS_COAX_POSITIVE),
 
-    // @Param: REV_PITCH
+    // @Param: PITCH_SV_REV
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
-    // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_PITCH", 7, AP_MotorsCoax, _rev_pitch, AP_MOTORS_COAX_POSITIVE),
+    // @Values: -1:Reversed,1:Normal
+    AP_GROUPINFO("PITCH_SV_REV", 41, AP_MotorsCoax, _rev_pitch, AP_MOTORS_COAX_POSITIVE),
 
-	// @Param: REV_ROLL
+	// @Param: YAW_SV_REV
     // @DisplayName: Reverse roll feedback 
     // @Description: Ensure the feedback is negative
-    // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("REV_YAW", 8, AP_MotorsCoax, _rev_yaw, AP_MOTORS_COAX_POSITIVE),
+    // @Values: -1:Reversed,1:Normal
+    AP_GROUPINFO("YAW_SV_REV", 42, AP_MotorsCoax, _rev_yaw, AP_MOTORS_COAX_POSITIVE),
 
 	// @Param: SV_SPEED
     // @DisplayName: Servo speed 
     // @Description: Servo update speed
     // @Values: -1:Opposite direction,1:Same direction
-    AP_GROUPINFO("SV_SPEED", 9, AP_MotorsCoax, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
+    AP_GROUPINFO("SV_SPEED", 43, AP_MotorsCoax, _servo_speed, AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS),
 
     AP_GROUPEND
 };
