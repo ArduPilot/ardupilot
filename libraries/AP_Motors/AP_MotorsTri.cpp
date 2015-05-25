@@ -130,7 +130,7 @@ void AP_MotorsTri::output_min()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsTri::get_motor_mask()
 {
-    // tri copter uses channels 1,2,3 and 4
+    // tri copter uses channels 1,2,4 and 7
     return (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1])) |
         (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2])) |
         (1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4])) |
