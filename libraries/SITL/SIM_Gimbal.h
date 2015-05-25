@@ -21,6 +21,7 @@
 #define _SIM_GIMBAL_H
 
 #include "SIM_Aircraft.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <utility/Socket.h>
 
 class Gimbal
@@ -67,7 +68,7 @@ private:
     // MAVLink at approx 100Hz
 
     // reporting period in ms
-    static const float reporting_period_ms = 10;
+    const float reporting_period_ms;
         
     // integral of gyro vector over last time interval. In radians
     Vector3f delta_angle;
@@ -104,5 +105,6 @@ private:
 
     void send_report(void);
 };
+#endif // CONFIG_HAL_BOARD
 
 #endif // _SIM_GIMBAL_H

@@ -18,6 +18,7 @@
 */
 
 #include "SIM_Aircraft.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Gimbal.h"
 #include <stdio.h>
 
@@ -30,6 +31,7 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
     lower_joint_limits(radians(-40), radians(-135), radians(-7.5)),
     upper_joint_limits(radians(40),  radians(45),   radians(7.5)),
     travelLimitGain(20),
+    reporting_period_ms(10),
     seen_heartbeat(false),
     seen_gimbal_control(false),
     mav_socket(false)
@@ -289,3 +291,4 @@ void Gimbal::send_report(void)
         delta_angle.zero();
     }
 }
+#endif // CONFIG_HAL_BOARD
