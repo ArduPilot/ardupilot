@@ -25,6 +25,7 @@ START_HIL=0
 TRACKER_ARGS=""
 EXTERNAL_SIM=0
 MODEL=""
+BREAKPOINT=""
 
 usage()
 {
@@ -37,6 +38,8 @@ Options:
     -V               enable valgrind for memory access checking (very slow!)
     -G               use gdb for debugging ardupilot
     -g               use gdb for debugging ardupilot, but don't auto-start
+    -D               build with debugging
+    -B               add a breakpoint at given location in debugger
     -T               start an antenna tracker instance
     -A               pass arguments to antenna tracker
     -t               set antenna tracker start location
@@ -47,7 +50,6 @@ Options:
     -w               wipe EEPROM and reload parameters
     -R               reverse throttle in plane
     -M               enable MAVLink gimbal
-    -D               build with debugging
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
@@ -71,7 +73,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:D" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -103,6 +105,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:D" opt; do
       ;;
     D)
       DEBUG_BUILD=1
+      ;;
+    B)
+      BREAKPOINT="$OPTARG"
       ;;
     M)
       USE_MAVLINK_GIMBAL=1
@@ -190,6 +195,9 @@ set -x
 [ -z "$FRAME" -a "$VEHICLE" = "ArduPlane" ] && {
     FRAME="jsbsim"
 }
+[ -z "$FRAME" -a "$VEHICLE" = "ArduCopter" ] && {
+    FRAME="quad"
+}
 
 EXTRA_PARM=""
 EXTRA_SIM=""
@@ -224,19 +232,18 @@ case $FRAME in
     +|quad)
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=quad"
+        MODEL="+"
 	;;
     X)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
         EXTRA_SIM="$EXTRA_SIM --frame=X"
+        MODEL="X"
 	;;
-    octa)
+    octa*)
 	BUILD_TARGET="sitl-octa"
         EXTRA_SIM="$EXTRA_SIM --frame=octa"
-	;;
-    octa-quad)
-	BUILD_TARGET="sitl-octa-quad"
-        EXTRA_SIM="$EXTRA_SIM --frame=octa-quad"
+        MODEL="$FRAME"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
@@ -278,11 +285,6 @@ esac
 
 if [ $DEBUG_BUILD == 1 ]; then
     BUILD_TARGET="$BUILD_TARGET-debug"
-fi
-
-if [ $USE_MAVLINK_GIMBAL == 1 ]; then
-    echo "Using MAVLink gimbal"
-    EXTRA_SIM="$EXTRA_SIM --gimbal"
 fi
 
 autotest=$(dirname $(readlink -e $0))
@@ -357,12 +359,8 @@ case $VEHICLE in
         cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         ;;
     ArduCopter)
-        if [ -n "$MODEL" ]; then
-            RUNSIM=""
-            cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
-        else
-            RUNSIM="nice $autotest/pysim/sim_wrapper.py --home=$SIMHOME --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
-        fi
+        RUNSIM=""
+        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
@@ -377,6 +375,11 @@ case $VEHICLE in
         ;;
 esac
 
+if [ $USE_MAVLINK_GIMBAL == 1 ]; then
+    echo "Using MAVLink gimbal"
+    cmd="$cmd --gimbal"
+fi
+
 if [ $START_HIL == 0 ]; then
 if [ $USE_VALGRIND == 1 ]; then
     echo "Using valgrind"
@@ -385,6 +388,9 @@ elif [ $USE_GDB == 1 ]; then
     echo "Using gdb"
     tfile=$(mktemp)
     [ $USE_GDB_STOPPED == 0 ] && {
+        if [ -n "$BREAKPOINT" ]; then
+            echo "b $BREAKPOINT" >> $tfile
+        fi
         echo r >> $tfile
     }
     $autotest/run_in_terminal_window.sh "ardupilot (gdb)" gdb -x $tfile --args $cmd || exit 1
