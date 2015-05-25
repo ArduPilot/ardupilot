@@ -204,6 +204,10 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 21, AP_MotorsHeli,  _direct_drive_tailspeed, AP_MOTOR_HELI_DDTAIL_DEFAULT),
 
+    // parameters 1 ~ 29 reserved for tradheli
+    // parameters 30 ~ 39 reserved for tricopter
+    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
+
     AP_GROUPEND
 };
 
