@@ -166,7 +166,6 @@ kill_tasks()
         killall -q JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf
         pkill -f runsim.py
         pkill -f sim_tracker.py
-        pkill -f sim_wrapper.py
     }
 }
 
