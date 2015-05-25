@@ -18,8 +18,8 @@ ifeq ($(SYSTYPE),Linux)
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN)
-  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
-  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+  TOOLPATH :=  $(subst :, ,$(PATH))
+  FIND_TOOL = $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW)
   # expect that tools are on the path
