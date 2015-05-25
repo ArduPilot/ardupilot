@@ -22,7 +22,7 @@
 #include "../AP_OpticalFlow/AP_OpticalFlow.h"
 #include "../AP_Terrain/AP_Terrain.h"
 #include "../SITL/SITL.h"
-#include "../SITL/SIM_Multicopter.h"
+#include "../SITL/SIM_Gimbal.h"
 
 class HAL_SITL;
 
@@ -190,6 +190,10 @@ private:
 
     // internal SITL model
     Aircraft *sitl_model;
+
+    // simulated gimbal
+    bool enable_gimbal;
+    Gimbal *gimbal;
 
     // TCP address to connect uartC to
     const char *_client_address;

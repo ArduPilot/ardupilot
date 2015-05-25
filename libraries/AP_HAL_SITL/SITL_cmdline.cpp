@@ -41,6 +41,7 @@ void SITL_State::_usage(void)
            "\t--console          use console instead of TCP ports\n"
            "\t--instance N       set instance of SITL (adds 10*instance to all port numbers)\n"
            "\t--speedup SPEEDUP  set simulation speedup\n"
+           "\t--gimbal           enable simulated MAVLink gimbal\n"
         );
 }
 
@@ -84,7 +85,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _instance = 0;
 
     enum long_options {
-        CMDLINE_CLIENT=0
+        CMDLINE_CLIENT=0,
+        CMDLINE_GIMBAL
     };
 
     const struct GetOptLong::option options[] = {
@@ -99,6 +101,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"client",          true,   0, CMDLINE_CLIENT},
+        {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {0, false, 0, 0}
     };
 
@@ -144,6 +147,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_CLIENT:
             _client_address = gopt.optarg;
+            break;
+        case CMDLINE_GIMBAL:
+            enable_gimbal = true;
             break;
         default:
             _usage();

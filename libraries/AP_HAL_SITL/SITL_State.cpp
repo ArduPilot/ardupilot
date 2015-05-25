@@ -89,6 +89,9 @@ void SITL_State::_sitl_setup(void)
         _update_compass(0, 0, 0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
 #endif
+        if (enable_gimbal) {
+            gimbal = new Gimbal(_sitl->state);
+        }
     }
 
     if (_synthetic_clock_mode) {
@@ -311,6 +314,10 @@ void SITL_State::_fdm_input_local(void)
 
     // get FDM output from the model
     sitl_model->fill_fdm(_sitl->state);
+
+    if (gimbal != NULL) {
+        gimbal->update();
+    }
 
     // update simulation time
     hal.scheduler->stop_clock(_sitl->state.timestamp_us);
