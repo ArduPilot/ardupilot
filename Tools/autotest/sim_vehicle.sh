@@ -163,7 +163,9 @@ shift $((OPTIND-1))
 kill_tasks() 
 {
     [ "$INSTANCE" -eq "0" ] && {
-        killall -q JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf
+	for pname in JSBSim lt-JSBSim ArduPlane.elf ArduCopter.elf APMrover2.elf AntennaTracker.elf JSBSIm.exe MAVProxy.exe; do
+	    pkill "$pname"
+	done
         pkill -f runsim.py
         pkill -f sim_tracker.py
     }
@@ -180,8 +182,6 @@ MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
 SIMIN_PORT="127.0.0.1:"$((5502+10*$INSTANCE))
 SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
 FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
-
-set -x
 
 [ -z "$VEHICLE" ] && {
     VEHICLE=$(basename $PWD)
@@ -287,22 +287,25 @@ if [ $DEBUG_BUILD == 1 ]; then
 fi
 
 autotest=$(dirname $(readlink -e $0))
-if [ $NO_REBUILD == 0 ]; then
 pushd $autotest/../../$VEHICLE || {
     echo "Failed to change to vehicle directory for $VEHICLE"
     usage
     exit 1
 }
 VEHICLEDIR=$(pwd)
+
+if [ $NO_REBUILD == 0 ]; then
 if [ $CLEAN_BUILD == 1 ]; then
+    echo "Building clean"
     make clean
 fi
+echo "Building $BUILD_TARGET"
 make $BUILD_TARGET -j$NUM_PROCS || {
     make clean
     make $BUILD_TARGET -j$NUM_PROCS
 }
-popd
 fi
+popd
 
 # get the location information
 if [ -z $CUSTOM_LOCATION ]; then
@@ -449,7 +452,12 @@ fi
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     options="$options --load-module=gimbal"
 fi
-mavproxy.py $options --cmd="$extra_cmd" $*
+
+if [ -f /usr/bin/cygstart ]; then
+    cygstart -w "/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe" $options --cmd="$extra_cmd" $*
+else
+    mavproxy.py $options --cmd="$extra_cmd" $*
+fi
 if [ $START_HIL == 0 ]; then
 kill_tasks
 fi
