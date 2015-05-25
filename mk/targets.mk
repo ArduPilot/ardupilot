@@ -88,8 +88,12 @@ $(1)-debug : $(1)
 $(1)-hilsensors : $(1)
 endef
 
+ifneq ($(findstring -, $(MAKECMDGOALS)),)
+ifneq (px4-v2,$(MAKECMDGOALS))
 # generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
 $(foreach board,$(BOARDS),$(foreach frame,$(FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
+endif
+endif
 
 apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
 apm2beta: apm2
