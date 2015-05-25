@@ -175,6 +175,13 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             camera_mount.set_roi_target(cmd.content.location);
         }
         break;
+
+    case MAV_CMD_DO_MOUNT_CONTROL:          // 205
+        // point the camera to a specified angle
+        camera_mount.set_angle_targets(cmd.content.mount_control.roll, 
+                                       cmd.content.mount_control.pitch, 
+                                       cmd.content.mount_control.yaw);
+        break;
 #endif
     }
 
@@ -247,7 +254,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_NAV_ROI:
     case MAV_CMD_DO_MOUNT_CONFIGURE:
-    case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:

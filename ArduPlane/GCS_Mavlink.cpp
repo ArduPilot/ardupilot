@@ -703,11 +703,17 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_GIMBAL_REPORT:
+#if MOUNT == ENABLED
+        CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
+        plane.camera_mount.send_gimbal_report(chan);
+#endif
+        break;
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
 
     case MSG_LIMITS_STATUS:
-    case MSG_GIMBAL_REPORT:
         // unused
         break;
     }
@@ -940,6 +946,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_GIMBAL_REPORT);
     }
 }
 
@@ -1451,6 +1458,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_SET:
     {
         handle_param_set(msg, &plane.DataFlash);
+        break;
+    }
+
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+    {
+#if MOUNT == ENABLED
+        handle_gimbal_report(plane.camera_mount, msg);
+#endif
         break;
     }
 
