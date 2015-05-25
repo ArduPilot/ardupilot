@@ -50,7 +50,6 @@ private:
 
     uint16_t control_port;
     uint16_t fdm_port;
-    char *autotest_dir;
     char *jsbsim_script;
     char *jsbsim_fgout;
     int jsbsim_stdout;

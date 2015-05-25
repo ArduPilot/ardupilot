@@ -58,6 +58,13 @@ public:
     }
 
     /*
+      set directory for additional files such as aircraft models
+     */
+    void set_autotest_dir(const char *_autotest_dir) {
+        autotest_dir = _autotest_dir;
+    }
+
+    /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;
@@ -90,6 +97,7 @@ protected:
     float scaled_frame_time_us;
     uint64_t last_wall_time_us;
     uint8_t instance;
+    const char *autotest_dir;
 
     bool on_ground(const Vector3f &pos) const;
 
