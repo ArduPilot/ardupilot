@@ -1,6 +1,8 @@
 # PX4 build is via external build system
 
+ifeq ($(PX4_ROOT),)
 PX4_ROOT=../PX4Firmware
+endif
 
 # cope with relative paths
 ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
