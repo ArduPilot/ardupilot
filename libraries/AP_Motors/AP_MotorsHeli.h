@@ -89,11 +89,7 @@ class AP_MotorsHeli : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsHeli( RC_Channel&      rc_roll,
-                   RC_Channel&      rc_pitch,
-                   RC_Channel&      rc_throttle,
-                   RC_Channel&      rc_yaw,
-                   RC_Channel&      servo_aux,
+    AP_MotorsHeli( RC_Channel&      servo_aux,
                    RC_Channel&      servo_rotor,
                    RC_Channel&      swash_servo_1,
                    RC_Channel&      swash_servo_2,
@@ -101,7 +97,7 @@ public:
                    RC_Channel&      yaw_servo,
                    uint16_t         loop_rate,
                    uint16_t         speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, loop_rate, speed_hz),
+        AP_Motors(loop_rate, speed_hz),
         _servo_aux(servo_aux),
         _servo_rsc(servo_rotor),
         _servo_1(swash_servo_1),
@@ -207,6 +203,12 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint16_t    get_motor_mask();
 
+    // set_radio_passthrough used to pass radio inputs directly to outputs
+    void set_radio_passthrough(int16_t radio_roll_input, int16_t radio_pitch_input, int16_t radio_throttle_input, int16_t radio_yaw_input);
+
+    // reset_radio_passthrough used to reset all radio inputs to center
+    void reset_radio_passthrough();
+
     // output - sends commands to the motors
     void    output();
 
@@ -310,6 +312,10 @@ private:
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
     float           _dt;                        // main loop time
     int16_t         _delta_phase_angle;         // phase angle dynamic compensation
+    int16_t         _roll_radio_passthrough;    // roll control PWM direct from radio, used for manual control
+    int16_t         _pitch_radio_passthrough;   // pitch control PWM direct from radio, used for manual control
+    int16_t         _throttle_radio_passthrough;// throttle control PWM direct from radio, used for manual control
+    int16_t         _yaw_radio_passthrough;     // yaw control PWM direct from radio, used for manual control
 };
 
 #endif  // AP_MOTORSHELI

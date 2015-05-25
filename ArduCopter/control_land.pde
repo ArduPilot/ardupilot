@@ -81,12 +81,12 @@ static void land_gps_run()
             update_simple_mode();
 
             // process pilot's roll and pitch input
-            roll_control = g.rc_1.control_in;
-            pitch_control = g.rc_2.control_in;
+            roll_control = channel_roll->control_in;
+            pitch_control = channel_pitch->control_in;
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
 
     // process roll, pitch inputs
@@ -147,11 +147,11 @@ static void land_nogps_run()
             update_simple_mode();
 
             // get pilot desired lean angles
-            get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+            get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
     }
 
     // call attitude controller

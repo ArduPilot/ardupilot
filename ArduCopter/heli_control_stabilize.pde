@@ -36,19 +36,22 @@ static void heli_stabilize_run()
         heli_flags.init_targets_on_arming=false;
         attitude_control.relax_bf_rate_controller();
     }
-    
+
+    // send RC inputs direct into motors library for use during manual passthrough for helicopter setup
+    heli_radio_passthrough();
+
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_collective(g.rc_3.control_in);
+    pilot_throttle_scaled = get_pilot_desired_collective(channel_throttle->control_in);
 
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

@@ -403,10 +403,10 @@ void report_optflow()
 static void
 print_radio_values()
 {
-    cliSerial->printf_P(PSTR("CH1: %d | %d\n"), (int)g.rc_1.radio_min, (int)g.rc_1.radio_max);
-    cliSerial->printf_P(PSTR("CH2: %d | %d\n"), (int)g.rc_2.radio_min, (int)g.rc_2.radio_max);
-    cliSerial->printf_P(PSTR("CH3: %d | %d\n"), (int)g.rc_3.radio_min, (int)g.rc_3.radio_max);
-    cliSerial->printf_P(PSTR("CH4: %d | %d\n"), (int)g.rc_4.radio_min, (int)g.rc_4.radio_max);
+    cliSerial->printf_P(PSTR("CH1: %d | %d\n"), (int)channel_roll->radio_min, (int)channel_roll->radio_max);
+    cliSerial->printf_P(PSTR("CH2: %d | %d\n"), (int)channel_pitch->radio_min, (int)channel_pitch->radio_max);
+    cliSerial->printf_P(PSTR("CH3: %d | %d\n"), (int)channel_throttle->radio_min, (int)channel_throttle->radio_max);
+    cliSerial->printf_P(PSTR("CH4: %d | %d\n"), (int)channel_yaw->radio_min, (int)channel_yaw->radio_max);
     cliSerial->printf_P(PSTR("CH5: %d | %d\n"), (int)g.rc_5.radio_min, (int)g.rc_5.radio_max);
     cliSerial->printf_P(PSTR("CH6: %d | %d\n"), (int)g.rc_6.radio_min, (int)g.rc_6.radio_max);
     cliSerial->printf_P(PSTR("CH7: %d | %d\n"), (int)g.rc_7.radio_min, (int)g.rc_7.radio_max);

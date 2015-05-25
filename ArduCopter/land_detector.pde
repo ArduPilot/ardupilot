@@ -46,7 +46,7 @@ static void update_land_detector()
         // we've sensed movement up or down so reset land_detector
         land_detector = 0;
         // if throttle output is high then clear landing flag
-        if (motors.get_throttle_out() > get_non_takeoff_throttle()) {
+        if (motors.get_throttle() > get_non_takeoff_throttle()) {
             set_land_complete(false);
         }
     }
@@ -62,7 +62,7 @@ static void update_throttle_thr_mix()
 {
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
-        if(!motors.armed() || g.rc_3.control_in <= 0) {
+        if(!motors.armed() || channel_throttle->control_in <= 0) {
             motors.set_throttle_mix_min();
         } else {
             motors.set_throttle_mix_mid();

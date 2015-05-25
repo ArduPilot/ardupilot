@@ -263,7 +263,7 @@ static void autotune_run()
     // this should not actually be possible because of the autotune_init() checks
     if (!ap.auto_armed || !motors.get_interlock()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(g.rc_3.control_in)-throttle_average);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         return;
     }
 
@@ -271,13 +271,13 @@ static void autotune_run()
     update_simple_mode();
 
     // get pilot desired lean angles
-    get_pilot_desired_lean_angles(g.rc_1.control_in, g.rc_2.control_in, target_roll, target_pitch);
+    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(g.rc_4.control_in);
+    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
 
     // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(g.rc_3.control_in);
+    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
 
     // check for pilot requested take-off - this should not actually be possible because of autotune_init() checks
     if (ap.land_complete && target_climb_rate > 0) {
@@ -290,7 +290,7 @@ static void autotune_run()
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
-        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(g.rc_3.control_in),true,g.throttle_filt);
+        attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
         pos_control.set_alt_target_to_current_alt();
     }else{
         // check if pilot is overriding the controls

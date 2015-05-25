@@ -94,11 +94,11 @@ static void update_thr_average()
     }
 
     // get throttle output
-    int16_t throttle = g.rc_3.servo_out;
+    float throttle = motors.get_throttle();
 
     // calc average throttle if we are in a level hover
     if (throttle > g.throttle_min && abs(climb_rate) < 60 && labs(ahrs.roll_sensor) < 500 && labs(ahrs.pitch_sensor) < 500) {
-        throttle_average = throttle_average * 0.99f + (float)throttle * 0.01f;
+        throttle_average = throttle_average * 0.99f + throttle * 0.01f;
         // update position controller
         pos_control.set_throttle_hover(throttle_average);
     }
@@ -122,7 +122,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 {
     int16_t throttle_out;
 
-    int16_t mid_stick = g.rc_3.get_control_mid();
+    int16_t mid_stick = channel_throttle->get_control_mid();
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
@@ -154,7 +154,7 @@ static float get_pilot_desired_climb_rate(float throttle_control)
     }
 
     float desired_rate = 0.0f;
-    float mid_stick = g.rc_3.get_control_mid();
+    float mid_stick = channel_throttle->get_control_mid();
     float deadband_top = mid_stick + g.throttle_deadzone;
     float deadband_bottom = mid_stick - g.throttle_deadzone;
 
@@ -190,7 +190,7 @@ static float get_non_takeoff_throttle()
 
 static float get_takeoff_trigger_throttle()
 {
-    return g.rc_3.get_control_mid() + g.takeoff_trigger_dz;
+    return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
 }
 
 // get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
@@ -213,7 +213,7 @@ static float get_throttle_pre_takeoff(float input_thr)
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {
-        in_min = g.rc_3.get_control_mid();
+        in_min = channel_throttle->get_control_mid();
     }
 
     float input_range = in_max-in_min;
