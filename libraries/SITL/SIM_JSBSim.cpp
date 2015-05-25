@@ -121,7 +121,7 @@ bool JSBSim::create_templates(void)
         hal.scheduler->panic("Unable to create jsbsim fgout script");
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n" 
-            "<output name=\"localhost\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
+            "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
             fdm_port);
     fclose(f);
 
@@ -420,7 +420,6 @@ void JSBSim::drain_control_socket()
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 fprintf(stderr, "error recv on control socket: %s",
                         strerror(errno));
-                exit(1);
             }
         } else {
             // fprintf(stderr, "received from control socket: %s\n", buf);
