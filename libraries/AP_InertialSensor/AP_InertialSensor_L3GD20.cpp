@@ -217,7 +217,7 @@ uint16_t AP_InertialSensor_L3GD20::_init_sensor( Sample_rate sample_rate )
     }
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_InertialSensor_L3GD20::_poll_data));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3GD20::_poll_data, void));
 
 #if L3GD20_DEBUG
     _dump_registers();

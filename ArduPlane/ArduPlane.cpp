@@ -26,7 +26,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpmf-conversions"
-#define SCHED_TASK(func) AP_HAL_CLASSPROC_VOID(&plane, &Plane::func)
+#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&plane, &Plane::func, void)
 
 /*
   scheduler table - all regular tasks are listed here, along with how

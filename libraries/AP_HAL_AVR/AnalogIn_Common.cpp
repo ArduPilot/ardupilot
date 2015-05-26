@@ -23,7 +23,7 @@ AVRAnalogIn::AVRAnalogIn() :
 void AVRAnalogIn::init(void* machtnichts) 
 {
     /* Register AVRAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AVRAnalogIn::_timer_event));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AVRAnalogIn::_timer_event, void));
     /* Register each private channel with AVRAnalogIn. */
     _register_channel(&_vcc);
 }

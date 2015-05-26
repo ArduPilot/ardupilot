@@ -64,7 +64,7 @@ bool OreoLED_PX4::init()
         // set overall health
         _overall_health = true;
         // register timer
-        hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&OreoLED_PX4::update_timer));
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&OreoLED_PX4::update_timer, void));
     }
 
     // return health

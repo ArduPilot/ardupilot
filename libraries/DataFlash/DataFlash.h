@@ -30,7 +30,9 @@
 class DataFlash_Class
 {
 public:
-#if APM_BUILD_DELEGATES
+#if APM_BUILD_FUNCTOR
+    FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
+#elif APM_BUILD_DELEGATES
     typedef DELEGATE_FUNCTION2(void, AP_HAL::BetterStream*, uint8_t) print_mode_fn;
 #else
     typedef void (*print_mode_fn)(AP_HAL::BetterStream *, uint8_t);

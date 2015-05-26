@@ -84,7 +84,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager& serial_manager)
         _mode_data_ready = false;
         _sats_data_ready = false;
         _sport_status = 0;
-        hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Frsky_Telem::sport_tick));
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::sport_tick, void));
     }
 
     if (_port != NULL) {

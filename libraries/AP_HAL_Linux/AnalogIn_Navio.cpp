@@ -78,7 +78,7 @@ void NavioAnalogIn::init(void* implspecific)
 {
     _adc->init();
     hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process( AP_HAL_MEMBERPROC(&NavioAnalogIn::_update));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&NavioAnalogIn::_update, void));
     hal.scheduler->resume_timer_procs();
 }
 

@@ -75,7 +75,7 @@ void AP_Terrain::schedule_disk_io(void)
 
     if (!timer_setup) {
         timer_setup = true;
-        hal.scheduler->register_io_process(AP_HAL_MEMBERPROC(&AP_Terrain::io_timer));        
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Terrain::io_timer, void));
     }
 
     switch (disk_io_state) {
