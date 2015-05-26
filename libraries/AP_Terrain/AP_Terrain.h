@@ -352,7 +352,7 @@ private:
     union grid_io_block disk_block;
 
     // last time we asked for more grids
-    uint32_t last_request_time_ms;
+    uint32_t last_request_time_ms[MAVLINK_COMM_NUM_BUFFERS];
 
     static const uint64_t bitmap_mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
 
