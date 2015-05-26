@@ -618,6 +618,10 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         _board_orientation = saved_orientation;
 
         _calibrating = false;
+
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
+
         return true;
     }
 
@@ -630,6 +634,7 @@ failed:
     }
     _board_orientation = saved_orientation;
     _calibrating = false;
+
     return false;
 }
 #endif
