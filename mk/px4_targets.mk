@@ -113,6 +113,7 @@ px4-clean: clean px4-archives-clean
 
 px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
+	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
 
 px4-v1-upload: px4-v1
 	$(RULEHDR)
