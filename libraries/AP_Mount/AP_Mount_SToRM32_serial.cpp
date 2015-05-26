@@ -179,9 +179,9 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
     yaw_deg = -yaw_deg;
 
     // send CMD_SETANGLE
-    cmd_set_angles_data.pitch = pitch_deg*100;
-    cmd_set_angles_data.roll = roll_deg*100;
-    cmd_set_angles_data.yaw = yaw_deg*100;
+    cmd_set_angles_data.pitch = pitch_deg;
+    cmd_set_angles_data.roll = roll_deg;
+    cmd_set_angles_data.yaw = yaw_deg;
 
     uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
 
