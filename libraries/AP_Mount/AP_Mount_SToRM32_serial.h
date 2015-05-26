@@ -43,8 +43,8 @@ public:
 
 private:
 
-    // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-    void send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode);
+    // send_target_angles
+    void send_target_angles(float pitch_deg, float roll_deg, float yaw_deg);
 
     // send read data request
     void get_angles();

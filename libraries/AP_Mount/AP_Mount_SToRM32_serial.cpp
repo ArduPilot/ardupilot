@@ -97,7 +97,7 @@ void AP_Mount_SToRM32_serial::update()
     }
     if (can_send(resend_now)) {
         if (resend_now) {
-            send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
+            send_target_angles(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z));
             get_angles();
             _reply_type = ReplyType_ACK;
             _reply_counter = 0;
@@ -146,8 +146,8 @@ bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
 }
 
 
-// send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-void AP_Mount_SToRM32_serial::send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode)
+// send_target_angles
+void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg, float yaw_deg)
 {
 
     static cmd_set_angles_struct cmd_set_angles_data = {
