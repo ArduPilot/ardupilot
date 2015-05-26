@@ -3,6 +3,8 @@
 #include "Compass.h"
 #include <AP_Notify.h>
 
+extern AP_HAL::HAL& hal;
+
 void
 Compass::compass_cal_update()
 {
@@ -115,6 +117,8 @@ Compass::accept_calibration(uint8_t i)
         if (!is_calibrating()) {
             AP_Notify::events.compass_cal_saved = 1;
         }
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
         return true;
     } else {
         return false;
