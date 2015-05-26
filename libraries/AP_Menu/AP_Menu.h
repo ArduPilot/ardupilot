@@ -58,8 +58,6 @@ public:
     ///
 #if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(func, int8_t, uint8_t, const struct arg *);
-#elif APM_BUILD_DELEGATES
-    typedef DELEGATE_FUNCTION2(int8_t, uint8_t, const struct arg *) func;
 #else
     typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
 #endif
@@ -77,8 +75,6 @@ public:
     ///
 #if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(preprompt, bool);
-#elif APM_BUILD_DELEGATES
-    typedef DELEGATE_FUNCTION0(bool) preprompt;
 #else
     typedef bool (*preprompt)(void);
 #endif
@@ -104,8 +100,6 @@ public:
         ///
 #if APM_BUILD_FUNCTOR
         FUNCTOR_DECLARE(func, int8_t, uint8_t, const struct arg *);
-#elif APM_BUILD_DELEGATES
-        DELEGATE_FUNCTION2(int8_t, uint8_t, const struct arg *) func;
 #else
         int8_t (*func)(uint8_t argc, const struct arg *argv);
 #endif
