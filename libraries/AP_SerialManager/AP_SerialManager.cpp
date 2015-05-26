@@ -156,9 +156,16 @@ void AP_SerialManager::init()
                 case SerialProtocol_AlexMos:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud = AP_SERIALMANAGER_ALEXMOS_BAUD / 1000;   // update baud param in case user looks at it
-                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD, 
+                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
+                    break;
+                case SerialProtocol_SToRM32:
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud = AP_SERIALMANAGER_SToRM32_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_SToRM32_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_SToRM32_BUFSIZE_TX);
                     break;
             }
         }
