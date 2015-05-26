@@ -39,6 +39,7 @@ class AP_Mount_Servo;
 class AP_Mount_MAVLink;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
+class AP_Mount_SToRM32_serial;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -53,6 +54,7 @@ class AP_Mount
     friend class AP_Mount_MAVLink;
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
+    friend class AP_Mount_SToRM32_serial;
 
 public:
 
@@ -62,7 +64,8 @@ public:
         Mount_Type_Servo = 1,           /// servo controlled mount
         Mount_Type_MAVLink = 2,         /// MAVLink controlled mount
         Mount_Type_Alexmos = 3,         /// Alexmos mount
-        Mount_Type_SToRM32 = 4          /// SToRM32 mount
+        Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
     };
 
     struct gimbal_params {
