@@ -72,8 +72,6 @@ public:
     GCS_MAVLINK();
 #if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-#elif APM_BUILD_DELEGATES
-    typedef DELEGATE_FUNCTION1(void, AP_HAL::UARTDriver*) run_cli_fn;
 #else
     typedef void (*run_cli_fn)(AP_HAL::UARTDriver *);
 #endif
@@ -303,8 +301,6 @@ private:
     void lock_channel(mavlink_channel_t chan, bool lock);
 #if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
-#elif APM_BUILD_DELEGATES
-    typedef DELEGATE_FUNCTION1(bool, uint8_t) set_mode_fn;
 #else    
     typedef bool (*set_mode_fn)(uint8_t);
 #endif
