@@ -70,7 +70,7 @@ void setup(void)
 			 AP_InertialSensor::RATE_50HZ);
 
     // initialise the scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]), NULL);
+    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
 }
 
 void loop(void)
