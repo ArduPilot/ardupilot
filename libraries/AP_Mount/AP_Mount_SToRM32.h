@@ -17,10 +17,11 @@
 #include <RC_Channel.h>
 #include <AP_Mount_Backend.h>
 
-#define AP_MOUNT_STORM32_SYSID      71      // hardcoded system id
-#define AP_MOUNT_STORM32_COMPID     67      // hard coded component id for communicating with the gimbal
 
 #define AP_MOUNT_STORM32_RESEND_MS  1000    // resend angle targets to gimbal once per second
+
+#define SToRM32_REPLY_TYPE_BUF_SIZE 8
+
 
 class AP_Mount_SToRM32 : public AP_Mount_Backend
 {
@@ -49,10 +50,122 @@ private:
     // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
     void send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode);
 
+    // send read data request
+    void get_angles();
+
+    // read_incoming
+    void read_incoming();
+    void parse_reply();
+
+    enum ReplyType {
+        ReplyType_UNKNOWN = 0,
+        ReplyType_DATA,
+        ReplyType_ACK
+    };
+
+    //void add_next_reply(ReplyType reply_type);
+    uint8_t get_reply_size(ReplyType reply_type);
+    bool can_send(bool with_control);
+
+    struct PACKED SToRM32_reply_data_struct {
+        uint16_t state;
+        uint16_t status;
+        uint16_t status2;
+
+        uint16_t i2c_errors;
+        uint16_t lipo_voltage;
+        uint16_t systicks;
+        uint16_t cycle_time;
+
+        int16_t imu1_gx;
+        int16_t imu1_gy;
+        int16_t imu1_gz;
+
+        int16_t imu1_ax;
+        int16_t imu1_ay;
+        int16_t imu1_az;
+
+        int16_t ahrs_x;
+        int16_t ahrs_y;
+        int16_t ahrs_z;
+
+        int16_t imu1_pitch;
+        int16_t imu1_roll;
+        int16_t imu1_yaw;
+
+        int16_t cpid_pitch;
+        int16_t cpid_roll;
+        int16_t cpid_yaw;
+
+        uint16_t input_pitch;
+        uint16_t input_roll;
+        uint16_t input_yaw;
+
+        int16_t imu2_pitch;
+        int16_t imu2_roll;
+        int16_t imu2_yaw;
+
+        int16_t mag2_yaw;
+        int16_t mag2_pitch;
+
+        int16_t ahrs_imu_confidence;
+
+        uint16_t function_input_values;
+
+        uint16_t crc;
+        uint8_t magic;
+    };
+
+    struct PACKED SToRM32_reply_ack_struct {
+        uint8_t magic;
+        uint8_t something[5];
+        uint8_t data;
+        uint16_t crc;
+    };
+
+    struct PACKED cmd_set_angles_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+        float pitch;
+        float roll;
+        float yaw;
+        uint8_t flags;
+        uint8_t type;
+        uint16_t crc;
+    };
+
+
     // internal variables
+    AP_HAL::UARTDriver *_port;
+
     bool _initialised;              // true once the driver has been initialised
-    mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal.  Currently hard-coded to Telem2
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
+
+    bool _idle;
+    uint8_t _reply_length;
+    uint8_t _reply_counter;
+    ReplyType _reply_type;
+
+
+    union PACKED SToRM32_reply {
+        SToRM32_reply_data_struct data;
+        SToRM32_reply_ack_struct ack;
+        uint8_t bytes[];
+    } _buffer;
+
+
+    // // expected reply types ring buffer
+    // static const uint8_t _next_reply_type_buf_size = 100;
+    // ReplyType _next_reply_type_buf[_next_reply_type_buf_size];
+    // volatile uint16_t _next_reply_type_buf_head;
+    // volatile uint16_t _next_reply_type_buf_tail;
+
+    // keep the last _current_angle values
+    Vector3l _current_angle;
 };
 
 #endif // __AP_MOUNT_STORM32_H__
