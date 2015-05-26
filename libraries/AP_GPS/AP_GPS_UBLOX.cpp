@@ -545,13 +545,13 @@ AP_GPS_UBLOX::_parse_gps(void)
             _last_5hz_time = hal.scheduler->millis();
         }
 
-		if (_fix_count == 50 && gps._sbas_mode != 2) {
-			// ask for SBAS settings every 20 seconds
+		if (_fix_count == 5 && gps._sbas_mode != 2) {
+			// ask for SBAS settings every 2 seconds
 			Debug("Asking for SBAS setting\n");
 			_send_message(CLASS_CFG, MSG_CFG_SBAS, NULL, 0);
 		}
-		if (_fix_count == 100) {
-			// ask for nav settings every 20 seconds
+		if (_fix_count == 10) {
+			// ask for nav settings every 2 seconds
 			Debug("Asking for engine setting\n");
 			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
             _fix_count = 0;
