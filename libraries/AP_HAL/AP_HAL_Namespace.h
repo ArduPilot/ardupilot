@@ -7,18 +7,8 @@
 #include "string.h"
 #include "utility/FastDelegate.h"
 
-#if defined(__AVR__)
-/*
-  gcc on AVR doesn't allow for delegates in progmem. It gives a
-  warning that the progmem area is uninitialised, and fills the area
-  with zeros. This is a workaround.
- */
-#define DELEGATE_FUNCTION_VOID_TYPEDEF(type)  typedef void (*type)(const void *)
-#define AP_HAL_CLASSPROC_VOID(classptr, func) (void (*)(const void*))func
-#else
 #define DELEGATE_FUNCTION_VOID_TYPEDEF(type)  typedef fastdelegate::FastDelegate0<void> type
 #define AP_HAL_CLASSPROC_VOID(classptr, func) fastdelegate::MakeDelegate(classptr, func)
-#endif
 
 // macros to hide the details of delegate functions using FastDelegate
 #define AP_HAL_CLASSPROC(classptr, func) fastdelegate::MakeDelegate(classptr, func)
