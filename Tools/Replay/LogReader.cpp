@@ -200,6 +200,9 @@ bool LogReader::update(char type[5])
 	    msgparser[f.type] = new MsgHandler_ARSP(formats[f.type], dataflash,
                                                     last_timestamp_usec,
                                                     airspeed);
+	} else if (streq(name, "FRAM")) {
+	    msgparser[f.type] = new MsgHandler_FRAM(formats[f.type], dataflash,
+                                                    last_timestamp_usec);
 	} else {
             ::printf("  No parser for (%s)\n", name);
 	}
