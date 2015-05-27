@@ -273,7 +273,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
     }
     struct log_Ubx1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_UBX1_MSG),
-        timestamp  : hal.scheduler->millis(),
+        time_us    : hal.scheduler->micros64(),
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
         jamInd     : _buffer.mon_hw_60.jamInd,
@@ -297,7 +297,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 
     struct log_Ubx2 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_UBX2_MSG),
-        timestamp : hal.scheduler->millis(),
+        time_us   : hal.scheduler->micros64(),
         instance  : state.instance,
         ofsI      : _buffer.mon_hw2.ofsI,
         magI      : _buffer.mon_hw2.magI,
@@ -313,7 +313,7 @@ void AP_GPS_UBLOX::log_accuracy(void) {
     }
     struct log_Ubx3 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_UBX3_MSG),
-        timestamp  : hal.scheduler->millis(),
+        time_us  : hal.scheduler->micros64(),
         instance   : state.instance,
         hAcc     : state.horizontal_accuracy,
         vAcc     : state.vertical_accuracy,
@@ -329,11 +329,11 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
-    uint32_t now = hal.scheduler->millis();
+    uint64_t now = hal.scheduler->micros64();
     for (uint8_t i=0; i<raw.numSV; i++) {
         struct log_GPS_RAW pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAW_MSG),
-            timestamp  : now,
+            time_us    : now,
             iTOW       : raw.iTOW,
             week       : raw.week,
             numSV      : raw.numSV,

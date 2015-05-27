@@ -111,7 +111,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
 
     struct log_AHRS pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SIMSTATE_MSG),
-        time_ms : hal.scheduler->millis(),
+        time_us : hal.scheduler->micros64(),
         roll    : (int16_t)(state.rollDeg*100),
         pitch   : (int16_t)(state.pitchDeg*100),
         yaw     : (uint16_t)(wrap_360_cd(yaw*100)),

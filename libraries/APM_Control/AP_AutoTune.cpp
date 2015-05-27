@@ -331,7 +331,7 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 
     struct log_ATRP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        timestamp  : hal.scheduler->millis(),
+        time_us    : hal.scheduler->micros64(),
         type       : type,
     	state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),

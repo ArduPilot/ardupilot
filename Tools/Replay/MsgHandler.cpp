@@ -46,6 +46,8 @@ void MsgHandler::init_field_types()
     add_field_type('M', sizeof(uint8_t));
     add_field_type('N', sizeof(char[16]));
     add_field_type('Z', sizeof(char[64]));
+    add_field_type('q', sizeof(int64_t));
+    add_field_type('Q', sizeof(uint64_t));
 }
 
 struct MsgHandler::format_field_info *MsgHandler::find_field_info(const char *label)
@@ -193,13 +195,16 @@ MsgHandler::~MsgHandler()
     }
 }
 
-extern uint64_t last_timestamp_usec; // fixme!
+void MsgHandler::wait_timestamp_usec(uint64_t timestamp)
+{
+    last_timestamp_usec = timestamp;
+    hal.scheduler->stop_clock(timestamp);
+}
 
 void MsgHandler::wait_timestamp(uint32_t timestamp)
 {
-    uint64_t timestamp_usec = timestamp*1000UL;
-    last_timestamp_usec = timestamp_usec;
-    hal.scheduler->stop_clock(timestamp_usec);
+    uint64_t usecs = timestamp*1000UL;
+    wait_timestamp_usec(usecs);
 }
 
 void MsgHandler::location_from_msg(uint8_t *msg,
@@ -240,13 +245,20 @@ void MsgHandler::attitude_from_msg(uint8_t *msg,
     att[2] = require_field_uint16_t(msg, label_yaw) * 0.01f;
 }
 
+void MsgHandler::field_not_found(uint8_t *msg, const char *label)
+{
+    char all_labels[256];
+    uint8_t type = msg[2];
+    string_for_labels(all_labels, 256);
+    ::printf("Field (%s) not found for id=%d; options are (%s)\n",
+             label, type, all_labels);
+    abort();
+}
+
 void MsgHandler::require_field(uint8_t *msg, const char *label, char *buffer, uint8_t bufferlen)
 {
     if (! field_value(msg, label, buffer, bufferlen)) {
-        char all_labels[256];
-        string_for_labels(all_labels, 256);
-        ::printf("Field (%s) not found; options are (%s)\n", label, all_labels);
-        exit(1);
+        field_not_found(msg,label);
     }
 }
 
@@ -283,9 +295,19 @@ int16_t MsgHandler::require_field_int16_t(uint8_t *msg, const char *label)
 
 void MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
 {
-    uint32_t timestamp;
-    require_field(msg, "TimeMS", timestamp);
-    wait_timestamp(timestamp);
+    uint64_t time_us;
+    uint64_t time_ms;
+
+    if (field_value(msg, "TimeUS", time_us)) {
+        // 64-bit timestamp present - great!
+        wait_timestamp_usec(time_us);
+    } else if (field_value(msg, "TimeMS", time_ms)) {
+        // there is special rounding code that needs to be crossed in
+        // wait_timestamp:
+        wait_timestamp(time_ms);
+    } else {
+        ::printf("No timestamp on message");
+    }
 }
 
 
@@ -372,9 +394,13 @@ void MsgHandler_GPS2::process_message(uint8_t *msg)
 
 void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
 {
-    uint32_t timestamp;
-    require_field(msg, "T", timestamp);
-    wait_timestamp(timestamp);
+    uint64_t time_us;
+    if (! field_value(msg, "TimeUS", time_us)) {
+        uint32_t timestamp;
+        require_field(msg, "T", timestamp);
+        time_us = timestamp * 1000;
+    }
+    wait_timestamp_usec(time_us);
 
     Location loc;
     location_from_msg(msg, loc, "Lat", "Lng", "Alt");
@@ -384,7 +410,7 @@ void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, 
     uint8_t status = require_field_uint8_t(msg, "Status");
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
-               timestamp,
+               uint32_t(time_us/1000),
                loc,
                vel,
                require_field_uint8_t(msg, "NSats"),
@@ -396,7 +422,11 @@ void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, 
 
     if (responsible_for_relalt) {
         // this could possibly check for the presence of "RelAlt" label?
-        rel_altitude = 0.01f * require_field_int32_t(msg, "RelAlt");
+        int32_t tmp;
+        if (! field_value(msg, "RAlt", tmp)) {
+            tmp = require_field_int32_t(msg, "RelAlt");
+        }
+        rel_altitude = 0.01f * tmp;
     }
 
     dataflash.WriteBlock(msg, f.length);

@@ -25,7 +25,7 @@ public:
 
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
-        uint32_t timestamp;
+        uint64_t time_us;
         uint8_t  type;
         uint8_t  state;
         int16_t  servo;
