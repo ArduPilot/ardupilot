@@ -75,6 +75,9 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     free(s);
 
     set_speedup(1);
+
+    last_wall_time_us = get_wall_time_us();
+    frame_counter = 0;
 }
 
 /*
