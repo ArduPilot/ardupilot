@@ -314,6 +314,55 @@ void AP_GPS_UBLOX::log_accuracy(void) {
     };
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_GPS_UBLOX::log_ack(uint8_t class_id, uint8_t msg_id) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+
+    struct log_Uack pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UACK_MSG),
+        time_ms  : hal.scheduler->millis(),
+        instance : state.instance,
+        clsID    : class_id,
+        msgID    : msg_id
+    };
+
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_GPS_UBLOX::log_nak(uint8_t class_id, uint8_t msg_id) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+
+    struct log_Uack pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UNAK_MSG),
+        time_ms  : hal.scheduler->millis(),
+        instance : state.instance,
+        clsID    : class_id,
+        msgID    : msg_id
+    };
+
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_GPS_UBLOX::log_nav_settings(uint8_t nav_eng, int8_t min_elev) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+
+    struct log_Ustg pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_USTG_MSG),
+        time_ms  : hal.scheduler->millis(),
+        instance : state.instance,
+        nav_engine : nav_eng,
+        min_elev : min_elev
+    };
+
+    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+}
+
 #endif // UBLOX_HW_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
@@ -334,10 +383,22 @@ AP_GPS_UBLOX::_parse_gps(void)
 {
     if (_class == CLASS_ACK) {
         Debug("ACK %u", (unsigned)_msg_id);
+
+#if UBLOX_HW_LOGGING
+        if (_msg_id == MSG_ACK_ACK) {
+            log_ack(_buffer.ack.clsID, _buffer.ack.msgID);
+        } else if (_msg_id == MSG_ACK_NACK) {
+            log_nak(_buffer.ack.clsID, _buffer.ack.msgID);
+        }
+#endif
+
         return false;
     }
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_NAV_SETTINGS) {
+#if UBLOX_HW_LOGGING
+        log_nav_settings(_buffer.nav_settings.dynModel, _buffer.nav_settings.minElev);
+#endif
 		Debug("Got settings %u min_elev %d drLimit %u\n", 
               (unsigned)_buffer.nav_settings.dynModel,
               (int)_buffer.nav_settings.minElev,

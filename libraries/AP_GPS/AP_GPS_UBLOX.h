@@ -200,6 +200,10 @@ private:
         uint8_t globalFlags;
         uint16_t reserved;
     };
+    struct PACKED ubx_ack_ack {
+        uint8_t clsID;
+        uint8_t msgID;
+    };
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -212,6 +216,7 @@ private:
         ubx_mon_hw2 mon_hw2;
         ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
+        ubx_ack_ack ack;
         uint8_t bytes[];
     } _buffer;
 
@@ -306,6 +311,9 @@ private:
     void log_mon_hw(void);
     void log_mon_hw2(void);
     void log_accuracy(void);
+    void log_ack(uint8_t class_id, uint8_t msg_id);
+    void log_nak(uint8_t class_id, uint8_t msg_id);
+    void log_nav_settings(uint8_t nav_eng, int8_t min_elev);
 };
 
 #endif // __AP_GPS_UBLOX_H__
