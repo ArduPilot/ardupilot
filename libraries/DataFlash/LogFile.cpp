@@ -335,6 +335,20 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
             ofs += sizeof(v);
             break;
         }
+        case 'q': {
+            int64_t v;
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            port->printf_P(PSTR("%lld"), (long long)v);
+            ofs += sizeof(v);
+            break;
+        }
+        case 'Q': {
+            uint64_t v;
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            port->printf_P(PSTR("%llu"), (unsigned long long)v);
+            ofs += sizeof(v);
+            break;
+        }
         case 'f': {
             float v;
             memcpy(&v, &pkt[ofs], sizeof(v));
