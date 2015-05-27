@@ -11,9 +11,12 @@ static void landinggear_update(){
 
         // if we are doing an automatic landing procedure, force the landing gear to deploy.
         // To-Do: should we pause the auto-land procedure to give time for gear to come down?
-        if (control_mode == LAND || (control_mode==RTL && rtl_state == RTL_Land) || (control_mode == AUTO && auto_mode == Auto_Land)){
+        if (control_mode == LAND ||
+           (control_mode==RTL && (rtl_state == RTL_LoiterAtHome || rtl_state == RTL_Land || rtl_state == RTL_FinalDescent)) ||
+           (control_mode == AUTO && auto_mode == Auto_Land) ||
+           (control_mode == AUTO && auto_mode == Auto_RTL && (rtl_state == RTL_LoiterAtHome || rtl_state == RTL_Land || rtl_state == RTL_FinalDescent))) {
             landinggear.force_deploy(true);
-        }            
+        }
 
         landinggear.update();
 
