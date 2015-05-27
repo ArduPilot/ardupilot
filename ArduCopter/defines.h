@@ -252,7 +252,7 @@ enum FlipState {
 #define MASK_LOG_CURRENT                (1<<9)
 #define MASK_LOG_RCOUT                  (1<<10)
 #define MASK_LOG_OPTFLOW                (1<<11)
-#define MASK_LOG_PID                    (1<<12) // deprecated
+#define MASK_LOG_PID                    (1<<12)
 #define MASK_LOG_COMPASS                (1<<13)
 #define MASK_LOG_INAV                   (1<<14) // deprecated
 #define MASK_LOG_CAMERA                 (1<<15)

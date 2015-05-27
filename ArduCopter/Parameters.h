@@ -415,7 +415,7 @@ public:
 
     AP_Int8         land_repositioning;
     AP_Float        ekfcheck_thresh;
-    AP_Int8         gcs_pid_mask;
+    AP_Int16        gcs_pid_mask;
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli

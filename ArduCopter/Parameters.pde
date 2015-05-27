@@ -344,7 +344,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131070:All+DisarmedLogging,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,0:Disabled
+    // @Values: 830:Default,894:Default+RCIN,958:Default+IMU,1854:Default+Motors,-6146:NearlyAll-AC315,45054:NearlyAll,131070:All+DisarmedLogging,131071:All+FastATT,262142:All+MotBatt,393214:All+FastIMU,All+FastIMU+PID:397310,0:Disabled
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 

@@ -49,6 +49,7 @@ print_log_menu(void)
         if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
         if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
         if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
+        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
     }
 
     cliSerial->println();
@@ -134,6 +135,7 @@ select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(OPTFLOW);
         TARG(COMPASS);
         TARG(CAMERA);
+        TARG(PID);
  #undef TARG
     }
 
