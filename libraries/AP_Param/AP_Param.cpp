@@ -276,7 +276,7 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
             continue;
         }
 #endif // AP_NESTED_GROUPS_ENABLED
-        if (GROUP_ID(group_info, group_base, i, group_shift) == phdr.group_element) {
+        if (GROUP_ID(group_info, group_base, i, group_shift) == phdr.group_element && type == phdr.type) {
             // found a group element
             *ptr = (void*)(PGM_POINTER(&_var_info[vindex].ptr) + PGM_UINT16(&group_info[i].offset));
             return &_var_info[vindex];
@@ -297,14 +297,15 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
             // not the right key
             continue;
         }
-        if (type != AP_PARAM_GROUP) {
-            // if its not a group then we are done
+        if (type == AP_PARAM_GROUP) {
+            const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
+            return find_by_header_group(phdr, ptr, i, group_info, 0, 0);
+        }
+        if (type == phdr.type) {
+            // found it
             *ptr = (void*)PGM_POINTER(&_var_info[i].ptr);
             return &_var_info[i];
         }
-
-        const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
-        return find_by_header_group(phdr, ptr, i, group_info, 0, 0);
     }
     return NULL;
 }
