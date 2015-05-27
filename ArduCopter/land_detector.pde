@@ -21,8 +21,14 @@ static void update_land_detector()
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
 
+   
+#if FRAME_CONFIG == HELI_FRAME
+    // check that collective pitch is on lower limit (should be constrained by LAND_COL_MIN)
+    bool motor_at_lower_limit = motors.limit.throttle_lower;
+#else
     // check that the average throttle output is near minimum (less than 12.5% hover throttle)
     bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
+#endif
     Vector3f accel_ef = ahrs.get_accel_ef_blended();
     accel_ef.z += GRAVITY_MSS;
 
