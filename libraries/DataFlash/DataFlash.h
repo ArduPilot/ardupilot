@@ -507,6 +507,22 @@ struct PACKED log_Ubx3 {
     float sAcc;
 };
 
+struct PACKED log_Uack {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t instance;
+    uint8_t clsID;
+    uint8_t msgID;
+};
+
+struct PACKED log_Ustg {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    uint8_t instance;
+    uint8_t nav_engine;
+    int8_t min_elev;
+};
+
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint32_t time_ms;     
@@ -627,6 +643,12 @@ Format characters in the format string for binary log messages
       "UBX2", "IBbBbB", "TimeMS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_UBX3_MSG, sizeof(log_Ubx3), \
       "UBX3", "IBfff", "TimeMS,Instance,hAcc,vAcc,sAcc" }, \
+    { LOG_UACK_MSG, sizeof(log_Uack), \
+      "UACK", "IBBB", "TimeMS,Instance,clsID,msgID" }, \
+    { LOG_UNAK_MSG, sizeof(log_Uack), \
+      "UNAK", "IBBB", "TimeMS,Instance,clsID,msgID" }, \
+    { LOG_USTG_MSG, sizeof(log_Ustg), \
+      "USTG", "IBBb", "TimeMS,Instance,navEng,minElev" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Icccc", "TimeMS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
@@ -727,6 +749,9 @@ Format characters in the format string for binary log messages
 #define LOG_GYR1_MSG      177
 #define LOG_GYR2_MSG      178
 #define LOG_GYR3_MSG      179
+#define LOG_UACK_MSG      180
+#define LOG_UNAK_MSG      181
+#define LOG_USTG_MSG      182
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
