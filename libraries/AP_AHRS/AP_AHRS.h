@@ -87,7 +87,8 @@ public:
         _sin_roll(0.0f),
         _sin_pitch(0.0f),
         _sin_yaw(0.0f),
-        _active_accel_instance(0)
+        _active_accel_instance(0),
+        _frame_number(0)
     {
         // load default values from var_info table
         AP_Param::setup_object_defaults(this, var_info);
@@ -361,6 +362,9 @@ public:
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 
+    // number of update() frames that have passed
+    uint64_t frame_number(void) const { return _frame_number; }
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 
@@ -442,6 +446,9 @@ protected:
 
     // which accelerometer instance is active
     uint8_t _active_accel_instance;
+
+    // frame number of update(), used for logging
+    uint64_t _frame_number;
 };
 
 #include <AP_AHRS_DCM.h>
