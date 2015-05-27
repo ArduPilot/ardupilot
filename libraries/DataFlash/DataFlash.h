@@ -636,13 +636,13 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" } \
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
       "PIDP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" } \
+      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }
 

@@ -1333,7 +1333,7 @@ void DataFlash_Class::Log_Write_PID(uint8_t msg_type, const PID_Info &info)
 {
     struct log_PID pkt = {
         LOG_PACKET_HEADER_INIT(msg_type),
-        time_ms         : hal.scheduler->millis(),
+        time_us         : hal.scheduler->micros64(),
         desired         : info.desired,
         P               : info.P,
         I               : info.I,
