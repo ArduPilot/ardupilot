@@ -341,7 +341,7 @@ void Plane::Log_Write_Status()
 struct PACKED log_Sonar {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float distance;
+    uint16_t distance;
     float voltage;
     float baro_alt;
     float groundspeed;
@@ -354,10 +354,15 @@ struct PACKED log_Sonar {
 void Plane::Log_Write_Sonar()
 {
 #if RANGEFINDER_ENABLED == ENABLED
+    uint16_t distance = 0;
+    if (rangefinder.status() == RangeFinder::RangeFinder_Good) {
+        distance = rangefinder.distance_cm();
+    }
+
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
         time_us     : hal.scheduler->micros64(),
-        distance    : (float)rangefinder.distance_cm(),
+        distance    : distance,
         voltage     : rangefinder.voltage_mv()*0.001f,
         baro_alt    : barometer.get_altitude(),
         groundspeed : gps.ground_speed(),
@@ -482,7 +487,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QCfccccfI",   "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
-      "SONR", "QffffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
+      "SONR", "QHfffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
       "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
