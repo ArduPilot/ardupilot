@@ -103,6 +103,7 @@ static uint16_t update_rate = 50;
 static uint32_t arm_time_ms;
 static bool ahrs_healthy;
 static bool have_imu2;
+static bool have_fram;
 
 static uint8_t num_user_parameters;
 static struct {
@@ -316,10 +317,23 @@ static void read_sensors(const char *type)
             ::printf("Barometer initialised\n");
             barometer.update_calibration();
         }
+    } 
+
+    bool run_ahrs = false;
+    if (streq(type,"FRAM")) {
+        if (!have_fram) {
+            have_fram = true;
+            printf("Have FRAM framing\n");
+        }
+        run_ahrs = true;
     }
 
     // special handling of IMU messages as these trigger an ahrs.update()
-    if ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2)) {
+    if (!have_fram && 
+        ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2))) {
+        run_ahrs = true;
+    }
+    if (run_ahrs) {
         ahrs.update();
         if (ahrs.get_home().lat != 0) {
             inertial_nav.update(ins.get_delta_time());

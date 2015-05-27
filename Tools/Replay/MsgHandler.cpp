@@ -345,6 +345,12 @@ void MsgHandler_ARSP::process_message(uint8_t *msg)
     dataflash.WriteBlock(msg, f.length);
 }
 
+void MsgHandler_FRAM::process_message(uint8_t *msg)
+{
+    wait_timestamp_from_msg(msg);
+    dataflash.WriteBlock(msg, f.length);
+}
+
 
 void MsgHandler_ATT::process_message(uint8_t *msg)
 {
