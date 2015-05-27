@@ -483,7 +483,7 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 override_channel;
 #endif
-    AP_Int8 gcs_pid_mask;
+    AP_Int16 gcs_pid_mask;
 
     // RC channels
     RC_Channel rc_1;
