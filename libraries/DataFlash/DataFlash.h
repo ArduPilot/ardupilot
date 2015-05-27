@@ -626,7 +626,7 @@ Format characters in the format string for binary log messages
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "QHLLeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
+      "CAM", "QIHLLeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }, \
     { LOG_ARSP_MSG, sizeof(log_AIRSPEED), \
       "ARSP",  "Qffcff",   "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
