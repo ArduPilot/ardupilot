@@ -1260,20 +1260,20 @@ def fly_CopterAVC(viewerip=None, map=False):
         util.build_SIL('ArduCopter', target=TARGET)
 
     home = "%f,%f,%u,%u" % (AVCHOME.lat, AVCHOME.lng, AVCHOME.alt, AVCHOME.heading)
-    sil = util.start_SIL('ArduCopter', wipe=True, model='+', home=home, speedup=speedup_default)
-    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter')
+    sil = util.start_SIL('ArduCopter', wipe=True, model='heli', home=home, speedup=speedup_default)
+    mavproxy = util.start_MAVProxy_SIL('ArduCopter', options='--sitl=127.0.0.1:5501 --out=127.0.0.1:19550')
     mavproxy.expect('Received [0-9]+ parameters')
 
     # setup test parameters
-    mavproxy.send("param load %s/copter_AVC2013_params.parm\n" % testdir)
+    mavproxy.send("param load %s/Helicopter.parm\n" % testdir)
     mavproxy.expect('Loaded [0-9]+ parameters')
 
     # reboot with new parameters
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    sil = util.start_SIL('ArduCopter', model='+', home=home, speedup=speedup_default)
-    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --quadcopter --streamrate=5'
+    sil = util.start_SIL('ArduCopter', model='heli', home=home, speedup=speedup_default)
+    options = '--sitl=127.0.0.1:5501 --out=127.0.0.1:19550 --streamrate=5'
     if viewerip:
         options += ' --out=%s:14550' % viewerip
     if map:
@@ -1323,8 +1323,11 @@ def fly_CopterAVC(viewerip=None, map=False):
         setup_rc(mavproxy)
         homeloc = mav.location()
 
-        # wait 10sec to allow EKF to settle
-        wait_seconds(mav, 10)
+        print("Lowering rotor speed")
+        mavproxy.send('rc 8 1000\n')
+
+        # wait 20sec to allow EKF to settle
+        wait_seconds(mav, 20)
 
         # Arm
         print("# Arm motors")
@@ -1333,6 +1336,9 @@ def fly_CopterAVC(viewerip=None, map=False):
             print(failed_test_msg)
             failed = True
 
+        print("Raising rotor speed")
+        mavproxy.send('rc 8 2000\n')
+
         print("# Fly AVC mission")
         if not fly_avc_test(mavproxy, mav):
             failed_test_msg = "fly_avc_test failed"
@@ -1340,6 +1346,9 @@ def fly_CopterAVC(viewerip=None, map=False):
             failed = True
         else:
             print("Flew AVC mission OK")
+
+        print("Lowering rotor speed")
+        mavproxy.send('rc 8 1000\n')
 
         #mission includes disarm at end so should be ok to download logs now
         if not log_download(mavproxy, mav, util.reltopdir("../buildlogs/CopterAVC-log.bin")):

@@ -163,6 +163,8 @@ steps = [
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
+
+    'build.Helicopter',
     'fly.CopterAVC',
 
     'convertgpx',
@@ -203,6 +205,9 @@ def run_step(step):
 
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter', j=opts.j)
+
+    if step == 'build.Helicopter':
+        return util.build_SIL('ArduCopter', target='sitl-heli', j=opts.j)
 
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')
