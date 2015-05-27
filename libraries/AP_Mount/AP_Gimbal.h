@@ -35,6 +35,7 @@ public:
         yawErrorLimit(0.1f)
     {
         _compid = compid;
+        memset(&_report_msg, 0, sizeof(_report_msg));
     }
 
     void    update_target(Vector3f newTarget);
