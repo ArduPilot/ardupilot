@@ -762,10 +762,11 @@ AP_InertialSensor::_init_gyro()
     // the first
 
     uint8_t num_converged = 0;
+    bool first_iter = true;
 
     // we try to get a good calibration estimate for up to 30 seconds
     // if the gyros are stable, we should get it in 1 second
-    for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
+    while (num_converged < num_gyros) {
         Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
         Vector3f accel_start;
         float diff_norm[INS_MAX_INSTANCES];
@@ -803,9 +804,10 @@ AP_InertialSensor::_init_gyro()
         }
 
         for (uint8_t k=0; k<num_gyros; k++) {
-            if (j == 0) {
+            if (first_iter) {
                 best_diff[k] = diff_norm[k];
                 best_avg[k] = gyro_avg[k];
+                first_iter = false;
             } else if (gyro_diff[k].length() < ToRad(0.1f)) {
                 // we want the average to be within 0.1 bit, which is 0.04 degrees/s
                 last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
