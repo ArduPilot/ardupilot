@@ -617,8 +617,6 @@ Format characters in the format string for binary log messages
       "RCOU",  "Qhhhhhhhhhhhh",     "TimeUS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
-    { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QCCH","TimeUS,Vcc,VServo,Flags" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -636,15 +634,7 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
-    { LOG_PIDR_MSG, sizeof(log_PID), \
-      "PIDR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
-    { LOG_PIDP_MSG, sizeof(log_PID), \
-      "PIDP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
-    { LOG_PIDY_MSG, sizeof(log_PID), \
-      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
-    { LOG_PIDA_MSG, sizeof(log_PID), \
-      "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -711,7 +701,17 @@ Format characters in the format string for binary log messages
     { LOG_GYR2_MSG, sizeof(log_GYRO), \
       "GYR2", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
     { LOG_GYR3_MSG, sizeof(log_GYRO), \
-      "GYR3", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }
+      "GYR3", "QQfff",        "TimeUS,SampleUS,GyrX,GyrY,GyrZ" }, \
+    { LOG_PIDR_MSG, sizeof(log_PID), \
+      "PIDR", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIDP_MSG, sizeof(log_PID), \
+      "PIDP", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIDY_MSG, sizeof(log_PID), \
+      "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIDA_MSG, sizeof(log_PID), \
+      "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_BAR2_MSG, sizeof(log_BARO), \
+      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
