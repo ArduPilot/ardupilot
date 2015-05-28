@@ -755,14 +755,13 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_mount,          8,     75 },   // 24
     { ten_hz_logging_loop,  40,    350 },   // 25
     { fifty_hz_logging_loop, 8,    110 },   // 26
-    { full_rate_logging_loop,1,    100 },   // 27
-    { perf_update,        4000,     75 },   // 28
-    { read_receiver_rssi,   40,     75 },   // 29
+    { perf_update,        4000,     75 },   // 27
+    { read_receiver_rssi,   40,     75 },   // 28
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { frsky_telemetry_send, 80,     75 },   // 30
+    { frsky_telemetry_send, 80,     75 },   // 29
 #endif
 #if EPM_ENABLED == ENABLED
-    { epm_update,           40,     75 },   // 31
+    { epm_update,           40,     75 },   // 30
 #endif
 #ifdef USERHOOK_FASTLOOP
     { userhook_FastLoop,     4,     75 },
@@ -1021,15 +1020,6 @@ static void fifty_hz_logging_loop()
 #endif
 }
 
-// full_rate_logging_loop
-// should be run at the MAIN_LOOP_RATE
-static void full_rate_logging_loop()
-{
-    if (should_log(MASK_LOG_IMU_FAST)) {
-        DataFlash.Log_Write_IMU(ins);
-    }
-}
-
 // three_hz_loop - 3.3hz loop
 static void three_hz_loop()
 {
@@ -1217,6 +1207,11 @@ static void read_AHRS(void)
 #endif
 
     ahrs.update();
+
+    if (should_log(MASK_LOG_IMU_FAST)) {
+        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_FRAM(ahrs.frame_number());
+    }
 }
 
 // read baro and sonar altitude at 10hz

@@ -1343,3 +1343,14 @@ void DataFlash_Class::Log_Write_PID(uint8_t msg_type, const PID_Info &info)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+// Write a FRAM packet
+void DataFlash_Class::Log_Write_FRAM(uint64_t frame)
+{
+    struct log_FRAM pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_FRAM_MSG),
+        time_us  : hal.scheduler->micros64(),
+        frame    : frame
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}

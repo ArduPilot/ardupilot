@@ -103,6 +103,7 @@ public:
     };
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
+    void Log_Write_FRAM(uint64_t frame);
 
     bool logging_started(void) const { return log_write_started; }
 
@@ -447,6 +448,12 @@ struct PACKED log_PID {
     float   AFF;
 };
 
+struct PACKED log_FRAM {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint64_t frame;
+};
+
 struct PACKED log_Current {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -644,7 +651,9 @@ Format characters in the format string for binary log messages
     { LOG_PIDY_MSG, sizeof(log_PID), \
       "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
-      "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }
+      "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_FRAM_MSG, sizeof(log_FRAM), \
+      "FRAM", "QQ",  "TimeUS,Frame" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -777,6 +786,7 @@ Format characters in the format string for binary log messages
 #define LOG_PIDP_MSG      180
 #define LOG_PIDY_MSG      181
 #define LOG_PIDA_MSG      182
+#define LOG_FRAM_MSG      183
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

@@ -56,6 +56,8 @@ AP_AHRS_DCM::update(void)
         _last_startup_ms = hal.scheduler->millis();
     }
 
+    _frame_number++;
+
     // tell the IMU to grab some data
     _ins.update();
 
