@@ -6,7 +6,7 @@
 const AP_Param::GroupInfo RCMapper::var_info[] PROGMEM = {
     // @Param: ROLL
     // @DisplayName: Roll channel
-    // @Description: Roll channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Roll is normally on channel 1, but you can move it to any channel with this parameter.
+    // @Description: Reboot is required for changes to take effect. Roll channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Roll is normally on channel 1, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
@@ -14,7 +14,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] PROGMEM = {
 
     // @Param: PITCH
     // @DisplayName: Pitch channel
-    // @Description: Pitch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Pitch is normally on channel 2, but you can move it to any channel with this parameter.
+    // @Description: Reboot is required for changes to take effect. Pitch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Pitch is normally on channel 2, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
@@ -22,7 +22,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] PROGMEM = {
 
     // @Param: THROTTLE
     // @DisplayName: Throttle channel
-    // @Description: Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Warning APM 2.X: Changing the throttle channel could produce unexpected fail-safe results if connection between receiver and on-board PPM Encoder is lost. Disabling on-board PPM Encoder is recommended.
+    // @Description: Reboot is required for changes to take effect. Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Warning APM 2.X: Changing the throttle channel could produce unexpected fail-safe results if connection between receiver and on-board PPM Encoder is lost. Disabling on-board PPM Encoder is recommended.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
@@ -30,7 +30,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] PROGMEM = {
 
     // @Param: YAW
     // @DisplayName: Yaw channel
-    // @Description: Yaw channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Yaw (also known as rudder) is normally on channel 4, but you can move it to any channel with this parameter.
+    // @Description: Reboot is required for changes to take effect. Yaw channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Yaw (also known as rudder) is normally on channel 4, but you can move it to any channel with this parameter.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
