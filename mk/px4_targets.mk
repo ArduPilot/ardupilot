@@ -108,7 +108,7 @@ px4-v2: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCP
 
 px4: px4-v1 px4-v2
 
-px4-clean: clean px4-archives-clean
+px4-clean: clean px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
 px4-cleandep: clean
