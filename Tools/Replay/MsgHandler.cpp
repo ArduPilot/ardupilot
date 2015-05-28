@@ -331,7 +331,6 @@ void MsgHandler_ARM::process_message(uint8_t *msg)
     printf("Armed state: %u at %lu\n", 
            (unsigned)ArmState,
            (unsigned long)hal.scheduler->millis());
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -342,13 +341,11 @@ void MsgHandler_ARSP::process_message(uint8_t *msg)
     airspeed.setHIL(require_field_float(msg, "Airspeed"),
 		    require_field_float(msg, "DiffPress"),
 		    require_field_float(msg, "Temp"));
-    dataflash.WriteBlock(msg, f.length);
 }
 
 void MsgHandler_FRAM::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -365,7 +362,6 @@ void MsgHandler_BARO::process_message(uint8_t *msg)
     baro.setHIL(0,
 		require_field_float(msg, "Press"),
 		require_field_int16_t(msg, "Temp") * 0.01f);
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -384,7 +380,6 @@ void MsgHandler_Event::process_message(uint8_t *msg)
         printf("Disarmed at %lu\n", 
                (unsigned long)hal.scheduler->millis());
     }
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -434,8 +429,6 @@ void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, 
         }
         rel_altitude = 0.01f * tmp;
     }
-
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -474,8 +467,6 @@ void MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
         require_field(msg, "Acc", accel2);
         ins.set_accel(imu_offset, accel2);
     }
-
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -504,8 +495,6 @@ void MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_
     // compass_offset is which compass we are setting info for;
     // mag_offset is a vector indicating the compass' calibration...
     compass.set_offsets(compass_offset, mag_offset);
-
-    dataflash.WriteBlock(msg, f.length);
 }
 
 
@@ -541,7 +530,6 @@ void MsgHandler_MSG::process_message(uint8_t *msg)
 	ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 	ahrs.set_fly_forward(true);
     }
-    dataflash.Log_Write_Message(msg_text);
 }
 
 

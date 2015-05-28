@@ -81,11 +81,10 @@ void LogReader::maybe_install_vehicle_specific_parsers() {
 MsgHandler_PARM *parameter_handler;
 
 /*
-  list of message types to be passed through to output log
+  messages which we will be generating, so should be discarded
  */
-static const char *passthrough_types[] = { "MODE", "EV", "POWR", "RCIN", "RCOU", "MSG", 
-                                           "CMD", "CAM", "CURR", "SIM", "TERR", "STRT", "PM", 
-                                           "STAT", NULL };
+static const char *generated_types[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5", 
+                                         "AHR2", "POS", NULL };
 
 /*
   see if a type is in a list of types
@@ -126,7 +125,11 @@ bool LogReader::update(char type[5])
 	memcpy(name, f.name, 4);
 	::printf("Defining log format for type (%d) (%s)\n", f.type, name);
 
-        dataflash.WriteBlock(&f, sizeof(f));
+        if (!in_list(type, generated_types)) {
+            // any messages which we won't be generating internally in
+            // replay should get the original FMT header
+            dataflash.WriteBlock(&f, sizeof(f));
+        }
 
 	// map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
@@ -228,11 +231,12 @@ bool LogReader::update(char type[5])
     strncpy(type, f.name, 4);
     type[4] = 0;
 
+    if (!in_list(type, generated_types)) {
+        dataflash.WriteBlock(msg, f.length);        
+    }
+
     MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
-        if (in_list(type, passthrough_types)) {
-            dataflash.WriteBlock(msg, f.length);
-        }
 	return true;
     }
 
