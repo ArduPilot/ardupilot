@@ -711,7 +711,11 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         // check throttle is not too low - must be above failsafe throttle
         if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->radio_in < g.failsafe_throttle_value) {
             if (display_failure) {
+#if FRAME_CONFIG == HELI_FRAME
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Collective below Failsafe"));
+#else
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle below Failsafe"));
+#endif
             }
             return false;
         }
@@ -721,14 +725,22 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
             // above top of deadband is too always high
             if (channel_throttle->control_in > get_takeoff_trigger_throttle()) {
                 if (display_failure) {
+#if FRAME_CONFIG == HELI_FRAME
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Collective too high"));
+#else
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
+#endif
                 }
                 return false;
             }
             // in manual modes throttle must be at zero
             if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && channel_throttle->control_in > 0) {
                 if (display_failure) {
+#if FRAME_CONFIG == HELI_FRAME
+                    gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Collective too high"));
+#else
                     gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Throttle too high"));
+#endif
                 }
                 return false;
             }
