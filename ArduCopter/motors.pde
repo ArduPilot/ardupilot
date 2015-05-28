@@ -363,7 +363,7 @@ static bool pre_arm_checks(bool display_failure)
                 Vector3f mag_vec = compass.get_field(i);
                 mag_vec.normalize();
                 Vector3f vec_diff = mag_vec - prime_mag_vec;
-                if (vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
+                if (compass.use_for_yaw(i) && vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent compasses"));
                     }
