@@ -38,7 +38,7 @@ static int16_t get_pilot_desired_collective(int16_t control_in)
 // should be called at 50hz
 static void check_dynamic_flight(void)
 {
-    if (!motors.armed() || !motors.motor_runup_complete() ||
+    if (!motors.armed() || !motors.rotor_runup_complete() ||
         control_mode == LAND || (control_mode==RTL && rtl_state == RTL_Land) || (control_mode == AUTO && auto_mode == Auto_Land)) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
