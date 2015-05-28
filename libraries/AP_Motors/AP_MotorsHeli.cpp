@@ -372,7 +372,7 @@ void AP_MotorsHeli::recalc_scalers()
     if (_rsc_ramp_time <= 0) {
         _rsc_ramp_time = 1;
     }
-    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time / _dt);
+    _rsc_ramp_increment = 1000.0f / (_rsc_ramp_time * _loop_rate);
 
     // recalculate rotor runup increment
     if (_rsc_runup_time <= 0 ) {
@@ -381,7 +381,7 @@ void AP_MotorsHeli::recalc_scalers()
     if (_rsc_runup_time < _rsc_ramp_time) {
         _rsc_runup_time = _rsc_ramp_time;
     }
-    _rsc_runup_increment = 1000.0f / (_rsc_runup_time * 100.0f);
+    _rsc_runup_increment = 1000.0f / (_rsc_runup_time * _loop_rate);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
