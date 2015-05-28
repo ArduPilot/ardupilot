@@ -116,7 +116,6 @@ public:
         _rsc_runup_increment(0.0f),
         _rotor_speed_estimate(0.0f),
         _tail_direct_drive_out(0),
-        _dt(0.01f),
         _delta_phase_angle(0)
     {
 		AP_Param::setup_object_defaults(this, var_info);
@@ -191,10 +190,7 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-    
-    // set_dt for setting main loop rate time
-    void set_dt(float dt) { _dt = dt; }
-    
+
     // set_delta_phase_angle for setting variable phase angle compensation and force
     // recalculation of collective factors
     void set_delta_phase_angle(int16_t angle);
