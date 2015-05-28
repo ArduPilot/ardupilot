@@ -366,7 +366,7 @@ static void update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.motor_runup_complete()) {
+        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
             set_auto_armed(true);
         }
 #else
