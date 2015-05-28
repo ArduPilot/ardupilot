@@ -75,9 +75,6 @@
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
 #define AP_MOTORS_HELI_TAIL_RAMP_INCREMENT      5       // 5 is 2 seconds for direct drive tail rotor to reach to full speed (5 = (2sec*100hz)/1000)
 
-// motor run-up time default in 100th of seconds
-#define AP_MOTORS_HELI_MOTOR_RUNUP_TIME         500     // 500 = 5 seconds
-
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 #define AP_MOTORS_HELI_FLYBAR                   1
@@ -123,7 +120,7 @@ public:
         // initialise flags
         _heliflags.swash_initialised = 0;
         _heliflags.landing_collective = 0;
-        _heliflags.motor_runup_complete = 0;
+        _heliflags.rotor_runup_complete = 0;
     };
 
     // init
@@ -180,7 +177,7 @@ public:
     void set_desired_rotor_speed(int16_t desired_speed);
 
     // return true if the main rotor is up to speed
-    bool motor_runup_complete() const;
+    bool rotor_runup_complete() const;
 
     // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
     void recalc_scalers();
@@ -264,7 +261,7 @@ private:
     struct heliflags_type {
         uint8_t swash_initialised       : 1;    // true if swash has been initialised
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
-        uint8_t motor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
+        uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
     } _heliflags;
 
     // parameters
