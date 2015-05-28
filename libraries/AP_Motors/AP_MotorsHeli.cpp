@@ -355,14 +355,14 @@ void AP_MotorsHeli::set_desired_rotor_speed(int16_t desired_speed)
 }
 
 // return true if the main rotor is up to speed
-bool AP_MotorsHeli::motor_runup_complete() const
+bool AP_MotorsHeli::rotor_runup_complete() const
 {
     // if we have no control of motors, assume pilot has spun them up
     if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
         return true;
     }
 
-    return _heliflags.motor_runup_complete;
+    return _heliflags.rotor_runup_complete;
 }
 
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
@@ -759,11 +759,11 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     }
 
     // set runup complete flag
-    if (!_heliflags.motor_runup_complete && rotor_target > 0 && _rotor_speed_estimate >= rotor_target) {
-        _heliflags.motor_runup_complete = true;
+    if (!_heliflags.rotor_runup_complete && rotor_target > 0 && _rotor_speed_estimate >= rotor_target) {
+        _heliflags.rotor_runup_complete = true;
     }
-    if (_heliflags.motor_runup_complete && rotor_target == 0 && _rotor_speed_estimate <= 0) {
-        _heliflags.motor_runup_complete = false;
+    if (_heliflags.rotor_runup_complete && rotor_target == 0 && _rotor_speed_estimate <= 0) {
+        _heliflags.rotor_runup_complete = false;
     }
 
     // output to rsc servo
