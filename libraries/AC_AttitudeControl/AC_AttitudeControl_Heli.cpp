@@ -288,7 +288,7 @@ float AC_AttitudeControl_Heli::rate_bf_to_motor_yaw(float rate_target_cds)
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_yaw || ((i>0&&rate_error<0)||(i<0&&rate_error>0))) {
-        if (((AP_MotorsHeli&)_motors).motor_runup_complete()) {
+        if (((AP_MotorsHeli&)_motors).rotor_runup_complete()) {
             i = _pid_rate_yaw.get_i();
         } else {
             i = ((AC_HELI_PID&)_pid_rate_yaw).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);    // If motor is not running use leaky I-term to avoid excessive build-up
