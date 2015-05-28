@@ -16,9 +16,7 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 static void heli_init()
 {
-    motors.set_dt(MAIN_LOOP_SECONDS);
-    // force recalculation of RSC ramp rates after setting _dt
-    motors.recalc_scalers();
+    // Nothing in here for now.  To-Do: Eliminate this function completely?
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
