@@ -168,8 +168,10 @@ void Plane::Log_Write_Attitude(void)
     targets.z = 0;          //Plane does not have the concept of navyaw. This is a placeholder.
 
     DataFlash.Log_Write_Attitude(ahrs, targets);
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+#endif
 
 #if AP_AHRS_NAVEKF_AVAILABLE
  #if OPTFLOW == ENABLED
