@@ -868,7 +868,7 @@ void loop()
 }
 
 
-// Main loop - 100hz
+// Main loop - 400hz
 static void fast_loop()
 {
 
