@@ -1740,7 +1740,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         if(packet.block_status == 0){
             DataFlash.handle_retry(packet.block_cnt);
         } else{
-            //printf("%d\n", packet.block_cnt);
             DataFlash.handle_ack(packet.block_cnt);
         }
         break;
