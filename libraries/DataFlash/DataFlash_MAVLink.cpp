@@ -140,15 +140,19 @@ void DataFlash_MAVLink::handle_retry(uint32_t block_num)
         }
     }
 }
+void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
+{
+    _chan = chan;
+}
 //TODO: handle full txspace properly
 void DataFlash_MAVLink::send_log_block(uint32_t block_address)
 {
-
-    if (!_initialised || comm_get_txspace(_chan) < 255){
+    mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
+    if (!_initialised || comm_get_txspace(chan) < 255){
        return; 
     }
     //printf("Data Sent!!\n");
-    mavlink_msg_remote_log_data_block_send(_chan,_block_max_size,_block_num[block_address],_buf[block_address]);
+    mavlink_msg_remote_log_data_block_send(chan,_block_max_size,_block_num[block_address],_buf[block_address]);
     
 }
 #endif // HAL_OS_POSIX_IO

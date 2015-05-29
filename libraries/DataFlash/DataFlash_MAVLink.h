@@ -56,6 +56,7 @@ public:
     void send_log_block(uint32_t block_address);
     void handle_ack(uint32_t block_num);
     void handle_retry(uint32_t block_num);
+    void set_channel(mavlink_channel_t chan);
 private:
 
     mavlink_channel_t _chan;
