@@ -35,6 +35,7 @@
  # define M_PI_2 1.570796326794897f
 #endif
 //Single precision conversions
+#define TINY_FLOAT 1.0e-20f
 #define DEG_TO_RAD 0.017453292519943295769236907684886f
 #define RAD_TO_DEG 57.295779513082320876798154814105f
 
@@ -171,6 +172,9 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 float   constrain_float(float amt, float low, float high);
 int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
 int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+
+//matrix algebra
+bool inverse(float x[], float y[], uint16_t dim);
 
 // degrees -> radians
 float radians(float deg);
