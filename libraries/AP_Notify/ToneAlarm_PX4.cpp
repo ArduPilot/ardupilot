@@ -54,17 +54,20 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED 8
     { "MFT100L4>B#B#B#B#", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING 9
-    { "MFMLT110O2L256bP128bP128bP16bP128bP128bP16bP128bP128bP16bP128bP128bP16bP128>bP128bP128>b<P128bP128>b<P128b", false },
-    #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 10
+    { "MFMLT220L128O1cc#dd#eff#gg#aa#b>cc#dd#eff#gcc#dd#eff#gg#aa#b>cc#dd#eff#gcc#dd#eff#gcc#dd#eff#gg#aa#bP8L32<cg>cg>c", false },
+    #define AP_NOTIFY_PX4_TONE_QUIET_DISARMED 10
+    { "MFMLT220L128O3cc#dd#eff#gcc#dd#eff#gP32cc#dd#eff#gcc#dd#eff#gcP8L20MS>>c<gc<gc<c<L10c", false },
+    #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 11
     { "MFT200L8G>C3", false },
-    #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 11
+    #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 12
     { "MBT200L2A-G-A-G-A-G-", true },
-    #define AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS 12
+    #define AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS 13
     { "MBT200>B#1", true },
-    #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
+    #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 14
     { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
-    #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
+    #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 15
     { "MBMLT100O3L512eP4eP16bP16bP2", true },
+
 };
 
 bool ToneAlarm_PX4::init()
@@ -247,7 +250,7 @@ void ToneAlarm_PX4::update()
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING);
         }else{
             // disarming tune
-            play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_DISARMED);
             stop_cont_tone();
         }
     }
