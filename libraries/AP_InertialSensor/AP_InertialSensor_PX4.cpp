@@ -58,8 +58,8 @@ uint8_t AP_InertialSensor_PX4::_queue_depth(uint16_t sensor_sample_rate) const
 {
     uint16_t requested_sample_rate = get_sample_rate_hz();
     uint8_t min_depth = (sensor_sample_rate+requested_sample_rate-1)/requested_sample_rate;
-    // add 30ms more worth of queue to account for possible timing jitter
-    uint8_t ret = min_depth + (30 * sensor_sample_rate) / 1000;
+    // add 5ms more worth of queue to account for possible timing jitter
+    uint8_t ret = min_depth + (5 * sensor_sample_rate) / 1000;
     return ret;
 }
 
