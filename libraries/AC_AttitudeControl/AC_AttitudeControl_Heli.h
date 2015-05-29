@@ -11,7 +11,7 @@
 #include <Filter.h>
 
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
-#define AC_ATTITUDE_HELI_RATE_FF_FILTER             5.0f
+#define AC_ATTITUDE_HELI_RATE_FF_FILTER             10.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
