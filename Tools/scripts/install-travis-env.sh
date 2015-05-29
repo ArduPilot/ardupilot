@@ -66,9 +66,9 @@ if [ ! -d PX4NuttX ]; then
     git clone https://github.com/diydrones/PX4NuttX.git
 fi
 
-#if [ ! -d uavcan ]; then
-#    git clone https://github.com/diydrones/uavcan.git
-#fi
+if [ ! -d uavcan ]; then
+    git clone https://github.com/diydrones/uavcan.git
+fi
 
 if [ ! -d VRNuttX ]; then
     git clone https://github.com/virtualrobotix/vrbrain_nuttx.git VRNuttX
