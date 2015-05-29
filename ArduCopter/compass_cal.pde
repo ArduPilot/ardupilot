@@ -6,11 +6,16 @@
 static void compass_cal_update() {
     compass.compass_cal_update();
 
+    static bool cal_has_run = false;
     if (compass.is_calibrating()) {
+        cal_has_run = true;
         if(!motors.armed() && g.rc_4.control_in < -4000 && g.rc_3.control_in > 900) {
             compass.cancel_calibration_all();
         }
         return;
+    } else if (cal_has_run) {
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
     }
 
     bool stick_gesture_detected = !motors.armed() && g.rc_4.control_in > 4000 && g.rc_3.control_in > 900;
