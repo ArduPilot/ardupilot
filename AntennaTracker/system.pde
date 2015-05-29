@@ -93,14 +93,15 @@ static void init_tracker()
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 
-    set_mode(AUTO); // tracking
+    set_mode(INITIALISING); // Special startup mode to handle tracker movements properly (first stabilize pitch, then yaw)
 
-    if (g.startup_delay > 0) {
+    if (g.startup_delay > 0 && (enum ServoType)g.servo_type.get() != SERVO_TYPE_CR) 
+	{
         // arm servos with trim value to allow them to start up (required
         // for some servos)
         prepare_servos();
     }
-
+ 
     // calibrate pressure on startup by default
     nav_status.need_altitude_calibration = true;
 }
@@ -190,8 +191,10 @@ static void set_mode(enum ControlMode mode)
         break;
 
     case STOP:
-    case INITIALISING:
         disarm_servos();
+        break;
+    case INITIALISING:
+        arm_servos();
         break;
     }
 }
@@ -206,6 +209,7 @@ static bool mavlink_set_mode(uint8_t mode)
     case MANUAL:
     case SCAN:
     case SERVO_TEST:
+    case INITIALISING:
     case STOP:
         set_mode((enum ControlMode)mode);
         return true;

@@ -31,6 +31,10 @@ static void update_pitch_servo(float pitch)
         update_pitch_onoff_servo(pitch);
         break;
 
+    case SERVO_TYPE_CR:
+	update_pitch_cr_servo(pitch);
+	break;
+
     case SERVO_TYPE_POSITION:
     default:
         update_pitch_position_servo(pitch);
@@ -108,6 +112,28 @@ static void update_pitch_position_servo(float pitch)
 
 
 /**
+   update the pitch for continuous rotation servo
+*/
+static void update_pitch_cr_servo(float pitch)
+{
+    float ahrs_pitch = degrees(ahrs.pitch);
+    
+    // mechanical limits for pitch servo + gimbal lock
+    if (pitch > g.pitch_range)
+    {
+      pitch = g.pitch_range;
+    }
+    if (pitch < -g.pitch_range)
+    {
+      pitch = -g.pitch_range;
+    }
+    
+    float err = ahrs_pitch - pitch;
+    int32_t err_cd = (int)err * 100;
+    channel_pitch.servo_out = g.pidPitch2Srv.get_pid(err_cd);
+}
+
+/**
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
@@ -142,6 +168,10 @@ static void update_yaw_servo(float yaw)
     case SERVO_TYPE_ONOFF:
         update_yaw_onoff_servo(yaw);
         break;
+	
+    case SERVO_TYPE_CR:
+	update_yaw_cr_servo(yaw);
+	break;
 
     case SERVO_TYPE_POSITION:
     default:
@@ -280,6 +310,20 @@ static void update_yaw_position_servo(float yaw)
         servo_limit.yaw_upper = true;
     }
 }
+
+/**
+   update the yaw continuous rotation servo. 
+
+ */
+static void update_yaw_cr_servo(float yaw)
+{
+    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
+    int32_t yaw_cd = wrap_180_cd(yaw*100);
+    int32_t err_cd = wrap_180_cd(ahrs_yaw_cd - yaw_cd);
+    
+    channel_yaw.servo_out = g.pidYaw2Srv.get_pid(err_cd);
+}
+
 
 
 /**

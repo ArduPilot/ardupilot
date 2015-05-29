@@ -3,6 +3,10 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
+// mark a function as not to be inlined
+#define NOINLINE __attribute__((noinline))
+
+
 // Command/Waypoint/Location Options Bitmask
 //--------------------
 #define MASK_OPTIONS_RELATIVE_ALT       (1<<0)          // 1 = Relative
@@ -22,7 +26,8 @@ enum ControlMode {
 
 enum ServoType {
     SERVO_TYPE_POSITION=0,
-    SERVO_TYPE_ONOFF=1
+    SERVO_TYPE_ONOFF=1,
+    SERVO_TYPE_CR=2
 };
 
 #endif // _DEFINES_H
