@@ -120,12 +120,5 @@ private:
     void calc_ellipsoid_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_ellipsoid_fit();
 
-    // math helpers
-    bool inverse9x9(const float m[],float invOut[]);
-    float det9x9(const float m[]);
-    bool inverse6x6(const float m[],float invOut[]);
-    float det6x6(const float m[]);
-    bool inverse4x4(float m[],float invOut[]);
-    bool inverse3x3(float m[], float invOut[]);
     uint16_t get_random();
 };
