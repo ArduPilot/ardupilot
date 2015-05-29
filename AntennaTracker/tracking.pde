@@ -41,8 +41,8 @@ static void update_tracker_position()
  */
 static void update_bearing_and_distance()
 {
-    // exit immediately if we do not have a valid vehicle position
-    if (!vehicle.location_valid) {
+    // exit immediately if we do not have a valid vehicle position or servo_test is in progress
+    if (!vehicle.location_valid || control_mode == SERVO_TEST) {
         return;
     }
 
