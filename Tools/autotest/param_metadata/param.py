@@ -22,7 +22,8 @@ known_param_fields = [
              'Range',
              'Units',
              'Increment',
-             'User',                         
+             'User',
+             'RebootRequired'
                       ]
 
 required_param_fields = [
