@@ -460,8 +460,8 @@ void NavEKF::ResetPosition(void)
         state.position.y = 0;
     } else if (!gpsNotAvailable) {
         // write to state vector and compensate for GPS latency
-        state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
-        state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
+        state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*gpsVelNED.x*float(_msecPosDelay);
+        state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*gpsVelNED.y*float(_msecPosDelay);
         // the estimated states at the last GPS measurement are set equal to the GPS measurement to prevent transients on the first fusion
         statesAtPosTime.position.x = gpsPosNE.x;
         statesAtPosTime.position.y = gpsPosNE.y;
@@ -483,16 +483,16 @@ void NavEKF::ResetVelocity(void)
          state.vel2.zero();
     } else if (!gpsNotAvailable) {
         // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
-        state.velocity.x  = velNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
-        state.velocity.y  = velNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
-        state.vel1.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU1 accel data
-        state.vel1.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU1 accel data
-        state.vel2.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU2 accel data
-        state.vel2.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU2 accel data
+        state.velocity.x  = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
+        state.velocity.y  = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
+        state.vel1.x      = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from IMU1 accel data
+        state.vel1.y      = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from IMU1 accel data
+        state.vel2.x      = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from IMU2 accel data
+        state.vel2.y      = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from IMU2 accel data
         // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
         for (uint8_t i=0; i<=49; i++){
-            storedStates[i].velocity.x = velNED.x + gpsVelGlitchOffset.x;
-            storedStates[i].velocity.y = velNED.y + gpsVelGlitchOffset.y;
+            storedStates[i].velocity.x = gpsVelNED.x + gpsVelGlitchOffset.x;
+            storedStates[i].velocity.y = gpsVelNED.y + gpsVelGlitchOffset.y;
         }
     }
 }
@@ -1908,9 +1908,9 @@ void NavEKF::FuseVelPosNED()
 
         // form the observation vector
         if (PV_AidingMode == AID_ABSOLUTE) {
-            observation[0] = velNED.x + gpsVelGlitchOffset.x;
-            observation[1] = velNED.y + gpsVelGlitchOffset.y;
-            observation[2] = velNED.z;
+            observation[0] = gpsVelNED.x + gpsVelGlitchOffset.x;
+            observation[1] = gpsVelNED.y + gpsVelGlitchOffset.y;
+            observation[2] = gpsVelNED.z;
             observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
         } else {
@@ -3821,7 +3821,7 @@ void NavEKF::SetFlightAndFusionModes()
     // if we are a fly forward type vehicle, then in-air mode can be determined through a combination of speed and height criteria
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
-        float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
+        float gndSpdSq = sq(gpsVelNED[0]) + sq(gpsVelNED[1]);
         bool highGndSpd = false;
         bool highAirSpd = false;
         bool largeHgtChange = false;
@@ -4087,7 +4087,7 @@ void NavEKF::readGpsData()
         RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
 
         // read the NED velocity from the GPS
-        velNED = _ahrs->get_gps().velocity();
+        gpsVelNED = _ahrs->get_gps().velocity();
 
         // Use the speed accuracy from the GPS if available, otherwise set it to zero.
         // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
@@ -4383,7 +4383,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
 // vector from GPS. It is used to align the yaw angle after launch or takeoff.
 void NavEKF::alignYawGPS()
 {
-    if ((sq(velNED[0]) + sq(velNED[1])) > 25.0f) {
+    if ((sq(gpsVelNED[0]) + sq(gpsVelNED[1])) > 25.0f) {
         float roll;
         float pitch;
         float oldYaw;
@@ -4394,7 +4394,7 @@ void NavEKF::alignYawGPS()
         // calculate course yaw angle
         oldYaw = atan2f(state.velocity.y,state.velocity.x);
         // calculate yaw angle from GPS velocity
-        newYaw = atan2f(velNED[1],velNED[0]);
+        newYaw = atan2f(gpsVelNED[1],gpsVelNED[0]);
         // estimate the yaw error
         yawErr = wrap_PI(newYaw - oldYaw);
         // If the inertial course angle disagrees with the GPS by more than 45 degrees, we declare the compass as bad
@@ -4551,7 +4551,7 @@ void NavEKF::InitialiseVariables()
     velDotNEDfilt.zero();
     summedDelAng.zero();
     summedDelVel.zero();
-    velNED.zero();
+    gpsVelNED.zero();
     gpsPosGlitchOffsetNE.zero();
     lastKnownPositionNE.zero();
     gpsPosNE.zero();
@@ -4982,7 +4982,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // calculate absolute difference between GPS vert vel and inertial vert vel
     float velDiffAbs;
     if (_ahrs->get_gps().have_vertical_velocity()) {
-        velDiffAbs = fabsf(velNED.z - state.velocity.z);
+        velDiffAbs = fabsf(gpsVelNED.z - state.velocity.z);
     } else {
         velDiffAbs = 0.0f;
     }

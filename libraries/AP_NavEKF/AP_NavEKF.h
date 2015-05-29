@@ -579,7 +579,7 @@ private:
     bool fuseVelData;               // this boolean causes the velNED measurements to be fused
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
-    Vector3f velNED;                // North, East, Down velocity measurements (m/s)
+    Vector3f gpsVelNED;             // North, East, Down velocity measurements (m/s)
     Vector2f gpsPosNE;              // North, East position measurements (m)
     ftype hgtMea;                   //  height measurement relative to reference point  (m)
     state_elements statesAtVelTime; // States at the effective time of velNED measurements
