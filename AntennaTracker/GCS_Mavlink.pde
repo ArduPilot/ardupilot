@@ -602,9 +602,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 }
                 if (is_equal(packet.param4,1.0f)) {
                     // Cant trim radio
-                }
-#if !defined( __AVR_ATmega1280__ )
-                else if (packet.param5 == 1) {
+                } else if (is_equal(packet.param5,1.0f)) {
                     float trim_roll, trim_pitch;
                     AP_InertialSensor_UserInteract_MAVLink interact(this);
                     if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
@@ -622,7 +620,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                         result = MAV_RESULT_FAILED;
                     }
                 }
-#endif
                 result = MAV_RESULT_ACCEPTED;
                 break;
             }

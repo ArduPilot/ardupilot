@@ -3,10 +3,6 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
-
-
 // Command/Waypoint/Location Options Bitmask
 //--------------------
 #define MASK_OPTIONS_RELATIVE_ALT       (1<<0)          // 1 = Relative
