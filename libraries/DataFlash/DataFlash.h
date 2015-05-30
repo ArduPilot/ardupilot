@@ -91,6 +91,7 @@ public:
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
+    void Log_Write_Parameters(void);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -124,7 +125,6 @@ protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
-    void Log_Write_Parameters(void);
     virtual uint16_t start_new_log(void) = 0;
 
     const struct LogStructure *_structures;
