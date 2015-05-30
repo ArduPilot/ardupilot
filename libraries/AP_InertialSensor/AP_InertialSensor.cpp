@@ -443,8 +443,8 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
         return false;
     }
     hal.console->printf_P(PSTR("Trim OK: roll=%.2f pitch=%.2f\n"),
-                          degrees(trim_roll),
-                          degrees(trim_pitch));
+                          (double)degrees(trim_roll),
+                          (double)degrees(trim_pitch));
     return true;
 }
 
