@@ -96,21 +96,6 @@ void Copter::set_failsafe_gcs(bool b)
 
 // ---------------------------------------------
 
-// set land complete maybe flag
-void Copter::set_land_complete_maybe(bool b)
-{
-    // if no change, exit immediately
-    if (ap.land_complete_maybe == b)
-        return;
-
-    if (b) {
-        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
-    }
-    ap.land_complete_maybe = b;
-}
-
-// ---------------------------------------------
-
 void Copter::set_pre_arm_check(bool b)
 {
     if(ap.pre_arm_check != b) {

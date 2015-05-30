@@ -77,6 +77,19 @@ void Copter::set_land_complete(bool b)
     ap.land_complete = b;
 }
 
+// set land complete maybe flag
+void Copter::set_land_complete_maybe(bool b)
+{
+    // if no change, exit immediately
+    if (ap.land_complete_maybe == b)
+        return;
+
+    if (b) {
+        Log_Write_Event(DATA_LAND_COMPLETE_MAYBE);
+    }
+    ap.land_complete_maybe = b;
+}
+
 // update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
 //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
 //  has no effect when throttle is above hover throttle
