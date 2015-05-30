@@ -43,15 +43,15 @@
   constructor
  */
 GetOptLong::GetOptLong(int _argc, char *const _argv[], const char *_optstring, const GetOptLong::option * _longopts) :
-    argc(_argc),
-    argv(_argv),
-    optstring(_optstring),
-    longopts(_longopts),
     opterr(0),
     optind(1),
     optopt(0),
     longindex(-1),
     optarg(NULL),
+    argc(_argc),
+    argv(_argv),
+    optstring(_optstring),
+    longopts(_longopts),
     place("")
 {}
 
