@@ -138,9 +138,9 @@ void SITL::convert_body_frame(double rollDeg, double pitchDeg,
     thetaDot = ToRad(pitchRate);
     psiDot = ToRad(yawRate);
 
-    *p = phiDot - psiDot*sinf(theta);
-    *q = cosf(phi)*thetaDot + sinf(phi)*psiDot*cosf(theta);
-    *r = cosf(phi)*psiDot*cosf(theta) - sinf(phi)*thetaDot;
+    *p = phiDot - psiDot*sin(theta);
+    *q = cos(phi)*thetaDot + sin(phi)*psiDot*cos(theta);
+    *r = cos(phi)*psiDot*cos(theta) - sin(phi)*thetaDot;
 }
 
 
