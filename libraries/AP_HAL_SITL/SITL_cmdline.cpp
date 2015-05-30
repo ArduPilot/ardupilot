@@ -71,7 +71,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     char *autotest_dir = NULL;
     float speedup = 1.0f;
 
-    asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest");
+    if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
+        hal.scheduler->panic("out of memory");
+    }
 
     signal(SIGFPE, _sig_fpe);
     // No-op SIGPIPE handler
