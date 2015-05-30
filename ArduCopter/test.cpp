@@ -4,22 +4,6 @@
 
 #if CLI_ENABLED == ENABLED
 
-// These are function definitions so the Menu can be constructed before the functions
-// are defined below. Order matters to the compiler.
-#if HIL_MODE == HIL_MODE_DISABLED
-static int8_t   test_baro(uint8_t argc,                 const Menu::arg *argv);
-#endif
-static int8_t   test_compass(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_ins(uint8_t argc,                  const Menu::arg *argv);
-static int8_t   test_optflow(uint8_t argc,              const Menu::arg *argv);
-static int8_t   test_relay(uint8_t argc,                const Menu::arg *argv);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-static int8_t   test_shell(uint8_t argc,                const Menu::arg *argv);
-#endif
-#if HIL_MODE == HIL_MODE_DISABLED
-static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
-#endif
-
 // Creates a constant array of structs representing menu options
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
