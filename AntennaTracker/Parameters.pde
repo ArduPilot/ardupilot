@@ -109,7 +109,7 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Param: SERVO_TYPE
     // @DisplayName: Type of servo system being used
     // @Description: This allows selection of position servos or on/off servos
-    // @Values: 0:Position,1:OnOff
+    // @Values: 0:Position,1:OnOff,2:ContinuousRotation
     // @User: Standard
     GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
 
@@ -178,7 +178,7 @@ const AP_Param::Info var_info[] PROGMEM = {
 
     // @Param: PITCH_RANGE
     // @DisplayName: Pitch Range
-    // @Description: Pitch axis total range of motion in degrees
+    // @Description: Pitch axis total range of motion in degrees. Used if mechanical limits are present. It also prevents gimbal-lock in some cases.
     // @Units: degrees
     // @Increment: 0.1
     // @Range: 0 180
