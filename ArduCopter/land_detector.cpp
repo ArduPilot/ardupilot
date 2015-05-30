@@ -35,15 +35,15 @@ void Copter::update_land_detector()
     } else {
 
 #if FRAME_CONFIG == HELI_FRAME
-    // check that collective pitch is on lower limit (should be constrained by LAND_COL_MIN)
-    bool motor_at_lower_limit = motors.limit.throttle_lower;
+        // check that collective pitch is on lower limit (should be constrained by LAND_COL_MIN)
+        bool motor_at_lower_limit = motors.limit.throttle_lower;
 #else
-    // check that the average throttle output is near minimum (less than 12.5% hover throttle)
-    bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
+        // check that the average throttle output is near minimum (less than 12.5% hover throttle)
+        bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
 #endif
 
-    // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-    bool accel_stationary = (accel_ef.length() < 1.0f);
+        // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
+        bool accel_stationary = (accel_ef.length() < 1.0f);
 
         if (motor_at_lower_limit && accel_stationary) {
             // landed criteria met - increment the counter and check if we've triggered
@@ -52,13 +52,13 @@ void Copter::update_land_detector()
             } else {
                 set_land_complete(true);
             }
-    } else {
-        // we've sensed movement up or down so reset land_detector
+        } else {
+            // we've sensed movement up or down so reset land_detector
             land_detector_count = 0;
         }
     }
 
-    set_land_complete_maybe(ap.land_complete || (land_detector_count > LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE));
+    set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*MAIN_LOOP_RATE));
 }
 
 void Copter::set_land_complete(bool b)
