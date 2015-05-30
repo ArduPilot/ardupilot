@@ -54,11 +54,11 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
 
-    crc_error_counter(0),
+    last_injected_data_ms(0),
+    last_iar_num_hypotheses(0),
     last_full_update_tow(0),
     last_full_update_cpu_ms(0),
-    last_injected_data_ms(0),
-    last_iar_num_hypotheses(0)
+    crc_error_counter(0)
 {
 
     Debug("SBP Driver Initialized");
