@@ -25,11 +25,11 @@ prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re
 prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
-vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % opts.vehicle)
-extension = 'pde'
+vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
+extension = 'cpp'
 if len(vehicle_paths) == 0:
-    vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
-    extension = 'cpp'
+    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % opts.vehicle)
+    extension = 'pde'
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
