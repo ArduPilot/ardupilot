@@ -33,6 +33,8 @@ SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
     _main_ekf(ahrs.get_NavEKF_const()),
     states(),
     state(*reinterpret_cast<struct state_elements *>(&states)),
+    gSense{},
+    Cov{},
     TiltCorrection(0),
     StartTime_ms(0),
     FiltInit(false),
@@ -40,8 +42,6 @@ SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
     dtIMU(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    memset(&gSense,0,sizeof(gSense));
-    memset(&Cov,0,sizeof(Cov));
 }
 
 // run a 9-state EKF used to calculate orientation
