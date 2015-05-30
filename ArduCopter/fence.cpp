@@ -1,12 +1,14 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // Code to integrate AC_Fence library with main ArduCopter code
 
 #if AC_FENCE == ENABLED
 
 // fence_check - ask fence library to check for breaches and initiate the response
 // called at 1hz
-void fence_check()
+void Copter::fence_check()
 {
     uint8_t new_breaches; // the type of fence that has been breached
     uint8_t orig_breaches = fence.get_breaches();
@@ -56,7 +58,7 @@ void fence_check()
 }
 
 // fence_send_mavlink_status - send fence status to ground station
-static void fence_send_mavlink_status(mavlink_channel_t chan)
+void Copter::fence_send_mavlink_status(mavlink_channel_t chan)
 {   
     if (fence.enabled()) {
         // traslate fence library breach types to mavlink breach types

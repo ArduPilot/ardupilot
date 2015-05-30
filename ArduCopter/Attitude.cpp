@@ -1,15 +1,17 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // get_smoothing_gain - returns smoothing gain to be passed into attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
-float get_smoothing_gain()
+float Copter::get_smoothing_gain()
 {
     return (2.0f + (float)g.rc_feel_rp/10.0f);
 }
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out)
+void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out)
 {
     float angle_max = constrain_float(aparm.angle_max,1000,8000);
     float scaler = (float)angle_max/(float)ROLL_PITCH_INPUT_MAX;
@@ -37,7 +39,7 @@ static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &
 // get_pilot_desired_heading - transform pilot's yaw input into a desired heading
 // returns desired angle in centi-degrees
 // To-Do: return heading as a float?
-static float get_pilot_desired_yaw_rate(int16_t stick_angle)
+float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
     // convert pilot input to the desired yaw rate
     return stick_angle * g.acro_yaw_p;
@@ -49,7 +51,7 @@ static float get_pilot_desired_yaw_rate(int16_t stick_angle)
 
 // get_roi_yaw - returns heading towards location held in roi_WP
 // should be called at 100hz
-static float get_roi_yaw()
+float Copter::get_roi_yaw()
 {
     static uint8_t roi_yaw_counter = 0;     // used to reduce update rate to 100hz
 
@@ -62,7 +64,7 @@ static float get_roi_yaw()
     return yaw_look_at_WP_bearing;
 }
 
-static float get_look_ahead_yaw()
+float Copter::get_look_ahead_yaw()
 {
     const Vector3f& vel = inertial_nav.get_velocity();
     float speed = pythagorous2(vel.x,vel.y);
@@ -79,7 +81,7 @@ static float get_look_ahead_yaw()
 
 // update_thr_average - update estimated throttle required to hover (if necessary)
 //  should be called at 100hz
-static void update_thr_average()
+void Copter::update_thr_average()
 {
     // ensure throttle_average has been initialised
     if( is_zero(throttle_average) ) {
@@ -105,8 +107,7 @@ static void update_thr_average()
 }
 
 // set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-static void
-set_throttle_takeoff()
+void Copter::set_throttle_takeoff()
 {
     // tell position controller to reset alt target and reset I terms
     pos_control.init_takeoff();
@@ -118,7 +119,7 @@ set_throttle_takeoff()
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
 // returns throttle output 0 to 1000
-static int16_t get_pilot_desired_throttle(int16_t throttle_control)
+int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
 {
     int16_t throttle_out;
 
@@ -146,7 +147,7 @@ static int16_t get_pilot_desired_throttle(int16_t throttle_control)
 // get_pilot_desired_climb_rate - transform pilot's throttle input to
 // climb rate in cm/s.  we use radio_in instead of control_in to get the full range
 // without any deadzone at the bottom
-static float get_pilot_desired_climb_rate(float throttle_control)
+float Copter::get_pilot_desired_climb_rate(float throttle_control)
 {
     // throttle failsafe check
     if( failsafe.radio ) {
@@ -183,12 +184,12 @@ static float get_pilot_desired_climb_rate(float throttle_control)
 }
 
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
-static float get_non_takeoff_throttle()
+float Copter::get_non_takeoff_throttle()
 {
     return (g.throttle_mid / 2.0f);
 }
 
-static float get_takeoff_trigger_throttle()
+float Copter::get_takeoff_trigger_throttle()
 {
     return channel_throttle->get_control_mid() + g.takeoff_trigger_dz;
 }
@@ -196,7 +197,7 @@ static float get_takeoff_trigger_throttle()
 // get_throttle_pre_takeoff - convert pilot's input throttle to a throttle output before take-off
 // used only for althold, loiter, hybrid flight modes
 // returns throttle output 0 to 1000
-static float get_throttle_pre_takeoff(float input_thr)
+float Copter::get_throttle_pre_takeoff(float input_thr)
 {
     // exit immediately if input_thr is zero
     if (input_thr <= 0.0f) {
@@ -229,7 +230,7 @@ static float get_throttle_pre_takeoff(float input_thr)
 
 // get_surface_tracking_climb_rate - hold copter at the desired distance above the ground
 //      returns climb rate (in cm/s) which should be passed to the position controller
-static float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
+float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
 {
     static uint32_t last_call_ms = 0;
     float distance_error;
@@ -263,14 +264,14 @@ static float get_surface_tracking_climb_rate(int16_t target_rate, float current_
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
-static void set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
+void Copter::set_accel_throttle_I_from_pilot_throttle(int16_t pilot_throttle)
 {
     // shift difference between pilot's throttle and hover throttle into accelerometer I
     g.pid_accel_z.set_integrator(pilot_throttle-throttle_average);
 }
 
 // updates position controller's maximum altitude using fence and EKF limits
-static void update_poscon_alt_max()
+void Copter::update_poscon_alt_max()
 {
     float alt_limit_cm = 0.0f;  // interpreted as no limit if left as zero
 

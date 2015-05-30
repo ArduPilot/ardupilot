@@ -1,7 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
+
 // Run landing gear controller at 10Hz
-static void landinggear_update(){
+void Copter::landinggear_update(){
 
     // If landing gear control is active, run update function.
     if (check_if_auxsw_mode_used(AUXSW_LANDING_GEAR)){

@@ -1,4 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#include "Copter.h"
+
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
@@ -14,7 +17,7 @@ static int8_t   test_mode(uint8_t argc, const Menu::arg *argv);         // in te
 static int8_t   reboot_board(uint8_t argc, const Menu::arg *argv);
 
 // This is the help function
-static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
     cliSerial->printf_P(PSTR("Commands:\n"
                          "  logs\n"
@@ -29,24 +32,24 @@ static int8_t   main_menu_help(uint8_t argc, const Menu::arg *argv)
 const struct Menu::command main_menu_commands[] PROGMEM = {
 //   command		function called
 //   =======        ===============
-    {"logs",                process_logs},
-    {"setup",               setup_mode},
-    {"test",                test_mode},
-    {"reboot",              reboot_board},
-    {"help",                main_menu_help},
+    {"logs",                MENU_FUNC(process_logs)},
+    {"setup",               MENU_FUNC(setup_mode)},
+    {"test",                MENU_FUNC(test_mode)},
+    {"reboot",              MENU_FUNC(reboot_board)},
+    {"help",                MENU_FUNC(main_menu_help)},
 };
 
 // Create the top-level menu object.
 MENU(main_menu, THISFIRMWARE, main_menu_commands);
 
-static int8_t reboot_board(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::reboot_board(uint8_t argc, const Menu::arg *argv)
 {
     hal.scheduler->reboot(false);
     return 0;
 }
 
 // the user wants the CLI. It never exits
-static void run_cli(AP_HAL::UARTDriver *port)
+void Copter::run_cli(AP_HAL::UARTDriver *port)
 {
     cliSerial = port;
     Menu::set_port(port);
@@ -71,7 +74,18 @@ static void run_cli(AP_HAL::UARTDriver *port)
 
 #endif // CLI_ENABLED
 
-static void init_ardupilot()
+static void mavlink_delay_cb_static()
+{
+    copter.mavlink_delay_cb();
+}
+
+
+static void failsafe_check_static()
+{
+    copter.failsafe_check();
+}
+
+void Copter::init_ardupilot()
 {
     if (!hal.gpio->usb_connected()) {
         // USB is not connected, this means UART0 may be a Xbee, with
@@ -121,7 +135,7 @@ static void init_ardupilot()
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
-    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
@@ -153,15 +167,7 @@ static void init_ardupilot()
     mavlink_system.sysid = g.sysid_this_mav;
 
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
-    if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
-        g.log_bitmask.set(0);
-    } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_HIGH, PSTR("ERASING LOGS"));
-        do_erase_logs();
-        gcs[0].reset_cli_timeout();
-    }
+    log_init();
 #endif
 
     init_rc_in();               // sets up rc channels from radio
@@ -176,7 +182,7 @@ static void init_ardupilot()
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
-    hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
+    hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // Do GPS init
     gps.init(&DataFlash, serial_manager);
@@ -279,7 +285,7 @@ static void init_ardupilot()
 //******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //******************************************************************************
-static void startup_ground(bool force_gyro_cal)
+void Copter::startup_ground(bool force_gyro_cal)
 {
     gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
 
@@ -306,7 +312,7 @@ static void startup_ground(bool force_gyro_cal)
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
-static bool position_ok()
+bool Copter::position_ok()
 {
     if (!ahrs.have_inertial_nav()) {
         // do not allow navigation with dcm position
@@ -331,7 +337,7 @@ static bool position_ok()
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
-static bool optflow_position_ok()
+bool Copter::optflow_position_ok()
 {
 #if OPTFLOW != ENABLED
     return false;
@@ -348,7 +354,7 @@ static bool optflow_position_ok()
 }
 
 // update_auto_armed - update status of auto_armed flag
-static void update_auto_armed()
+void Copter::update_auto_armed()
 {
     // disarm checks
     if(ap.auto_armed){
@@ -378,7 +384,7 @@ static void update_auto_armed()
     }
 }
 
-static void check_usb_mux(void)
+void Copter::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == ap.usb_connected) {
@@ -392,7 +398,7 @@ static void check_usb_mux(void)
 // frsky_telemetry_send - sends telemetry data using frsky telemetry
 //  should be called at 5Hz by scheduler
 #if FRSKY_TELEM_ENABLED == ENABLED
-static void frsky_telemetry_send(void)
+void Copter::frsky_telemetry_send(void)
 {
     frsky_telemetry.send_frames((uint8_t)control_mode);
 }
@@ -401,7 +407,7 @@ static void frsky_telemetry_send(void)
 /*
   should we log a message type now?
  */
-static bool should_log(uint32_t mask)
+bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {

@@ -1,10 +1,12 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
  */
-static void failsafe_radio_on_event()
+void Copter::failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
     if( !motors.armed() ) {
@@ -91,14 +93,14 @@ static void failsafe_radio_on_event()
 // failsafe_off_event - respond to radio contact being regained
 // we must be in AUTO, LAND or RTL modes
 // or Stabilize or ACRO mode but with motors disarmed
-static void failsafe_radio_off_event()
+void Copter::failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-static void failsafe_battery_event(void)
+void Copter::failsafe_battery_event(void)
 {
     // return immediately if low battery event has already been triggered
     if (failsafe.battery) {
@@ -163,7 +165,7 @@ static void failsafe_battery_event(void)
 }
 
 // failsafe_gcs_check - check for ground station failsafe
-static void failsafe_gcs_check()
+void Copter::failsafe_gcs_check()
 {
     uint32_t last_gcs_update_ms;
 
@@ -251,7 +253,7 @@ static void failsafe_gcs_check()
 }
 
 // failsafe_gcs_off_event - actions to take when GCS contact is restored
-static void failsafe_gcs_off_event(void)
+void Copter::failsafe_gcs_off_event(void)
 {
     // log recovery of GCS in logs?
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_RESOLVED);
@@ -259,7 +261,7 @@ static void failsafe_gcs_off_event(void)
 
 // set_mode_RTL_or_land_with_pause - sets mode to RTL if possible or LAND with 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
-static void set_mode_RTL_or_land_with_pause()
+void Copter::set_mode_RTL_or_land_with_pause()
 {
     // attempt to switch to RTL, if this fails then switch to Land
     if (!set_mode(RTL)) {
@@ -271,7 +273,7 @@ static void set_mode_RTL_or_land_with_pause()
     }
 }
 
-static void update_events()
+void Copter::update_events()
 {
     ServoRelayEvents.update_events();
 }

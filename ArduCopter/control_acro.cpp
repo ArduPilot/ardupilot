@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include "Copter.h"
+
 
 /*
  * control_acro.pde - init and run calls for acro flight mode
  */
 
 // acro_init - initialise acro controller
-static bool acro_init(bool ignore_checks)
+bool Copter::acro_init(bool ignore_checks)
 {
     // always successfully enter acro
     return true;
@@ -13,7 +15,7 @@ static bool acro_init(bool ignore_checks)
 
 // acro_run - runs the acro controller
 // should be called at 100hz or more
-static void acro_run()
+void Copter::acro_run()
 {
     float target_roll, target_pitch, target_yaw;
     int16_t pilot_throttle_scaled;
@@ -40,7 +42,7 @@ static void acro_run()
 
 // get_pilot_desired_angle_rates - transform pilot's roll pitch and yaw input into a desired lean angle rates
 // returns desired angle rates in centi-degrees-per-second
-static void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
+void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out)
 {
     float rate_limit;
     Vector3f rate_ef_level, rate_bf_level, rate_bf_request;

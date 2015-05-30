@@ -1,11 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
   compass/motor interference calibration
  */
 
 // setup_compassmot - sets compass's motor interference parameters
-static uint8_t mavlink_compassmot(mavlink_channel_t chan)
+uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
 {
     int8_t   comp_type;                 // throttle or current based compensation
     Vector3f compass_base[COMPASS_MAX_INSTANCES];           // compass vector when throttle is zero

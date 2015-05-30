@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_brake.pde - init and run calls for brake flight mode
  */
 
 // brake_init - initialise brake controller
-static bool brake_init(bool ignore_checks)
+bool Copter::brake_init(bool ignore_checks)
 {
     if (position_ok() || optflow_position_ok() || ignore_checks) {
 
@@ -30,7 +32,7 @@ static bool brake_init(bool ignore_checks)
 
 // brake_run - runs the brake controller
 // should be called at 100hz or more
-static void brake_run()
+void Copter::brake_run()
 {
     float target_yaw_rate = 0;
     float target_climb_rate = 0;

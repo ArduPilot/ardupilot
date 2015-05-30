@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /**
  *
  * ekf_check.pde - detects failures of the ekf or inertial nav system
@@ -26,7 +28,7 @@ static struct {
 
 // ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
 // should be called at 10hz
-void ekf_check()
+void Copter::ekf_check()
 {
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
     if (!motors.armed() || ap.usb_connected || (g.ekfcheck_thresh <= 0.0f)) {
@@ -81,7 +83,7 @@ void ekf_check()
 }
 
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
-static bool ekf_over_threshold()
+bool Copter::ekf_over_threshold()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     // return false immediately if disabled
@@ -112,7 +114,7 @@ static bool ekf_over_threshold()
 
 
 // failsafe_ekf_event - perform ekf failsafe
-static void failsafe_ekf_event()
+void Copter::failsafe_ekf_event()
 {
     // return immediately if ekf failsafe already triggered
     if (failsafe.ekf) {
@@ -140,7 +142,7 @@ static void failsafe_ekf_event()
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
-static void failsafe_ekf_off_event(void)
+void Copter::failsafe_ekf_off_event(void)
 {
     // return immediately if not in ekf failsafe
     if (!failsafe.ekf) {

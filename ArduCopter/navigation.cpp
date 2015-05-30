@@ -1,9 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // run_nav_updates - top level call for the autopilot
 // ensures calculations such as "distance to waypoint" are calculated before autopilot makes decisions
 // To-Do - rename and move this function to make it's purpose more clear
-static void run_nav_updates(void)
+void Copter::run_nav_updates(void)
 {
     // fetch position from inertial navigation
     calc_position();
@@ -16,7 +18,7 @@ static void run_nav_updates(void)
 }
 
 // calc_position - get lat and lon positions from inertial nav library
-static void calc_position()
+void Copter::calc_position()
 {
     // pull position from interial nav library
     current_loc.lng = inertial_nav.get_longitude();
@@ -24,7 +26,7 @@ static void calc_position()
 }
 
 // calc_distance_and_bearing - calculate distance and bearing to next waypoint and home
-static void calc_distance_and_bearing()
+void Copter::calc_distance_and_bearing()
 {
     calc_wp_distance();
     calc_wp_bearing();
@@ -32,7 +34,7 @@ static void calc_distance_and_bearing()
 }
 
 // calc_wp_distance - calculate distance to next waypoint for reporting and autopilot decisions
-static void calc_wp_distance()
+void Copter::calc_wp_distance()
 {
     // get target from loiter or wpinav controller
     if (control_mode == LOITER || control_mode == CIRCLE) {
@@ -45,7 +47,7 @@ static void calc_wp_distance()
 }
 
 // calc_wp_bearing - calculate bearing to next waypoint for reporting and autopilot decisions
-static void calc_wp_bearing()
+void Copter::calc_wp_bearing()
 {
     // get target from loiter or wpinav controller
     if (control_mode == LOITER || control_mode == CIRCLE) {
@@ -58,7 +60,7 @@ static void calc_wp_bearing()
 }
 
 // calc_home_distance_and_bearing - calculate distance and bearing to home for reporting and autopilot decisions
-static void calc_home_distance_and_bearing()
+void Copter::calc_home_distance_and_bearing()
 {
     Vector3f curr = inertial_nav.get_position();
 
@@ -74,7 +76,7 @@ static void calc_home_distance_and_bearing()
 }
 
 // run_autopilot - highest level call to process mission commands
-static void run_autopilot()
+void Copter::run_autopilot()
 {
     if (control_mode == AUTO) {
         // update state of mission

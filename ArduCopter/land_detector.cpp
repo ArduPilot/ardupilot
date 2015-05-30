@@ -1,17 +1,20 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
+
 // counter to verify landings
 static uint32_t land_detector = ((float)LAND_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE; // we assume we are landed
 
 // land_complete_maybe - return true if we may have landed (used to reset loiter targets during landing)
-static bool land_complete_maybe()
+bool Copter::land_complete_maybe()
 {
     return (ap.land_complete || ap.land_complete_maybe);
 }
 
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // called at MAIN_LOOP_RATE
-static void update_land_detector()
+void Copter::update_land_detector()
 {
     // land detector can not use the following sensors because they are unreliable during landing
     // barometer altitude :                 ground effect can cause errors larger than 4m
@@ -64,7 +67,7 @@ static void update_land_detector()
 // update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
 //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
 //  has no effect when throttle is above hover throttle
-static void update_throttle_thr_mix()
+void Copter::update_throttle_thr_mix()
 {
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle

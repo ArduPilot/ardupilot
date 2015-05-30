@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_flip.pde - init and run calls for flip flight mode
  *      original implementation in 2010 by Jose Julio
@@ -37,7 +39,7 @@ int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll 
 int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 
 // flip_init - initialise flip controller
-static bool flip_init(bool ignore_checks)
+bool Copter::flip_init(bool ignore_checks)
 {
     // only allow flip from ACRO, Stabilize, AltHold or Drift flight modes
     if (control_mode != ACRO && control_mode != STABILIZE && control_mode != ALT_HOLD) {
@@ -92,7 +94,7 @@ static bool flip_init(bool ignore_checks)
 
 // flip_run - runs the flip controller
 // should be called at 100hz or more
-static void flip_run()
+void Copter::flip_run()
 {
     int16_t throttle_out;
     float recovery_angle;

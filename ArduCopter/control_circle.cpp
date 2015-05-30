@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_circle.pde - init and run calls for circle flight mode
  */
 
 // circle_init - initialise circle controller flight mode
-static bool circle_init(bool ignore_checks)
+bool Copter::circle_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
         circle_pilot_yaw_override = false;
@@ -27,7 +29,7 @@ static bool circle_init(bool ignore_checks)
 
 // circle_run - runs the circle flight mode
 // should be called at 100hz or more
-static void circle_run()
+void Copter::circle_run()
 {
     float target_yaw_rate = 0;
     float target_climb_rate = 0;

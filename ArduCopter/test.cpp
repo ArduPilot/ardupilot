@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 #if CLI_ENABLED == ENABLED
 
 // These are function definitions so the Menu can be constructed before the functions
@@ -22,35 +24,33 @@ static int8_t   test_sonar(uint8_t argc,                const Menu::arg *argv);
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-const struct Menu::command test_menu_commands[] PROGMEM = {
+static const struct Menu::command test_menu_commands[] PROGMEM = {
 #if HIL_MODE == HIL_MODE_DISABLED
-    {"baro",                test_baro},
+    {"baro",                MENU_FUNC(test_baro)},
 #endif
-    {"compass",             test_compass},
-    {"ins",                 test_ins},
-    {"optflow",             test_optflow},
-    {"relay",               test_relay},
+    {"compass",             MENU_FUNC(test_compass)},
+    {"ins",                 MENU_FUNC(test_ins)},
+    {"optflow",             MENU_FUNC(test_optflow)},
+    {"relay",               MENU_FUNC(test_relay)},
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    {"shell", 				test_shell},
+    {"shell", 				MENU_FUNC(test_shell)},
 #endif
 #if HIL_MODE == HIL_MODE_DISABLED
-    {"rangefinder",         test_sonar},
+    {"rangefinder",         MENU_FUNC(test_sonar)},
 #endif
 };
 
 // A Macro to create the Menu
 MENU(test_menu, "test", test_menu_commands);
 
-static int8_t
-test_mode(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_mode(uint8_t argc, const Menu::arg *argv)
 {
     test_menu.run();
     return 0;
 }
 
 #if HIL_MODE == HIL_MODE_DISABLED
-static int8_t
-test_baro(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_baro(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     init_barometer(true);
@@ -75,8 +75,7 @@ test_baro(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-static int8_t
-test_compass(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
 {
     uint8_t delta_ms_fast_loop;
     uint8_t medium_loopCounter = 0;
@@ -162,8 +161,7 @@ test_compass(uint8_t argc, const Menu::arg *argv)
     return (0);
 }
 
-static int8_t
-test_ins(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
 {
     Vector3f gyro, accel;
     print_hit_enter();
@@ -196,8 +194,7 @@ test_ins(uint8_t argc, const Menu::arg *argv)
     }
 }
 
-static int8_t
-test_optflow(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_optflow(uint8_t argc, const Menu::arg *argv)
 {
 #if OPTFLOW == ENABLED
     if(optflow.enabled()) {
@@ -227,7 +224,7 @@ test_optflow(uint8_t argc, const Menu::arg *argv)
 #endif      // OPTFLOW == ENABLED
 }
 
-static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_relay(uint8_t argc, const Menu::arg *argv)
 {
     print_hit_enter();
     delay(1000);
@@ -253,8 +250,7 @@ static int8_t test_relay(uint8_t argc, const Menu::arg *argv)
 /*
  *  run a debug shell
  */
-static int8_t
-test_shell(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_shell(uint8_t argc, const Menu::arg *argv)
 {
     hal.util->run_debug_shell(cliSerial);
     return 0;
@@ -265,8 +261,7 @@ test_shell(uint8_t argc, const Menu::arg *argv)
 /*
  *  test the rangefinders
  */
-static int8_t
-test_sonar(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::test_sonar(uint8_t argc, const Menu::arg *argv)
 {
 #if CONFIG_SONAR == ENABLED
 	sonar.init();
@@ -291,7 +286,7 @@ test_sonar(uint8_t argc, const Menu::arg *argv)
 }
 #endif
 
-static void print_hit_enter()
+void Copter::print_hit_enter()
 {
     cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
 }

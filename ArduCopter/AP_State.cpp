@@ -1,7 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // set_home_state - update home state
-void set_home_state(enum HomeState new_home_state)
+void Copter::set_home_state(enum HomeState new_home_state)
 {
     // if no change, exit immediately
     if (ap.home_state == new_home_state)
@@ -17,13 +19,13 @@ void set_home_state(enum HomeState new_home_state)
 }
 
 // home_is_set - returns true if home positions has been set (to GPS location, armed location or EKF origin)
-bool home_is_set()
+bool Copter::home_is_set()
 {
     return (ap.home_state == HOME_SET_NOT_LOCKED || ap.home_state == HOME_SET_AND_LOCKED);
 }
 
 // ---------------------------------------------
-void set_auto_armed(bool b)
+void Copter::set_auto_armed(bool b)
 {
     // if no change, exit immediately
     if( ap.auto_armed == b )
@@ -36,7 +38,7 @@ void set_auto_armed(bool b)
 }
 
 // ---------------------------------------------
-void set_simple_mode(uint8_t b)
+void Copter::set_simple_mode(uint8_t b)
 {
     if(ap.simple_mode != b){
         if(b == 0){
@@ -53,7 +55,7 @@ void set_simple_mode(uint8_t b)
 }
 
 // ---------------------------------------------
-static void set_failsafe_radio(bool b)
+void Copter::set_failsafe_radio(bool b)
 {
     // only act on changes
     // -------------------
@@ -80,20 +82,20 @@ static void set_failsafe_radio(bool b)
 
 
 // ---------------------------------------------
-void set_failsafe_battery(bool b)
+void Copter::set_failsafe_battery(bool b)
 {
     failsafe.battery = b;
     AP_Notify::flags.failsafe_battery = b;
 }
 
 // ---------------------------------------------
-static void set_failsafe_gcs(bool b)
+void Copter::set_failsafe_gcs(bool b)
 {
     failsafe.gcs = b;
 }
 
 // ---------------------------------------------
-void set_land_complete(bool b)
+void Copter::set_land_complete(bool b)
 {
     // if no change, exit immediately
     if( ap.land_complete == b )
@@ -110,7 +112,7 @@ void set_land_complete(bool b)
 // ---------------------------------------------
 
 // set land complete maybe flag
-void set_land_complete_maybe(bool b)
+void Copter::set_land_complete_maybe(bool b)
 {
     // if no change, exit immediately
     if (ap.land_complete_maybe == b)
@@ -124,7 +126,7 @@ void set_land_complete_maybe(bool b)
 
 // ---------------------------------------------
 
-void set_pre_arm_check(bool b)
+void Copter::set_pre_arm_check(bool b)
 {
     if(ap.pre_arm_check != b) {
         ap.pre_arm_check = b;
@@ -132,21 +134,21 @@ void set_pre_arm_check(bool b)
     }
 }
 
-void set_pre_arm_rc_check(bool b)
+void Copter::set_pre_arm_rc_check(bool b)
 {
     if(ap.pre_arm_rc_check != b) {
         ap.pre_arm_rc_check = b;
     }
 }
 
-void set_using_interlock(bool b)
+void Copter::set_using_interlock(bool b)
 {
     if(ap.using_interlock != b) {
         ap.using_interlock = b;
     }
 }
 
-void set_motor_emergency_stop(bool b)
+void Copter::set_motor_emergency_stop(bool b)
 {
     if(ap.motor_emergency_stop != b) {
         ap.motor_emergency_stop = b;

@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // Traditional helicopter variables and functions
 
 #include "heli.h"
@@ -14,13 +16,13 @@
 static int8_t heli_dynamic_flight_counter;
 
 // heli_init - perform any special initialisation required for the tradheli
-static void heli_init()
+void Copter::heli_init()
 {
     // Nothing in here for now.  To-Do: Eliminate this function completely?
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
-static int16_t get_pilot_desired_collective(int16_t control_in)
+int16_t Copter::get_pilot_desired_collective(int16_t control_in)
 {
     // return immediately if reduce collective range for manual flight has not been configured
     if (g.heli_stab_col_min == 0 && g.heli_stab_col_max == 1000) {
@@ -36,7 +38,7 @@ static int16_t get_pilot_desired_collective(int16_t control_in)
 
 // heli_check_dynamic_flight - updates the dynamic_flight flag based on our horizontal velocity
 // should be called at 50hz
-static void check_dynamic_flight(void)
+void Copter::check_dynamic_flight(void)
 {
     if (!motors.armed() || !motors.rotor_runup_complete() ||
         control_mode == LAND || (control_mode==RTL && rtl_state == RTL_Land) || (control_mode == AUTO && auto_mode == Auto_Land)) {
@@ -80,7 +82,7 @@ static void check_dynamic_flight(void)
 
 // update_heli_control_dynamics - pushes several important factors up into AP_MotorsHeli.
 // should be run between the rate controller and the servo updates.
-static void update_heli_control_dynamics(void)
+void Copter::update_heli_control_dynamics(void)
 {
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
@@ -90,7 +92,7 @@ static void update_heli_control_dynamics(void)
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
 // should be called soon after update_land_detector in main code
-static void heli_update_landing_swash()
+void Copter::heli_update_landing_swash()
 {
     switch(control_mode) {
         case ACRO:
@@ -130,7 +132,7 @@ static void heli_update_landing_swash()
 }
 
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
-static void heli_update_rotor_speed_targets()
+void Copter::heli_update_rotor_speed_targets()
 {
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
@@ -156,7 +158,7 @@ static void heli_update_rotor_speed_targets()
 }
 
 // heli_radio_passthrough send RC inputs direct into motors library for use during manual passthrough for helicopter setup
-static void heli_radio_passthrough()
+void Copter::heli_radio_passthrough()
 {
     motors.set_radio_passthrough(channel_roll->control_in, channel_pitch->control_in, channel_throttle->control_in, channel_yaw->control_in);
 }

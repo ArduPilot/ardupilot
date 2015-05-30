@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
@@ -11,7 +13,7 @@ static uint8_t auto_disarming_counter;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
-static void arm_motors_check()
+void Copter::arm_motors_check()
 {
     static int16_t arming_counter;
 
@@ -71,10 +73,10 @@ static void arm_motors_check()
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
 // called at 1hz
-static void auto_disarm_check()
+void Copter::auto_disarm_check()
 {
 
-    uint8_t delay;
+    uint8_t disarm_delay;
 
     // exit immediately if we are already disarmed or throttle output is not zero,
     if (!motors.armed() || !ap.throttle_zero) {
@@ -90,12 +92,12 @@ static void auto_disarm_check()
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
         if (ap.using_interlock || ap.motor_emergency_stop){
-            delay = AUTO_DISARMING_DELAY_SHORT;
+            disarm_delay = AUTO_DISARMING_DELAY_SHORT;
         } else {
-            delay = AUTO_DISARMING_DELAY_LONG;
+            disarm_delay = AUTO_DISARMING_DELAY_LONG;
         }
 
-        if(auto_disarming_counter >= delay) {
+        if(auto_disarming_counter >= disarm_delay) {
             init_disarm_motors();
             auto_disarming_counter = 0;
         }
@@ -106,7 +108,7 @@ static void auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-static bool init_arm_motors(bool arming_from_gcs)
+bool Copter::init_arm_motors(bool arming_from_gcs)
 {
 	// arming marker
     // Flag used to track if we have armed the motors the first time.
@@ -233,7 +235,7 @@ static bool init_arm_motors(bool arming_from_gcs)
 
 // perform pre-arm checks and set ap.pre_arm_check flag
 //  return true if the checks pass successfully
-static bool pre_arm_checks(bool display_failure)
+bool Copter::pre_arm_checks(bool display_failure)
 {
     // exit immediately if already armed
     if (motors.armed()) {
@@ -528,7 +530,7 @@ static bool pre_arm_checks(bool display_failure)
 }
 
 // perform pre_arm_rc_checks checks and set ap.pre_arm_rc_check flag
-static void pre_arm_rc_checks()
+void Copter::pre_arm_rc_checks()
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
     if( ap.pre_arm_rc_check ) {
@@ -571,7 +573,7 @@ static void pre_arm_rc_checks()
 }
 
 // performs pre_arm gps related checks and returns true if passed
-static bool pre_arm_gps_checks(bool display_failure)
+bool Copter::pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     if(!ahrs.get_NavEKF().healthy()) {
@@ -638,7 +640,7 @@ static bool pre_arm_gps_checks(bool display_failure)
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
-static bool arm_checks(bool display_failure, bool arming_from_gcs)
+bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 {
 #if LOGGING_ENABLED == ENABLED
     // start dataflash
@@ -760,7 +762,7 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
 }
 
 // init_disarm_motors - disarm motors
-static void init_disarm_motors()
+void Copter::init_disarm_motors()
 {
     // return immediately if we are already disarmed
     if (!motors.armed()) {
@@ -806,7 +808,7 @@ static void init_disarm_motors()
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
-static void motors_output()
+void Copter::motors_output()
 {
     // check if we are performing the motor test
     if (ap.motor_test) {
@@ -824,7 +826,7 @@ static void motors_output()
 }
 
 // check for pilot stick input to trigger lost vehicle alarm
-static void lost_vehicle_check()
+void Copter::lost_vehicle_check()
 {
     static uint8_t soundalarm_counter;
 

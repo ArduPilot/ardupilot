@@ -1,11 +1,14 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#include "Copter.h"
+
 #if FRAME_CONFIG == HELI_FRAME
 /*
  * heli_control_acro.pde - init and run calls for acro flight mode for trad heli
  */
 
 // heli_acro_init - initialise acro controller
-static bool heli_acro_init(bool ignore_checks)
+bool Copter::heli_acro_init(bool ignore_checks)
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
     attitude_control.use_flybar_passthrough(motors.has_flybar());
@@ -16,7 +19,7 @@ static bool heli_acro_init(bool ignore_checks)
 
 // heli_acro_run - runs the acro controller
 // should be called at 100hz or more
-static void heli_acro_run()
+void Copter::heli_acro_run()
 {
     float target_roll, target_pitch, target_yaw;
     
@@ -57,7 +60,7 @@ static void heli_acro_run()
 
 // get_pilot_desired_yaw_rate - transform pilot's yaw input into a desired yaw angle rate
 // returns desired yaw rate in centi-degrees-per-second
-static void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out)
+void Copter::get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out)
 {
     // calculate rate request
     float rate_bf_yaw_request = yaw_in * g.acro_yaw_p;

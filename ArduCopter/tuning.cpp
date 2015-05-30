@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * tuning.pde - function to update various parameters in flight using the ch6 tuning knob
  *      This should not be confused with the AutoTune feature which can bve found in control_autotune.pde
@@ -7,7 +9,7 @@
 
 // tuning - updates parameters based on the ch6 tuning knob's position
 //  should be called at 3.3hz
-static void tuning() {
+void Copter::tuning() {
 
     // exit immediately if not tuning of when radio failsafe is invoked so tuning values are not set to zero
     if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0) {

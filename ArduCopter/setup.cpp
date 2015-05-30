@@ -1,28 +1,20 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 #if CLI_ENABLED == ENABLED
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define WITH_ESC_CALIB
 #endif
 
-// Functions called from the setup menu
-static int8_t   setup_factory           (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_show              (uint8_t argc, const Menu::arg *argv);
-static int8_t   setup_set               (uint8_t argc, const Menu::arg *argv);
-#ifdef WITH_ESC_CALIB
-static int8_t   esc_calib               (uint8_t argc, const Menu::arg *argv);
-#endif
-
 // Command/function table for the setup menu
-const struct Menu::command setup_menu_commands[] PROGMEM = {
-    // command			function called
-    // =======          ===============
-    {"reset",                       setup_factory},
-    {"show",                        setup_show},
-    {"set",                         setup_set},
+static const struct Menu::command setup_menu_commands[] PROGMEM = {
+    {"reset",                       MENU_FUNC(setup_factory)},
+    {"show",                        MENU_FUNC(setup_show)},
+    {"set",                         MENU_FUNC(setup_set)},
 #ifdef WITH_ESC_CALIB
-    {"esc_calib",                   esc_calib},
+    {"esc_calib",                   MENU_FUNC(esc_calib)},
 #endif
 };
 
@@ -30,8 +22,7 @@ const struct Menu::command setup_menu_commands[] PROGMEM = {
 MENU(setup_menu, "setup", setup_menu_commands);
 
 // Called from the top-level menu to run the setup menu.
-static int8_t
-setup_mode(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::setup_mode(uint8_t argc, const Menu::arg *argv)
 {
     // Give the user some guidance
     cliSerial->printf_P(PSTR("Setup Mode\n\n\n"));
@@ -43,8 +34,7 @@ setup_mode(uint8_t argc, const Menu::arg *argv)
 
 // Initialise the EEPROM to 'factory' settings (mostly defined in APM_Config.h or via defaults).
 // Called by the setup menu 'factoryreset' command.
-static int8_t
-setup_factory(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::setup_factory(uint8_t argc, const Menu::arg *argv)
 {
     int16_t c;
 
@@ -70,7 +60,7 @@ setup_factory(uint8_t argc, const Menu::arg *argv)
 
 //Set a parameter to a specified value. It will cast the value to the current type of the
 //parameter and make sure it fits in case of INT8 and INT16
-static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
 {
     int8_t value_int8;
     int16_t value_int16;
@@ -129,8 +119,7 @@ static int8_t setup_set(uint8_t argc, const Menu::arg *argv)
 
 // Print the current configuration.
 // Called by the setup menu 'show' command.
-static int8_t
-setup_show(uint8_t argc, const Menu::arg *argv)
+int8_t Copter::setup_show(uint8_t argc, const Menu::arg *argv)
 {
     AP_Param *param;
     ap_var_type type;
@@ -175,8 +164,7 @@ setup_show(uint8_t argc, const Menu::arg *argv)
 #define PWM_HIGHEST_MIN 1800
 #define PWM_LOWEST_MIN 800
 
-static int8_t
-esc_calib(uint8_t argc,const Menu::arg *argv)
+int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 {
 
 
@@ -318,7 +306,7 @@ esc_calib(uint8_t argc,const Menu::arg *argv)
 // CLI reports
 /***************************************************************************/
 
-static void report_batt_monitor()
+void Copter::report_batt_monitor()
 {
     cliSerial->printf_P(PSTR("\nBatt Mon:\n"));
     print_divider();
@@ -332,7 +320,7 @@ static void report_batt_monitor()
     print_blanks(2);
 }
 
-static void report_frame()
+void Copter::report_frame()
 {
     cliSerial->printf_P(PSTR("Frame\n"));
     print_divider();
@@ -354,7 +342,7 @@ static void report_frame()
     print_blanks(2);
 }
 
-static void report_radio()
+void Copter::report_radio()
 {
     cliSerial->printf_P(PSTR("Radio\n"));
     print_divider();
@@ -363,7 +351,7 @@ static void report_radio()
     print_blanks(2);
 }
 
-static void report_ins()
+void Copter::report_ins()
 {
     cliSerial->printf_P(PSTR("INS\n"));
     print_divider();
@@ -373,7 +361,7 @@ static void report_ins()
     print_blanks(2);
 }
 
-static void report_flight_modes()
+void Copter::report_flight_modes()
 {
     cliSerial->printf_P(PSTR("Flight modes\n"));
     print_divider();
@@ -384,7 +372,7 @@ static void report_flight_modes()
     print_blanks(2);
 }
 
-void report_optflow()
+void Copter::report_optflow()
 {
  #if OPTFLOW == ENABLED
     cliSerial->printf_P(PSTR("OptFlow\n"));
@@ -400,8 +388,7 @@ void report_optflow()
 // CLI utilities
 /***************************************************************************/
 
-static void
-print_radio_values()
+void Copter::print_radio_values()
 {
     cliSerial->printf_P(PSTR("CH1: %d | %d\n"), (int)channel_roll->radio_min, (int)channel_roll->radio_max);
     cliSerial->printf_P(PSTR("CH2: %d | %d\n"), (int)channel_pitch->radio_min, (int)channel_pitch->radio_max);
@@ -413,8 +400,7 @@ print_radio_values()
     cliSerial->printf_P(PSTR("CH8: %d | %d\n"), (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
 }
 
-static void
-print_switch(uint8_t p, uint8_t m, bool b)
+void Copter::print_switch(uint8_t p, uint8_t m, bool b)
 {
     cliSerial->printf_P(PSTR("Pos %d:\t"),p);
     print_flight_mode(cliSerial, m);
@@ -425,8 +411,7 @@ print_switch(uint8_t p, uint8_t m, bool b)
         cliSerial->printf_P(PSTR("OFF\n"));
 }
 
-static void
-print_accel_offsets_and_scaling(void)
+void Copter::print_accel_offsets_and_scaling(void)
 {
     const Vector3f &accel_offsets = ins.get_accel_offsets();
     const Vector3f &accel_scale = ins.get_accel_scale();
@@ -439,8 +424,7 @@ print_accel_offsets_and_scaling(void)
                     (double)accel_scale.z);                            // YAW
 }
 
-static void
-print_gyro_offsets(void)
+void Copter::print_gyro_offsets(void)
 {
     const Vector3f &gyro_offsets = ins.get_gyro_offsets();
     cliSerial->printf_P(PSTR("G_off: %4.2f, %4.2f, %4.2f\n"),
@@ -452,7 +436,7 @@ print_gyro_offsets(void)
 #endif // CLI_ENABLED
 
 // report_compass - displays compass information.  Also called by compassmot.pde
-static void report_compass()
+void Copter::report_compass()
 {
     cliSerial->printf_P(PSTR("Compass\n"));
     print_divider();
@@ -499,8 +483,7 @@ static void report_compass()
     print_blanks(1);
 }
 
-static void
-print_blanks(int16_t num)
+void Copter::print_blanks(int16_t num)
 {
     while(num > 0) {
         num--;
@@ -508,8 +491,7 @@ print_blanks(int16_t num)
     }
 }
 
-static void
-print_divider(void)
+void Copter::print_divider(void)
 {
     for (int i = 0; i < 40; i++) {
         cliSerial->print_P(PSTR("-"));
@@ -517,7 +499,7 @@ print_divider(void)
     cliSerial->println();
 }
 
-static void print_enabled(bool b)
+void Copter::print_enabled(bool b)
 {
     if(b)
         cliSerial->print_P(PSTR("en"));
@@ -526,7 +508,7 @@ static void print_enabled(bool b)
     cliSerial->print_P(PSTR("abled\n"));
 }
 
-static void report_version()
+void Copter::report_version()
 {
     cliSerial->printf_P(PSTR("FW Ver: %d\n"),(int)g.k_format_version);
     print_divider();

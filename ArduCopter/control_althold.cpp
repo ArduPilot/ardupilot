@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include "Copter.h"
+
 
 /*
  * control_althold.pde - init and run calls for althold, flight mode
  */
 
 // althold_init - initialise althold controller
-static bool althold_init(bool ignore_checks)
+bool Copter::althold_init(bool ignore_checks)
 {
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
@@ -19,7 +21,7 @@ static bool althold_init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-static void althold_run()
+void Copter::althold_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;

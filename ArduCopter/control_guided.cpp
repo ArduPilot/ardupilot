@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_guided.pde - init and run calls for guided flight mode
  */
@@ -24,7 +26,7 @@ struct Guided_Limit {
 } guided_limit;
 
 // guided_init - initialise guided controller
-static bool guided_init(bool ignore_checks)
+bool Copter::guided_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
         // initialise yaw
@@ -39,7 +41,7 @@ static bool guided_init(bool ignore_checks)
 
 
 // guided_takeoff_start - initialises waypoint controller to implement take-off
-static void guided_takeoff_start(float final_alt_above_home)
+void Copter::guided_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
     
@@ -56,7 +58,7 @@ static void guided_takeoff_start(float final_alt_above_home)
 }
 
 // initialise guided mode's position controller
-static void guided_pos_control_start()
+void Copter::guided_pos_control_start()
 {
     // set to position control mode
     guided_mode = Guided_WP;
@@ -77,7 +79,7 @@ static void guided_pos_control_start()
 }
 
 // initialise guided mode's velocity controller
-static void guided_vel_control_start()
+void Copter::guided_vel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_Velocity;
@@ -91,7 +93,7 @@ static void guided_vel_control_start()
 }
 
 // initialise guided mode's posvel controller
-static void guided_posvel_control_start()
+void Copter::guided_posvel_control_start()
 {
     // set guided_mode to velocity controller
     guided_mode = Guided_PosVel;
@@ -118,7 +120,7 @@ static void guided_posvel_control_start()
 }
 
 // guided_set_destination - sets guided mode's target destination
-static void guided_set_destination(const Vector3f& destination)
+void Copter::guided_set_destination(const Vector3f& destination)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -129,7 +131,7 @@ static void guided_set_destination(const Vector3f& destination)
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-static void guided_set_velocity(const Vector3f& velocity)
+void Copter::guided_set_velocity(const Vector3f& velocity)
 {
     // check we are in velocity control mode
     if (guided_mode != Guided_Velocity) {
@@ -141,7 +143,7 @@ static void guided_set_velocity(const Vector3f& velocity)
 }
 
 // set guided mode posvel target
-static void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
+void Copter::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity) {
     // check we are in velocity control mode
     if (guided_mode != Guided_PosVel) {
         guided_posvel_control_start();
@@ -156,7 +158,7 @@ static void guided_set_destination_posvel(const Vector3f& destination, const Vec
 
 // guided_run - runs the guided controller
 // should be called at 100hz or more
-static void guided_run()
+void Copter::guided_run()
 {
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
@@ -193,7 +195,7 @@ static void guided_run()
 
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more
-static void guided_takeoff_run()
+void Copter::guided_takeoff_run()
 {
     // if not auto armed or motors interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
@@ -225,7 +227,7 @@ static void guided_takeoff_run()
 
 // guided_pos_control_run - runs the guided position controller
 // called from guided_run
-static void guided_pos_control_run()
+void Copter::guided_pos_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -255,7 +257,7 @@ static void guided_pos_control_run()
 
 // guided_vel_control_run - runs the guided velocity controller
 // called from guided_run
-static void guided_vel_control_run()
+void Copter::guided_vel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -293,7 +295,7 @@ static void guided_vel_control_run()
 
 // guided_posvel_control_run - runs the guided spline controller
 // called from guided_run
-static void guided_posvel_control_run()
+void Copter::guided_posvel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -348,7 +350,7 @@ static void guided_posvel_control_run()
 // Guided Limit code
 
 // guided_limit_clear - clear/turn off guided limits
-static void guided_limit_clear()
+void Copter::guided_limit_clear()
 {
     guided_limit.timeout_ms = 0;
     guided_limit.alt_min_cm = 0.0f;
@@ -357,7 +359,7 @@ static void guided_limit_clear()
 }
 
 // guided_limit_set - set guided timeout and movement limits
-static void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
+void Copter::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm)
 {
     guided_limit.timeout_ms = timeout_ms;
     guided_limit.alt_min_cm = alt_min_cm;
@@ -367,7 +369,7 @@ static void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_ma
 
 // guided_limit_init_time_and_pos - initialise guided start time and position as reference for limit checking
 //  only called from AUTO mode's auto_nav_guided_start function
-static void guided_limit_init_time_and_pos()
+void Copter::guided_limit_init_time_and_pos()
 {
     // initialise start time
     guided_limit.start_time = hal.scheduler->millis();
@@ -378,7 +380,7 @@ static void guided_limit_init_time_and_pos()
 
 // guided_limit_check - returns true if guided mode has breached a limit
 //  used when guided is invoked from the NAV_GUIDED_ENABLE mission command
-static bool guided_limit_check()
+bool Copter::guided_limit_check()
 {
     // check if we have passed the timeout
     if ((guided_limit.timeout_ms > 0) && (millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {

@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 #if AUTOTUNE_ENABLED == ENABLED
 
 /*
@@ -160,7 +162,7 @@ static float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
 static float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
 
 // autotune_init - should be called when autotune mode is selected
-static bool autotune_init(bool ignore_checks)
+bool Copter::autotune_init(bool ignore_checks)
 {
     bool success = true;
 
@@ -207,7 +209,7 @@ static bool autotune_init(bool ignore_checks)
 }
 
 // autotune_stop - should be called when the ch7/ch8 switch is switched OFF
-static void autotune_stop()
+void Copter::autotune_stop()
 {
     // set gains to their original values
     autotune_load_orig_gains();
@@ -224,7 +226,7 @@ static void autotune_stop()
 }
 
 // autotune_start - Initialize autotune flight mode
-static bool autotune_start(bool ignore_checks)
+bool Copter::autotune_start(bool ignore_checks)
 {
     // only allow flip from Stabilize or AltHold flight modes
     if (control_mode != STABILIZE && control_mode != ALT_HOLD) {
@@ -253,7 +255,7 @@ static bool autotune_start(bool ignore_checks)
 
 // autotune_run - runs the autotune flight mode
 // should be called at 100hz or more
-static void autotune_run()
+void Copter::autotune_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
@@ -329,7 +331,7 @@ static void autotune_run()
 }
 
 // autotune_attitude_controller - sets attitude control targets during tuning
-static void autotune_attitude_control()
+void Copter::autotune_attitude_control()
 {
     float rotation_rate = 0.0f;        // rotation rate in radians/second
     float lean_angle = 0.0f;
@@ -729,7 +731,7 @@ static void autotune_attitude_control()
 
 // autotune_backup_gains_and_initialise - store current gains as originals
 //  called before tuning starts to backup original gains
-static void autotune_backup_gains_and_initialise()
+void Copter::autotune_backup_gains_and_initialise()
 {
     // initialise state because this is our first time
     if (autotune_roll_enabled()) {
@@ -783,7 +785,7 @@ static void autotune_backup_gains_and_initialise()
 
 // autotune_load_orig_gains - set gains to their original values
 //  called by autotune_stop and autotune_failed functions
-static void autotune_load_orig_gains()
+void Copter::autotune_load_orig_gains()
 {
     // sanity check the gains
     bool failed = false;
@@ -825,7 +827,7 @@ static void autotune_load_orig_gains()
 }
 
 // autotune_load_tuned_gains - load tuned gains
-static void autotune_load_tuned_gains()
+void Copter::autotune_load_tuned_gains()
 {
     // sanity check the gains
     bool failed = true;
@@ -865,7 +867,7 @@ static void autotune_load_tuned_gains()
 
 // autotune_load_intra_test_gains - gains used between tests
 //  called during testing mode's update-gains step to set gains ahead of return-to-level step
-static void autotune_load_intra_test_gains()
+void Copter::autotune_load_intra_test_gains()
 {
     // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
     // sanity check the gains
@@ -900,7 +902,7 @@ static void autotune_load_intra_test_gains()
 
 // autotune_load_twitch_gains - load the to-be-tested gains for a single axis
 // called by autotune_attitude_control() just before it beings testing a gain (i.e. just before it twitches)
-static void autotune_load_twitch_gains()
+void Copter::autotune_load_twitch_gains()
 {
     bool failed = true;
     switch (autotune_state.axis) {
@@ -941,7 +943,7 @@ static void autotune_load_twitch_gains()
 
 // autotune_save_tuning_gains - save the final tuned gains for each axis
 // save discovered gains to eeprom if autotuner is enabled (i.e. switch is in the high position)
-static void autotune_save_tuning_gains()
+void Copter::autotune_save_tuning_gains()
 {
     // if we successfully completed tuning
     if (autotune_state.mode == AUTOTUNE_MODE_SUCCESS) {
@@ -1033,7 +1035,7 @@ static void autotune_save_tuning_gains()
 }
 
 // autotune_update_gcs - send message to ground station
-void autotune_update_gcs(uint8_t message_id)
+void Copter::autotune_update_gcs(uint8_t message_id)
 {
     switch (message_id) {
         case AUTOTUNE_MESSAGE_STARTED:
@@ -1055,21 +1057,21 @@ void autotune_update_gcs(uint8_t message_id)
 }
 
 // axis helper functions
-inline bool autotune_roll_enabled() {
+inline bool Copter::autotune_roll_enabled() {
     return g.autotune_axis_bitmask & AUTOTUNE_AXIS_BITMASK_ROLL;
 }
 
-inline bool autotune_pitch_enabled() {
+inline bool Copter::autotune_pitch_enabled() {
     return g.autotune_axis_bitmask & AUTOTUNE_AXIS_BITMASK_PITCH;
 }
 
-inline bool autotune_yaw_enabled() {
+inline bool Copter::autotune_yaw_enabled() {
     return g.autotune_axis_bitmask & AUTOTUNE_AXIS_BITMASK_YAW;
 }
 
 // autotune_twitching_test - twitching tests
 // update min and max and test for end conditions
-void autotune_twitching_test(float measurement, float target, float &measurement_min, float &measurement_max)
+void Copter::autotune_twitching_test(float measurement, float target, float &measurement_min, float &measurement_max)
 {
     // capture maximum measurement
     if (measurement > measurement_max) {
@@ -1109,7 +1111,7 @@ void autotune_twitching_test(float measurement, float target, float &measurement
 
 // autotune_updating_d_up - increase D and adjust P to optimize the D term for a little bounce back
 // optimize D term while keeping the maximum just below the target by adjusting P
-void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
+void Copter::autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
 {
     if (measurement_max > target) {
         // if maximum measurement was higher than target
@@ -1164,7 +1166,7 @@ void autotune_updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, f
 
 // autotune_updating_d_down - decrease D and adjust P to optimize the D term for no bounce back
 // optimize D term while keeping the maximum just below the target by adjusting P
-void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
+void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
 {
     if (measurement_max > target) {
         // if maximum measurement was higher than target
@@ -1219,7 +1221,7 @@ void autotune_updating_d_down(float &tune_d, float tune_d_min, float tune_d_step
 
 // autotune_updating_p_down - decrease P until we don't reach the target before time out
 // P is decreased to ensure we are not overshooting the target
-void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
+void Copter::autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max < target) {
         if (autotune_state.ignore_next == 0){
@@ -1248,7 +1250,7 @@ void autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step
 
 // autotune_updating_p_up - increase P to ensure the target is reached
 // P is increased until we achieve our target within a reasonable time
-void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max)
+void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max)
 {
     if (measurement_max > target) {
         // ignore the next result unless it is the same as this one
@@ -1277,7 +1279,7 @@ void autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_r
 
 // autotune_updating_p_up - increase P to ensure the target is reached while checking bounce back isn't increasing
 // P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
-void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
+void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
 {
     if (measurement_max > target) {
         // ignore the next result unless it is the same as this one
@@ -1326,7 +1328,7 @@ void autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d
 }
 
 // autotune_twitching_measure_acceleration - measure rate of change of measurement
-void autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max)
+void Copter::autotune_twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max)
 {
     if (rate_measurement_max < rate_measurement) {
         rate_measurement_max = rate_measurement;

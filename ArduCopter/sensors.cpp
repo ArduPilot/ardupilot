@@ -1,6 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void init_barometer(bool full_calibration)
+#include "Copter.h"
+
+void Copter::init_barometer(bool full_calibration)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));
     if (full_calibration) {
@@ -12,7 +14,7 @@ static void init_barometer(bool full_calibration)
 }
 
 // return barometric altitude in centimeters
-static void read_barometer(void)
+void Copter::read_barometer(void)
 {
     barometer.update();
     if (should_log(MASK_LOG_IMU)) {
@@ -25,14 +27,14 @@ static void read_barometer(void)
 }
 
 #if CONFIG_SONAR == ENABLED
-static void init_sonar(void)
+void Copter::init_sonar(void)
 {
    sonar.init();
 }
 #endif
 
 // return sonar altitude in centimeters
-static int16_t read_sonar(void)
+int16_t Copter::read_sonar(void)
 {
 #if CONFIG_SONAR == ENABLED
     sonar.update();
@@ -68,7 +70,7 @@ static int16_t read_sonar(void)
 }
 
 // initialise compass
-static void init_compass()
+void Copter::init_compass()
 {
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
@@ -80,7 +82,7 @@ static void init_compass()
 }
 
 // initialise optical flow sensor
-static void init_optflow()
+void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
     // exit immediately if not enabled
@@ -95,7 +97,7 @@ static void init_optflow()
 
 // called at 200hz
 #if OPTFLOW == ENABLED
-static void update_optical_flow(void)
+void Copter::update_optical_flow(void)
 {
     static uint32_t last_of_update = 0;
 
@@ -123,7 +125,7 @@ static void update_optical_flow(void)
 
 // read_battery - check battery voltage and current and invoke failsafe if necessary
 // called at 10hz
-static void read_battery(void)
+void Copter::read_battery(void)
 {
     battery.read();
 
@@ -154,7 +156,7 @@ static void read_battery(void)
 
 // read the receiver RSSI as an 8 bit number for MAVLink
 // RC_CHANNELS_SCALED message
-void read_receiver_rssi(void)
+void Copter::read_receiver_rssi(void)
 {
     // avoid divide by zero
     if (g.rssi_range <= 0) {
@@ -168,7 +170,7 @@ void read_receiver_rssi(void)
 
 #if EPM_ENABLED == ENABLED
 // epm update - moves epm pwm output back to neutral after grab or release is completed
-void epm_update()
+void Copter::epm_update()
 {
     epm.update();
 }

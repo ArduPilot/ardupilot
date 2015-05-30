@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
 //   The take-off can be initiated from a GCS NAV_TAKEOFF command which includes a takeoff altitude
 //   A safe takeoff speed is calculated and used to calculate a time_ms
@@ -7,7 +9,7 @@
 
 // return true if this flight mode supports user takeoff
 //  must_nagivate is true if mode must also control horizontal position
-bool current_mode_has_user_takeoff(bool must_navigate)
+bool Copter::current_mode_has_user_takeoff(bool must_navigate)
 {
     switch (control_mode) {
         case GUIDED:
@@ -23,7 +25,7 @@ bool current_mode_has_user_takeoff(bool must_navigate)
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-static bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
+bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
     if (motors.armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
         switch(control_mode) {
@@ -44,7 +46,7 @@ static bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 }
 
 // start takeoff to specified altitude above home
-static void takeoff_timer_start(float alt)
+void Copter::takeoff_timer_start(float alt)
 {
     // calculate climb rate
     float speed = min(wp_nav.get_speed_up(), max(g.pilot_velocity_z_max*2.0f/3.0f, g.pilot_velocity_z_max-50.0f));
@@ -62,7 +64,7 @@ static void takeoff_timer_start(float alt)
 }
 
 // stop takeoff
-static void takeoff_stop()
+void Copter::takeoff_stop()
 {
     takeoff_state.running = false;
     takeoff_state.start_ms = 0;
@@ -72,7 +74,7 @@ static void takeoff_stop()
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-static void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
+void Copter::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
 {
     // return pilot_climb_rate if take-off inactive
     if (!takeoff_state.running) {

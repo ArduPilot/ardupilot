@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*****************************************************************************
 *  esc_calibration.pde : functions to check and perform ESC calibration
 *****************************************************************************/
@@ -15,7 +17,7 @@ enum ESCCalibrationModes {
 };
 
 // check if we should enter esc calibration mode
-static void esc_calibration_startup_check()
+void Copter::esc_calibration_startup_check()
 {
     // exit immediately if pre-arm rc checks fail
     pre_arm_rc_checks();
@@ -66,7 +68,7 @@ static void esc_calibration_startup_check()
 }
 
 // esc_calibration_passthrough - pass through pilot throttle to escs
-static void esc_calibration_passthrough()
+void Copter::esc_calibration_passthrough()
 {
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
@@ -95,7 +97,7 @@ static void esc_calibration_passthrough()
 }
 
 // esc_calibration_auto - calibrate the ESCs automatically using a timer and no pilot input
-static void esc_calibration_auto()
+void Copter::esc_calibration_auto()
 {
     bool printed_msg = false;
 

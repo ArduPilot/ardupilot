@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_loiter.pde - init and run calls for loiter flight mode
  */
 
 // loiter_init - initialise loiter controller
-static bool loiter_init(bool ignore_checks)
+bool Copter::loiter_init(bool ignore_checks)
 {
     if (position_ok() || optflow_position_ok() || ignore_checks) {
 
@@ -27,7 +29,7 @@ static bool loiter_init(bool ignore_checks)
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-static void loiter_run()
+void Copter::loiter_run()
 {
     float target_yaw_rate = 0;
     float target_climb_rate = 0;

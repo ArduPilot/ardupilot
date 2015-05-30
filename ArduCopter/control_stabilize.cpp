@@ -1,11 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Copter.h"
+
 /*
  * control_stabilize.pde - init and run calls for stabilize flight mode
  */
 
 // stabilize_init - initialise stabilize controller
-static bool stabilize_init(bool ignore_checks)
+bool Copter::stabilize_init(bool ignore_checks)
 {
     // set target altitude to zero for reporting
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
@@ -17,7 +19,7 @@ static bool stabilize_init(bool ignore_checks)
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
-static void stabilize_run()
+void Copter::stabilize_run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate;
