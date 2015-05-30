@@ -290,6 +290,7 @@ bool Plane::setup_failsafe_mixing(void)
         }
         if (ioctl(px4io_fd, PWM_SERVO_SET_RC_CONFIG, (unsigned long)&config) != 0) {
             hal.console->printf("SET_RC_CONFIG failed\n");
+            goto failed;
         }
     }
 
