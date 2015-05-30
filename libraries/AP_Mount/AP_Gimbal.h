@@ -32,6 +32,7 @@ public:
         _gimbalParams(parameters),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
+        lockedToBody(false),
         yawErrorLimit(0.1f)
     {
     }
@@ -54,6 +55,8 @@ public:
 
     Vector3f    gimbalRateDemVec;       // degrees/s
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
+
+    bool lockedToBody;
 
 private:
     
@@ -84,6 +87,7 @@ private:
     Vector3f getGimbalRateDemVecTilt(const Quaternion &quatEst);
     Vector3f getGimbalRateDemVecForward(const Quaternion &quatEst);
     Vector3f getGimbalRateDemVecGyroBias();
+    Vector3f getGimbalRateBodyLock();
 
 };
 

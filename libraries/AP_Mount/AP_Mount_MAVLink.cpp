@@ -79,11 +79,13 @@ void AP_Mount_MAVLink::update()
     switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
+            _gimbal.lockedToBody = true;
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
             {
+            _gimbal.lockedToBody = false;
             const Vector3f &target = _state._neutral_angles.get();
             _angle_ef_target_rad.x = ToRad(target.x);
             _angle_ef_target_rad.y = ToRad(target.y);
@@ -93,17 +95,20 @@ void AP_Mount_MAVLink::update()
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+            _gimbal.lockedToBody = false;
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
+            _gimbal.lockedToBody = false;
             // update targets using pilot's rc inputs
             update_targets_from_rc();
             break;
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
+            _gimbal.lockedToBody = false;
             if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
             }
