@@ -54,7 +54,7 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
 endif
 
 ifneq ($(wildcard $(SKETCHBOOK)/config.mk),)
-$(warning Reading $(SKETCHBOOK)/config.mk)
+$(info Reading $(SKETCHBOOK)/config.mk)
 include $(SKETCHBOOK)/config.mk
 endif
 
