@@ -64,7 +64,7 @@ private:
     /*
       read a block
     */
-    void ReadBlock(void *pkt, uint16_t size);
+    bool ReadBlock(void *pkt, uint16_t size);
 
     // write buffer
     uint8_t *_writebuf;

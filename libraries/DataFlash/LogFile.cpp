@@ -292,7 +292,9 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
     }
     uint8_t msg_len = PGM_UINT8(&_structures[i].msg_len) - 3;
     uint8_t pkt[msg_len];
-    ReadBlock(pkt, msg_len);
+    if (!ReadBlock(pkt, msg_len)) {
+        return;
+    }
     port->printf_P(PSTR("%S, "), _structures[i].name);
     for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
         char fmt = PGM_UINT8(&_structures[i].format[fmt_ofs]);
@@ -469,7 +471,9 @@ void DataFlash_Block::LogReadProcess(uint16_t log_num,
 
     while (true) {
         uint8_t data;
-        ReadBlock(&data, 1);
+        if (!ReadBlock(&data, 1)) {
+            break;
+        }
 
         // This is a state machine to read the packets
         switch(log_step) {

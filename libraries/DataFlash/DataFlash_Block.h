@@ -93,7 +93,7 @@ private:
     void FinishWrite(void);
 
     // Read methods
-    void ReadBlock(void *pBuffer, uint16_t size);
+    bool ReadBlock(void *pBuffer, uint16_t size);
 
     // file numbers
     void SetFileNumber(uint16_t FileNumber);

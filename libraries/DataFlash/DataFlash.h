@@ -135,7 +135,7 @@ protected:
     /*
       read a block
     */
-    virtual void ReadBlock(void *pkt, uint16_t size) = 0;
+    virtual bool ReadBlock(void *pkt, uint16_t size) = 0;
 
 };
 

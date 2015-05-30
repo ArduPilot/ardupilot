@@ -229,15 +229,18 @@ void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
 /*
   read a packet. The header bytes have already been read.
 */
-void DataFlash_File::ReadBlock(void *pkt, uint16_t size)
+bool DataFlash_File::ReadBlock(void *pkt, uint16_t size)
 {
     if (_read_fd == -1 || !_initialised || _open_error) {
-        return;
+        return false;
     }
 
     memset(pkt, 0, size);
-    ::read(_read_fd, pkt, size);
+    if (::read(_read_fd, pkt, size) != size) {
+        return false;
+    }
     _read_offset += size;
+    return true;
 }
 
 
