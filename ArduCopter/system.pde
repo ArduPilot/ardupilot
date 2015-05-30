@@ -252,6 +252,11 @@ static void init_ardupilot()
     heli_init();
 #endif
 
+#if LOGGING_ENABLED == ENABLED
+    // Write all current parameters
+    DataFlash.Log_Write_Parameters();
+#endif
+
     startup_ground(true);
 
 #if LOGGING_ENABLED == ENABLED
