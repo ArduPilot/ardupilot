@@ -591,8 +591,6 @@ uint16_t DataFlash_Class::StartNewLog(void)
         hal.scheduler->delay(10);
     }
 
-    // and all current parameters
-    Log_Write_Parameters();
     return ret;
 }
 
