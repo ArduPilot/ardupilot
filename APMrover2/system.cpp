@@ -210,8 +210,10 @@ void Rover::init_ardupilot()
     }
 #endif
 
-	startup_ground();
+    // Write all current parameters
+    DataFlash.Log_Write_Parameters();
 
+	startup_ground();
 	if (should_log(MASK_LOG_CMD)) {
         Log_Write_Startup(TYPE_GROUNDSTART_MSG);
     }
