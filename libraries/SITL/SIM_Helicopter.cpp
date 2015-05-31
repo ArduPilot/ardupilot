@@ -26,17 +26,7 @@
   constructor
  */
 Helicopter::Helicopter(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    terminal_rotation_rate(4*radians(360.0)),
-    hover_throttle(0.65f),
-    terminal_velocity(40.0f),
-    hover_lean(8.0f),
-    yaw_zero(0.1f),
-    rotor_rot_accel(radians(20)),
-    roll_rate_max(radians(1400)),
-    pitch_rate_max(radians(1400)),
-    yaw_rate_max(radians(1400)),
-    rsc_setpoint(0.8f)
+    Aircraft(home_str, frame_str)
 {
     mass = 2.13f;
 

@@ -39,16 +39,16 @@ public:
     }
 
 private:
-    float terminal_rotation_rate;
-    float hover_throttle;
-    float terminal_velocity;
-    float hover_lean;
-    float yaw_zero;
-    float rotor_rot_accel;
-    float roll_rate_max;
-    float pitch_rate_max;
-    float yaw_rate_max;
-    float rsc_setpoint;
+    float terminal_rotation_rate = 4*radians(360.0f);
+    float hover_throttle = 0.65f;
+    float terminal_velocity = 40;
+    float hover_lean = 8.0f;
+    float yaw_zero = 0.1f;
+    float rotor_rot_accel = radians(20);
+    float roll_rate_max = radians(1400);
+    float pitch_rate_max = radians(1400);
+    float yaw_rate_max = radians(1400);
+    float rsc_setpoint = 0.8f;
     float thrust_scale;
     float tail_thrust_scale;
 };
