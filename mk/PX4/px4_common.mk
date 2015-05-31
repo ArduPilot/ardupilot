@@ -42,7 +42,6 @@ MODULES		+= drivers/batt_smbus
 # System commands
 #
 MODULES		+= systemcmds/bl_update
-MODULES		+= systemcmds/boardinfo
 MODULES		+= systemcmds/mixer
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/pwm

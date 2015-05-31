@@ -82,7 +82,7 @@ module_mk:
 px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
-	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) cp $(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(v) $(PX4_MAKE) px4fmu-v1_APM
 	$(v) /bin/rm -f $(SKETCH)-v1.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v1_APM.px4 $(SKETCH)-v1.px4
@@ -92,7 +92,7 @@ px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v1.exp
 px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
-	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
+	$(v) cp $(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/nuttx/
 	$(PX4_MAKE) px4fmu-v2_APM
 	$(v) /bin/rm -f $(SKETCH)-v2.px4
 	$(v) cp $(PX4_ROOT)/Images/px4fmu-v2_APM.px4 $(SKETCH)-v2.px4
