@@ -75,7 +75,7 @@
 
 #include "Copter.h"
 
-#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&copter, &Copter::func, void)
+#define SCHED_TASK(func) FUNCTOR_BIND(&copter, &Copter::func, void)
 
 /*
   scheduler table for fast CPUs - all regular tasks apart from the fast_loop()
