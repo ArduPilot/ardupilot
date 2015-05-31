@@ -49,8 +49,8 @@ private:
     actuator_outputs_s _outputs;
     actuator_armed_s _armed;
 
-    int _actuator_direct_pub = -1;
-    int _actuator_armed_pub = -1;
+    orb_advert_t _actuator_direct_pub = NULL;
+    orb_advert_t _actuator_armed_pub = NULL;
     uint16_t _esc_pwm_min = 1000;
     uint16_t _esc_pwm_max = 2000;
 

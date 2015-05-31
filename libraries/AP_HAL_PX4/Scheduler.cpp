@@ -242,7 +242,7 @@ void PX4Scheduler::resume_timer_procs()
 
 void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
-	systemreset(hold_in_bootloader);
+	px4_systemreset(hold_in_bootloader);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)

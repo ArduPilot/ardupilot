@@ -59,10 +59,10 @@ void PX4RCOutput::init(void* unused)
     }
 
     // publish actuator vaules on demand
-    _actuator_direct_pub = -1;
+    _actuator_direct_pub = NULL;
 
     // and armed state
-    _actuator_armed_pub = -1;
+    _actuator_armed_pub = NULL;
 }
 
 
@@ -280,7 +280,7 @@ void PX4RCOutput::_arm_actuators(bool arm)
     _armed.lockdown = false;
     _armed.force_failsafe = false;
 
-    if (_actuator_armed_pub == -1) {
+    if (_actuator_armed_pub == NULL) {
         _actuator_armed_pub = orb_advertise(ORB_ID(actuator_armed), &_armed);
     } else {
         orb_publish(ORB_ID(actuator_armed), _actuator_armed_pub, &_armed);
@@ -295,8 +295,8 @@ void PX4RCOutput::_publish_actuators(void)
 	struct actuator_direct_s actuators;
 
 	actuators.nvalues = _max_channel;
-    if (actuators.nvalues > NUM_ACTUATORS_DIRECT) {
-        actuators.nvalues = NUM_ACTUATORS_DIRECT;
+    if (actuators.nvalues > actuators.NUM_ACTUATORS_DIRECT) {
+        actuators.nvalues = actuators.NUM_ACTUATORS_DIRECT;
     }
     // don't publish more than 8 actuators for now, as the uavcan ESC
     // driver refuses to update any motors if you try to publish more
@@ -311,7 +311,7 @@ void PX4RCOutput::_publish_actuators(void)
         actuators.values[i] = actuators.values[i]*2 - 1;
     }
 
-    if (_actuator_direct_pub == -1) {
+    if (_actuator_direct_pub == NULL) {
         _actuator_direct_pub = orb_advertise(ORB_ID(actuator_direct), &actuators);
     } else {
         orb_publish(ORB_ID(actuator_direct), _actuator_direct_pub, &actuators);
