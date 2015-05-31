@@ -26,6 +26,7 @@
 
 #include <drivers/drv_range_finder.h>
 #include <drivers/drv_hrt.h>
+#include <uORB/topics/distance_sensor.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -106,7 +107,7 @@ void AP_RangeFinder_PX4::update(void)
         return;
     }
 
-    struct range_finder_report range_report;
+    struct distance_sensor_s range_report;
     float sum = 0;
     uint16_t count = 0;
 
@@ -125,7 +126,7 @@ void AP_RangeFinder_PX4::update(void)
     while (::read(_fd, &range_report, sizeof(range_report)) == sizeof(range_report) &&
            range_report.timestamp != _last_timestamp) {
             // take reading
-            sum += range_report.distance;
+            sum += range_report.current_distance;
             count++;
             _last_timestamp = range_report.timestamp;
     }
