@@ -119,7 +119,7 @@ private:
     AP_HAL::BetterStream* cliSerial;
 
     // the rate we run the main loop 
-    const AP_InertialSensor::Sample_rate ins_sample_rate;
+    const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
 
     // Global parameters are all contained within the 'g' class.
     Parameters g;
@@ -148,7 +148,7 @@ private:
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
     DataFlash_APM2 DataFlash;
 #elif defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash;
+    DataFlash_File DataFlash {HAL_BOARD_LOG_DIRECTORY};
 #else
     // no dataflash driver
     DataFlash_Empty DataFlash;
@@ -165,7 +165,7 @@ private:
     AP_GPS gps;
 
     // flight modes convenience array
-    AP_Int8 *flight_modes;
+    AP_Int8 *flight_modes = &g.flight_mode1;
 
     AP_Baro barometer;
     Compass compass;
@@ -174,19 +174,19 @@ private:
 
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    AP_AHRS_NavEKF ahrs;
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder};
 #else
-    AP_AHRS_DCM ahrs;
+    AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
 
-    AP_L1_Control L1_controller;
-    AP_TECS TECS_controller;
+    AP_L1_Control L1_controller {ahrs};
+    AP_TECS TECS_controller {ahrs, aparm};
 
     // Attitude to servo controllers
-    AP_RollController  rollController;
-    AP_PitchController pitchController;
-    AP_YawController   yawController;
-    AP_SteerController steerController;
+    AP_RollController  rollController {ahrs, aparm, DataFlash};
+    AP_PitchController pitchController {ahrs, aparm, DataFlash};
+    AP_YawController   yawController {ahrs, aparm};
+    AP_SteerController steerController {ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL sitl;
@@ -216,14 +216,14 @@ private:
 
     // GCS selection
     AP_SerialManager serial_manager;
-    const uint8_t num_gcs;
+    const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // selected navigation controller
-    AP_Navigation *nav_controller;
+    AP_Navigation *nav_controller = &L1_controller;
 
     // selected navigation controller
-    AP_SpdHgtControl *SpdHgt_Controller;
+    AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
@@ -245,30 +245,30 @@ private:
     AP_Relay relay;
 
     // handle servo and relay events
-    AP_ServoRelayEvents ServoRelayEvents;
+    AP_ServoRelayEvents ServoRelayEvents {relay};
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera;
+    AP_Camera camera {&relay};
 #endif
 
     // Optical flow sensor
     OpticalFlow optflow;
 
     // Rally Ponints
-    AP_Rally rally;
+    AP_Rally rally {ahrs};
 
     // remember if USB is connected, so we can adjust baud rate
     bool usb_connected;
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    enum FlightMode control_mode;
-    enum FlightMode previous_mode;
+    enum FlightMode control_mode = INITIALISING;
+    enum FlightMode previous_mode = INITIALISING;
 
     // Used to maintain the state of the previous control switch position
     // This is set to 254 when we need to re-read the switch
-    uint8_t oldSwitchPosition;
+    uint8_t oldSwitchPosition = 254;
 
     // This is used to enable the inverted flight feature
     bool inverted_flight;
@@ -285,7 +285,7 @@ private:
         // These are used in the calculation of elevon1_trim and elevon2_trim
         uint16_t ch1_temp;
         uint16_t ch2_temp;
-    } elevon;
+    } elevon { 1500, 1500, 1500, 1500 };
 
     // Failsafe
     struct {
@@ -320,7 +320,7 @@ private:
 
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
     // before recording our home position (and executing a ground start if we booted with an air start)
-    uint8_t ground_start_count;
+    uint8_t ground_start_count = 5;
 
     // true if we have a position estimate from AHRS
     bool have_position;
@@ -356,11 +356,11 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry;
+    AP_Frsky_Telem frsky_telemetry {ahrs, battery};
 #endif
 
     // Airspeed Sensors
-    AP_Airspeed airspeed;
+    AP_Airspeed airspeed {aparm};
 
     // ACRO controller state
     struct {
@@ -388,7 +388,7 @@ private:
         // when ground steering is active, and for steering in auto-takeoff
         bool locked_course;
         float locked_course_err;
-    } steer_state;
+    } steer_state { -1, false, 0 };
 
     // flight mode specific
     struct {
@@ -432,7 +432,7 @@ private:
         int16_t initial_pitch_cd;
         
         // turn angle for next leg of mission
-        float next_turn_angle;
+        float next_turn_angle {90};
 
         // filtered sink rate for landing
         float land_sink_rate;
@@ -457,7 +457,7 @@ private:
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 
-    AP_SpdHgtControl::FlightStage flight_stage;
+    AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
 
     // probability of aircraft is currently in flight. range from 0 to
     // 1 where 1 is 100% sure we're in flight
@@ -475,22 +475,26 @@ private:
 
     // the aerodymamic load factor. This is calculated from the demanded
     // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
-    float aerodynamic_load_factor;
+    float aerodynamic_load_factor = 1.0f;
 
     // a smoothed airspeed estimate, used for limiting roll angle
     float smoothed_airspeed;
 
     // Mission library
-    AP_Mission mission;
+    AP_Mission mission {ahrs, 
+            FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
+
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain;
+    AP_Terrain terrain {ahrs, mission, rally};
 #endif
 
     // Outback Challenge Failsafe Support
 #if OBC_FAILSAFE == ENABLED
-    APM_OBC obc;
+    APM_OBC obc {mission, barometer, gps, rcmap};
 #endif
 
     /*
@@ -532,7 +536,7 @@ private:
 
     // 3D Location vectors
     // Location structure defined in AP_Common
-    const struct Location &home;
+    const struct Location &home = ahrs.get_home();
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
     enum HomeState home_is_set;
@@ -578,7 +582,7 @@ private:
     // INS variables
     // The main loop execution time.  Seconds
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
-    float G_Dt;
+    float G_Dt = 0.02f;
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
@@ -601,13 +605,14 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount;
+    AP_Mount camera_mount {ahrs, current_loc};
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming arming;
+    AP_Arming arming {ahrs, barometer, compass, home_is_set, 
+            FUNCTOR_BIND_MEMBER(&Plane::gcs_send_text_P, void, gcs_severity, const prog_char_t *)};
 
-    AP_Param param_loader;
+    AP_Param param_loader {var_info};
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
