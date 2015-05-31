@@ -12,6 +12,11 @@
  #define HELI_DYNAMIC_FLIGHT_SPEED_MIN      500     // we are in "dynamic flight" when the speed is over 1m/s for 2 seconds
 #endif
 
+// Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
+// and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
+// governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
+static ModeFilterInt16_Size5 rotor_speed_deglitch_filter(4);
+
 // counter to control dynamic flight profile
 static int8_t heli_dynamic_flight_counter;
 
