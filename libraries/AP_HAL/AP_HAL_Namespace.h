@@ -5,12 +5,6 @@
 #include "string.h"
 #include "utility/functor.h"
 
-#define FUNCTOR_BIND_VOID(obj, func, rettype, ...) \
-    FUNCTOR_BIND(obj, func, rettype, ## __VA_ARGS__)
-
-#define FUNCTOR_TYPEDEF_VOID(name, rettype, ...) \
-    FUNCTOR_TYPEDEF(name, rettype, ## __VA_ARGS__)
-
 namespace AP_HAL {
 
     /* Toplevel pure virtual class Hal.*/
