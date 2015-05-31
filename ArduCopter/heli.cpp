@@ -4,8 +4,6 @@
 
 // Traditional helicopter variables and functions
 
-#include "heli.h"
-
 #if FRAME_CONFIG == HELI_FRAME
 
 #ifndef HELI_DYNAMIC_FLIGHT_SPEED_MIN

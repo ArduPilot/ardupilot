@@ -112,9 +112,6 @@
 // Local modules
 #include "Parameters.h"
 
-// Heli modules
-#include "heli.h"
-
 class Copter {
     public:
     friend class GCS_MAVLINK;
@@ -497,6 +494,19 @@ private:
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;
+
+#if FRAME_CONFIG == HELI_FRAME
+    // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
+    // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC
+    // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
+    ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
+
+    // Tradheli flags
+    struct {
+        uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
+        uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
+    } heli_flags;
+#endif
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
