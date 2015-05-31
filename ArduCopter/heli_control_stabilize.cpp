@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
 /*
  * Init and run calls for stabilize flight mode for trad heli
  */
@@ -69,4 +69,4 @@ void Copter::heli_stabilize_run()
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
 }
 
-#endif  //HELI_FRAME
+#endif

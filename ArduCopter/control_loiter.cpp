@@ -7,7 +7,7 @@
 // loiter_init - initialise loiter controller
 bool Copter::loiter_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // do not allow helis to enter Loiter if the Rotor Runup is not complete
     if (!ignore_checks && !motors.rotor_runup_complete()){
         return false;
@@ -108,7 +108,7 @@ void Copter::loiter_run()
         wp_nav.loiter_soften_for_landing();
     }
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // helicopters are held on the ground until rotor speed runup has finished
     bool takeoff_triggered = (ap.land_complete && (target_climb_rate > 0.0f) && motors.rotor_runup_complete());
 #else
@@ -132,7 +132,7 @@ void Copter::loiter_run()
     case Loiter_MotorStopped:
 
         motors.set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
 #else

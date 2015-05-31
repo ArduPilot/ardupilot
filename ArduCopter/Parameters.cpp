@@ -257,7 +257,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
-    
+
     // @Param: PILOT_VELZ_MAX
     // @DisplayName: Pilot maximum vertical speed
     // @Description: The maximum vertical velocity the pilot may request in cm/s
@@ -449,7 +449,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
-    
+
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
@@ -717,7 +717,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // @Group: IM_
     // @Path: ../libraries/AC_InputManager/AC_InputManager_Heli.cpp
     GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
@@ -739,7 +739,9 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
+    // @Group: ATC_
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
     // @Group: ATC_
@@ -833,6 +835,11 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
     GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
+#elif FRAME_CONFIG == HELI_DUAL_FRAME
+    // @Group: H_
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Dual.cpp
+    GOBJECT(motors, "H_",           AP_MotorsHeli_Dual),
+
 #elif FRAME_CONFIG == SINGLE_FRAME
     GOBJECT(motors, "MOT_",           AP_MotorsSingle),
 
@@ -855,7 +862,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
     GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
-    
+
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
@@ -866,8 +873,8 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
-    GOBJECT(rssi, "RSSI_",  AP_RSSI),      
-    
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),
+
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
@@ -944,10 +951,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 
-    // @Group: 
+    // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
-    
+
     AP_VAREND
 };
 
@@ -1133,7 +1140,7 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_pid_rate_yaw, 0, AP_PARAM_FLOAT, "ATC_RAT_YAW_P" },
         { Parameters::k_param_pid_rate_yaw, 1, AP_PARAM_FLOAT, "ATC_RAT_YAW_I" },
         { Parameters::k_param_pid_rate_yaw, 2, AP_PARAM_FLOAT, "ATC_RAT_YAW_D" },
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
         { Parameters::k_param_pid_rate_roll,  4, AP_PARAM_FLOAT, "ATC_RAT_RLL_VFF" },
         { Parameters::k_param_pid_rate_pitch, 4, AP_PARAM_FLOAT, "ATC_RAT_PIT_VFF" },
         { Parameters::k_param_pid_rate_yaw  , 4, AP_PARAM_FLOAT, "ATC_RAT_YAW_VFF" },
@@ -1143,7 +1150,7 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_pid_rate_roll,  5, AP_PARAM_FLOAT, "ATC_RAT_RLL_IMAX" },
         { Parameters::k_param_pid_rate_pitch, 5, AP_PARAM_FLOAT, "ATC_RAT_PIT_IMAX" },
         { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" },
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
         { Parameters::k_param_pid_rate_roll,  7, AP_PARAM_FLOAT, "ATC_RAT_RLL_ILMI" },
         { Parameters::k_param_pid_rate_pitch, 7, AP_PARAM_FLOAT, "ATC_RAT_PIT_ILMI" },
         { Parameters::k_param_pid_rate_yaw,   7, AP_PARAM_FLOAT, "ATC_RAT_YAW_ILMI" },
@@ -1166,7 +1173,7 @@ void Copter::convert_pid_parameters(void)
     // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
     float pid_scaler = 1.27f;
 
-#if FRAME_CONFIG == QUAD_FRAME || FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME  || FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME
+#if FRAME_TYPE == MULTICOPTER
     // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
     if (g.frame_orientation == AP_MOTORS_X_FRAME || g.frame_orientation == AP_MOTORS_V_FRAME || g.frame_orientation == AP_MOTORS_H_FRAME) {
         pid_scaler = 0.9f;

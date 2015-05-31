@@ -26,7 +26,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     switch (mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_TYPE == HELICOPTER
                 success = heli_acro_init(ignore_checks);
             #else
                 success = acro_init(ignore_checks);
@@ -34,7 +34,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_TYPE == HELICOPTER
                 success = heli_stabilize_init(ignore_checks);
             #else
                 success = stabilize_init(ignore_checks);
@@ -118,7 +118,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     if (success) {
         // perform any cleanup required by previous flight mode
         exit_mode(control_mode, mode);
-        
+
         prev_control_mode = control_mode;
         prev_control_mode_reason = control_mode_reason;
 
@@ -162,7 +162,7 @@ void Copter::update_flight_mode()
 
     switch (control_mode) {
         case ACRO:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_TYPE == HELICOPTER
                 heli_acro_run();
             #else
                 acro_run();
@@ -170,7 +170,7 @@ void Copter::update_flight_mode()
             break;
 
         case STABILIZE:
-            #if FRAME_CONFIG == HELI_FRAME
+            #if FRAME_TYPE == HELICOPTER
                 heli_stabilize_run();
             #else
                 stabilize_run();
@@ -278,11 +278,13 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
     // cancel any takeoffs in progress
     takeoff_stop();
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
         attitude_control.use_flybar_passthrough(false, false);
+#if FRAME_CONFIG == HELI_FRAME
         motors.set_acro_tail(false);
+#endif
     }
 
     // if we are changing from a mode that did not use manual throttle,
@@ -295,7 +297,7 @@ void Copter::exit_mode(control_mode_t old_control_mode, control_mode_t new_contr
             input_manager.set_stab_col_ramp(0.0);
         }
     }
-#endif //HELI_FRAME
+#endif
 }
 
 // returns true or false whether mode requires GPS
@@ -426,4 +428,3 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     }
 }
-

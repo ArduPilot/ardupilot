@@ -4,7 +4,7 @@
 // throw_init - initialise throw controller
 bool Copter::throw_init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_TYPE == HELICOPTER
     // do not allow helis to use throw to start
     return false;
 #endif

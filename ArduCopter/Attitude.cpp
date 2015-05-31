@@ -105,7 +105,7 @@ float Copter::get_look_ahead_yaw()
 //  called at 100hz
 void Copter::update_throttle_hover()
 {
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_TYPE == MULTICOPTER
     // if not armed or landed exit
     if (!motors.armed() || ap.land_complete) {
         return;

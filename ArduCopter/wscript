@@ -36,7 +36,7 @@ def build(bld):
     )
 
     frames = (
-        'quad', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'single',
+        'quad', 'tri', 'hexa', 'y6', 'octa', 'octa-quad', 'heli', 'heli-dual', 'single',
         'coax',
     )
     for frame in frames:

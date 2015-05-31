@@ -376,12 +376,12 @@ bool Copter::parameter_checks(bool display_failure)
         }
         #endif
 
-        #if FRAME_CONFIG == HELI_FRAME
+        #if FRAME_TYPE == HELICOPTER
         // check helicopter parameters
         if (!motors.parameter_check(display_failure)) {
             return false;
         }
-        #endif // HELI_FRAME
+        #endif
 
         // check for missing terrain data
         if (!pre_arm_terrain_check(display_failure)) {
@@ -412,7 +412,7 @@ bool Copter::pilot_throttle_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_RC)) {
         if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->get_radio_in() < g.failsafe_throttle_value) {
             if (display_failure) {
-                #if FRAME_CONFIG == HELI_FRAME
+                #if FRAME_TYPE == HELICOPTER
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Collective below Failsafe");
                 #else
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Throttle below Failsafe");
@@ -819,7 +819,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         // check throttle is not too low - must be above failsafe throttle
         if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->get_radio_in() < g.failsafe_throttle_value) {
             if (display_failure) {
-                #if FRAME_CONFIG == HELI_FRAME
+                #if FRAME_TYPE == HELICOPTER
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective below Failsafe");
                 #else
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle below Failsafe");
@@ -833,7 +833,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
             // above top of deadband is too always high
             if (get_pilot_desired_climb_rate(channel_throttle->get_control_in()) > 0.0f) {
                 if (display_failure) {
-                    #if FRAME_CONFIG == HELI_FRAME
+                    #if FRAME_TYPE == HELICOPTER
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective too high");
                     #else
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle too high");
@@ -844,7 +844,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
             // in manual modes throttle must be at zero
             if ((mode_has_manual_throttle(control_mode) || control_mode == DRIFT) && channel_throttle->get_control_in() > 0) {
                 if (display_failure) {
-                    #if FRAME_CONFIG == HELI_FRAME
+                    #if FRAME_TYPE == HELICOPTER
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective too high");
                     #else
                     gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle too high");
