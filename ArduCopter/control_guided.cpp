@@ -160,6 +160,9 @@ void Copter::guided_set_destination_posvel(const Vector3f& destination, const Ve
 // should be called at 100hz or more
 void Copter::guided_run()
 {
+    // use the booster
+    booster.set_active(true);
+
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint controller?

@@ -25,13 +25,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
 // their values.
 //
 AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
-                             const AP_Motors& motors, AC_AttitudeControl& attitude_control,
+                             const AP_Motors& motors, AC_AttitudeControl& attitude_control, AC_BoosterController& booster,
                              AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                              AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy) :
     _ahrs(ahrs),
     _inav(inav),
     _motors(motors),
     _attitude_control(attitude_control),
+    _booster(booster),
     _p_pos_z(p_pos_z),
     _p_vel_z(p_vel_z),
     _pid_accel_z(pid_accel_z),
@@ -53,6 +54,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
     _roll_target(0.0f),
     _pitch_target(0.0f),
+    _boost_target(0),
     _alt_max(0.0f),
     _distance_to_target(0.0f),
     _accel_target_jerk_limited(0.0f,0.0f),
@@ -564,6 +566,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     // set roll, pitch lean angle targets to current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
+    _boost_target = 0;
 
     // initialise I terms from lean angles
     if (reset_I) {
@@ -619,6 +622,7 @@ void AC_PosControl::init_vel_controller_xyz()
     // set roll, pitch lean angle targets to current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
+    _boost_target = 0;
 
     // reset last velocity if this controller has just been engaged or dt is zero
     lean_angles_to_accel(_accel_target.x, _accel_target.y);
@@ -892,6 +896,9 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
     _pitch_target = constrain_float(atanf(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI_F),-lean_angle_max, lean_angle_max);
     float cos_pitch_target = cosf(_pitch_target*M_PI_F/18000);
     _roll_target = constrain_float(atanf(accel_right*cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI_F), -lean_angle_max, lean_angle_max);
+
+    // scale the pitch and update the boost if the booster is active
+    _booster.calculate_boost_and_scale_pitch (_pitch_target, -lean_angle_max, _boost_target);
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s

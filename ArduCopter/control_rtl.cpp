@@ -74,6 +74,11 @@ void Copter::rtl_run()
     }
 }
 
+void Copter::rtl_stop()
+{
+    booster.set_active(false);
+}
+
 // rtl_climb_start - initialise climb to RTL altitude
 void Copter::rtl_climb_start()
 {
@@ -103,6 +108,9 @@ void Copter::rtl_climb_start()
 
     // hold current yaw during initial climb
     set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    // don't use the booster when climbing
+    booster.set_active(false);
 }
 
 // rtl_return_start - initialise return to home
@@ -133,6 +141,9 @@ void Copter::rtl_return_start()
 //      called by rtl_run at 100hz or more
 void Copter::rtl_climb_return_run()
 {
+    // use the booster
+    booster.set_active(true);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // reset attitude control targets
@@ -166,6 +177,9 @@ void Copter::rtl_climb_return_run()
         attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
 
+    // engage the booster
+    booster.set_boost(wp_nav.get_boost());
+
     // check if we've completed this stage of RTL
     rtl_state_complete = wp_nav.reached_wp_destination();
 }
@@ -189,6 +203,9 @@ void Copter::rtl_loiterathome_start()
 //      called by rtl_run at 100hz or more
 void Copter::rtl_loiterathome_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // reset attitude control targets
@@ -256,6 +273,9 @@ void Copter::rtl_descent_start()
 //      called by rtl_run at 100hz or more
 void Copter::rtl_descent_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
 
@@ -319,6 +339,9 @@ void Copter::rtl_land_start()
 //      called by rtl_run at 100hz or more
 void Copter::rtl_land_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
     // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately

@@ -41,6 +41,12 @@ Copter::Copter(void) :
 #else
     motors(MAIN_LOOP_RATE),
 #endif
+#if BOOSTER == ENABLED
+    booster_backend(),
+    booster(&booster_backend),
+#else
+    booster(NULL),
+#endif
     scaleLongDown(1),
     wp_bearing(0),
     home_bearing(0),
@@ -87,7 +93,7 @@ Copter::Copter(void) :
     attitude_control(ahrs, aparm, motors, g.p_stabilize_roll, g.p_stabilize_pitch, g.p_stabilize_yaw,
                      g.pid_rate_roll, g.pid_rate_pitch, g.pid_rate_yaw),
 #endif
-    pos_control(ahrs, inertial_nav, motors, attitude_control,
+    pos_control(ahrs, inertial_nav, motors, attitude_control, booster,
                 g.p_alt_hold, g.p_vel_z, g.pid_accel_z,
                 g.p_pos_xy, g.pi_vel_xy),
     wp_nav(inertial_nav, ahrs, pos_control, attitude_control),

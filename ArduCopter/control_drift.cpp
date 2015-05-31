@@ -32,6 +32,7 @@
 bool Copter::drift_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+        booster.set_active(true);
         return true;
     }else{
         return false;
@@ -93,11 +94,20 @@ void Copter::drift_run()
         breaker = 0.0f;
     }
 
+    // engage the booster if it's active and scale the target pitch
+    target_pitch = booster.set_boost_and_scale_pitch(target_pitch, aparm.angle_max);
+
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilot's throttle with angle boost
     attitude_control.set_throttle_out(get_throttle_assist(vel.z, pilot_throttle_scaled), true, g.throttle_filt);
+}
+
+// drift_stop - stops the drift controller by ensuring that the booster is disabled
+void Copter::drift_stop()
+{
+    booster.set_active(false);
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1000) based on pilot input and z-axis velocity
