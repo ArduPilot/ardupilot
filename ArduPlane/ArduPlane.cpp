@@ -24,7 +24,7 @@
 
 #include "Plane.h"
 
-#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&plane, &Plane::func, void)
+#define SCHED_TASK(func) FUNCTOR_BIND(&plane, &Plane::func, void)
 
 /*
   scheduler table - all regular tasks are listed here, along with how
