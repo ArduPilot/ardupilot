@@ -37,7 +37,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Rover rover;
 
-#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&rover, &Rover::func, void)
+#define SCHED_TASK(func) FUNCTOR_BIND(&rover, &Rover::func, void)
 
 /*
   scheduler table - all regular tasks should be listed here, along
