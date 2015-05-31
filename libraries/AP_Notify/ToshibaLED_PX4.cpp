@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <px4_defines.h>
 #include <drivers/drv_rgbled.h>
 #include <stdio.h>
 #include <errno.h>
