@@ -68,57 +68,116 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-static Parameters g;
+class Replay {
+public:
+    void setup();
+    void loop();
 
-static AP_InertialSensor ins;
-static AP_Baro barometer;
-static AP_GPS gps;
-static Compass compass;
-static RangeFinder rng;
-static AP_AHRS_NavEKF ahrs(ins, barometer, gps, rng);
-static AP_InertialNav_NavEKF inertial_nav(ahrs);
-static AP_Vehicle::FixedWing aparm;
-static AP_Airspeed airspeed(aparm);
-static DataFlash_File dataflash("logs");
+private:
+    Parameters g;
+
+    AP_InertialSensor ins;
+    AP_Baro barometer;
+    AP_GPS gps;
+    Compass compass;
+    RangeFinder rng;
+    NavEKF EKF{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF};
+    AP_InertialNav_NavEKF inertial_nav{ahrs};
+    AP_Vehicle::FixedWing aparm;
+    AP_Airspeed airspeed{aparm};
+    DataFlash_File dataflash{"logs"};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-SITL sitl;
+    SITL sitl;
 #endif
 
-static const NavEKF &NavEKF = ahrs.get_NavEKF();
+    LogReader logreader{ahrs, ins, barometer, compass, gps, airspeed, dataflash};
 
-static LogReader LogReader(ahrs, ins, barometer, compass, gps, airspeed, dataflash);
+    FILE *plotf;
+    FILE *plotf2;
+    FILE *ekf1f;
+    FILE *ekf2f;
+    FILE *ekf3f;
+    FILE *ekf4f;
 
-static FILE *plotf;
-static FILE *plotf2;
-static FILE *ekf1f;
-static FILE *ekf2f;
-static FILE *ekf3f;
-static FILE *ekf4f;
+    bool done_parameters;
+    bool done_baro_init;
+    bool done_home_init;
+    uint16_t update_rate = 50;
+    uint32_t arm_time_ms;
+    bool ahrs_healthy;
+    bool have_imu2;
+    bool have_fram;
 
-static bool done_parameters;
-static bool done_baro_init;
-static bool done_home_init;
-static uint16_t update_rate = 50;
-static uint32_t arm_time_ms;
-static bool ahrs_healthy;
-static bool have_imu2;
-static bool have_fram;
+    uint8_t num_user_parameters;
+    struct {
+        char name[17];
+        float value;
+    } user_parameters[100];
 
-static uint8_t num_user_parameters;
-static struct {
-    char name[17];
-    float value;
-} user_parameters[100];
+    // setup the var_info table
+    AP_Param param_loader{var_info};
+
+    static const AP_Param::Info var_info[];
+
+    void load_parameters(void);
+    void usage(void);
+    void set_user_parameters(void);
+    void read_sensors(const char *type);
+    
+};
 
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES
 };
 
-// setup the var_info table
-AP_Param param_loader(var_info);
+static Replay replay;
 
-static void usage(void)
+#define GSCALAR(v, name, def) { replay.g.v.vtype, name, Parameters::k_param_ ## v, &replay.g.v, {def_value : def} }
+#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replay.v, {group_info : class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replay.v, {group_info : class::var_info} }
+
+const AP_Param::Info Replay::var_info[] PROGMEM = {
+    GSCALAR(dummy,         "_DUMMY", 0),
+
+    // barometer ground calibration. The GND_ prefix is chosen for
+    // compatibility with previous releases of ArduPlane
+    // @Group: GND_
+    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
+    GOBJECT(barometer, "GND_", AP_Baro),
+
+    // @Group: INS_
+    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
+    GOBJECT(ins,                    "INS_", AP_InertialSensor),
+
+    // @Group: AHRS_
+    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+
+    // @Group: ARSPD_
+    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+    GOBJECT(airspeed,                               "ARSPD_",   AP_Airspeed),
+
+    // @Group: EKF_
+    // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
+    GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
+
+    // @Group: COMPASS_
+    // @Path: ../libraries/AP_Compass/AP_Compass.cpp
+    GOBJECT(compass, "COMPASS_", Compass),
+
+    AP_VAREND
+};
+
+void Replay::load_parameters(void)
+{
+    if (!AP_Param::check_var_info()) {
+        hal.scheduler->panic(PSTR("Bad parameter table"));
+    }
+}
+
+void Replay::usage(void)
 {
     ::printf("Options:\n");
     ::printf(" -rRATE     set IMU rate in Hz\n");
@@ -128,7 +187,7 @@ static void usage(void)
     ::printf(" -A time    arm at time milliseconds)\n");
 }
 
-void setup()
+void Replay::setup()
 {
     ::printf("Starting\n");
 
@@ -150,11 +209,11 @@ void setup()
             break;
 
         case 'g':
-            LogReader.set_gyro_mask(strtol(optarg, NULL, 0));
+            logreader.set_gyro_mask(strtol(optarg, NULL, 0));
             break;
 
         case 'a':
-            LogReader.set_accel_mask(strtol(optarg, NULL, 0));
+            logreader.set_accel_mask(strtol(optarg, NULL, 0));
             break;
 
         case 'A':
@@ -193,7 +252,7 @@ void setup()
 
     load_parameters();
 
-    if (!LogReader.open_log(filename)) {
+    if (!logreader.open_log(filename)) {
         perror(filename);
         exit(1);
     }
@@ -201,10 +260,10 @@ void setup()
     dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
     dataflash.StartNewLog();
 
-    LogReader.wait_type("GPS");
-    LogReader.wait_type("IMU");
-    LogReader.wait_type("GPS");
-    LogReader.wait_type("IMU");
+    logreader.wait_type("GPS");
+    logreader.wait_type("IMU");
+    logreader.wait_type("GPS");
+    logreader.wait_type("IMU");
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
 
@@ -257,7 +316,7 @@ void setup()
     ::printf("Waiting for GPS\n");
     while (!done_home_init) {
         char type[5];
-        if (!LogReader.update(type)) {
+        if (!logreader.update(type)) {
             break;
         }
         read_sensors(type);
@@ -281,17 +340,17 @@ void setup()
 /*
   setup user -p parameters
  */
-static void set_user_parameters(void)
+void Replay::set_user_parameters(void)
 {
     for (uint8_t i=0; i<num_user_parameters; i++) {
-        if (!LogReader.set_parameter(user_parameters[i].name, user_parameters[i].value)) {
+        if (!logreader.set_parameter(user_parameters[i].name, user_parameters[i].value)) {
             ::printf("Failed to set parameter %s to %f\n", user_parameters[i].name, user_parameters[i].value);
             exit(1);
         }
     }
 }
 
-static void read_sensors(const char *type)
+void Replay::read_sensors(const char *type)
 {
     if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
         done_parameters = true;
@@ -350,7 +409,7 @@ static void read_sensors(const char *type)
     }
 }
 
-void loop()
+void Replay::loop()
 {
     while (true) {
         char type[5];
@@ -362,7 +421,7 @@ void loop()
             }
         }
 
-        if (!LogReader.update(type)) {
+        if (!logreader.update(type)) {
             ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
             fclose(plotf);
             exit(0);
@@ -396,38 +455,38 @@ void loop()
 
             const Matrix3f &dcm_matrix = ahrs.AP_AHRS_DCM::get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
-            NavEKF.getEulerAngles(ekf_euler);
-            NavEKF.getVelNED(velNED);
-            NavEKF.getPosNED(posNED);
-            NavEKF.getGyroBias(gyroBias);
-            NavEKF.getIMU1Weighting(accelWeighting);
-            NavEKF.getAccelZBias(accelZBias1, accelZBias2);
-            NavEKF.getWind(windVel);
-            NavEKF.getMagNED(magNED);
-            NavEKF.getMagXYZ(magXYZ);
-            NavEKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
-            NavEKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-            NavEKF.getFilterFaults(faultStatus);
-            NavEKF.getPosNED(ekf_relpos);
+            EKF.getEulerAngles(ekf_euler);
+            EKF.getVelNED(velNED);
+            EKF.getPosNED(posNED);
+            EKF.getGyroBias(gyroBias);
+            EKF.getIMU1Weighting(accelWeighting);
+            EKF.getAccelZBias(accelZBias1, accelZBias2);
+            EKF.getWind(windVel);
+            EKF.getMagNED(magNED);
+            EKF.getMagXYZ(magXYZ);
+            EKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
+            EKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+            EKF.getFilterFaults(faultStatus);
+            EKF.getPosNED(ekf_relpos);
             Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
 
             if (temp < 0.0f) temp = temp + 360.0f;
             fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
                     hal.scheduler->millis() * 0.001f,
-                    LogReader.get_sim_attitude().x,
-                    LogReader.get_sim_attitude().y,
-                    LogReader.get_sim_attitude().z,
+                    logreader.get_sim_attitude().x,
+                    logreader.get_sim_attitude().y,
+                    logreader.get_sim_attitude().z,
                     barometer.get_altitude(),
-                    LogReader.get_attitude().x,
-                    LogReader.get_attitude().y,
-                    wrap_180_cd(LogReader.get_attitude().z*100)*0.01f,
-                    LogReader.get_inavpos().x,
-                    LogReader.get_inavpos().y,
-                    LogReader.get_relalt(),
-                    LogReader.get_ahr2_attitude().x,
-                    LogReader.get_ahr2_attitude().y,
-                    wrap_180_cd(LogReader.get_ahr2_attitude().z*100)*0.01f,
+                    logreader.get_attitude().x,
+                    logreader.get_attitude().y,
+                    wrap_180_cd(logreader.get_attitude().z*100)*0.01f,
+                    logreader.get_inavpos().x,
+                    logreader.get_inavpos().y,
+                    logreader.get_relalt(),
+                    logreader.get_ahr2_attitude().x,
+                    logreader.get_ahr2_attitude().y,
+                    wrap_180_cd(logreader.get_ahr2_attitude().z*100)*0.01f,
                     degrees(DCM_attitude.x),
                     degrees(DCM_attitude.y),
                     degrees(DCM_attitude.z),
@@ -462,9 +521,9 @@ void loop()
                     magXYZ.x, 
                     magXYZ.y, 
                     magXYZ.z,
-                    LogReader.get_attitude().x,
-                    LogReader.get_attitude().y,
-                    LogReader.get_attitude().z);
+                    logreader.get_attitude().x,
+                    logreader.get_attitude().y,
+                    logreader.get_attitude().z);
 
             // define messages for EKF1 data packet
             int16_t     roll  = (int16_t)(100*degrees(ekf_euler.x)); // roll angle (centi-deg)
@@ -580,6 +639,21 @@ void loop()
                     (int)faultStatus);
         }
     }
+}
+
+/*
+  compatibility with old pde style build
+ */
+void setup(void);
+void loop(void);
+
+void setup(void)
+{
+    replay.setup();
+}
+void loop(void)
+{
+    replay.loop();
 }
 
 AP_HAL_MAIN();
