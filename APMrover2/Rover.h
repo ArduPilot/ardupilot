@@ -156,11 +156,12 @@ private:
     // flight modes convenience array
     AP_Int8	*modes;
 
-    // Inertial Navigation EKF
+// Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    AP_AHRS_NavEKF ahrs;
+    NavEKF EKF{&ahrs, barometer, sonar};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, sonar, EKF};
 #else
-    AP_AHRS_DCM ahrs;
+    AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
 
     AP_L1_Control L1_controller;

@@ -30,11 +30,6 @@ Rover::Rover(void) :
 #endif
     in_log_download(false),
     modes(&g.mode1),
-#if AP_AHRS_NAVEKF_AVAILABLE
-    ahrs(ins, barometer, gps, sonar),
-#else
-    ahrs(ins, barometer, gps),
-#endif
     L1_controller(ahrs),
     nav_controller(&L1_controller),
     steerController(ahrs),
