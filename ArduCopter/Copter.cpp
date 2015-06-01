@@ -28,7 +28,6 @@ Copter::Copter(void) :
     ins_sample_rate(AP_InertialSensor::RATE_400HZ),
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
-    ahrs(ins, barometer, gps, sonar),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::verify_command, bool, const AP_Mission::Mission_Command &),

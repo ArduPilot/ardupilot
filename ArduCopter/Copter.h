@@ -177,7 +177,8 @@ private:
 #endif
 
     // Inertial Navigation EKF
-    AP_AHRS_NavEKF ahrs;
+    NavEKF EKF{&ahrs, barometer, sonar};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL sitl;
