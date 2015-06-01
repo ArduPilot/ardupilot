@@ -87,11 +87,7 @@ void AP_Scheduler::run(uint16_t time_available)
                 task_fn_t func;
                 pgm_read_block(&_tasks[i].function, &func, sizeof(func));
                 current_task = i;
-#if APM_BUILD_FUNCTOR
                 func();
-#else
-                func();
-#endif
                 current_task = -1;
                 
                 // record the tick counter when we ran. This drives

@@ -41,11 +41,7 @@
 class AP_Scheduler
 {
 public:
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(task_fn_t, void);
-#else
-    typedef void (*task_fn_t)(void);
-#endif
 
     struct Task {
         task_fn_t function;
