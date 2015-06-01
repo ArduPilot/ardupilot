@@ -216,13 +216,8 @@ public:
     };
 
     // main program function pointers
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
-#else
-    typedef bool (*mission_cmd_fn_t)(const Mission_Command& cmd);
-    typedef void (*mission_complete_fn_t)(void);
-#endif
 
     // mission state enumeration
     enum mission_state {
