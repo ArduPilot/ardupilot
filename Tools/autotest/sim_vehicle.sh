@@ -167,7 +167,6 @@ kill_tasks()
 	    pkill "$pname"
 	done
         pkill -f runsim.py
-        pkill -f sim_tracker.py
     }
 }
 
@@ -196,6 +195,9 @@ FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 }
 [ -z "$FRAME" -a "$VEHICLE" = "ArduCopter" ] && {
     FRAME="quad"
+}
+[ -z "$FRAME" -a "$VEHICLE" = "AntennaTracker" ] && {
+    FRAME="tracker"
 }
 
 EXTRA_PARM=""
@@ -273,6 +275,10 @@ case $FRAME in
         EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
 	;;
+    tracker)
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
+        MODEL="$FRAME"
+	;;
     "")
         ;;
     *)
@@ -335,17 +341,14 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     if [ $CLEAN_BUILD == 1 ]; then
         make clean
     fi
-    make sitl -j$NUM_PROCS || {
+    make sitl-debug -j$NUM_PROCS || {
         make clean
-        make sitl -j$NUM_PROCS
+        make sitl-debug -j$NUM_PROCS
     }
     TRACKER_INSTANCE=1
-    TRACKIN_PORT="127.0.0.1:"$((5502+10*$TRACKER_INSTANCE))
-    TRACKOUT_PORT="127.0.0.1:"$((5501+10*$TRACKER_INSTANCE))
     TRACKER_UARTA="tcp:127.0.0.1:"$((5760+10*$TRACKER_INSTANCE))
-    cmd="nice /tmp/AntennaTracker.build/AntennaTracker.elf -I1"
+    cmd="nice /tmp/AntennaTracker.build/AntennaTracker.elf -I1 --model=tracker --home=$TRACKER_HOME"
     $autotest/run_in_terminal_window.sh "AntennaTracker" $cmd || exit 1
-    $autotest/run_in_terminal_window.sh "pysim(Tracker)" nice $autotest/pysim/sim_tracker.py --home=$TRACKER_HOME --simin=$TRACKIN_PORT --simout=$TRACKOUT_PORT $TRACKER_ARGS || exit 1
     popd
 fi
 
@@ -354,26 +357,20 @@ if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
 
+cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
+
 case $VEHICLE in
     ArduPlane)
         PARMS="ArduPlane.parm"
-        RUNSIM=""
-        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         ;;
     ArduCopter)
-        RUNSIM=""
-        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         PARMS="copter_params.parm"
         ;;
     APMrover2)
-        RUNSIM=""
-        cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
         PARMS="Rover.parm"
         ;;
     *)
-        echo "Unknown vehicle simulation type $VEHICLE - please specify vehicle using -v VEHICLE_TYPE"
-        usage
-        exit 1
+        PARMS=""
         ;;
 esac
 
@@ -402,30 +399,6 @@ fi
 fi
 
 trap kill_tasks SIGINT
-
-echo "RUNSIM: $RUNSIM"
-
-if [ -n "$RUNSIM" -o "$EXTERNAL_SIM" == 1 ]; then
-    sleep 2
-    rm -f $tfile
-    if [ $EXTERNAL_SIM == 0 ]; then
-        $autotest/run_in_terminal_window.sh "Simulator" $RUNSIM || {
-            echo "Failed to start simulator: $RUNSIM"
-            exit 1
-        }
-        sleep 2
-    else
-        echo "Using external ROS simulator"
-        RUNSIM="$autotest/ROS/runsim.py --simin=$SIMIN_PORT --simout=$SIMOUT_PORT --fgout=$FG_PORT $EXTRA_SIM"
-        $autotest/run_in_terminal_window.sh "ROS Simulator" $RUNSIM || {
-            echo "Failed to start simulator: $RUNSIM"
-            exit 1
-        }
-        sleep 2
-    fi
-else
-    echo "not running external simulator"
-fi
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
 options=""
