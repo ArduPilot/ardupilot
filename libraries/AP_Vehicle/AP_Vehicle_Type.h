@@ -38,10 +38,6 @@
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_APMrover2) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-# define APM_BUILD_FUNCTOR 1
-#else
-# define APM_BUILD_FUNCTOR 0
-#endif
+#define APM_BUILD_FUNCTOR 1
 
 #endif // AP_VEHICLE_TYPE_H
