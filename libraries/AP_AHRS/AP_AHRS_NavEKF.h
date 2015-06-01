@@ -34,9 +34,9 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng) :
+AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng, NavEKF &_EKF) :
     AP_AHRS_DCM(ins, baro, gps),
-        EKF(this, baro, rng),
+        EKF(_EKF),
         ekf_started(false),
         startup_delay_ms(1000),
         start_time_ms(0)
@@ -127,7 +127,7 @@ public:
 private:
     bool using_EKF(void) const;
 
-    NavEKF EKF;
+    NavEKF &EKF;
     bool ekf_started;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
