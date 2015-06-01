@@ -46,7 +46,7 @@ popd
 
 echo "Testing build of examples"
 
-examples="Tools/VARTest Tools/CPUInfo"
+examples="Tools/CPUInfo"
 for d in $examples; do
     pushd $d
     make clean
