@@ -5,51 +5,13 @@
 #include <AP_Vehicle_Type.h>
 
 #include "string.h"
-#include "utility/FastDelegate.h"
-
-#define DELEGATE_FUNCTION_VOID_TYPEDEF(type)  typedef fastdelegate::FastDelegate0<void> type
-#define AP_HAL_CLASSPROC_VOID(classptr, func) fastdelegate::MakeDelegate(classptr, func)
-
-// macros to hide the details of delegate functions using FastDelegate
-#define AP_HAL_CLASSPROC(classptr, func) fastdelegate::MakeDelegate(classptr, func)
-#define AP_HAL_MEMBERPROC(func) AP_HAL_CLASSPROC(this, func)
-
-#define DELEGATE_FUNCTION0(rettype)          fastdelegate::FastDelegate0<rettype>
-#define DELEGATE_FUNCTION1(rettype, args...) fastdelegate::FastDelegate0<rettype, args>
-#define DELEGATE_FUNCTION2(rettype, args...) fastdelegate::FastDelegate0<rettype, args>
-
-#define DELEGATE_FUNCTION(rettype, ...) fastdelegate::FastDelegate0<rettype, ## __VA_ARGS__>
-
-#if APM_BUILD_FUNCTOR
 #include "utility/functor.h"
 
-// Also add the hacks for the delegate implementation. Here it's just an alias
 #define FUNCTOR_BIND_VOID(obj, func, rettype, ...) \
     FUNCTOR_BIND(obj, func, rettype, ## __VA_ARGS__)
 
 #define FUNCTOR_TYPEDEF_VOID(name, rettype, ...) \
     FUNCTOR_TYPEDEF(name, rettype, ## __VA_ARGS__)
-
-#else
-#define FUNCTOR_TYPEDEF(name, rettype, ...) \
-    typedef DELEGATE_FUNCTION(rettype, ## __VA_ARGS__) name
-
-#define FUNCTOR_DECLARE(name, rettype, ...) \
-    DELEGATE_FUNCTION(rettype, ## __VA_ARGS__) name
-
-#define FUNCTOR_BIND(obj, func, rettype, ...) \
-    AP_HAL_CLASSPROC(obj, func)
-
-#define FUNCTOR_BIND_MEMBER(func, rettype, ...) \
-    AP_HAL_MEMBERPROC(func)
-
-#define FUNCTOR_BIND_VOID(obj, func, rettype, ...) \
-    AP_HAL_CLASSPROC_VOID(obj, func)
-
-#define FUNCTOR_TYPEDEF_VOID(name, rettype, ...) \
-    DELEGATE_FUNCTION_VOID_TYPEDEF(name)
-
-#endif
 
 namespace AP_HAL {
 
