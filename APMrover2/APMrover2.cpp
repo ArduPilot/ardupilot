@@ -37,9 +37,6 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Rover rover;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
-
 #define SCHED_TASK(func) FUNCTOR_BIND_VOID(&rover, &Rover::func, void)
 
 /*
@@ -79,8 +76,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(frsky_telemetry_send),  10,    100 }
 #endif
 };
-#pragma GCC diagnostic pop
-
 
 /*
   setup is called when the sketch starts
