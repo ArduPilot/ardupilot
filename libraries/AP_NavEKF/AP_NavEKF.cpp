@@ -2957,7 +2957,7 @@ void NavEKF::FuseOptFlow()
             Kfusion[14] = 0.0f;
             Kfusion[15] = 0.0f;
         }
-        if (inhibitMagStates) {
+        if (!inhibitMagStates) {
             Kfusion[16] = -SK_LOS[1]*(P[16][0]*tempVar[0] + P[16][1]*tempVar[1] - P[16][3]*tempVar[2] + P[16][2]*tempVar[7] - P[16][4]*tempVar[3] + P[16][6]*tempVar[4] - P[16][9]*tempVar[5] + P[16][5]*tempVar[6]);
             Kfusion[17] = -SK_LOS[1]*(P[17][0]*tempVar[0] + P[17][1]*tempVar[1] - P[17][3]*tempVar[2] + P[17][2]*tempVar[7] - P[17][4]*tempVar[3] + P[17][6]*tempVar[4] - P[17][9]*tempVar[5] + P[17][5]*tempVar[6]);
             Kfusion[18] = -SK_LOS[1]*(P[18][0]*tempVar[0] + P[18][1]*tempVar[1] - P[18][3]*tempVar[2] + P[18][2]*tempVar[7] - P[18][4]*tempVar[3] + P[18][6]*tempVar[4] - P[18][9]*tempVar[5] + P[18][5]*tempVar[6]);
@@ -3020,7 +3020,7 @@ void NavEKF::FuseOptFlow()
             Kfusion[14] = 0.0f;
             Kfusion[15] = 0.0f;
         }
-        if (inhibitMagStates) {
+        if (!inhibitMagStates) {
             Kfusion[16] = SK_LOS[0]*(P[16][0]*tempVar[0] + P[16][1]*tempVar[1] - P[16][2]*tempVar[2] + P[16][3]*tempVar[3] + P[16][5]*tempVar[4] - P[16][6]*tempVar[5] - P[16][9]*tempVar[6] + P[16][4]*tempVar[7]);
             Kfusion[17] = SK_LOS[0]*(P[17][0]*tempVar[0] + P[17][1]*tempVar[1] - P[17][2]*tempVar[2] + P[17][3]*tempVar[3] + P[17][5]*tempVar[4] - P[17][6]*tempVar[5] - P[17][9]*tempVar[6] + P[17][4]*tempVar[7]);
             Kfusion[18] = SK_LOS[0]*(P[18][0]*tempVar[0] + P[18][1]*tempVar[1] - P[18][2]*tempVar[2] + P[18][3]*tempVar[3] + P[18][5]*tempVar[4] - P[18][6]*tempVar[5] - P[18][9]*tempVar[6] + P[18][4]*tempVar[7]);
