@@ -225,6 +225,9 @@ struct PACKED log_Startup {
 
 void Rover::Log_Write_Startup(uint8_t type)
 {
+    // Write all current parameters
+    DataFlash.Log_Write_Parameters();
+
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : hal.scheduler->micros64(),
@@ -234,7 +237,9 @@ void Rover::Log_Write_Startup(uint8_t type)
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
     // write all commands to the dataflash as well
-    Log_Write_EntireMission();
+    if (should_log(MASK_LOG_CMD)) {
+        Log_Write_EntireMission();
+    }
 }
 
 void Rover::Log_Write_EntireMission()
