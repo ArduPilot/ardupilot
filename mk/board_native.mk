@@ -95,47 +95,11 @@ print-%:
 -include $(ALLDEPS)
 
 # Link the final object
-$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
+$(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"
 	$(RULEHDR)
-	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)$(LD) $(LDFLAGS) -o $@ $(SKETCHOBJS) $(LIBOBJS) $(LIBS)
 	$(v)cp $(SKETCHELF) .
 	@echo "Firmware is in $(BUILDELF)"
 
-#
-# Build sketch objects
-#
-SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES)
-
-$(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< -I$(SRCROOT) $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-#
-# Build library objects from sources in the sketchbook
-#
-SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
+include $(MK_DIR)/build_rules.mk
