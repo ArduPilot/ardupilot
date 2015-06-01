@@ -1,4 +1,4 @@
-TOOLCHAIN = NATIVE
+TOOLCHAIN = BBONE
 
 include $(MK_DIR)/find_tools.mk
 
