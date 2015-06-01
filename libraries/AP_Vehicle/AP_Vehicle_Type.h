@@ -38,6 +38,4 @@
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
 #endif
 
-#define APM_BUILD_FUNCTOR 1
-
 #endif // AP_VEHICLE_TYPE_H
