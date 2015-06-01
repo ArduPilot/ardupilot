@@ -2,8 +2,6 @@
 #ifndef __AP_HAL_NAMESPACE_H__
 #define __AP_HAL_NAMESPACE_H__
 
-#include <AP_Vehicle_Type.h>
-
 #include "string.h"
 #include "utility/functor.h"
 
