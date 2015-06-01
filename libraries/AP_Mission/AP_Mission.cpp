@@ -1068,6 +1068,9 @@ bool AP_Mission::advance_current_nav_cmd()
         cmd_index++;
     }
 
+    // avoid endless loops
+    uint8_t max_loops = 255;
+
     // search until we find next nav command or reach end of command list
     while (!_flags.nav_cmd_loaded) {
         // get next command
@@ -1089,6 +1092,11 @@ bool AP_Mission::advance_current_nav_cmd()
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
                 _cmd_start_fn(_do_cmd);
+            } else {
+                // protect against endless loops of do-commands
+                if (max_loops-- == 0) {
+                    return false;
+                }
             }
         }
         // move onto next command
