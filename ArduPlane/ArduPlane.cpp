@@ -74,6 +74,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(frsky_telemetry_send),  10,    100 },
 #endif
     { SCHED_TASK(terrain_update),         5,    500 },
+    { SCHED_TASK(is_flying_update),      10,    100 },
 };
 
 void Plane::setup() 
@@ -295,23 +296,18 @@ void Plane::one_second_loop()
 
     update_aux();
 
-    // determine if we are flying or not
-    determine_is_flying();
-
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
+    crash_detection_update();
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data(DataFlash);
     }
 #endif
-    // piggyback the status log entry on the MODE log entry flag
-    if (should_log(MASK_LOG_MODE)) {
-        Log_Write_Status();
-    }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 }
@@ -843,7 +839,7 @@ void Plane::update_flight_stage(void)
   Do we think we are flying?
   Probabilistic method where a bool is low-passed and considered a probability.
 */
-void Plane::determine_is_flying(void)
+void Plane::is_flying_update(void)
 {
     float aspeed;
     bool isFlyingBool;
@@ -854,17 +850,40 @@ void Plane::determine_is_flying(void)
     bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
                         gps.ground_speed() >= 5);
 
-
     if (hal.util->get_soft_armed()) {
         // when armed, we need overwhelming evidence that we ARE NOT flying
         isFlyingBool = airspeedMovement || gpsMovement;
 
-        /*
-          make is_flying() more accurate for landing approach
-         */
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-            fabsf(auto_state.sink_rate) > 0.2f) {
-            isFlyingBool = true;
+        if (control_mode == AUTO) {
+            /*
+              make is_flying() more accurate during various auto modes
+             */
+            switch (flight_stage)
+            {
+            case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+                // while on the ground, an uncalibrated airspeed sensor can drift to 5m/s so
+                // ensure we aren't showing a false positive. If the throttle is suppressed
+                // we are definitely not flying, or at least for not much longer!
+                if (throttle_suppressed) {
+                    isFlyingBool = false;
+                }
+                break;
+
+            case AP_SpdHgtControl::FLIGHT_NORMAL:
+                // TODO: detect ground impacts
+                break;
+
+            case AP_SpdHgtControl::FLIGHT_LAND_APPROACH: // pre-flare
+                // make is_flying() more accurate for landing approach
+                if (fabsf(auto_state.sink_rate) > 0.2f) {
+                    isFlyingBool = true;
+                }
+                break;
+
+            case AP_SpdHgtControl::FLIGHT_LAND_FINAL: // post-flare
+            default:
+                break;
+            } // switch
         }
     } else {
         // when disarmed, we need overwhelming evidence that we ARE flying
@@ -872,7 +891,8 @@ void Plane::determine_is_flying(void)
     }
 
     // low-pass the result.
-    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
+    // coef=0.2f @ 5Hz takes 2.2s to go from 100% down to 10% (or 0% up to 90%)
+    isFlyingProbability = (0.8f * isFlyingProbability) + (0.2f * (float)isFlyingBool);
 
     /*
       update last_flying_ms so we always know how long we have not
@@ -880,6 +900,10 @@ void Plane::determine_is_flying(void)
      */
     if (is_flying()) {
         auto_state.last_flying_ms = millis();
+    }
+
+    if (should_log(MASK_LOG_MODE)) {
+        Log_Write_Status();
     }
 }
 
@@ -899,6 +923,49 @@ bool Plane::is_flying(void)
     return (isFlyingProbability >= 0.9f);
 }
 
+void Plane::crash_detection_update(void)
+{
+    if (auto_state.is_crashed ||
+        control_mode != AUTO || // only AUTO mode is supported
+        throttle_suppressed || // haven't launched yet
+        auto_state.last_flying_ms == 0 || // never flown yet
+        is_flying()) // we're flying, therefore we're not crashed
+    {
+        return;
+    }
+
+    switch (flight_stage)
+    {
+    case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+        auto_state.is_crashed = true;
+        break;
+
+    case AP_SpdHgtControl::FLIGHT_NORMAL:
+        auto_state.is_crashed = true;
+        // TODO: handle auto missions without NAV_TAKEOFF cmd
+        break;
+
+    case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+        auto_state.is_crashed = true;
+        // when altitude gets low, we automatically progress to FLIGHT_LAND_FINAL
+        // but if we're far enough away from land point we will trigger here sooner
+        // than land_complete gets set due to the 3 second delay in the landing logic
+        break;
+
+    case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
+    default:
+        // we've flared so throttle is off
+        break;
+    } // switch
+
+    if (auto_state.is_crashed) {
+        if (g.crash_detection_enable) {
+            disarm_motors();
+            auto_state.land_complete = true;
+        }
+        gcs_send_text_P(SEVERITY_HIGH, PSTR("Crash Detected!"));
+    }
+}
 
 #if OPTFLOW == ENABLED
 // called at 50hz

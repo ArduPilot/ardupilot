@@ -971,6 +971,14 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    1), 
 
+    // @Param: CRASH_DETECT
+    // @DisplayName: Crash Detection
+    // @Description: Automatically disengage motors if a crash is detected
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    GSCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
+
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_
