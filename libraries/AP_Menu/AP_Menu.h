@@ -56,11 +56,7 @@ public:
     ///						command, so that the same function can be used
     ///						to handle more than one command.
     ///
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(func, int8_t, uint8_t, const struct arg *);
-#else
-    typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
-#endif
 
 	static void set_port(AP_HAL::BetterStream *port) {
 		_port = port;
@@ -73,11 +69,7 @@ public:
     ///
     /// If this function returns false, the menu exits.
     ///
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(preprompt, bool);
-#else
-    typedef bool (*preprompt)(void);
-#endif
 
     /// menu command description
     ///
@@ -98,11 +90,7 @@ public:
         /// The "?", "help" and "exit" commands are always defined, but
         /// can be overridden by explicit entries in the command array.
         ///
-#if APM_BUILD_FUNCTOR
         FUNCTOR_DECLARE(func, int8_t, uint8_t, const struct arg *);
-#else
-        int8_t (*func)(uint8_t argc, const struct arg *argv);
-#endif
     };
 
     /// constructor
