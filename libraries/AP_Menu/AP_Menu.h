@@ -18,7 +18,6 @@
 
 #include <inttypes.h>
 #include <AP_HAL.h>
-#include <AP_Vehicle.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
 #define MENU_ARGS_MAX           3       ///< maximum number of arguments
