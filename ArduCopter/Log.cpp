@@ -451,13 +451,19 @@ struct PACKED log_Startup {
 // Write Startup packet
 void Copter::Log_Write_Startup()
 {
+    // Write all current parameters
+    DataFlash.Log_Write_Parameters();
+
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : hal.scheduler->micros64()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 
-    Log_Write_EntireMission();
+    // write all commands to the dataflash as well
+    if (should_log(MASK_LOG_CMD)) {
+        Log_Write_EntireMission();
+    }
 }
 
 void Copter::Log_Write_EntireMission()
