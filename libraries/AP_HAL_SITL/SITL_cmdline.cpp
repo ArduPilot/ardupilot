@@ -19,6 +19,7 @@
 #include <SIM_CRRCSim.h>
 #include <SIM_last_letter.h>
 #include <SIM_JSBSim.h>
+#include <SIM_Tracker.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -60,7 +61,8 @@ static const struct {
     { "rover",     Rover::create },
     { "crrcsim",   CRRCSim::create },
     { "jsbsim",    JSBSim::create },
-    { "last_letter", last_letter::create }
+    { "last_letter", last_letter::create },
+    { "tracker",   Tracker::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
