@@ -71,11 +71,7 @@ class GCS_MAVLINK
 {
 public:
     GCS_MAVLINK();
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);
-#else
-    typedef void (*run_cli_fn)(AP_HAL::UARTDriver *);
-#endif
     void        update(run_cli_fn run_cli);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
@@ -300,11 +296,7 @@ private:
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
     void lock_channel(mavlink_channel_t chan, bool lock);
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
-#else    
-    typedef bool (*set_mode_fn)(uint8_t);
-#endif
     void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
 
