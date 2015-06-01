@@ -49,6 +49,10 @@ AP_InertialSensor ins;
 AP_ADC_ADS7844 apm1_adc;
 #endif
 
+static void display_offsets_and_scaling();
+static void run_test();
+static void run_calibration();
+
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");
@@ -108,7 +112,7 @@ void loop(void)
     }
 }
 
-void run_calibration()
+static void run_calibration()
 {
     float roll_trim, pitch_trim;
     // clear off any other characters (like line feeds,etc)
@@ -125,7 +129,7 @@ void run_calibration()
 #endif
 }
 
-void display_offsets_and_scaling()
+static void display_offsets_and_scaling()
 {
     Vector3f accel_offsets = ins.get_accel_offsets();
     Vector3f accel_scale = ins.get_accel_scale();
@@ -149,7 +153,7 @@ void display_offsets_and_scaling()
                     gyro_offsets.z);
 }
 
-void run_test()
+static void run_test()
 {
     Vector3f accel;
     Vector3f gyro;
