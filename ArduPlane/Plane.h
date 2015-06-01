@@ -172,9 +172,22 @@ private:
 
     AP_InertialSensor ins;
 
+#if RANGEFINDER_ENABLED == ENABLED
+    // rangefinder
+    RangeFinder rangefinder;
+
+    struct {
+        bool in_range;
+        float correction;
+        uint32_t last_correction_time_ms;
+        uint8_t in_range_count;
+    } rangefinder_state;
+#endif
+
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder};
+    NavEKF EKF{&ahrs, barometer, rangefinder};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rangefinder, EKF};
 #else
     AP_AHRS_DCM ahrs {ins, barometer, gps};
 #endif
@@ -228,18 +241,6 @@ private:
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
     AP_HAL::AnalogSource *rssi_analog_source;
-
-#if RANGEFINDER_ENABLED == ENABLED
-    // rangefinder
-    RangeFinder rangefinder;
-
-    struct {
-        bool in_range;
-        float correction;
-        uint32_t last_correction_time_ms;
-        uint8_t in_range_count;
-    } rangefinder_state;
-#endif
 
     // Relay
     AP_Relay relay;
