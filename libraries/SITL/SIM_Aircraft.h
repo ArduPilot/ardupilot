@@ -98,6 +98,7 @@ protected:
     uint64_t last_wall_time_us;
     uint8_t instance;
     const char *autotest_dir;
+    const char *frame;
 
     bool on_ground(const Vector3f &pos) const;
 

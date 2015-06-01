@@ -53,20 +53,22 @@ static const struct {
     const char *name;
     Aircraft *(*constructor)(const char *home_str, const char *frame_str);
 } model_constructors[] = {
-    { "+",         MultiCopter::create },
-    { "quad",      MultiCopter::create },
-    { "copter",    MultiCopter::create },
-    { "x",         MultiCopter::create },
-    { "hexa",      MultiCopter::create },
-    { "octa",      MultiCopter::create },
-    { "heli",      Helicopter::create },
-    { "rover",     Rover::create },
-    { "crrcsim",   CRRCSim::create },
-    { "jsbsim",    JSBSim::create },
-    { "gazebo",    Gazebo::create },
-    { "last_letter", last_letter::create },
-    { "tracker",   Tracker::create },
-    { "balloon",   Balloon::create }
+    { "+",                  MultiCopter::create },
+    { "quad",               MultiCopter::create },
+    { "copter",             MultiCopter::create },
+    { "x",                  MultiCopter::create },
+    { "hexa",               MultiCopter::create },
+    { "octa",               MultiCopter::create },
+    { "heli",               Helicopter::create },
+    { "heli-dual",          Helicopter::create },
+    { "heli-compound",      Helicopter::create },
+    { "rover",              Rover::create },
+    { "crrcsim",            CRRCSim::create },
+    { "jsbsim",             JSBSim::create },
+    { "gazebo",             Gazebo::create },
+    { "last_letter",        last_letter::create },
+    { "tracker",            Tracker::create },
+    { "balloon",            Balloon::create }
 };
 
 void SITL_State::_parse_command_line(int argc, char * const argv[])
