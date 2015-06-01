@@ -40,24 +40,53 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-AP_InertialSensor ins;
-AP_Baro baro;
+class MissionTest {
+public:
+    void setup();
+    void loop();
 
-// GPS declaration
-static AP_GPS  gps;
+private:
+    AP_InertialSensor ins;
+    AP_Baro baro;
+    AP_GPS  gps;
+    Compass compass;
+    AP_AHRS_DCM ahrs{ins, baro, gps};
 
-Compass compass;
-AP_AHRS_DCM ahrs(ins, baro, gps);
+    // global constants that control how many verify calls must be made for a command before it completes
+    uint8_t verify_nav_cmd_iterations_to_complete = 3;
+    uint8_t verify_do_cmd_iterations_to_complete = 1;
+    uint8_t num_nav_cmd_runs = 0;
+    uint8_t num_do_cmd_runs = 0;
 
-// global constants that control how many verify calls must be made for a command before it completes
-static uint8_t verify_nav_cmd_iterations_to_complete = 3;
-static uint8_t verify_do_cmd_iterations_to_complete = 1;
-static uint8_t num_nav_cmd_runs = 0;
-static uint8_t num_do_cmd_runs = 0;
+    bool start_cmd(const AP_Mission::Mission_Command& cmd);
+    bool verify_cmd(const AP_Mission::Mission_Command& cmd);
+    void mission_complete(void);
+    void run_mission_test();
+    void init_mission();
+    void init_mission_no_nav_commands();
+    void init_mission_endless_loop();
+    void init_mission_jump_to_nonnav();
+    void init_mission_starts_with_do_commands();
+    void init_mission_ends_with_do_commands();
+    void init_mission_ends_with_jump_command();
+    void print_mission();
+    void run_resume_test();
+    void run_set_current_cmd_test();
+    void run_set_current_cmd_while_stopped_test();
+    void run_replace_cmd_test();
+    void run_max_cmd_test();
+
+    AP_Mission mission{ahrs,
+            FUNCTOR_BIND_MEMBER(&MissionTest::start_cmd, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&MissionTest::verify_cmd, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void)};
+};
+
+static MissionTest missiontest;
 
 // start_cmd - function that is called when new command is started
 //      should return true if command is successfully started
-bool start_cmd(const AP_Mission::Mission_Command& cmd)
+bool MissionTest::start_cmd(const AP_Mission::Mission_Command& cmd)
 {
     // reset tracking of number of iterations of this command (we simulate all nav commands taking 3 iterations to complete, all do command 1 iteration)
     if (AP_Mission::is_nav_cmd(cmd)) {
@@ -73,7 +102,7 @@ bool start_cmd(const AP_Mission::Mission_Command& cmd)
 
 // verify_mcd - function that is called repeatedly to ensure a command is progressing
 //      should return true once command is completed
-bool verify_cmd(const AP_Mission::Mission_Command& cmd)
+bool MissionTest::verify_cmd(const AP_Mission::Mission_Command& cmd)
 {
     if (AP_Mission::is_nav_cmd(cmd)) {
         num_nav_cmd_runs++;
@@ -97,41 +126,13 @@ bool verify_cmd(const AP_Mission::Mission_Command& cmd)
 }
 
 // mission_complete - function that is called once the mission completes
-void mission_complete(void)
+void MissionTest::mission_complete(void)
 {
     hal.console->print_P(PSTR("\nMission Complete!\n"));
 }
 
-// declaration
-AP_Mission mission(ahrs, &start_cmd, &verify_cmd, &mission_complete);
-
-// setup
-void setup(void)
-{
-    hal.console->println("AP_Mission library test\n");
-
-    // display basic info about command sizes
-    hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)mission.num_commands_max());
-    hal.console->printf_P(PSTR("Command size: %d bytes\n"),(int)AP_MISSION_EEPROM_COMMAND_SIZE);
-}
-
-// loop
-void loop(void)
-{
-    // uncomment line below to run one of the mission tests
-    run_mission_test();
-
-    // uncomment line below to run the mission pause/resume test
-    //run_resume_test();
-
-    // wait forever
-    while(true) {
-        hal.scheduler->delay(1000);
-    }
-}
-
 // run_mission_test - tests the stop and resume feature
-void run_mission_test()
+void MissionTest::run_mission_test()
 {
     // uncomment one of the init_xxx() commands below to run the test
 
@@ -190,7 +191,7 @@ void run_mission_test()
 }
 
 // init_mission - initialise the mission to hold something
-void init_mission()
+void MissionTest::init_mission()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -261,7 +262,7 @@ void init_mission()
 
 // init_mission_no_nav_commands - initialise a mission with no navigation commands
 //      mission should ignore the jump that causes the endless loop and complete
-void init_mission_no_nav_commands()
+void MissionTest::init_mission_no_nav_commands()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -318,7 +319,7 @@ void init_mission_no_nav_commands()
 
 // init_mission_endless_loop - initialise a mission with a do-jump that causes an endless loop
 //      mission should start the first do command but then complete
-void init_mission_endless_loop()
+void MissionTest::init_mission_endless_loop()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -370,7 +371,7 @@ void init_mission_endless_loop()
 // init_mission_jump_to_nonnav - initialise a mission with a do-jump to the previous command which is a "do" command
 //      ideally we would execute this previous "do" command the number of times specified in the do-jump command but this is tricky so we ignore the do-jump
 //      mission should run the "do" command once and then complete
-void init_mission_jump_to_nonnav()
+void MissionTest::init_mission_jump_to_nonnav()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -434,7 +435,7 @@ void init_mission_jump_to_nonnav()
 //      first command to execute should be the first do command followed by the first nav command
 //      second do command should execute after 1st do command completes
 //      third do command (which is after 1st nav command) should start after 1st nav command completes
-void init_mission_starts_with_do_commands()
+void MissionTest::init_mission_starts_with_do_commands()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -511,7 +512,7 @@ void init_mission_starts_with_do_commands()
 // init_mission_ends_with_do_commands - initialise a mission which ends with do comamnds
 //      a single do command just after nav command will be started but not verified because mission will complete
 //      final do command will not be started
-void init_mission_ends_with_do_commands()
+void MissionTest::init_mission_ends_with_do_commands()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -587,7 +588,7 @@ void init_mission_ends_with_do_commands()
 
 // init_mission_ends_with_jump_command - initialise a mission which ends with a jump comamnd
 //      mission should complete after the do-jump is executed the appropriate number of times
-void init_mission_ends_with_jump_command()
+void MissionTest::init_mission_ends_with_jump_command()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -670,7 +671,7 @@ void init_mission_ends_with_jump_command()
 }
 
 // print_mission - print out the entire mission to the console
-void print_mission()
+void MissionTest::print_mission()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -709,7 +710,7 @@ void print_mission()
 
 // run_resume_test - tests the stop and resume feature
 //      when mission is resumed, active commands should be started again
-void run_resume_test()
+void MissionTest::run_resume_test()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -815,7 +816,7 @@ void run_resume_test()
 }
 
 // run_set_current_cmd_test - tests setting the current command during a mission
-void run_set_current_cmd_test()
+void MissionTest::run_set_current_cmd_test()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -920,7 +921,7 @@ void run_set_current_cmd_test()
 
 // run_set_current_cmd_while_stopped_test - tests setting the current command while the mission is stopped
 //      when mission is resumed, the mission should start from the modified current cmd
-void run_set_current_cmd_while_stopped_test()
+void MissionTest::run_set_current_cmd_while_stopped_test()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -1057,7 +1058,7 @@ void run_set_current_cmd_while_stopped_test()
 }
 
 // run_replace_cmd_test - tests replacing a command during a mission
-void run_replace_cmd_test()
+void MissionTest::run_replace_cmd_test()
 {
     AP_Mission::Mission_Command cmd;
 
@@ -1162,7 +1163,7 @@ void run_replace_cmd_test()
 }
 
 // run_max_cmd_test - tests filling the eeprom with commands and then reading them back
-void run_max_cmd_test()
+void MissionTest::run_max_cmd_test()
 {
     AP_Mission::Mission_Command cmd;
     uint16_t num_commands = 0;
@@ -1198,7 +1199,8 @@ void run_max_cmd_test()
             if (cmd.content.location.alt == i) {
                 hal.console->printf_P(PSTR("successfully read command #%u\n"),(unsigned int)i);
             }else{
-                hal.console->printf_P(PSTR("cmd #u's alt does not match, expected %u but read %u\n"),(unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
+                hal.console->printf_P(PSTR("cmd %u's alt does not match, expected %u but read %u\n"),
+                                      (unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
             }
         }
     }
@@ -1215,6 +1217,43 @@ void run_max_cmd_test()
     if (success) {
         hal.console->printf_P(PSTR("\nTest Passed!  wrote and read back %u commands\n\n"),(unsigned int)mission.num_commands_max());
     }
+}
+
+// setup
+void MissionTest::setup(void)
+{
+    hal.console->println("AP_Mission library test\n");
+
+    // display basic info about command sizes
+    hal.console->printf_P(PSTR("Max Num Commands: %d\n"),(int)mission.num_commands_max());
+    hal.console->printf_P(PSTR("Command size: %d bytes\n"),(int)AP_MISSION_EEPROM_COMMAND_SIZE);
+}
+
+// loop
+void MissionTest::loop(void)
+{
+    // uncomment line below to run one of the mission tests
+    run_mission_test();
+
+    // uncomment line below to run the mission pause/resume test
+    //run_resume_test();
+
+    // wait forever
+    while(true) {
+        hal.scheduler->delay(1000);
+    }
+}
+
+void setup(void);
+void loop(void);
+
+void setup(void)
+{
+    missiontest.setup();
+}
+void loop(void)
+{
+    missiontest.loop();
 }
 
 AP_HAL_MAIN();
