@@ -31,28 +31,11 @@ Aircraft(home_str, frame_str)
 */
 void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate)
 {
-    float pitch_target = zero_pitch + pitch_input*pitch_range;
-    float yaw_target = zero_yaw + yaw_input*yaw_range;
-    while (yaw_target > 180) {
-        yaw_target -= 360;
-    }
+    float pitch_target = pitch_input*pitch_range;
+    float yaw_target = yaw_input*yaw_range;
 
-    float r, p, y;
-    dcm.to_euler(&r, &p, &y);
-
-    float pitch_current = degrees(p);
-    float yaw_current = degrees(y);
-
-    pitch_rate = constrain_float(pitch_target - pitch_current, -pitchrate, pitchrate);
-
-    float yaw_diff = yaw_target - yaw_current;
-    if (yaw_diff > 180) {
-        yaw_diff -= 360;
-    }
-    if (yaw_diff < -180) {
-        yaw_diff += 360;
-    }
-    yaw_rate = constrain_float(yaw_diff, -yawrate, yawrate);
+    pitch_rate = constrain_float(pitch_target - pitch_current_relative, -pitchrate, pitchrate);
+    yaw_rate   = constrain_float(yaw_target - yaw_current_relative, -yawrate, yawrate);
 }
 
 /*
@@ -92,18 +75,12 @@ void Tracker::update(const struct sitl_input &input)
     yaw_input = (input.servos[0]-1500)/500.0f;
     pitch_input = (input.servos[1]-1500)/500.0f;
 
-    if (onoff) {
-        update_onoff_servos(yaw_rate, pitch_rate);
-    } else {
-        update_position_servos(delta_time, yaw_rate, pitch_rate);
-    }
-
     // implement yaw and pitch limits
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
 
-    float pitch_current_relative = degrees(p) - zero_pitch;
-    float yaw_current_relative = degrees(y) - zero_yaw;
+    pitch_current_relative = degrees(p) - zero_pitch;
+    yaw_current_relative = degrees(y) - zero_yaw;
     float roll_current = degrees(r);
     if (yaw_current_relative > 180) {
         yaw_current_relative -= 360;
@@ -123,6 +100,13 @@ void Tracker::update(const struct sitl_input &input)
     if (pitch_rate < 0 && pitch_current_relative <= -pitch_range) {
         pitch_rate = 0;
     }
+
+    if (onoff) {
+        update_onoff_servos(yaw_rate, pitch_rate);
+    } else {
+        update_position_servos(delta_time, yaw_rate, pitch_rate);
+    }
+
 
     // keep it level
     float roll_rate = 0 - roll_current;
