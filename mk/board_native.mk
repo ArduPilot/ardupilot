@@ -102,4 +102,7 @@ $(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	$(v)cp $(SKETCHELF) .
 	@echo "Firmware is in $(BUILDELF)"
 
+SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES)
+SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)
+
 include $(MK_DIR)/build_rules.mk

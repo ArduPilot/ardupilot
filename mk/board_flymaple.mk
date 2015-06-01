@@ -175,4 +175,7 @@ $(SKETCHEEP):	$(SKETCHELF)
 	$(RULEHDR)
 	$(v)$(OBJCOPY) -O ihex -j.eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $< $@
 
+SKETCH_INCLUDES        =       $(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
+SLIB_INCLUDES  =       -I$(dir $<)/utility $(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
+
 include $(MK_DIR)/build_rules.mk

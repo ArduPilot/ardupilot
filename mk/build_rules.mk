@@ -2,7 +2,6 @@
 #
 # Build sketch objects
 #
-SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES)
 
 $(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
 	$(RULEHDR)
@@ -23,7 +22,6 @@ $(BUILDROOT)/%.o: $(SRCROOT)/%.S
 #
 # Build library objects from sources in the sketchbook
 #
-SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)
 
 $(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
 	$(RULEHDR)
