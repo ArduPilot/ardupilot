@@ -24,8 +24,6 @@
 
 #include "Plane.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpmf-conversions"
 #define SCHED_TASK(func) FUNCTOR_BIND_VOID(&plane, &Plane::func, void)
 
 /*
@@ -77,8 +75,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
 #endif
     { SCHED_TASK(terrain_update),         5,    500 },
 };
-
-#pragma GCC diagnostic pop
 
 void Plane::setup() 
 {
