@@ -50,6 +50,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     accel_noise(0.3),
     rate_hz(400),
     autotest_dir(NULL),
+    frame(frame_str),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
 #else
