@@ -47,7 +47,7 @@ pxf: TOOLCHAIN = BBONE
 pxf: all
 
 bebop: HAL_BOARD = HAL_BOARD_LINUX
-bebop: TOOLCHAIN = PARROTP7
+bebop: TOOLCHAIN = BBONE
 bebop: all
 
 navio: HAL_BOARD = HAL_BOARD_LINUX
