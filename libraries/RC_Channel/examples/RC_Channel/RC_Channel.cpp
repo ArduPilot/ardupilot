@@ -60,6 +60,10 @@ static RC_Channel rc_7(CH_7);
 static RC_Channel rc_8(CH_8);
 static RC_Channel *rc = &rc_1;
 
+static void print_pwm(void);
+static void print_radio_values();
+static void copy_input_output(void);
+
 
 void setup()
 {
