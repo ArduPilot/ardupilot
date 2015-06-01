@@ -30,11 +30,7 @@
 class DataFlash_Class
 {
 public:
-#if APM_BUILD_FUNCTOR
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
-#else
-    typedef void (*print_mode_fn)(AP_HAL::BetterStream *, uint8_t);
-#endif
 
     // initialisation
     virtual void Init(const struct LogStructure *structure, uint8_t num_types);
