@@ -1,10 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 /**
   update_vehicle_position_estimate - updates estimate of vehicle positions
   should be called at 50hz
  */
-static void update_vehicle_pos_estimate()
+void Tracker::update_vehicle_pos_estimate()
 {
     // calculate time since last actual position update
     float dt = (hal.scheduler->micros() - vehicle.last_update_us) * 1.0e-6f;
@@ -26,7 +28,7 @@ static void update_vehicle_pos_estimate()
   update_tracker_position - updates antenna tracker position from GPS location
   should be called at 50hz
  */
-static void update_tracker_position()
+void Tracker::update_tracker_position()
 {
     // update our position if we have at least a 2D fix
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
@@ -39,7 +41,7 @@ static void update_tracker_position()
   update_bearing_and_distance - updates bearing and distance to the vehicle
   should be called at 50hz
  */
-static void update_bearing_and_distance()
+void Tracker::update_bearing_and_distance()
 {
     // exit immediately if we do not have a valid vehicle position
     if (!vehicle.location_valid) {
@@ -65,7 +67,7 @@ static void update_bearing_and_distance()
 /**
   main antenna tracking code, called at 50Hz
  */
-static void update_tracking(void)
+void Tracker::update_tracking(void)
 {
     // update vehicle position estimate
     update_vehicle_pos_estimate();
@@ -110,7 +112,7 @@ static void update_tracking(void)
 /**
    handle an updated position from the aircraft
  */
-static void tracking_update_position(const mavlink_global_position_int_t &msg)
+void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 {
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
@@ -125,7 +127,7 @@ static void tracking_update_position(const mavlink_global_position_int_t &msg)
 /**
    handle an updated pressure reading from the aircraft
  */
-static void tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
+void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 {
     float local_pressure = barometer.get_pressure();
     float aircraft_pressure = msg.press_abs*100.0f;
@@ -148,7 +150,7 @@ static void tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 /**
    handle a manual control message by using the data to command yaw and pitch
  */
-static void tracking_manual_control(const mavlink_manual_control_t &msg)
+void Tracker::tracking_manual_control(const mavlink_manual_control_t &msg)
 {
     nav_status.bearing = msg.x;
     nav_status.pitch   = msg.y;
@@ -161,7 +163,7 @@ static void tracking_manual_control(const mavlink_manual_control_t &msg)
 /**
    update_armed_disarmed - set armed LED if we have received a position update within the last 5 seconds
  */
-static void update_armed_disarmed()
+void Tracker::update_armed_disarmed()
 {
     if (vehicle.last_update_ms != 0 && (hal.scheduler->millis() - vehicle.last_update_ms) < TRACKING_TIMEOUT_MS) {
         AP_Notify::flags.armed = true;

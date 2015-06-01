@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 /*
  * control_auto.pde - auto control mode
  */
@@ -8,7 +10,7 @@
  * update_auto - runs the auto controller
  *  called at 50hz while control_mode is 'AUTO'
  */
-static void update_auto(void)
+void Tracker::update_auto(void)
 {
     // exit immediately if we do not have a valid vehicle position
     if (!vehicle.location_valid) {

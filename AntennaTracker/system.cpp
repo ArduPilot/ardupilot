@@ -1,16 +1,28 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 // mission storage
 static const StorageAccess wp_storage(StorageManager::StorageMission);
 
-static void init_tracker()
+static void mavlink_snoop_static(const mavlink_message_t* msg)
+{
+    return tracker.mavlink_snoop(msg);
+}
+
+static void mavlink_delay_cb_static()
+{
+    tracker.mavlink_delay_cb();
+}
+
+void Tracker::init_tracker()
 {
     // initialise console serial port
     serial_manager.init_console();
 
-    cliSerial->printf_P(PSTR("\n\nInit " THISFIRMWARE
-                         "\n\nFree RAM: %u\n"),
-                    hal.util->available_memory());
+    hal.console->printf_P(PSTR("\n\nInit " THISFIRMWARE
+                               "\n\nFree RAM: %u\n"),
+                          hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
@@ -25,11 +37,11 @@ static void init_tracker()
 
     // init the GCS and start snooping for vehicle data
     gcs[0].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_Console, 0);
-    gcs[0].set_snoop(mavlink_snoop);
+    gcs[0].set_snoop(mavlink_snoop_static);
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
-    hal.scheduler->register_delay_callback(mavlink_delay_cb, 5);
+    hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
     // we start by assuming USB connected, as we initialed the serial
     // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
@@ -38,25 +50,25 @@ static void init_tracker()
 
     // setup serial port for telem1 and start snooping for vehicle data
     gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
-    gcs[1].set_snoop(mavlink_snoop);
+    gcs[1].set_snoop(mavlink_snoop_static);
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // setup serial port for telem2 and start snooping for vehicle data
     gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
-    gcs[2].set_snoop(mavlink_snoop);
+    gcs[2].set_snoop(mavlink_snoop_static);
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS > 3
     // setup serial port for fourth telemetry port (not used by default) and start snooping for vehicle data
     gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
-    gcs[3].set_snoop(mavlink_snoop);
+    gcs[3].set_snoop(mavlink_snoop_static);
 #endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
-            cliSerial->println_P(PSTR("Compass initialisation failed!"));
+            hal.console->println_P(PSTR("Compass initialisation failed!"));
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -107,7 +119,7 @@ static void init_tracker()
 
 // updates the status of the notify objects
 // should be called at 50hz
-static void update_notify()
+void Tracker::update_notify()
 {
     notify.update();
 }
@@ -115,7 +127,7 @@ static void update_notify()
 /*
   fetch HOME from EEPROM
 */
-static bool get_home_eeprom(struct Location &loc)
+bool Tracker::get_home_eeprom(struct Location &loc)
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
@@ -132,7 +144,7 @@ static bool get_home_eeprom(struct Location &loc)
     return true;
 }
 
-static void set_home_eeprom(struct Location temp)
+void Tracker::set_home_eeprom(struct Location temp)
 {
     wp_storage.write_byte(0, temp.options);
     wp_storage.write_uint32(1, temp.alt);
@@ -143,19 +155,19 @@ static void set_home_eeprom(struct Location temp)
     g.command_total.set_and_save(1); // At most 1 entry for HOME
 }
 
-static void set_home(struct Location temp)
+void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
 }
 
-static void arm_servos()
+void Tracker::arm_servos()
 {    
     channel_yaw.enable_out();
     channel_pitch.enable_out();
 }
 
-static void disarm_servos()
+void Tracker::disarm_servos()
 {
     channel_yaw.disable_out();
     channel_pitch.disable_out();
@@ -164,7 +176,7 @@ static void disarm_servos()
 /*
   setup servos to trim value after initialising
  */
-static void prepare_servos()
+void Tracker::prepare_servos()
 {
     start_time_ms = hal.scheduler->millis();
     channel_yaw.radio_out = channel_yaw.radio_trim;
@@ -173,7 +185,7 @@ static void prepare_servos()
     channel_pitch.output();
 }
 
-static void set_mode(enum ControlMode mode)
+void Tracker::set_mode(enum ControlMode mode)
 {
     if(control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
@@ -199,7 +211,7 @@ static void set_mode(enum ControlMode mode)
 /*
   set_mode() wrapper for MAVLink SET_MODE
  */
-static bool mavlink_set_mode(uint8_t mode)
+bool Tracker::mavlink_set_mode(uint8_t mode)
 {
     switch (mode) {
     case AUTO:
@@ -213,7 +225,7 @@ static bool mavlink_set_mode(uint8_t mode)
     return false;
 }
 
-static void check_usb_mux(void)
+void Tracker::check_usb_mux(void)
 {
     bool usb_check = hal.gpio->usb_connected();
     if (usb_check == usb_connected) {

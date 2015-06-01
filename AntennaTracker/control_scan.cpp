@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 /*
  * control_scan.pde - scan control mode
  */
@@ -8,7 +10,7 @@
  * update_scan - runs the scan controller
  *  called at 50hz while control_mode is 'SCAN'
  */
-static void update_scan(void)
+void Tracker::update_scan(void)
 {
     if (!nav_status.manual_control_yaw) {
         float yaw_delta = g.scan_speed * 0.02f;

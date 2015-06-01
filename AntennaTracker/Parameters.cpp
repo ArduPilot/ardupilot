@@ -1,17 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 /*
  *  AntennaTracker parameter definitions
  *
  */
 
-#define GSCALAR(v, name, def) { g.v.vtype, name, Parameters::k_param_ ## v, &g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { aparm.v.vtype, name, Parameters::k_param_ ## v, &aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &v, {group_info : class::var_info} }
+#define GSCALAR(v, name, def) { tracker.g.v.vtype, name, Parameters::k_param_ ## v, &tracker.g.v, {def_value : def} }
+#define ASCALAR(v, name, def) { tracker.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&tracker.aparm.v, {def_value : def} }
+#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &tracker.g.v, {group_info : class::var_info} }
+#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&tracker.v, {group_info : class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
 
-const AP_Param::Info var_info[] PROGMEM = {
+const AP_Param::Info Tracker::var_info[] PROGMEM = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 
@@ -280,22 +282,22 @@ const AP_Param::Info var_info[] PROGMEM = {
 };
 
 
-static void load_parameters(void)
+void Tracker::load_parameters(void)
 {
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+        hal.console->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println_P(PSTR("done."));
+        hal.console->println_P(PSTR("done."));
     } else {
         uint32_t before = hal.scheduler->micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-        cliSerial->printf_P(PSTR("load_all took %luus\n"), hal.scheduler->micros() - before);
+        hal.console->printf_P(PSTR("load_all took %luus\n"), (unsigned long)(hal.scheduler->micros() - before));
     }
 }

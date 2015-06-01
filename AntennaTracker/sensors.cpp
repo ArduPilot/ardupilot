@@ -1,6 +1,8 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-static void init_barometer(void)
+#include "Tracker.h"
+
+void Tracker::init_barometer(void)
 {
     gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
     barometer.calibrate();
@@ -8,7 +10,7 @@ static void init_barometer(void)
 }
 
 // read the barometer and return the updated altitude in meters
-static void update_barometer(void)
+void Tracker::update_barometer(void)
 {
     barometer.update();
 }
@@ -17,7 +19,7 @@ static void update_barometer(void)
 /*
   update INS and attitude
  */
-static void update_ahrs()
+void Tracker::update_ahrs()
 {
     ahrs.update();
 }
@@ -26,7 +28,7 @@ static void update_ahrs()
 /*
   read and update compass
  */
-static void update_compass(void)
+void Tracker::update_compass(void)
 {
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
@@ -39,7 +41,7 @@ static void update_compass(void)
 /*
   if the compass is enabled then try to accumulate a reading
  */
-static void compass_accumulate(void)
+void Tracker::compass_accumulate(void)
 {
     if (g.compass_enabled) {
         compass.accumulate();
@@ -49,7 +51,7 @@ static void compass_accumulate(void)
 /*
   try to accumulate a baro reading
  */
-static void barometer_accumulate(void)
+void Tracker::barometer_accumulate(void)
 {
     barometer.accumulate();
 }
@@ -58,7 +60,7 @@ static void barometer_accumulate(void)
 /*
   read the GPS
  */
-static void update_GPS(void)
+void Tracker::update_GPS(void)
 {
     gps.update();
 

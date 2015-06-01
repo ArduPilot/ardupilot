@@ -1,11 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include "Tracker.h"
+
 /*
  * servos.pde - code to move pitch and yaw servos to attain a target heading or pitch
  */
 
 // init_servos - initialises the servos
-static void init_servos()
+void Tracker::init_servos()
 {
     // setup antenna control PWM channels
     channel_yaw.set_angle(g.yaw_range * 100/2);        // yaw range is +/- (YAW_RANGE parameter/2) converted to centi-degrees
@@ -24,7 +26,7 @@ static void init_servos()
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-static void update_pitch_servo(float pitch)
+void Tracker::update_pitch_servo(float pitch)
 {
     switch ((enum ServoType)g.servo_type.get()) {
     case SERVO_TYPE_ONOFF:
@@ -46,7 +48,7 @@ static void update_pitch_servo(float pitch)
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-static void update_pitch_position_servo(float pitch)
+void Tracker::update_pitch_position_servo(float pitch)
 {
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
@@ -111,7 +113,7 @@ static void update_pitch_position_servo(float pitch)
    update the pitch (elevation) servo. The aim is to drive the boards ahrs pitch to the
    requested pitch, so the board (and therefore the antenna) will be pointing at the target
  */
-static void update_pitch_onoff_servo(float pitch)
+void Tracker::update_pitch_onoff_servo(float pitch)
 {
     // degrees(ahrs.pitch) is -90 to 90, where 0 is horizontal
     // pitch argument is -90 to 90, where 0 is horizontal
@@ -136,7 +138,7 @@ static void update_pitch_onoff_servo(float pitch)
 /**
    update the yaw (azimuth) servo.
  */
-static void update_yaw_servo(float yaw)
+void Tracker::update_yaw_servo(float yaw)
 {
     switch ((enum ServoType)g.servo_type.get()) {
     case SERVO_TYPE_ONOFF:
@@ -159,7 +161,7 @@ static void update_yaw_servo(float yaw)
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-static void update_yaw_position_servo(float yaw)
+void Tracker::update_yaw_position_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
@@ -195,8 +197,6 @@ static void update_yaw_position_servo(float yaw)
       Use our current yawspeed to determine if we are moving in the
       right direction
      */
-    static int8_t slew_dir;
-    static uint32_t slew_start_ms;
     int8_t new_slew_dir = slew_dir;
 
     // get earth frame z-axis rotation rate in radians
@@ -230,11 +230,11 @@ static void update_yaw_position_servo(float yaw)
     }
 
     if (new_slew_dir != slew_dir) {
-        gcs_send_text_fmt(PSTR("SLEW: %d/%d err=%ld servo=%ld ez=%.3f"),
-                          (int)slew_dir, (int)new_slew_dir,
-                          (long)angle_err,
-                          (long)channel_yaw.servo_out,
-                          (double)degrees(ahrs.get_gyro().z));
+        tracker.gcs_send_text_fmt(PSTR("SLEW: %d/%d err=%ld servo=%ld ez=%.3f"),
+                                  (int)slew_dir, (int)new_slew_dir,
+                                  (long)angle_err,
+                                  (long)channel_yaw.servo_out,
+                                  (double)degrees(ahrs.get_gyro().z));
     }
 
     slew_dir = new_slew_dir;
@@ -287,7 +287,7 @@ static void update_yaw_position_servo(float yaw)
    yaw to the requested yaw, so the board (and therefore the antenna)
    will be pointing at the target
  */
-static void update_yaw_onoff_servo(float yaw)
+void Tracker::update_yaw_onoff_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     int32_t yaw_cd   = wrap_180_cd(yaw*100);
