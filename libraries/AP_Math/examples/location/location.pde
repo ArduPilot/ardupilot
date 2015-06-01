@@ -20,6 +20,8 @@
 #include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_Declination.h>
+#include <AP_Rally.h>
+#include <AP_OpticalFlow.h>
 
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_SITL.h>
