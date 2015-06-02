@@ -6,7 +6,6 @@
 
 #include <AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
 #include "DataFlash.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -23,7 +22,12 @@
 
 
 extern const AP_HAL::HAL& hal;
-
+#ifndef MAV_SYS_ID_LOG
+#define MAV_SYS_ID_LOG  1
+#endif
+#ifndef MAV_COMP_ID_LOG
+#define MAV_COMP_ID_LOG 1
+#endif
 /*
   constructor
  */
@@ -39,7 +43,9 @@ DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
     ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
     _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
 #endif
-{ }
+{
+    memset(&mavlink, 0, sizeof(mavlink));
+}
 
 
 // initialisation
@@ -48,6 +54,8 @@ void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_t
     memset(_block_num, 0, sizeof(_block_num));  
     DataFlash_Class::Init(structure, num_types);
 
+    mavlink.system_id = MAV_SYS_ID_LOG;
+    mavlink.component_id = MAV_COMP_ID_LOG;
     _initialised = true;
 }
 
@@ -151,9 +159,18 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
     if (!_initialised || comm_get_txspace(chan) < 255){
        return; 
     }
+    mavlink_message_t msg;
+    mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
+    uint8_t saved_seq = chan_status->current_tx_seq;
+    chan_status->current_tx_seq = mavlink.seq++;
     //printf("Data Sent!!\n");
-    mavlink_msg_remote_log_data_block_send(chan,_block_max_size,_block_num[block_address],_buf[block_address]);
-    
+    uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink.system_id, 
+                                                          mavlink.component_id, 
+                                                          &msg,
+                                                          _block_max_size,
+                                                          _block_num[block_address],
+                                                          _buf[block_address]);
+    chan_status->current_tx_seq = saved_seq;
+    _mavlink_resend_uart(chan, &msg);
 }
-#endif // HAL_OS_POSIX_IO
 

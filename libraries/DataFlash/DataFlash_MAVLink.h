@@ -72,6 +72,16 @@ private:
     uint8_t _buf[80][200];
     uint32_t _block_num[80];
 
+    struct {
+        // socket to telem2 on aircraft
+        bool connected;
+        uint8_t system_id;
+        uint8_t component_id;
+        mavlink_message_t rxmsg;
+        mavlink_status_t status;
+        uint8_t seq;
+    } mavlink;
+
     uint16_t start_new_log(void) { return 0; }
     void ReadBlock(void *pkt, uint16_t size) {}
     int8_t next_block_address();
