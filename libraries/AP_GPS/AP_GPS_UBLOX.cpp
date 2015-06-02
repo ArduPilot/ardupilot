@@ -119,14 +119,14 @@ AP_GPS_UBLOX::send_next_rate_update(void)
         _configure_message_rate(CLASS_MON, MSG_MON_HW2, 2); // 24+8 bytes
         break;
 #endif
-#if UBLOX_VERSION_AUTODETECTION 
+#if UBLOX_RXM_RAW_LOGGING
     case 7:
-        _request_version();
+        _configure_message_rate(CLASS_RXM, MSG_RXM_RAW, gps._raw_data);
         break;
 #endif
-#if UBLOX_RXM_RAW_LOGGING
+#if UBLOX_VERSION_AUTODETECTION 
     case 8:
-        _configure_message_rate(CLASS_RXM, MSG_RXM_RAW, gps._raw_data); // 24*16+8 bytes
+        _request_version();
         break;
 #endif
     default:
