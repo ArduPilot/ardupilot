@@ -761,7 +761,8 @@ private:
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
-    bool create_mixer_file(const char *filename);
+    bool print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...);
+    bool create_mixer(char *buf, uint16_t buf_size, const char *filename);
     bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
