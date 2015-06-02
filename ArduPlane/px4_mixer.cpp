@@ -21,18 +21,34 @@
 #include <drivers/drv_pwm_output.h>
 #include <systemlib/mixer/mixer.h>
 
+#define PX4_LIM_RC_MIN 900
+#define PX4_LIM_RC_MAX 2100
 
 /*
-  create a mixer file given key fixed wing parameters
+  formatted print to a buffer with buffer advance. Returns true on
+  success, false on fail
  */
-bool Plane::create_mixer_file(const char *filename)
+bool Plane::print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...)
 {
-    int mix_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-    if (mix_fd == -1) {
-        hal.console->printf("Unable to create mixer file\n");
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    int n = ::vsnprintf(buf, buf_size, fmt, arg_list);
+    va_end(arg_list);
+    if (n <= 0 || n >= buf_size) {
         return false;
     }
-    dprintf(mix_fd, "Auto-generated mixer file for ArduPilot\n\n");
+    buf += n;
+    buf_size -= n;
+    return true;
+}
+
+/*
+  create a PX4 mixer buffer given the current fixed wing parameters
+ */
+bool Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
+{
+    char *buf0 = buf;
+    uint16_t buf_size0 = buf_size;
 
     /*
       this is the equivalent of channel_output_mixer()
@@ -48,8 +64,8 @@ bool Plane::create_mixer_file(const char *filename)
     const uint16_t mix_max = scale_max1 * g.mixing_gain;
     // scaling factors used by PX4IO between pwm and internal values,
     // as configured in setup_failsafe_mixing() below
-    const float pwm_min = 900;
-    const float pwm_max = 2100;
+    const float pwm_min = PX4_LIM_RC_MIN;
+    const float pwm_max = PX4_LIM_RC_MAX;
     const float pwm_scale = 2*scale_max1/(pwm_max - pwm_min);
 
     for (uint8_t i=0; i<8; i++) {
@@ -107,7 +123,9 @@ bool Plane::create_mixer_file(const char *filename)
             c1 = i;
         } else {
             // a empty output
-            dprintf(mix_fd, "Z:\n\n");
+            if (!print_buffer(buf, buf_size, "Z:\n")) {
+                return false;
+            }
             continue;
         }
         if (mix == 0) {
@@ -118,6 +136,8 @@ bool Plane::create_mixer_file(const char *filename)
             const RC_Channel *chan2 = RC_Channel::rc_channel(c1);
             int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->radio_trim);
             int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->radio_trim);
+            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // if the input and output channels are the same then we
             // apply clipping. This allows for direct pass-thru
             int32_t limit = (c1==i?scale_max2:scale_max1);
@@ -137,49 +157,69 @@ bool Plane::create_mixer_file(const char *filename)
                 in_scale_low = -in_scale_low;
                 in_scale_high = -in_scale_high;
             }
-            dprintf(mix_fd, "M: 1\n");
-            dprintf(mix_fd, "O: %d %d %d %d %d\n",
-                    (int)(pwm_scale*(chan1_trim - chan1->radio_min)),
-                    (int)(pwm_scale*(chan1->radio_max - chan1_trim)),
-                    (int)(pwm_scale*(chan1_trim - 1500)),
-                    (int)-scale_max2, (int)scale_max2);
-            dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", c1,
-                    in_scale_low,
-                    in_scale_high,
-                    0,
-                    -limit, limit);
+            if (!print_buffer(buf, buf_size, "M: 1\n") ||
+                !print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
+                              (int)(pwm_scale*(chan1_trim - chan1->radio_min)),
+                              (int)(pwm_scale*(chan1->radio_max - chan1_trim)),
+                              (int)(pwm_scale*(chan1_trim - 1500)),
+                              (int)-scale_max2, (int)scale_max2) ||
+                !print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", c1,
+                              in_scale_low,
+                              in_scale_high,
+                              0,
+                              -limit, limit)) {
+                return false;
+            }
         } else {
             const RC_Channel *chan1 = RC_Channel::rc_channel(c1);
             const RC_Channel *chan2 = RC_Channel::rc_channel(c2);
             int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->radio_trim);
             int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->radio_trim);
+            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
+            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
             // mix of two input channels to give an output channel. To
             // make the mixer match the behaviour of APM we need to
             // scale and offset the input channels to undo the affects
             // of the PX4IO input processing
-            dprintf(mix_fd, "M: 2\n");
-            dprintf(mix_fd, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1);
+            if (!print_buffer(buf, buf_size, "M: 2\n") ||
+                !print_buffer(buf, buf_size, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1)) {
+                return false;
+            }
             int32_t in_scale_low = pwm_scale*(chan1_trim - pwm_min);
             int32_t in_scale_high = pwm_scale*(pwm_max - chan1_trim);
             int32_t offset = pwm_scale*(chan1_trim - 1500);
-            dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n", 
-                    c1, in_scale_low, in_scale_high, offset,
-                    (int)-scale_max2, (int)scale_max2);
+            if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+                              c1, in_scale_low, in_scale_high, offset,
+                              (int)-scale_max2, (int)scale_max2)) {
+                return false;
+            }
             in_scale_low = pwm_scale*(chan2_trim - pwm_min);
             in_scale_high = pwm_scale*(pwm_max - chan2_trim);
             offset = pwm_scale*(chan2_trim - 1500);
             if (rev) {
-                dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", 
-                        c2, in_scale_low, in_scale_high, offset,
-                        (int)-scale_max2, (int)scale_max2);
+                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+                                  c2, in_scale_low, in_scale_high, offset,
+                                  (int)-scale_max2, (int)scale_max2)) {
+                    return false;
+                }
             } else {
-                dprintf(mix_fd, "S: 0 %u %d %d %d %d %d\n\n", 
-                        c2, -in_scale_low, -in_scale_high, -offset,
-                        (int)-scale_max2, (int)scale_max2);
+                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
+                                  c2, -in_scale_low, -in_scale_high, -offset,
+                                  (int)-scale_max2, (int)scale_max2)) {
+                    return false;
+                }
             }
         }
     }    
-    close(mix_fd);
+
+    /*
+      if possible, also write to a file for debugging purposes
+     */
+    int mix_fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if (mix_fd != -1) {
+        write(mix_fd, buf0, buf_size0 - buf_size);
+        close(mix_fd);
+    }
     return true;
 }
 
@@ -189,25 +229,20 @@ bool Plane::create_mixer_file(const char *filename)
  */
 bool Plane::setup_failsafe_mixing(void)
 {
-    // we create MIXER.MIX regardless of whether we will be using it,
-    // as it gives a template for the user to modify to create their
-    // own CUSTOM.MIX file
     const char *mixer_filename = "/fs/microsd/APM/MIXER.MIX";
-    const char *custom_mixer_filename = "/fs/microsd/APM/CUSTOM.MIX";
     bool ret = false;
     char *buf = NULL;
     const uint16_t buf_size = 2048;
 
-    if (!create_mixer_file(mixer_filename)) {
+    buf = (char *)malloc(buf_size);
+    if (buf == NULL) {
         return false;
     }
 
-    struct stat st;
-    const char *filename;
-    if (stat(custom_mixer_filename, &st) == 0) {
-        filename = custom_mixer_filename;
-    } else {
-        filename = mixer_filename;
+    if (!create_mixer(buf, buf_size, mixer_filename)) {
+        hal.console->printf("Unable to create mixer\n");
+        free(buf);
+        return false;
     }
 
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
@@ -216,16 +251,8 @@ bool Plane::setup_failsafe_mixing(void)
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd == -1) {
         // px4io isn't started, no point in setting up a mixer
+        free(buf);
         return false;
-    }
-
-    buf = (char *)malloc(buf_size);
-    if (buf == NULL) {
-        goto failed;
-    }
-    if (load_mixer_file(filename, &buf[0], buf_size) != 0) {
-        hal.console->printf("Unable to load %s\n", filename);
-        goto failed;
     }
 
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
@@ -234,7 +261,10 @@ bool Plane::setup_failsafe_mixing(void)
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
     }
 
-    // we need to force safety on to allow us to load a mixer
+    // we need to force safety on to allow us to load a mixer. We call
+    // it twice as there have been reports that this call can fail
+    // with a small probability
+    hal.rcout->force_safety_on();
     hal.rcout->force_safety_on();
 
     /* reset any existing mixer in px4io. This shouldn't be needed,
@@ -274,7 +304,7 @@ bool Plane::setup_failsafe_mixing(void)
             // by small numbers near RC3_MIN
             config.rc_trim = 1500;
         } else {
-            config.rc_trim = constrain_int16(ch->radio_trim, config.rc_min, config.rc_max);
+            config.rc_trim = constrain_int16(ch->radio_trim, config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
         config.rc_assignment = i;
@@ -297,16 +327,28 @@ bool Plane::setup_failsafe_mixing(void)
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
         pwm_values.values[i] = 900;
     }
-    ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values);
+    if (ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values) != 0) {
+        hal.console->printf("SET_MIN_PWM failed\n");
+        goto failed;
+    }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
         pwm_values.values[i] = 2100;
     }
-    ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values);
-    ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0);
+    if (ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values) != 0) {
+        hal.console->printf("SET_MAX_PWM failed\n");
+        goto failed;
+    }
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
+        hal.console->printf("SET_OVERRIDE_OK failed\n");
+        goto failed;
+    }
 
     // setup for immediate manual control if FMU dies
-    ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1);
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 1) != 0) {
+        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+        goto failed;
+    }
 
     ret = true;
 
@@ -319,6 +361,7 @@ failed:
     }
     // restore safety state if it was previously armed
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
+        hal.rcout->force_safety_off();
         hal.rcout->force_safety_off();
     }
     return ret;
