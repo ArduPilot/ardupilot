@@ -1,5 +1,9 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 0.7.1 29-May-2015
+Changes from 0.7
+1) Added support for continuous rotation (CR) servos
+------------------------------------------------------------------
 AntennaTracker 0.7 17-May-2015
 Changes from 0.5 (skipped 0.6 to avoid confusion after the wrong version number was communicated on diydrones.com)
 1) added support for 4th MAVLink channel
