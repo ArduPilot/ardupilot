@@ -62,7 +62,7 @@ private:
 
 static SchedTest schedtest;
 
-#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&schedtest, &SchedTest::func, void)
+#define SCHED_TASK(func) FUNCTOR_BIND(&schedtest, &SchedTest::func, void)
 
 /*
   scheduler table - all regular tasks are listed here, along with how
