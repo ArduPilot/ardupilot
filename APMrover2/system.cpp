@@ -306,6 +306,11 @@ void Rover::set_mode(enum mode mode)
 
         case GUIDED:
             rtl_complete = false;
+            /*
+              when entering guided mode we set the target as the current
+              location. This matches the behaviour of the copter code.
+            */
+            guided_WP = current_loc;
             set_guided_WP();
             break;
 
@@ -329,6 +334,7 @@ bool Rover::mavlink_set_mode(uint8_t mode)
     case HOLD:
     case LEARNING:
     case STEERING:
+    case GUIDED:
     case AUTO:
     case RTL:
         set_mode((enum mode)mode);
