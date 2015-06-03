@@ -22,6 +22,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // except in a takeoff
         auto_state.takeoff_complete = true;
 
+        // if we are still executing mission commands then we must be traveling around still
+        auto_state.is_crashed = false;
+
         // if a go around had been commanded, clear it now.
         auto_state.commanded_go_around = false;
 
@@ -39,6 +42,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
+        auto_state.is_crashed = false;
         do_takeoff(cmd);
         break;
 

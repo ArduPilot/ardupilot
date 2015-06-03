@@ -433,6 +433,9 @@ private:
         // movement until altitude is reached
         bool idle_mode:1;
 
+        // crash detection
+        bool is_crashed:1;
+
         // used to 'wiggle' servos in idle mode to prevent them freezing
         // at high altitudes
         uint8_t idle_wiggle_stage;
@@ -471,6 +474,9 @@ private:
 
         // once landed, post some landing statistics to the GCS
         bool post_landing_stats;
+
+        // time stamp of when we start flying while in auto mode in milliseconds
+        uint32_t started_flying_in_auto_ms;
     } auto_state;
 
     // true if we are in an auto-throttle mode, which means
@@ -865,7 +871,8 @@ private:
     void set_servos_idle(void);
     void set_servos();
     void update_aux();
-    void determine_is_flying(void);
+    void update_is_flying_5Hz(void);
+    void crash_detection_update(void);
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();
