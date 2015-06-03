@@ -450,7 +450,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     // @Values: 0:Very Soft, 25:Soft, 50:Medium, 75:Crisp, 100:Very Crisp
-    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_VERY_CRISP),
+    GSCALAR(rc_feel_rp, "RC_FEEL_RP",  RC_FEEL_RP_MEDIUM),
 
 #if POSHOLD_ENABLED == ENABLED
     // @Param: PHLD_BRAKE_RATE
