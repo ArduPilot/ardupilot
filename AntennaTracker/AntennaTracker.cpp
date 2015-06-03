@@ -21,7 +21,7 @@
 
 #include "Tracker.h"
 
-#define SCHED_TASK(func) FUNCTOR_BIND_VOID(&tracker, &Tracker::func, void)
+#define SCHED_TASK(func) FUNCTOR_BIND(&tracker, &Tracker::func, void)
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
