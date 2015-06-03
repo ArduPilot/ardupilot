@@ -218,9 +218,11 @@ private:
     void init_servos();
     void update_pitch_servo(float pitch);
     void update_pitch_position_servo(float pitch);
+    void update_pitch_cr_servo(float pitch);
     void update_pitch_onoff_servo(float pitch);
     void update_yaw_servo(float yaw);
     void update_yaw_position_servo(float yaw);
+    void update_yaw_cr_servo(float yaw);
     void update_yaw_onoff_servo(float yaw);
     void init_tracker();
     void update_notify();

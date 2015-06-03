@@ -33,6 +33,10 @@ void Tracker::update_pitch_servo(float pitch)
         update_pitch_onoff_servo(pitch);
         break;
 
+    case SERVO_TYPE_CR:
+        update_pitch_cr_servo(pitch);
+        break;
+
     case SERVO_TYPE_POSITION:
     default:
         update_pitch_position_servo(pitch);
@@ -136,6 +140,16 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 }
 
 /**
+   update the pitch for continuous rotation servo
+*/
+void Tracker::update_pitch_cr_servo(float pitch)
+{
+    float ahrs_pitch = degrees(ahrs.pitch);
+    float err_cd = (ahrs_pitch - pitch) * 100.0f;
+    channel_pitch.servo_out = g.pidPitch2Srv.get_pid(err_cd);
+}
+
+/**
    update the yaw (azimuth) servo.
  */
 void Tracker::update_yaw_servo(float yaw)
@@ -143,6 +157,10 @@ void Tracker::update_yaw_servo(float yaw)
     switch ((enum ServoType)g.servo_type.get()) {
     case SERVO_TYPE_ONOFF:
         update_yaw_onoff_servo(yaw);
+        break;
+
+    case SERVO_TYPE_CR:
+        update_yaw_cr_servo(yaw);
         break;
 
     case SERVO_TYPE_POSITION:
@@ -306,4 +324,16 @@ void Tracker::update_yaw_onoff_servo(float yaw)
         // move clockwise
         channel_yaw.servo_out = 18000;
     }
+}
+
+/**
+   update the yaw continuous rotation servo
+ */
+void Tracker::update_yaw_cr_servo(float yaw)
+{
+    int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
+    float yaw_cd = wrap_180_cd_float(yaw*100.0f);
+    float err_cd = wrap_180_cd((float)ahrs_yaw_cd - yaw_cd);
+
+    channel_yaw.servo_out = g.pidYaw2Srv.get_pid(err_cd);
 }

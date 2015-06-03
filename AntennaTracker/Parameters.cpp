@@ -111,7 +111,7 @@ const AP_Param::Info Tracker::var_info[] PROGMEM = {
     // @Param: SERVO_TYPE
     // @DisplayName: Type of servo system being used
     // @Description: This allows selection of position servos or on/off servos
-    // @Values: 0:Position,1:OnOff
+    // @Values: 0:Position,1:OnOff,2:ContinuousRotation
     // @User: Standard
     GSCALAR(servo_type,          "SERVO_TYPE",   SERVO_TYPE_POSITION),
 
