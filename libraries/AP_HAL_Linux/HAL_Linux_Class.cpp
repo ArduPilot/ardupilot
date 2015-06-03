@@ -119,6 +119,7 @@ void _usage(void)
     printf("\t                  -B /dev/ttyS1\n");    
     printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
     printf("\t                  -A tcp:11.0.0.2:5678\n");    
+    printf("\t                  -A udp:11.0.0.2:5678\n");    
 }
 
 void HAL_Linux::init(int argc,char* const argv[]) const 
