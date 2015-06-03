@@ -43,7 +43,7 @@
 #define AP_CLASSTYPE(class, element) (((const class *) 1)->element.vtype)
 
 // declare a group var_info line
-#define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
+#define AP_GROUPINFO(name, idx, class, element, def) { static_cast<uint8_t>(AP_CLASSTYPE(class, element)), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
 
 // declare a nested group entry in a group var_info
 #ifdef AP_NESTED_GROUPS_ENABLED
