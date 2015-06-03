@@ -105,7 +105,7 @@ private:
     bool done_baro_init;
     bool done_home_init;
     uint16_t update_rate = 50;
-    uint32_t arm_time_ms;
+    int32_t arm_time_ms = -1;
     bool ahrs_healthy;
     bool have_imu2;
     bool have_fram;
@@ -217,7 +217,7 @@ void Replay::setup()
             break;
 
         case 'A':
-            arm_time_ms = strtoul(optarg, NULL, 0);
+            arm_time_ms = strtol(optarg, NULL, 0);
             break;
 
         case 'p':
@@ -414,7 +414,7 @@ void Replay::loop()
     while (true) {
         char type[5];
 
-        if (arm_time_ms != 0 && hal.scheduler->millis() > arm_time_ms) {
+        if (arm_time_ms >= 0 && hal.scheduler->millis() > (uint32_t)arm_time_ms) {
             if (!hal.util->get_soft_armed()) {
                 hal.util->set_soft_armed(true);
                 ::printf("Arming at %u ms\n", (unsigned)hal.scheduler->millis());
