@@ -29,5 +29,5 @@ help:
 	@echo "  linux - a generic Linux build"
 	@echo "  flymaple - the FlyMaple board"
 	@echo "  vrbrain - the VRBrain boards"
-	@echo "  stil - the SITL Software In The Loop simulation"
+	@echo "  sitl - the SITL Software In The Loop simulation"
 	@echo "  bbbmini - the Beagle Bone Black mini"
