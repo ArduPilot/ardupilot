@@ -145,7 +145,7 @@ void Tracker::update_pitch_onoff_servo(float pitch)
 void Tracker::update_pitch_cr_servo(float pitch)
 {
     float ahrs_pitch = degrees(ahrs.pitch);
-    float err_cd = (ahrs_pitch - pitch) * 100.0f;
+    float err_cd = (pitch - ahrs_pitch) * 100.0f;
     channel_pitch.servo_out = g.pidPitch2Srv.get_pid(err_cd);
 }
 
@@ -333,7 +333,7 @@ void Tracker::update_yaw_cr_servo(float yaw)
 {
     int32_t ahrs_yaw_cd = wrap_180_cd(ahrs.yaw_sensor);
     float yaw_cd = wrap_180_cd_float(yaw*100.0f);
-    float err_cd = wrap_180_cd((float)ahrs_yaw_cd - yaw_cd);
+    float err_cd = wrap_180_cd(yaw_cd - (float)ahrs_yaw_cd);
 
     channel_yaw.servo_out = g.pidYaw2Srv.get_pid(err_cd);
 }
