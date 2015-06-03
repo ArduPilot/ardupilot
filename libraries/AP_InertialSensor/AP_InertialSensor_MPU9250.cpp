@@ -237,6 +237,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
             _spi_sem->give();
         }
         if (tries++ > 5) {
+            hal.console->printf("MPU9250: 5 unsuccessful attempts to initialize\n");
             return false;
         }
     } while (1);
