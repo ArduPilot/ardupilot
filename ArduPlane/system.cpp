@@ -347,6 +347,9 @@ void Plane::set_mode(enum FlightMode mode)
     // zero locked course
     steer_state.locked_course_err = 0;
 
+    // reset crash detection
+    auto_state.is_crashed = false;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;
@@ -484,6 +487,7 @@ void Plane::exit_mode(enum FlightMode mode)
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
         }
+        auto_state.started_flying_in_auto_ms = 0;
     }
 }
 
