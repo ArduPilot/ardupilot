@@ -42,8 +42,8 @@ extern const AP_HAL::HAL& hal;
 DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
     _chan(chan),
     _initialised(false),
-    _total_blocks(80),
-    _block_max_size(200),
+    _total_blocks(NUM_BUFFER_BLOCKS),
+    _block_max_size(BUFFER_BLOCK_SIZE),
     _latest_block_num(0),
     _cur_block_address(0),
     _latest_block_len(0)

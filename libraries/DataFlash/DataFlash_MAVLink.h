@@ -19,6 +19,10 @@
 #endif
 #include<stdio.h>
 
+#define NUM_BUFFER_BLOCKS 80
+#define BUFFER_BLOCK_SIZE 200
+
+
 class DataFlash_MAVLink : public DataFlash_Class
 {
 public:
@@ -69,8 +73,8 @@ private:
     uint16_t _latest_block_len;
 
     // write buffer
-    uint8_t _buf[80][200];
-    uint32_t _block_num[80];
+    uint8_t _buf[NUM_BUFFER_BLOCKS][BUFFER_BLOCK_SIZE];
+    uint32_t _block_num[NUM_BUFFER_BLOCKS];
 
     struct {
         // socket to telem2 on aircraft
