@@ -798,6 +798,16 @@ GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
 
 }
 
+void
+GCS_MAVLINK::handle_remote_log_status(const mavlink_message_t *msg, DataFlash_MAVLink &DataFlash){
+    mavlink_remote_log_block_status_t packet;
+    mavlink_msg_remote_log_block_status_decode(msg, &packet);
+    if(packet.block_status == 0){
+        DataFlash.handle_retry(packet.block_cnt);
+    } else{
+        DataFlash.handle_ack(packet.block_cnt);
+    }
+}
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)
 {

@@ -1734,17 +1734,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         AP_Notify::handle_led_control(msg);
         break;
 
-    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS: {
-        mavlink_remote_log_block_status_t packet;
-        mavlink_msg_remote_log_block_status_decode(msg, &packet);
-        if(packet.block_status == 0){
-            DataFlash.handle_retry(packet.block_cnt);
-        } else{
-            DataFlash.handle_ack(packet.block_cnt);
-        }
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        handle_remote_log_status(msg, DataFlash);
         break;
-    }
-
 
     }     // end switch
 } // end handle mavlink
