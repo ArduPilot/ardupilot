@@ -104,10 +104,26 @@
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_VRBRAIN.h>
 
+/*
+  a plane specific arming class
+ */
+class AP_Arming_Plane : public AP_Arming
+{
+public:
+    AP_Arming_Plane(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+                    const enum HomeState &home_set, gcs_send_t_p gcs_send) :
+        AP_Arming(ahrs_ref, baro, compass, home_set, gcs_send) {}
+    bool pre_arm_checks(bool report);
+};
+
+/*
+  main APM:Plane class
+ */
 class Plane {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
+    friend class AP_Arming_Plane;
 
     Plane(void);
     void setup();
@@ -610,7 +626,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming arming {ahrs, barometer, compass, home_is_set, 
+    AP_Arming_Plane arming {ahrs, barometer, compass, home_is_set, 
             FUNCTOR_BIND_MEMBER(&Plane::gcs_send_text_P, void, gcs_severity, const prog_char_t *)};
 
     AP_Param param_loader {var_info};
