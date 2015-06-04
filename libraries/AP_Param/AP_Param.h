@@ -40,7 +40,7 @@
 #define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
 
 // find the type of a variable given the class and element
-#define AP_CLASSTYPE(class, element) (((const class *) 1)->element.vtype)
+#define AP_CLASSTYPE(class, element) ((uint8_t)(((const class *) 1)->element.vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
