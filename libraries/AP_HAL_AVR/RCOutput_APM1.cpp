@@ -148,8 +148,8 @@ void APM1RCOutput::disable_ch(uint8_t ch) {
 
 /* constrain pwm to be between min and max pulsewidth. */
 static inline uint16_t constrain_period(uint16_t p) {
-    if (p > RC_INPUT_MAX_PULSEWIDTH) return RC_INPUT_MAX_PULSEWIDTH;
-    if (p < RC_INPUT_MIN_PULSEWIDTH) return RC_INPUT_MIN_PULSEWIDTH;
+    if (p > RC_OUTPUT_MAX_PULSEWIDTH) return RC_OUTPUT_MAX_PULSEWIDTH;
+    if (p < RC_OUTPUT_MIN_PULSEWIDTH) return RC_OUTPUT_MIN_PULSEWIDTH;
     return p;
 }
 
