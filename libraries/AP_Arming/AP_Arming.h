@@ -50,7 +50,11 @@ public:
     bool rudder_arming_enabled();
     uint16_t get_enabled_checks();
 
-    bool pre_arm_checks(bool report);
+    /*
+      pre_arm_checks() is virtual so it can be modified
+      in a vehicle specific subclass
+    */
+    virtual bool pre_arm_checks(bool report);
     void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
 
     void set_logging_available(bool set) { logging_available = set; }
@@ -58,7 +62,7 @@ public:
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
+protected:
     bool                                                armed:1;
     bool                                                logging_available:1;
     bool                                                skip_gyro_cal:1;
