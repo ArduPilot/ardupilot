@@ -164,7 +164,7 @@ void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
 void DataFlash_MAVLink::send_log_block(uint32_t block_address)
 {
     mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
-    if (!_initialised || comm_get_txspace(chan) < 255){
+    if (!_initialised){
        return; 
     }
     mavlink_message_t msg;
@@ -178,6 +178,9 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
                                                           _block_max_size,
                                                           _block_num[block_address],
                                                           _buf[block_address]);
+    if(comm_get_txspace(chan) < len){
+        return;
+    }
     chan_status->current_tx_seq = saved_seq;
     _mavlink_resend_uart(chan, &msg);
 }
