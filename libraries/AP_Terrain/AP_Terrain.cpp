@@ -362,7 +362,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
         status         : (uint8_t)status(),
         lat            : loc.lat,
         lng            : loc.lng,
-        spacing        : grid_spacing,
+        spacing        : (uint16_t)grid_spacing,
         terrain_height : terrain_height,
         current_height : current_height,
         pending        : pending,
