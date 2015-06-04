@@ -21,6 +21,13 @@
 #include <time.h>
 #include "../AP_HAL/utility/RingBuffer.h"
 
+#define REMOTE_LOG_DEBUGGING 0
+
+#if REMOTE_LOG_DEBUGGING
+ # define Debug(fmt, args ...)  do {Debug("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
 
 extern const AP_HAL::HAL& hal;
 #ifndef MAV_SYS_ID_LOG
@@ -95,7 +102,7 @@ void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
         _cur_block_address = next_block_address();
         block_address = _cur_block_address;
 
-        //printf("%d\n",block_address);
+        Debug("%d\n",block_address);
         memcpy(_buf[block_address], &((char *)pBuffer)[remaining_size], size - remaining_size);
         _latest_block_len += (size-remaining_size);
     }
@@ -113,7 +120,7 @@ int8_t DataFlash_MAVLink::next_block_address()
     }
     
     _latest_block_len=0;    //reset block size
-    //printf("%d \n", oldest_block_address);
+    Debug("%d \n", oldest_block_address);
     return oldest_block_address;
 }
 
@@ -123,7 +130,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         return;
     }
     if(block_num == 0){
-        printf("\nStarting New Log!!\n");
+        Debug("\nStarting New Log!!\n");
         memset(_block_num, 0, sizeof(_block_num));
         _latest_block_num = 0;
         _cur_block_address = 0;
@@ -164,7 +171,7 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
     mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
     uint8_t saved_seq = chan_status->current_tx_seq;
     chan_status->current_tx_seq = mavlink.seq++;
-    //printf("Data Sent!!\n");
+    Debug("Data Sent!!\n");
     uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink.system_id, 
                                                           mavlink.component_id, 
                                                           &msg,
