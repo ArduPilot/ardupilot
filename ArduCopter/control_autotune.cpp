@@ -628,10 +628,10 @@ void Copter::autotune_attitude_control()
             // move to the next tuning type
             switch (autotune_state.tune_type) {
             case AUTOTUNE_TYPE_RD_UP:
-                autotune_state.tune_type++;
+                autotune_state.tune_type = AutoTuneTuneType(autotune_state.tune_type + 1);
                 break;
             case AUTOTUNE_TYPE_RD_DOWN:
-                autotune_state.tune_type++;
+                autotune_state.tune_type = AutoTuneTuneType(autotune_state.tune_type + 1);
                 switch (autotune_state.axis) {
                 case AUTOTUNE_AXIS_ROLL:
                     tune_roll_rd = max(AUTOTUNE_RD_MIN, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
@@ -648,7 +648,7 @@ void Copter::autotune_attitude_control()
                 }
                 break;
             case AUTOTUNE_TYPE_RP_UP:
-                autotune_state.tune_type++;
+                autotune_state.tune_type = AutoTuneTuneType(autotune_state.tune_type + 1);
                 switch (autotune_state.axis) {
                 case AUTOTUNE_AXIS_ROLL:
                     tune_roll_rp = max(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
@@ -662,7 +662,7 @@ void Copter::autotune_attitude_control()
                 }
                 break;
             case AUTOTUNE_TYPE_SP_DOWN:
-                autotune_state.tune_type++;
+                autotune_state.tune_type = AutoTuneTuneType(autotune_state.tune_type + 1);
                 break;
             case AUTOTUNE_TYPE_SP_UP:
                 // we've reached the end of a D-up-down PI-up-down tune type cycle
