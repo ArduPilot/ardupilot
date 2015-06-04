@@ -45,8 +45,10 @@ private:
     unsigned _alt_servo_count;
     uint32_t _rate_mask;
     uint16_t _enabled_channels;
-    int _pwm_sub;
-    actuator_outputs_s _outputs;
+    struct {
+        int pwm_sub;
+        actuator_outputs_s outputs;
+    } _outputs[ORB_MULTI_MAX_INSTANCES] {};
     actuator_armed_s _armed;
 
     orb_advert_t _actuator_direct_pub = NULL;
