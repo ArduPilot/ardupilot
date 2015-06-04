@@ -1304,13 +1304,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // don't allow the 0,0 position
                     break;
                 }
-                Location new_home_loc;
+                Location new_home_loc {};
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
                 result = MAV_RESULT_ACCEPTED;
+                plane.gcs_send_text_fmt(PSTR("set home to %.6f %.6f at %um"),
+                                        new_home_loc.lat*1.0e-7f,
+                                        new_home_loc.lng*1.0e-7f,
+                                        (unsigned)(new_home_loc.alt*0.01f));
             }
             break;
         }
