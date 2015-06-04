@@ -6,6 +6,7 @@
 
 #include <AP_HAL.h>
 
+#ifdef HAL_BOARD_REMOTE_LOG_PORT
 #include "DataFlash.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -173,4 +174,4 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
     chan_status->current_tx_seq = saved_seq;
     _mavlink_resend_uart(chan, &msg);
 }
-
+#endif
