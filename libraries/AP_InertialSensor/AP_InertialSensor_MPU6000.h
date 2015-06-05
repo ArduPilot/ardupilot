@@ -24,6 +24,20 @@
 #include <LowPassFilter2p.h>
 #endif
 
+class AP_MPU6000_BusDriver
+{
+    public:
+        virtual void init();
+        virtual void read8(uint8_t addr, uint8_t *val);
+        virtual void write8(uint8_t addr, uint8_t val);
+        enum bus_speed {
+                SPEED_LOW, SPEED_HIGH
+        };
+        virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+        virtual uint8_t read_burst(uint8_t v[14]);
+        virtual AP_HAL::Semaphore* get_semaphore();
+};
+
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
@@ -59,8 +73,8 @@ private:
     void                 _register_write_check(uint8_t reg, uint8_t val);
     bool                 _hardware_init(void);
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_MPU6000_BusDriver *_bus;
+    AP_HAL::Semaphore   *_bus_sem;
 
     static const float          _gyro_scale;
 
@@ -90,6 +104,36 @@ private:
     Vector3l _gyro_sum;
 #endif
     volatile uint16_t _sum_count;
+};
+
+class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
+{
+    public:
+        void init();
+        void read8(uint8_t addr, uint8_t *val);
+        void write8(uint8_t addr, uint8_t val);
+        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+        uint8_t read_burst(uint8_t v[14]);
+        AP_HAL::Semaphore* get_semaphore();
+
+    private:
+        AP_HAL::SPIDeviceDriver *_spi;
+        AP_HAL::Semaphore *_spi_sem;
+};
+
+class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
+{
+    public:
+        void init();
+        void read8(uint8_t addr, uint8_t *val);
+        void write8(uint8_t addr, uint8_t val);
+        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+        uint8_t read_burst(uint8_t v[14]);
+        AP_HAL::Semaphore* get_semaphore();
+
+    private:
+        AP_HAL::I2CDriver *_i2c;
+        AP_HAL::Semaphore *_i2c_sem;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__
