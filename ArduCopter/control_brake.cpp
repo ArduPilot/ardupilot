@@ -18,7 +18,7 @@ bool Copter::brake_init(bool ignore_checks)
         wp_nav.init_brake_target(BRAKE_MODE_DECEL_RATE);
 
         // initialize vertical speed and acceleration
-        pos_control.set_speed_z(0, 0);
+        pos_control.set_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
         pos_control.set_accel_z(BRAKE_MODE_DECEL_RATE);
 
         // initialise altitude target to stopping point
