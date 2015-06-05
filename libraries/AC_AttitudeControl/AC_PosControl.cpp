@@ -662,7 +662,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     accel_to_lean_angles(dt, ekfNavVelGainScaler);
 
     // update altitude target
-    set_alt_target_from_climb_rate(_vel_desired.z, dt);
+    set_alt_target_from_climb_rate(_vel_desired.z, dt, false);
 
     // run z-axis position controller
     update_z_controller();
