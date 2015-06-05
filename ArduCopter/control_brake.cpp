@@ -34,9 +34,6 @@ bool Copter::brake_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::brake_run()
 {
-    float target_yaw_rate = 0;
-    float target_climb_rate = 0;
-
     // if not auto armed set throttle to zero and exit immediately
     if(!ap.auto_armed) {
         wp_nav.init_brake_target(BRAKE_MODE_DECEL_RATE);
@@ -59,11 +56,11 @@ void Copter::brake_run()
     wp_nav.update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call attitude controller
-    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), 0.0f);
 
     // body-frame rate controller is run directly from 100hz loop
 
     // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
+    pos_control.set_alt_target_from_climb_rate(0.0f, G_Dt, false);
     pos_control.update_z_controller();
 }

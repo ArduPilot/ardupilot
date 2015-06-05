@@ -80,7 +80,7 @@ void Copter::althold_run()
         }
 
         // call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
+        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
         pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
     }
