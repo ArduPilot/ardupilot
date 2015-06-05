@@ -26,13 +26,6 @@ static void althold_run()
     float target_climb_rate;
     float takeoff_climb_rate = 0.0f;
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        return;
-    }
-
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
 
@@ -42,6 +35,22 @@ static void althold_run()
 
     // get pilot's desired yaw rate
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+
+    // call attitude controller
+    attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME
+        // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else
+        // Multirotors do not stabilize roll/pitch/yaw when not auto-armed in Alt Hold
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        return;
+    }
 
     // get pilot desired climb rate
     target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
@@ -64,12 +73,15 @@ static void althold_run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
+#if FRAME_CONFIG == HELI_FRAME
+        // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
+#else
+        // Multirotors do not stabilize roll/pitch/yaw when landed
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
+#endif
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
     }else{
-        // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-        // body-frame rate controller is run directly from 100hz loop
 
         // call throttle controller
         if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
