@@ -228,7 +228,7 @@ private:
         uint8_t rc_map_cmd;
         uint8_t rc_map_fc_roll;
         uint8_t rc_map_fc_pitch;
-	
+
         uint8_t rc_mix_fc_roll;
         uint8_t rc_mix_fc_pitch;
 
@@ -300,8 +300,8 @@ private:
     uint8_t _board_version;
     float _current_firmware_version;
     uint8_t _firmware_beta_version;
-    bool _gimbal_3axis ;
-    bool _gimbal_bat_monitoring ;
+    bool _gimbal_3axis;
+    bool _gimbal_bat_monitoring;
 
     // keep the last _current_angle values
     Vector3f _current_angle;
@@ -310,8 +310,8 @@ private:
     bool _param_read_once;
 
     // Serial Protocol Variables
-    uint8_t _checksum ;
-    uint8_t _step ;
+    uint8_t _checksum;
+    uint8_t _step;
     uint8_t _command_id;
     uint8_t _payload_length;
     uint8_t _payload_counter;
