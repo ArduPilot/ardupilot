@@ -30,6 +30,8 @@
 #include <Mmsystem.h>
 #endif
 
+extern const AP_HAL::HAL& hal;
+
 /*
   parent class for all simulator types
  */
@@ -176,7 +178,17 @@ void Aircraft::sync_frame_time(void)
                  (double)rate_hz,
                  (double)scaled_frame_time_us);
 #endif
+        uint64_t first_wall_time_us = hal.scheduler->get_start_time_micros64();
+        uint64_t sim_time = first_wall_time_us + hal.scheduler->micros64();
+        int64_t diff = now - sim_time;
+
+        //Watch diff slowly climb
+        printf("%f = %lf - %lf \n", float(diff)     / 1000000.0f,
+                                    double(now)      / 1000000.0,
+                                    double(sim_time) / 1000000.0);
+
         uint32_t sleep_time = scaled_frame_time_us*frame_counter;
+
         if (sleep_time > min_sleep_time) {
             usleep(sleep_time);
         }
