@@ -796,55 +796,40 @@ void Copter::autotune_backup_gains_and_initialise()
 //  called by autotune_stop and autotune_failed functions
 void Copter::autotune_load_orig_gains()
 {
-    // sanity check the gains
-    bool failed = false;
     attitude_control.bf_feedforward(orig_bf_feedforward);
     if (autotune_roll_enabled()) {
-        if (!is_zero(orig_roll_rp) || !is_zero(orig_roll_sp)) {
+        if (!is_zero(orig_roll_rp)) {
             g.pid_rate_roll.kP(orig_roll_rp);
             g.pid_rate_roll.kI(orig_roll_ri);
             g.pid_rate_roll.kD(orig_roll_rd);
             g.p_stabilize_roll.kP(orig_roll_sp);
             attitude_control.set_accel_roll_max(orig_roll_accel);
-        } else {
-            failed = true;
         }
     }
     if (autotune_pitch_enabled()) {
-        if (!is_zero(orig_pitch_rp) || !is_zero(orig_pitch_sp)) {
+        if (!is_zero(orig_pitch_rp)) {
             g.pid_rate_pitch.kP(orig_pitch_rp);
             g.pid_rate_pitch.kI(orig_pitch_ri);
             g.pid_rate_pitch.kD(orig_pitch_rd);
             g.p_stabilize_pitch.kP(orig_pitch_sp);
             attitude_control.set_accel_pitch_max(orig_pitch_accel);
-        } else {
-            failed = true;
         }
     }
     if (autotune_yaw_enabled()) {
-        if (!is_zero(orig_yaw_rp) || !is_zero(orig_yaw_sp) || !is_zero(orig_yaw_rLPF)) {
+        if (!is_zero(orig_yaw_rp)) {
             g.pid_rate_yaw.kP(orig_yaw_rp);
             g.pid_rate_yaw.kI(orig_yaw_ri);
             g.pid_rate_yaw.kD(orig_yaw_rd);
             g.pid_rate_yaw.filt_hz(orig_yaw_rLPF);
             g.p_stabilize_yaw.kP(orig_yaw_sp);
             attitude_control.set_accel_yaw_max(orig_yaw_accel);
-        } else {
-            failed = true;
         }
-    }
-    if (failed) {
-        // log an error message and fail the autotune
-        Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
     }
 }
 
 // autotune_load_tuned_gains - load tuned gains
 void Copter::autotune_load_tuned_gains()
 {
-    // sanity check the gains
-    bool failed = true;
-
     if (!attitude_control.get_bf_feedforward()) {
         attitude_control.bf_feedforward(true);
         attitude_control.set_accel_roll_max(0.0f);
@@ -857,7 +842,6 @@ void Copter::autotune_load_tuned_gains()
             g.pid_rate_roll.kD(tune_roll_rd);
             g.p_stabilize_roll.kP(tune_roll_sp);
             attitude_control.set_accel_roll_max(tune_roll_accel);
-            failed = false;
         }
     }
     if (autotune_pitch_enabled()) {
@@ -867,7 +851,6 @@ void Copter::autotune_load_tuned_gains()
             g.pid_rate_pitch.kD(tune_pitch_rd);
             g.p_stabilize_pitch.kP(tune_pitch_sp);
             attitude_control.set_accel_pitch_max(tune_pitch_accel);
-            failed = false;
         }
     }
     if (autotune_yaw_enabled()) {
@@ -878,12 +861,7 @@ void Copter::autotune_load_tuned_gains()
             g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
             g.p_stabilize_yaw.kP(tune_yaw_sp);
             attitude_control.set_accel_yaw_max(tune_yaw_accel);
-            failed = false;
         }
-    }
-    if (failed) {
-        // log an error message and fail the autotune
-        Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
     }
 }
 
@@ -893,36 +871,28 @@ void Copter::autotune_load_intra_test_gains()
 {
     // we are restarting tuning so reset gains to tuning-start gains (i.e. low I term)
     // sanity check the gains
-    bool failed = true;
     attitude_control.bf_feedforward(true);
-    if (autotune_roll_enabled() && !is_zero(orig_roll_rp)) {
+    if (autotune_roll_enabled()) {
         g.pid_rate_roll.kP(orig_roll_rp);
         g.pid_rate_roll.kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_roll.kD(orig_roll_rd);
         g.p_stabilize_roll.kP(orig_roll_sp);
         attitude_control.set_accel_roll_max(orig_roll_accel);
-        failed = false;
     }
-    if (autotune_pitch_enabled() && !is_zero(orig_pitch_rp)) {
+    if (autotune_pitch_enabled()) {
         g.pid_rate_pitch.kP(orig_pitch_rp);
         g.pid_rate_pitch.kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_pitch.kD(orig_pitch_rd);
         g.p_stabilize_pitch.kP(orig_pitch_sp);
         attitude_control.set_accel_pitch_max(orig_pitch_accel);
-        failed = false;
     }
-    if (autotune_yaw_enabled() && !is_zero(orig_yaw_rp)) {
+    if (autotune_yaw_enabled()) {
         g.pid_rate_yaw.kP(orig_yaw_rp);
         g.pid_rate_yaw.kI(orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_yaw.kD(orig_yaw_rd);
         g.pid_rate_yaw.filt_hz(orig_yaw_rLPF);
         g.p_stabilize_yaw.kP(orig_yaw_sp);
         attitude_control.set_accel_pitch_max(orig_pitch_accel);
-        failed = false;
-    }
-    if (failed) {
-        // log an error message and fail the autotune
-        Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
     }
 }
 
@@ -933,37 +903,24 @@ void Copter::autotune_load_twitch_gains()
     bool failed = true;
     switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
-            if (!is_zero(tune_roll_rp)) {
-                g.pid_rate_roll.kP(tune_roll_rp);
-                g.pid_rate_roll.kI(tune_roll_rp*0.01f);
-                g.pid_rate_roll.kD(tune_roll_rd);
-                g.p_stabilize_roll.kP(tune_roll_sp);
-                failed = false;
-            }
+            g.pid_rate_roll.kP(tune_roll_rp);
+            g.pid_rate_roll.kI(tune_roll_rp*0.01f);
+            g.pid_rate_roll.kD(tune_roll_rd);
+            g.p_stabilize_roll.kP(tune_roll_sp);
             break;
         case AUTOTUNE_AXIS_PITCH:
-            if (!is_zero(tune_pitch_rp)) {
-                g.pid_rate_pitch.kP(tune_pitch_rp);
-                g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
-                g.pid_rate_pitch.kD(tune_pitch_rd);
-                g.p_stabilize_pitch.kP(tune_pitch_sp);
-                failed = false;
-            }
+            g.pid_rate_pitch.kP(tune_pitch_rp);
+            g.pid_rate_pitch.kI(tune_pitch_rp*0.01f);
+            g.pid_rate_pitch.kD(tune_pitch_rd);
+            g.p_stabilize_pitch.kP(tune_pitch_sp);
             break;
         case AUTOTUNE_AXIS_YAW:
-            if (!is_zero(tune_yaw_rp)) {
-                g.pid_rate_yaw.kP(tune_yaw_rp);
-                g.pid_rate_yaw.kI(tune_yaw_rp*0.01f);
-                g.pid_rate_yaw.kD(0.0f);
-                g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
-                g.p_stabilize_yaw.kP(tune_yaw_sp);
-                failed = false;
-            }
+            g.pid_rate_yaw.kP(tune_yaw_rp);
+            g.pid_rate_yaw.kI(tune_yaw_rp*0.01f);
+            g.pid_rate_yaw.kD(0.0f);
+            g.pid_rate_yaw.filt_hz(tune_yaw_rLPF);
+            g.p_stabilize_yaw.kP(tune_yaw_sp);
             break;
-    }
-    if (failed) {
-        // log an error message and fail the autotune
-        Log_Write_Error(ERROR_SUBSYSTEM_AUTOTUNE,ERROR_CODE_AUTOTUNE_BAD_GAINS);
     }
 }
 

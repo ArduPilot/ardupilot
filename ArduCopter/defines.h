@@ -354,7 +354,7 @@ enum FlipState {
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- autotune
-#define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
+
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
 #define ERROR_CODE_PARACHUTE_LANDED         3
