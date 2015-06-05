@@ -37,7 +37,7 @@ public:
     void     system_initialized();
 
     void     reboot(bool hold_in_bootloader);
-    void     panic(const prog_char_t *errormsg);
+    void     panic(const prog_char_t *errormsg) NORETURN;
 
     bool     interrupts_are_blocked(void) {
         return _nested_atomic_ctr != 0;
