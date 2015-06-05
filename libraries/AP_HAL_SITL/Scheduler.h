@@ -17,6 +17,7 @@ public:
 
     void     init(void *unused);
     void     delay(uint16_t ms);
+    uint64_t get_start_time_micros64();
     uint32_t millis();
     uint32_t micros();
     uint64_t millis64();
