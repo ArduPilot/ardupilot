@@ -81,17 +81,26 @@ public:
     // get_accel_roll_max - gets the roll acceleration limit
     float get_accel_roll_max() { return _accel_roll_max; }
 
+    // set_accel_roll_max - sets the roll acceleration limit
+    void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
+
     // save_accel_roll_max - sets and saves the roll acceleration limit
     void save_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; _accel_roll_max.save(); }
 
     // get_accel_pitch_max - gets the pitch acceleration limit
     float get_accel_pitch_max() { return _accel_pitch_max; }
 
+    // set_accel_pitch_max - sets the pitch acceleration limit
+    void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
+
     // save_accel_pitch_max - sets and saves the pitch acceleration limit
     void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; _accel_pitch_max.save(); }
 
     // get_accel_yaw_max - gets the yaw acceleration limit
     float get_accel_yaw_max() { return _accel_yaw_max; }
+
+    // set_accel_yaw_max - sets the yaw acceleration limit
+    void set_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
 
     // save_accel_yaw_max - sets and saves the yaw acceleration limit
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
