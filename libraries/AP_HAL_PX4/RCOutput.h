@@ -53,8 +53,8 @@ private:
 
     orb_advert_t _actuator_direct_pub = NULL;
     orb_advert_t _actuator_armed_pub = NULL;
-    uint16_t _esc_pwm_min = 1000;
-    uint16_t _esc_pwm_max = 2000;
+    uint16_t _esc_pwm_min = 0;
+    uint16_t _esc_pwm_max = 0;
 
     void _init_alt_channels(void);
     void _publish_actuators(void);

@@ -297,6 +297,12 @@ void PX4RCOutput::_publish_actuators(void)
 {
 	struct actuator_direct_s actuators;
 
+    if (_esc_pwm_min == 0 ||
+        _esc_pwm_max == 0) {
+        // not initialised yet
+        return;
+    }
+
 	actuators.nvalues = _max_channel;
     if (actuators.nvalues > actuators.NUM_ACTUATORS_DIRECT) {
         actuators.nvalues = actuators.NUM_ACTUATORS_DIRECT;
@@ -307,9 +313,14 @@ void PX4RCOutput::_publish_actuators(void)
     if (actuators.nvalues > 8) {
         actuators.nvalues = 8;
     }
+    bool armed = hal.util->get_soft_armed();
 	actuators.timestamp = hrt_absolute_time();
     for (uint8_t i=0; i<actuators.nvalues; i++) {
-        actuators.values[i] = (_period[i] - _esc_pwm_min) / (float)(_esc_pwm_max - _esc_pwm_min);
+        if (!armed) {
+            actuators.values[i] = 0;
+        } else {
+            actuators.values[i] = (_period[i] - _esc_pwm_min) / (float)(_esc_pwm_max - _esc_pwm_min);
+        }
         // actuator values are from -1 to 1
         actuators.values[i] = actuators.values[i]*2 - 1;
     }
