@@ -92,6 +92,8 @@ enum mode {
 #define MASK_LOG_ARM_DISARM     (1<<15)
 #define MASK_LOG_WHEN_DISARMED  (1UL<<16)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
+#define MASK_LOG_TRIGGER        (1UL<<20)
+
 
 // Waypoint Modes
 // ----------------
