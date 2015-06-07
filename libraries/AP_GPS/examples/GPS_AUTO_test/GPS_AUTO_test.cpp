@@ -45,8 +45,10 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 // create board led object
 AP_BoardLED board_led;
 
+// This example uses GPS system. Create it.
 AP_GPS gps;
 
+// Serial manager is needed for UART comunications
 AP_SerialManager serial_manager;
 
 #define T6 1000000
@@ -56,8 +58,10 @@ void setup()
 {
     hal.console->println("GPS AUTO library test");
 
-    // initialise the leds
+    // Initialise the leds
     board_led.init();
+
+    // Initialize the UART for GPS system
     serial_manager.init();
     gps.init(NULL, serial_manager);
 }
@@ -65,10 +69,22 @@ void setup()
 void loop()
 {
     static uint32_t last_msg_ms;
+
+    // Update GPS state based on possible bytes received from the module.
     gps.update();
+
+    // If new GPS data is received, output it's contents to the console
+    // Here we rely on the time of the message in GPS class and the time of last message
+    // saved in static variable last_msg_ms. When new message is received, the time
+    // in GPS class will be updated.
     if (last_msg_ms != gps.last_message_time_ms()) {
+        // Reset the time of message
         last_msg_ms = gps.last_message_time_ms();
+
+        // Acquire location
         const Location &loc = gps.location();
+
+        // Print the contents of message
         hal.console->print("Lat: ");
         print_latlon(hal.console, loc.lat);
         hal.console->print(" Lon: ");
@@ -82,7 +98,10 @@ void loop()
                             (unsigned long)gps.time_week_ms(),
                             gps.status());
     }
+
+    // Delay for 10 mS will give us 100 Hz invocation rate
     hal.scheduler->delay(10);
 }
 
+// Register above functions in HAL board level
 AP_HAL_MAIN();
