@@ -895,9 +895,17 @@ void Copter::do_take_picture()
 // log_picture - log picture taken and send feedback to GCS
 void Copter::log_picture()
 {
-    gcs_send_message(MSG_CAMERA_FEEDBACK);
-    if (should_log(MASK_LOG_CAMERA)) {
-        DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+    if (camera._feedback_pin == -1 ){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+    }
+    else {
+      camera._camera_triggered = 0;
+      if (should_log(MASK_LOG_TRIGGER)) {
+          DataFlash.Log_Write_Trigger(ahrs, gps, current_loc);
+      }      
     }
 }
 
