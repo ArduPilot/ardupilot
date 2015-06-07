@@ -580,13 +580,13 @@ void Copter::autotune_attitude_control()
         case AUTOTUNE_TYPE_RP_UP:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_up_d_down(tune_roll_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_roll_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_up_d_down(tune_pitch_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_pitch_rd, AUTOTUNE_RD_MIN, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
-                autotune_updating_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate*(1+0.5f*g.autotune_aggressiveness), autotune_test_min, autotune_test_max);
+                autotune_updating_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, autotune_target_rate, autotune_test_min, autotune_test_max);
                 break;
             }
             break;
@@ -594,10 +594,10 @@ void Copter::autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_DOWN:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
+                autotune_updating_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
+                autotune_updating_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_down(tune_yaw_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -608,10 +608,10 @@ void Copter::autotune_attitude_control()
         case AUTOTUNE_TYPE_SP_UP:
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
+                autotune_updating_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle*(1+0.5f*g.autotune_aggressiveness), autotune_test_max);
+                autotune_updating_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
                 autotune_updating_p_up(tune_yaw_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, autotune_target_angle, autotune_test_max);
@@ -1199,7 +1199,7 @@ void Copter::autotune_updating_d_down(float &tune_d, float tune_d_min, float tun
 // P is decreased to ensure we are not overshooting the target
 void Copter::autotune_updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max)
 {
-    if (measurement_max < target) {
+    if (measurement_max < target*(1+0.5f*g.autotune_aggressiveness)) {
         if (autotune_state.ignore_next == 0){
             // if maximum measurement was lower than target so increment the success counter
             autotune_counter++;
@@ -1228,7 +1228,7 @@ void Copter::autotune_updating_p_down(float &tune_p, float tune_p_min, float tun
 // P is increased until we achieve our target within a reasonable time
 void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max)
 {
-    if (measurement_max > target) {
+    if (measurement_max > target*(1+0.5f*g.autotune_aggressiveness)) {
         // ignore the next result unless it is the same as this one
         autotune_state.ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
@@ -1257,12 +1257,12 @@ void Copter::autotune_updating_p_up(float &tune_p, float tune_p_max, float tune_
 // P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
 void Copter::autotune_updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max)
 {
-    if (measurement_max > target) {
+    if (measurement_max > target*(1+0.5f*g.autotune_aggressiveness)) {
         // ignore the next result unless it is the same as this one
         autotune_state.ignore_next = 1;
         // if maximum measurement was greater than target so increment the success counter
         autotune_counter++;
-    }else if ((measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
+    }else if ((measurement_max < target) && (measurement_max-measurement_min > measurement_max*g.autotune_aggressiveness) && (tune_d > tune_d_min)) {
         // if bounce back was larger than the threshold so decrement the success counter
         if (autotune_counter > 0 ) {
             autotune_counter--;
