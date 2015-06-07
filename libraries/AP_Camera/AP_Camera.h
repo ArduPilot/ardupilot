@@ -25,6 +25,8 @@
 #define AP_CAMERA_SERVO_ON_PWM              1300    // default PWM value to move servo to when shutter is activated
 #define AP_CAMERA_SERVO_OFF_PWM             1100    // default PWM value to move servo to when shutter is deactivated
 
+#define AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN -1  // default is to not use camera feedback pin
+
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
 class AP_Camera {
@@ -40,6 +42,12 @@ public:
         _apm_relay = obj_relay;
     }
 
+    // pin number for accurate camera feedback messages
+    AP_Int8         _feedback_pin;
+    
+    // this is set to 1 when camera really has been triggered    
+    AP_Int8         _camera_triggered;
+    
     // single entry point to take pictures
     //  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
     void            trigger_pic(bool send_mavlink_msg);
