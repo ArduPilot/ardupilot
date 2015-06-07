@@ -48,6 +48,10 @@ bool Rover::print_log_menu(void)
 		PLOG(COMPASS);
 		PLOG(CAMERA);
 		PLOG(STEERING);
+                PLOG(RC);
+                PLOG(WHEN_DISARMED);
+                PLOG(IMU_RAW);
+                PLOG(TRIGGER);
 		#undef PLOG
 	}
 
@@ -98,7 +102,7 @@ int8_t Rover::erase_logs(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 {
-	uint16_t	bits;
+	uint32_t	bits;
 
 	if (argc != 2) {
 		cliSerial->printf_P(PSTR("missing log type\n"));
@@ -114,7 +118,7 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 	// bits accordingly.
 	//
 	if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
-		bits = ~0;
+		bits = 0xFFFFFFFFUL;
 	} else {
 		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, PSTR(#_s))) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
@@ -131,6 +135,10 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 		TARG(COMPASS);
 		TARG(CAMERA);
 		TARG(STEERING);
+                TARG(RC);
+                TARG(WHEN_DISARMED);
+                TARG(IMU_RAW);
+                TARG(TRIGGER);
 		#undef TARG
 	}
 
@@ -460,4 +468,3 @@ void Rover::start_logging() {}
 void Rover::Log_Write_RC(void) {}
 
 #endif // LOGGING_ENABLED
-
