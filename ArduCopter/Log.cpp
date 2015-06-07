@@ -30,21 +30,33 @@ bool Copter::print_log_menu(void)
     if (0 == g.log_bitmask) {
         cliSerial->printf_P(PSTR("none"));
     }else{
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) cliSerial->printf_P(PSTR(" ATTITUDE_FAST"));
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) cliSerial->printf_P(PSTR(" ATTITUDE_MED"));
-        if (g.log_bitmask & MASK_LOG_GPS) cliSerial->printf_P(PSTR(" GPS"));
-        if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf_P(PSTR(" PM"));
-        if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf_P(PSTR(" CTUN"));
-        if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf_P(PSTR(" NTUN"));
-        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf_P(PSTR(" RCIN"));
-        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(PSTR(" IMU"));
-        if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(PSTR(" CMD"));
-        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(PSTR(" CURRENT"));
-        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf_P(PSTR(" RCOUT"));
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(PSTR(" OPTFLOW"));
-        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(PSTR(" COMPASS"));
-        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(PSTR(" CAMERA"));
-        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(PSTR(" PID"));
+        // Macro to make the following code a bit easier on the eye.
+        // Pass it the capitalised name of the log option, as defined
+        // in defines.h but without the LOG_ prefix.  It will check for
+        // the bit being set and print the name of the log option to suit.
+ #define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf_P(PSTR(" %S"), PSTR(# _s))
+        PLOG(ATTITUDE_FAST);
+        PLOG(ATTITUDE_MED);
+        PLOG(GPS);
+        PLOG(PM);
+        PLOG(CTUN);
+        PLOG(NTUN);
+        PLOG(RCIN);
+        PLOG(IMU);
+        PLOG(CMD);
+        PLOG(CURRENT);
+        PLOG(RCOUT);
+        PLOG(OPTFLOW);
+        PLOG(PID);
+        PLOG(COMPASS);
+        PLOG(INAV);
+        PLOG(CAMERA);
+        PLOG(WHEN_DISARMED);
+        PLOG(MOTBATT);
+        PLOG(IMU_FAST);
+        PLOG(IMU_RAW);        
+        PLOG(TRIGGER);        
+ #undef PLOG        
     }
 
     cliSerial->println();
@@ -94,7 +106,7 @@ int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv)
 
 int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
 {
-    uint16_t bits;
+    uint32_t bits;
 
     if (argc != 2) {
         cliSerial->printf_P(PSTR("missing log type\n"));
@@ -110,7 +122,7 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
     // bits accordingly.
     //
     if (!strcasecmp_P(argv[1].str, PSTR("all"))) {
-        bits = ~0;
+        bits = 0xFFFFFFFFUL;
     } else {
  #define TARG(_s)        if (!strcasecmp_P(argv[1].str, PSTR(# _s))) bits |= MASK_LOG_ ## _s
         TARG(ATTITUDE_FAST);
@@ -125,9 +137,15 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CURRENT);
         TARG(RCOUT);
         TARG(OPTFLOW);
-        TARG(COMPASS);
-        TARG(CAMERA);
         TARG(PID);
+        TARG(COMPASS);
+        TARG(INAV);
+        TARG(CAMERA);
+        TARG(WHEN_DISARMED);
+        TARG(MOTBATT);
+        TARG(IMU_FAST);
+        TARG(IMU_RAW);        
+        TARG(TRIGGER);        
  #undef TARG
     }
 
