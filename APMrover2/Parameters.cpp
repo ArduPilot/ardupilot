@@ -58,6 +58,15 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @User: Advanced
 	GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 
+#if CLI_ENABLED == ENABLED
+    // @Param: CLI_ENABLED
+    // @DisplayName: CLI Enable
+    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(cli_enabled,            "CLI_ENABLED",    0),
+#endif
+
     // @Param: TELEM_DELAY
     // @DisplayName: Telemetry startup delay 
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
