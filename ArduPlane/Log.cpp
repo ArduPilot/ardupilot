@@ -49,6 +49,7 @@ bool Plane::print_log_menu(void)
         PLOG(CAMERA);
         PLOG(RC);
         PLOG(SONAR);
+        PLOG(TRIGGER);        
  #undef PLOG
     }
 
@@ -128,6 +129,7 @@ int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
         TARG(CAMERA);
         TARG(RC);
         TARG(SONAR);
+        TARG(TRIGGER);        
  #undef TARG
     }
 
