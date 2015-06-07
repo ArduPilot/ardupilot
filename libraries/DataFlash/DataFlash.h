@@ -81,6 +81,7 @@ public:
     void Log_Write_Message(const char *message);
     void Log_Write_Message_P(const prog_char_t *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
+    void Log_Write_Trigger(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);    
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
@@ -419,6 +420,20 @@ struct PACKED log_Camera {
     uint16_t yaw;
 };
 
+struct PACKED log_Trigger {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;    
+    uint32_t gps_time;
+    uint16_t gps_week;
+    int32_t  latitude;
+    int32_t  longitude;
+    int32_t  altitude;
+    int32_t  altitude_rel;
+    int16_t  roll;
+    int16_t  pitch;
+    uint16_t yaw;
+};
+
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -625,13 +640,15 @@ Format characters in the format string for binary log messages
       "ARSP",  "Qffcff",   "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current), \
       "CURR", "QhhhHfh","TimeUS,Throttle,Volt,Curr,Vcc,CurrTot,Volt2" },\
-	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
+    { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw" }, \
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
-
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
+    { LOG_TRIGGER_MSG, sizeof(log_Trigger), \
+      "TRIG", "QIHLLeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,Roll,Pitch,Yaw" }
+      
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
     { LOG_GPS2_MSG, sizeof(log_GPS2), \
@@ -707,7 +724,7 @@ Format characters in the format string for binary log messages
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }
+      "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }      
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -718,28 +735,28 @@ Format characters in the format string for binary log messages
 // message types 0 to 100 reversed for vehicle specific use
 
 // message types for common messages
-#define LOG_FORMAT_MSG	  128
+#define LOG_FORMAT_MSG    128
 #define LOG_PARAMETER_MSG 129
-#define LOG_GPS_MSG		  130
-#define LOG_IMU_MSG		  131
-#define LOG_MESSAGE_MSG	  132
+#define LOG_GPS_MSG       130
+#define LOG_IMU_MSG       131
+#define LOG_MESSAGE_MSG   132
 #define LOG_RCIN_MSG      133
 #define LOG_RCOUT_MSG     134
-#define LOG_IMU2_MSG	  135
-#define LOG_BARO_MSG	  136
-#define LOG_POWR_MSG	  137
-#define LOG_AHR2_MSG	  138
+#define LOG_IMU2_MSG      135
+#define LOG_BARO_MSG      136
+#define LOG_POWR_MSG      137
+#define LOG_AHR2_MSG      138
 #define LOG_SIMSTATE_MSG  139
 #define LOG_EKF1_MSG      140
 #define LOG_EKF2_MSG      141
 #define LOG_EKF3_MSG      142
 #define LOG_EKF4_MSG      143
-#define LOG_GPS2_MSG	  144
+#define LOG_GPS2_MSG      144
 #define LOG_CMD_MSG       145
-#define LOG_RADIO_MSG	  146
+#define LOG_RADIO_MSG     146
 #define LOG_ATRP_MSG      147
 #define LOG_CAMERA_MSG    148
-#define LOG_IMU3_MSG	  149
+#define LOG_IMU3_MSG      149
 #define LOG_TERRAIN_MSG   150
 #define LOG_UBX1_MSG      151
 #define LOG_UBX2_MSG      152
@@ -753,7 +770,7 @@ Format characters in the format string for binary log messages
 #define LOG_ESC7_MSG      160
 #define LOG_ESC8_MSG      161
 #define LOG_EKF5_MSG      162
-#define LOG_BAR2_MSG	  163
+#define LOG_BAR2_MSG      163
 #define LOG_ARSP_MSG      164
 #define LOG_ATTITUDE_MSG  165
 #define LOG_CURRENT_MSG   166
@@ -773,6 +790,7 @@ Format characters in the format string for binary log messages
 #define LOG_PIDP_MSG      180
 #define LOG_PIDY_MSG      181
 #define LOG_PIDA_MSG      182
+#define LOG_TRIGGER_MSG   183
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
