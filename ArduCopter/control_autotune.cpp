@@ -524,25 +524,25 @@ void Copter::autotune_attitude_control()
         if ((autotune_state.tune_type == AUTOTUNE_TYPE_SP_DOWN) || (autotune_state.tune_type == AUTOTUNE_TYPE_SP_UP)) {
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_roll_rp, tune_roll_rd, tune_roll_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, autotune_test_accel_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, autotune_test_accel_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_angle, autotune_test_min, autotune_test_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, autotune_test_accel_max);
                 break;
             }
         } else {
             switch (autotune_state.axis) {
             case AUTOTUNE_AXIS_ROLL:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_roll_rp, tune_roll_rd, tune_roll_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, autotune_test_accel_max);
                 break;
             case AUTOTUNE_AXIS_PITCH:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, autotune_test_accel_max);
                 break;
             case AUTOTUNE_AXIS_YAW:
-                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp);
+                Log_Write_AutoTune(autotune_state.axis, autotune_state.tune_type, autotune_target_rate, autotune_test_min, autotune_test_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, autotune_test_accel_max);
                 break;
             }
         }

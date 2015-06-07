@@ -160,28 +160,30 @@ struct PACKED log_AutoTune {
     uint64_t time_us;
     uint8_t axis;           // roll or pitch
     uint8_t tune_step;      // tuning PI or D up or down
-    float   rate_target;    // target achieved rotation rate
-    float   rate_min;       // maximum achieved rotation rate
-    float   rate_max;       // maximum achieved rotation rate
+    float   meas_target;    // target achieved rotation rate
+    float   meas_min;       // maximum achieved rotation rate
+    float   meas_max;       // maximum achieved rotation rate
     float   new_gain_rp;    // newly calculated gain
     float   new_gain_rd;    // newly calculated gain
     float   new_gain_sp;    // newly calculated gain
+    float   new_ddt;        // newly calculated gain
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
+void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
         time_us     : hal.scheduler->micros64(),
         axis        : axis,
         tune_step   : tune_step,
-        rate_target : rate_target,
-        rate_min    : rate_min,
-        rate_max    : rate_max,
+        meas_target : meas_target,
+        meas_min    : meas_min,
+        meas_max    : meas_max,
         new_gain_rp : new_gain_rp,
         new_gain_rd : new_gain_rd,
-        new_gain_sp : new_gain_sp
+        new_gain_sp : new_gain_sp,
+        new_ddt     : new_ddt
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -656,7 +658,7 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "QBBffffff",       "TimeUS,Axis,TuneStep,RateTarg,RateMin,RateMax,RP,RD,SP" },
+      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "Qff",          "TimeUS,Angle,Rate" },
 #endif
