@@ -127,6 +127,14 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosContro
     _yaw(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // init flags
+    _flags.reached_destination = false;
+    _flags.fast_waypoint = false;
+    _flags.slowing_down = false;
+    _flags.recalc_wp_leash = false;
+    _flags.new_wp_destination = false;
+    _flags.segment_type = SEGMENT_STRAIGHT;
 }
 
 ///
