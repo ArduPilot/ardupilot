@@ -149,10 +149,11 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 
     _pid_info.D = rate_error * _K_D * 4.0f; 
-    _pid_info.FF = (ToRad(desired_rate) * kp_ff) * scaler;
+    _pid_info.P = (ToRad(desired_rate) * kp_ff) * scaler;
+    _pid_info.FF = (ToRad(desired_rate) * k_ff) * scaler;
 	
 	// Calculate the demanded control surface deflection
-	_last_out = _pid_info.D + _pid_info.FF + _pid_info.I;
+	_last_out = _pid_info.D + _pid_info.FF + _pid_info.P + _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
