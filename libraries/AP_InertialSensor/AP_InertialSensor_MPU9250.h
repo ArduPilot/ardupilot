@@ -72,6 +72,10 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
+    // The default rotation for the IMU, its value depends on how the IMU is
+    // placed by default on the system
+    enum Rotation _default_rotation;
+
 #if MPU9250_DEBUG
     void						_dump_registers(void);
 #endif
