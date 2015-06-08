@@ -34,13 +34,8 @@ class RangeFinder
 {
 public:
     friend class AP_RangeFinder_Backend;
-    RangeFinder(void) :
-    primary_instance(0),
-    num_instances(0),
-    estimated_terrain_height(0)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
+
+    RangeFinder(void);
 
     // RangeFinder driver types
     enum RangeFinder_Type {

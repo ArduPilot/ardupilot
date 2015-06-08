@@ -185,6 +185,18 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+RangeFinder::RangeFinder(void) :
+    primary_instance(0),
+    num_instances(0),
+    estimated_terrain_height(0)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+
+    // init state and drivers
+    memset(state,0,sizeof(state));
+    memset(drivers,0,sizeof(drivers));
+}
+
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
