@@ -135,7 +135,14 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Param::setup_object_defaults(this, var_info);
 
     // slow start motors from zero to min throttle
+    _flags.slow_start = true;
     _flags.slow_start_low_end = true;
+
+    // init other flags
+    _flags.armed = false;
+    _flags.stabilizing = false;
+    _flags.frame_orientation = AP_MOTORS_X_FRAME;
+    _flags.interlock = false;
 
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
@@ -144,6 +151,12 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
     _throttle_filter.reset(0.0f);
+
+    // init limit flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = true;
 };
 
 void AP_Motors::armed(bool arm)
