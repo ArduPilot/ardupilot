@@ -1,7 +1,7 @@
 # PX4 build is via external build system
 
 ifeq ($(PX4_ROOT),)
-PX4_ROOT=../PX4Firmware
+PX4_ROOT=modules/PX4Firmware
 endif
 
 # cope with relative paths
@@ -14,8 +14,8 @@ ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
 $(error ERROR: PX4_ROOT not set correctly - no nuttx-configs directory found)
 endif
 
-ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
-UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/../uavcan && pwd)/
+ifneq ($(wildcard $(SKETCHBOOK)/modules/uavcan),)
+UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
 endif
 
 # default to PX4NuttX above the PX4Firmware tree
@@ -37,7 +37,7 @@ PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
 EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
-ifneq ($(wildcard $(SKETCHBOOK)/../uavcan),)
+ifneq ($(wildcard $(SKETCHBOOK)/modules/uavcan),)
 EXTRAFLAGS += -DUAVCAN=1
 endif
 
