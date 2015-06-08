@@ -466,7 +466,7 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
         const DataFlash_Class::PID_Info &pid_info = rollController.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 1, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
                                     pid_info.desired,
                                     degrees(gyro.x),
                                     pid_info.FF,
@@ -479,9 +479,22 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
     }
     if (g.gcs_pid_mask & 2) {
         const DataFlash_Class::PID_Info &pid_info = pitchController.get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 2, 
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH, 
                                     pid_info.desired,
                                     degrees(gyro.y),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+    if (g.gcs_pid_mask & 8) {
+        const DataFlash_Class::PID_Info &pid_info = steerController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER, 
+                                    pid_info.desired,
+                                    degrees(gyro.z),
                                     pid_info.FF,
                                     pid_info.P,
                                     pid_info.I,

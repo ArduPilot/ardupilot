@@ -171,6 +171,7 @@ void Plane::Log_Write_Attitude(void)
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+    DataFlash.Log_Write_PID(LOG_PIDY_MSG, steerController.get_pid_info());
 #endif
 
 #if AP_AHRS_NAVEKF_AVAILABLE
