@@ -61,13 +61,20 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise flags
-    _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
+    _flags.recalc_leash_xy = true;
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
+    _flags.freeze_ff_xy = true;
+    _flags.freeze_ff_z = true;
+    _limit.pos_up = true;
+    _limit.pos_down = true;
+    _limit.vel_up = true;
+    _limit.vel_down = true;
+    _limit.accel_xy = true;
 }
 
 ///
