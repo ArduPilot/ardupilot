@@ -35,6 +35,7 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
+    _last_update(0),
     _yaw(0.0f),
     _angle(0.0f),
     _angle_total(0.0f),
@@ -43,6 +44,9 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _angular_accel(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // init flags
+    _flags.panorama = false;
 }
 
 /// init - initialise circle controller setting center specifically
