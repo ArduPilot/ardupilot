@@ -92,6 +92,8 @@
 #define AK8963_DEBUG 0
 #define AK8963_SELFTEST 0
 #if AK8963_DEBUG
+#include <cstdio>
+#include <cassert>
 #define error(...) fprintf(stderr, __VA_ARGS__)
 #define debug(...) hal.console->printf(__VA_ARGS__)
 #define ASSERT(x) assert(x)
@@ -308,6 +310,23 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass) :
     _mag_x =_mag_y = _mag_z = 0;
     _accum_count = 0;
     _magnetometer_adc_resolution = AK8963_16BIT_ADC;
+    _set_sensitivity(_magnetometer_adc_resolution);
+}
+
+void AP_Compass_AK8963::_set_sensitivity(uint8_t resolution) 
+{
+    /* refer to p.9 of AK8963 datasheet */
+    switch (resolution) {
+        case AK8963_16BIT_ADC:
+                _sensitivity = 0.15f;
+            break;
+        case AK8963_14BIT_ADC:
+                _sensitivity = 0.6f;
+            break;
+        default:
+            hal.console->printf_P(PSTR("wrong AK8963 resolution"));
+            break;
+    }
 }
 
 
@@ -413,7 +432,7 @@ bool AP_Compass_AK8963::init()
 
     if (id_mismatch_count == 5) {
         _initialised = false;
-        hal.console->printf("WRONG AK8963 DEVICE ID: 0x%x\n", (unsigned)deviceid);
+        hal.console->printf_P(PSTR("WRONG AK8963 DEVICE ID: 0x%x\n"), (unsigned)deviceid);
         hal.scheduler->panic(PSTR("AK8963: bad DEVICE ID"));
     }
 
@@ -514,10 +533,17 @@ void AP_Compass_AK8963::read()
                    _mag_z_accum * magnetometer_ASA[2]);
 
     field /= _accum_count;
+    _convert_to_common_units(field); 
+
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
     publish_field(field, _compass_instance);
+}
+
+void AP_Compass_AK8963::_convert_to_common_units(Vector3f &field)
+{
+    field *= _sensitivity;
 }
 
 void AP_Compass_AK8963::_start_conversion()

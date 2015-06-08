@@ -73,6 +73,9 @@ private:
     void                _start_conversion();
     void                _collect_samples();
 
+    void                _set_sensitivity(uint8_t resolution);
+    void                _convert_to_common_units(Vector3f &field);
+
     float               _mag_x_accum;
     float               _mag_y_accum;
     float               _mag_z_accum;
@@ -83,6 +86,7 @@ private:
     uint8_t             _magnetometer_adc_resolution;
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
+    float               _sensitivity = 1.0f;
 };
 
 class AK8963_MPU9250_SPI_Backend: public AK8963_Backend
