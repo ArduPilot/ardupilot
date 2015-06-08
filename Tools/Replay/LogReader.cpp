@@ -233,6 +233,10 @@ bool LogReader::update(char type[5])
 
     if (!in_list(type, generated_types)) {
         dataflash.WriteBlock(msg, f.length);        
+        // a MsgHandler would probably have found a timestamp and
+        // caled stop_clock.  This runs IO, clearing dataflash's
+        // buffer.
+        hal.scheduler->stop_clock(last_timestamp_usec);
     }
 
     MsgHandler *p = msgparser[f.type];
