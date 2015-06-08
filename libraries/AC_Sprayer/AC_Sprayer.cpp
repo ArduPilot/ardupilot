@@ -65,6 +65,10 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
 
+    // initialise flags
+    _flags.spraying = false;
+    _flags.testing = false;
+
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
 
