@@ -23,9 +23,9 @@
 class ToneAlarm_Linux: public NotifyDevice
 {
 public:
-    ToneAlarm_Linux():
-    err(-1)
-    {}
+    ToneAlarm_Linux() : err(true)
+    { }
+
     /// init - initialised the tone alarm
     bool init(void);
 

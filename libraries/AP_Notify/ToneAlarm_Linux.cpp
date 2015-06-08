@@ -61,7 +61,7 @@ bool ToneAlarm_Linux::play_tune(uint8_t tune_number)
 void ToneAlarm_Linux::update()
 {
     // exit immediately if we haven't initialised successfully
-    if (err == -1) {
+    if (err) {
         return;
     }
 
