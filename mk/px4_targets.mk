@@ -82,7 +82,7 @@ module_mk:
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
-px4-v1: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
+px4-v1: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCPP) module_mk px4-io-v1
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V1_CONFIG_FILE)
 	$(v) cp $(PWD)/$(PX4_V1_CONFIG_FILE) $(PX4_ROOT)/makefiles/
@@ -92,7 +92,7 @@ px4-v1: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v1.export $(SKETCHCP
 	$(v) $(SKETCHBOOK)/Tools/scripts/add_git_hashes.py $(HASHADDER_FLAGS) "$(SKETCH)-v1.px4" "$(SKETCH)-v1.px4"
 	$(v) echo "PX4 $(SKETCH) Firmware is in $(SKETCH)-v1.px4"
 
-px4-v2: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
+px4-v2: $(BUILDROOT)/make.flags CHECK_MODULES $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCPP) module_mk px4-io-v2
 	$(RULEHDR)
 	$(v) rm -f $(PX4_ROOT)/makefiles/$(PX4_V2_CONFIG_FILE)
 	$(v) cp $(PWD)/$(PX4_V2_CONFIG_FILE) $(PX4_ROOT)/makefiles/
@@ -104,7 +104,7 @@ px4-v2: $(BUILDROOT)/make.flags $(PX4_ROOT)/Archives/px4fmu-v2.export $(SKETCHCP
 
 px4: px4-v1 px4-v2
 
-px4-clean: clean px4-archives-clean px4-cleandep
+px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 	$(v) /bin/rm -rf $(PX4_ROOT)/makefiles/build $(PX4_ROOT)/Build
 
 px4-cleandep: clean

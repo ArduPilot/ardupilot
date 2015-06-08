@@ -113,3 +113,5 @@ etags:
 
 clean:
 	@rm -fr $(BUILDROOT)
+
+include $(MK_DIR)/modules.mk
