@@ -580,6 +580,18 @@ void MsgHandler_PARM::process_message(uint8_t *msg)
 {
     const uint8_t parameter_name_len = AP_MAX_NAME_SIZE + 1; // null-term
     char parameter_name[parameter_name_len];
+    uint64_t time_us;
+
+    if (field_value(msg, "TimeUS", time_us)) {
+        wait_timestamp_usec(time_us);
+    } else {
+        // older logs can have a lot of FMT and PARM messages up the
+        // front which don't have timestamps.  Since in Replay we run
+        // DataFlash's IO only when stop_clock is called, we can
+        // overflow DataFlash's ringbuffer.  This should force us to
+        // do IO:
+        hal.scheduler->stop_clock(last_timestamp_usec);
+    }
 
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
