@@ -311,7 +311,7 @@ void RangeFinder::detect_instance(uint8_t instance)
 RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 {
     // sanity check instance
-    if (instance > RANGEFINDER_MAX_INSTANCES) {
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
         return RangeFinder_NotConnected;
     }
 
@@ -326,7 +326,7 @@ RangeFinder::RangeFinder_Status RangeFinder::status(uint8_t instance) const
 bool RangeFinder::has_data(uint8_t instance) const
 {
     // sanity check instance
-    if (instance > RANGEFINDER_MAX_INSTANCES) {
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
         return RangeFinder_NotConnected;
     }
     return ((state[instance].status != RangeFinder_NotConnected) && (state[instance].status != RangeFinder_NoData));
