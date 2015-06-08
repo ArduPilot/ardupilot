@@ -100,9 +100,9 @@ private:
     // notification object for LEDs, buzzers etc
     AP_Notify notify;
 
-    uint32_t start_time_ms;
+    uint32_t start_time_ms = 0;
 
-    bool usb_connected;
+    bool usb_connected = false;
 
     AP_GPS gps;
 
@@ -165,7 +165,7 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status;
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // Servo state
     struct {
@@ -173,15 +173,15 @@ private:
         bool yaw_upper      : 1;    // true if yaw servo has been limited from moving to a higher position (i.e. position or rate limited)
         bool pitch_lower    : 1;    // true if pitch servo has been limited from moving to a lower position (i.e. position or rate limited)
         bool pitch_upper    : 1;    // true if pitch servo has been limited from moving to a higher position (i.e. position or rate limited)
-    } servo_limit;
+    } servo_limit = {true, true, true, true};
 
     // setup the var_info table
     AP_Param param_loader{var_info};
 
     uint8_t one_second_counter = 0;
     bool target_set = false;
-    int8_t slew_dir;
-    uint32_t slew_start_ms;
+    int8_t slew_dir = 0;
+    uint32_t slew_start_ms = 0;
 
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];

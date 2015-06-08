@@ -114,7 +114,10 @@ AP_ADC_ADS7844 apm1_adc;
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Tracker::Tracker(void)
-{}
+{
+    memset(&current_loc, 0, sizeof(current_loc));
+    memset(&vehicle, 0, sizeof(vehicle));
+}
 
 Tracker tracker;
 
