@@ -45,13 +45,42 @@ Copter::Copter(void) :
     motors(MAIN_LOOP_RATE),
 #endif
     scaleLongDown(1),
+    wp_bearing(0),
+    home_bearing(0),
+    home_distance(0),
+    wp_distance(0),
+    auto_mode(Auto_TakeOff),
+    guided_mode(Guided_TakeOff),
+    rtl_state(RTL_InitialClimb),
+    rtl_state_complete(false),
+    circle_pilot_yaw_override(false),
     simple_cos_yaw(1.0f),
+    simple_sin_yaw(0.0f),
+    super_simple_last_bearing(0),
     super_simple_cos_yaw(1.0),
+    super_simple_sin_yaw(0.0f),
+    initial_armed_bearing(0),
+    throttle_average(0.0f),
+    desired_climb_rate(0),
+    loiter_time_max(0),
+    loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry(ahrs, battery),
 #endif
+    climb_rate(0),
+    sonar_alt(0),
+    sonar_alt_health(0),
+    target_sonar_alt(0.0f),
+    baro_alt(0),
+    baro_climbrate(0.0f),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
+    yaw_look_at_WP_bearing(0.0f),
+    yaw_look_at_heading(0),
+    yaw_look_at_heading_slew(0),
+    yaw_look_ahead_bearing(0.0f),
+    condition_value(0),
+    condition_start(0),
     G_Dt(0.0025f),
     inertial_nav(ahrs),
 #if FRAME_CONFIG == HELI_FRAME
@@ -66,10 +95,16 @@ Copter::Copter(void) :
                 g.p_pos_xy, g.pi_vel_xy),
     wp_nav(inertial_nav, ahrs, pos_control, attitude_control),
     circle_nav(inertial_nav, ahrs, pos_control),
+    pmTest1(0),
+    fast_loopTimer(0),
+    mainLoop_count(0),
+    rtl_loiter_start_time(0),
+    auto_trim_counter(0),
     ServoRelayEvents(relay),
 #if CAMERA == ENABLED
     camera(&relay),
 #endif
+    rssi_analog_source(NULL),
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
 #endif
@@ -88,8 +123,11 @@ Copter::Copter(void) :
 #if AP_TERRAIN_AVAILABLE
     terrain(ahrs, mission, rally),
 #endif
+    in_mavlink_delay(false),
+    gcs_out_of_time(false),
     param_loader(var_info)
 {
+    memset(&current_loc, 0, sizeof(current_loc));
 }
 
 Copter copter;
