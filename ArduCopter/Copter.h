@@ -343,9 +343,6 @@ private:
     float throttle_average;              // estimated throttle required to hover
     int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
 
-    // ACRO Mode
-    float acro_level_mix;                // scales back roll, pitch and yaw inversely proportional to input from pilot
-
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
