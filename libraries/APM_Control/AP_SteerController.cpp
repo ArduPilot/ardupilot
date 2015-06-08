@@ -75,6 +75,15 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
 	// @User: User
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
+
+	// @Param: FF
+	// @DisplayName: Steering feed forward
+	// @Description: The feed forward gain for steering this is the ratio of the achieved turn rate to applied steering. A value of 1 means that the vehicle would yaw at a rate of 45 degrees per second with full steering deflection at 1m/s ground speed.
+	// @Range: 0.0 10.0
+	// @Increment: 0.1
+	// @User: User
+	AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        0),
+
 	AP_GROUPEND
 };
 
@@ -102,6 +111,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // equation for a ground vehicle. It returns steering as an angle from -45 to 45
     float scaler = 1.0f / speed;
 
+    _pid_info.desired = desired_rate;
+
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
 	float rate_error = (desired_rate - ToDeg(_ahrs.get_gyro().z)) * scaler;
 	
@@ -109,6 +120,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // No conversion is required for K_D
 	float ki_rate = _K_I * _tau * 45.0f;
 	float kp_ff = max((_K_P - _K_I * _tau) * _tau  - _K_D , 0) * 45.0f;
+	float k_ff = _K_FF * 45.0f;
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Multiply roll rate error by _ki_rate and integrate
@@ -124,20 +136,23 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
                 // prevent the integrator from decreasing if steering defln demand is below the lower limit
                 integrator_delta = min(integrator_delta, 0);
             }
-			_integrator += integrator_delta;
+			_pid_info.I += integrator_delta;
 		}
 	} else {
-		_integrator = 0;
+		_pid_info.I = 0;
 	}
 	
     // Scale the integration limit
     float intLimScaled = _imax * 0.01f;
 
     // Constrain the integrator state
-    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
+
+    _pid_info.D = rate_error * _K_D * 4.0f; 
+    _pid_info.FF = (ToRad(desired_rate) * kp_ff) * scaler;
 	
 	// Calculate the demanded control surface deflection
-	_last_out = (rate_error * _K_D * 4.0f) + (ToRad(desired_rate) * kp_ff) * scaler + _integrator;
+	_last_out = _pid_info.D + _pid_info.FF + _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -179,6 +194,6 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 
 void AP_SteerController::reset_I()
 {
-	_integrator = 0;
+	_pid_info.I = 0;
 }
 
