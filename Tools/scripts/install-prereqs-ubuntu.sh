@@ -61,23 +61,6 @@ $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS $AVR_PKGS
 sudo pip -q install $PYTHON_PKGS
 
-
-if [ ! -d PX4Firmware ]; then
-    git clone https://github.com/diydrones/PX4Firmware.git
-fi
-
-if [ ! -d PX4NuttX ]; then
-    git clone https://github.com/diydrones/PX4NuttX.git
-fi
-
-if [ ! -d uavcan ]; then
-    git clone https://github.com/diydrones/uavcan.git
-fi
-
-if [ ! -d VRNuttX ]; then
-    git clone https://github.com/virtualrobotix/vrbrain_nuttx.git VRNuttX
-fi
-
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
@@ -108,3 +91,9 @@ if ! grep -Fxq "$exportline2" ~/.profile ; then
 fi
 
 apt-cache search arm-none-eabi
+
+(
+ cd ardupilot
+ git submodule init
+ git submodule update
+)
