@@ -248,7 +248,11 @@ private:
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _calibrate_accel(const Vector3f accel_sample[6],
+                          Vector3f& accel_offsets,
+                          Vector3f& accel_scale,
+                          Vector3f& max_abs_offsets,
+                          enum Rotation rotation);
     bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
                              AP_InertialSensor_UserInteract* interact);
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
@@ -291,6 +295,9 @@ private:
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+
+    // accelerometer max absolute offsets to be used for calibration
+    Vector3f _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
