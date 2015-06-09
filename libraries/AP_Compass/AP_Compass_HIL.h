@@ -16,6 +16,7 @@ public:
     AP_Compass_HIL(Compass &compass);
     void read(void);
     bool init(void);
+    uint32_t get_expected_magfield() override;
 
     // detect the sensor
     static AP_Compass_Backend *detect(Compass &compass);

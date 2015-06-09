@@ -62,6 +62,13 @@ AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
     return sensor;
 }
 
+uint32_t AP_Compass_PX4::get_expected_magfield()
+{
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 530;
+
+    return COMPASS_MAGFIELD_EXPECTED;
+}
+
 bool AP_Compass_PX4::init(void)
 {
 	_mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);

@@ -72,7 +72,19 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _last_accum_time(0),
     _compass_instance(0),
     _product_id(0)
-{}
+{
+}
+
+uint32_t AP_Compass_HMC5843::get_expected_magfield()
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 330;       // pre arm will fail if mag field > 544 or < 115
+    #else // PX4, SITL
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 530;       // pre arm will fail if mag field > 874 or < 185
+    #endif
+
+    return COMPASS_MAGFIELD_EXPECTED;
+}
 
 // detect the sensor
 AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)

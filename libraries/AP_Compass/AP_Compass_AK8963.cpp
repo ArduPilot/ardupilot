@@ -397,6 +397,14 @@ bool AP_Compass_AK8963::_self_test()
     return success;
 }
 
+uint32_t AP_Compass_AK8963::get_expected_magfield()
+{
+    /* 50 uT is an expected magnetic field around Earth's surface */
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 50;
+
+    return COMPASS_MAGFIELD_EXPECTED;
+}
+
 bool AP_Compass_AK8963::init()
 {
     hal.scheduler->suspend_timer_procs();

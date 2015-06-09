@@ -37,9 +37,10 @@ class AP_Compass_AK8963 : public AP_Compass_Backend
 public:
     AP_Compass_AK8963(Compass &compass);
 
-    bool        init(void);
-    void        read(void);
-    void        accumulate(void);
+    bool        init(void) override;
+    void        read(void) override;
+    void        accumulate(void) override;
+    uint32_t    get_expected_magfield() override;
 
 protected:
     AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.

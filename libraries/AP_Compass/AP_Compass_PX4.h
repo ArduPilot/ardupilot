@@ -12,6 +12,7 @@ public:
     bool        init(void);
     void        read(void);
     void        accumulate(void);
+    uint32_t    get_expected_magfield() override;
 
     AP_Compass_PX4(Compass &compass);
     // detect the sensor
