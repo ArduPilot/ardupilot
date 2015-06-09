@@ -44,6 +44,7 @@ public:
     virtual void accumulate(void) {};
 
     virtual uint32_t get_expected_magfield() = 0;
+    virtual uint32_t get_max_offset() = 0;
 
 protected:
     // publish a magnetic field vector to the frontend

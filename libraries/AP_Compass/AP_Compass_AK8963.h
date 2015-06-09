@@ -41,6 +41,7 @@ public:
     void        read(void) override;
     void        accumulate(void) override;
     uint32_t    get_expected_magfield() override;
+    uint32_t    get_max_offset() override;
 
 protected:
     AK8963_Backend      *_backend;  // Not to be confused with Compass (frontend) "_backends" attribute.

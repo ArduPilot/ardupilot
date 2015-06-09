@@ -118,6 +118,8 @@ public:
     ///
     const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
+    uint32_t get_max_offset(uint8_t i) const { return _backends[i]->get_max_offset();}
+    uint32_t get_max_offset() const { return get_max_offset(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///

@@ -405,6 +405,32 @@ uint32_t AP_Compass_AK8963::get_expected_magfield()
     return COMPASS_MAGFIELD_EXPECTED;
 }
 
+uint32_t AP_Compass_AK8963::get_max_offset() 
+{
+    /* Scaled from HMC5883 offsets that have been experimentally deduced.
+     * HMC_t  - values that are stored in its registers
+     * AK_t - values that are stored in its registers.
+     *
+     * 1) They correspond to HMC_t * 1.6. Here's why:
+     * HMC_gain = 1090 => HMC_resolution = 0.92 mG / LSb
+     * AK_resolution = 0.15 uT / LSb (for 16-bit)
+     * scaling = 0.15 / 0.92 = 0.16304 
+     * AK_t = HMC_t * 1.6 (mG -> uT)
+     *
+     * 2) HMC_apm = HMC_t * 0.6. (the value APM uses. See HMC code)
+     * (AK_t / 1.6) * 0.6 = HMC_t
+     * 0.375 * AK_t = HMC_t
+     * 600 * 0.375 = 225.
+     *
+     * All calculations have been made for 16-bit AK8963 and 12-bit HMC5883 with gain = 1090. 
+     * We know it's tricky, but eventually we'll get rid of it. Sorry.
+     */
+
+    static const uint32_t AK8963_MAX_MAGNETIC_FIELD_OFFSET = 225;
+
+    return AK8963_MAX_MAGNETIC_FIELD_OFFSET;
+}
+
 bool AP_Compass_AK8963::init()
 {
     hal.scheduler->suspend_timer_procs();
