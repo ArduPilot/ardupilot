@@ -35,6 +35,8 @@ cat <<EOF
 ==============================
 git submodules are initialised
 
+Please see http://dev.ardupilot.com/wiki/git-submodules/
+
 Please restart the build
 ==============================
 EOF
@@ -46,7 +48,12 @@ for m in $MODULE_LIST; do
 	[ -z "$RET" ] || {
             echo "Module modules/$m out of date"
             git submodule summary modules/$m
-            echo "Please run 'git submodule update'"
+cat <<EOF
+
+You need to run 'git submodule update'
+
+Please see http://dev.ardupilot.com/wiki/git-submodules/
+EOF
             exit 1
         }
 done
