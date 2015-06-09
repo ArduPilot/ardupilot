@@ -31,6 +31,14 @@ done
         echo "git submodule update failed"        
         exit 1
     }
+cat <<EOF
+==============================
+git submodules are initialised
+
+Please restart the build
+==============================
+EOF
+exit 1
 }
 
 for m in $MODULE_LIST; do
