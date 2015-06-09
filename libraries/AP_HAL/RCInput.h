@@ -53,7 +53,7 @@ public:
     virtual void clear_overrides() = 0;
 
     /* execute receiver bind */
-    virtual void rc_bind(int dsmMode);
+    virtual void rc_bind(int dsmMode) { };
 
 };
 
