@@ -1066,7 +1066,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
-
         case MAV_CMD_START_RX_PAIR:
             // initiate bind procedure
             hal.rcin->rc_bind(packet.param1);
