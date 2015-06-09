@@ -1374,7 +1374,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                     break;
             }
-            brake;
+            break;
 #endif
 
         case MAV_CMD_DO_MOTOR_TEST:
