@@ -14,6 +14,11 @@ for m in $MODULE_LIST; do
         NEED_INIT=1
         break
     }
+    [ -f modules/$m/.git ] || {
+        echo "module/$m/.git missing - need module init"
+        NEED_INIT=1
+        break
+    }
 done
 
 [ $NEED_INIT = 1 ] && {
