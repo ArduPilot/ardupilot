@@ -289,6 +289,9 @@ build_antennatracker() {
 }
 
 # make sure PX4 is rebuilt from scratch
+git submodule init
+git submodule update
+
 pushd ArduPlane
 make px4-clean || exit 1
 popd
