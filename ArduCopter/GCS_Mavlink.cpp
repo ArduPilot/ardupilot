@@ -1107,6 +1107,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         switch(packet.command) {
 
+        case MAV_CMD_START_RX_PAIR:
+            // initiate bind procedure
+            hal.rcin->rc_bind(packet.param1);
+            break;
+
         case MAV_CMD_NAV_TAKEOFF: {
             // param3 : horizontal navigation by pilot acceptable
             // param4 : yaw angle   (not supported)
@@ -1369,7 +1374,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                     break;
             }
-            break;
 #endif
 
         case MAV_CMD_DO_MOTOR_TEST:
