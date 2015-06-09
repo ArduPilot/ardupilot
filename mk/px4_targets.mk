@@ -9,11 +9,6 @@ ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
 PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
 endif
 
-# check it is a valid PX4Firmware tree
-ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
-$(error ERROR: PX4_ROOT not set correctly - no nuttx-configs directory found)
-endif
-
 ifneq ($(wildcard $(SKETCHBOOK)/modules/uavcan),)
 UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
 endif
@@ -26,10 +21,6 @@ endif
 # cope with relative paths for NUTTX_SRC
 ifeq ($(wildcard $(NUTTX_SRC)/configs),)
 NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(NUTTX_SRC) && pwd)/
-endif
-
-ifeq ($(wildcard $(NUTTX_SRC)configs),)
-$(error ERROR: NUTTX_SRC not set correctly - no configs directory found)
 endif
 
 NUTTX_GIT_VERSION := $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
