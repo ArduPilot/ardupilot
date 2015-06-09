@@ -1,27 +1,21 @@
 # PX4 build is via external build system
 
-ifeq ($(PX4_ROOT),)
-PX4_ROOT=modules/PX4Firmware
+ifneq ($(PX4_ROOT),)
+$(error PX4_ROOT found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
-# cope with relative paths
-ifeq ($(wildcard $(PX4_ROOT)/nuttx-configs),)
-PX4_ROOT := $(shell cd $(SKETCHBOOK)/$(PX4_ROOT) && pwd)
+ifneq ($(NUTTX_SRC),)
+$(error NUTTX_SRC found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
-ifneq ($(wildcard $(SKETCHBOOK)/modules/uavcan),)
+ifneq ($(UAVCAN_DIR),)
+$(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
+endif
+
+
+PX4_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4Firmware && pwd)
+NUTTX_SRC := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
 UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
-endif
-
-# default to PX4NuttX above the PX4Firmware tree
-ifeq ($(NUTTX_SRC),)
-NUTTX_SRC := $(shell cd $(PX4_ROOT)/../PX4NuttX/nuttx && pwd)/
-endif
-
-# cope with relative paths for NUTTX_SRC
-ifeq ($(wildcard $(NUTTX_SRC)/configs),)
-NUTTX_SRC := $(shell cd $(SKETCHBOOK)/$(NUTTX_SRC) && pwd)/
-endif
 
 NUTTX_GIT_VERSION := $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
 PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
