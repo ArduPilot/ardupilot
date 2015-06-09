@@ -14,7 +14,8 @@ endif
 
 
 PX4_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4Firmware && pwd)
-NUTTX_SRC := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
+NUTTX_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
+NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
 UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
 
 NUTTX_GIT_VERSION := $(shell cd $(NUTTX_SRC) && git rev-parse HEAD | cut -c1-8)
