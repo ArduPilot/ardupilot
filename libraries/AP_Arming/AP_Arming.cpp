@@ -244,7 +244,7 @@ bool AP_Arming::compass_checks(bool report)
 
         // check for unreasonable compass offsets
         Vector3f offsets = _compass.get_offsets();
-        if (offsets.length() > 600) {
+        if (offsets.length() > _compass.get_max_offset()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
