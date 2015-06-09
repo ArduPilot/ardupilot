@@ -339,7 +339,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
         // check for unreasonable compass offsets
         Vector3f offsets = compass.get_offsets();
-        if(offsets.length() > COMPASS_OFFSETS_MAX) {
+        if (offsets.length() > compass.get_max_offset()) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
             }
