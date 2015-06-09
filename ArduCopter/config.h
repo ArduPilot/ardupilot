@@ -284,11 +284,6 @@
  # define MAGNETOMETER                   ENABLED
 #endif
 
-// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#ifndef COMPASS_MAGFIELD_EXPECTED
- #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
-#endif
-
 // max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
  #ifndef COMPASS_OFFSETS_MAX
