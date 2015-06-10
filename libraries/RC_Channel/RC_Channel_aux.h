@@ -128,10 +128,12 @@ public:
     // return the current function for a channel
     static Aux_servo_function_t channel_function(uint8_t channel);
 
+    // refresh aux servo to function mapping
+    static void update_aux_servo_function(void);
+
 private:
     static uint32_t _function_mask;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
-    static void update_aux_servo_function(void);
 };
 
 #endif /* RC_CHANNEL_AUX_H_ */
