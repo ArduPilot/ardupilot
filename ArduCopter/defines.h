@@ -386,12 +386,6 @@ enum FlipState {
 #define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
 #define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
 
-// GPS Failsafe definitions (FS_GPS_ENABLE parameter)
-#define FS_GPS_DISABLED                     0       // GPS failsafe disabled
-#define FS_GPS_LAND                         1       // switch to LAND mode on GPS Failsafe
-#define FS_GPS_ALTHOLD                      2       // switch to ALTHOLD mode on GPS failsafe
-#define FS_GPS_LAND_EVEN_STABILIZE          3       // switch to LAND mode on GPS failsafe even if in a manual flight mode like Stabilize
-
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
