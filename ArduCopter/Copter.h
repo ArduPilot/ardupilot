@@ -324,6 +324,9 @@ private:
     RTLState rtl_state;  // records state of rtl (initial climb, returning home, etc)
     bool rtl_state_complete; // set to true if the current state is completed
 
+    // Alt Hold
+    AltHoldModeState althold_state; // records state of Alt Hold mode
+
     // Circle
     bool circle_pilot_yaw_override; // true if pilot is overriding yaw
 

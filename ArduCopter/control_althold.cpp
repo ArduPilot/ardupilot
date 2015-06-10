@@ -28,32 +28,43 @@ void Copter::althold_run()
     float target_climb_rate;
     float takeoff_climb_rate = 0.0f;
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    // Alt Hold State Machine Determination
     if(!ap.auto_armed || !motors.get_interlock()) {
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-        return;
+        althold_state = AH_Disarmed;
+    } else if (ap.land_complete && (takeoff_state.running || (channel_throttle->control_in > get_takeoff_trigger_throttle()))){
+        althold_state = AH_Takeoff;
+    } else if (ap.land_complete){
+        althold_state = AH_Landed;
+    } else {
+        althold_state = AH_Flying;
     }
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
+    // Alt Hold State Machine
+    switch (althold_state) {
 
-    // get pilot desired lean angles
-    // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
-    get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
+    case AH_Disarmed:
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        break;
 
-    // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+    case AH_Takeoff:
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
 
-    // get pilot desired climb rate
-    target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+        // get pilot desired lean angles
+        // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+        get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
 
-    // get takeoff adjusted pilot and takeoff climb rates
-    takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
 
-    // check for take-off
-    if (ap.land_complete && (takeoff_state.running || (channel_throttle->control_in > get_takeoff_trigger_throttle()))) {
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
+        // get takeoff adjusted pilot and takeoff climb rates
+        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+
         if (!takeoff_state.running) {
             takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
         }
@@ -62,13 +73,62 @@ void Copter::althold_run()
         set_land_complete(false);
         // clear i term when we're taking off
         set_throttle_takeoff();
-    }
 
-    // reset target lean angles and heading while landed
-    if (ap.land_complete) {
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        // body-frame rate controller is run directly from 100hz loop
+
+        // call throttle controller
+        // ToDo: Should we really run surface_tracking during climb rate?
+        // if (sonar_alt_health >= SONAR_ALT_HEALTH_MAX) {
+               // if sonar is ok, use surface tracking
+        //     target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+        // }
+
+        // call position controller
+        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
+        pos_control.update_z_controller();
+
+        break;
+
+    case AH_Landed:
+
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // get pilot desired lean angles
+        // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+        get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-    }else{
+
+        break;
+
+    case AH_Flying:
+
+        // apply SIMPLE mode transform to pilot inputs
+        update_simple_mode();
+
+        // get pilot desired lean angles
+        // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
+        get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch);
+
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+        target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         // body-frame rate controller is run directly from 100hz loop
@@ -81,7 +141,8 @@ void Copter::althold_run()
 
         // call position controller
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
-        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
+
+        break;
     }
 }
