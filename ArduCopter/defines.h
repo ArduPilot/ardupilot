@@ -202,6 +202,14 @@ enum RTLState {
     RTL_Land
 };
 
+// Alt_Hold states
+enum AltHoldModeState {
+    AltHold_Disarmed,
+    AltHold_Takeoff,
+    AltHold_Flying,
+    AltHold_Landed
+};
+
 // Flip states
 enum FlipState {
     Flip_Start,
