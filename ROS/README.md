@@ -12,8 +12,10 @@ This port is being done using [Erle-Brain](https://erlerobotics.com/blog/product
 
 ### Milestones
 
- - [x] Prototype with `AP_InertialSensor`
- - [x] Prototype with `AP_Baro`
+ - [x] Prototype with `AP_InertialSensor
+ - [x] Prototype with `AP_Baro
+ - [x] Prototype with `AP_GPS 
+ - [x] Prototype with `AP_RC`
  - [ ] Prototype `AP_AHRS` + `AP_InertialSensor`
  - [ ] Convert msgs to ROS standarts
  - [ ] Rover prototype
