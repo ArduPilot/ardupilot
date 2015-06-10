@@ -33,9 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-on-restore", "1"]
   end
 
-  config.vm.synced_folder "../PX4Firmware", "/PX4Firmware"
-  config.vm.synced_folder "../PX4NuttX", "/PX4NuttX", type: "rsync"
-  config.vm.synced_folder "../uavcan", "/uavcan"
+
 
   config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"  
 end
