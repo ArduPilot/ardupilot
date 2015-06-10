@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "RCInput.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <drivers/drv_pwm_output.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
@@ -112,6 +115,24 @@ void PX4RCInput::_timer_tick(void)
         // note, we rely on the vehicle code checking new_input() 
         // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
+}
+
+bool PX4RCInput::rc_bind(int dsmMode)
+{
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        hal.console->printf("RCInput: failed to open /dev/px4io\n");
+        return false;
+    }
+    
+    uint32_t mode = (dsmMode == 0) ? DSM2_BIND_PULSES : ((dsmMode == 1) ? DSMX_BIND_PULSES : DSMX8_BIND_PULSES);
+    int ret = ioctl(fd, DSM_BIND_START, mode);
+    close(fd);
+    if (ret != 0) {
+        hal.console->printf("RCInput: Unable to start DSM bind\n");
+        return false;
+    }
+    return true;
 }
 
 #endif
