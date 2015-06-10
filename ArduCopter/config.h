@@ -269,9 +269,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  EKF Checker
-#ifndef EKFCHECK_THRESHOLD_DEFAULT
- # define EKFCHECK_THRESHOLD_DEFAULT    0.8f    // EKF checker's default compass and velocity variance above which the EKF's horizontal position will be considered bad
+//  EKF Failsafe
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+ # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
 #ifndef EKF_ORIGIN_MAX_DIST_M

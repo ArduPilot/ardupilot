@@ -31,7 +31,7 @@ static struct {
 void Copter::ekf_check()
 {
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors.armed() || ap.usb_connected || (g.ekfcheck_thresh <= 0.0f)) {
+    if (!motors.armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -87,7 +87,7 @@ bool Copter::ekf_over_threshold()
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     // return false immediately if disabled
-    if (g.ekfcheck_thresh <= 0.0f) {
+    if (g.fs_ekf_thresh <= 0.0f) {
         return false;
     }
 
@@ -106,7 +106,7 @@ bool Copter::ekf_over_threshold()
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold
-    return (compass_variance >= g.ekfcheck_thresh && vel_variance >= g.ekfcheck_thresh);
+    return (compass_variance >= g.fs_ekf_thresh && vel_variance >= g.fs_ekf_thresh);
 #else
     return false;
 #endif

@@ -120,7 +120,7 @@ public:
         k_param_serial2_baud,           // deprecated - remove
         k_param_land_repositioning,
         k_param_sonar, // sonar object
-        k_param_ekfcheck_thresh,
+        k_param_fs_ekf_thresh,
         k_param_terrain,
         k_param_acro_expo,
         k_param_throttle_deadzone,
@@ -414,7 +414,7 @@ public:
     AP_Int8         arming_check;
 
     AP_Int8         land_repositioning;
-    AP_Float        ekfcheck_thresh;
+    AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
 #if FRAME_CONFIG ==     HELI_FRAME

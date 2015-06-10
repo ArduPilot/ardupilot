@@ -479,12 +479,12 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
-    // @Param: EKF_CHECK_THRESH
-    // @DisplayName: EKF check compass and velocity variance threshold
-    // @Description: Allows setting the maximum acceptable compass and velocity variance (0 to disable check)
-    // @Values: 0:Disabled, 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @Param: FS_EKF_THRESH
+    // @DisplayName: EKF failsafe variance threshold
+    // @Description: Allows setting the maximum acceptable compass and velocity variance
+    // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
     // @User: Advanced
-    GSCALAR(ekfcheck_thresh, "EKF_CHECK_THRESH",    EKFCHECK_THRESHOLD_DEFAULT),
+    GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH",    FS_EKF_THRESHOLD_DEFAULT),
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
