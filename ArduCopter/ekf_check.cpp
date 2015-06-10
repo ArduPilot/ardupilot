@@ -121,8 +121,13 @@ void Copter::failsafe_ekf_event()
         return;
     }
 
-    // do nothing if motors disarmed or not in flight mode that requires GPS
-    if (!motors.armed() || !mode_requires_GPS(control_mode)) {
+    // do nothing if motors disarmed
+    if (!motors.armed()) {
+        return;
+    }
+
+    // do nothing if not in GPS flight mode and ekf-action is not land-even-stabilize
+    if (!mode_requires_GPS(control_mode) && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;
     }
 
@@ -130,12 +135,20 @@ void Copter::failsafe_ekf_event()
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // take action based on flight mode
-    if (mode_requires_GPS(control_mode)) {
-        set_mode_land_with_pause();
+    // take action based on fs_ekf_action parameter
+    switch (g.fs_ekf_action) {
+        case FS_EKF_ACTION_ALTHOLD:
+            // AltHold
+            if (!set_mode(ALT_HOLD)) {
+                set_mode_land_with_pause();
+            }
+            break;
+        default:
+            set_mode_land_with_pause();
+            break;
     }
 
-    // if flight mode is LAND ensure it's not the GPS controlled LAND
+    // if flight mode is already LAND ensure it's not the GPS controlled LAND
     if (control_mode == LAND) {
         land_do_not_use_GPS();
     }

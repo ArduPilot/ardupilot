@@ -479,6 +479,13 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(land_repositioning, "LAND_REPOSITION",     LAND_REPOSITION_DEFAULT),
 
+    // @Param: FS_EKF_ACTION
+    // @DisplayName: EKF Failsafe Action
+    // @Description: Controls the action that will be taken when an EKF failsafe is invoked
+    // @Values: 1:Land, 2:AltHold, 3:Land even in Stabilize
+    // @User: Advanced
+    GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    FS_EKF_ACTION_DEFAULT),
+
     // @Param: FS_EKF_THRESH
     // @DisplayName: EKF failsafe variance threshold
     // @Description: Allows setting the maximum acceptable compass and velocity variance
