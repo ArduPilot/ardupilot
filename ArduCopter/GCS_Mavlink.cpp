@@ -665,10 +665,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         copter.send_simstate(chan);
 #endif
-#if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(AHRS2);
         copter.gcs[chan-MAVLINK_COMM_0].send_ahrs2(copter.ahrs);
-#endif
         break;
 
     case MSG_HWSTATUS:
@@ -703,10 +701,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         copter.ahrs.get_NavEKF().send_status_report(chan);
-#endif
         break;
 
     case MSG_FENCE_STATUS:

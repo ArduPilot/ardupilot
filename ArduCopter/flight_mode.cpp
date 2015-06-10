@@ -131,10 +131,9 @@ bool Copter::set_mode(uint8_t mode)
 // called at 100hz or more
 void Copter::update_flight_mode()
 {
-#if AP_AHRS_NAVEKF_AVAILABLE
     // Update EKF speed limit - used to limit speed when we are using optical flow
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-#endif
+
     switch (control_mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME

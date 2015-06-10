@@ -1010,11 +1010,9 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     // @Group: EKF_
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
     GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
-#endif
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp

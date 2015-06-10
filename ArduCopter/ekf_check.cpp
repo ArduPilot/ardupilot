@@ -85,7 +85,6 @@ void Copter::ekf_check()
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
-#if AP_AHRS_NAVEKF_AVAILABLE
     // return false immediately if disabled
     if (g.fs_ekf_thresh <= 0.0f) {
         return false;
@@ -107,9 +106,6 @@ bool Copter::ekf_over_threshold()
 
     // return true if compass and velocity variance over the threshold
     return (compass_variance >= g.fs_ekf_thresh && vel_variance >= g.fs_ekf_thresh);
-#else
-    return false;
-#endif
 }
 
 
