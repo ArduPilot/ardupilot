@@ -22,11 +22,11 @@ popd
 for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     pushd $d
     make clean
-    make navio -j3
+    make navio -j2
     make clean
     make sitl -j4
     make clean
-    make linux -j4
+    make linux -j2
     make clean
     make px4-cleandep
     make px4-v2
