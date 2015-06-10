@@ -52,6 +52,8 @@ public:
     /* clear_overrides: equivelant to setting all overrides to 0 */
     virtual void clear_overrides() = 0;
 
+    /* execute receiver bind */
+    virtual bool rc_bind(int dsmMode) { return false; };
 };
 
 #endif // __AP_HAL_RC_INPUT_H__
