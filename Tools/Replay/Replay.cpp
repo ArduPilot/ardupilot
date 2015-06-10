@@ -52,10 +52,11 @@
 #include <RC_Channel.h>
 #include <AP_RangeFinder.h>
 #include <stdio.h>
-#include <getopt.h>
 #include <errno.h>
 #include <fenv.h>
 #include <VehicleType.h>
+#include <getopt.h> // for optind only
+#include <utility/getopt_cpp.h>
 
 #ifndef INT16_MIN
 #define INT16_MIN -32768
@@ -73,7 +74,11 @@ public:
     void setup();
     void loop();
 
+    Replay() : filename("log.bin") { }
+
 private:
+    const char *filename;
+
     Parameters g;
 
     AP_InertialSensor ins;
@@ -109,6 +114,8 @@ private:
     bool ahrs_healthy;
     bool have_imu2;
     bool have_fram;
+
+    void _parse_command_line(uint8_t argc, char * const argv[]);
 
     uint8_t num_user_parameters;
     struct {
@@ -180,55 +187,61 @@ void Replay::load_parameters(void)
 void Replay::usage(void)
 {
     ::printf("Options:\n");
-    ::printf(" -rRATE     set IMU rate in Hz\n");
-    ::printf(" -pNAME=VALUE set parameter NAME to VALUE\n");
-    ::printf(" -aMASK     set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
-    ::printf(" -gMASK     set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
-    ::printf(" -A time    arm at time milliseconds)\n");
+    ::printf("\t--rate RATE        set IMU rate in Hz\n");
+    ::printf("\t--parm NAME=VALUE  set parameter NAME to VALUE\n");
+    ::printf("\t--accel-mask MASK  set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
+    ::printf("\t--gyro-mask MASK   set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
+    ::printf("\t--arm-time time    arm at time (milliseconds)\n");
 }
 
-void Replay::setup()
+void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
-    ::printf("Starting\n");
+    const struct GetOptLong::option options[] = {
+        {"rate",            true,   0, 'r'},
+        {"parm",            true,   0, 'p'},
+        {"param",           true,   0, 'p'},
+        {"help",            false,  0, 'h'},
+        {"accel-mask",      true,   0, 'a'},
+        {"gyro-mask",       true,   0, 'g'},
+        {"arm-time",        true,   0, 'A'},
+        {0, false, 0, 0}
+    };
 
-    const char *filename = "log.bin";
-    uint8_t argc;
-    char * const *argv;
+    GetOptLong gopt(argc, argv, "r:p:ha:g:A:", options);
+    gopt.optind = optind;
+
     int opt;
-
-    hal.util->commandline_arguments(argc, argv);
-
-	while ((opt = getopt(argc, argv, "r:p:ha:g:A:")) != -1) {
+    while ((opt = gopt.getoption()) != -1) {
 		switch (opt) {
         case 'h':
             usage();
             exit(0);
 
         case 'r':
-			update_rate = strtol(optarg, NULL, 0);
+			update_rate = strtol(gopt.optarg, NULL, 0);
             break;
 
         case 'g':
-            logreader.set_gyro_mask(strtol(optarg, NULL, 0));
+            logreader.set_gyro_mask(strtol(gopt.optarg, NULL, 0));
             break;
 
         case 'a':
-            logreader.set_accel_mask(strtol(optarg, NULL, 0));
+            logreader.set_accel_mask(strtol(gopt.optarg, NULL, 0));
             break;
 
         case 'A':
-            arm_time_ms = strtol(optarg, NULL, 0);
+            arm_time_ms = strtol(gopt.optarg, NULL, 0);
             break;
 
         case 'p':
-            char *eq = strchr(optarg, '=');
+            const char *eq = strchr(gopt.optarg, '=');
             if (eq == NULL) {
                 ::printf("Usage: -p NAME=VALUE\n");
                 exit(1);
             }
-            *eq++ = 0;
-            strncpy(user_parameters[num_user_parameters].name, optarg, 16);
-            user_parameters[num_user_parameters].value = atof(eq);
+            memset(user_parameters[num_user_parameters].name, '\0', 16);
+            strncpy(user_parameters[num_user_parameters].name, gopt.optarg, eq-gopt.optarg);
+            user_parameters[num_user_parameters].value = atof(eq+1);
             num_user_parameters++;
             if (num_user_parameters >= sizeof(user_parameters)/sizeof(user_parameters[0])) {
                 ::printf("Too many user parameters\n");
@@ -238,17 +251,27 @@ void Replay::setup()
         }
     }
 
-	argv += optind;
-	argc -= optind;
+	argv += gopt.optind;
+	argc -= gopt.optind;
 
     if (argc > 0) {
         filename = argv[0];
     }
+}
+
+void Replay::setup()
+{
+    ::printf("Starting\n");
+
+    uint8_t argc;
+    char * const *argv;
+
+    hal.util->commandline_arguments(argc, argv);
+
+    _parse_command_line(argc, argv);
 
     hal.console->printf("Processing log %s\n", filename);
-    if (update_rate != 0) {
-        hal.console->printf("Using an update rate of %u Hz\n", update_rate);
-    }
+    hal.console->printf("Using an update rate of %u Hz\n", update_rate);
 
     load_parameters();
 
@@ -282,7 +305,6 @@ void Replay::setup()
     ins.set_hil_mode();
 
     switch (update_rate) {
-    case 0:
     case 50:
         ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
         break;
@@ -295,6 +317,9 @@ void Replay::setup()
     case 400:
         ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
         break;
+    default:
+        printf("Invalid update rate (%d); use 50, 100, 200 or 400\n",update_rate);
+        exit(1);
     }
 
     plotf = fopen("plot.dat", "w");
