@@ -20,22 +20,11 @@ This port is being done using [Erle-Brain](https://erlerobotics.com/blog/product
 
 ### Try it yourself
 
-Create a ROS catkin workspace:
 ```bash
-mkdir -p ~/catkin_ws/src
-cd ~/catkin_ws/src
+source /opt/ros/indigo/setup.bash
+mkdir -p catkin_ws/src; cd catkin_ws/src
+git clone https://github.com/erlerobot/ardupilot -b ros
 catkin_init_workspace
-```
-
-Get the sources
-```bash
-git clone -b ros http://github.com/erlerobot/ardupilot
-cd ..
-```
-
-Source environment variables and compile the code
-```bash
-# Now you should be in ~/catkin_ws
-source devel/setup.bash
-catkin_make
+cd .. 
+catkin_make --pkg apm_inertial_sensor # compile the apm_inertial_sensor
 ```
