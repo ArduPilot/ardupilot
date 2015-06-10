@@ -293,7 +293,7 @@ void Copter::autotune_run()
     if (ap.land_complete) {
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
-        pos_control.set_alt_target_to_current_alt();
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
     }else{
         // check if pilot is overriding the controls
         if (!is_zero(target_roll) || !is_zero(target_pitch) || !is_zero(target_yaw_rate) || !is_zero(target_climb_rate)) {
