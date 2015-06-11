@@ -26,6 +26,7 @@
 
 #include "UARTDevice.h"
 #include "UDPDevice.h"
+#include "ConsoleDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,8 +40,8 @@ LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
     _flow_control(FLOW_CONTROL_DISABLE)
 {
     if (default_console) {
-        _rd_fd = 0;
-        _wr_fd = 1;
+        _device = new ConsoleDevice();
+        _device->open();
         _console = true;
     }
 }
@@ -64,10 +65,9 @@ void LinuxUARTDriver::begin(uint32_t b)
 void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     if (device_path == NULL && _console) {
-        _rd_fd = STDIN_FILENO;
-        _wr_fd = STDOUT_FILENO;
-        fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-        fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
+        _device = new ConsoleDevice();
+        _device->open();
+        _device->set_nonblocking();
     } else if (!_initialised) {
         if (device_path == NULL) {
             return;
@@ -114,10 +114,9 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             // Notify that the option is not valid and select standart input and output
             ::printf("LinuxUARTDriver parsing failed, using default\n");
 
-            _rd_fd = STDIN_FILENO;
-            _wr_fd = STDOUT_FILENO;
-            fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-            fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
+            _device = new ConsoleDevice();
+            _device->open();
+            _device->set_nonblocking();
             break;
         }
         }
