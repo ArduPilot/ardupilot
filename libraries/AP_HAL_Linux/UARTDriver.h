@@ -35,8 +35,6 @@ public:
 
 private:
     SerialDevice *_device = nullptr;
-    int _rd_fd;
-    int _wr_fd;
     bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
@@ -49,7 +47,6 @@ private:
 
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();
-    void _tcp_start_connection(bool wait_for_connection);
     void _udp_start_connection(void);
     bool _serial_start_connection(void);
 
