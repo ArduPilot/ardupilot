@@ -4,8 +4,10 @@
 
 #include "Scheduler.h"
 #include "Storage.h"
+#include "RCInput.h"
 #include "UARTDriver.h"
-#include <unistd.h>
+#include "Util.h"
+#include "SPIUARTDriver.h"
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
@@ -18,63 +20,98 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-#define APM_LINUX_TIMER_PRIORITY    13
-#define APM_LINUX_UART_PRIORITY     12
-#define APM_LINUX_MAIN_PRIORITY     11
-#define APM_LINUX_IO_PRIORITY       10
+#define APM_LINUX_TIMER_PRIORITY        15
+#define APM_LINUX_UART_PRIORITY         14
+#define APM_LINUX_RCIN_PRIORITY         13
+#define APM_LINUX_MAIN_PRIORITY         12
+#define APM_LINUX_TONEALARM_PRIORITY    11
+#define APM_LINUX_IO_PRIORITY           10
 
 LinuxScheduler::LinuxScheduler()
 {}
 
-typedef void *(*pthread_startroutine_t)(void *);
-
-/*
-  setup for realtime. Lock all of memory in the thread and pre-fault
-  the given stack size, so stack faults don't cause timing jitter
- */
-void LinuxScheduler::_setup_realtime(uint32_t size) 
+void LinuxScheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
+                                             const char *name,
+                                             pthread_startroutine_t start_routine)
 {
-        uint8_t dummy[size];
-        mlockall(MCL_CURRENT|MCL_FUTURE);
-        memset(dummy, 0, sizeof(dummy));
+    struct sched_param param = { .sched_priority = rtprio };
+    pthread_attr_t attr;
+    int r;
+
+    pthread_attr_init(&attr);
+    /*
+      we need to run as root to get realtime scheduling. Allow it to
+      run as non-root for debugging purposes, plus to allow the Replay
+      tool to run
+     */
+    if (geteuid() == 0) {
+        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+        pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+        pthread_attr_setschedparam(&attr, &param);
+    }
+    r = pthread_create(ctx, &attr, start_routine, this);
+    if (r != 0) {
+        hal.console->printf("Error creating thread '%s': %s\n",
+                            name, strerror(r));
+        panic(PSTR("Failed to create thread"));
+    }
+    pthread_attr_destroy(&attr);
+
+    if (name) {
+        pthread_setname_np(*ctx, name);
+    }
 }
 
 void LinuxScheduler::init(void* machtnichts)
 {
+    mlockall(MCL_CURRENT|MCL_FUTURE);
+
     clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
 
-    _setup_realtime(32768);
-
-    pthread_attr_t thread_attr;
-    struct sched_param param;
-
-    memset(&param, 0, sizeof(param));
-
-    param.sched_priority = APM_LINUX_MAIN_PRIORITY;
+    struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
 
-    param.sched_priority = APM_LINUX_TIMER_PRIORITY;
-    pthread_attr_init(&thread_attr);
-    (void)pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+    struct {
+        pthread_t *ctx;
+        int rtprio;
+        const char *name;
+        pthread_startroutine_t start_routine;
+    } *iter, table[] = {
+        { .ctx = &_timer_thread_ctx,
+          .rtprio = APM_LINUX_TIMER_PRIORITY,
+          .name = "sched-timer",
+          .start_routine = &Linux::LinuxScheduler::_timer_thread,
+        },
+        { .ctx = &_uart_thread_ctx,
+          .rtprio = APM_LINUX_UART_PRIORITY,
+          .name = "sched-uart",
+          .start_routine = &Linux::LinuxScheduler::_uart_thread,
+        },
+        { .ctx = &_rcin_thread_ctx,
+          .rtprio = APM_LINUX_RCIN_PRIORITY,
+          .name = "sched-rcin",
+          .start_routine = &Linux::LinuxScheduler::_rcin_thread,
+        },
+        { .ctx = &_tonealarm_thread_ctx,
+          .rtprio = APM_LINUX_TONEALARM_PRIORITY,
+          .name = "sched-tonealarm",
+          .start_routine = &Linux::LinuxScheduler::_tonealarm_thread,
+        },
+        { .ctx = &_io_thread_ctx,
+          .rtprio = APM_LINUX_IO_PRIORITY,
+          .name = "sched-io",
+          .start_routine = &Linux::LinuxScheduler::_io_thread,
+        },
+        { }
+    };
 
-    pthread_create(&_timer_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_timer_thread, this);
+    if (geteuid() != 0) {
+        printf("WARNING: running as non-root. Will not use realtime scheduling\n");
+    }
 
-    // the UART thread runs at a medium priority
-    pthread_attr_init(&thread_attr);
-    param.sched_priority = APM_LINUX_UART_PRIORITY;
-    (void)pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-
-    pthread_create(&_uart_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_uart_thread, this);
-    
-    // the IO thread runs at lower priority
-    pthread_attr_init(&thread_attr);
-    param.sched_priority = APM_LINUX_IO_PRIORITY;
-    (void)pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-    
-    pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&Linux::LinuxScheduler::_io_thread, this);
+    for (iter = table; iter->ctx; iter++)
+        _create_realtime_thread(iter->ctx, iter->rtprio, iter->name,
+                                iter->start_routine);
 }
 
 void LinuxScheduler::_microsleep(uint32_t usec)
@@ -88,12 +125,11 @@ void LinuxScheduler::_microsleep(uint32_t usec)
 void LinuxScheduler::delay(uint16_t ms)
 {
     if (stopped_clock_usec) {
-        stopped_clock_usec += 1000UL*ms;
         return;
     }
-    uint32_t start = millis();
+    uint64_t start = millis64();
     
-    while ((millis() - start) < ms) {
+    while ((millis64() - start) < ms) {
         // this yields the CPU to other apps
         _microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -104,7 +140,7 @@ void LinuxScheduler::delay(uint16_t ms)
     }
 }
 
-uint32_t LinuxScheduler::millis() 
+uint64_t LinuxScheduler::millis64() 
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec/1000;
@@ -116,7 +152,7 @@ uint32_t LinuxScheduler::millis()
                    (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
-uint32_t LinuxScheduler::micros() 
+uint64_t LinuxScheduler::micros64() 
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec;
@@ -128,8 +164,21 @@ uint32_t LinuxScheduler::micros()
                    (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
+uint32_t LinuxScheduler::millis() 
+{
+    return millis64() & 0xFFFFFFFF;
+}
+
+uint32_t LinuxScheduler::micros() 
+{
+    return micros64() & 0xFFFFFFFF;
+}
+
 void LinuxScheduler::delay_microseconds(uint16_t us)
 {
+    if (stopped_clock_usec) {
+        return;
+    }
     _microsleep(us);
 }
 
@@ -164,7 +213,7 @@ void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc)
         }
     }
 
-    if (_num_io_procs < LINUX_SCHEDULER_MAX_TIMER_PROCS) {
+    if (_num_io_procs < LINUX_SCHEDULER_MAX_IO_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
@@ -179,19 +228,14 @@ void LinuxScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t per
 
 void LinuxScheduler::suspend_timer_procs()
 {
-    _timer_suspended = true;
-    while (_in_timer_proc) {
-        usleep(1);
+    if (!_timer_semaphore.take(0)) {
+        printf("Failed to take timer semaphore\n");
     }
 }
 
 void LinuxScheduler::resume_timer_procs()
 {
-    _timer_suspended = false;
-    if (_timer_event_missed == true) {
-        _run_timers(false);
-        _timer_event_missed = false;
-    }
+    _timer_semaphore.give();
 }
 
 void LinuxScheduler::_run_timers(bool called_from_timer_thread)
@@ -201,16 +245,16 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
-                _timer_proc[i]();
-            }
-        }
-    } else if (called_from_timer_thread) {
-        _timer_event_missed = true;
+    if (!_timer_semaphore.take(0)) {
+        printf("Failed to take timer semaphore in _run_timers\n");
     }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i]) {
+            _timer_proc[i]();
+        }
+    }
+    _timer_semaphore.give();
 
     // and the failsafe, if one is setup
     if (_failsafe != NULL) {
@@ -220,72 +264,114 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
     _in_timer_proc = false;
 }
 
-void *LinuxScheduler::_timer_thread(void)
+void *LinuxScheduler::_timer_thread(void* arg)
 {
-    _setup_realtime(32768);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
+    /*
+      this aims to run at an average of 1kHz, so that it can be used
+      to drive 1kHz processes without drift
+     */
+    uint64_t next_run_usec = sched->micros64() + 1000;
     while (true) {
-        _microsleep(5000);
-
+        uint64_t dt = next_run_usec - sched->micros64();
+        if (dt > 2000) {
+            // we've lost sync - restart
+            next_run_usec = sched->micros64();
+        } else {
+            sched->_microsleep(dt);
+        }
+        next_run_usec += 1000;
         // run registered timers
-        _run_timers(true);
-
+        sched->_run_timers(true);
     }
     return NULL;
 }
 
 void LinuxScheduler::_run_io(void)
 {
-    if (_in_io_proc) {
+    if (!_io_semaphore.take(0)) {
         return;
     }
-    _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i] != NULL) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i]) {
+            _io_proc[i]();
         }
     }
 
-    _in_io_proc = false;
+    _io_semaphore.give();
 }
 
-void *LinuxScheduler::_uart_thread(void)
+void *LinuxScheduler::_rcin_thread(void *arg)
 {
-    _setup_realtime(32768);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(10000);
+        sched->_microsleep(10000);
+
+        ((LinuxRCInput *)hal.rcin)->_timer_tick();
+    }
+    return NULL;
+}
+
+void *LinuxScheduler::_uart_thread(void* arg)
+{
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
+    }
+    while (true) {
+        sched->_microsleep(10000);
 
         // process any pending serial bytes
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
+        ((LinuxUARTDriver *)hal.uartE)->_timer_tick();
     }
     return NULL;
 }
 
-void *LinuxScheduler::_io_thread(void)
+void *LinuxScheduler::_tonealarm_thread(void* arg)
 {
-    _setup_realtime(32768);
-    while (system_initializing()) {
-        poll(NULL, 0, 1);        
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
     }
     while (true) {
-        _microsleep(20000);
+        sched->_microsleep(10000);
+
+        // process tone command
+        ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();
+    }
+    return NULL;
+}
+
+void *LinuxScheduler::_io_thread(void* arg)
+{
+    LinuxScheduler* sched = (LinuxScheduler *)arg;
+
+    while (sched->system_initializing()) {
+        poll(NULL, 0, 1);
+    }
+    while (true) {
+        sched->_microsleep(20000);
 
         // process any pending storage writes
         ((LinuxStorage *)hal.storage)->_timer_tick();
 
         // run registered IO processes
-        _run_io();
+        sched->_run_io();
     }
     return NULL;
 }
@@ -323,12 +409,15 @@ void LinuxScheduler::system_initialized()
 
 void LinuxScheduler::reboot(bool hold_in_bootloader) 
 {
-    for(;;);
+    exit(1);
 }
 
 void LinuxScheduler::stop_clock(uint64_t time_usec)
 {
-    stopped_clock_usec = time_usec;
+    if (time_usec >= stopped_clock_usec) {
+        stopped_clock_usec = time_usec;
+        _run_io();
+    }
 }
 
 #endif // CONFIG_HAL_BOARD

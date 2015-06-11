@@ -20,24 +20,25 @@
 
 extern const AP_HAL::HAL& hal;
 
-void ExternalLED::init(void)
+bool ExternalLED::init(void)
 {
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
-        return;
+        return false;
     }
 
     // setup the main LEDs as outputs
-    hal.gpio->pinMode(EXTERNAL_LED_ARMED, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_GPS, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_MOTOR1, GPIO_OUTPUT);
-    hal.gpio->pinMode(EXTERNAL_LED_MOTOR2, GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_ARMED, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_GPS, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_MOTOR1, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(EXTERNAL_LED_MOTOR2, HAL_GPIO_OUTPUT);
 
     // turn leds off
     hal.gpio->write(EXTERNAL_LED_ARMED, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_GPS, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR1, HAL_GPIO_LED_OFF);
     hal.gpio->write(EXTERNAL_LED_MOTOR2, HAL_GPIO_LED_OFF);
+    return true;
 }
 
 /*
@@ -194,10 +195,7 @@ void ExternalLED::update(void)
         if (AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_radio) {
             // radio or battery failsafe indicated by fast flashing
             set_pattern(FAST_FLASH);
-        }else if(AP_Notify::flags.failsafe_gps || AP_Notify::flags.gps_glitching)
-            // gps failsafe indicated by oscillating
-            set_pattern(OSCILLATE);
-        else{
+        } else {
             // otherwise do whatever the armed led is doing
             motor_led1(_flags.armedled_on);
             motor_led2(_flags.armedled_on);

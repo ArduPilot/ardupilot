@@ -113,13 +113,13 @@ Vector2<T> Vector2<T>::operator -(void) const
 template <typename T>
 bool Vector2<T>::operator ==(const Vector2<T> &v) const
 {
-    return (x==v.x && y==v.y);
+    return (is_equal(x,v.x) && is_equal(y,v.y));
 }
 
 template <typename T>
 bool Vector2<T>::operator !=(const Vector2<T> &v) const
 {
-    return (x!=v.x && y!=v.y);
+    return (!is_equal(x,v.x) || !is_equal(y,v.y));
 }
 
 template <typename T>

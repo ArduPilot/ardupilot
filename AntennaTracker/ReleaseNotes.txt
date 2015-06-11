@@ -1,0 +1,27 @@
+Antenna Tracker Release Notes:
+------------------------------------------------------------------
+AntennaTracker 0.7.1 29-May-2015
+Changes from 0.7
+1) Added support for continuous rotation (CR) servos
+------------------------------------------------------------------
+AntennaTracker 0.7 17-May-2015
+Changes from 0.5 (skipped 0.6 to avoid confusion after the wrong version number was communicated on diydrones.com)
+1) added support for 4th MAVLink channel
+------------------------------------------------------------------
+AntennaTracker 0.5 29-Apr-2015
+Changes from 0.4
+1) add SERVO_TEST mode which moves the servos to the position specified by a do-set-servo command (normally from MP's extended tuning page)
+2) add DISTANCE_MIN parameter (default to 5m).  Vehicles must be at least this distance away for the tracker to track them.
+3) add SYSID_TARGET parameter to specify which vehicle to follow which is useful if multiple vehicles are sharing the same network.  This param defaults to zero which means track the first vehicle.  Set to "0" to track the first vehicle found.
+4) send request to vehicle for position updates at 1hz.  Improves reliability when used with copter which won't sent position data by default.
+5) Listens for vehicle position updates on all channels
+6) bug fix for LED on pixhawk so it flashes blue or green (instead of yellow) when waiting for he vehicle's position
+------------------------------------------------------------------
+AntennaTracker 0.4 31-Jan-2015
+Changes from 0.3
+1) Init Telem2 port so it can be used to communicate with GCS
+------------------------------------------------------------------
+AntennaTracker 0.3 28-Jan-2015
+Changes from 0.2
+1) MAVLink routing replaces Proxy mode
+------------------------------------------------------------------

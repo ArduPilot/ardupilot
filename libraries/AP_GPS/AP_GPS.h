@@ -23,7 +23,10 @@
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_Math.h>
+#include <GCS_MAVLink.h>
+#include <AP_Vehicle.h>
 #include "GPS_detect_state.h"
+#include "../AP_SerialManager/AP_SerialManager.h"
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -33,6 +36,22 @@
 #define GPS_MAX_INSTANCES 2
 #else
 #define GPS_MAX_INSTANCES 1
+#endif
+
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#define GPS_RTK_AVAILABLE 1
+#else
+#define GPS_RTK_AVAILABLE 0
+#endif
+
+/**
+ * save flash by skipping NMEA and SIRF support on copter and plane
+ * for APM1/APM2
+ */
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define GPS_SKIP_SIRF_NMEA
+  #endif
 #endif
 
 class DataFlash_Class;
@@ -49,7 +68,7 @@ public:
     }
 
     /// Startup initialisation.
-    void init(DataFlash_Class *dataflash);
+    void init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager);
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -66,7 +85,8 @@ public:
         GPS_TYPE_NMEA  = 5,
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
-        GPS_TYPE_SBP   = 8
+        GPS_TYPE_SBP   = 8,
+        GPS_TYPE_PX4   = 9
     };
 
     /// GPS status codes
@@ -110,7 +130,13 @@ public:
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
+        float speed_accuracy;
+        float horizontal_accuracy;
+        float vertical_accuracy;
         bool have_vertical_velocity:1;      ///< does this GPS give vertical velocity?
+        bool have_speed_accuracy:1;
+        bool have_horizontal_accuracy:1;
+        bool have_vertical_accuracy:1;
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
     };
 
@@ -120,6 +146,10 @@ public:
     // is not present but the 2nd is then we return 2
     uint8_t num_sensors(void) const {
         return num_instances;
+    }
+
+    uint8_t primary_sensor(void) const {
+        return primary_instance;
     }
 
     // using these macros saves some code space on APM2
@@ -139,12 +169,52 @@ public:
         return status(primary_instance);
     }
 
+    // Query the highest status this GPS supports
+    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(void) const;
+
     // location of last fix
     const Location &location(uint8_t instance) const {
         return _GPS_STATE(instance).location;
     }
     const Location &location() const {
         return location(primary_instance);
+    }
+
+    bool speed_accuracy(uint8_t instance, float &sacc) const {
+        if(_GPS_STATE(instance).have_speed_accuracy) {
+            sacc = _GPS_STATE(instance).speed_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool speed_accuracy(float &sacc) const {
+        return speed_accuracy(primary_instance, sacc);
+    }
+
+    bool horizontal_accuracy(uint8_t instance, float &hacc) const {
+        if(_GPS_STATE(instance).have_horizontal_accuracy) {
+            hacc = _GPS_STATE(instance).horizontal_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool horizontal_accuracy(float &hacc) const {
+        return horizontal_accuracy(primary_instance, hacc);
+    }
+
+    bool vertical_accuracy(uint8_t instance, float &vacc) const {
+        if(_GPS_STATE(instance).have_vertical_accuracy) {
+            vacc = _GPS_STATE(instance).vertical_accuracy;
+            return true;
+        }
+        return false;
+    }
+
+    bool vertical_accuracy(float &vacc) const {
+        return vertical_accuracy(primary_instance, vacc);
     }
 
     // 3D velocity in NED format
@@ -245,7 +315,7 @@ public:
 
     // set position for HIL
     void setHIL(uint8_t instance, GPS_Status status, uint64_t time_epoch_ms, 
-                Location &location, Vector3f &velocity, uint8_t num_sats,
+                const Location &location, const Vector3f &velocity, uint8_t num_sats,
                 uint16_t hdop, bool _have_vertical_velocity);
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -256,13 +326,39 @@ public:
     // configuration parameters
     AP_Int8 _type[GPS_MAX_INSTANCES];
     AP_Int8 _navfilter;
-
+#if GPS_MAX_INSTANCES > 1
+    AP_Int8 _auto_switch;
+    AP_Int8 _min_dgps;
+    AP_Int16 _sbp_logmask;
+    AP_Int8 _inject_to;
+#endif
+    AP_Int8 _sbas_mode;
+    AP_Int8 _min_elevation;
+    AP_Int8 _raw_data;
+    
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
+
+    //Inject a packet of raw binary to a GPS
+    void inject_data(uint8_t *data, uint8_t len);
+    void inject_data(uint8_t instance, uint8_t *data, uint8_t len);
+
+    //MAVLink Status Sending
+    void send_mavlink_gps_raw(mavlink_channel_t chan);
+#if GPS_MAX_INSTANCES > 1    
+    void send_mavlink_gps2_raw(mavlink_channel_t chan);
+#endif
+
+#if GPS_RTK_AVAILABLE
+    void send_mavlink_gps_rtk(mavlink_channel_t chan);
+#if GPS_MAX_INSTANCES > 1    
+    void send_mavlink_gps2_rtk(mavlink_channel_t chan);
+#endif
+#endif
 
 private:
     struct GPS_timing {
@@ -275,6 +371,7 @@ private:
     GPS_timing timing[GPS_MAX_INSTANCES];
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
+    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
 
     /// primary GPS instance
     uint8_t primary_instance:2;
@@ -295,7 +392,7 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#if GPS_RTK_AVAILABLE
         struct SBP_detect_state sbp_detect_state;
 #endif
     } detect_state[GPS_MAX_INSTANCES];
@@ -319,5 +416,6 @@ private:
 #include <AP_GPS_NMEA.h>
 #include <AP_GPS_SIRF.h>
 #include <AP_GPS_SBP.h>
+#include <AP_GPS_PX4.h>
 
 #endif // __AP_GPS_H__

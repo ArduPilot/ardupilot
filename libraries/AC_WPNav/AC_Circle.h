@@ -78,7 +78,6 @@ private:
     // flags structure
     struct circle_flags {
         uint8_t panorama    : 1;    // true if we are doing a panorama
-        uint8_t dir         : 1;    // 0 = clockwise, 1 = counter clockwise
     } _flags;
 
     // references to inertial nav and ahrs libraries

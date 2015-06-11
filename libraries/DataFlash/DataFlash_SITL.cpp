@@ -5,7 +5,7 @@
 
 #include <AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <assert.h>
 #include "DataFlash.h"
+
+#pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 16384
@@ -117,11 +119,6 @@ void DataFlash_SITL::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
     memcpy(&buffer[BufferNum][IntPageAdr+hdr_size],
            pBuffer,
            size);
-}
-
-unsigned char DataFlash_SITL::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
-{
-	return (unsigned char)buffer[BufferNum][IntPageAdr];
 }
 
 // read size bytes of data to a page. The caller must ensure that

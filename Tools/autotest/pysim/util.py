@@ -58,29 +58,15 @@ def deltree(path):
 
 
 
-def build_SIL(atype, target='sitl'):
+def build_SIL(atype, target='sitl', j=1):
     '''build desktop SIL'''
     run_cmd("make clean",
             dir=reltopdir(atype),
             checkfail=True)
-    run_cmd("make %s" % target,
+    run_cmd("make -j%u %s" % (j, target),
             dir=reltopdir(atype),
             checkfail=True)
     return True
-
-def build_AVR(atype, board='mega2560'):
-    '''build AVR binaries'''
-    config = open(reltopdir('config.mk'), mode='w')
-    config.write('''
-HAL_BOARD=HAL_BOARD_APM1
-BOARD=%s
-PORT=/dev/null
-''' % board)
-    config.close()
-    run_cmd("make clean", dir=reltopdir(atype),  checkfail=True)
-    run_cmd("make", dir=reltopdir(atype),  checkfail=True)
-    return True
-
 
 # list of pexpect children to close on exit
 close_list = []
@@ -119,7 +105,7 @@ def pexpect_drain(p):
     except pexpect.TIMEOUT:
         pass
 
-def start_SIL(atype, valgrind=False, wipe=False, height=None):
+def start_SIL(atype, valgrind=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1):
     '''launch a SIL instance'''
     import pexpect
     cmd=""
@@ -131,8 +117,15 @@ def start_SIL(atype, valgrind=False, wipe=False, height=None):
     cmd += executable
     if wipe:
         cmd += ' -w'
-    if height is not None:
-        cmd += ' -H %u' % height
+    if synthetic_clock:
+        cmd += ' -S'
+    if home is not None:
+        cmd += ' --home=%s' % home
+    if model is not None:
+        cmd += ' --model=%s' % model
+    if speedup != 1:
+        cmd += ' --speedup=%f' % speedup
+    print("Running: %s" % cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=5)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
@@ -267,12 +260,13 @@ def BodyRatesToEarthRates(dcm, gyro):
     psiDot   = (q*sin(phi) + r*cos(phi))/cos(theta)
     return Vector3(phiDot, thetaDot, psiDot)
 
+radius_of_earth = 6378100.0 # in meters
+
 def gps_newpos(lat, lon, bearing, distance):
     '''extrapolate latitude/longitude given a heading and distance 
     thanks to http://www.movable-type.co.uk/scripts/latlong.html
     '''
     from math import sin, asin, cos, atan2, radians, degrees
-    radius_of_earth = 6378100.0 # in meters
     
     lat1 = radians(lat)
     lon1 = radians(lon)
@@ -285,6 +279,37 @@ def gps_newpos(lat, lon, bearing, distance):
                         cos(dr)-sin(lat1)*sin(lat2))
     return (degrees(lat2), degrees(lon2))
 
+
+def gps_distance(lat1, lon1, lat2, lon2):
+    '''return distance between two points in meters,
+    coordinates are in degrees
+    thanks to http://www.movable-type.co.uk/scripts/latlong.html'''
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    dLat = lat2 - lat1
+    dLon = lon2 - lon1
+
+    a = math.sin(0.5*dLat)**2 + math.sin(0.5*dLon)**2 * math.cos(lat1) * math.cos(lat2)
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
+    return radius_of_earth * c
+
+def gps_bearing(lat1, lon1, lat2, lon2):
+    '''return bearing between two points in degrees, in range 0-360
+    thanks to http://www.movable-type.co.uk/scripts/latlong.html'''
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    dLat = lat2 - lat1
+    dLon = lon2 - lon1
+    y = math.sin(dLon) * math.cos(lat2)
+    x = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(dLon)
+    bearing = math.degrees(math.atan2(y, x))
+    if bearing < 0:
+        bearing += 360.0
+    return bearing
 
 class Wind(object):
     '''a wind generation object'''
@@ -411,7 +436,15 @@ def toVec(magnitude, angle):
     m.from_euler(0, 0, angle)
     return m.transposed() * v
 
+def constrain(value, minv, maxv):
+    '''constrain a value to a range'''
+    if value < minv:
+        value = minv
+    if value > maxv:
+        value = maxv
+    return value
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+

@@ -75,6 +75,9 @@ private:
     uint32_t _total_read;
     uint32_t _total_written;
     enum flow_control _flow_control;
+
+    pid_t _uart_owner_pid;
+
 };
 
 #endif // __AP_HAL_PX4_UARTDRIVER_H__

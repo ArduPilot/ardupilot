@@ -11,16 +11,28 @@
    maximum number of INS instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#define INS_MAX_INSTANCES 2
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+#define INS_MAX_INSTANCES 3
+#define INS_MAX_BACKENDS  6
 #else
 #define INS_MAX_INSTANCES 1
+#define INS_MAX_BACKENDS  1
 #endif
+
 
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
+
+class AP_InertialSensor_Backend;
+
+/*
+  forward declare DataFlash class. We can't include DataFlash.h
+  because of mutual dependencies
+ */
+class DataFlash_Class;
+
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
  *
@@ -30,6 +42,8 @@
  */
 class AP_InertialSensor
 {
+    friend class AP_InertialSensor_Backend;
+
 public:
     AP_InertialSensor();
 
@@ -40,10 +54,10 @@ public:
 
     // the rate that updates will be available to the application
     enum Sample_rate {
-        RATE_50HZ,
-        RATE_100HZ,
-        RATE_200HZ,
-        RATE_400HZ
+        RATE_50HZ  = 50,
+        RATE_100HZ = 100,
+        RATE_200HZ = 200,
+        RATE_400HZ = 400
     };
 
     /// Perform startup initialisation.
@@ -59,90 +73,116 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    virtual void init( Start_style style,
-                       Sample_rate sample_rate);
+    void init( Start_style style,
+               Sample_rate sample_rate);
 
-    /// Perform cold startup initialisation for just the accelerometers.
-    ///
-    /// @note This should not be called unless ::init has previously
-    ///       been called, as ::init may perform other work.
-    ///
-    virtual void init_accel();
+    /// Register a new gyro/accel driver, allocating an instance
+    /// number
+    uint8_t register_gyro(void);
+    uint8_t register_accel(void);
 
 #if !defined( __AVR_ATmega1280__ )
     // perform accelerometer calibration including providing user instructions
     // and feedback
-    virtual bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
-                                 float& trim_roll,
-                                 float& trim_pitch);
+    bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
+                         float& trim_roll,
+                         float& trim_pitch);
 #endif
+    bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
-    /// calibrated - returns true if the accelerometers have been calibrated
-    ///
-    /// @note this should not be called while flying because it reads from the eeprom which can be slow
-    ///
-    bool calibrated();
+    /// calibrating - returns true if the gyros or accels are currently being calibrated
+    bool calibrating() const { return _calibrating; }
 
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
     ///       been called, as ::init may perform other work
     ///
-    virtual void init_gyro(void);
+    void init_gyro(void);
 
     /// Fetch the current gyro values
     ///
     /// @returns	vector of rotational rates in radians/sec
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
-    const Vector3f     &get_gyro(void) const { return get_gyro(_get_primary_gyro()); }
-    virtual void       set_gyro(uint8_t instance, const Vector3f &gyro) {}
+    const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
+    void               set_gyro(uint8_t instance, const Vector3f &gyro);
 
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
-    const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_get_primary_gyro()); }
+    const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
+
+    //get delta angle if available
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
+        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
+        return _delta_angle_valid[i];
+    }
+
+    bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
+
+    //get delta velocity if available
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
+        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
+        return _delta_velocity_valid[i];
+    }
+    bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
+
+    float get_delta_velocity_dt(uint8_t i) const {
+        return _delta_velocity_dt[i];
+    }
+    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
     /// @returns	vector of current accelerations in m/s/s
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
-    const Vector3f     &get_accel(void) const { return get_accel(get_primary_accel()); }
-    virtual void       set_accel(uint8_t instance, const Vector3f &accel) {}
+    const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }
+    void               set_accel(uint8_t instance, const Vector3f &accel);
+
+    uint32_t get_gyro_error_count(uint8_t i) const { return _gyro_error_count[i]; }
+    uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
 
     // multi-device interface
-    virtual bool get_gyro_health(uint8_t instance) const { return true; }
-    bool get_gyro_health(void) const { return get_gyro_health(_get_primary_gyro()); }
-    virtual uint8_t get_gyro_count(void) const { return 1; };
+    bool get_gyro_health(uint8_t instance) const { return (instance<_gyro_count) ? _gyro_healthy[instance] : false; }
+    bool get_gyro_health(void) const { return get_gyro_health(_primary_gyro); }
+    bool get_gyro_health_all(void) const;
+    uint8_t get_gyro_count(void) const { return _gyro_count; }
+    bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
+    bool gyro_calibrated_ok_all() const;
 
-    virtual bool get_accel_health(uint8_t instance) const { return true; }
-    bool get_accel_health(void) const { return get_accel_health(get_primary_accel()); }
-    virtual uint8_t get_accel_count(void) const { return 1; };
+    bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
+    bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
+    bool get_accel_health_all(void) const;
+    uint8_t get_accel_count(void) const { return _accel_count; };
+    bool accel_calibrated_ok_all() const;
 
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
-    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(get_primary_accel()); }
+    const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
 
     // get accel scale
     const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
-    const Vector3f &get_accel_scale(void) const { return get_accel_scale(get_primary_accel()); }
+    const Vector3f &get_accel_scale(void) const { return get_accel_scale(_primary_accel); }
 
-    /* Update the sensor data, so that getters are nonblocking.
-     * Returns a bool of whether data was updated or not.
-     */
-    virtual bool update() = 0;
+    // return the temperature if supported. Zero is returned if no
+    // temperature is available
+    float get_temperature(uint8_t instance) const { return _temperature[instance]; }
 
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
      */
-    virtual float get_delta_time() const = 0;
+    float get_delta_time() const { return _delta_time; }
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
-    virtual float get_gyro_drift_rate(void) = 0;
+    float get_gyro_drift_rate(void) const { return ToRad(0.5f/60); }
 
-    // wait for a sample to be available, with timeout in milliseconds
-    virtual bool wait_for_sample(uint16_t timeout_ms) = 0;
+    // update gyro and accel values from accumulated samples
+    void update(void);
+
+    // wait for a sample to be available
+    void wait_for_sample(void);
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -152,29 +192,38 @@ public:
         _board_orientation = orientation;
     }
 
-    // override default filter frequency
-    void set_default_filter(float filter_hz) {
-        if (!_mpu6000_filter.load()) {
-            _mpu6000_filter.set(filter_hz);
-        }
-    }
+    // return the selected sample rate
+    Sample_rate get_sample_rate(void) const { return _sample_rate; }
 
-    virtual uint16_t error_count(void) const { return 0; }
-    virtual bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
+    uint16_t error_count(void) const { return 0; }
+    bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
-    virtual uint8_t get_primary_accel(void) const { return 0; }
+    uint8_t get_primary_accel(void) const { return _primary_accel; }
+    uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
-protected:
+    // enable HIL mode
+    void set_hil_mode(void) { _hil_mode = true; }
 
-    virtual uint8_t _get_primary_gyro(void) const { return 0; }
+    // get the gyro filter rate in Hz
+    uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
-    // sensor specific init to be overwritten by descendant classes
-    virtual uint16_t        _init_sensor( Sample_rate sample_rate ) = 0;
+    // get the accel filter rate in Hz
+    uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
-    // no-save implementations of accel and gyro initialisation routines
-    virtual void  _init_accel();
+    // pass in a pointer to DataFlash for raw data logging
+    void set_dataflash(DataFlash_Class *dataflash) { _dataflash = dataflash; }
 
-    virtual void _init_gyro();
+    // enable/disable raw gyro/accel logging
+    void set_raw_logging(bool enable) { _log_raw_data = enable; }
+
+private:
+
+    // load backend drivers
+    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
+    void _detect_backends(void);
+
+    // gyro initialisation
+    void _init_gyro();
 
 #if !defined( __AVR_ATmega1280__ )
     // Calibration routines borrowed from Rolfe Schmidt
@@ -182,48 +231,111 @@ protected:
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    virtual bool            _calibrate_accel(Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale);
-    virtual void            _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
-    virtual void            _calibrate_reset_matrices(float dS[6], float JS[6][6]);
-    virtual void            _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
-    virtual void            _calculate_trim(Vector3f accel_sample, float& trim_roll, float& trim_pitch);
+    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
+                             AP_InertialSensor_UserInteract* interact);
+    void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
+    void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
+    void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
+    bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 #endif
 
     // save parameters to eeprom
     void  _save_parameters();
 
-    // Most recent accelerometer reading obtained by ::update
+    // backend objects
+    AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
+
+    // number of gyros and accel drivers. Note that most backends
+    // provide both accel and gyro data, so will increment both
+    // counters on initialisation
+    uint8_t _gyro_count;
+    uint8_t _accel_count;
+    uint8_t _backend_count;
+
+    // the selected sample rate
+    Sample_rate _sample_rate;
+    
+    // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
+    Vector3f _delta_velocity[INS_MAX_INSTANCES];
+    float _delta_velocity_dt[INS_MAX_INSTANCES];
+    bool _delta_velocity_valid[INS_MAX_INSTANCES];
 
-    // previous accelerometer reading obtained by ::update
-    Vector3f _previous_accel[INS_MAX_INSTANCES];
-
-    // Most recent gyro reading obtained by ::update
+    // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
+    Vector3f _delta_angle[INS_MAX_INSTANCES];
+    bool _delta_angle_valid[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
 
     // accelerometer scaling and offsets
-    AP_Vector3f             _accel_scale[INS_MAX_INSTANCES];
-    AP_Vector3f             _accel_offset[INS_MAX_INSTANCES];
-    AP_Vector3f             _gyro_offset[INS_MAX_INSTANCES];
+    AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
+    AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
+    AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+
+    // temperatures for an instance if available
+    float _temperature[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
-    AP_Int8                 _mpu6000_filter;
+    AP_Int8     _accel_filter_cutoff;
+    AP_Int8     _gyro_filter_cutoff;
 
     // board orientation from AHRS
-    enum Rotation			_board_orientation;
+    enum Rotation _board_orientation;
+
+    // calibrated_ok flags
+    bool _gyro_cal_ok[INS_MAX_INSTANCES];
+
+    // primary accel and gyro
+    uint8_t _primary_gyro;
+    uint8_t _primary_accel;
+
+    // has wait_for_sample() found a sample?
+    bool _have_sample:1;
+
+    // are we in HIL mode?
+    bool _hil_mode:1;
+
+    // are gyros or accels currently being calibrated
+    bool _calibrating:1;
+
+    // should we log raw accel/gyro data?
+    bool _log_raw_data:1;
+
+    // the delta time in seconds for the last sample
+    float _delta_time;
+
+    // last time a wait_for_sample() returned a sample
+    uint32_t _last_sample_usec;
+
+    // target time for next wait_for_sample() return
+    uint32_t _next_sample_usec;
+    
+    // time between samples in microseconds
+    uint32_t _sample_period_usec;
+
+    // health of gyros and accels
+    bool _gyro_healthy[INS_MAX_INSTANCES];
+    bool _accel_healthy[INS_MAX_INSTANCES];
+
+    uint32_t _accel_error_count[INS_MAX_INSTANCES];
+    uint32_t _gyro_error_count[INS_MAX_INSTANCES];
+
+    DataFlash_Class *_dataflash;
 };
 
-#include "AP_InertialSensor_Oilpan.h"
+#include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_MPU6000.h"
-#include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_PX4.h"
-#include "AP_InertialSensor_VRBRAIN.h"
+#include "AP_InertialSensor_Oilpan.h"
+#include "AP_InertialSensor_MPU9250.h"
+#include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_Flymaple.h"
+#include "AP_InertialSensor_MPU9150.h"
+#include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
-#include "AP_InertialSensor_Flymaple.h"
-#include "AP_InertialSensor_L3G4200D.h"
 
 #endif // __AP_INERTIAL_SENSOR_H__

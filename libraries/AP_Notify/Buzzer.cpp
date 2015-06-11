@@ -23,21 +23,22 @@
 
 extern const AP_HAL::HAL& hal;
 
-void Buzzer::init()
+bool Buzzer::init()
 {
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
-        return;
+        return false;
     }
 
     // setup the pin and ensure it's off
-    hal.gpio->pinMode(BUZZER_PIN, GPIO_OUTPUT);
+    hal.gpio->pinMode(BUZZER_PIN, HAL_GPIO_OUTPUT);
     on(false);
 
     // set initial boot states. This prevents us issueing a arming
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
+    return true;
 }
 
 // update - updates led according to timed_updated.  Should be called at 50Hz
@@ -46,6 +47,12 @@ void Buzzer::update()
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
         return;
+    }
+
+    // check for arming failed event
+    if (AP_Notify::events.arming_failed) {
+        // arming failed buzz
+        play_pattern(SINGLE_BUZZ);
     }
 
     // reduce 50hz call down to 10hz
@@ -87,21 +94,60 @@ void Buzzer::update()
                         break;
                 }
                 return;
-            case GPS_GLITCH:
-                // play bethoven's 5th type buzz (three fast, one long)
+            case ARMING_BUZZ:
+                // record start time
+                if (_pattern_counter == 1) {
+                    _arming_buzz_start_ms = hal.scheduler->millis();
+                    on(true);
+                } else {
+                    // turn off buzzer after 3 seconds
+                    if (hal.scheduler->millis() - _arming_buzz_start_ms >= BUZZER_ARMING_BUZZ_MS) {
+                        _arming_buzz_start_ms = 0;
+                        on(false);
+                        _pattern = NONE;
+                    }
+                }
+                return;
+            case BARO_GLITCH:
+                // four fast tones
                 switch (_pattern_counter) {
                     case 1:
                     case 3:
                     case 5:
                     case 7:
+                    case 9:
                         on(true);
                         break;
                     case 2:
                     case 4:
                     case 6:
+                    case 8:
                         on(false);
                         break;
-                    case 17:
+                    case 10:
+                        on(false);
+                        _pattern = NONE;
+                        break;
+                    default:
+                        // do nothing
+                        break;
+                }
+                return;
+            case EKF_BAD:
+                // four tones getting shorter)
+                switch (_pattern_counter) {
+                    case 1:
+                    case 5:
+                    case 8:
+                    case 10:
+                        on(true);
+                        break;
+                    case 4:
+                    case 7:
+                    case 9:
+                        on(false);
+                        break;
+                    case 11:
                         on(false);
                         _pattern = NONE;
                         break;
@@ -121,7 +167,7 @@ void Buzzer::update()
         _flags.armed = AP_Notify::flags.armed;
         if (_flags.armed) {
             // double buzz when armed
-            play_pattern(DOUBLE_BUZZ);
+            play_pattern(ARMING_BUZZ);
         }else{
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);
@@ -129,22 +175,12 @@ void Buzzer::update()
         return;
     }
 
-    // check gps glitch
-    if (_flags.gps_glitching != AP_Notify::flags.gps_glitching) {
-        _flags.gps_glitching = AP_Notify::flags.gps_glitching;
-        if (_flags.gps_glitching) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
-        }
-        return;
-    }
-
-    // check gps failsafe
-    if (_flags.failsafe_gps != AP_Notify::flags.failsafe_gps) {
-        _flags.failsafe_gps = AP_Notify::flags.failsafe_gps;
-        if (_flags.failsafe_gps) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
+    // check ekf bad
+    if (_flags.ekf_bad != AP_Notify::flags.ekf_bad) {
+        _flags.ekf_bad = AP_Notify::flags.ekf_bad;
+        if (_flags.ekf_bad) {
+            // ekf bad warning buzz
+            play_pattern(EKF_BAD);
         }
         return;
     }

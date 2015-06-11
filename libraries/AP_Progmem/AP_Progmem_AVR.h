@@ -12,22 +12,11 @@ typedef struct {
     char c;
 } prog_char_t;
 
-#undef PROGMEM
-#define PROGMEM __attribute__(( section(".progmem.data") ))
+typedef char prog_char;
 
 #undef PSTR
-/* need to define prog_char in avr-gcc 4.7 */
-#if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR__ > 6
-typedef char prog_char;
-#endif
-/* Need const type for progmem - new for avr-gcc 4.6 */
-#if __AVR__ && __GNUC__ == 4 && __GNUC_MINOR__ > 5
 #define PSTR(s) (__extension__({static const prog_char __c[] PROGMEM = (s); \
                                   (const prog_char_t *)&__c[0]; }))
-#else
-#define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); \
-                                  (prog_char_t *)&__c[0]; }))
-#endif
 
 
 static inline int strcasecmp_P(const char *str1, const prog_char_t *pstr)
@@ -56,6 +45,12 @@ static inline char *strncpy_P(char *buffer, const prog_char_t *pstr, size_t buff
     return strncpy_P(buffer, (const prog_char *)pstr, buffer_size);
 }
 
+static inline void pgm_read_block(const void *s, void *dest, uint8_t len) {
+    uint8_t *dp = (uint8_t *)dest;
+    for (uint8_t i=0; i<len; i++) {
+        dp[i] = pgm_read_byte(i + (const prog_char *)s);
+    }
+}
 
 // read something the size of a pointer. This makes the menu code more
 // portable
@@ -64,15 +59,9 @@ static inline uintptr_t pgm_read_pointer(const void *s)
     if (sizeof(uintptr_t) == sizeof(uint16_t)) {
         return (uintptr_t)pgm_read_word(s);
     } else {
-        union {
-            uintptr_t p;
-            uint8_t a[sizeof(uintptr_t)];
-        } u;
-        uint8_t        i;
-        for (i=0; i< sizeof(uintptr_t); i++) {
-            u.a[i] = pgm_read_byte(i + (const prog_char *)s);
-        }
-        return u.p;
+        uintptr_t p;
+        pgm_read_block(s, &p, sizeof(p));
+        return p;
     }
 }
 

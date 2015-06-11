@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
-    AP_GROUPINFO("REQUIRE",     0,      AP_Arming,  require,                 0),
+    AP_GROUPINFO("REQUIRE",     0,      AP_Arming,  require,                 1),
 
     // @Param: DIS_RUD
     // @DisplayName: Disable Rudder Arming
@@ -36,26 +36,31 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
-    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed befor allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and manual RC control you would set ARMING_CHECK to 72.
-    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS,16:INS,32:Parameters,64:Manual RC Trasmitter,128:Board voltage,256:Battery Level 
+    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed befor allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
+    // @Values: 0:None,1:All,2:Barometer,4:Compass,8:GPS,16:INS,32:Parameters,64:RC Failsafe,128:Board voltage,256:Battery Level,512:Airspeed,1024:LoggingAvailable
     // @User: Advanced
-    AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       0),
+    AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
     AP_GROUPEND
 };
 
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
-AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
-                     const bool &home_set, gcs_send_t_p gcs_print_func)
-   : armed(false)
+AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+                     const enum HomeState &home_set, gcs_send_t_p gcs_print_func)
+    : armed(false)
+   , logging_available(false)
+   , skip_gyro_cal(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
    , barometer(baro)
+   , _compass(compass)
    , home_is_set(home_set)
    , gcs_send_text_P(gcs_print_func)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
+    memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
 }
 
 bool AP_Arming::is_armed() 
@@ -76,12 +81,138 @@ bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (! barometer.healthy) {
+        if (! barometer.healthy()) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Baro not healthy!"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Barometer not healthy!"));
             }
             return false;
         }
+    }
+
+    return true;
+}
+
+bool AP_Arming::airspeed_checks(bool report) 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
+        const AP_Airspeed *airspeed = ahrs.get_airspeed();
+        if (airspeed == NULL) {
+            // not an airspeed capable vehicle
+            return true;
+        }
+        if (airspeed->enabled() && airspeed->use() && !airspeed->healthy()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: airspeed not healthy"));
+            }
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool AP_Arming::logging_checks(bool report) 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_LOGGING)) {
+        if (!logging_available) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: logging not available"));
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+bool AP_Arming::ins_checks(bool report) 
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_INS)) {
+        const AP_InertialSensor &ins = ahrs.get_ins();
+        if (! ins.get_gyro_health_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: gyros not healthy!"));
+            }
+            return false;
+        }
+        if (!skip_gyro_cal && ! ins.gyro_calibrated_ok_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: gyros not calibrated!"));
+            }
+            return false;
+        }
+        if (! ins.get_accel_health_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: accels not healthy!"));
+            }
+            return false;
+        }
+        if (!ahrs.healthy()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: AHRS not healthy!"));
+            }
+            return false;
+        }
+        if (!ins.accel_calibrated_ok_all()) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: 3D accel cal needed"));
+            }
+            return false;
+        }
+#if INS_MAX_INSTANCES > 1
+        // check all accelerometers point in roughly same direction
+        if (ins.get_accel_count() > 1) {
+            const Vector3f &prime_accel_vec = ins.get_accel();
+            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+                // get next accel vector
+                const Vector3f &accel_vec = ins.get_accel(i);
+                Vector3f vec_diff = accel_vec - prime_accel_vec;
+                // allow for up to 0.5 m/s/s difference. Has to pass
+                // in last 10 seconds
+                float threshold = 0.5f;
+                if (i >= 2) {
+                    /*
+                      we allow for a higher threshold for IMU3 as it
+                      runs at a different temperature to IMU1/IMU2,
+                      and is not used for accel data in the EKF
+                     */
+                    threshold *= 3;
+                }
+                if (vec_diff.length() <= threshold) {
+                    last_accel_pass_ms[i] = hal.scheduler->millis();
+                }
+                if (hal.scheduler->millis() - last_accel_pass_ms[i] > 10000) {
+                    if (report) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
+                    }
+                    return false;
+                }
+            }
+        }
+
+        // check all gyros are giving consistent readings
+        if (ins.get_gyro_count() > 1) {
+            const Vector3f &prime_gyro_vec = ins.get_gyro();
+            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+                // get next gyro vector
+                const Vector3f &gyro_vec = ins.get_gyro(i);
+                Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+                // allow for up to 5 degrees/s difference. Pass if its
+                // been OK in last 10 seconds
+                if (vec_diff.length() <= radians(5)) {
+                    last_gyro_pass_ms[i] = hal.scheduler->millis();
+                }
+                if (hal.scheduler->millis() - last_gyro_pass_ms[i] > 10000) {
+                    if (report) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent gyros"));
+                    }
+                    return false;
+                }
+            }
+        }
+#endif
     }
 
     return true;
@@ -91,32 +222,46 @@ bool AP_Arming::compass_checks(bool report)
 {
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
-        const Compass* compass = ahrs.get_compass();
 
-        //if there is no compass and the user has specifically asked to check
-        //the compass, then there is a problem
-        if (compass == NULL && (checks_to_perform & ARMING_CHECK_COMPASS)) {
-            if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: No compass detected."));
-            }
-            return false;
-        } else if (compass == NULL) {
-            //if the user's not asking to check and there isn't a compass
-            //then skip compass checks
+        if (!_compass.use_for_yaw()) {
+            // compass use is disabled
             return true;
         }
 
-        if (! compass->healthy()) {
+        if (!_compass.healthy()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not healthy!"));
             }
             return false;
         }
         // check compass learning is on or offsets have been set
-        Vector3f offsets = compass->get_offsets();
-        if(!compass->_learn && offsets.length() == 0) {
+        if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
             if (report) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass not calibrated"));
+            }
+            return false;
+        }
+
+        // check for unreasonable compass offsets
+        Vector3f offsets = _compass.get_offsets();
+        if (offsets.length() > 600) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Compass offsets too high"));
+            }
+            return false;
+        }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+# define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 544 or < 115
+#else // PX4, SITL
+#define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
+#endif
+
+        // check for unreasonable mag field length
+        float mag_field = _compass.get_field().length();
+        if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65f || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35f) {
+            if (report) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check mag field"));
             }
             return false;
         }
@@ -133,12 +278,10 @@ bool AP_Arming::gps_checks(bool report)
         const AP_GPS &gps = ahrs.get_gps();
 
         //GPS OK?
-        if (!home_is_set || 
-            gps.status() < AP_GPS::GPS_OK_FIX_3D ||              
-            AP_Notify::flags.gps_glitching ||
-            AP_Notify::flags.failsafe_gps) {
+        if (home_is_set == HOME_UNSET || 
+            gps.status() < AP_GPS::GPS_OK_FIX_3D) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Pos"));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Bad GPS Position"));
             }
             return false;
         }      
@@ -183,7 +326,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
         if (AP_Notify::flags.failsafe_radio) {
             if (report) {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on."));
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Radio failsafe on"));
             }
             return false;
         }
@@ -198,32 +341,24 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
 bool AP_Arming::pre_arm_checks(bool report) 
 {
+    bool ret = true;
     if (armed || require == NONE) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
     }
 
-    if (! hardware_safety_check(report))
-        return false;
+    ret &= hardware_safety_check(report);
+    ret &= barometer_checks(report);
+    ret &= ins_checks(report);
+    ret &= compass_checks(report);
+    ret &= gps_checks(report);
+    ret &= battery_checks(report);
+    ret &= airspeed_checks(report);
+    ret &= logging_checks(report);
+    ret &= manual_transmitter_checks(report);
 
-    if (! barometer_checks(report))
-        return false;
-
-    if (! compass_checks(report))
-        return false;
-
-    if (! gps_checks(report))
-        return false;
-
-    if (! battery_checks(report))
-        return false;
-
-    if (! manual_transmitter_checks(report))
-        return false;
-
-    //all checks passed, allow arming!
-    return true;
+    return ret;
 }
 
 //returns true if arming occured successfully

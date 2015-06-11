@@ -27,20 +27,42 @@ public:
     // Constructors
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
     AP_AHRS(ins, baro, gps),
-        _last_declination(0),
-        _mag_earth(1,0)
+        _omega_I_sum_time(0.0f),
+        _renorm_val_sum(0.0f),
+        _renorm_val_count(0),
+        _error_rp(1.0f),
+        _error_yaw(1.0f),
+        _gps_last_update(0),
+        _ra_deltat(0.0f),
+        _ra_sum_start(0),
+        _last_declination(0.0f),
+        _mag_earth(1,0),
+        _have_gps_lock(false),
+        _last_lat(0),
+        _last_lng(0),
+        _position_offset_north(0.0f),
+        _position_offset_east(0.0f),
+        _have_position(false),
+        _last_wind_time(0),
+        _last_airspeed(0.0f),
+        _last_consistent_heading(0),
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        _imu1_weight(0.5f),
+#endif
+        _last_failure_ms(0),
+        _last_startup_ms(0)
     {
         _dcm_matrix.identity();
 
         // these are experimentally derived from the simulator
         // with large drift levels
-        _ki = 0.0087;
-        _ki_yaw = 0.01;
+        _ki = 0.0087f;
+        _ki_yaw = 0.01f;
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f get_gyro(void) const {
-        return _omega + _omega_P + _omega_yaw_P;
+    const Vector3f &get_gyro(void) const {
+        return _omega;
     }
 
     // return rotation matrix representing rotaton from body to earth axes
@@ -53,6 +75,10 @@ public:
         return _omega_I;
     }
 
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    void reset_gyro_drift(void);
+
     // Methods
     void            update(void);
     void            reset(bool recover_eulers = false);
@@ -61,11 +87,11 @@ public:
     void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc);
+    virtual bool get_position(struct Location &loc) const;
 
     // status reporting
-    float           get_error_rp(void);
-    float           get_error_yaw(void);
+    float           get_error_rp(void) const { return _error_rp; } 
+    float           get_error_yaw(void) const { return _error_yaw; }
 
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate(void) {
@@ -82,7 +108,10 @@ public:
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
-    bool healthy(void);
+    bool healthy(void) const;
+
+    // time that the AHRS has been up
+    uint32_t uptime_ms(void) const;
 
 private:
     float _ki;
@@ -98,6 +127,7 @@ private:
     float           yaw_error_compass();
     void            euler_angles(void);
     bool            have_gps(void) const;
+    bool            use_fast_gains(void) const;
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
@@ -125,12 +155,8 @@ private:
     // state to support status reporting
     float _renorm_val_sum;
     uint16_t _renorm_val_count;
-    float _error_rp_sum;
-    uint16_t _error_rp_count;
-    float _error_rp_last;
-    float _error_yaw_sum;
-    uint16_t _error_yaw_count;
-    float _error_yaw_last;
+    float _error_rp;
+    float _error_yaw;
 
     // time in millis when we last got a GPS heading
     uint32_t _gps_last_update;
@@ -169,8 +195,15 @@ private:
     // estimated wind in m/s
     Vector3f _wind;
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    float _imu1_weight;
+#endif
+
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;
+
+    // time when DCM was last reset
+    uint32_t _last_startup_ms;
 };
 
 #endif // __AP_AHRS_DCM_H__

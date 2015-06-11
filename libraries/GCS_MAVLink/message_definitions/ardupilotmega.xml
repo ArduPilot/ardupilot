@@ -23,6 +23,16 @@
               <param index="6">Empty</param>
               <param index="7">Empty</param>
             </entry>
+            <entry name="MAV_CMD_DO_GRIPPER" value="211">
+              <description>Mission command to operate EPM gripper</description>
+              <param index="1">gripper number (a number from 1 to max number of grippers on the vehicle)</param>
+              <param index="2">gripper action (0=release, 1=grab. See GRIPPER_ACTIONS enum)</param>
+              <param index="3">Empty</param>
+              <param index="4">Empty</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
@@ -75,6 +85,187 @@
       </entry>
     </enum>
 
+    <!-- gripper action enum -->
+    <enum name="GRIPPER_ACTIONS">
+      <description>Gripper actions.</description>
+      <entry name="GRIPPER_ACTION_RELEASE" value="0">
+        <description>gripper release of cargo</description>
+      </entry>
+      <entry name="GRIPPER_ACTION_GRAB" value="1">
+        <description>gripper grabs onto cargo</description>
+      </entry>
+    </enum>
+
+    <!-- Camera event types -->
+    <enum name="CAMERA_STATUS_TYPES">
+        <entry name="CAMERA_STATUS_TYPE_HEARTBEAT"  value="0"><description>Camera heartbeat, announce camera component ID at 1hz</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_TRIGGER"    value="1"><description>Camera image triggered</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_DISCONNECT" value="2"><description>Camera connection lost</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_ERROR"      value="3"><description>Camera unknown error</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWBATT"    value="4"><description>Camera battery low. Parameter p1 shows reported voltage</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTORE"   value="5"><description>Camera storage low. Parameter p1 shows reported shots remaining</description></entry>
+        <entry name="CAMERA_STATUS_TYPE_LOWSTOREV"  value="6"><description>Camera storage low. Parameter p1 shows reported video minutes remaining</description></entry>
+    </enum>
+
+    <!-- camera feedback flags, a little bit of future-proofing -->
+    <enum name="CAMERA_FEEDBACK_FLAGS">
+        <entry name="CAMERA_FEEDBACK_PHOTO"         value="0"> <description>Shooting photos, not video</description></entry>
+        <entry name="CAMERA_FEEDBACK_VIDEO"         value="1"> <description>Shooting video, not stills</description></entry>
+        <entry name="CAMERA_FEEDBACK_BADEXPOSURE"   value="2"> <description>Unable to achieve requested exposure (e.g. shutter speed too low)</description></entry>
+        <entry name="CAMERA_FEEDBACK_CLOSEDLOOP"    value="3"> <description>Closed loop feedback from camera, we know for sure it has successfully taken a picture</description></entry>
+        <entry name="CAMERA_FEEDBACK_OPENLOOP"      value="4"> <description>Open loop camera, an image trigger has been requested but we can't know for sure it has successfully taken a picture</description></entry>
+    </enum>
+
+    <!-- Gimbal payload enumerations -->
+	<enum name="MAV_MODE_GIMBAL">
+		<entry name="MAV_MODE_GIMBAL_UNINITIALIZED" value="0">
+			<description>Gimbal is powered on but has not started initializing yet</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_PITCH" value="1">
+			<description>Gimbal is currently running calibration on the pitch axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_ROLL" value="2">
+			<description>Gimbal is currently running calibration on the roll axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_CALIBRATING_YAW" value="3">
+			<description>Gimbal is currently running calibration on the yaw axis</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_INITIALIZED" value="4">
+			<description>Gimbal has finished calibrating and initializing, but is relaxed pending reception of first rate command from copter</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_ACTIVE" value="5">
+			<description>Gimbal is actively stabilizing</description>
+		</entry>
+		<entry name="MAV_MODE_GIMBAL_RATE_CMD_TIMEOUT" value="6">
+			<description>Gimbal is relaxed because it missed more than 10 expected rate command messages in a row.  Gimbal will move back to active mode when it receives a new rate command</description>
+		</entry>
+	</enum>
+	
+	<enum name="GIMBAL_AXIS">
+		<entry name="GIMBAL_AXIS_YAW" value="0">
+			<description>Gimbal yaw axis</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_PITCH" value="1">
+			<description>Gimbal pitch axis</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_ROLL" value="2">
+			<description>Gimbal roll axis</description>
+		</entry> 
+	</enum>
+	
+	<enum name="GIMBAL_AXIS_CALIBRATION_STATUS">
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_IN_PROGRESS" value="0">
+			<description>Axis calibration is in progress</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_SUCCEEDED" value="1">
+			<description>Axis calibration succeeded</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_STATUS_FAILED" value="2">
+			<description>Axis calibration failed</description>
+		</entry>
+	</enum>
+	
+	<enum name="FACTORY_TEST">
+		<entry name="FACTORY_TEST_AXIS_RANGE_LIMITS" value="0">
+			<description>Tests to make sure each axis can move to its mechanical limits</description>
+		</entry>
+	</enum>
+	
+	<enum name="GIMBAL_AXIS_CALIBRATION_REQUIRED">
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_UNKNOWN" value="0">
+			<description>Whether or not this axis requires calibration is unknown at this time</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_TRUE" value="1">
+			<description>This axis requires calibration</description>
+		</entry>
+		<entry name="GIMBAL_AXIS_CALIBRATION_REQUIRED_FALSE" value="2">
+			<description>This axis does not require calibration</description>
+		</entry>
+	</enum>
+	
+    <!-- GoPro System Enumerations -->
+    <enum name="GOPRO_HEARTBEAT_STATUS">
+      <entry name="GOPRO_HEARTBEAT_STATUS_DISCONNECTED" value="0">
+        <description>No GoPro connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_INCOMPATIBLE" value="1">
+        <description>The detected GoPro is not HeroBus compatible</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_OFF" value="2">
+        <description>A HeroBus compatible GoPro is connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_ON" value="3">
+        <description>A HeroBus compatible GoPro is connected</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_RECORDING" value="4">
+        <description>A HeroBus compatible GoPro is connected and recording</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_OVERTEMP" value="5">
+        <description>A HeroBus compatible GoPro is connected and overtemperature</description>
+      </entry>
+      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_STORAGE" value="6">
+        <description>A HeroBus compatible GoPro is connected and storage is missing or full</description>
+      </entry>
+    </enum>
+    <enum name="GOPRO_SET_RESPONSE_RESULT">
+      <entry name="GOPRO_SET_RESPONSE_RESULT_FAILURE" value="0">
+        <description>The write message with ID indicated failed</description>
+      </entry>
+      <entry name="GOPRO_SET_RESPONSE_RESULT_SUCCESS" value="1">
+        <description>The write message with ID indicated succeeded</description>
+      </entry>
+    </enum>
+    <enum name="GOPRO_COMMAND">
+      <entry name="GOPRO_COMMAND_POWER" value="0">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_CAPTURE_MODE" value="1">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_SHUTTER" value="2">
+        <description>(___/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_BATTERY" value="3">
+        <description>(Get/___)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_MODEL" value="4">
+        <description>(Get/___)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_REQUEST_FAILED" value="254">
+        <description>(Get/___)</description>
+      </entry>
+    </enum>
+
+    <!-- led control pattern enums (enumeration of specific patterns) -->
+    <enum name="LED_CONTROL_PATTERN">
+        <entry name="LED_CONTROL_PATTERN_OFF" value="0"> <description>LED patterns off (return control to regular vehicle control)</description></entry>
+        <entry name="LED_CONTROL_PATTERN_FIRMWAREUPDATE" value="1"> <description>LEDs show pattern during firmware update</description></entry>
+        <entry name="LED_CONTROL_PATTERN_CUSTOM" value="255"> <description>Custom Pattern using custom bytes fields</description></entry>
+    </enum>
+
+	<!-- EKF_STATUS_FLAGS - these values should be bit-and with the messages flags field to know if flag has been set -->
+    <enum name="EKF_STATUS_FLAGS">
+        <description>Flags in EKF_STATUS message</description>
+        <entry name="EKF_ATTITUDE" value="1"> <description>set if EKF's attitude estimate is good</description></entry>
+        <entry name="EKF_VELOCITY_HORIZ" value="2"> <description>set if EKF's horizontal velocity estimate is good</description></entry>
+        <entry name="EKF_VELOCITY_VERT" value="4"> <description>set if EKF's vertical velocity estimate is good</description></entry>
+        <entry name="EKF_POS_HORIZ_REL" value="8"> <description>set if EKF's horizontal position (relative) estimate is good</description></entry>
+        <entry name="EKF_POS_HORIZ_ABS" value="16"> <description>set if EKF's horizontal position (absolute) estimate is good</description></entry>
+        <entry name="EKF_POS_VERT_ABS" value="32"> <description>set if EKF's vertical position (absolute) estimate is good</description></entry>
+        <entry name="EKF_POS_VERT_AGL" value="64"> <description>set if EKF's vertical position (above ground) estimate is good</description></entry>
+        <entry name="EKF_CONST_POS_MODE" value="128"> <description>EKF is in constant position mode and does not know it's absolute or relative position</description></entry>
+        <entry name="EKF_PRED_POS_HORIZ_REL" value="256"> <description>set if EKF's predicted horizontal position (relative) estimate is good</description></entry>
+        <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
+	</enum>
+
+        <enum name="PID_TUNING_AXIS">
+          <entry name="PID_TUNING_ROLL"  value="1"></entry>
+          <entry name="PID_TUNING_PITCH" value="2"></entry>
+          <entry name="PID_TUNING_YAW"   value="3"></entry>
+          <entry name="PID_TUNING_ACCZ"  value="4"></entry>
+          <entry name="PID_TUNING_STEER" value="5"></entry>
+        </enum>
+
       </enums>
 
      <messages>
@@ -96,7 +287,7 @@
           </message>
 
           <message id="151" name="SET_MAG_OFFSETS">
-               <description>set the magnetometer offsets</description>
+               <description>Deprecated. Use MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS instead. Set the magnetometer offsets</description>
                <field type="uint8_t" name="target_system">System ID</field>
                <field type="uint8_t" name="target_component">Component ID</field>
                <field type="int16_t" name="mag_ofs_x">magnetometer X offset</field>
@@ -175,9 +366,9 @@
 	    <description>Message with some status from APM to GCS about camera or antenna mount</description>
 	    <field name="target_system" type="uint8_t">System ID</field>
 	    <field name="target_component" type="uint8_t">Component ID</field>
-	    <field name="pointing_a" type="int32_t">pitch(deg*100) or lat, depending on mount mode</field>
-	    <field name="pointing_b" type="int32_t">roll(deg*100) or lon depending on mount mode</field>
-	    <field name="pointing_c" type="int32_t">yaw(deg*100) or alt (in cm) depending on mount mode</field>
+	    <field name="pointing_a" type="int32_t">pitch(deg*100)</field>
+	    <field name="pointing_b" type="int32_t">roll(deg*100)</field>
+	    <field name="pointing_c" type="int32_t">yaw(deg*100)</field>
 	  </message>
 
 	  <!-- geo-fence messages -->
@@ -386,5 +577,275 @@
             <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
             <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
 	  </message>
+
+  <!-- camera event message from CCB to autopilot: for image trigger events but also things like heartbeat, error, low power, full card, etc -->
+    <message name="CAMERA_STATUS" id="179">
+        <description>Camera Event</description>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch, according to camera clock)</field>    
+        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
+        <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
+        <field name="img_idx"   type="uint16_t" >Image index</field>    <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
+        <field name="event_id"  type="uint8_t" >See CAMERA_STATUS_TYPES enum for definition of the bitmask</field>
+        <field name="p1"        type="float"   >Parameter 1 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p2"        type="float"   >Parameter 2 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p3"        type="float"   >Parameter 3 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+        <field name="p4"        type="float"   >Parameter 4 (meaning depends on event, see CAMERA_STATUS_TYPES enum)</field>
+    </message>
+
+    <!-- camera feedback message - can be originated from CCB (in response to a CAMERA_STATUS), or directly from the autopilot as part of a DO_DIGICAM_CONTROL-->
+    <message name="CAMERA_FEEDBACK" id="180">
+        <description>Camera Capture Feedback</description>
+        <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)</field>
+        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
+        <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
+        <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
+        <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
+        <field name="lng"       type="int32_t" >Longitude in (deg * 1E7)</field>
+        <field name="alt_msl"   type="float"   >Altitude Absolute (meters AMSL)</field>
+        <field name="alt_rel"   type="float"   >Altitude Relative (meters above HOME location)</field>
+        <field name="roll"      type="float"   >Camera Roll angle (earth frame, degrees, +-180)</field>  <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="pitch"     type="float"   >Camera Pitch angle (earth frame, degrees, +-180)</field> <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="yaw"       type="float"   >Camera Yaw (earth frame, degrees, 0-360, true)</field>   <!-- initially only supporting fixed cameras, in future we'll need feedback messages from the gimbal so we can include that offset here -->
+        <field name="foc_len"   type="float"   >Focal Length (mm)</field> <!-- per-image to support zooms. Zero means fixed focal length or unknown. Should be true mm, not scaled to 35mm film equivalent -->
+        <field name="flags"     type="uint8_t" >See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask</field> <!-- future proofing -->
+    </message>
+
+    <message name="BATTERY2" id="181">
+      <description>2nd Battery status</description>
+      <field type="uint16_t" name="voltage">voltage in millivolts</field>
+      <field type="int16_t" name="current_battery">Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current</field>
+    </message>
+
+    <message name="AHRS3" id="182">
+      <description>Status of third AHRS filter if available. This is for ANU research group (Ali and Sean)</description>
+      <field type="float" name="roll">Roll angle (rad)</field>
+      <field type="float" name="pitch">Pitch angle (rad)</field>
+      <field type="float" name="yaw">Yaw angle (rad)</field>
+      <field type="float" name="altitude">Altitude (MSL)</field>
+      <field type="int32_t" name="lat">Latitude in degrees * 1E7</field>
+      <field type="int32_t" name="lng">Longitude in degrees * 1E7</field>
+      <field type="float" name="v1">test variable1</field>
+      <field type="float" name="v2">test variable2</field>
+      <field type="float" name="v3">test variable3</field>
+      <field type="float" name="v4">test variable4</field>
+    </message>
+
+    <message name="AUTOPILOT_VERSION_REQUEST" id="183">
+        <description>Request the autopilot version from the system/component.</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
+
+    <message name="LED_CONTROL" id="186">
+        <description>Control vehicle LEDs</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+        <field type="uint8_t" name="instance">Instance (LED instance to control or 255 for all LEDs)</field>
+        <field type="uint8_t" name="pattern">Pattern (see LED_PATTERN_ENUM)</field>
+        <field type="uint8_t" name="custom_len">Custom Byte Length</field>
+        <field type="uint8_t[24]" name="custom_bytes">Custom Bytes</field>
+    </message>
+
+    <!-- 191 to 192 RESERVED for mag calibration -->
+    
+    <!-- EKF status message from autopilot to GCS.   -->
+    <message name="EKF_STATUS_REPORT" id="193">
+        <description>EKF Status message including flags and variances</description>
+        <field name="flags" type="uint16_t">Flags</field>   <!-- supported flags see EKF_STATUS_FLAGS enum -->
+        <field name="velocity_variance" type="float">Velocity variance</field>   <!-- below 0.5 is good, 0.5~0.79 is warning, 0.8 or higher is bad  -->
+        <field name="pos_horiz_variance" type="float">Horizontal Position variance</field>
+        <field name="pos_vert_variance" type="float">Vertical Position variance</field>
+        <field name="compass_variance" type="float">Compass variance</field>
+        <field name="terrain_alt_variance" type="float">Terrain Altitude variance</field>
+    </message>
+
+    <!-- realtime PID tuning message -->
+    <message name="PID_TUNING" id="194">
+        <description>PID tuning information</description>
+        <field name="axis" type="uint8_t" enum="PID_TUNING_AXIS">axis</field>
+        <field name="desired" type="float">desired rate (degrees/s)</field>
+        <field name="achieved" type="float">achieved rate (degrees/s)</field>
+        <field name="FF" type="float">FF component</field>
+        <field name="P" type="float">P component</field>
+        <field name="I" type="float">I component</field>
+        <field name="D" type="float">D component</field>
+    </message>
+
+    <message name="GIMBAL_REPORT" id="200">
+        <description>3 axis gimbal mesuraments</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+        <field type="float" name="delta_time">Time since last update (seconds)</field>
+        <field type="float" name="delta_angle_x">Delta angle X (radians)</field>
+        <field type="float" name="delta_angle_y">Delta angle Y (radians)</field>
+        <field type="float" name="delta_angle_z">Delta angle X (radians)</field>
+        <field type="float" name="delta_velocity_x">Delta velocity X (m/s)</field>
+        <field type="float" name="delta_velocity_y">Delta velocity Y (m/s)</field>
+        <field type="float" name="delta_velocity_z">Delta velocity Z (m/s)</field>
+        <field type="float" name="joint_roll"> Joint ROLL (radians)</field>
+        <field type="float" name="joint_el"> Joint EL (radians)</field>
+        <field type="float" name="joint_az"> Joint AZ (radians)</field>
+    </message>
+
+    <message name="GIMBAL_CONTROL" id="201">
+        <description>Control message for rate gimbal</description>
+        <field type="uint8_t" name="target_system">System ID</field>
+        <field type="uint8_t" name="target_component">Component ID</field>
+        <field type="float" name="demanded_rate_x">Demanded angular rate X (rad/s)</field>
+        <field type="float" name="demanded_rate_y">Demanded angular rate Y (rad/s)</field>
+        <field type="float" name="demanded_rate_z">Demanded angular rate Z (rad/s)</field>
+    </message>
+
+    <message name="GIMBAL_RESET" id="202">
+        <description>
+            Causes the gimbal to reset and boot as if it was just powered on
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_AXIS_CALIBRATION_PROGRESS" id="203">
+        <description>
+            Reports progress and success or failure of gimbal axis calibration procedure
+        </description>
+        <field name="calibration_axis" type="uint8_t" enum="GIMBAL_AXIS">Which gimbal axis we're reporting calibration progress for</field>
+        <field name="calibration_progress" type="uint8_t">The current calibration progress for this axis, 0x64=100%</field>
+        <field name="calibration_status" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_STATUS">The status of the running calibration</field>
+    </message>
+
+    <message name="GIMBAL_SET_HOME_OFFSETS" id="204">
+        <description>
+            Instructs the gimbal to set its current position as its new home position.  Will primarily be used for factory calibration
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_HOME_OFFSET_CALIBRATION_RESULT" id="205">
+        <description>
+            Sent by the gimbal after it receives a SET_HOME_OFFSETS message to indicate the result of the home offset calibration
+        </description>
+        <field name="calibration_result" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_STATUS">The result of the home offset calibration</field>
+    </message>
+
+    <message name="GIMBAL_SET_FACTORY_PARAMETERS" id="206">
+        <description>
+            Set factory configuration parameters (such as assembly date and time, and serial number).  This is only intended to be used
+            during manufacture, not by end users, so it is protected by a simple checksum of sorts (this won't stop anybody determined,
+            it's mostly just to keep the average user from trying to modify these values.  This will need to be revisited if that isn't
+            adequate.
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="magic_1" type="uint32_t">Magic number 1 for validation</field>
+        <field name="magic_2" type="uint32_t">Magic number 2 for validation</field>
+        <field name="magic_3" type="uint32_t">Magic number 3 for validation</field>
+        <field name="assembly_year" type="uint16_t">Assembly Date Year</field>
+        <field name="assembly_month" type="uint8_t">Assembly Date Month</field>
+        <field name="assembly_day" type="uint8_t">Assembly Date Day</field>
+        <field name="assembly_hour" type="uint8_t">Assembly Time Hour</field>
+        <field name="assembly_minute" type="uint8_t">Assembly Time Minute</field>
+        <field name="assembly_second" type="uint8_t">Assembly Time Second</field>
+        <field name="serial_number_pt_1" type="uint32_t">Unit Serial Number Part 1 (part code, design, language/country)</field>
+        <field name="serial_number_pt_2" type="uint32_t">Unit Serial Number Part 2 (option, year, month)</field>
+        <field name="serial_number_pt_3" type="uint32_t">Unit Serial Number Part 3 (incrementing serial number per month)</field>
+    </message>
+
+    <message name="GIMBAL_FACTORY_PARAMETERS_LOADED" id="207">
+        <description>
+            Sent by the gimbal after the factory parameters are successfully loaded, to inform the factory software that the load is complete
+        </description>
+        <field name="dummy" type="uint8_t">Dummy field because mavgen doesn't allow messages with no fields</field>
+    </message>
+
+    <message name="GIMBAL_ERASE_FIRMWARE_AND_CONFIG" id="208">
+        <description>
+            Commands the gimbal to erase its firmware image and flash configuration, leaving only the bootloader.  The gimbal will then reboot into the bootloader,
+            ready for the load of a new application firmware image.  Erasing the flash configuration will cause the gimbal to re-perform axis calibration when a
+            new firmware image is loaded, and will cause all tuning parameters to return to their factory defaults.  WARNING: sending this command will render a
+            gimbal inoperable until a new firmware image is loaded onto it.  For this reason, a particular "knock" value must be sent for the command to take effect.
+            Use this command at your own risk
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="knock" type="uint32_t">Knock value to confirm this is a valid request</field>
+    </message>
+
+    <message name="GIMBAL_PERFORM_FACTORY_TESTS" id="209">
+        <description>
+            Command the gimbal to perform a series of factory tests.  Should not be needed by end users
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+
+    <message name="GIMBAL_REPORT_FACTORY_TESTS_PROGRESS" id="210">
+        <description>
+            Reports the current status of a section of a running factory test
+        </description>
+        <field name="test" type="uint8_t" enum="FACTORY_TEST">Which factory test is currently running</field>
+        <field name="test_section" type="uint8_t">Which section of the test is currently running.  The meaning of this is test-dependent</field>
+        <field name="test_section_progress" type="uint8_t">The progress of the current test section, 0x64=100%</field>
+        <field name="test_status" type="uint8_t">The status of the currently executing test section.  The meaning of this is test and section-dependent</field>
+    </message>
+    
+    <message name="GIMBAL_REQUEST_AXIS_CALIBRATION_STATUS" id="211">
+    	<description>
+    		Requests the calibration status for all gimbal axes.  Should result in a GIMBAL_REPORT_AXIS_CALIBRATION_STATUS message being generated by the gimbal
+    	</description>
+    	<field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+    </message>
+    
+    <message name="GIMBAL_REPORT_AXIS_CALIBRATION_STATUS" id="212">
+    	<description>
+    		Reports the calibration status for each gimbal axis (whether the axis requires calibration or not)
+    	</description>
+    	<field name="yaw_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the yaw axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field>
+    	<field name="pitch_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the pitch axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field>
+    	<field name="roll_requires_calibration" type="uint8_t" enum="GIMBAL_AXIS_CALIBRATION_REQUIRED">Whether or not the roll axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration</field> 
+    </message>
+
+	<message name="GIMBAL_REQUEST_AXIS_CALIBRATION" id="213">
+		<description>
+			Requests any currently uncalibrated gimbal axes to run the axis calibration procedure.  An axis is considered uncalibrated if its commutation calibration
+			slope and intercept are 0
+		</description>
+		<field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+	</message>
+    <!-- 214 RESERVED for more GIMBAL -->
+
+    <!-- GoPro Messages -->
+    <message name="GOPRO_HEARTBEAT" id="215">
+      <description>Heartbeat from a HeroBus attached GoPro</description>
+      <field name="status" type="uint8_t" enum="GOPRO_HEARTBEAT_STATUS">Status</field>
+    </message>
+    <message name="GOPRO_GET_REQUEST" id="216">
+      <description>Request a GOPRO_COMMAND response from the GoPro</description>
+      <field name="target_system" type="uint8_t">System ID</field>
+      <field name="target_component" type="uint8_t">Component ID</field>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+    </message>
+    <message name="GOPRO_GET_RESPONSE" id="217">
+      <description>Response from a GOPRO_COMMAND get request</description>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="value" type="uint8_t">Value</field>
+    </message>
+    <message name="GOPRO_SET_REQUEST" id="218">
+      <description>Request to set a GOPRO_COMMAND with a desired</description>
+      <field name="target_system" type="uint8_t">System ID</field>
+      <field name="target_component" type="uint8_t">Component ID</field>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="value" type="uint8_t">Value</field>
+    </message>
+    <message name="GOPRO_SET_RESPONSE" id="219">
+      <description>Response from a GOPRO_COMMAND set request</description>
+      <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
+      <field name="result" type="uint8_t" enum="GOPRO_SET_RESPONSE_RESULT">Result</field>
+    </message>
+
+    <!-- 219 to 225 RESERVED for more GOPRO-->
+
      </messages>
 </mavlink>

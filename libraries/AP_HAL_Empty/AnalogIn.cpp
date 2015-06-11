@@ -11,11 +11,11 @@ float EmptyAnalogSource::read_average() {
 }
 
 float EmptyAnalogSource::voltage_average() {
-    return 5.0 * _v / 1024.0;
+    return 5.0f * _v / 1024.0f;
 }
 
 float EmptyAnalogSource::voltage_latest() {
-    return 5.0 * _v / 1024.0;
+    return 5.0f * _v / 1024.0f;
 }
 
 float EmptyAnalogSource::read_latest() {

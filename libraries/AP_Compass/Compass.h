@@ -7,55 +7,46 @@
 #include <AP_Param.h>
 #include <AP_Math.h>
 #include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_HAL.h>
+#include "AP_Compass_Backend.h"
 
 // compass product id
-#define AP_COMPASS_TYPE_UNKNOWN  0x00
-#define AP_COMPASS_TYPE_HIL      0x01
-#define AP_COMPASS_TYPE_HMC5843  0x02
-#define AP_COMPASS_TYPE_HMC5883L 0x03
-#define AP_COMPASS_TYPE_PX4      0x04
-#define AP_COMPASS_TYPE_VRBRAIN  0x05
+#define AP_COMPASS_TYPE_UNKNOWN         0x00
+#define AP_COMPASS_TYPE_HIL             0x01
+#define AP_COMPASS_TYPE_HMC5843         0x02
+#define AP_COMPASS_TYPE_HMC5883L        0x03
+#define AP_COMPASS_TYPE_PX4             0x04
+#define AP_COMPASS_TYPE_VRBRAIN         0x05
+#define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
-// setup default mag orientation for each board type
+// setup default mag orientation for some board types
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 # define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-# define MAG_BOARD_ORIENTATION ROTATION_YAW_90
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-# define MAG_BOARD_ORIENTATION ROTATION_NONE
 #else
-# error "You must define a default compass orientation for this board"
+# define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#define COMPASS_MAX_INSTANCES 2
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+#define COMPASS_MAX_INSTANCES 3
+#define COMPASS_MAX_BACKEND   3   
 #else
 #define COMPASS_MAX_INSTANCES 1
+#define COMPASS_MAX_BACKEND   1   
 #endif
 
 class Compass
 {
+friend class AP_Compass_Backend;
 public:
-    int16_t product_id;                         /// product id
-    uint32_t last_update;               ///< micros() time of last update
-
     /// Constructor
     ///
     Compass();
@@ -65,17 +56,15 @@ public:
     /// @returns    True if the compass was initialized OK, false if it was not
     ///             found or is not functioning.
     ///
-    virtual bool init();
+    bool init();
 
     /// Read the compass and update the mag_ variables.
     ///
-    virtual bool read(void) = 0;
-
-    
+    bool read();    
 
     /// use spare CPU cycles to accumulate values from the compass if
-    /// possible
-    virtual void accumulate(void) = 0;
+    /// possible (this method should also be implemented in the backends)
+    void accumulate();
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -85,39 +74,47 @@ public:
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const;
 
-    /// Sets the compass offset x/y/z values.
+    /// Sets offset x/y/z values.
     ///
+    /// @param  i                   compass instance
     /// @param  offsets             Offsets to the raw mag_ values.
     ///
-    void set_offsets(const Vector3f &offsets);
+    void set_offsets(uint8_t i, const Vector3f &offsets);
 
-    /// Saves the current compass offset x/y/z values.
+    /// Sets and saves the compass offset x/y/z values.
+    ///
+    /// @param  i                   compass instance
+    /// @param  offsets             Offsets to the raw mag_ values.
+    ///
+    void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
+
+    /// Saves the current offset x/y/z values for one or all compasses
+    ///
+    /// @param  i                   compass instance
     ///
     /// This should be invoked periodically to save the offset values maintained by
     /// ::learn_offsets.
     ///
-    void save_offsets();
+    void save_offsets(uint8_t i);
+    void save_offsets(void);
 
     // return the number of compass instances
-    virtual uint8_t get_count(void) const { return 1; }
+    uint8_t get_count(void) const { return _compass_count; }
 
     /// Return the current field as a Vector3f
-    const Vector3f &get_field(uint8_t i) const { return _field[i]; }
-    const Vector3f &get_field(void) const { return get_field(_get_primary()); }
+    const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
+    const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     /// Return the health of a compass
-    bool healthy(uint8_t i) const { return _healthy[i]; }
-    bool healthy(void) const { return healthy(_get_primary()); }
-
-    /// set the current field as a Vector3f
-    void set_field(const Vector3f &field) { _field[0] = field; }
+    bool healthy(uint8_t i) const { return _state[i].healthy; }
+    bool healthy(void) const { return healthy(get_primary()); }
 
     /// Returns the current offset values
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _offset[i]; }
-    const Vector3f &get_offsets(void) const { return get_offsets(_get_primary()); }
+    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
+    const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///
@@ -128,22 +125,25 @@ public:
 
     /// Program new offset values.
     ///
+    /// @param  i                   compass instance
     /// @param  x                   Offset to the raw mag_x value.
     /// @param  y                   Offset to the raw mag_y value.
     /// @param  z                   Offset to the raw mag_z value.
     ///
-    void set_offsets(int x, int y, int z) {
-        set_offsets(Vector3f(x, y, z));
+    void set_and_save_offsets(uint8_t i, int x, int y, int z) {
+        set_and_save_offsets(i, Vector3f(x, y, z));
     }
+
+    // learn offsets accessor
+    bool learn_offsets_enabled() const { return _learn; }
 
     /// Perform automatic offset updates
     ///
     void learn_offsets(void);
 
     /// return true if the compass should be used for yaw calculations
-    bool use_for_yaw(void) const {
-        return _healthy[0] && _use_for_yaw;
-    }
+    bool use_for_yaw(uint8_t i) const;
+    bool use_for_yaw(void) const;
 
     /// Sets the local magnetic field declination.
     ///
@@ -162,28 +162,23 @@ public:
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
     ///
-    void motor_compensation_type(const uint8_t comp_type) {
-        if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
-            _motor_comp_type = (int8_t)comp_type;
-            _thr_or_curr = 0;                               // set current current or throttle to zero
-            set_motor_compensation(Vector3f(0,0,0));        // clear out invalid compensation vector
-        }
-    }
+    void motor_compensation_type(const uint8_t comp_type);
 
     /// get the motor compensation value.
-    uint8_t motor_compensation_type() const {
+    uint8_t get_motor_compensation_type() const {
         return _motor_comp_type;
     }
 
     /// Set the motor compensation factor x/y/z values.
     ///
+    /// @param  i                   instance of compass
     /// @param  offsets             Offsets multiplied by the throttle value and added to the raw mag_ values.
     ///
-    void set_motor_compensation(const Vector3f &motor_comp_factor, uint8_t i=0);
+    void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _motor_compensation[i]; }
-    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(0); }
+    const Vector3f& get_motor_compensation(uint8_t i) const { return _state[i].motor_compensation; }
+    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(get_primary()); }
 
     /// Saves the current motor compensation x/y/z values.
     ///
@@ -195,13 +190,13 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_motor_offsets(uint8_t i) const { return _motor_offset[i]; }
-    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(0); }
+    const Vector3f &get_motor_offsets(uint8_t i) const { return _state[i].motor_offset; }
+    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(get_primary()); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
     void set_throttle(float thr_pct) {
-        if(_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+        if (_motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
             _thr_or_curr = thr_pct;
         }
     }
@@ -209,46 +204,131 @@ public:
     /// Set the current used by system in amps
     /// @param amps                 current flowing to the motors expressed in amps
     void set_current(float amps) {
-        if(_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+        if (_motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
             _thr_or_curr = amps;
         }
     }
 
+    /// Returns True if the compasses have been configured (i.e. offsets saved)
+    ///
+    /// @returns                    True if compass has been configured
+    ///
+    bool configured(uint8_t i);
+    bool configured(void);
+
+    /// Returns the instance of the primary compass
+    ///
+    /// @returns                    the instance number of the primary compass
+    ///
+    uint8_t get_primary(void) const { return _primary; }
+
+    // HIL methods
+    void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
+    void        setHIL(uint8_t instance, const Vector3f &mag);
+    const Vector3f&   getHIL(uint8_t instance) const;
+    void        _setup_earth_field();
+
+    // enable HIL mode
+    void        set_hil_mode(void) { _hil_mode = true; }
+
+    // return last update time in microseconds
+    uint32_t last_update_usec(void) const { return _last_update_usec; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
+    // HIL variables
+    struct {
+        Vector3f Bearth;
+        float last_declination;
+        bool healthy[COMPASS_MAX_INSTANCES];
+        Vector3f field[COMPASS_MAX_INSTANCES];
+    } _hil;
+
+private:
+    /// Register a new compas driver, allocating an instance number
+    ///
+    /// @return number of compass instances
+    uint8_t register_compass(void);
+
+    // load backend drivers
+    void _add_backend(AP_Compass_Backend *(detect)(Compass &));
+    void _detect_backends(void);
+
+    //< micros() time of last update
+    uint32_t _last_update_usec;
+
+    // backend objects
+    AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
+    uint8_t     _backend_count;
+
+    // number of registered compasses.
+    uint8_t     _compass_count;
+
     // settable parameters
-    AP_Int8 _learn;                             ///<enable calibration learning
-
-protected:
-    virtual uint8_t _get_primary(void) const { return 0; }
-
-    bool _healthy[COMPASS_MAX_INSTANCES];
-    Vector3f _field[COMPASS_MAX_INSTANCES];     ///< magnetic field strength
-
-    AP_Int8 _orientation;
-    AP_Vector3f _offset[COMPASS_MAX_INSTANCES];
-    AP_Float _declination;
-    AP_Int8 _use_for_yaw;                       ///<enable use for yaw calculation
-    AP_Int8 _auto_declination;                  ///<enable automatic declination code
-    AP_Int8 _external;                          ///<compass is external
-#if COMPASS_MAX_INSTANCES > 1
-    AP_Int8 _primary;                           ///primary instance
-#endif
-
-    bool _null_init_done;                           ///< first-time-around flag used by offset nulling
-
-    ///< used by offset correction
-    static const uint8_t _mag_history_size = 20;
-    uint8_t _mag_history_index[COMPASS_MAX_INSTANCES];
-    Vector3i _mag_history[COMPASS_MAX_INSTANCES][_mag_history_size];
-
-    // motor compensation
-    AP_Int8     _motor_comp_type;               // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
-    AP_Vector3f _motor_compensation[COMPASS_MAX_INSTANCES]; // factors multiplied by throttle and added to compass outputs
-    Vector3f    _motor_offset[COMPASS_MAX_INSTANCES]; // latest compensation added to compass
-    float       _thr_or_curr;                   // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
+    AP_Int8 _learn;
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
+
+    // primary instance
+    AP_Int8     _primary;                           
+
+    // declination in radians
+    AP_Float    _declination;
+
+    // enable automatic declination code
+    AP_Int8     _auto_declination;                  
+
+    // first-time-around flag used by offset nulling
+    bool        _null_init_done;                           
+
+    // used by offset correction
+    static const uint8_t _mag_history_size = 20;
+
+    // motor compensation type
+    // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
+    AP_Int8     _motor_comp_type;
+
+    // throttle expressed as a percentage from 0 ~ 1.0 or current expressed in amps
+    float       _thr_or_curr;
+
+    struct mag_state {
+        AP_Int8     external;
+        bool        healthy;
+        AP_Int8     orientation;
+        AP_Vector3f offset;
+
+#if COMPASS_MAX_INSTANCES > 1
+        // device id detected at init.  
+        // saved to eeprom when offsets are saved allowing ram &
+        // eeprom values to be compared as consistency check
+        AP_Int32    dev_id;
+#endif
+        AP_Int8     use_for_yaw;
+
+        uint8_t     mag_history_index;
+        Vector3i    mag_history[_mag_history_size];
+
+        // factors multiplied by throttle and added to compass outputs
+        AP_Vector3f motor_compensation;
+
+        // latest compensation added to compass
+        Vector3f    motor_offset;
+
+        // corrected magnetic field strength
+        Vector3f    field;
+
+        // when we last got data
+        uint32_t    last_update_ms;
+    } _state[COMPASS_MAX_INSTANCES];
+
+    // if we want HIL only
+    bool _hil_mode:1;
 };
+
+#include "AP_Compass_Backend.h"
+#include "AP_Compass_HMC5843.h"
+#include "AP_Compass_HIL.h"
+#include "AP_Compass_AK8963.h"
+#include "AP_Compass_PX4.h"
 #endif

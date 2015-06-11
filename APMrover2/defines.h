@@ -65,14 +65,8 @@ enum mode {
 #define LOG_CTUN_MSG	        0x01
 #define LOG_NTUN_MSG    		0x02
 #define LOG_PERFORMANCE_MSG		0x03
-#define LOG_CURRENT_MSG 		0x05
 #define LOG_STARTUP_MSG 		0x06
 #define LOG_SONAR_MSG 		    0x07
-#define LOG_ATTITUDE_MSG        0x08
-#define LOG_MODE_MSG            0x09
-#define LOG_COMPASS_MSG         0x0A
-#define LOG_CAMERA_MSG          0x0B
-#define LOG_COMPASS2_MSG        0x0C
 #define LOG_STEERING_MSG        0x0D
 
 #define TYPE_AIRSTART_MSG		0x00
@@ -95,6 +89,7 @@ enum mode {
 #define MASK_LOG_STEERING  		(1<<13)
 #define MASK_LOG_RC     		(1<<14)
 #define MASK_LOG_WHEN_DISARMED  (1UL<<16)
+#define MASK_LOG_IMU_RAW        (1UL<<19)
 
 // Waypoint Modes
 // ----------------
@@ -126,38 +121,7 @@ enum mode {
 
 #define SPEEDFILT 400			// centimeters/second; the speed below which a groundstart will be triggered
 
-
-// EEPROM addresses
-// parameters get the first 1KiB of EEPROM, remainder is for mission commands
-#define MISSION_START_BYTE  0x500
-#define MISSION_END_BYTE    HAL_STORAGE_SIZE_AVAILABLE
-
 // convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue)?-1:1)
-
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
-
-// InertialSensor driver types
-#define CONFIG_INS_OILPAN  1
-#define CONFIG_INS_MPU6000 2
-#define CONFIG_INS_HIL     3
-#define CONFIG_INS_PX4     4
-#define CONFIG_INS_FLYMAPLE 5
-#define CONFIG_INS_L3G4200D 6
-#define CONFIG_INS_VRBRAIN 7
-
-// barometer driver types
-#define AP_BARO_BMP085   1
-#define AP_BARO_MS5611   2
-#define AP_BARO_PX4      3
-#define AP_BARO_HIL      4
-#define AP_BARO_VRBRAIN  5
-
-// compass driver types
-#define AP_COMPASS_HMC5843   1
-#define AP_COMPASS_PX4       2
-#define AP_COMPASS_HIL       3
-#define AP_COMPASS_VRBRAIN   4
 
 #endif // _DEFINES_H

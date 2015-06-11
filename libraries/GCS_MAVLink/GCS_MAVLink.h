@@ -26,9 +26,16 @@
 // only two telemetry ports on APM1/APM2
 #define MAVLINK_COMM_NUM_BUFFERS 2
 #else
-// allow three telemetry ports on other boards
-#define MAVLINK_COMM_NUM_BUFFERS 3
+// allow four telemetry ports on other boards
+#define MAVLINK_COMM_NUM_BUFFERS 4
 #endif
+
+/*
+  The MAVLink protocol code generator does its own alignment, so
+  alignment cast warnings can be ignored
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
@@ -44,15 +51,7 @@
 #include "include/mavlink/v1.0/mavlink_types.h"
 
 /// MAVLink stream used for uartA
-extern AP_HAL::BetterStream	*mavlink_comm_0_port;
-
-/// MAVLink stream used for uartC
-extern AP_HAL::BetterStream	*mavlink_comm_1_port;
-
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-/// MAVLink stream used for uartD
-extern AP_HAL::BetterStream	*mavlink_comm_2_port;
-#endif
+extern AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
@@ -64,21 +63,11 @@ extern mavlink_system_t mavlink_system;
 ///
 static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-    switch(chan) {
-	case MAVLINK_COMM_0:
-		mavlink_comm_0_port->write(ch);
-		break;
-	case MAVLINK_COMM_1:
-		mavlink_comm_1_port->write(ch);
-		break;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-	case MAVLINK_COMM_2:
-		mavlink_comm_2_port->write(ch);
-		break;
-#endif
-	default:
-		break;
-	}
+    // sanity check chan
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return;
+    }
+    mavlink_comm_port[chan]->write(ch);
 }
 
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
@@ -121,8 +110,6 @@ bool comm_is_idle(mavlink_channel_t chan);
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 
-uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
-
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t);
 
@@ -137,5 +124,7 @@ enum gcs_severity {
     SEVERITY_CRITICAL,
     SEVERITY_USER_RESPONSE
 };
+
+#pragma GCC diagnostic pop
 
 #endif // GCS_MAVLink_h

@@ -126,7 +126,6 @@ void AP_PerfMon::DisplayResults()
     uint32_t sumOfTime = 0;
     uint32_t unExplainedTime;
     uint8_t order[PERFMON_MAX_FUNCTIONS];
-    bool blocking_writes;
 
     // record end time
     if( allEndTime == 0 ) {
@@ -159,7 +158,6 @@ void AP_PerfMon::DisplayResults()
     totalTime = allEndTime - allStartTime;
 
     // ensure serial is blocking
-    //blocking_writes = hal.console->get_blocking_writes();
     hal.console->set_blocking_writes(true);
 
     // print table of results
@@ -177,13 +175,13 @@ void AP_PerfMon::DisplayResults()
         }
 
         hz = numCalls[j]/(totalTime/1000000);
-        pct = ((float)time[j] / (float)totalTime) * 100.0;
+        pct = ((float)time[j] / (float)totalTime) * 100.0f;
         hal.console->printf_P(PSTR("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n"),
             functionNames[j],
             pct,
             (unsigned long)time[j]/1000,
-            (float)avgTime/1000.0,
-            (float)maxTime[j]/1000.0,
+            (float)avgTime/1000.0f,
+            (float)maxTime[j]/1000.0f,
             numCalls[j],
             hz);
     }
@@ -193,7 +191,7 @@ void AP_PerfMon::DisplayResults()
     } else {
         unExplainedTime = totalTime - sumOfTime;
     }
-    pct = ((float)unExplainedTime / (float)totalTime) * 100.0;
+    pct = ((float)unExplainedTime / (float)totalTime) * 100.0f;
     hal.console->printf_P(PSTR("unexpl:\t\t%4.2f\t%lu\n"),pct,(unsigned long)unExplainedTime/1000);
 
     // restore to blocking writes if necessary

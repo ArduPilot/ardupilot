@@ -19,9 +19,10 @@ class AP_MotorsTri : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsTri( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, RC_Channel& rc_tail, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz),
-        _rc_tail(rc_tail) {
+    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(loop_rate, speed_hz)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
     };
 
     // init
@@ -41,12 +42,27 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min();
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask();
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
     // output - sends commands to the motors
-    virtual void        output_armed();
-    virtual void        output_disarmed();
+    void                output_armed_stabilizing();
+    void                output_armed_not_stabilizing();
+    void                output_disarmed();
 
-    RC_Channel&         _rc_tail;       // REV parameter used from this channel to determine direction of tail servo movement
+    // calc_yaw_radio_output - calculate final radio output for yaw channel
+    int16_t             calc_yaw_radio_output();        // calculate radio output for yaw servo, typically in range of 1100-1900
+
+    // parameters
+    AP_Int8         _yaw_servo_reverse;                 // Yaw servo signal reversing
+    AP_Int16        _yaw_servo_trim;                    // Trim or center position of yaw servo
+    AP_Int16        _yaw_servo_min;                     // Minimum angle limit of yaw servo
+    AP_Int16        _yaw_servo_max;                     // Maximum angle limit of yaw servo
 };
 
 #endif  // AP_MOTORSTRI

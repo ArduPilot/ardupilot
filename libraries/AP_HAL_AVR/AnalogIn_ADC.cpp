@@ -99,7 +99,7 @@ void ADCSource::set_pin(uint8_t pin) {
             if (dpin != -1) {
                 // enable as input without a pull-up. This gives the
                 // best results for our analog sensors
-                hal.gpio->pinMode(dpin, GPIO_INPUT);
+                hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
                 hal.gpio->write(dpin, 0);
             }
         }
@@ -153,7 +153,7 @@ float ADCSource::_read_average() {
 void ADCSource::setup_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 1);
     }
     if (_settle_time_ms != 0) {
@@ -173,7 +173,7 @@ void ADCSource::setup_read() {
 void ADCSource::stop_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 0);
     }
 }

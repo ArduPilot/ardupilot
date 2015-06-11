@@ -19,8 +19,6 @@
 
 #include "AP_Math.h"
 
-#define HALF_SQRT_2 0.70710678118654757
-
 // create a rotation matrix given some euler angles
 // this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
 template <typename T>
@@ -58,6 +56,43 @@ void Matrix3<T>::to_euler(float *roll, float *pitch, float *yaw) const
     if (yaw != NULL) {
         *yaw = atan2f(b.x, a.x);
     }
+}
+
+/*
+  calculate Euler angles (312 convention) for the matrix.
+  See http://www.atacolorado.com/eulersequences.doc
+  vector is returned in r, p, y order
+*/
+template <typename T>
+Vector3<T> Matrix3<T>::to_euler312() const
+{
+    return Vector3<T>(asinf(c.y),
+                      atan2f(-c.x, c.z),
+                      atan2f(-a.y, b.y));
+}
+
+/*
+  fill the matrix from Euler angles in radians in 312 convention
+*/
+template <typename T>
+void Matrix3<T>::from_euler312(float roll, float pitch, float yaw)
+{
+    float c3 = cosf(pitch);
+    float s3 = sinf(pitch);
+    float s2 = sinf(roll);
+    float c2 = cosf(roll);
+    float s1 = sinf(yaw);
+    float c1 = cosf(yaw);
+
+    a.x = c1 * c3 - s1 * s2 * s3;
+    b.y = c1 * c2;
+    c.z = c3 * c2;
+    a.y = -c2*s1;
+    a.z = s3*c1 + c3*s2*s1;
+    b.x = c3*s1 + s3*s2*c1;
+    b.z = s1*s3 - s2*c1*c3;
+    c.x = -s3*c2;
+    c.y = s2;
 }
 
 // apply an additional rotation from a body frame gyro vector
@@ -115,6 +150,21 @@ void Matrix3<T>::rotateXYinv(const Vector3<T> &g)
     temp_matrix.c.z = - c.x * g.y + c.y * g.x;
 
     (*this) += temp_matrix;
+}
+
+/*
+  re-normalise a rotation matrix
+*/
+template <typename T>
+void Matrix3<T>::normalize(void)
+{
+    float error = a * b;
+    Vector3<T> t0 = a - (b * (0.5f * error));
+    Vector3<T> t1 = b - (a * (0.5f * error));
+    Vector3<T> t2 = t0 % t1;
+    a = t0 * (1.0f / t0.length());
+    b = t1 * (1.0f / t1.length());
+    c = t2 * (1.0f / t2.length());
 }
 
 // multiplication by a vector
@@ -181,8 +231,11 @@ template void Matrix3<float>::zero(void);
 template void Matrix3<float>::rotate(const Vector3<float> &g);
 template void Matrix3<float>::rotateXY(const Vector3<float> &g);
 template void Matrix3<float>::rotateXYinv(const Vector3<float> &g);
+template void Matrix3<float>::normalize(void);
 template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
 template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
+template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
+template Vector3<float> Matrix3<float>::to_euler312(void) const;
 template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
 template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
 template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;

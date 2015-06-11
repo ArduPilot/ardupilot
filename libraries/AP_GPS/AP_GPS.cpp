@@ -27,15 +27,17 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
 #if GPS_MAX_INSTANCES > 1
+
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftBinaryProtocol
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
+
 #endif
 
     // @Param: NAVFILTER
@@ -44,18 +46,80 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
     AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
 
+#if GPS_MAX_INSTANCES > 1
+    // @Param: AUTO_SWITCH
+    // @DisplayName: Automatic Switchover Setting
+    // @Description: Automatic switchover to GPS reporting best lock
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
+#endif
+
+#if GPS_RTK_AVAILABLE
+    // @Param: DGPS_MIN_LOCK
+    // @DisplayName: Minimum Lock Type Accepted for DGPS
+    // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
+    // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
+    // @User: Advanced
+    AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
+#endif
+
+    // @Param: SBAS_MODE
+    // @DisplayName: SBAS Mode
+    // @Description: This sets the SBAS (satellite based augmentation system) mode if available on this GPS. If set to 2 then the SBAS mode is not changed in the GPS. Otherwise the GPS will be reconfigured to enable/disable SBAS. Disabling SBAS may be worthwhile in some parts of the world where an SBAS signal is available but the baseline is too long to be useful.
+    // @Values: 0:Disabled,1:Enabled,2:NoChange
+    // @User: Advanced
+    AP_GROUPINFO("SBAS_MODE", 5, AP_GPS, _sbas_mode, 2),
+
+    // @Param: MIN_ELEV
+    // @DisplayName: Minimum elevation
+    // @Description: This sets the minimum elevation of satellites above the horizon for them to be used for navigation. Setting this to -100 leaves the minimum elevation set to the GPS modules default.
+    // @Range: -100 90
+    // @Units: Degrees
+    // @User: Advanced
+    AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
+
+#if GPS_MAX_INSTANCES > 1
+
+    // @Param: INJECT_TO
+    // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
+    // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
+    // @Values: 0,1: send to specified instance. 127: broadcast
+    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, 127),
+
+#endif
+
+#if GPS_RTK_AVAILABLE
+    // @Param: SBP_LOGMASK
+    // @DisplayName: Swift Binary Protocol Logging Mask
+    // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
+    // @Values: 0x0000 for none, 0xFFFF for all, 0xFF00 for external only.
+    // @User: Advanced
+    AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
+#endif
+
+#if GPS_RTK_AVAILABLE
+    // @Param: RXM_RAW
+    // @DisplayName: Raw data logging
+    // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
+    // @Values: 0:Disabled,1:log at 1MHz,5:log at 5MHz.
+    AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
+#endif
+
     AP_GROUPEND
 };
 
 /// Startup initialisation.
-void AP_GPS::init(DataFlash_Class *dataflash)
+void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_manager)
 {
     _DataFlash = dataflash;
-    hal.uartB->begin(38400UL, 256, 16);
+    primary_instance = 0;
+
+    // search for serial ports with gps protocol
+    _port[0] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 0);
+
 #if GPS_MAX_INSTANCES > 1
-    if (hal.uartE != NULL) {
-        hal.uartE->begin(38400UL, 256, 16);        
-    }
+    _port[1] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, 1);
 #endif
 }
 
@@ -82,15 +146,19 @@ void AP_GPS::send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t 
  */
 void AP_GPS::send_blob_update(uint8_t instance)
 {
+    // exit immediately if no uart for this instance
+    if (_port[instance] == NULL) {
+        return;
+    }
+
     // see if we can write some more of the initialisation blob
     if (initblob_state[instance].remaining > 0) {
-        AP_HAL::UARTDriver *port = instance==0?hal.uartB:hal.uartE;
-        int16_t space = port->txspace();
+        int16_t space = _port[instance]->txspace();
         if (space > (int16_t)initblob_state[instance].remaining) {
             space = initblob_state[instance].remaining;
         }
         while (space > 0) {
-            port->write(pgm_read_byte(initblob_state[instance].blob));
+            _port[instance]->write(pgm_read_byte(initblob_state[instance].blob));
             initblob_state[instance].blob++;
             space--;
             initblob_state[instance].remaining--;
@@ -107,15 +175,23 @@ void
 AP_GPS::detect_instance(uint8_t instance)
 {
     AP_GPS_Backend *new_gps = NULL;
-    AP_HAL::UARTDriver *port = instance==0?hal.uartB:hal.uartE;
     struct detect_state *dstate = &detect_state[instance];
+    uint32_t now = hal.scheduler->millis();
 
-    if (port == NULL) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    if (_type[instance] == GPS_TYPE_PX4) {
+        // check for explicitely chosen PX4 GPS beforehand
+        // it is not possible to autodetect it, nor does it require a real UART
+        hal.console->print_P(PSTR(" PX4 "));
+        new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);
+        goto found_gps;
+    }
+#endif
+
+    if (_port[instance] == NULL) {
         // UART not available
         return;
     }
-
-    uint32_t now = hal.scheduler->millis();
 
     state[instance].instance = instance;
     state[instance].status = NO_GPS;
@@ -133,15 +209,16 @@ AP_GPS::detect_instance(uint8_t instance)
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
-		port->begin(baudrate, 256, 16);		
+		_port[instance]->begin(baudrate);
+		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
 
     send_blob_update(instance);
 
-    while (port->available() > 0 && new_gps == NULL) {
-        uint8_t data = port->read();
+    while (_port[instance]->available() > 0 && new_gps == NULL) {
+        uint8_t data = _port[instance]->read();
         /*
           running a uBlox at less than 38400 will lead to packet
           corruption, as we can't receive the packets in the 200ms
@@ -153,31 +230,31 @@ AP_GPS::detect_instance(uint8_t instance)
             pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print_P(PSTR(" ublox "));
-            new_gps = new AP_GPS_UBLOX(*this, state[instance], port);
+            new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
 			hal.console->print_P(PSTR(" MTK19 "));
-			new_gps = new AP_GPS_MTK19(*this, state[instance], port);
+			new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
 		} 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                  AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
 			hal.console->print_P(PSTR(" MTK "));
-			new_gps = new AP_GPS_MTK(*this, state[instance], port);
+			new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
 		}
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+#if GPS_RTK_AVAILABLE
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             hal.console->print_P(PSTR(" SBP "));
-            new_gps = new AP_GPS_SBP(*this, state[instance], port);
+            new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
-#if !defined( __AVR_ATmega1280__ )
+#if !defined(GPS_SKIP_SIRF_NMEA)
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
 			hal.console->print_P(PSTR(" SIRF "));
-			new_gps = new AP_GPS_SIRF(*this, state[instance], port);
+			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
 		}
 		else if (now - dstate->detect_started_ms > 5000) {
 			// prevent false detection of NMEA mode in
@@ -185,17 +262,41 @@ AP_GPS::detect_instance(uint8_t instance)
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
 				hal.console->print_P(PSTR(" NMEA "));
-				new_gps = new AP_GPS_NMEA(*this, state[instance], port);
+				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 			}
 		}
 #endif
 	}
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+found_gps:
+#endif
 	if (new_gps != NULL) {
         state[instance].status = NO_FIX;
         drivers[instance] = new_gps;
         timing[instance].last_message_time_ms = now;
 	}
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(uint8_t instance) const
+{
+#if GPS_RTK_AVAILABLE
+    if (drivers[instance] != NULL)
+        return drivers[instance]->highest_supported_status();
+#endif
+    return AP_GPS::GPS_OK_FIX_3D;
+}
+
+AP_GPS::GPS_Status 
+AP_GPS::highest_supported_status(void) const
+{
+#if GPS_RTK_AVAILABLE
+
+    if (drivers[primary_instance] != NULL)
+        return drivers[primary_instance]->highest_supported_status();
+#endif
+    return AP_GPS::GPS_OK_FIX_3D;
 }
 
 
@@ -264,36 +365,39 @@ AP_GPS::update(void)
         update_instance(i);
     }
 
-    // update notify with gps status. We always base this on the first GPS
-    AP_Notify::flags.gps_status = state[0].status;
-
 #if GPS_MAX_INSTANCES > 1
     // work out which GPS is the primary, and how many sensors we have
     for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         if (state[i].status != NO_GPS) {
             num_instances = i+1;
         }
-        if (i == primary_instance) {
-            continue;
-        }
-        if (state[i].status > state[primary_instance].status) {
-            // we have a higher status lock, change GPS
-            primary_instance = i;
-            continue;
-        }
-        if (state[i].status == state[primary_instance].status &&
-            state[i].num_sats >= state[primary_instance].num_sats + 2) {
-            // this GPS has at least 2 more satellites than the
-            // current primary, switch primary. Once we switch we will
-            // then tend to stick to the new GPS as primary. We don't
-            // want to switch too often as it will look like a
-            // position shift to the controllers.
-            primary_instance = i;
+        if (_auto_switch) {            
+            if (i == primary_instance) {
+                continue;
+            }
+            if (state[i].status > state[primary_instance].status) {
+                // we have a higher status lock, change GPS
+                primary_instance = i;
+                continue;
+            }
+            if (state[i].status == state[primary_instance].status &&
+                state[i].num_sats >= state[primary_instance].num_sats + 2) {
+                // this GPS has at least 2 more satellites than the
+                // current primary, switch primary. Once we switch we will
+                // then tend to stick to the new GPS as primary. We don't
+                // want to switch too often as it will look like a
+                // position shift to the controllers.
+                primary_instance = i;
+            }
+        } else {
+            primary_instance = 0;
         }
     }
 #else
     num_instances = 1;
 #endif // GPS_MAX_INSTANCES
+	// update notify with gps status. We always base this on the primary_instance
+    AP_Notify::flags.gps_status = state[primary_instance].status;
 }
 
 /*
@@ -301,7 +405,7 @@ AP_GPS::update(void)
  */
 void 
 AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms, 
-               Location &_location, Vector3f &_velocity, uint8_t _num_sats, 
+               const Location &_location, const Vector3f &_velocity, uint8_t _num_sats, 
                uint16_t hdop, bool _have_vertical_velocity)
 {
     if (instance >= GPS_MAX_INSTANCES) {
@@ -313,14 +417,16 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     istate.location = _location;
     istate.location.options = 0;
     istate.velocity = _velocity;
+    istate.have_vertical_velocity = true;
     istate.ground_speed = pythagorous2(istate.velocity.x, istate.velocity.y);
     istate.ground_course_cd = degrees(atan2f(istate.velocity.y, istate.velocity.x)) * 100UL;
     istate.hdop = hdop;
     istate.num_sats = _num_sats;
     istate.have_vertical_velocity = _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
-    istate.time_week     = time_epoch_ms / (86400*7*(uint64_t)1000);
-    istate.time_week_ms  = time_epoch_ms - istate.time_week*(86400*7*(uint64_t)1000);
+    uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL);
+    istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
+    istate.time_week_ms  = gps_time_ms - istate.time_week*(86400*7*(uint64_t)1000);
     timing[instance].last_message_time_ms = tnow;
     timing[instance].last_fix_time_ms = tnow;
     _type[instance].set(GPS_TYPE_HIL);
@@ -334,6 +440,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
 void 
 AP_GPS::lock_port(uint8_t instance, bool lock)
 {
+
     if (instance >= GPS_MAX_INSTANCES) {
         return;
     }
@@ -343,3 +450,117 @@ AP_GPS::lock_port(uint8_t instance, bool lock)
         locked_ports &= ~(1U<<instance);
     }
 }
+
+    //Inject a packet of raw binary to a GPS
+void 
+AP_GPS::inject_data(uint8_t *data, uint8_t len)
+{
+
+#if GPS_MAX_INSTANCES > 1
+
+    //Support broadcasting to all GPSes.
+    if (_inject_to == 127) {
+        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            inject_data(i, data, len);
+        }
+    } else {
+        inject_data(_inject_to, data, len);
+    }
+
+#else
+    inject_data(0,data,len);
+#endif
+
+}
+
+void 
+AP_GPS::inject_data(uint8_t instance, uint8_t *data, uint8_t len)
+{
+    if (instance < GPS_MAX_INSTANCES && drivers[instance] != NULL)
+        drivers[instance]->inject_data(data, len);
+}  
+
+void 
+AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
+{
+    static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
+    if (status(0) > AP_GPS::NO_GPS) {
+        // when we have a GPS then only send new data
+        if (last_send_time_ms[chan] == last_message_time_ms(0)) {
+            return;
+        }
+        last_send_time_ms[chan] = last_message_time_ms(0);
+    } else {
+        // when we don't have a GPS then send at 1Hz
+        uint32_t now = hal.scheduler->millis();
+        if (now - last_send_time_ms[chan] < 1000) {
+            return;
+        }
+        last_send_time_ms[chan] = now;
+    }
+    const Location &loc = location(0);
+    mavlink_msg_gps_raw_int_send(
+        chan,
+        last_fix_time_ms(0)*(uint64_t)1000,
+        status(0),
+        loc.lat,        // in 1E7 degrees
+        loc.lng,        // in 1E7 degrees
+        loc.alt * 10UL, // in mm
+        get_hdop(0),
+        65535,
+        ground_speed(0)*100,  // cm/s
+        ground_course_cd(0), // 1/100 degrees,
+        num_sats(0));
+}
+
+#if GPS_MAX_INSTANCES > 1
+void 
+AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
+{
+    static uint32_t last_send_time_ms[MAVLINK_COMM_NUM_BUFFERS];
+    if (num_sensors() < 2 || status(1) <= AP_GPS::NO_GPS) {
+        return;
+    }
+    // when we have a GPS then only send new data
+    if (last_send_time_ms[chan] == last_message_time_ms(1)) {
+        return;
+    }
+    last_send_time_ms[chan] = last_message_time_ms(1);
+
+    const Location &loc = location(1);
+    mavlink_msg_gps2_raw_send(
+        chan,
+        last_fix_time_ms(1)*(uint64_t)1000,
+        status(1),
+        loc.lat,
+        loc.lng,
+        loc.alt * 10UL,
+        get_hdop(1),
+        65535,
+        ground_speed(1)*100,  // cm/s
+        ground_course_cd(1), // 1/100 degrees,
+        num_sats(1),
+        0,
+        0);
+}
+#endif
+
+#if GPS_RTK_AVAILABLE
+void 
+AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan)
+{
+    if (drivers[0] != NULL && drivers[0]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+        drivers[0]->send_mavlink_gps_rtk(chan);
+    }
+}
+
+#if GPS_MAX_INSTANCES > 1
+void 
+AP_GPS::send_mavlink_gps2_rtk(mavlink_channel_t chan)
+{
+    if (drivers[1] != NULL && drivers[1]->highest_supported_status() > AP_GPS::GPS_OK_FIX_3D) {
+        drivers[1]->send_mavlink_gps_rtk(chan);
+    }
+}
+#endif
+#endif

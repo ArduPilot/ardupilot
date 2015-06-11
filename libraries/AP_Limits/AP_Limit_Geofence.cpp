@@ -54,17 +54,17 @@ const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
 
 };
 
+// storage object
+StorageAccess AP_Limit_Geofence::_storage(StorageManager::StorageFence);
 
 AP_Limit_Geofence::AP_Limit_Geofence(uint16_t efs, uint8_t f_wp_s,
-        uint8_t max_fp, GPS *&gps, const struct Location *h_loc,
-        const struct Location *c_loc) :
+                                     GPS *&gps, const struct Location *h_loc,
+                                     const struct Location *c_loc) :
     AP_Limit_Module(AP_LIMITS_GEOFENCE),
     _gps(gps),
     _current_loc(c_loc),
     _home(h_loc),
-    _eeprom_fence_start(efs),
     _fence_wp_size(f_wp_s),
-    _max_fence_points(max_fp),
     _boundary_uptodate(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -147,11 +147,8 @@ void AP_Limit_Geofence::set_fence_point_with_index(Vector2l &point, uint8_t i)
         return;
     }
 
-    uint16_t mem = _eeprom_fence_start + (i * _fence_wp_size);
-
-    hal.storage->write_dword(mem, point.x);
-    mem += 4;
-    hal.storage->write_dword(mem, point.y);
+    _storage.write_uint32(i * 8, point.x);
+    _storage.write_uint32(i * 8+4, point.y);
 
     _boundary_uptodate = false;
 }
@@ -168,10 +165,8 @@ Vector2l AP_Limit_Geofence::get_fence_point_with_index(uint8_t i)
     }
 
     // read fence point
-    uint16_t mem = _eeprom_fence_start + (i * _fence_wp_size);
-    ret.x = hal.storage->read_dword(mem);
-    mem += 4;
-    ret.y = hal.storage->read_dword(mem);
+    ret.x = _storage.read_uint32(i * 8);
+    ret.y = _storage.read_uint32(i * 8+4);
 
     return ret;
 }

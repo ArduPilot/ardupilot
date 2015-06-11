@@ -14,7 +14,7 @@ export LANG=C
 # Locate the sketch sources based on the initial Makefile's path
 #
 SRCROOT			:=	$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   # Workaround a $(realpath ) bug on cygwin
   ifeq ($(SRCROOT),)
     SRCROOT	:=	$(shell cygpath -m ${CURDIR})
@@ -48,9 +48,14 @@ else
     $(warning WARNING: sketchbook directory $(SKETCHBOOK) contains no libraries)
   endif
 endif
-ifneq ($(findstring CYGWIN, $(SYSTYPE)),) 
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
     # Convert cygwin path into a windows normal path
     SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
+endif
+
+ifneq ($(wildcard $(SKETCHBOOK)/config.mk),)
+$(info Reading $(SKETCHBOOK)/config.mk)
+include $(SKETCHBOOK)/config.mk
 endif
 
 #
@@ -80,6 +85,18 @@ ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
 
+ifneq ($(findstring vrubrain, $(MAKECMDGOALS)),)
+# when building vrbrain we need all sources to be inside the sketchbook directory
+# as the NuttX build system relies on it
+BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
+endif
+
+ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
+# when building vrbrain we need all sources to be inside the sketchbook directory
+# as the NuttX build system relies on it
+BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
+endif
+
 ifeq ($(BUILDROOT),)
 BUILDROOT		:=	$(abspath $(TMPDIR)/$(SKETCH).build)
 endif
@@ -95,19 +112,6 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
-# Jump over the next makefile sections when runing a "make configure"
-ifneq ($(MAKECMDGOALS),configure)
-
-################################################################################
-# Config options
-#
-# The Makefile calling us must specify BOARD
-#
-include $(SKETCHBOOK)/config.mk
-ifeq ($(PORT),)
-$(error ERROR: could not locate $(SKETCHBOOK)/config.mk, please run 'make configure' first and edit config.mk)
-endif
-
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
@@ -119,43 +123,72 @@ HAL_BOARD = HAL_BOARD_PX4
 endif
 
 ifneq ($(findstring sitl, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_AVR_SITL
+HAL_BOARD = HAL_BOARD_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring linux, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NONE
+endif
+
+ifneq ($(findstring erle, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLE
+endif
+
+ifneq ($(findstring zynq, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+endif
+
+ifneq ($(findstring pxf, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
+endif
+
+ifneq ($(findstring navio, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
+endif
+
+ifneq ($(findstring bbbmini, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 endif
 
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
+endif
+
+ifneq ($(findstring vrubrain, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
+endif
+
+ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_VRBRAIN
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 ifneq ($(findstring apm1, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM1
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM1
 endif
 
 ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_APM2
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
 endif
 
 ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
-# default to APM2
+# default to SITL
 ifeq ($(HAL_BOARD),)
-#$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
-HAL_BOARD = HAL_BOARD_APM2
-endif
-
-HARDWARE		?=	arduino
-ifeq ($(BOARD),)
-BOARD = mega2560
-endif
-
-ifneq ($(findstring apm1-1280, $(MAKECMDGOALS)),)
-BOARD = mega
-endif
-
+HAL_BOARD = HAL_BOARD_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 

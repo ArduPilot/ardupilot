@@ -14,6 +14,7 @@ public:
         AP_Float P;
         AP_Float I;
         AP_Float D;
+        AP_Float FF;
         AP_Int16 rmax;
         AP_Int16 imax;
     };
@@ -25,7 +26,7 @@ public:
 
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
-        uint32_t timestamp;
+        uint64_t time_us;
         uint8_t  type;
         uint8_t  state;
         int16_t  servo;

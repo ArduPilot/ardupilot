@@ -8,14 +8,14 @@ include $(MK_DIR)/find_tools.mk
 #
 DEFINES         =   -DF_CPU=$(F_CPU)
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
-DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
+DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align
 WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter -Wno-missing-field-initializers
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
-CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
+CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-use-cxa-atexit
 COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 
 ASOPTS          =   -x assembler-with-cpp 
@@ -34,7 +34,7 @@ CPULDFLAGS= $($(TOOLCHAIN)_CPULDFLAGS)
 OPTFLAGS= $($(TOOLCHAIN)_OPTFLAGS)
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
-CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
+CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS          =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS         =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
@@ -64,6 +64,9 @@ endif
 
 # Library object files
 LIBOBJS			:=	$(SKETCHLIBOBJS)
+
+HARDWARE ?= arduino
+BOARD ?= mega2560
 
 # Find the hardware directory to use
 HARDWARE_DIR		:=	$(firstword $(wildcard $(SKETCHBOOK)/hardware/$(HARDWARE) \
@@ -124,6 +127,7 @@ endif
 
 # The ELF file
 SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
 SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
@@ -174,6 +178,8 @@ jtag-program:
 $(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
 	$(RULEHDR)
 	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)cp $(SKETCHELF) $(BUILDELF)
+	@echo "Firmware is in $(BUILDELF)"
 
 # Create the hex file
 $(SKETCHHEX):	$(SKETCHELF)
@@ -185,41 +191,7 @@ $(SKETCHEEP):	$(SKETCHELF)
 	$(RULEHDR)
 	$(v)$(OBJCOPY) -O ihex -j.eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $< $@
 
-#
-# Build sketch objects
-#
-SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
+SKETCH_INCLUDES	= $(SKETCHLIBINCLUDES)
+SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)
 
-$(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< -I$(SRCROOT) $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-#
-# Build library objects from sources in the sketchbook
-#
-SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES) $(ARDUINOLIBINCLUDES) $(COREINCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
+include $(MK_DIR)/build_rules.mk

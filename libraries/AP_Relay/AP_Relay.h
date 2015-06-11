@@ -42,6 +42,7 @@ public:
 
 private:
     AP_Int8 _pin[AP_RELAY_NUM_RELAYS];
+    AP_Int8 _default;
 };
 
 #endif /* AP_RELAY_H_ */

@@ -86,14 +86,14 @@ HAL_PX4::HAL_PX4() :
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
 static bool thread_running = false;        /**< Daemon status flag */
 static int daemon_task;                /**< Handle of daemon task / thread */
-static bool ran_overtime;
+bool px4_ran_overtime;
 
 extern const AP_HAL::HAL& hal;
 
 /*
   set the priority of the main APM task
  */
-static void set_priority(uint8_t priority)
+void hal_px4_set_priority(uint8_t priority)
 {
     struct sched_param param;
     param.sched_priority = priority;
@@ -108,8 +108,8 @@ static void set_priority(uint8_t priority)
  */
 static void loop_overtime(void *)
 {
-    set_priority(APM_OVERTIME_PRIORITY);
-    ran_overtime = true;
+    hal_px4_set_priority(APM_OVERTIME_PRIORITY);
+    px4_ran_overtime = true;
 }
 
 static int main_loop(int argc, char **argv)
@@ -134,7 +134,7 @@ static int main_loop(int argc, char **argv)
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    set_priority(APM_STARTUP_PRIORITY);
+    hal_px4_set_priority(APM_STARTUP_PRIORITY);
 
     schedulerInstance.hal_initialized();
 
@@ -150,7 +150,7 @@ static int main_loop(int argc, char **argv)
     /*
       switch to high priority for main loop
      */
-    set_priority(APM_MAIN_PRIORITY);
+    hal_px4_set_priority(APM_MAIN_PRIORITY);
 
     while (!_px4_thread_should_exit) {
         perf_begin(perf_loop);
@@ -165,24 +165,24 @@ static int main_loop(int argc, char **argv)
 
         loop();
 
-        if (ran_overtime) {
+        if (px4_ran_overtime) {
             /*
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            set_priority(APM_MAIN_PRIORITY);
+            hal_px4_set_priority(APM_MAIN_PRIORITY);
             perf_count(perf_overrun);
-            ran_overtime = false;
+            px4_ran_overtime = false;
         }
 
         perf_end(perf_loop);
 
         /*
-          give up 500 microseconds of time, to ensure drivers get a
+          give up 250 microseconds of time, to ensure drivers get a
           chance to run. This relies on the accurate semaphore wait
           using hrt in semaphore.cpp
          */
-        hal.scheduler->delay_microseconds(500);
+        hal.scheduler->delay_microseconds(250);
     }
     thread_running = false;
     return 0;
@@ -231,12 +231,12 @@ void HAL_PX4::init(int argc, char * const argv[]) const
                    SKETCHNAME, deviceA, deviceC, deviceD, deviceE);
 
             _px4_thread_should_exit = false;
-            daemon_task = task_spawn_cmd(SKETCHNAME,
-                                     SCHED_FIFO,
-                                     APM_MAIN_PRIORITY,
-                                     8192,
-                                     main_loop,
-                                     NULL);
+            daemon_task = px4_task_spawn_cmd(SKETCHNAME,
+                                             SCHED_FIFO,
+                                             APM_MAIN_PRIORITY,
+                                             APM_MAIN_THREAD_STACK_SIZE,
+                                             main_loop,
+                                             NULL);
             exit(0);
         }
 

@@ -31,7 +31,7 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms) :
  */
 void Airspeed_Calibration::init(float initial_ratio)
 {
-    state.z = 1.0 / sqrtf(initial_ratio);
+    state.z = 1.0f / sqrtf(initial_ratio);
 }
 
 /*
@@ -125,7 +125,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     // very useful both for testing and to force a reasonable value. 
     float ratio = constrain_float(_ratio, 1.0f, 4.0f);
 
-    _calibration.state.z = 1.0 / sqrtf(ratio);
+    _calibration.state.z = 1.0f / sqrtf(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = get_differential_pressure();

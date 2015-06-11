@@ -3,8 +3,6 @@
 #include <AP_HAL.h>
 #include "AP_InertialNav.h"
 
-extern const AP_HAL::HAL& hal;
-
 #if AP_AHRS_NAVEKF_AVAILABLE
 
 /*
@@ -14,25 +12,16 @@ extern const AP_HAL::HAL& hal;
  */
 
 /**
- * initializes the object.
- */
-void AP_InertialNav_NavEKF::init()
-{
-    AP_InertialNav::init();
-}
-
-/**
    update internal state
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    AP_InertialNav::update(dt);
-    _ahrs.get_relative_position_NED(_relpos_cm);
+    _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
     _relpos_cm *= 100; // convert to cm
 
-    _haveabspos = _ahrs.get_position(_abspos);
+    _haveabspos = _ahrs_ekf.get_position(_abspos);
 
-    _ahrs.get_velocity_NED(_velocity_cm);
+    _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
     _velocity_cm *= 100; // convert to cm/s
 
     // InertialNav is NEU
@@ -41,30 +30,45 @@ void AP_InertialNav_NavEKF::update(float dt)
 }
 
 /**
- * position_ok - true if inertial based altitude and position can be trusted
- * @return
+ * get_filter_status : returns filter status as a series of flags
  */
-bool AP_InertialNav_NavEKF::position_ok() const
+nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return true;
+    nav_filter_status ret;
+    _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
+    return ret;
+}
+
+/**
+ * get_origin - returns the inertial navigation origin in lat/lon/alt
+ */
+struct Location AP_InertialNav_NavEKF::get_origin() const
+{
+    struct Location ret;
+    if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
+        // initialise location to all zeros if origin not yet set
+        memset(&ret, 0, sizeof(ret));
     }
-    return AP_InertialNav::position_ok();
+    return ret;
 }
 
 /**
  * get_position - returns the current position relative to the home location in cm.
  *
- * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
- *
  * @return
  */
 const Vector3f &AP_InertialNav_NavEKF::get_position(void) const 
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm;
-    }
-    return AP_InertialNav::get_position();
+    return _relpos_cm;
+}
+
+/**
+ * get_location - updates the provided location with the latest calculated locatoin
+ *  returns true on success (i.e. the EKF knows it's latest position), false on failure
+ */
+bool AP_InertialNav_NavEKF::get_location(struct Location &loc) const
+{
+    return _ahrs_ekf.get_NavEKF().getLLH(loc);
 }
 
 /**
@@ -72,10 +76,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
  */
 int32_t AP_InertialNav_NavEKF::get_latitude() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return _abspos.lat;
-    }
-    return AP_InertialNav::get_latitude();
+    return _abspos.lat;
 }
 
 /**
@@ -84,36 +85,7 @@ int32_t AP_InertialNav_NavEKF::get_latitude() const
  */
 int32_t AP_InertialNav_NavEKF::get_longitude() const
 {
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return _abspos.lng;
-    }
-    return AP_InertialNav::get_longitude();
-}
-
-/**
- * get_latitude_diff - returns the current latitude difference from the home location.
- *
- * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- */
-float AP_InertialNav_NavEKF::get_latitude_diff() const
-{
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.x / LATLON_TO_CM;
-    }
-    return AP_InertialNav::get_latitude_diff();
-}
-
-/**
- * get_longitude_diff - returns the current longitude difference from the home location.
- *
- * @return difference in 100 nano degrees (i.e. degree value multiplied by 10,000,000)
- */
-float AP_InertialNav_NavEKF::get_longitude_diff() const
-{
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.y / _lon_to_cm_scaling;
-    }
-    return AP_InertialNav::get_longitude_diff();
+    return _abspos.lng;
 }
 
 /**
@@ -126,10 +98,7 @@ float AP_InertialNav_NavEKF::get_longitude_diff() const
  */
 const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _velocity_cm;
-    }
-    return AP_InertialNav::get_velocity();
+    return _velocity_cm;
 }
 
 /**
@@ -139,22 +108,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_velocity() const
  */
 float AP_InertialNav_NavEKF::get_velocity_xy() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return pythagorous2(_velocity_cm.x, _velocity_cm.y);
-    }
-    return AP_InertialNav::get_velocity_xy();
-}
-
-/**
- * altitude_ok - returns true if inertial based altitude and position can be trusted
- * @return
- */
-bool AP_InertialNav_NavEKF::altitude_ok() const
-{
-    if (_ahrs.have_inertial_nav() && _haveabspos) {
-        return true;
-    }
-    return AP_InertialNav::altitude_ok();
+    return pythagorous2(_velocity_cm.x, _velocity_cm.y);
 }
 
 /**
@@ -163,10 +117,38 @@ bool AP_InertialNav_NavEKF::altitude_ok() const
  */
 float AP_InertialNav_NavEKF::get_altitude() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _relpos_cm.z;
+    return _relpos_cm.z;
+}
+
+/**
+ * getHgtAboveGnd - get latest height above ground level estimate in cm and a validity flag
+ *
+ * @return
+ */
+bool AP_InertialNav_NavEKF::get_hagl(float height) const
+{
+    // true when estimate is valid
+    bool valid = _ahrs_ekf.get_NavEKF().getHAGL(height);
+    // convert height from m to cm
+    height *= 100.0f;
+    return valid;
+}
+
+/**
+ * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
+ * this is used to limit height during optical flow navigation
+ * it will return invalid when no limiting is required
+ * @return
+ */
+bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float& limit) const
+{
+    // true when estimate is valid
+    if (_ahrs_ekf.get_NavEKF().getHeightControlLimit(limit)) {
+        // convert height from m to cm
+        limit *= 100.0f;
+        return true;
     }
-    return AP_InertialNav::get_altitude();
+    return false;
 }
 
 /**
@@ -178,10 +160,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
  */
 float AP_InertialNav_NavEKF::get_velocity_z() const
 {
-    if (_ahrs.have_inertial_nav()) {
-        return _velocity_cm.z;
-    }
-    return AP_InertialNav::get_velocity_z();
+    return _velocity_cm.z;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

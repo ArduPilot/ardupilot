@@ -36,8 +36,8 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 
 	// @Param: P
 	// @DisplayName: Proportional Gain
-	// @Description: This is the gain from bank angle to aileron. This gain works the same way as the P term in the old PID (RLL2SRV_P) and can be set to the same value.
-	// @Range: 0.1 2.0
+	// @Description: This is the gain from bank angle error to aileron.
+	// @Range: 0.1 4.0
 	// @Increment: 0.1
 	// @User: User
 	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.4f),
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.0f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.04f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -69,11 +69,19 @@ const AP_Param::GroupInfo AP_RollController::var_info[] PROGMEM = {
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
-	// @Description: This limits the number of degrees of aileron in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.
+	// @Description: This limits the number of degrees of aileron in centi-degrees over which the integrator will operate. At the default setting of 3000 centi-degrees, the integrator will be limited to +- 30 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 2/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
-	AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        1500),
+	AP_GROUPINFO("IMAX",      5, AP_RollController, gains.imax,        3000),
+
+	// @Param: FF
+	// @DisplayName: Feed forward Gain
+	// @Description: This is the gain from demanded rate to aileron output. 
+	// @Range: 0.1 4.0
+	// @Increment: 0.1
+	// @User: User
+	AP_GROUPINFO("FF",        6, AP_RollController, gains.FF,          0.0f),
 
 	AP_GROUPEND
 };
@@ -95,7 +103,9 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
 	float ki_rate = gains.I * gains.tau;
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0)/_ahrs.get_EAS2TAS();
+    float eas2tas = _ahrs.get_EAS2TAS();
+	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+    float k_ff = gains.FF / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
 	
 	// Limit the demanded roll rate
@@ -133,23 +143,28 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
                  integrator_delta = min(integrator_delta, 0);
             }
-			_integrator += integrator_delta;
+			_pid_info.I += integrator_delta;
 		}
 	} else {
-		_integrator = 0;
+		_pid_info.I = 0;
 	}
 	
     // Scale the integration limit
     float intLimScaled = gains.imax * 0.01f;
 
     // Constrain the integrator state
-    _integrator = constrain_float(_integrator, -intLimScaled, intLimScaled);
+    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
 	
 	// Calculate the demanded control surface deflection
 	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
 	// path, but want a 1/speed^2 scaler applied to the rate error path. 
 	// This is because acceleration scales with speed^2, but rate scales with speed.
-	_last_out = ( (rate_error * gains.D) + (desired_rate * kp_ff) ) * scaler;
+    _pid_info.D = rate_error * gains.D * scaler;
+    _pid_info.P = desired_rate * kp_ff * scaler;
+    _pid_info.FF = desired_rate * k_ff * scaler;
+    _pid_info.desired = desired_rate;
+
+	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
@@ -159,7 +174,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
         autotune.update(desired_rate, achieved_rate, _last_out);
     }
 
-	_last_out += _integrator;
+	_last_out += _pid_info.I;
 	
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
@@ -189,7 +204,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 */
 int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator)
 {
-    if (gains.tau < 0.1) {
+    if (gains.tau < 0.1f) {
         gains.tau.set(0.1f);
     }
 	
@@ -201,6 +216,6 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
 
 void AP_RollController::reset_I()
 {
-	_integrator = 0;
+	_pid_info.I = 0;
 }
 

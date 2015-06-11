@@ -45,7 +45,7 @@ bool ToshibaLED_I2C::hw_init()
     bool ret = (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
 
     // update the red, green and blue values to zero
-    uint8_t val[3] = { TOSHIBA_LED_OFF, TOSHIBA_LED_OFF, TOSHIBA_LED_OFF };
+    uint8_t val[3] = { _led_off, _led_off, _led_off };
     ret &= (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
 
     // re-enable recording of i2c lockup errors

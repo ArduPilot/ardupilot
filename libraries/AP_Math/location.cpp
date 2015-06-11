@@ -44,6 +44,7 @@ float longitude_scale(const struct Location &loc)
         return scale;
     }
     scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    scale = constrain_float(scale, 0.01f, 1.0f);
     last_lat = loc.lat;
     return scale;
 }
@@ -83,34 +84,28 @@ bool location_passed_point(const struct Location &location,
                            const struct Location &point1,
                            const struct Location &point2)
 {
-    // the 3 points form a triangle. If the angle between lines
-    // point1->point2 and location->point2 is greater than 90
-    // degrees then we have passed the waypoint
-    Vector2f loc1(location.lat, location.lng);
-    Vector2f pt1(point1.lat, point1.lng);
-    Vector2f pt2(point2.lat, point2.lng);
-    float angle = (loc1 - pt2).angle(pt1 - pt2);
-    if (isinf(angle)) {
-        // two of the points are co-located.
-        // If location is equal to point2 then say we have passed the
-        // waypoint, otherwise say we haven't
-        if (get_distance(location, point2) == 0) {
-            return true;
-        }
-        return false;
-    } else if (angle == 0) {
-        // if we are exactly on the line between point1 and
-        // point2 then we are past the waypoint if the
-        // distance from location to point1 is greater then
-        // the distance from point2 to point1
-        return get_distance(location, point1) >
-               get_distance(point2, point1);
+    return location_path_proportion(location, point1, point2) >= 1.0f;
+}
 
+
+/*
+  return the proportion we are along the path from point1 to
+  point2, along a line parallel to point1<->point2.
+
+  This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2)
+{
+    Vector2f vec1 = location_diff(point1, point2);
+    Vector2f vec2 = location_diff(point1, location);
+    float dsquared = sq(vec1.x) + sq(vec1.y);
+    if (dsquared < 0.001f) {
+        // the two points are very close together
+        return 1.0f;
     }
-    if (degrees(angle) > 90) {
-        return true;
-    }
-    return false;
+    return (vec1 * vec2) / dsquared;
 }
 
 /*
@@ -133,7 +128,7 @@ void location_update(struct Location &loc, float bearing, float distance)
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
-    if (ofs_north != 0 || ofs_east != 0) {
+    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
         int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
         loc.lat += dlat;
@@ -259,7 +254,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   const double p = sqrt(ecef[0]*ecef[0] + ecef[1]*ecef[1]);
 
   /* Compute longitude first, this can be done exactly. */
-  if (p != 0)
+  if (!is_zero(p))
     llh[1] = atan2(ecef[1], ecef[0]);
   else
     llh[1] = 0;

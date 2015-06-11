@@ -7,7 +7,7 @@ typedef struct __mavlink_hil_gps_t
  uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
  int32_t lat; ///< Latitude (WGS84), in degrees * 1E7
  int32_t lon; ///< Longitude (WGS84), in degrees * 1E7
- int32_t alt; ///< Altitude (WGS84), in meters * 1000 (positive for up)
+ int32_t alt; ///< Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  uint16_t eph; ///< GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
  uint16_t epv; ///< GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  uint16_t vel; ///< GPS ground speed (m/s * 100). If unknown, set to: 65535
@@ -57,7 +57,7 @@ typedef struct __mavlink_hil_gps_t
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
@@ -125,7 +125,7 @@ static inline uint16_t mavlink_msg_hil_gps_pack(uint8_t system_id, uint8_t compo
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
@@ -219,7 +219,7 @@ static inline uint16_t mavlink_msg_hil_gps_encode_chan(uint8_t system_id, uint8_
  * @param fix_type 0-1: no fix, 2: 2D fix, 3: 3D fix. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
  * @param lat Latitude (WGS84), in degrees * 1E7
  * @param lon Longitude (WGS84), in degrees * 1E7
- * @param alt Altitude (WGS84), in meters * 1000 (positive for up)
+ * @param alt Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  * @param eph GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: 65535
  * @param epv GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: 65535
  * @param vel GPS ground speed (m/s * 100). If unknown, set to: 65535
@@ -382,7 +382,7 @@ static inline int32_t mavlink_msg_hil_gps_get_lon(const mavlink_message_t* msg)
 /**
  * @brief Get field alt from hil_gps message
  *
- * @return Altitude (WGS84), in meters * 1000 (positive for up)
+ * @return Altitude (AMSL, not WGS84), in meters * 1000 (positive for up)
  */
 static inline int32_t mavlink_msg_hil_gps_get_alt(const mavlink_message_t* msg)
 {

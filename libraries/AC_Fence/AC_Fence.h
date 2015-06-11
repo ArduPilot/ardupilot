@@ -19,7 +19,7 @@
 
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
-#define AC_FENCE_CIRCLE_RADIUS_DEFAULT              150.0f  // default circular fence radius is 150m
+#define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
@@ -33,7 +33,7 @@ class AC_Fence
 public:
 
     /// Constructor
-    AC_Fence(const AP_InertialNav* inav);
+    AC_Fence(const AP_InertialNav& inav);
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool true_false) { _enabled = true_false; }
@@ -52,7 +52,8 @@ public:
     ///
 
     /// check_fence - returns the fence type that has been breached (if any)
-    uint8_t check_fence();
+    ///     curr_alt is the altitude above home in meters
+    uint8_t check_fence(float curr_alt);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }
@@ -95,7 +96,7 @@ private:
     void clear_breach(uint8_t fence_type);
 
     // pointers to other objects we depend upon
-    const AP_InertialNav *const _inav;
+    const AP_InertialNav& _inav;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control

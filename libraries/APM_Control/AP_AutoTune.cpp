@@ -60,8 +60,8 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_P 0.3f
 
 // tau ranges
-#define AUTOTUNE_MAX_TAU 0.7
-#define AUTOTUNE_MIN_TAU 0.2
+#define AUTOTUNE_MAX_TAU 0.7f
+#define AUTOTUNE_MIN_TAU 0.2f
 
 #define AUTOTUNE_MIN_IMAX 2000
 #define AUTOTUNE_MAX_IMAX 4000
@@ -76,7 +76,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
     dataflash(_dataflash)
 {}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
 # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
@@ -331,7 +331,7 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 
     struct log_ATRP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        timestamp  : hal.scheduler->millis(),
+        time_us    : hal.scheduler->micros64(),
         type       : type,
     	state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),

@@ -44,6 +44,7 @@ public:
 
 	int32_t target_bearing_cd(void) const;
 	float turn_distance(float wp_radius) const;
+	float turn_distance(float wp_radius, float turn_angle) const;
 	void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP);
 	void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction);
 	void update_heading_hold(int32_t navigation_heading_cd);

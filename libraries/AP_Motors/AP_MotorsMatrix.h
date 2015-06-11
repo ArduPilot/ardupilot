@@ -14,15 +14,13 @@
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
-#define AP_MOTORS_MATRIX_YAW_LOWER_LIMIT_PWM    200
-
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsMatrix( RC_Channel& rc_roll, RC_Channel& rc_pitch, RC_Channel& rc_throttle, RC_Channel& rc_yaw, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(rc_roll, rc_pitch, rc_throttle, rc_yaw, speed_hz)
+    AP_MotorsMatrix(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_Motors(loop_rate, speed_hz)
     {};
 
     // init
@@ -49,6 +47,9 @@ public:
     // add_motor using just position and yaw_factor (or prop direction)
     void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
 
+    // add_motor using separate roll and pitch factors (for asymmetrical frames) and prop direction
+    void                add_motor(int8_t motor_num, float roll_factor_in_degrees, float pitch_factor_in_degrees, float yaw_factor, uint8_t testing_order);
+
     // remove_motor
     void                remove_motor(int8_t motor_num);
 
@@ -60,10 +61,15 @@ public:
         remove_all_motors();
     };
 
+    // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
+    //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+    virtual uint16_t    get_motor_mask();
+
 protected:
     // output - sends commands to the motors
-    virtual void        output_armed();
-    virtual void        output_disarmed();
+    void                output_armed_stabilizing();
+    void                output_armed_not_stabilizing();
+    void                output_disarmed();
 
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);

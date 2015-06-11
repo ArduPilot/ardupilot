@@ -17,8 +17,14 @@ class AP_ServoRelayEvents {
 public:
     AP_ServoRelayEvents(AP_Relay &_relay) : 
     relay(_relay),
-    mask(0)
-        {}
+    mask(0),
+    type(EVENT_TYPE_RELAY),
+    start_time_ms(0),
+    delay_ms(0),
+    repeat(0),
+    channel(0),
+    servo_value(0)
+    {}
 
     // set allowed servo channel mask
     void set_channel_mask(uint16_t _mask) { mask = _mask; }

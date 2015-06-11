@@ -19,9 +19,14 @@
 #include "quaternion.h"
 #include "polygon.h"
 #include "edc.h"
+#include "float.h"
+#include "AP_Param.h"
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
+#endif
+#ifndef M_2PI_F
+ #define M_2PI_F (2*M_PI_F)
 #endif
 #ifndef PI
  # define PI M_PI_F
@@ -71,14 +76,17 @@
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
+// are two floats equal
+static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+
+// is a float is zero
+static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
 
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
-
-// a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
-float           fast_atan(float v);
 
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
@@ -108,6 +116,14 @@ int32_t                 get_bearing_cd(const struct Location &loc1, const struct
 bool        location_passed_point(const struct Location & location,
                                   const struct Location & point1,
                                   const struct Location & point2);
+
+/*
+  return the proportion we are along the path from point1 to
+  point2. This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2);
 
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location &loc, float bearing, float distance);
@@ -140,8 +156,14 @@ float wrap_PI(float angle_in_radians);
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-//Convert between LLH and ECEF coordinate systems
+// Converts from WGS84 geodetic coordinates (lat, lon, height)
+// into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
+// (X, Y, Z)
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
+
+// Converts from WGS84 Earth Centered, Earth Fixed (ECEF) 
+// coordinates (X, Y, Z), into WHS84 geodetic 
+// coordinates (lat, lon, height)
 void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 #endif
 

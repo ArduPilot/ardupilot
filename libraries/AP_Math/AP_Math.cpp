@@ -1,4 +1,5 @@
 #include "AP_Math.h"
+#include <float.h>
 
 // a varient of asin() that checks the input ranges and ensures a
 // valid angle as output. If nan is given as input then zero is
@@ -6,7 +7,7 @@
 float safe_asin(float v)
 {
     if (isnan(v)) {
-        return 0.0;
+        return 0.0f;
     }
     if (v >= 1.0f) {
         return PI/2;
@@ -29,13 +30,6 @@ float safe_sqrt(float v)
         return 0;
     }
     return ret;
-}
-
-// a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
-float fast_atan(float v)
-{
-    float v2 = v*v;
-    return (v*(1.6867629106f + v2*0.4378497304f)/(1.6867633134f + v2));
 }
 
 #if ROTATION_COMBINATION_SUPPORT

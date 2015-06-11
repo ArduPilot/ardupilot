@@ -5,8 +5,16 @@
 #include <AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
-#define AVR_RC_INPUT_NUM_CHANNELS 8
+#define AVR_RC_INPUT_NUM_CHANNELS 11
 #define AVR_RC_INPUT_MIN_CHANNELS 5     // for ppm sum we allow less than 8 channels to make up a valid packet
+
+/*
+  mininum pulse width in microseconds to signal end of a PPM-SUM
+  frame. This value is chosen to be smaller than the default 3000 sync
+  pulse width for OpenLRSng. Note that this is the total pulse with
+  (typically 300us low followed by a long high pulse)
+ */
+#define AVR_RC_INPUT_MIN_SYNC_PULSE_WIDTH 2700
 
 class AP_HAL_AVR::APM1RCInput : public AP_HAL::RCInput {
 public:
@@ -17,7 +25,10 @@ public:
     void     init(void* isrregistry);
 
     /**
-     * Return true if new input since the last read()
+     * Return true if there has been new input since the last read()
+     * call. This call also clears the new_input flag, so once it
+     * returns true it won't return true again until another frame is
+     * received.
      */
     bool  new_input();
 

@@ -18,6 +18,7 @@
 #include <uORB/topics/system_power.h>
 #include <GCS_MAVLink.h>
 #include <errno.h>
+#include "GPIO.h"
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -42,7 +43,7 @@ static const struct {
 } pin_scaling[] = {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     // PX4 has 4 FMU analog input pins
-    { 10, (5.7*3.3)/4096 }, // FMU battery on multi-connector pin 5,
+    { 10, (5.7f*3.3f)/4096 }, // FMU battery on multi-connector pin 5,
                             // 5.7:1 scaling
     { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
     { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
@@ -68,6 +69,8 @@ using namespace PX4;
 
 PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
 	_pin(pin),
+    _stop_pin(-1),
+    _settle_time_ms(0),
     _value(initial_value),
     _value_ratiometric(initial_value),
     _latest_value(initial_value),
@@ -80,6 +83,11 @@ PX4AnalogSource::PX4AnalogSource(int16_t pin, float initial_value) :
         _pin = PX4_ANALOG_VCC_5V_PIN;
     }
 #endif
+}
+
+void PX4AnalogSource::set_stop_pin(uint8_t p)
+{ 
+    _stop_pin = p; 
 }
 
 float PX4AnalogSource::read_average() 
@@ -184,20 +192,55 @@ void PX4AnalogSource::_add_value(float v, float vcc5V)
 
 
 PX4AnalogIn::PX4AnalogIn() :
+    _current_stop_pin_i(0),
 	_board_voltage(0),
     _servorail_voltage(0),
-    _power_flags(0)    
+    _power_flags(0)
 {}
 
 void PX4AnalogIn::init(void* machtnichts)
 {
-	_adc_fd = open(ADC_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
+	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
-        hal.scheduler->panic("Unable to open " ADC_DEVICE_PATH);
+        hal.scheduler->panic("Unable to open " ADC0_DEVICE_PATH);
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
     _system_power_handle = orb_subscribe(ORB_ID(system_power));
+}
+
+
+/*
+  move to the next stop pin
+ */
+void PX4AnalogIn::next_stop_pin(void)
+{
+    // find the next stop pin. We start one past the current stop pin
+    // and wrap completely, so we do the right thing is there is only
+    // one stop pin
+    for (uint8_t i=1; i <= PX4_ANALOG_MAX_CHANNELS; i++) {
+        uint8_t idx = (_current_stop_pin_i + i) % PX4_ANALOG_MAX_CHANNELS;
+        PX4::PX4AnalogSource *c = _channels[idx];
+        if (c && c->_stop_pin != -1) {
+            // found another stop pin
+            _stop_pin_change_time = hal.scheduler->millis();
+            _current_stop_pin_i = idx;
+
+            // set that pin high
+            hal.gpio->pinMode(c->_stop_pin, 1);
+            hal.gpio->write(c->_stop_pin, 1);
+
+            // set all others low
+            for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+                PX4::PX4AnalogSource *c2 = _channels[j];
+                if (c2 && c2->_stop_pin != -1 && j != idx) {
+                    hal.gpio->pinMode(c2->_stop_pin, 1);
+                    hal.gpio->write(c2->_stop_pin, 0);
+                }
+            }
+            break;
+        }
+    }
 }
 
 /*
@@ -214,6 +257,12 @@ void PX4AnalogIn::_timer_tick(void)
     _last_run = now;
 
     struct adc_msg_s buf_adc[PX4_ANALOG_MAX_CHANNELS];
+
+    // cope with initial setup of stop pin
+    if (_channels[_current_stop_pin_i] == NULL ||
+        _channels[_current_stop_pin_i]->_stop_pin == -1) {
+        next_stop_pin();
+    }
 
     /* read all channels available */
     int ret = read(_adc_fd, &buf_adc, sizeof(buf_adc));
@@ -235,7 +284,16 @@ void PX4AnalogIn::_timer_tick(void)
             for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                 PX4::PX4AnalogSource *c = _channels[j];
                 if (c != NULL && buf_adc[i].am_channel == c->_pin) {
-                    c->_add_value(buf_adc[i].am_data, _board_voltage);
+                    // add a value if either there is no stop pin, or
+                    // the stop pin has been settling for enough time
+                    if (c->_stop_pin == -1 || 
+                        (_current_stop_pin_i == j &&
+                         hal.scheduler->millis() - _stop_pin_change_time > c->_settle_time_ms)) {
+                        c->_add_value(buf_adc[i].am_data, _board_voltage);
+                        if (c->_stop_pin != -1 && _current_stop_pin_i == j) {
+                            next_stop_pin();
+                        }
+                    }
                 }
             }
         }
@@ -301,8 +359,10 @@ void PX4AnalogIn::_timer_tick(void)
             if (system_power.servo_valid)   flags |= MAV_POWER_STATUS_SERVO_VALID;
             if (system_power.periph_5V_OC)  flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
             if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
-            if (_power_flags != 0 && _power_flags != flags) {
-                // the power status has changed since boot
+            if (_power_flags != 0 && 
+                _power_flags != flags && 
+                hal.util->get_soft_armed()) {
+                // the power status has changed while armed
                 flags |= MAV_POWER_STATUS_CHANGED;
             }
             _power_flags = flags;
@@ -316,7 +376,7 @@ AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new PX4AnalogSource(pin, 0.0);
+            _channels[j] = new PX4AnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }

@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include <AP_HAL.h>
 #include <AC_Circle.h>
+#include <AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,9 +36,17 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
     _ahrs(ahrs),
     _pos_control(pos_control),
     _last_update(0),
-    _angle(0)
+    _yaw(0.0f),
+    _angle(0.0f),
+    _angle_total(0.0f),
+    _angular_vel(0.0f),
+    _angular_vel_max(0.0f),
+    _angular_accel(0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // init flags
+    _flags.panorama = false;
 }
 
 /// init - initialise circle controller setting center specifically
@@ -90,18 +99,15 @@ void AC_Circle::init()
 void AC_Circle::update()
 {
     // calculate dt
-    uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update) / 1000.0f;
+    float dt = _pos_control.time_since_last_xy_update();
 
-    // update circle position at 10hz
-    if (dt > 0.095f) {
+    // update circle position at poscontrol update rate
+    if (dt >= _pos_control.get_dt_xy()) {
 
         // double check dt is reasonable
-        if (dt >= 1.0f) {
-            dt = 0.0;
+        if (dt >= 0.2f) {
+            dt = 0.0f;
         }
-        // capture time since last iteration
-        _last_update = now;
 
         // ramp up angular velocity to maximum
         if (_rate >= 0) {
@@ -123,7 +129,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
-        if (_radius != 0.0) {
+        if (!is_zero(_radius)) {
             // calculate target position
             Vector3f target;
             target.x = _center.x + _radius * cosf(-_angle);
@@ -149,12 +155,9 @@ void AC_Circle::update()
             _yaw = _angle * AC_CIRCLE_DEGX100;
         }
 
-        // trigger position controller on next update
-        _pos_control.trigger_xy();
+        // update position controller
+        _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f);
     }
-
-    // run loiter's position to velocity step
-    _pos_control.update_xy_controller(false);
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
@@ -180,7 +183,7 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     float dist = pythagorous2(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (dist == 0) {
+    if (is_zero(dist)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
@@ -244,11 +247,11 @@ void AC_Circle::init_start_angle(bool use_heading)
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
         const Vector3f &curr_pos = _inav.get_position();
-        if (curr_pos.x == _center.x && curr_pos.y == _center.y) {
+        if (is_equal(curr_pos.x,_center.x) && is_equal(curr_pos.y,_center.y)) {
             _angle = wrap_PI(_ahrs.yaw-PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = ToRad(90) + atan2f(-(curr_pos.x-_center.x), curr_pos.y-_center.y);
+            float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);
             _angle = wrap_PI(bearing_rad);
         }
     }

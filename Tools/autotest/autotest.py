@@ -15,7 +15,17 @@ os.putenv('TMPDIR', util.reltopdir('tmp'))
 
 def get_default_params(atype):
     '''get default parameters'''
-    sil = util.start_SIL(atype, wipe=True)
+
+    # use rover simulator so SITL is not starved of input
+    from pymavlink import mavutil
+    HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
+    if atype in ['APMrover2', 'ArduPlane']:
+        frame = 'rover'
+    else:
+        frame = '+'
+
+    home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    sil = util.start_SIL(atype, wipe=True, model=frame, home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL(atype)
     print("Dumping defaults")
     idx = mavproxy.expect(['Please Run Setup', 'Saved [0-9]+ parameters to (\S+)'])
@@ -23,7 +33,7 @@ def get_default_params(atype):
         # we need to restart it after eeprom erase
         util.pexpect_close(mavproxy)
         util.pexpect_close(sil)
-        sil = util.start_SIL(atype)
+        sil = util.start_SIL(atype, model=frame, home=home, speedup=10)
         mavproxy = util.start_MAVProxy_SIL(atype)
         idx = mavproxy.expect('Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
@@ -53,6 +63,20 @@ def build_binaries():
     shutil.copymode(orig, copy)
     if util.run_cmd(copy, dir=util.reltopdir('.')) != 0:
         print("Failed build_binaries.sh")
+        return False
+    return True
+
+def build_devrelease():
+    '''run the build_devrelease.sh script'''
+    print("Running build_devrelease.sh")
+    import shutil
+    # copy the script as it changes git branch, which can change the script while running
+    orig=util.reltopdir('Tools/scripts/build_devrelease.sh')
+    copy=util.reltopdir('./build_devrelease.sh')
+    shutil.copyfile(orig, copy)
+    shutil.copymode(orig, copy)
+    if util.run_cmd(copy, dir=util.reltopdir('.')) != 0:
+        print("Failed build_devrelease.sh")
         return False
     return True
 
@@ -87,9 +111,9 @@ def convert_gpx():
     return True
 
 
-def test_prerequesites():
+def test_prerequisites():
     '''check we have the right directories and tools to run tests'''
-    print("Testing prerequesites")
+    print("Testing prerequisites")
     util.mkdir_p(util.reltopdir('../buildlogs'))
     return True
 
@@ -114,29 +138,28 @@ parser.add_option("--viewerip", default=None, help='IP address to send MAVLink a
 parser.add_option("--map", action='store_true', default=False, help='show map')
 parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
 parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
+parser.add_option("-j", default=1, type='int', help='build CPUs')
 
 opts, args = parser.parse_args()
 
 import  arducopter, arduplane, apmrover2
 
 steps = [
-    'prerequesites',
+    'prerequisites',
     'build.All',
     'build.Binaries',
+#    'build.DevRelease',
     'build.Examples',
     'build.Parameters',
 
-    'build2560.ArduPlane',
     'build.ArduPlane',
     'defaults.ArduPlane',
     'fly.ArduPlane',
 
-    'build2560.APMrover2',
     'build.APMrover2',
     'defaults.APMrover2',
     'drive.APMrover2',
 
-    'build2560.ArduCopter',
     'build.ArduCopter',
     'defaults.ArduCopter',
     'fly.ArduCopter',
@@ -165,26 +188,21 @@ def skip_step(step):
 
 def run_step(step):
     '''run one step'''
-    if step == "prerequesites":
-        return test_prerequesites()
+
+    # remove old logs
+    util.run_cmd('/bin/rm -f logs/*.BIN logs/LASTLOG.TXT')
+
+    if step == "prerequisites":
+        return test_prerequisites()
 
     if step == 'build.ArduPlane':
-        return util.build_SIL('ArduPlane')
+        return util.build_SIL('ArduPlane', j=opts.j)
 
     if step == 'build.APMrover2':
-        return util.build_SIL('APMrover2')
+        return util.build_SIL('APMrover2', j=opts.j)
 
     if step == 'build.ArduCopter':
-        return util.build_SIL('ArduCopter')
-
-    if step == 'build2560.ArduCopter':
-        return util.build_AVR('ArduCopter', board='mega2560')
-
-    if step == 'build2560.ArduPlane':
-        return util.build_AVR('ArduPlane', board='mega2560')
-
-    if step == 'build2560.APMrover2':
-        return util.build_AVR('APMrover2', board='mega2560')
+        return util.build_SIL('ArduCopter', j=opts.j)
 
     if step == 'defaults.ArduPlane':
         return get_default_params('ArduPlane')
@@ -212,6 +230,9 @@ def run_step(step):
 
     if step == 'build.Binaries':
         return build_binaries()
+
+    if step == 'build.DevRelease':
+        return build_devrelease()
 
     if step == 'build.Examples':
         return build_examples()
@@ -296,14 +317,25 @@ def write_fullresults():
     results.addfile('ArduPlane code size', 'ArduPlane.sizes.txt')
     results.addfile('ArduPlane stack sizes', 'ArduPlane.framesizes.txt')
     results.addfile('ArduPlane defaults', 'ArduPlane-defaults.parm')
+    results.addglob("ArduPlane log", 'ArduPlane-*.BIN')
+    results.addglob("ArduPlane core", 'ArduPlane.core')
+    results.addglob("ArduPlane ELF", 'ArduPlane.elf')
     results.addfile('ArduCopter build log', 'ArduCopter.txt')
     results.addfile('ArduCopter code size', 'ArduCopter.sizes.txt')
     results.addfile('ArduCopter stack sizes', 'ArduCopter.framesizes.txt')
     results.addfile('ArduCopter defaults', 'ArduCopter-defaults.parm')
+    results.addglob("ArduCopter log", 'ArduCopter-*.BIN')
+    results.addglob("ArduCopter core", 'ArduCopter.core')
+    results.addglob("ArduCopter elf", 'ArduCopter.elf')
+    results.addglob("CopterAVC log", 'CopterAVC-*.BIN')
+    results.addglob("CopterAVC core", 'CopterAVC.core')
     results.addfile('APMrover2 build log', 'APMrover2.txt')
     results.addfile('APMrover2 code size', 'APMrover2.sizes.txt')
     results.addfile('APMrover2 stack sizes', 'APMrover2.framesizes.txt')
     results.addfile('APMrover2 defaults', 'APMrover2-defaults.parm')
+    results.addglob("APMrover2 log", 'APMrover2-*.BIN')
+    results.addglob("APMrover2 core", 'APMrover2.core')
+    results.addglob("APMrover2 ELF", 'APMrover2.elf')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
@@ -315,6 +347,29 @@ def write_fullresults():
 
 results = TestResults()
 
+def check_logs(step):
+    '''check for log files from a step'''
+    print("check step: ", step)
+    if step.startswith('fly.'):
+        vehicle = step[4:]
+    elif step.startswith('drive.'):
+        vehicle = step[6:]
+    else:
+        return
+    logs = glob.glob("logs/*.BIN")
+    for log in logs:
+        bname = os.path.basename(log)
+        newname = util.reltopdir("../buildlogs/%s-%s" % (vehicle, bname))
+        print("Renaming %s to %s" % (log, newname))
+        os.rename(log, newname)
+
+    corefile = "core"
+    if os.path.exists(corefile):
+        newname = util.reltopdir("../buildlogs/%s.core" % vehicle)
+        print("Renaming %s to %s" % (corefile, newname))
+        os.rename(corefile, newname)
+        util.run_cmd('/bin/cp A*/A*.elf ../buildlogs', dir=util.reltopdir('.'))
+        
 def run_tests(steps):
     '''run a list of steps'''
     global results
@@ -341,9 +396,11 @@ def run_tests(steps):
             print(">>>> FAILED STEP: %s at %s (%s)" % (step, time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             results.add(step, '<span class="failed-text">FAILED</span>', time.time() - t1)
+            check_logs(step)
             continue
         results.add(step, '<span class="passed-text">PASSED</span>', time.time() - t1)
         print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+        check_logs(step)
     if not passed:
         print("FAILED %u tests: %s" % (len(failed), failed))
 

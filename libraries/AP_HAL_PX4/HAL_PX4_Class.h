@@ -17,6 +17,8 @@ public:
     void init(int argc, char * const argv[]) const;
 };
 
+void hal_px4_set_priority(uint8_t priority);
+
 extern const HAL_PX4 AP_HAL_PX4;
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

@@ -58,12 +58,16 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
     AP_Param::setup_object_defaults(this, var_info);
 
     // check for silly parameter values
-    if (_pump_pct_1ms < 0 || _pump_pct_1ms > 100) {
+    if (_pump_pct_1ms < 0.0f || _pump_pct_1ms > 100.0f) {
         _pump_pct_1ms.set_and_save(AC_SPRAYER_DEFAULT_PUMP_RATE);
     }
     if (_spinner_pwm < 0) {
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
+
+    // initialise flags
+    _flags.spraying = false;
+    _flags.testing = false;
 
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
@@ -151,7 +155,7 @@ AC_Sprayer::update()
 
     // if testing pump output speed as if travelling at 1m/s
     if (_flags.testing) {
-        ground_speed = 100;
+        ground_speed = 100.0f;
     }
 
     // if spraying or testing update the pump servo position

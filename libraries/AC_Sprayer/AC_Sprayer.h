@@ -27,7 +27,7 @@
 #include <RC_Channel.h>
 #include <AP_InertialNav.h>     // Inertial Navigation library
 
-#define AC_SPRAYER_DEFAULT_PUMP_RATE        10       // default quantity of spray per meter travelled
+#define AC_SPRAYER_DEFAULT_PUMP_RATE        10.0f   // default quantity of spray per meter travelled
 #define AC_SPRAYER_DEFAULT_PUMP_MIN         0       // default minimum pump speed expressed as a percentage from 0 to 100
 #define AC_SPRAYER_DEFAULT_SPINNER_PWM      1300    // default speed of spinner (higher means spray is throw further horizontally
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     // we must be travelling at least 1m/s to begin spraying

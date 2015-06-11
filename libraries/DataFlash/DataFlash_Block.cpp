@@ -104,7 +104,7 @@ void DataFlash_Block::StartRead(uint16_t PageAdr)
     df_Read_BufferIdx = sizeof(ph);
 }
 
-void DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
+bool DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
 {
     while (size > 0) {
         uint16_t n = df_PageSize - df_Read_BufferIdx;
@@ -114,7 +114,9 @@ void DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
 
         WaitReady();
 
-        BlockRead(df_Read_BufferNum, df_Read_BufferIdx, pBuffer, n);
+        if (!BlockRead(df_Read_BufferNum, df_Read_BufferIdx, pBuffer, n)) {
+            return false;
+        }
         size -= n;
         pBuffer = (void *)(n + (uintptr_t)pBuffer);
         
@@ -129,13 +131,16 @@ void DataFlash_Block::ReadBlock(void *pBuffer, uint16_t size)
 
             // We are starting a new page - read FileNumber and FilePage
             struct PageHeader ph;
-            BlockRead(df_Read_BufferNum, 0, &ph, sizeof(ph));
+            if (!BlockRead(df_Read_BufferNum, 0, &ph, sizeof(ph))) {
+                return false;
+            }
             df_FileNumber = ph.FileNumber;
             df_FilePage   = ph.FilePage;
 
             df_Read_BufferIdx = sizeof(ph);
         }
     }
+    return true;
 }
 
 void DataFlash_Block::SetFileNumber(uint16_t FileNumber)
@@ -182,7 +187,9 @@ bool DataFlash_Block::NeedErase(void)
 {
     uint32_t version = 0;
     StartRead(df_NumPages+1);
-    ReadBlock(&version, sizeof(version));
+    if (!ReadBlock(&version, sizeof(version))) {
+        return true;
+    }
     StartRead(1);
     return version != DF_LOGGING_FORMAT;
 }
@@ -207,7 +214,9 @@ int16_t DataFlash_Block::get_log_data_raw(uint16_t log_num, uint16_t page, uint3
     }
 
     df_Read_BufferIdx = offset + sizeof(struct PageHeader);
-    ReadBlock(data, len);
+    if (!ReadBlock(data, len)) {
+        return -1;
+    }
 
     return (int16_t)len;
 }

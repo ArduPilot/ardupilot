@@ -14,6 +14,7 @@
 #include <AP_Math.h>
 #include <AP_Param.h>
 #include <GPS.h>
+#include <../StorageManager/StorageManager.h>
 
 #define MAX_FENCEPOINTS 6
 
@@ -51,9 +52,7 @@ protected:
     AP_Int8                 _num_points;
 
 private:
-    const uint16_t          _eeprom_fence_start;
-    const unsigned          _fence_wp_size;
-    const unsigned          _max_fence_points;
+    static StorageAccess    _storage;
     bool                    _boundary_uptodate;
     Vector2l                _boundary[MAX_FENCEPOINTS];      // complex mode fence
 

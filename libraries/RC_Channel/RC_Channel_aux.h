@@ -67,6 +67,8 @@ public:
         k_flaperon2             = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
         k_parachute_release     = 27,            ///< parachute release
+        k_epm                   = 28,            ///< epm gripper
+        k_landing_gear_control  = 29,            ///< landing gear controller
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -80,6 +82,9 @@ public:
 
 	// set radio_out for a function channel
 	static void set_radio(Aux_servo_function_t function, int16_t value);
+
+	// set radio_out for all channels matching the given function type, allow radio_trim to center servo
+	static void set_radio_trimmed(Aux_servo_function_t function, int16_t value);
 
 	// set and save the trim for a function channel to radio_in
 	static void set_radio_trim(Aux_servo_function_t function);
@@ -120,10 +125,15 @@ public:
     // prevent a channel from being used for auxillary functions
     static void disable_aux_channel(uint8_t channel);
 
+    // return the current function for a channel
+    static Aux_servo_function_t channel_function(uint8_t channel);
+
+    // refresh aux servo to function mapping
+    static void update_aux_servo_function(void);
+
 private:
     static uint32_t _function_mask;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
-    static void update_aux_servo_function(void);
 };
 
 #endif /* RC_CHANNEL_AUX_H_ */

@@ -15,18 +15,25 @@
 #ifndef AP_Mission_h
 #define AP_Mission_h
 
+#include <AP_HAL.h>
+#include <AP_Vehicle.h>
 #include <GCS_MAVLink.h>
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <AP_AHRS.h>
-#include <AP_HAL.h>
+#include <../StorageManager/StorageManager.h>
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
 
-#define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3       // only allow up to 3 do-jump commands (due to RAM limitations on the APM2)
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
+ # define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 3     // allow up to 3 do-jump commands (due to RAM limitations) on the APM2
+#else
+ # define AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS 15    // allow up to 15 do-jump commands all high speed CPUs
+#endif
+
 #define AP_MISSION_JUMP_REPEAT_FOREVER      -1      // when do-jump command's repeat count is -1 this means endless repeat
 
 #define AP_MISSION_CMD_ID_NONE              0       // mavlink cmd id of zero means invalid or missing command
@@ -42,7 +49,6 @@
 class AP_Mission {
 
 public:
-
     // jump command structure
     struct PACKED Jump_Command {
         uint16_t target;        // target command id
@@ -101,9 +107,51 @@ public:
         float cycle_time;       // cycle time in seconds (the time between peaks or the time the servo is at the specified pwm value for each cycle?)
     };
 
+    // mount control command structure
+    struct PACKED Mount_Control {
+        float pitch;            // pitch angle in degrees
+        float roll;             // roll angle in degrees
+        float yaw;              // yaw angle (relative to vehicle heading) in degrees
+    };
+
+    // digicam control command structure
+    struct PACKED Digicam_Configure {
+        uint8_t shooting_mode;  // ProgramAuto = 1, AV = 2, TV = 3, Man=4, IntelligentAuto=5, SuperiorAuto=6
+        uint16_t shutter_speed;
+        uint8_t aperture;       // F stop number * 10
+        uint16_t ISO;           // 80, 100, 200, etc
+        uint8_t exposure_type;
+        uint8_t cmd_id;
+        float engine_cutoff_time;   // seconds
+    };
+
+    // digicam control command structure
+    struct PACKED Digicam_Control {
+        uint8_t session;        // 1 = on, 0 = off
+        uint8_t zoom_pos;
+        int8_t zoom_step;       // +1 = zoom in, -1 = zoom out
+        uint8_t focus_lock;
+        uint8_t shooting_cmd;
+        uint8_t cmd_id;
+    };
+
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
+    };
+
+    // gripper command structure
+    struct PACKED Gripper_Command {
+        uint8_t num;            // gripper number
+        uint8_t action;         // action (0 = release, 1 = grab)
+    };
+
+    // nav guided command
+    struct PACKED Guided_Limits_Command {
+        // max time is held in p1 field
+        float alt_min;          // min alt below which the command will be aborted.  0 for no lower alt limit
+        float alt_max;          // max alt above which the command will be aborted.  0 for no upper alt limit
+        float horiz_max;        // max horizontal distance the vehicle can move before the command will be aborted.  0 for no horizontal limit
     };
 
     union PACKED Content {
@@ -134,8 +182,23 @@ public:
         // do-repeate-servo
         Repeat_Servo_Command repeat_servo;
 
+        // mount control
+        Mount_Control mount_control;
+
+        // camera configure
+        Digicam_Configure digicam_configure;
+
+        // camera control
+        Digicam_Control digicam_control;
+
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
+
+        // do-gripper
+        Gripper_Command gripper;
+
+        // do-guided-limits
+        Guided_Limits_Command guided_limits;
 
         // location
         Location location;      // Waypoint location
@@ -153,8 +216,8 @@ public:
     };
 
     // main program function pointers
-    typedef bool (*mission_cmd_fn_t)(const Mission_Command& cmd);
-    typedef void (*mission_complete_fn_t)(void);
+    FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
+    FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
     // mission state enumeration
     enum mission_state {
@@ -164,19 +227,16 @@ public:
     };
 
     /// constructor
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn, uint16_t storage_start, uint16_t storage_end) :
+    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _ahrs(ahrs),
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
-        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE)
+        _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
+        _last_change_time_ms(0)
     {
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
-
-        // calculate
-        _storage_start = storage_start;
-        _cmd_total_max = ((storage_end - storage_start - 4) / AP_MISSION_EEPROM_COMMAND_SIZE) -1;   // -4 to remove space for eeprom version number, -1 to be safe
 
         // clear commands
         _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
@@ -202,7 +262,7 @@ public:
     uint16_t num_commands() const { return _cmd_total; }
 
     /// num_commands_max - returns maximum number of commands that can be stored
-    uint16_t num_commands_max() const {return _cmd_total_max; }
+    uint16_t num_commands_max() const;
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -300,10 +360,19 @@ public:
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
 
+    // return the last time the mission changed in milliseconds
+    uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
+
+    // find the nearest landing sequence starting point (DO_LAND_START) and
+    // return its index.  Returns 0 if no appropriate DO_LAND_START point can
+    // be found.
+    uint16_t get_landing_sequence_start();
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static StorageAccess _storage;
 
     struct Mission_Flags {
         mission_state state;
@@ -372,8 +441,6 @@ private:
     mission_complete_fn_t   _mission_complete_fn;   // pointer to function which will be called when mission completes
 
     // internal variables
-    uint16_t                _storage_start; // first position we are free to use in eeprom storage
-    uint16_t                _cmd_total_max; // maximum number of commands we can store
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
@@ -383,6 +450,9 @@ private:
         uint16_t index;                 // index of do-jump commands in mission
         int16_t num_times_run;          // number of times this jump command has been run
     } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+
+    // last time that mission changed
+    uint32_t _last_change_time_ms;
 };
 
 #endif

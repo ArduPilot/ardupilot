@@ -26,10 +26,15 @@ public:
     /* readRegister: read from a device register - writes the register,
      * then reads back an 8-bit value. */
     uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data);
+
     /* readRegister: read contigious device registers - writes the first 
      * register, then reads back multiple bytes */
     uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data);
+
+    uint8_t readRegistersMultiple(uint8_t addr, uint8_t reg,
+                                  uint8_t len, uint8_t count, 
+                                  uint8_t* data);
 
     uint8_t lockup_count();
 

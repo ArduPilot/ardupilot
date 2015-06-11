@@ -21,6 +21,8 @@ public:
         ARMING_CHECK_RC         = 0x0040,
         ARMING_CHECK_VOLTAGE    = 0x0080,
         ARMING_CHECK_BATTERY    = 0x0100,
+        ARMING_CHECK_AIRSPEED   = 0x0200,
+        ARMING_CHECK_LOGGING    = 0x0400,
     };
 
     enum ArmingMethod {
@@ -35,11 +37,11 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    //for the hacky funciton pointer to gcs_send_text_p
-    typedef void (*gcs_send_t_p)(gcs_severity, const prog_char_t*);
+    // for the hacky function pointer to gcs_send_text_p
+    FUNCTOR_TYPEDEF(gcs_send_t_p, void, gcs_severity, const prog_char_t *);
 
-    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro,
-              const bool &home_set, gcs_send_t_p);
+    AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
+              const enum HomeState &home_set, gcs_send_t_p);
 
     ArmingRequired arming_required();
     bool arm(uint8_t method);
@@ -48,13 +50,22 @@ public:
     bool rudder_arming_enabled();
     uint16_t get_enabled_checks();
 
-    bool pre_arm_checks(bool report);
+    /*
+      pre_arm_checks() is virtual so it can be modified
+      in a vehicle specific subclass
+    */
+    virtual bool pre_arm_checks(bool report);
+    void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
+
+    void set_logging_available(bool set) { logging_available = set; }
 
     //for params
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
-    bool                                                armed;
+protected:
+    bool                                                armed:1;
+    bool                                                logging_available:1;
+    bool                                                skip_gyro_cal:1;
 
     //Parameters
     AP_Int8                                           require;
@@ -67,12 +78,21 @@ private:
 
     const AP_AHRS                                       &ahrs;
     const AP_Baro                                  &barometer;
-    const bool                                   &home_is_set;
+    Compass                                         &_compass;
+    const enum HomeState                         &home_is_set;
     gcs_send_t_p                              gcs_send_text_P;
+    uint32_t                                  last_accel_pass_ms[INS_MAX_INSTANCES];
+    uint32_t                                  last_gyro_pass_ms[INS_MAX_INSTANCES];
 
     void set_enabled_checks(uint16_t);
 
     bool barometer_checks(bool report);
+
+    bool airspeed_checks(bool report);
+
+    bool logging_checks(bool report);
+
+    bool ins_checks(bool report);
 
     bool compass_checks(bool report);
 

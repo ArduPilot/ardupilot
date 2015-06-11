@@ -34,76 +34,92 @@
 class APM_OBC
 {
 public:
-	enum control_mode {
-		OBC_MANUAL = 0,
-		OBC_FBW    = 1,
-		OBC_AUTO   = 2
-	};
+    enum control_mode {
+        OBC_MANUAL = 0,
+        OBC_FBW    = 1,
+        OBC_AUTO   = 2
+    };
 
-	enum state {
-		STATE_PREFLIGHT       = 0,
-		STATE_AUTO            = 1,
-		STATE_DATA_LINK_LOSS  = 2,
-		STATE_GPS_LOSS        = 3
-	};
+    enum state {
+        STATE_PREFLIGHT       = 0,
+        STATE_AUTO            = 1,
+        STATE_DATA_LINK_LOSS  = 2,
+        STATE_GPS_LOSS        = 3
+    };
 
-	// Constructor
+    // Constructor
     APM_OBC(AP_Mission &_mission, AP_Baro &_baro, const AP_GPS &_gps, const RCMapper &_rcmap) :
         mission(_mission),
         baro(_baro),
         gps(_gps),
-        rcmap(_rcmap)
+        rcmap(_rcmap),
+        _gps_loss_count(0),
+        _comms_loss_count(0)
         {
             AP_Param::setup_object_defaults(this, var_info);
             
-            _last_heartbeat_pin = -1;
-            _last_manual_pin = -1;
             _state = STATE_PREFLIGHT;
             _terminate.set(0);
             
             _saved_wp = 0;
         }
 
-	void check(enum control_mode control_mode, uint32_t last_heartbeat_ms);
+    // check that everything is OK
+    void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
+
+    // generate heartbeat msgs, so external failsafe boards are happy
+    // during sensor calibration
+    void heartbeat(void);
 
     // called in servo output code to set servos to crash position if needed
-	void check_crash_plane(void);
+    void check_crash_plane(void);
 
-	// for holding parameters
-	static const struct AP_Param::GroupInfo var_info[];
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
-	enum state _state;
+    enum state _state;
 
     AP_Mission &mission;
     AP_Baro &baro;
     const AP_GPS &gps;
     const RCMapper &rcmap;
 
-	// digital output pins for communicating with the failsafe board
-	AP_Int8 _heartbeat_pin;
-	AP_Int8 _manual_pin;
-	AP_Int8 _terminate_pin;
-	AP_Int8 _terminate;
-	AP_Int8 _terminate_action;
+    AP_Int8 _enable;
+    // digital output pins for communicating with the failsafe board
+    AP_Int8 _heartbeat_pin;
+    AP_Int8 _manual_pin;
+    AP_Int8 _terminate_pin;
+    AP_Int8 _terminate;
+    AP_Int8 _terminate_action;
 
-	// last pins to cope with changing at runtime
-	int8_t _last_heartbeat_pin;
-	int8_t _last_manual_pin;
-	int8_t _last_terminate_pin;
-
-	// waypoint numbers to jump to on failsafe conditions
-	AP_Int8 _wp_comms_hold;
-	AP_Int8 _wp_gps_loss;
+    // waypoint numbers to jump to on failsafe conditions
+    AP_Int8 _wp_comms_hold;
+    AP_Int8 _wp_gps_loss;
 
     AP_Float _qnh_pressure;
     AP_Int32 _amsl_limit;
     AP_Int32 _amsl_margin_gps;
+    AP_Int16 _rc_fail_time;
+    AP_Int8  _max_gps_loss;
+    AP_Int8  _max_comms_loss;
 
-	bool _heartbeat_pin_value;
+    bool _heartbeat_pin_value;
 
-	// saved waypoint for resuming mission
-	uint8_t _saved_wp;
+    // saved waypoint for resuming mission
+    uint8_t _saved_wp;
+    
+    // number of times we've lost GPS
+    uint8_t _gps_loss_count;
+
+    // number of times we've lost data link
+    uint8_t _comms_loss_count;
+
+    // last comms loss time
+    uint32_t _last_comms_loss_ms;
+
+    // last GPS loss time
+    uint32_t _last_gps_loss_ms;
 
     // have the failsafe values been setup?
     bool _failsafe_setup:1;
@@ -111,10 +127,10 @@ private:
     // setup failsafe values for if FMU firmware stops running
     void setup_failsafe(void);
 
-	bool check_altlimit(void);
+    bool check_altlimit(void);
 };
 
 // map from ArduPlane control_mode to APM_OBC::control_mode
-#define OBC_MODE(control_mode) ((control_mode==AUTO?APM_OBC::OBC_AUTO:control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
+#define OBC_MODE(control_mode) (auto_throttle_mode?APM_OBC::OBC_AUTO:(control_mode==MANUAL?APM_OBC::OBC_MANUAL:APM_OBC::OBC_FBW))
 
 #endif // APM_OBC_H

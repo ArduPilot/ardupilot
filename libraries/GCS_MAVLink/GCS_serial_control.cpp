@@ -87,7 +87,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
                 while (port->txspace() <= 0) {
                     hal.scheduler->delay(5);
                 }
-                uint8_t n = port->txspace();
+                uint16_t n = port->txspace();
                 if (n > packet.count) {
                     n = packet.count;
                 }
@@ -126,6 +126,7 @@ more_data:
 
     // read any reply data
     packet.count = 0;
+    memset(packet.data, 0, sizeof(packet.data));
     while (available > 0) {
         packet.data[packet.count++] = (uint8_t)port->read();
         available--;

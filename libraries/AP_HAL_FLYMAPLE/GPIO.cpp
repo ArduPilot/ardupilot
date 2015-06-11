@@ -82,9 +82,9 @@ bool FLYMAPLEGPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8
 {
     // Flymaple can only handle RISING, FALLING and CHANGE
     ExtIntTriggerMode flymaple_interrupt_mode;
-    if (mode == GPIO_INTERRUPT_FALLING)
+    if (mode == HAL_GPIO_INTERRUPT_FALLING)
 	flymaple_interrupt_mode = FALLING;
-    else if (mode == GPIO_INTERRUPT_RISING)
+    else if (mode == HAL_GPIO_INTERRUPT_RISING)
 	flymaple_interrupt_mode = RISING;
     else 
 	return false;

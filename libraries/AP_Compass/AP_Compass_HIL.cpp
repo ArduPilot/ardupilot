@@ -15,8 +15,7 @@
  */
 
 /*
- *       AP_Compass_HIL.cpp - Arduino Library for HIL model of HMC5843 I2C Magnetometer
- *       Code by James Goppert. DIYDrones.com
+ *       AP_Compass_HIL.cpp - HIL backend for AP_Compass
  *
  */
 
@@ -27,100 +26,42 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_Compass_HIL::AP_Compass_HIL() : Compass() 
+AP_Compass_HIL::AP_Compass_HIL(Compass &compass):
+    AP_Compass_Backend(compass)
 {
-    product_id = AP_COMPASS_TYPE_HIL;
-    _setup_earth_field();
+    memset(_compass_instance, 0, sizeof(_compass_instance));
+    _compass._setup_earth_field();
 }
 
-// setup _Bearth
-void AP_Compass_HIL::_setup_earth_field(void)
+// detect the sensor
+AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
 {
-    // assume a earth field strength of 400
-    _Bearth(400, 0, 0);
-	
-    // rotate _Bearth for inclination and declination. -66 degrees
-    // is the inclination in Canberra, Australia
-    Matrix3f R;
-    R.from_euler(0, ToRad(66), _declination.get());
-    _Bearth = R * _Bearth;
-}
-
-// Public Methods //////////////////////////////////////////////////////////////
-
-bool AP_Compass_HIL::read()
-{
-    // get offsets
-    Vector3f ofs = _offset[0].get();
-
-    // apply motor compensation
-    if(_motor_comp_type != AP_COMPASS_MOT_COMP_DISABLED && _thr_or_curr != 0.0f) {
-        _motor_offset[0] = _motor_compensation[0].get() * _thr_or_curr;
-    }else{
-        _motor_offset[0].zero();
+    AP_Compass_HIL *sensor = new AP_Compass_HIL(compass);
+    if (sensor == NULL) {
+        return NULL;
     }
+    if (!sensor->init()) {
+        delete sensor;
+        return NULL;
+    }
+    return sensor;
+}
 
-    // return last values provided by setHIL function
-    _field[0] = _hil_mag + ofs + _motor_offset[0];
-
-    // values set by setHIL function
-    last_update = hal.scheduler->micros();      // record time of update
+bool
+AP_Compass_HIL::init(void)
+{
+    // register two compass instances
+    for (uint8_t i=0; i<HIL_NUM_COMPASSES; i++) {
+        _compass_instance[i] = register_compass();
+    }
     return true;
 }
 
-#define MAG_OFS_X 5.0
-#define MAG_OFS_Y 13.0
-#define MAG_OFS_Z -18.0
-
-// Update raw magnetometer values from HIL data
-//
-void AP_Compass_HIL::setHIL(float roll, float pitch, float yaw)
+void AP_Compass_HIL::read()
 {
-    Matrix3f R;
-
-    // create a rotation matrix for the given attitude
-    R.from_euler(roll, pitch, yaw);
-
-    if (_last_declination != _declination.get()) {
-        _setup_earth_field();
-        _last_declination = _declination.get();
+    for (uint8_t i=0; i<sizeof(_compass_instance)/sizeof(_compass_instance[0]); i++) {
+        if (_compass._hil.healthy[i]) {
+            publish_field(_compass._hil.field[_compass_instance[i]], _compass_instance[i]);
+        }
     }
-
-    // convert the earth frame magnetic vector to body frame, and
-    // apply the offsets
-    _hil_mag = R.mul_transpose(_Bearth);
-    _hil_mag -= Vector3f(MAG_OFS_X, MAG_OFS_Y, MAG_OFS_Z);
-
-    // apply default board orientation for this compass type. This is
-    // a noop on most boards
-    _hil_mag.rotate(MAG_BOARD_ORIENTATION);
-
-    // add user selectable orientation
-    _hil_mag.rotate((enum Rotation)_orientation.get());
-
-    if (!_external) {
-        // and add in AHRS_ORIENTATION setting if not an external compass
-        _hil_mag.rotate(_board_orientation);
-    }
-
-    _healthy[0] = true;
-}
-
-// Update raw magnetometer values from HIL mag vector
-//
-void AP_Compass_HIL::setHIL(const Vector3f &mag)
-{
-    _hil_mag.x = mag.x;
-    _hil_mag.y = mag.y;
-    _hil_mag.z = mag.z;
-    _healthy[0] = true;
-}
-
-const Vector3f& AP_Compass_HIL::getHIL() const {
-    return _hil_mag;
-}
-
-void AP_Compass_HIL::accumulate(void)
-{
-    // nothing to do
 }

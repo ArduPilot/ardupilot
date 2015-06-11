@@ -45,7 +45,7 @@ public:
     uint16_t start_new_log(void);
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
-                        void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
+                        print_mode_fn print_mode,
                         AP_HAL::BetterStream *port);
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
@@ -58,16 +58,17 @@ private:
     uint32_t _read_offset;
     uint32_t _write_offset;
     volatile bool _initialised;
+    volatile bool _open_error;
     const char *_log_directory;
 
     /*
       read a block
     */
-    void ReadBlock(void *pkt, uint16_t size);
+    bool ReadBlock(void *pkt, uint16_t size);
 
     // write buffer
     uint8_t *_writebuf;
-    const uint16_t _writebuf_size;
+    uint16_t _writebuf_size;
     const uint16_t _writebuf_chunk;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
@@ -88,6 +89,7 @@ private:
     perf_counter_t  _perf_write;
     perf_counter_t  _perf_fsync;
     perf_counter_t  _perf_errors;
+    perf_counter_t  _perf_overruns;
 #endif
 };
 

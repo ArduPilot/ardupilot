@@ -21,6 +21,8 @@ public:
 
     void _timer_tick(void);
 
+    bool rc_bind(int dsmMode);
+
 private:
     /* override state */
     uint16_t _override[RC_INPUT_MAX_CHANNELS];

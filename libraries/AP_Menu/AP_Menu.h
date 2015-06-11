@@ -55,7 +55,7 @@ public:
     ///						command, so that the same function can be used
     ///						to handle more than one command.
     ///
-    typedef int8_t (*func)(uint8_t argc, const struct arg *argv);
+    FUNCTOR_TYPEDEF(func, int8_t, uint8_t, const struct arg *);
 
 	static void set_port(AP_HAL::BetterStream *port) {
 		_port = port;
@@ -68,7 +68,7 @@ public:
     ///
     /// If this function returns false, the menu exits.
     ///
-    typedef bool (*preprompt)(void);
+    FUNCTOR_TYPEDEF(preprompt, bool);
 
     /// menu command description
     ///
@@ -89,7 +89,7 @@ public:
         /// The "?", "help" and "exit" commands are always defined, but
         /// can be overridden by explicit entries in the command array.
         ///
-        int8_t (*func)(uint8_t argc, const struct arg *argv);                   ///< callback function
+        FUNCTOR_DECLARE(func, int8_t, uint8_t, const struct arg *);
     };
 
     /// constructor

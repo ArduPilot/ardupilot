@@ -32,11 +32,15 @@ public:
         AP_Int8 throttle_max;	
         AP_Int8 throttle_slewrate;
         AP_Int8 throttle_cruise;
+        AP_Int8 takeoff_throttle_max;
         AP_Int16 airspeed_min;
         AP_Int16 airspeed_max;
         AP_Int16 pitch_limit_max_cd;
         AP_Int16 pitch_limit_min_cd;        
         AP_Int8  autotune_level;
+        AP_Int16 land_pitch_cd;
+        AP_Float land_flare_sec;
+        AP_Int8  stall_prevention;
     };
 
     /*
@@ -47,24 +51,7 @@ public:
     };
 };
 
-/*
-  define common vehicle build types. Note that the APM_BUILD_DIRECTORY
-  define is only available with makefile based build, not with
-  arduino.
-  Also note that code needs to support other APM_BUILD_DIRECTORY
-  values for example sketches
- */
-#define APM_BUILD_APMrover2      1
-#define APM_BUILD_ArduCopter     2
-#define APM_BUILD_ArduPlane      3
-#define APM_BUILD_AntennaTracker 4
 
-/*
-  using this macro catches cases where we try to check vehicle type on
-  build systems that don't support it
- */
-#ifdef APM_BUILD_DIRECTORY
-#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
-#endif
+#include "AP_Vehicle_Type.h"
 
 #endif // AP_VEHICLE_H

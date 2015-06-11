@@ -1,0 +1,250 @@
+Release 2.49, March 4th 2015
+----------------------------
+
+The ardupilot development team has released version 2.49 of
+APM:Rover.  This release is a bug fix release with two important bugs
+found by Marco Walther - Thanks Marco!
+
+The bug fixes in this release are:
+
+    - fixed a sonar problem where objects to the left wouldn't be
+      identified - thanks Marco Walther!
+    - Fixed the ordering of the AP_Notify call so the main indicator
+      light would be correct on startup - thanks Marco Walther!
+
+
+
+Release 2.48, February 20th 2015
+--------------------------------
+
+The ardupilot development team has released version 2.48 of
+APM:Rover.  This release is a bug fix release with some important bugs
+found by the users of ardupilot.
+
+The changes in this release are:
+
+  - fixed a bug that could cause short term loss of RC control with
+    some receiver systems and configurations
+  - allowed for shorter sync pulse widths for PPM-SUM receivers on
+    APM1 and APM2
+  - fix an issue where battery reporting could be intermittent (thanks
+    Georgii Staroselskii!)
+  - fixed a mission handling bug that could cause a crash if jump
+    commands form an infinite loop (thanks to Dellarb for reporting
+    this bug)
+  - improved support for in-kernel SPI handling on Linux (thanks to John Williams)
+  - support UAVCAN based ESCs and GPS modules on Pixhawk (thanks to
+    Pavel, Holger and and PX4 dev team)
+  - Multiple updates for the NavIO+ cape on RaspberryPi (thanks to
+    Emlid)
+  - Lots of EKF changes
+  - added support for MAVLink packet routing
+  - added detection and recovery from faulty gyro and accel sensors
+  - added support for BBBMini Linux port
+  - increased number of AVR input channels from 8 to 11
+  - auto-set system clock based on GPS in Linux ports
+  - added SBUS FrSky telemetry support (thanks to Mathias)
+  - Added AK8963 MAG support (thanks Staroselskii Georgii)
+  - Added support for second battery
+  - Auto formatting of SDCard if it cannot be accessed on startup
+  - A number of significant performance improvements for the PX4 platform
+
+The most important bug fix is the one for short term loss of RC
+control. This is a very long standing bug which didn't have a
+noticible impact for most people, but could cause loss of RC control
+for around 1 or 2 seconds for some people in certain circumstances.
+
+The bug was in the the AP_HAL RCInput API. Each HAL backend has a flag
+that says whether there is a new RC input frame available. That flag
+was cleared by the read() method (typically hal.rcin->read()). Callers
+would check for new input by checking the boolean
+hal.rcin->new_input() function.
+
+The problem was that read() was called from multiple places. Normally
+this is fine as reads from other than the main radio input loop happen
+before the other reads, but if the timing of the new radio frame
+exactly matched the loop frequency then a read from another place
+could clear the new_input flag and we would not see the new RC input
+frame. If that happened enough times we would go into a short term RC
+failsafe and ignore RC inputs, even in manual mode.
+
+The fix was very simple - it is the new_input() function itself that
+should clear the flag, not read(). 
+
+Many thanks to MarkM for helping us track down this bug by providing
+us with sufficient detail on how to reproduce it. In Marks case his
+OpenLRSng configuration happened to produce exactly the worst case
+timing needed to reproduce the issue. Once Tridge copied his OpenLRS
+settings to his TX/RX he was able to reproduce the problem and it was
+easy to find and fix.
+
+A number of users have reported occasional glitches in manual control
+where servos pause for short periods in past releases. It is likely
+that some of those issues were caused by this bug. The dev team would
+like to apologise for taking so long to track down this bug!
+
+The other main change was also related to RC input. Some receivers use
+a PPM-SUM sync pulse width shorter than what the APM1/APM2 code was
+setup to handle. The OpenLRSng default sync pulse width is 3000
+microseconds, but the APM1/APM2 code was written for a mininum sync
+pulse width of 4000 microseconds. For this release we have changed the
+APM1/APM2 driver to accept a sync pulse width down to 2700
+microseconds.
+
+Auto format of SD Card
+======================
+From time to time the SD cards in the PX4 autopilots get corrupted.
+This isn't a surprise considering what we do to them.  Your all
+familiar with the windows "please unmount or eject your SDCard before
+removing" process.  Well we don't do that.  In fact normal operation
+is to just pull the power on the SDCard - whilst its being written
+too!!  Not to metion the horrible vibration rich environment the
+SDCard exists in.  If the autopilot is setup in the internal innards
+of your plane/copter/rover this can be a nightmare to get to.  To
+resolve that problem Tridge has added code at startup so when
+ArduPilot tries to mount to SDCard to access it - if that fails it
+will then try to format the SDCard and if successful mount the card
+and proceed.  If the format fails then you will get the usual SOS
+Audio that makes most of us want to find the buzzer and rip its heart
+out.
+
+I mention this in case anyone has precious logs saved on the SDCard or
+they are using the SDCard out of their phone with their wedding
+photo's on it.  Probably best not to do that and assume any data on
+the SDCard can be deleted.
+
+We are also looking to add a parameter to control whether the card is
+auto formatted on startup or not but it isn't in there yet.
+
+
+
+Release 2.47, November 15th 2014
+--------------------------------
+
+The ardupilot development team is proud to announce the release of 
+version 2.47 of APM:Rover. This is a minor bug fix release.  The most 
+important change in this release is the fixing of the skid steering 
+support but there have been a number of fixes in other areas as well.
+
+Full changes list for this release:
+
+  - add support for controlling safety switch on Pixhawk from ground station
+
+  - prevent reports of failed AHRS during initialisation
+
+  - fixed skid steering that was broken in the last release
+
+  - report gyro unhealthy if gyro calibration failed
+
+  - fixed dual sonar support in CLI sonar test
+
+  - fixed Nuttx crash on Pixhawk with bad I2C cables
+
+  - added GPS_SBAS_MODE parameter - turns on/off satellite based augemtation system for GPS
+
+  - added GPS_MIN_ELEV parameter - specifiy the elevation mask for GPS satellites
+
+  - added RELAY_DEFAULT parameter to control default of relay on startup
+
+  - fixed bug in FRAM storage on Pixhawk that could cause parameters changes not to be saved
+
+  - better handling of compass errors in the EKF (Extended Kalman Filter)
+
+  - improved support for linux based autopilots
+
+  - added support for PulsedLight LIDAR as a range finder
+
+Many thanks to everyone who contributed to this release, especially
+Tom Coyle and Linus Penzlien for their excellent testing and feedback.
+
+Happy driving!
+
+
+
+Release 2.46, August 26th 2014
+------------------------------
+
+The ardupilot development team is proud to announce the release of
+version 2.46 of APM:Rover. This is a major release with a lot of new
+features and bug fixes.
+
+This release is based on a lot of development and testing that
+happened prior to the AVC competition where APM based vehicles
+performed very well.
+
+Full changes list for this release:
+
+  - added support for higher baudrates on telemetry ports, to make it
+    easier to use high rate telemetry to companion boards. Rates of up
+    to 1.5MBit are now supported to companion boards.
+
+  - new Rangefinder code with support for a wider range of rangefinder
+    types including a range of Lidars (thanks to Allyson Kreft)
+
+  - added logging of power status on Pixhawk
+
+  - added PIVOT_TURN_ANGLE parameter for pivot based turns on skid
+    steering rovers
+
+  - lots of improvements to the EKF support for Rover, thanks to Paul
+    Riseborough and testing from Tom Coyle. Using the EKF can greatly
+    improve navigation accuracy for fast rovers. Enable with
+    AHRS_EKF_USE=1. 
+
+  - improved support for dual GPS on Pixhawk. Using a 2nd GPS can
+    greatly improve performance when in an area with an obstructed
+    view of the sky
+
+  - support for up to 14 RC channels on Pihxawk
+
+  - added BRAKING_PERCENT and BRAKING_SPEEDERR parameters for better
+    breaking support when cornering
+
+  - added support for FrSky telemetry via SERIAL2_PROTOCOL parameter
+    (thanks to Matthias Badaire)
+
+  - added support for Linux based autopilots, initially with the PXF
+    BeagleBoneBlack cape and the Erle robotics board. Support for more
+    boards is expected in future releases. Thanks to Victor, Sid and
+    Anuj for their great work on the Linux port. 
+
+  - added StorageManager library, which expands available FRAM storage
+    on Pixhawk to 16 kByte. This allows for 724 waypoints, 50 rally
+    points and 84 fence points on Pixhawk.
+
+  - improved reporting of magnetometer and barometer errors to the GCS
+
+  - fixed a bug in automatic flow control detection for serial ports
+    in Pixhawk
+
+  - fixed use of FMU servo pins as digital inputs on Pixhawk
+
+  - imported latest updates for VRBrain boards (thanks to Emile
+    Castelnuovo and Luca Micheletti)
+
+  - updates to the Piksi GPS support (thanks to Niels Joubert)
+
+  - improved gyro estimate in DCM (thanks to Jon Challinger)
+
+  - improved position projection in DCM in wind (thanks to Przemek
+    Lekston)
+
+  - several updates to AP_NavEKF for more robust handling of errors
+    (thanks to Paul Riseborough)
+
+  - lots of small code cleanups thanks to Daniel Frenzel
+
+  - initial support for NavIO board from Mikhail Avkhimenia
+
+  - fixed logging of RCOU for up to 12 channels (thanks to Emile
+    Castelnuovo)
+
+  - code cleanups from Silvia Nunezrivero
+
+  - improved parameter download speed on radio links with no flow
+    control
+
+Many thanks to everyone who contributed to this release, especially
+Tom Coyle and Linus Penzlien for their excellent testing and feedback.
+
+Happy driving!

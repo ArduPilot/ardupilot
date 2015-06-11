@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
 
     // @Param: ALT_MIN
-    // @DisplayName: Parachute min altitude in cm above home
+    // @DisplayName: Parachute min altitude in meters above home
     // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 32000
     // @Units: Meters
@@ -83,7 +83,7 @@ void AP_Parachute::release()
 void AP_Parachute::update()
 {
     // exit immediately if not enabled or parachute not to be released
-    if (_enabled <= 0 || _release_time == 0) {
+    if (_enabled <= 0) {
         return;
     }
 
@@ -91,7 +91,7 @@ void AP_Parachute::update()
     uint32_t time_diff = hal.scheduler->millis() - _release_time;
 
     // check if we should release parachute
-    if (!_released) {
+    if ((_release_time != 0) && !_released) {
         if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -102,7 +102,7 @@ void AP_Parachute::update()
             }
             _released = true;
         }
-    }else if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    }else if ((_release_time == 0) || time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);
