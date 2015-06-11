@@ -664,6 +664,7 @@ private:
     float posDownAtArming;          // flight vehicle vertical position at arming used as a reference point
     bool highYawRate;               // true when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
+    bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
