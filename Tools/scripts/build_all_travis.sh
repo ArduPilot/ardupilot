@@ -12,7 +12,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all apm2 sitl linux; do
+for b in apm2; do
     pwd
     make clean
     make $b -j4
