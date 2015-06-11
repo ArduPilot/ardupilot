@@ -34,8 +34,6 @@ using namespace Linux;
 
 LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
     device_path(NULL),
-    _rd_fd(-1),
-    _wr_fd(-1),
     _packetise(false),
     _flow_control(FLOW_CONTROL_DISABLE)
 {
@@ -77,21 +75,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         case DEVICE_TCP:
         {
             _connected = false;
-            if (_flag != NULL){
-                if (!strcmp(_flag, "wait")){    
-                    _tcp_start_connection(true);    
-                } else {
-                    _tcp_start_connection(false);    
-                }
-            } else {
-                _tcp_start_connection(false);    
-            }
-            
-            if (!_connected) {
-                ::printf("LinuxUARTDriver TCP connection not established\n");
-                exit(1);
-            }
-            _flow_control = FLOW_CONTROL_ENABLE;
+            ::fprintf(stderr, "Please, use UDP instead\n");
             break;
         }   
 
@@ -255,112 +239,6 @@ bool LinuxUARTDriver::_serial_start_connection()
 
     return true;
 }
-
-
-/*
-  start a TCP connection for the serial port. If wait_for_connection
-  is true then block until a client connects
- */
-void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
-{
-    int one=1;
-    struct sockaddr_in sockaddr;
-    int ret;    
-    int listen_fd = -1;  // socket we are listening on    
-    int net_fd = -1; // network file descriptor, will be linked to wr_fd and rd_fd
-    uint8_t portNumber = 0; // connecto to _base_port + portNumber
-
-    if (net_fd != -1) {
-        close(net_fd);
-    }
-
-    if (listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
-
-#ifdef HAVE_SOCK_SIN_LEN
-        sockaddr.sin_len = sizeof(sockaddr);
-#endif
-        sockaddr.sin_port = htons(_base_port + portNumber);
-        sockaddr.sin_family = AF_INET;
-        if (strcmp(_ip, "*") == 0) {
-            // Bind to all interfaces
-            sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        } else {
-            sockaddr.sin_addr.s_addr = inet_addr(_ip);
-        }
-
-        listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (listen_fd == -1) {
-            ::printf("socket failed - %s\n", strerror(errno));
-            exit(1);
-        }
-
-        /* we want to be able to re-use ports quickly */
-        setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-        if (!wait_for_connection) {
-
-            ret = connect(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-
-            if (ret < 0) {
-                ::printf("connect failed on port %u - %s\n",
-                         (unsigned)ntohs(sockaddr.sin_port),
-                         strerror(errno));
-                exit(1);
-            }
-
-            fcntl(listen_fd, F_SETFL, fcntl(listen_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            _rd_fd = listen_fd;
-
-            _connected = true;
-
-            ::printf("Serial port %u on TCP port %u\n", portNumber, 
-                     _base_port + portNumber);
-            fflush(stdout);
-
-        } else {
-
-            ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-            if (ret == -1) {
-                ::printf("bind failed on port %u - %s\n",
-                         (unsigned)ntohs(sockaddr.sin_port),
-                         strerror(errno));
-                exit(1);
-            }
-
-            ret = listen(listen_fd, 5);
-            if (ret == -1) {
-                ::printf("listen failed - %s\n", strerror(errno));
-                exit(1);
-            }
-
-            ::printf("Serial port %u on TCP port %u\n", portNumber, 
-                     _base_port + portNumber);
-            ::fflush(stdout);
-
-            ::printf("Waiting for connection ....\n");
-            ::fflush(stdout);
-            net_fd = accept(listen_fd, NULL, NULL);
-            if (net_fd == -1) {
-                ::printf("accept() error - %s", strerror(errno));
-                exit(1);
-            }
-            setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-            setsockopt(net_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-
-            // always run the file descriptor non-blocking, and deal with                                         |
-            // blocking IO in the higher level calls
-            fcntl(net_fd, F_SETFL, fcntl(net_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            _connected = true;
-            _rd_fd = net_fd;
-            _wr_fd = net_fd;
-        }
-
-    }
-}
-
 
 /*
   start a UDP connection for the serial port
