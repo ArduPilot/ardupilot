@@ -25,6 +25,7 @@
 #include "../AP_HAL/utility/RingBuffer.h"
 
 #include "UARTDevice.h"
+#include "UDPDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -367,38 +368,11 @@ void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
  */
 void LinuxUARTDriver::_udp_start_connection(void)
 {
-    struct sockaddr_in sockaddr;
-    int ret;    
-    
-    memset(&sockaddr,0,sizeof(sockaddr));
+    _device = new UDPDevice(_ip, _base_port);
+    _device->open();
+    _device->set_nonblocking();
 
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(_base_port);
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(_ip);
-
-    _rd_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (_rd_fd == -1) {
-        ::printf("socket failed - %s\n", strerror(errno));
-        exit(1);
-    }
-        
-    ret = connect(_rd_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        ::printf("connect failed to %s:%u - %s\n",
-                 _ip, (unsigned)_base_port,
-                 strerror(errno));
-        exit(1);
-    }
-
-    // always run the file descriptor non-blocking, and deal with                                         |
-    // blocking IO in the higher level calls
-    fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-    _wr_fd = _rd_fd;
-
-    // try to write on MAVLink packet boundaries if possible
+    /* try to write on MAVLink packet boundaries if possible */
     _packetise = true;
 }
 
@@ -409,13 +383,12 @@ void LinuxUARTDriver::end()
 {
     _initialised = false;
     _connected = false;
-    while (_in_timer) hal.scheduler->delay(1);
-    if (_rd_fd == _wr_fd && _rd_fd != -1) {
-        _device->close();
-    }
-    _rd_fd = -1;
-    _wr_fd = -1;
 
+    while (_in_timer) {
+        hal.scheduler->delay(1);
+    }
+
+    _device->close();
     _deallocate_buffers();
 }
 
