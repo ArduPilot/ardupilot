@@ -131,16 +131,6 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         }
     }
 
-    // we have enough memory to have a larger transmit buffer for
-    // all ports. This means we don't get delays while waiting to
-    // write GPS config packets
-    if (rxS < 1024) {
-        rxS = 8192;
-    }            
-    if (txS < 8192) {
-        txS = 8192;
-    }
-    
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
 
@@ -156,6 +146,23 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
         t.c_cc[VMIN] = 0;
         tcsetattr(_rd_fd, TCSANOW, &t);
+    }
+
+    _allocate_buffers(rxS, txS);
+}
+
+void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
+{
+    /* we have enough memory to have a larger transmit buffer for
+     * all ports. This means we don't get delays while waiting to
+     * write GPS config packets
+     */
+
+    if (rxS < 8192) {
+        rxS = 8192;
+    }
+    if (txS < 8192) {
+        txS = 8192;
     }
 
     /*
