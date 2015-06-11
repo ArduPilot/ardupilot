@@ -6,6 +6,9 @@
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
 #define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
+#define AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS        (15.5f*GRAVITY_MSS) // accelerometer values over 15.5G are recorded as a clipping error
+#define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
+#define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 
 /**
    maximum number of INS instances available on this platform. If more
@@ -24,6 +27,7 @@
 #include <AP_HAL.h>
 #include <AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
+#include <LowPassFilter.h>
 
 class AP_InertialSensor_Backend;
 
@@ -216,6 +220,15 @@ public:
     // enable/disable raw gyro/accel logging
     void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
+    // calculate vibration levels and check for accelerometer clipping (called by a backends)
+    void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
+
+    // retrieve latest calculated vibration levels
+    Vector3f get_vibration_levels() const;
+
+    // retrieve and clear accelerometer clipping count
+    uint32_t get_accel_clip_count(uint8_t instance) const;
+
 private:
 
     // load backend drivers
@@ -322,6 +335,11 @@ private:
 
     uint32_t _accel_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_error_count[INS_MAX_INSTANCES];
+
+    // vibration and clipping
+    uint32_t _accel_clip_count[INS_MAX_INSTANCES];
+    LowPassFilterVector3f _accel_vibe_floor_filter;
+    LowPassFilterVector3f _accel_vibe_filter;
 
     DataFlash_Class *_dataflash;
 };

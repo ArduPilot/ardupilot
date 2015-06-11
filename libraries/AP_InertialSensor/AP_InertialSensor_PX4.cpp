@@ -278,6 +278,9 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // publish a temperature (for logging purposed only)
     _publish_temperature(frontend_instance, accel_report.temperature);
 
+    // check noise
+    _imu.calc_vibration_and_clipping(frontend_instance, accel, dt);
+
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
     _accel_dt_max[i] = max(_accel_dt_max[i],dt);
 

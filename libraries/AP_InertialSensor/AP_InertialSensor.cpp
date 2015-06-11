@@ -285,6 +285,8 @@ AP_InertialSensor::AP_InertialSensor() :
     _hil_mode(false),
     _calibrating(false),
     _log_raw_data(false),
+    _accel_vibe_floor_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ),
+    _accel_vibe_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ),
     _dataflash(NULL)
 {
     AP_Param::setup_object_defaults(this, var_info);        
@@ -294,6 +296,7 @@ AP_InertialSensor::AP_InertialSensor() :
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
+        _accel_clip_count[i] = 0;
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
@@ -638,6 +641,15 @@ AP_InertialSensor::init_gyro()
 
     // save calibration
     _save_parameters();
+}
+
+// accelerometer clipping reporting
+uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
+{
+    if (instance > get_accel_count()) {
+        return 0;
+    }
+    return _accel_clip_count[instance];
 }
 
 // get_gyro_health_all - return true if all gyros are healthy
@@ -1318,3 +1330,38 @@ void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
     }
 }
 
+// calculate vibration levels and check for accelerometer clipping (called by a backends)
+void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
+{
+    // check for clipping
+    if (fabsf(accel.x) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
+        fabsf(accel.y) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS ||
+        fabsf(accel.z) > AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS) {
+        _accel_clip_count[instance]++;
+    }
+
+    // calculate vibration on primary accel only
+    if (instance != _primary_accel) {
+        return;
+    }
+
+    // filter accel a 5hz
+    Vector3f accel_filt = _accel_vibe_floor_filter.apply(accel, dt);
+
+    // calc difference from this sample and 5hz filtered value, square and filter at 2hz
+    Vector3f accel_diff = (accel - accel_filt);
+    accel_diff.x *= accel_diff.x;
+    accel_diff.y *= accel_diff.y;
+    accel_diff.z *= accel_diff.z;
+    _accel_vibe_filter.apply(accel_diff, dt);
+}
+
+// retrieve latest calculated vibration levels
+Vector3f AP_InertialSensor::get_vibration_levels() const
+{
+    Vector3f vibe = _accel_vibe_filter.get();
+    vibe.x = safe_sqrt(vibe.x);
+    vibe.y = safe_sqrt(vibe.y);
+    vibe.z = safe_sqrt(vibe.z);
+    return vibe;
+}
