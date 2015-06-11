@@ -61,8 +61,8 @@ void LinuxUARTDriver::begin(uint32_t b)
 void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     if (device_path == NULL && _console) {
-        _rd_fd = 0;
-        _wr_fd = 1;
+        _rd_fd = STDIN_FILENO;
+        _wr_fd = STDOUT_FILENO;
         fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
         fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
     } else if (!_initialised) {
@@ -122,8 +122,8 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             // Notify that the option is not valid and select standart input and output
             ::printf("LinuxUARTDriver parsing failed, using default\n");
 
-            _rd_fd = 0;
-            _wr_fd = 1;
+            _rd_fd = STDIN_FILENO;
+            _wr_fd = STDOUT_FILENO;
             fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
             fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
             break;
