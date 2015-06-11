@@ -44,6 +44,7 @@ private:
     bool _packetise; // true if writes should try to be on mavlink boundaries
     enum flow_control _flow_control;
 
+    void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _tcp_start_connection(bool wait_for_connection);
     void _udp_start_connection(void);
 
