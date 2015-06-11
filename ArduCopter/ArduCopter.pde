@@ -559,6 +559,7 @@ static float target_sonar_alt;      // desired altitude in cm above the ground
 static int32_t baro_alt;            // barometer altitude in cm above home
 static float baro_climbrate;        // barometer climbrate in cm/s
 static LowPassFilterVector3f land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF); // accelerations for land detector test
+static LowPassFilterFloat rc_throttle_control_in_filter(1.0f);
 
 ////////////////////////////////////////////////////////////////////////////////
 // 3D Location vectors

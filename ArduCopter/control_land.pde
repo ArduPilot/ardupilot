@@ -76,6 +76,15 @@ static void land_gps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
+        if(rc_throttle_control_in_filter.get() > 700){
+            // exit land
+            if (position_ok()) {
+                set_mode(LOITER);
+            } else {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -142,6 +151,15 @@ static void land_nogps_run()
 
     // process pilot inputs
     if (!failsafe.radio) {
+        if(rc_throttle_control_in_filter.get() > 700){
+            // exit land
+            if (position_ok()) {
+                set_mode(LOITER);
+            } else {
+                set_mode(ALT_HOLD);
+            }
+        }
+
         if (g.land_repositioning) {
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
