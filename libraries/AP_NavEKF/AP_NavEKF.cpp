@@ -5062,6 +5062,8 @@ void NavEKF::setTouchdownExpected(bool val)
 // Return true if all criteria pass for 10 seconds
 bool NavEKF::calcGpsGoodToAlign(void)
 {
+    static struct Location gpsloc_prev;    // LLH location of previous GPS measurement
+
     // calculate absolute difference between GPS vert vel and inertial vert vel
     float velDiffAbs;
     if (_ahrs->get_gps().have_vertical_velocity()) {
@@ -5085,9 +5087,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hAccFail =  false;
     }
 
-    // fail if satellite geometry is poor
-    bool hdopFail = _ahrs->get_gps().get_hdop() > 250;
-
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
@@ -5100,7 +5099,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // Check for significant change in GPS posiiton if disarmed which indicates bad GPS
     // Note: this assumes we are not flying from a moving vehicle, eg boat
     const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
-    static float gpsDriftNE; // amount of position drift detected
+    static float gpsDriftNE = 0.0f; // amount of position drift detected
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsesd since last GPS fix and limit to prevent numerical errors
     float deltaTime = constrain_float(float(lastFixTime_ms - secondLastFixTime_ms)*0.001f,0.01f,posFiltTimeConst);
@@ -5117,7 +5116,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    static float gpsVertVelFilt;
+    static float gpsVertVelFilt = 0.0f;
     if (_ahrs->get_gps().have_vertical_velocity() && !vehicleArmed) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * velNED.z + 0.9f * gpsVertVelFilt;
@@ -5143,7 +5142,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // record time of fail
     // assume  fail first time called
-    if (gpsVelFail || numSatsFail || hAccFail || yawFail || hdopFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
+    if (gpsVelFail || numSatsFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
