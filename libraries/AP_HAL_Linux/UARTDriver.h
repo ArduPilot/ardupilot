@@ -4,6 +4,8 @@
 
 #include <AP_HAL_Linux.h>
 
+#include "SerialDevice.h"
+
 class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
 public:
     LinuxUARTDriver(bool default_console);
@@ -32,6 +34,7 @@ public:
     enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
+    SerialDevice *_device = nullptr;
     int _rd_fd;
     int _wr_fd;
     bool _nonblocking_writes;
