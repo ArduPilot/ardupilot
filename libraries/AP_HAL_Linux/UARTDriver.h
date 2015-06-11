@@ -48,6 +48,7 @@ private:
     enum flow_control _flow_control;
 
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
+    void _deallocate_buffers();
     void _tcp_start_connection(bool wait_for_connection);
     void _udp_start_connection(void);
     bool _serial_start_connection(void);
