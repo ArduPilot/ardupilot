@@ -101,20 +101,9 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
         case DEVICE_SERIAL:            
         {
-            _rd_fd = open(device_path, O_RDWR);
-            _wr_fd = _rd_fd;
-            if (_rd_fd == -1) {
-                ::fprintf(stdout, "Failed to open UART device %s - %s\n",
-                          device_path, strerror(errno));
-                return;
+            if (!_serial_start_connection()) {
+                return; /* Whatever it might mean */
             }
-            
-            // always run the file descriptor non-blocking, and deal with
-            // blocking IO in the higher level calls
-            fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            // TODO: add proper flow control support
-            _flow_control = FLOW_CONTROL_DISABLE;
             break;
         }
         default:
@@ -247,6 +236,28 @@ LinuxUARTDriver::device_type LinuxUARTDriver::_parseDevicePath(const char *arg)
     free(devstr);
     return DEVICE_UNKNOWN;
 }
+
+bool LinuxUARTDriver::_serial_start_connection()
+{
+    _rd_fd = open(device_path, O_RDWR);
+    _wr_fd = _rd_fd;
+
+    if (_rd_fd == -1) {
+        ::fprintf(stdout, "Failed to open UART device %s - %s\n",
+                  device_path, strerror(errno));
+        return false;
+    }
+
+    // always run the file descriptor non-blocking, and deal with
+    // blocking IO in the higher level calls
+    fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
+
+    // TODO: add proper flow control support
+    _flow_control = FLOW_CONTROL_DISABLE;
+
+    return true;
+}
+
 
 /*
   start a TCP connection for the serial port. If wait_for_connection
