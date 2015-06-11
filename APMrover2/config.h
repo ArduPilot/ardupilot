@@ -299,7 +299,8 @@
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT | \
     MASK_LOG_STEERING | \
-    MASK_LOG_CAMERA
+    MASK_LOG_CAMERA | \
+    MASK_LOG_TRIGGER
 #else
 // other systems have plenty of space for full logs
 #define DEFAULT_LOG_BITMASK   0xffff

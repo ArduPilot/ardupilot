@@ -124,16 +124,17 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(gcs_send_deferred),     8,    550 },   // 22
     { SCHED_TASK(gcs_data_stream_send),  8,    550 },   // 23
     { SCHED_TASK(update_mount),          8,     75 },   // 24
-    { SCHED_TASK(ten_hz_logging_loop),  40,    350 },   // 25
-    { SCHED_TASK(fifty_hz_logging_loop), 8,    110 },   // 26
-    { SCHED_TASK(full_rate_logging_loop),1,    100 },   // 27
-    { SCHED_TASK(perf_update),        4000,     75 },   // 28
-    { SCHED_TASK(read_receiver_rssi),   40,     75 },   // 29
+    { SCHED_TASK(update_trigger),        8,     75 },   // 25
+    { SCHED_TASK(ten_hz_logging_loop),  40,    350 },   // 26
+    { SCHED_TASK(fifty_hz_logging_loop), 8,    110 },   // 27
+    { SCHED_TASK(full_rate_logging_loop),1,    100 },   // 28
+    { SCHED_TASK(perf_update),        4000,     75 },   // 29
+    { SCHED_TASK(read_receiver_rssi),   40,     75 },   // 30
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { SCHED_TASK(frsky_telemetry_send), 80,     75 },   // 30
+    { SCHED_TASK(frsky_telemetry_send), 80,     75 },   // 31
 #endif
 #if EPM_ENABLED == ENABLED
-    { SCHED_TASK(epm_update),           40,     75 },   // 31
+    { SCHED_TASK(epm_update),           40,     75 },   // 32
 #endif
 #ifdef USERHOOK_FASTLOOP
     { SCHED_TASK(userhook_FastLoop),     4,     75 },
@@ -306,15 +307,25 @@ void Copter::throttle_loop()
 
 // update_mount - update camera mount position
 // should be run at 50hz
-void Copter::update_mount()
+void Copter::update_mount(void)
 {
 #if MOUNT == ENABLED
-    // update camera mount's position
     camera_mount.update();
 #endif
+}
 
+// update camera trigger
+void Copter::update_trigger(void)
+{
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if(camera._camera_triggered == 0 && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+      camera._camera_triggered = 1;
+    }    
 #endif
 }
 
@@ -621,4 +632,3 @@ void loop(void)
 }
 
 AP_HAL_MAIN();
-

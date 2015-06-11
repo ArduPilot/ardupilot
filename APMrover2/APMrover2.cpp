@@ -68,6 +68,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(update_events),          1,   1000 },
     { SCHED_TASK(check_usb_mux),         15,   1000 },
     { SCHED_TASK(mount_update),           1,    600 },
+    { SCHED_TASK(update_trigger),         1,    600 },    
     { SCHED_TASK(gcs_failsafe_check),     5,    600 },
     { SCHED_TASK(compass_accumulate),     1,    900 },
     { SCHED_TASK(update_notify),          1,    300 },
@@ -166,8 +167,22 @@ void Rover::mount_update(void)
 #if MOUNT == ENABLED
     camera_mount.update();
 #endif
+}
+
+/*
+  update camera trigger - 50Hz
+ */
+void Rover::update_trigger(void)
+{
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if(camera._camera_triggered == 0 && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+      camera._camera_triggered = 1;
+    }    
 #endif
 }
 

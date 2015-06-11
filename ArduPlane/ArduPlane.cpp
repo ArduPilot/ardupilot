@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+    /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /*
    Lead developer: Andrew Tridgell
@@ -66,6 +66,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(read_receiver_rssi),     5,   1000 },
     { SCHED_TASK(airspeed_ratio_update), 50,   1000 }, // 30
     { SCHED_TASK(update_mount),           1,   1500 },
+    { SCHED_TASK(update_trigger),         1,   1500 },    
     { SCHED_TASK(log_perf_info),        500,   1000 },
     { SCHED_TASK(compass_save),        3000,   2500 },
     { SCHED_TASK(update_logging1),        5,   1700 },
@@ -184,9 +185,22 @@ void Plane::update_mount(void)
 #if MOUNT == ENABLED
     camera_mount.update();
 #endif
+}
 
+/*
+  update camera trigger
+ */
+void Plane::update_trigger(void)
+{
 #if CAMERA == ENABLED
     camera.trigger_pic_cleanup();
+    if(camera._camera_triggered == 0 && camera._feedback_pin != -1 && check_digital_pin(camera._feedback_pin) == 0){
+      gcs_send_message(MSG_CAMERA_FEEDBACK);
+      if (should_log(MASK_LOG_CAMERA)) {
+          DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
+      }
+      camera._camera_triggered = 1;
+    }    
 #endif
 }
 
