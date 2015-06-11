@@ -24,6 +24,8 @@
 #include <arpa/inet.h>
 #include "../AP_HAL/utility/RingBuffer.h"
 
+#include "UARTDevice.h"
+
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
@@ -102,7 +104,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         case DEVICE_SERIAL:            
         {
             if (!_serial_start_connection()) {
-                return; /* Whatever it might mean */
+                break; /* Whatever it might mean */
             }
             break;
         }
@@ -123,19 +125,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
 
-    if (b != 0 && _rd_fd == _wr_fd) {
-        // set the baud rate
-        struct termios t;
-        memset(&t, 0, sizeof(t));
-        tcgetattr(_rd_fd, &t);
-        cfsetspeed(&t, b);
-        // disable LF -> CR/LF
-        t.c_iflag &= ~(BRKINT | ICRNL | IMAXBEL | IXON | IXOFF);
-        t.c_oflag &= ~(OPOST | ONLCR);
-        t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
-        t.c_cc[VMIN] = 0;
-        tcsetattr(_rd_fd, TCSANOW, &t);
-    }
+    _device->set_speed(b);
 
     _allocate_buffers(rxS, txS);
 }
@@ -239,20 +229,9 @@ LinuxUARTDriver::device_type LinuxUARTDriver::_parseDevicePath(const char *arg)
 
 bool LinuxUARTDriver::_serial_start_connection()
 {
-    _rd_fd = open(device_path, O_RDWR);
-    _wr_fd = _rd_fd;
-
-    if (_rd_fd == -1) {
-        ::fprintf(stdout, "Failed to open UART device %s - %s\n",
-                  device_path, strerror(errno));
-        return false;
-    }
-
-    // always run the file descriptor non-blocking, and deal with
-    // blocking IO in the higher level calls
-    fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-
-    // TODO: add proper flow control support
+    _device = new UARTDevice(device_path);
+    _device->open();
+    _device->set_nonblocking();
     _flow_control = FLOW_CONTROL_DISABLE;
 
     return true;
@@ -413,7 +392,7 @@ void LinuxUARTDriver::end()
     _connected = false;
     while (_in_timer) hal.scheduler->delay(1);
     if (_rd_fd == _wr_fd && _rd_fd != -1) {
-        close(_rd_fd);
+        _device->close();
     }
     _rd_fd = -1;
     _wr_fd = -1;
@@ -580,15 +559,8 @@ size_t LinuxUARTDriver::write(const uint8_t *buffer, size_t size)
 int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
     int ret = 0;
-
-    struct pollfd fds;
-    fds.fd = _wr_fd;
-    fds.events = POLLOUT;
-    fds.revents = 0;
-
-    if (poll(&fds, 1, 0) == 1) {
-        ret = ::write(_wr_fd, buf, n);
-    }
+    
+    ret = _device->write(buf, n);
 
     if (ret > 0) {
         BUF_ADVANCEHEAD(_writebuf, ret);
@@ -604,22 +576,12 @@ int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     int ret;
-    ret = ::read(_rd_fd, buf, n);
+
+    ret = _device->read(buf, n);
+
     if (ret > 0) {
         BUF_ADVANCETAIL(_readbuf, ret);
-    } else {
-        switch (errno) {
-            case EAGAIN: 
-                /* Ignore EAGAIN that resulted from non-blocking read */
-                break;
-            case EPIPE:
-                /* Ignore EPIPE that resulted from peer shutdown */
-                break;
-            default:
-               ::fprintf(stdout, "read failed - %s\n", strerror(errno));
-               break;
-        }
-    }
+    } 
 
     return ret;
 }
