@@ -34,6 +34,8 @@
 class SocketAPM {
 public:
     SocketAPM(bool _datagram);
+    ~SocketAPM();
+
     bool connect(const char *address, uint16_t port);
     bool bind(const char *address, uint16_t port);
     void reuseaddress();

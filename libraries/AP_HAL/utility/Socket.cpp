@@ -35,6 +35,13 @@ datagram(_datagram)
     setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 }
 
+SocketAPM::~SocketAPM()
+{
+    if (::close(fd) < 0) {
+        perror("close");
+    }
+}
+
 void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
 {
     memset(&sockaddr, 0, sizeof(sockaddr));
