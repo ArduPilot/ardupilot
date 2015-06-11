@@ -175,6 +175,25 @@ void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
     }
 }
 
+void LinuxUARTDriver::_deallocate_buffers()
+{
+    if (_readbuf) {
+        free(_readbuf);
+        _readbuf = NULL;
+    }
+
+    if (_writebuf) {
+        free(_writebuf);
+        _writebuf = NULL;
+    }
+
+    _readbuf_size = _writebuf_size = 0;
+    _writebuf_head = 0;
+    _writebuf_tail = 0;
+    _readbuf_head = 0;
+    _readbuf_tail = 0;
+}
+
 /*
     Device path accepts the following syntaxes:
         - /dev/ttyO1
@@ -396,19 +415,8 @@ void LinuxUARTDriver::end()
     }
     _rd_fd = -1;
     _wr_fd = -1;
-    if (_readbuf) {
-        free(_readbuf);
-        _readbuf = NULL;
-    }
-    if (_writebuf) {
-        free(_writebuf);
-        _writebuf = NULL;
-    }
-    _readbuf_size = _writebuf_size = 0;
-    _writebuf_head = 0;
-    _writebuf_tail = 0;
-    _readbuf_head = 0;
-    _readbuf_tail = 0;
+
+    _deallocate_buffers();
 }
 
 
