@@ -158,6 +158,15 @@ public:
         return ret;
     }
 
+    // get latest filtered value from filter (equal to the value returned by latest call to apply method)
+    Vector3f get() const {
+        Vector3f ret;
+        ret.x = _filter_x.get();
+        ret.y = _filter_y.get();
+        ret.z = _filter_z.get();
+        return ret;
+    }
+
     void reset(const Vector3f& value) {
         _filter_x.reset(value.x);
         _filter_y.reset(value.y);
