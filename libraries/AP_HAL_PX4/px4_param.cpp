@@ -6,6 +6,9 @@
   try to access FRAM in an invalid manner
  */
 
+#include <AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <px4_defines.h>
 #include <px4_posix.h>
 #include <stdio.h>
@@ -33,3 +36,5 @@ int param_set(param_t param, const void *val)
 {
     return -1;
 }
+
+#endif // CONFIG_HAL_BOARD
