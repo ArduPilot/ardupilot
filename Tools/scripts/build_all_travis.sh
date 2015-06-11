@@ -10,6 +10,13 @@ set -x
 
 . ~/.profile
 
+travis_build_type_or_empty() {
+    if [ -z "$TRAVIS_BUILD_TYPE" ] || [ "$TRAVIS_BUILD_TYPE" = "$1" ]; then
+        return 0
+    fi
+    return 1
+}
+
 echo "Testing ArduPlane build"
 pushd ArduPlane
 for b in apm2; do
@@ -20,6 +27,9 @@ done
 popd
 
 for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
+    if ! travis_build_type_or_empty "$d"; then
+        continue
+    fi
     pushd $d
     make clean
     make navio -j2
@@ -33,9 +43,11 @@ for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
     popd
 done
 
-pushd Tools/Replay
-make clean
-make linux -j4
-popd
+if travis_build_type_or_empty "Replay"; then
+    pushd Tools/Replay
+    make clean
+    make linux -j4
+    popd
+fi
 
 exit 0
