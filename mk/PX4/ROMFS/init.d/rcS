@@ -43,7 +43,7 @@ then
 	echo "[init] card mounted at /fs/microsd"
         set HAVE_MICROSD 1
 	# Start playing the startup tune
-	tone_alarm start
+	tone_alarm 1
 else
         set HAVE_MICROSD 0
 	echo "Trying format of microSD"
@@ -55,7 +55,7 @@ else
                 then
                         echo "format succeeded"
                         set HAVE_MICROSD 1
-                        tone_alarm start
+                        tone_alarm 1
                 else
                         echo "mount failed"
                         tone_alarm MNBG
