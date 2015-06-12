@@ -715,6 +715,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         copter.send_pid_tuning(chan);
         break;
 
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_vibration(copter.ins);
+        break;
+
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
     }
@@ -939,6 +944,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_VIBRATION);
     }
 }
 
