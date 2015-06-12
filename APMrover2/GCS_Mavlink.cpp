@@ -531,6 +531,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_FENCE_STATUS:
     case MSG_WIND:
     case MSG_PID_TUNING:
+    case MSG_VIBRATION:
         // unused
         break;
 
