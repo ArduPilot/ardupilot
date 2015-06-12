@@ -23,8 +23,8 @@ declare -A build_extra_clean
 
 build_platforms=(  ["ArduPlane"]="apm2 navio sitl linux px4-v2"
                    ["ArduCopter"]="navio sitl linux px4-v2"
-                   ["APMrover2"]="navio sitl linux px4-v2"
-                   ["AntennaTracker"]="navio sitl linux px4-v2"
+                   ["APMrover2"]="apm2 navio sitl linux px4-v2"
+                   ["AntennaTracker"]="apm2 navio sitl linux px4-v2"
                    ["Tools/Replay"]="linux")
 
 build_concurrency=(["apm2"]="-j4"
