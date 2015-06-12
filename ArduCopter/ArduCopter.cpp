@@ -390,7 +390,7 @@ void Copter::fifty_hz_logging_loop()
     }
 
     // log IMU data if we're not already logging at the higher rate
-    if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_FAST)) {
+    if (should_log(MASK_LOG_IMU) && !(should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW))) {
         DataFlash.Log_Write_IMU(ins);
     }
 #endif
@@ -400,7 +400,7 @@ void Copter::fifty_hz_logging_loop()
 // should be run at the MAIN_LOOP_RATE
 void Copter::full_rate_logging_loop()
 {
-    if (should_log(MASK_LOG_IMU_FAST)) {
+    if (should_log(MASK_LOG_IMU_FAST) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
         DataFlash.Log_Write_IMUDT(ins);
     }
