@@ -285,8 +285,10 @@ AP_InertialSensor::AP_InertialSensor() :
     _hil_mode(false),
     _calibrating(false),
     _log_raw_data(false),
+#if INS_VIBRATION_CHECK
     _accel_vibe_floor_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ),
     _accel_vibe_filter(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ),
+#endif
     _dataflash(NULL)
 {
     AP_Param::setup_object_defaults(this, var_info);        
@@ -296,7 +298,9 @@ AP_InertialSensor::AP_InertialSensor() :
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
+#if INS_VIBRATION_CHECK
         _accel_clip_count[i] = 0;
+#endif
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
@@ -643,14 +647,16 @@ AP_InertialSensor::init_gyro()
     _save_parameters();
 }
 
+#if INS_VIBRATION_CHECK
 // accelerometer clipping reporting
 uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
 {
-    if (instance > get_accel_count()) {
+    if (instance >= get_accel_count()) {
         return 0;
     }
     return _accel_clip_count[instance];
 }
+#endif
 
 // get_gyro_health_all - return true if all gyros are healthy
 bool AP_InertialSensor::get_gyro_health_all(void) const
@@ -1330,6 +1336,7 @@ void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
     }
 }
 
+#if INS_VIBRATION_CHECK
 // calculate vibration levels and check for accelerometer clipping (called by a backends)
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
 {
@@ -1365,3 +1372,4 @@ Vector3f AP_InertialSensor::get_vibration_levels() const
     vibe.z = safe_sqrt(vibe.z);
     return vibe;
 }
+#endif

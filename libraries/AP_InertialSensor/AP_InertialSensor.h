@@ -17,9 +17,11 @@
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
+#define INS_VIBRATION_CHECK 1
 #else
 #define INS_MAX_INSTANCES 1
 #define INS_MAX_BACKENDS  1
+#define INS_VIBRATION_CHECK 0
 #endif
 
 
@@ -220,6 +222,7 @@ public:
     // enable/disable raw gyro/accel logging
     void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
+#if INS_VIBRATION_CHECK
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
@@ -228,6 +231,7 @@ public:
 
     // retrieve and clear accelerometer clipping count
     uint32_t get_accel_clip_count(uint8_t instance) const;
+#endif
 
 private:
 
@@ -336,10 +340,12 @@ private:
     uint32_t _accel_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_error_count[INS_MAX_INSTANCES];
 
+#if INS_VIBRATION_CHECK
     // vibration and clipping
     uint32_t _accel_clip_count[INS_MAX_INSTANCES];
     LowPassFilterVector3f _accel_vibe_floor_filter;
     LowPassFilterVector3f _accel_vibe_filter;
+#endif
 
     DataFlash_Class *_dataflash;
 };
