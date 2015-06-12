@@ -5364,6 +5364,55 @@ static void mavlink_test_autopilot_version(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_vibration(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_vibration_t packet_in = {
+		93372036854775807ULL,73.0,101.0,129.0,963498504,963498712,963498920
+    };
+	mavlink_vibration_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.time_usec = packet_in.time_usec;
+        	packet1.vibration_x = packet_in.vibration_x;
+        	packet1.vibration_y = packet_in.vibration_y;
+        	packet1.vibration_z = packet_in.vibration_z;
+        	packet1.clipping_0 = packet_in.clipping_0;
+        	packet1.clipping_1 = packet_in.clipping_1;
+        	packet1.clipping_2 = packet_in.clipping_2;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_vibration_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_vibration_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_vibration_pack(system_id, component_id, &msg , packet1.time_usec , packet1.vibration_x , packet1.vibration_y , packet1.vibration_z , packet1.clipping_0 , packet1.clipping_1 , packet1.clipping_2 );
+	mavlink_msg_vibration_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_vibration_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_usec , packet1.vibration_x , packet1.vibration_y , packet1.vibration_z , packet1.clipping_0 , packet1.clipping_1 , packet1.clipping_2 );
+	mavlink_msg_vibration_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_vibration_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_vibration_send(MAVLINK_COMM_1 , packet1.time_usec , packet1.vibration_x , packet1.vibration_y , packet1.vibration_z , packet1.clipping_0 , packet1.clipping_1 , packet1.clipping_2 );
+	mavlink_msg_vibration_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_v2_extension(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -5793,6 +5842,7 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_actuator_control_target(system_id, component_id, last_msg);
 	mavlink_test_battery_status(system_id, component_id, last_msg);
 	mavlink_test_autopilot_version(system_id, component_id, last_msg);
+	mavlink_test_vibration(system_id, component_id, last_msg);
 	mavlink_test_v2_extension(system_id, component_id, last_msg);
 	mavlink_test_memory_vect(system_id, component_id, last_msg);
 	mavlink_test_debug_vect(system_id, component_id, last_msg);
