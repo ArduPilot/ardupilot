@@ -25,7 +25,7 @@ env:
     - TRAVIS_BUILD_TYPE=ArduCopter
     - TRAVIS_BUILD_TYPE=APMrover2
     - TRAVIS_BUILD_TYPE=AntennaTracker
-    - TRAVIS_BUILD_TYPE=Replay
+    - TRAVIS_BUILD_TYPE=Tools/Replay
 
 addons:
   coverity_scan:

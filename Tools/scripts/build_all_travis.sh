@@ -17,37 +17,37 @@ travis_build_type_or_empty() {
     return 1
 }
 
-echo "Testing ArduPlane build"
-pushd ArduPlane
-for b in apm2; do
-    pwd
-    make clean
-    make $b -j4
-done
-popd
+declare -A build_platforms
+declare -A build_concurrency
+declare -A build_extra_clean
 
-for d in ArduCopter APMrover2 ArduPlane AntennaTracker; do
+build_platforms=(  ["ArduPlane"]="apm2 navio sitl linux px4-v2"
+                   ["ArduCopter"]="navio sitl linux px4-v2"
+                   ["APMrover2"]="navio sitl linux px4-v2"
+                   ["AntennaTracker"]="navio sitl linux px4-v2"
+                   ["Tools/Replay"]="linux")
+
+build_concurrency=(["apm2"]="-j4"
+                   ["navio"]="-j2"
+                   ["sitl"]="-j4"
+                   ["linux"]="-j2"
+                   ["px4-v2"]="")
+
+build_extra_clean=(["px4-v2"]="make px4-cleandep")
+
+for d in "${!build_platforms[@]}"; do
     if ! travis_build_type_or_empty "$d"; then
         continue
     fi
+
     pushd $d
-    make clean
-    make navio -j2
-    make clean
-    make sitl -j4
-    make clean
-    make linux -j2
-    make clean
-    make px4-cleandep
-    make px4-v2
+    for p in ${build_platforms["$d"]}; do
+        make clean
+        if [ ${build_extra_clean[$p]+_} ]; then
+            ${build_extra_clean[$p]}
+        fi
+
+        make $p ${build_concurrency[$p]}
+    done
     popd
 done
-
-if travis_build_type_or_empty "Replay"; then
-    pushd Tools/Replay
-    make clean
-    make linux -j4
-    popd
-fi
-
-exit 0
