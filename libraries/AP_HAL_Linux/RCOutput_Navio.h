@@ -6,7 +6,7 @@
 
 class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     public:
-    LinuxRCOutput_Navio(uint8_t channel_offset,
+    LinuxRCOutput_Navio(bool external_clock, uint8_t channel_offset,
                         uint8_t oe_pin_number);
     ~LinuxRCOutput_Navio();
     void     init(void* machtnichts);
@@ -26,9 +26,11 @@ private:
     AP_HAL::Semaphore *_i2c_sem;
     AP_HAL::DigitalSource *_enable_pin;
     uint16_t _frequency;
+    float _osc_clock;
 
     uint16_t *_pulses_buffer;
 
+    bool _external_clock;
     uint8_t _channel_offset;
     uint8_t _oe_pin_number;
 };

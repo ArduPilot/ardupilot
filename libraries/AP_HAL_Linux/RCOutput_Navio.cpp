@@ -44,21 +44,35 @@
 #define PCA9685_MODE2_OUTNE1_BIT   (1 << 1)
 #define PCA9685_MODE2_OUTNE0_BIT   (1 << 0)
 
+/*
+ * Drift for internal oscillator
+ * see: https://github.com/diydrones/ardupilot/commit/50459bdca0b5a1adf95
+ * and https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library/issues/11
+ */
+#define PCA9685_INTERNAL_CLOCK (1.04f * 25000000.f)
+#define PCA9685_EXTERNAL_CLOCK 24576000.f
+
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 13
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-LinuxRCOutput_Navio::LinuxRCOutput_Navio(uint8_t channel_offset,
+LinuxRCOutput_Navio::LinuxRCOutput_Navio(bool external_clock,
+                                         uint8_t channel_offset,
                                          uint8_t oe_pin_number) :
     _i2c_sem(NULL),
     _enable_pin(NULL),
     _frequency(50),
     _pulses_buffer(new uint16_t[PWM_CHAN_COUNT]),
+    _external_clock(external_clock),
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
 {
+    if (_external_clock)
+        _osc_clock = PCA9685_EXTERNAL_CLOCK;
+    else
+        _osc_clock = PCA9685_INTERNAL_CLOCK;
 }
 
 LinuxRCOutput_Navio::~LinuxRCOutput_Navio()
@@ -121,18 +135,25 @@ void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
     /* Put PCA9685 to sleep (required to write prescaler) */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
 
-    /* Calculate and write prescale value to match frequency */
-    uint8_t prescale = round(24576000.f / 4096.f / freq_hz)  - 1;
+    /* Calculate prescale and save frequency using this value: it may be
+     * different from @freq_hz due to rounding/ceiling. We use ceil() rather
+     * than round() so the resulting frequency is never greater than @freq_hz
+     */
+    uint8_t prescale = ceil(_osc_clock / (4096 * freq_hz)) - 1;
+    _frequency = _osc_clock / (4096 * (prescale + 1));
+
+    /* Write prescale value to match frequency */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
 
-    /* Enable external clocking */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
-                            PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT); 
+    if (_external_clock) {
+        /* Enable external clocking */
+        hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
+                               PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT);
+    }
 
     /* Restart the device to apply new settings and enable auto-incremented write */
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
                             PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
-    _frequency = freq_hz;
 
     _i2c_sem->give();
 }
