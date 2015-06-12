@@ -2630,6 +2630,16 @@
             <field type="uint64_t" name="uid">UID if provided by hardware</field>
         </message>
         <!-- MESSAGE IDs 180 - 240: Space for custom messages in individual projectname_messages.xml files -->
+        <message id="241" name="VIBRATION">
+            <description>Vibration levels and accelerometer clipping</description>
+            <field type="uint64_t" name="time_usec">Timestamp (micros since boot or Unix epoch)</field>
+            <field type="float" name="vibration_x">Vibration levels on X-axis</field>
+            <field type="float" name="vibration_y">Vibration levels on Y-axis</field>
+            <field type="float" name="vibration_z">Vibration levels on Z-axis</field>
+            <field type="uint32_t" name="clipping_0">first accelerometer clipping count</field>
+            <field type="uint32_t" name="clipping_1">second accelerometer clipping count</field>
+            <field type="uint32_t" name="clipping_2">third accelerometer clipping count</field>
+        </message>
         <message id="248" name="V2_EXTENSION">
             <description>Message implementing parts of the V2 payload specs in V1 frames for transitional support.</description>
             <field type="uint8_t" name="target_network">Network ID (0 for broadcast)</field>
