@@ -34,9 +34,7 @@ PX4_GIT_VERSION   := $(shell cd $(PX4_ROOT) && git rev-parse HEAD | cut -c1-8)
 
 EXTRAFLAGS += -DNUTTX_GIT_VERSION="\"$(NUTTX_GIT_VERSION)\""
 EXTRAFLAGS += -DPX4_GIT_VERSION="\"$(PX4_GIT_VERSION)\""
-ifneq ($(wildcard $(SKETCHBOOK)/modules/uavcan),)
 EXTRAFLAGS += -DUAVCAN=1
-endif
 
 # we have different config files for V1 and V2
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
@@ -63,9 +61,7 @@ endif
 ifneq ($(wildcard $(NUTTX_SRC)/..),)
 HASHADDER_FLAGS += --nuttx "$(NUTTX_SRC)/.."
 endif
-ifneq ($(wildcard $(UAVCAN_DIR)),)
 HASHADDER_FLAGS += --uavcan "$(UAVCAN_DIR)"
-endif
 
 .PHONY: module_mk
 module_mk:
