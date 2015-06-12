@@ -731,6 +731,8 @@ void Copter::start_logging()
             }
             DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
 
+            Log_Write_Startup();
+
             // log the flight mode
             DataFlash.Log_Write_Mode(control_mode);
         }
