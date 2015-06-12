@@ -527,6 +527,8 @@ void Plane::start_logging()
     if (hal.util->get_system_id(sysid)) {
         DataFlash.Log_Write_Message(sysid);
     }
+
+    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 }
 
 /*
