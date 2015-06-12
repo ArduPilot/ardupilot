@@ -9,7 +9,6 @@
 #include <AP_AHRS.h>
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <AP_Compass.h>
-#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -871,6 +870,7 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 
 void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
 {
+#if INS_VIBRATION_CHECK
     uint64_t time_us = hal.scheduler->micros64();
     Vector3f vibration = ins.get_vibration_levels();
     struct log_Vibe pkt = {
@@ -884,6 +884,7 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
         clipping_2  : ins.get_accel_clip_count(2)
     };
     WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 // Write a text message to the log
