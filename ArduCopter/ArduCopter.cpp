@@ -363,6 +363,9 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || landing_with_GPS())) {
         Log_Write_Nav_Tuning();
     }
+    if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
+        DataFlash.Log_Write_Vibration(ins);
+    }
 }
 
 // fifty_hz_logging_loop
