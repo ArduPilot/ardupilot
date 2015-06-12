@@ -59,6 +59,7 @@ enum ap_message {
     MSG_EKF_STATUS_REPORT,
     MSG_LOCAL_POSITION,
     MSG_PID_TUNING,
+    MSG_VIBRATION,
     MSG_RETRY_DEFERRED // this must be last
 };
 
@@ -139,6 +140,7 @@ public:
 #endif
     void send_autopilot_version(void) const;
     void send_local_position(const AP_AHRS &ahrs) const;
+    void send_vibration(const AP_InertialSensor &ins) const;
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
