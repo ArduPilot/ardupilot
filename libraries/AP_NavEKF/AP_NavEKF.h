@@ -453,6 +453,9 @@ private:
     // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
     void detectOptFlowTakeoff(void);
 
+    // update inflight calculaton that determines if GPS data is good enough for reliable navigation
+    void calcGpsGoodForFlight(void);
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
@@ -665,6 +668,7 @@ private:
     bool highYawRate;               // true when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
+    bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
