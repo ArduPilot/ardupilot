@@ -1,11 +1,10 @@
 #include <VehicleType.h>
+#include <DataFlashFileReader.h>
 
-class LogReader
+class LogReader : public DataFlashFileReader
 {
 public:
     LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash);
-    bool open_log(const char *logfile);
-    bool update(char type[5]);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -22,9 +21,10 @@ public:
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
+    virtual bool handle_log_format_msg(const struct log_Format &f);
+    virtual bool handle_msg(const struct log_Format &f, uint8_t *msg);
 
 private:
-    int fd;
     AP_AHRS &ahrs;
     AP_InertialSensor &ins;
     AP_Baro &baro;
@@ -41,9 +41,7 @@ private:
 
     uint32_t ground_alt_cm;
 
-#define LOGREADER_MAX_FORMATS 255 // must be >= highest MESSAGE
-    struct log_Format formats[LOGREADER_MAX_FORMATS];
-    class MsgHandler *msgparser[LOGREADER_MAX_FORMATS];
+    class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS];
 
     template <typename R>
     void require_field(class MsgHandler *p, uint8_t *msg, const char *label, R &ret);
@@ -82,8 +80,6 @@ private:
     uint64_t last_timestamp_usec;
 
     void wait_timestamp(uint32_t timestamp);
-
-    void update_rover(uint8_t type, uint8_t *data, uint16_t length);
 
     bool installed_vehicle_specific_parsers;
     void maybe_install_vehicle_specific_parsers();

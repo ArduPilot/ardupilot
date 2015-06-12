@@ -60,14 +60,18 @@ struct MsgHandler::format_field_info *MsgHandler::find_field_info(const char *la
     return NULL;
 }
 
-MsgHandler::MsgHandler(struct log_Format &_f, DataFlash_Class &_dataflash,
-                       uint64_t &_last_timestamp_usec)
-    : next_field(0), f(_f), dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec)
+MsgHandler::MsgHandler(const struct log_Format &_f) : next_field(0), f(_f)
 {
     init_field_types();
     parse_format_fields();
 }
 
+LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
+                             DataFlash_Class &_dataflash,
+                             uint64_t &_last_timestamp_usec) :
+    dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec),
+    MsgHandler(_f) {
+}
 
 void MsgHandler::add_field(const char *_label, uint8_t _type, uint8_t _offset,
                           uint8_t _length)
@@ -195,13 +199,13 @@ MsgHandler::~MsgHandler()
     }
 }
 
-void MsgHandler::wait_timestamp_usec(uint64_t timestamp)
+void LR_MsgHandler::wait_timestamp_usec(uint64_t timestamp)
 {
     last_timestamp_usec = timestamp;
     hal.scheduler->stop_clock(timestamp);
 }
 
-void MsgHandler::wait_timestamp(uint32_t timestamp)
+void LR_MsgHandler::wait_timestamp(uint32_t timestamp)
 {
     uint64_t usecs = timestamp*1000UL;
     wait_timestamp_usec(usecs);
@@ -293,7 +297,7 @@ int16_t MsgHandler::require_field_int16_t(uint8_t *msg, const char *label)
     return ret;
 }
 
-void MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
+void LR_MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
 {
     uint64_t time_us;
     uint64_t time_ms;
@@ -316,14 +320,14 @@ void MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
  * subclasses to handle specific messages below here
 */
 
-void MsgHandler_AHR2::process_message(uint8_t *msg)
+void LR_MsgHandler_AHR2::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     attitude_from_msg(msg, ahr2_attitude, "Roll", "Pitch", "Yaw");
 }
 
 
-void MsgHandler_ARM::process_message(uint8_t *msg)
+void LR_MsgHandler_ARM::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     uint8_t ArmState = require_field_uint8_t(msg, "ArmState");
@@ -334,7 +338,7 @@ void MsgHandler_ARM::process_message(uint8_t *msg)
 }
 
 
-void MsgHandler_ARSP::process_message(uint8_t *msg)
+void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 
@@ -343,20 +347,20 @@ void MsgHandler_ARSP::process_message(uint8_t *msg)
 		    require_field_float(msg, "Temp"));
 }
 
-void MsgHandler_FRAM::process_message(uint8_t *msg)
+void LR_MsgHandler_FRAM::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 }
 
 
-void MsgHandler_ATT::process_message(uint8_t *msg)
+void LR_MsgHandler_ATT::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     attitude_from_msg(msg, attitude, "Roll", "Pitch", "Yaw");
 }
 
 
-void MsgHandler_BARO::process_message(uint8_t *msg)
+void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     baro.setHIL(0,
@@ -368,7 +372,7 @@ void MsgHandler_BARO::process_message(uint8_t *msg)
 #define DATA_ARMED                          10
 #define DATA_DISARMED                       11
 
-void MsgHandler_Event::process_message(uint8_t *msg)
+void LR_MsgHandler_Event::process_message(uint8_t *msg)
 {
     uint8_t id = require_field_uint8_t(msg, "Id");
     if (id == DATA_ARMED) {
@@ -383,7 +387,7 @@ void MsgHandler_Event::process_message(uint8_t *msg)
 }
 
 
-void MsgHandler_GPS2::process_message(uint8_t *msg)
+void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
 {
     // only LOG_GPS_MSG gives us relative altitude.  We still log
     // the relative altitude when we get a LOG_GPS2_MESSAGE - but
@@ -393,7 +397,7 @@ void MsgHandler_GPS2::process_message(uint8_t *msg)
 }
 
 
-void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
+void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, bool responsible_for_relalt)
 {
     uint64_t time_us;
     if (! field_value(msg, "TimeUS", time_us)) {
@@ -433,25 +437,25 @@ void MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg, 
 
 
 
-void MsgHandler_GPS::process_message(uint8_t *msg)
+void LR_MsgHandler_GPS::process_message(uint8_t *msg)
 {
     update_from_msg_gps(0, msg, true);
 }
 
 
-void MsgHandler_IMU2::process_message(uint8_t *msg)
+void LR_MsgHandler_IMU2::process_message(uint8_t *msg)
 {
   update_from_msg_imu(1, msg);
 }
 
 
-void MsgHandler_IMU3::process_message(uint8_t *msg)
+void LR_MsgHandler_IMU3::process_message(uint8_t *msg)
 {
   update_from_msg_imu(2, msg);
 }
 
 
-void MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
+void LR_MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 
@@ -470,19 +474,19 @@ void MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
 }
 
 
-void MsgHandler_IMU::process_message(uint8_t *msg)
+void LR_MsgHandler_IMU::process_message(uint8_t *msg)
 {
     update_from_msg_imu(0, msg);
 }
 
 
-void MsgHandler_MAG2::process_message(uint8_t *msg)
+void LR_MsgHandler_MAG2::process_message(uint8_t *msg)
 {
     update_from_msg_compass(1, msg);
 }
 
 
-void MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_t *msg)
+void LR_MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
 
@@ -499,7 +503,7 @@ void MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_
 
 
 
-void MsgHandler_MAG::process_message(uint8_t *msg)
+void LR_MsgHandler_MAG::process_message(uint8_t *msg)
 {
     update_from_msg_compass(0, msg);
 }
@@ -507,7 +511,7 @@ void MsgHandler_MAG::process_message(uint8_t *msg)
 #include <AP_AHRS.h>
 #include <VehicleType.h>
 
-void MsgHandler_MSG::process_message(uint8_t *msg)
+void LR_MsgHandler_MSG::process_message(uint8_t *msg)
 {
     const uint8_t msg_text_len = 64;
     char msg_text[msg_text_len];
@@ -533,7 +537,7 @@ void MsgHandler_MSG::process_message(uint8_t *msg)
 }
 
 
-void MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
+void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 {
     inavpos = Vector3f(require_field_float(msg, "PosX") * 0.01f,
 		       require_field_float(msg, "PosY") * 0.01f,
@@ -541,7 +545,7 @@ void MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 }
 
 
-bool MsgHandler::set_parameter(const char *name, float value)
+bool LR_MsgHandler::set_parameter(const char *name, float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
@@ -576,7 +580,7 @@ bool MsgHandler::set_parameter(const char *name, float value)
     return true;
 }
 
-void MsgHandler_PARM::process_message(uint8_t *msg)
+void LR_MsgHandler_PARM::process_message(uint8_t *msg)
 {
     const uint8_t parameter_name_len = AP_MAX_NAME_SIZE + 1; // null-term
     char parameter_name[parameter_name_len];
@@ -599,7 +603,7 @@ void MsgHandler_PARM::process_message(uint8_t *msg)
 }
 
 
-void MsgHandler_SIM::process_message(uint8_t *msg)
+void LR_MsgHandler_SIM::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     attitude_from_msg(msg, sim_attitude, "Roll", "Pitch", "Yaw");
