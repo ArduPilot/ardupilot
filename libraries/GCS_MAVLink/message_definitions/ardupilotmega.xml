@@ -33,6 +33,28 @@
               <param index="6">Empty</param>
               <param index="7">Empty</param>
             </entry>
+
+            <entry name="MAV_CMD_DO_AUTOTUNE_ENABLE" value="212">
+              <description>Enable/disable autotune</description>
+              <param index="1">enable (1: enable, 0:disable)</param>
+              <param index="2">Empty</param>
+              <param index="3">Empty</param>
+              <param index="4">Empty</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
+
+            <entry name="MAV_CMD_NAV_ALTITUDE_WAIT" value="83">
+              <description>Mission command to wait for an altitude or downwards vertical speed. This is meant for high altitude balloon launches, allowing the aircraft to be idle until either an altitude is reached or a negative vertical speed is reached (indicating early balloon burst). The wiggle time is how often to wiggle the control surfaces to prevent them seizing up.</description>
+              <param index="1">altitude (m)</param>
+              <param index="2">descent speed (m/s)</param>
+              <param index="3">Wiggle Time (s)</param>
+              <param index="4">Empty</param>
+              <param index="5">Empty</param>
+              <param index="6">Empty</param>
+              <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
