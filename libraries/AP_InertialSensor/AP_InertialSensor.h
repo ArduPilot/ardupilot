@@ -135,7 +135,7 @@ public:
     float get_delta_velocity_dt(uint8_t i) const {
         return _delta_velocity_dt[i];
     }
-    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
+    float get_delta_velocity_dt() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
