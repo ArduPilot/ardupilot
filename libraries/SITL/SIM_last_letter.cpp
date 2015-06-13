@@ -60,11 +60,17 @@ void last_letter::start_last_letter(void)
             close(i);
         }
 
-        int ret = execlp("roslaunch", 
-                         "roslaunch", 
+        char argHome[50];
+        sprintf(argHome,"home:=[%f,%f,%f]",home.lat*1.0e-7,home.lng*1.0e-7,(double)home.alt*1.0e-2);
+
+        int ret = execlp("roslaunch",
+                         "roslaunch",
                          "last_letter",
                          "launcher.launch",
                          "ArduPlane:=true",
+                         "simRate:=500",
+                         "deltaT:=0.002",
+                         argHome,
                          NULL);
         if (ret != 0) {
             perror("roslaunch");
