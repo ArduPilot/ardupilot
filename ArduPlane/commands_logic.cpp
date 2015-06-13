@@ -145,6 +145,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             }
         }    
 #endif
+
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
+        autotune_enable(cmd.p1);
         break;
 
 #if CAMERA == ENABLED
@@ -267,6 +270,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
         return true;
 
     default:

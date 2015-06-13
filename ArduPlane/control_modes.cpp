@@ -147,6 +147,18 @@ void Plane::autotune_restore(void)
 }
 
 /*
+  enable/disable autotune for AUTO modes
+ */
+void Plane::autotune_enable(bool enable)
+{
+    if (enable) {
+        autotune_start();
+    } else {
+        autotune_restore();
+    }
+}
+
+/*
   are we flying inverted?
  */
 bool Plane::fly_inverted(void)

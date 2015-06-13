@@ -751,6 +751,7 @@ private:
     void reset_control_switch();
     void autotune_start(void);
     void autotune_restore(void);
+    void autotune_enable(bool enable);
     bool fly_inverted(void);
     void failsafe_short_on_event(enum failsafe_state fstype);
     void failsafe_long_on_event(enum failsafe_state fstype);

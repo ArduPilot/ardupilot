@@ -1347,6 +1347,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        case MAV_CMD_DO_AUTOTUNE_ENABLE:
+            // param1 : enable/disable
+            plane.autotune_enable(packet.param1);
+            break;
+
         default:
             break;
         }
