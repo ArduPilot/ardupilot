@@ -452,7 +452,7 @@ private:
         float next_turn_angle {90};
 
         // filtered sink rate for landing
-        float land_sink_rate;
+        float sink_rate;
 
         // time when we first pass min GPS speed on takeoff
         uint32_t takeoff_speed_time_ms;

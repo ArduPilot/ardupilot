@@ -30,20 +30,6 @@ bool Plane::verify_land()
     // use rangefinder to correct if possible
     height -= rangefinder_correction();
 
-    // calculate the sink rate.
-    float sink_rate;
-    Vector3f vel;
-    if (ahrs.get_velocity_NED(vel)) {
-        sink_rate = vel.z;
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.have_vertical_velocity()) {
-        sink_rate = gps.velocity().z;
-    } else {
-        sink_rate = -barometer.get_climb_rate();        
-    }
-
-    // low pass the sink rate to take some of the noise out
-    auto_state.land_sink_rate = 0.8f * auto_state.land_sink_rate + 0.2f*sink_rate;
-    
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
@@ -58,16 +44,16 @@ bool Plane::verify_land()
     bool rangefinder_in_range = false;
 #endif
     if (height <= g.land_flare_alt ||
-        (aparm.land_flare_sec > 0 && height <= auto_state.land_sink_rate * aparm.land_flare_sec) ||
+        (aparm.land_flare_sec > 0 && height <= auto_state.sink_rate * aparm.land_flare_sec) ||
         (!rangefinder_in_range && location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) ||
-        (fabsf(auto_state.land_sink_rate) < 0.2f && !is_flying())) {
+        (fabsf(auto_state.sink_rate) < 0.2f && !is_flying())) {
 
         if (!auto_state.land_complete) {
             if (!is_flying() && (millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), (double)gps.ground_speed());
             } else {
                 gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
-                        (double)height, (double)auto_state.land_sink_rate, (double)gps.ground_speed());
+                        (double)height, (double)auto_state.sink_rate, (double)gps.ground_speed());
             }
         }
         auto_state.land_complete = true;
