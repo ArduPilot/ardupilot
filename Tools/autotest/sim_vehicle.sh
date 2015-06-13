@@ -271,21 +271,10 @@ case $FRAME in
         MODEL="$FRAME"
         check_jsbsim_version
 	;;
-    rover|rover-skid)
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
-        MODEL="$FRAME"
-	;;
-    tracker)
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
-        MODEL="$FRAME"
-	;;
-    "")
-        ;;
     *)
-        echo "Unknown frame type $FRAME"
-        usage
-        exit 1
-        ;;
+        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
+        MODEL="$FRAME"
+	;;
 esac
 
 if [ $DEBUG_BUILD == 1 ]; then
