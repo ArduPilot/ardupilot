@@ -26,7 +26,7 @@
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.
 ///
-#include "APM_Config.h"  // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
+#include "APM_Config.h"
 ///
 /// DO NOT EDIT THIS INCLUDE - if you want to make a local change, make that
 /// change in your local copy of APM_Config.h.

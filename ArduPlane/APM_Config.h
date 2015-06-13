@@ -8,3 +8,14 @@
 // longer valid! You should switch to using CONFIG_HAL_BOARD via the HAL_BOARD
 // flag in your local config.mk instead.
 
+
+
+
+/*************************************
+ *THIS INCLUDE, DO NOT EDIT IT. EVER.*
+ *************************************/
+
+
+
+
+
