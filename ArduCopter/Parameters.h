@@ -77,7 +77,7 @@ public:
         k_param_gps,
 
         // Parachute object
-        k_param_parachute,	// 17
+        k_param_parachute,
 
         // Landing gear object
         k_param_landinggear,    // 18
@@ -187,14 +187,14 @@ public:
         k_param_gcs2,
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
-        k_param_serial_manager,  // 119
+        k_param_serial_manager,
         k_param_ch9_option,
         k_param_ch10_option,
         k_param_ch11_option,
-        k_param_ch12_option,     // 123
+        k_param_ch12_option,
         k_param_takeoff_trigger_dz,
-        k_param_gcs3,            // 125
-        k_param_gcs_pid_mask,
+        k_param_gcs3,
+        k_param_gcs_pid_mask,    // 126
 
         k_param_rtl_speed_cms=135,
         k_param_fs_batt_curr_rtl, // 136
@@ -274,7 +274,7 @@ public:
         k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
-        k_param_failsafe_gcs,           // 198
+        k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
         //
@@ -317,21 +317,21 @@ public:
         k_param_p_loiter_lon,       // remove
         k_param_pid_loiter_rate_lat,    // remove
         k_param_pid_loiter_rate_lon,    // remove
-        k_param_pid_nav_lat,        // 233 - remove
-        k_param_pid_nav_lon,        // 234 - remove
+        k_param_pid_nav_lat,        // remove
+        k_param_pid_nav_lon,        // remove
         k_param_p_alt_hold,
         k_param_p_vel_z,
-        k_param_pid_optflow_roll,       // 237 - remove
-        k_param_pid_optflow_pitch,      // 238 - remove
-        k_param_acro_balance_roll_old,  // 239 - remove
-        k_param_acro_balance_pitch_old, // 240 - remove
+        k_param_pid_optflow_roll,       // remove
+        k_param_pid_optflow_pitch,      // remove
+        k_param_acro_balance_roll_old,  // remove
+        k_param_acro_balance_pitch_old, // remove
         k_param_pid_accel_z,
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
-        k_param_acro_yaw_p, // 244
-        k_param_autotune_axis_bitmask,  // 245
-        k_param_autotune_aggressiveness,  // 246
-        k_param_pi_vel_xy,  // 247
+        k_param_acro_yaw_p,
+        k_param_autotune_axis_bitmask,
+        k_param_autotune_aggressiveness,
+        k_param_pi_vel_xy,
         k_param_fs_ekf_action, // 248
 
         // 254,255: reserved
