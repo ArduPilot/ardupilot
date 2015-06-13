@@ -402,6 +402,7 @@ void Copter::full_rate_logging_loop()
 {
     if (should_log(MASK_LOG_IMU_FAST)) {
         DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMUDT(ins);
     }
 }
 
