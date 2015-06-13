@@ -22,6 +22,9 @@ int main(int argc, char **argv)
   ros::Publisher imu_pub = n.advertise<apm_inertial_sensor::apm_imu>(topic_name, 1000);
   apm_inertial_sensor::apm_imu msg;
 
+  // init APM Linux HAL
+  hal.init(NULL, NULL);
+
   // init the IMU
     ins.init(AP_InertialSensor::COLD_START, 
              AP_InertialSensor::RATE_100HZ);
