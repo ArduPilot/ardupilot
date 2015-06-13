@@ -196,6 +196,9 @@ public:
         k_param_gcs3,            // 125
         k_param_gcs_pid_mask,
 
+        k_param_rtl_speed_cms=135,
+        k_param_fs_batt_curr_rtl, // 136
+
         //
         // 140: Sensor parameters
         //
