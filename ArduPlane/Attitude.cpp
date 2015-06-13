@@ -681,6 +681,45 @@ void Plane::flaperon_update(int8_t flap_percent)
     RC_Channel_aux::set_radio_trimmed(RC_Channel_aux::k_flaperon2, ch2);
 }
 
+/*
+  setup servos for idle mode
+  Idle mode is used during balloon launch to keep servos still, apart
+  from occasional wiggle to prevent freezing up
+ */
+void Plane::set_servos_idle(void)
+{
+    RC_Channel_aux::output_ch_all();
+    if (auto_state.idle_wiggle_stage == 0) {
+        RC_Channel::output_trim_all();
+        return;
+    }
+    int16_t servo_value = 0;
+    // move over full range for 2 seconds
+    auto_state.idle_wiggle_stage += 2;
+    if (auto_state.idle_wiggle_stage < 50) {
+        servo_value = auto_state.idle_wiggle_stage * (4500 / 50);
+    } else if (auto_state.idle_wiggle_stage < 100) {
+        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
+    } else if (auto_state.idle_wiggle_stage < 150) {
+        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
+    } else if (auto_state.idle_wiggle_stage < 200) {
+        servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);        
+    } else {
+        auto_state.idle_wiggle_stage = 0;
+    }
+    channel_roll->servo_out = servo_value;
+    channel_pitch->servo_out = servo_value;
+    channel_rudder->servo_out = servo_value;
+    channel_roll->calc_pwm();
+    channel_pitch->calc_pwm();
+    channel_rudder->calc_pwm();
+    channel_roll->output();
+    channel_pitch->output();
+    channel_throttle->output();
+    channel_rudder->output();
+    channel_throttle->output_trim();
+}
+
 
 /*****************************************
 * Set the flight control servos based on the current calculated values
@@ -688,6 +727,12 @@ void Plane::flaperon_update(int8_t flap_percent)
 void Plane::set_servos(void)
 {
     int16_t last_throttle = channel_throttle->radio_out;
+
+    if (control_mode == AUTO && auto_state.idle_mode) {
+        // special handling for balloon launch
+        set_servos_idle();
+        return;
+    }
 
     /*
       see if we are doing ground steering.

@@ -24,6 +24,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         // if a go around had been commanded, clear it now.
         auto_state.commanded_go_around = false;
+
+        // start non-idle
+        auto_state.idle_mode = false;
         
         gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),cmd.id);
     } else {
@@ -66,6 +69,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         do_continue_and_change_alt(cmd);
+        break;
+
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        do_altitude_wait(cmd);
         break;
 
     // Conditional commands
@@ -227,6 +234,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         return verify_continue_and_change_alt();
 
+    case MAV_CMD_NAV_ALTITUDE_WAIT:
+        return verify_altitude_wait(cmd);
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -362,6 +372,12 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
     reset_offset_altitude();
+}
+
+void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
+{
+    // set all servos to trim until we reach altitude or descent speed
+    auto_state.idle_mode = true;
 }
 
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
@@ -627,6 +643,34 @@ bool Plane::verify_continue_and_change_alt()
 
     //keep flying the same course
     nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+
+    return false;
+}
+
+/*
+  see if we have reached altitude or descent speed
+ */
+bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
+{
+    if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
+        gcs_send_text_P(SEVERITY_LOW,PSTR("Reached altitude"));
+        return true;
+    }
+    if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
+        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), auto_state.sink_rate);
+        return true;        
+    }
+
+    // if requested, wiggle servos
+    if (cmd.content.altitude_wait.wiggle_time != 0) {
+        static uint32_t last_wiggle_ms;
+        if (auto_state.idle_wiggle_stage == 0 &&
+            hal.scheduler->millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
+            auto_state.idle_wiggle_stage = 1;
+            last_wiggle_ms = hal.scheduler->millis();
+        }
+        // idle_wiggle_stage is updated in set_servos_idle()
+    }
 
     return false;
 }

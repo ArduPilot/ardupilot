@@ -434,6 +434,15 @@ private:
         // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
 
+        // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
+        // are we in idle mode? used for balloon launch to stop servo
+        // movement until altitude is reached
+        bool idle_mode:1;
+
+        // used to 'wiggle' servos in idle mode to prevent them freezing
+        // at high altitudes
+        uint8_t idle_wiggle_stage;
+
         // Altitude threshold to complete a takeoff command in autonomous
         // modes.  Centimeters above home
         int32_t takeoff_altitude_rel_cm;
@@ -730,6 +739,7 @@ private:
     bool verify_wait_delay();
     bool verify_change_alt();
     bool verify_within_distance();
+    bool verify_altitude_wait(const AP_Mission::Mission_Command &cmd);
     void do_loiter_at_location();
     void do_take_picture();
     void log_picture();
@@ -852,6 +862,7 @@ private:
     void terrain_update(void);
     void update_flight_mode(void);
     void stabilize();
+    void set_servos_idle(void);
     void set_servos();
     void update_aux();
     void determine_is_flying(void);
@@ -891,6 +902,7 @@ private:
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
