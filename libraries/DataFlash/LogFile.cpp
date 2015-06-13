@@ -868,6 +868,86 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 #endif
 }
 
+// Write an accel/gyro delta time data packet
+void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
+{
+    float delta_t = ins.get_delta_time();
+    float delta_vel_t = ins.get_delta_velocity_dt(0);
+    Vector3f delta_angle, delta_velocity;
+    ins.get_delta_angle(0, delta_angle);
+    ins.get_delta_velocity(0, delta_velocity);
+
+    uint64_t time_us = hal.scheduler->micros64();
+    const Vector3f &gyro = ins.get_gyro(0);
+    const Vector3f &accel = ins.get_accel(0);
+    struct log_IMUDT pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
+        time_us : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
+        return;
+    }
+#if INS_MAX_INSTANCES > 1
+    delta_vel_t = ins.get_delta_velocity_dt(1);
+    const Vector3f &gyro2 = ins.get_gyro(1);
+    const Vector3f &accel2 = ins.get_accel(1);
+    if (!ins.get_delta_angle(1, delta_angle)) {
+        delta_angle.zero();
+    }
+    if (!ins.get_delta_velocity(1, delta_velocity)) {
+        delta_velocity.zero();
+    }
+    struct log_IMUDT pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT2_MSG),
+        time_us     : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt2, sizeof(pkt2));
+
+    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+        return;
+    }
+    delta_vel_t = ins.get_delta_velocity_dt(1);
+    const Vector3f &gyro3 = ins.get_gyro(2);
+    const Vector3f &accel3 = ins.get_accel(2);
+    if (!ins.get_delta_angle(2, delta_angle)) {
+        delta_angle.zero();
+    }
+    if (!ins.get_delta_velocity(2, delta_velocity)) {
+        delta_velocity.zero();
+    }
+    struct log_IMUDT pkt3 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT3_MSG),
+        time_us     : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
+#endif
+}
+
 void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
 {
 #if INS_VIBRATION_CHECK

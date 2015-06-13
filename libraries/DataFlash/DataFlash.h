@@ -67,6 +67,7 @@ public:
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
+    void Log_Write_IMUDT(const AP_InertialSensor &ins);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
@@ -225,6 +226,14 @@ struct PACKED log_IMU {
     uint32_t gyro_error, accel_error;
     float temperature;
     uint8_t gyro_health, accel_health;
+};
+
+struct PACKED log_IMUDT {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float delta_time, delta_vel_dt;
+    float delta_ang_x, delta_ang_y, delta_ang_z;
+    float delta_vel_x, delta_vel_y, delta_vel_z;
 };
 
 struct PACKED log_Vibe {
@@ -717,8 +726,13 @@ Format characters in the format string for binary log messages
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }
-
+      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
+    { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
+      "IMT","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+    { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
+      "IMT2","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+    { LOG_IMUDT3_MSG, sizeof(log_IMUDT), \
+      "IMT3","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -785,6 +799,9 @@ Format characters in the format string for binary log messages
 #define LOG_PIDY_MSG      181
 #define LOG_PIDA_MSG      182
 #define LOG_VIBE_MSG      183
+#define LOG_IMUDT_MSG     184
+#define LOG_IMUDT2_MSG    185
+#define LOG_IMUDT3_MSG    186
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
