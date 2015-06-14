@@ -1,5 +1,6 @@
 #include <VehicleType.h>
 #include <DataFlashFileReader.h>
+#include <LR_MsgHandler.h>
 
 class LogReader : public DataFlashFileReader
 {
