@@ -5081,6 +5081,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // fail if not enough sats
     bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
 
+    // fail if satellite geometry is poor
+    bool hdopFail = _ahrs->get_gps().get_hdop() > 250;
+
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
@@ -5145,7 +5148,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // record time of fail
     // assume  fail first time called
-    if (gpsVelFail || numSatsFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
+    if (gpsVelFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
