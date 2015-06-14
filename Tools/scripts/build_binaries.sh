@@ -138,33 +138,31 @@ build_arduplane() {
 	copyit $TMPDIR/ArduPlane.build/ArduPlane.hex $ddir $tag
 	touch $binaries/Plane/$tag
     done
-    test -n "$PX4_ROOT" && {
-	echo "Building ArduPlane PX4 binaries"
-	ddir=$binaries/Plane/$hdate/PX4
-        checkout ArduPlane $tag PX4 || {
-            echo "Failed checkout of ArduPlane PX4 $tag"
+    echo "Building ArduPlane PX4 binaries"
+    ddir=$binaries/Plane/$hdate/PX4
+    checkout ArduPlane $tag PX4 || {
+        echo "Failed checkout of ArduPlane PX4 $tag"
+        error_count=$((error_count+1))
+        checkout ArduPlane "latest" ""
+        popd
+        return
+    }
+    skip_build $tag $ddir || {
+	make px4 || {
+            echo "Failed build of ArduPlane PX4 $tag"
             error_count=$((error_count+1))
             checkout ArduPlane "latest" ""
             popd
             return
         }
-	skip_build $tag $ddir || {
-	    make px4 || {
-                echo "Failed build of ArduPlane PX4 $tag"
-                error_count=$((error_count+1))
-                checkout ArduPlane "latest" ""
-                popd
-                return
-            }
-	    copyit ArduPlane-v1.px4 $ddir $tag &&
-	    copyit ArduPlane-v2.px4 $ddir $tag
-            if [ "$tag" = "latest" ]; then
-	        copyit px4io-v1.bin $binaries/PX4IO/$hdate/PX4IO $tag
-	        copyit px4io-v1.elf $binaries/PX4IO/$hdate/PX4IO $tag
-	        copyit px4io-v2.bin $binaries/PX4IO/$hdate/PX4IO $tag
-	        copyit px4io-v2.elf $binaries/PX4IO/$hdate/PX4IO $tag
-            fi
-	}
+	copyit ArduPlane-v1.px4 $ddir $tag &&
+	copyit ArduPlane-v2.px4 $ddir $tag
+        if [ "$tag" = "latest" ]; then
+	    copyit px4io-v1.bin $binaries/PX4IO/$hdate/PX4IO $tag
+	    copyit px4io-v1.elf $binaries/PX4IO/$hdate/PX4IO $tag
+	    copyit px4io-v2.bin $binaries/PX4IO/$hdate/PX4IO $tag
+	    copyit px4io-v2.elf $binaries/PX4IO/$hdate/PX4IO $tag
+        fi
     }
     checkout ArduPlane "latest" ""
     popd
@@ -176,28 +174,26 @@ build_arducopter() {
     echo "Building ArduCopter $tag binaries from $(pwd)"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
-    test -n "$PX4_ROOT" && {
-        checkout ArduCopter $tag PX4 || {
-            echo "Failed checkout of ArduCopter PX4 $tag"
-            error_count=$((error_count+1))
-            checkout ArduCopter "latest" ""
-            popd
-            return
-        }
-        rm -rf ../Build.ArduCopter
-	for f in $frames; do
-	    echo "Building ArduCopter PX4-$f binaries"
-	    ddir="$binaries/Copter/$hdate/PX4-$f"
-	    skip_build $tag $ddir && continue
-	    make px4-$f || {
-                echo "Failed build of ArduCopter PX4 $tag"
-                error_count=$((error_count+1))
-                continue
-            }
-	    copyit ArduCopter-v1.px4 $ddir $tag &&
-	    copyit ArduCopter-v2.px4 $ddir $tag
-	done
+    checkout ArduCopter $tag PX4 || {
+        echo "Failed checkout of ArduCopter PX4 $tag"
+        error_count=$((error_count+1))
+        checkout ArduCopter "latest" ""
+        popd
+        return
     }
+    rm -rf ../Build.ArduCopter
+    for f in $frames; do
+	echo "Building ArduCopter PX4-$f binaries"
+	ddir="$binaries/Copter/$hdate/PX4-$f"
+	skip_build $tag $ddir && continue
+	make px4-$f || {
+            echo "Failed build of ArduCopter PX4 $tag"
+            error_count=$((error_count+1))
+            continue
+        }
+	copyit ArduCopter-v1.px4 $ddir $tag &&
+	copyit ArduCopter-v2.px4 $ddir $tag
+    done
     checkout ArduCopter "latest" ""
     popd
 }
@@ -221,25 +217,23 @@ build_rover() {
 	copyit $TMPDIR/APMrover2.build/APMrover2.hex $ddir $tag
 	touch $binaries/Rover/$tag
     done
-    test -n "$PX4_ROOT" && {
-	echo "Building APMrover2 PX4 binaries"
-	ddir=$binaries/Rover/$hdate/PX4
-        checkout APMrover2 $tag PX4 || {
+    echo "Building APMrover2 PX4 binaries"
+    ddir=$binaries/Rover/$hdate/PX4
+    checkout APMrover2 $tag PX4 || {
+        checkout APMrover2 "latest" ""
+        popd
+        return
+    }
+    skip_build $tag $ddir || {
+	make px4 || {
+            echo "Failed build of APMrover2 PX4 $tag"
+            error_count=$((error_count+1))
             checkout APMrover2 "latest" ""
             popd
             return
         }
-	skip_build $tag $ddir || {
-	    make px4 || {
-                echo "Failed build of APMrover2 PX4 $tag"
-                error_count=$((error_count+1))
-                checkout APMrover2 "latest" ""
-                popd
-                return
-            }
-	    copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
-	    copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
-	}
+	copyit APMrover2-v1.px4 $binaries/Rover/$hdate/PX4 $tag &&
+	copyit APMrover2-v2.px4 $binaries/Rover/$hdate/PX4 $tag 
     }
     checkout APMrover2 "latest" ""
     popd
@@ -264,25 +258,23 @@ build_antennatracker() {
 	copyit $TMPDIR/AntennaTracker.build/AntennaTracker.hex $ddir $tag
 	touch $binaries/AntennaTracker/$tag
     done
-    test -n "$PX4_ROOT" && {
-	echo "Building AntennaTracker PX4 binaries"
-	ddir=$binaries/AntennaTracker/$hdate/PX4
-        checkout AntennaTracker $tag PX4 || {
+    echo "Building AntennaTracker PX4 binaries"
+    ddir=$binaries/AntennaTracker/$hdate/PX4
+    checkout AntennaTracker $tag PX4 || {
+        checkout AntennaTracker "latest" ""
+        popd
+        return
+    }
+    skip_build $tag $ddir || {
+	make px4 || {
+            echo "Failed build of AntennaTracker PX4 $tag"
+            error_count=$((error_count+1))
             checkout AntennaTracker "latest" ""
             popd
             return
         }
-	skip_build $tag $ddir || {
-	    make px4 || {
-                echo "Failed build of AntennaTracker PX4 $tag"
-                error_count=$((error_count+1))
-                checkout AntennaTracker "latest" ""
-                popd
-                return
-            }
-	    copyit AntennaTracker-v1.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
-	    copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
-	}
+	copyit AntennaTracker-v1.px4 $binaries/AntennaTracker/$hdate/PX4 $tag &&
+	copyit AntennaTracker-v2.px4 $binaries/AntennaTracker/$hdate/PX4 $tag 
     }
     checkout AntennaTracker "latest" ""
     popd
