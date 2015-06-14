@@ -196,7 +196,10 @@ public:
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
-        k_param_rtl_speed_cms=135,
+        //
+        // 135 : reserved for Solo until features merged with master
+        //
+        k_param_rtl_speed_cms = 135,
         k_param_fs_batt_curr_rtl, // 136
 
         //
