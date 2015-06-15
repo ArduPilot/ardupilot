@@ -572,150 +572,54 @@ void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
 
 void AP_InertialSensor_LSM9DS0::_gyro_init()
 {
-    /*
-     * CTRL_REG1_G sets output data rate, bandwidth, power-down and enables
-     *
-     * Bits[7:0]: DR1 DR0 BW1 BW0 PD Zen Xen Yen
-     * DR[1:0] - Output data rate selection
-     *     00=95Hz, 01=190Hz, 10=380Hz, 11=760Hz
-     * BW[1:0] - Bandwidth selection (sets cutoff frequency)
-     *      Value depends on ODR. See datasheet table 21.
-     * PD - Power down enable (0=power down mode, 1=normal or sleep mode)
-     * Zen, Xen, Yen - Axis enable (o=disabled, 1=enabled)
-     *
-     * Data rate of 760Hz, cutoff of 50Hz, Normal mode, enable all axes
-     */
-    _register_write_g(CTRL_REG1_G, 0xEF);
+    _register_write_g(CTRL_REG1_G,
+            CTRL_REG1_G_DR_760Hz_BW_50Hz |
+            CTRL_REG1_G_PD |
+            CTRL_REG1_G_ZEN |
+            CTRL_REG1_G_YEN |
+            CTRL_REG1_G_XEN);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG2_G sets up the HPF
-     *
-     * Bits[7:0]: 0 0 HPM1 HPM0 HPCF3 HPCF2 HPCF1 HPCF0
-     * HPM[1:0] - High pass filter mode selection
-     *     00=normal (reset reading HP_RESET_FILTER, 01=ref signal for filtering,
-     *     10=normal, 11=autoreset on interrupt
-     * HPCF[3:0] - High pass filter cutoff frequency
-     *     Value depends on data rate. See datasheet table 26.
-     *
-     * Normal mode, high cutoff frequency
-     */
     _register_write_g(CTRL_REG2_G, 0x00);
     hal.scheduler->delay(1);
 
     /*
-     * CTRL_REG3_G sets up interrupt and DRDY_G pins
-     *
-     * Bits[7:0]: I1_IINT1 I1_BOOT H_LACTIVE PP_OD I2_DRDY I2_WTM I2_ORUN I2_EMPTY
-     * I1_INT1 - Interrupt enable on INT_G pin (0=disable, 1=enable)
-     * I1_BOOT - Boot status available on INT_G (0=disable, 1=enable)
-     * H_LACTIVE - Interrupt active configuration on INT_G (0:high, 1:low)
-     * PP_OD - Push-pull/open-drain (0=push-pull, 1=open-drain)
-     * I2_DRDY - Data ready on DRDY_G (0=disable, 1=enable)
-     * I2_WTM - FIFO watermark interrupt on DRDY_G (0=disable 1=enable)
-     * I2_ORUN - FIFO overrun interrupt on DRDY_G (0=disable 1=enable)
-     * I2_EMPTY - FIFO empty interrupt on DRDY_G (0=disable 1=enable)
-     *
      * Gyro data ready on DRDY_G
      */
-    _register_write_g(CTRL_REG3_G, 0x08);
+    _register_write_g(CTRL_REG3_G, CTRL_REG3_G_I2_DRDY);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG4_G sets the scale, update mode
-     *
-     * Bits[7:0] - BDU BLE FS1 FS0 - ST1 ST0 SIM
-     * BDU - Block data update (0=continuous, 1=output not updated until read
-     * BLE - Big/little endian (0=data LSB @ lower address, 1=LSB @ higher add)
-     * FS[1:0] - Full-scale selection
-     *     00=245dps, 01=500dps, 10=2000dps, 11=2000dps
-     * ST[1:0] - Self-test enable
-     *     00=disabled, 01=st 0 (x+, y-, z-), 10=undefined, 11=st 1 (x-, y+, z+)
-     * SIM - SPI serial interface mode select
-     *     0=4 wire, 1=3 wire
-     *
-     * BUD, set scale to 2000 dps
-     */
-    _register_write_g(CTRL_REG4_G, 0xB0);
+    _register_write_g(CTRL_REG4_G,
+            CTRL_REG4_G_BDU |
+            CTRL_REG4_G_FS_2000DPS);
     _set_gyro_scale(G_SCALE_2000DPS);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG5_G sets up the FIFO, HPF, and INT1
-     *
-     * Bits[7:0] - BOOT FIFO_EN - HPen INT1_Sel1 INT1_Sel0 Out_Sel1 Out_Sel0
-     * BOOT - Reboot memory content (0=normal, 1=reboot)
-     * FIFO_EN - FIFO enable (0=disable, 1=enable)
-     * HPen - HPF enable (0=disable, 1=enable)
-     * INT1_Sel[1:0] - Int 1 selection configuration
-     * Out_Sel[1:0] - Out selection configuration
-     */
     _register_write_g(CTRL_REG5_G, 0x00);
     hal.scheduler->delay(1);
 }
 
 void AP_InertialSensor_LSM9DS0::_accel_init()
 {
-    /*
-     * CTRL_REG0_XM (0x1F) (Default value: 0x00)
-     *
-     * Bits (7-0): BOOT FIFO_EN WTM_EN 0 0 HP_CLICK HPIS1 HPIS2
-     * BOOT - Reboot memory content (0: normal, 1: reboot)
-     * FIFO_EN - Fifo enable (0: disable, 1: enable)
-     * WTM_EN - FIFO watermark enable (0: disable, 1: enable)
-     * HP_CLICK - HPF enabled for click (0: filter bypassed, 1: enabled)
-     * HPIS1 - HPF enabled for interrupt generator 1 (0: bypassed, 1: enabled)
-     * HPIS2 - HPF enabled for interrupt generator 2 (0: bypassed, 1 enabled)
-     */
     _register_write_xm(CTRL_REG0_XM, 0x00);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG1_XM (0x20) (Default value: 0x07)
-     *
-     * Bits (7-0): AODR3 AODR2 AODR1 AODR0 BDU AZEN AYEN AXEN
-     * AODR[3:0] - select the acceleration data rate:
-     *     0000=power down, 0001=3.125Hz, 0010=6.25Hz, 0011=12.5Hz,
-     *     0100=25Hz, 0101=50Hz, 0110=100Hz, 0111=200Hz, 1000=400Hz,
-     *     1001=800Hz, 1010=1600Hz, (remaining combinations undefined).
-     * BDU - block data update for accel AND mag
-     *     0: Continuous update
-     *     1: Output registers aren't updated until MSB and LSB have been read.
-     * AZEN, AYEN, and AXEN - Acceleration x/y/z-axis enabled.
-     *     0: Axis disabled, 1: Axis enabled
-     *
-     * 800Hz data rate, BDU enabled, x,y,z all enabled
-     */
-    _register_write_xm(CTRL_REG1_XM, 0x9F);
+    _register_write_xm(CTRL_REG1_XM,
+            CTRL_REG1_XM_AODR_800Hz |
+            CTRL_REG1_XM_BDU |
+            CTRL_REG1_XM_AZEN |
+            CTRL_REG1_XM_AYEN |
+            CTRL_REG1_XM_AXEN);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG2_XM (0x21) (Default value: 0x00)
-     *
-     * Bits (7-0): ABW1 ABW0 AFS2 AFS1 AFS0 AST1 AST0 SIM
-     * ABW[1:0] - Accelerometer anti-alias filter bandwidth
-     *     00=773Hz, 01=194Hz, 10=362Hz, 11=50Hz
-     * AFS[2:0] - Accel full-scale selection
-     *     000=+/-2g, 001=+/-4g, 010=+/-6g, 011=+/-8g, 100=+/-16g
-     * AST[1:0] - Accel self-test enable
-     *     00=normal (no self-test), 01=positive st, 10=negative st, 11=not allowed
-     * SIM - SPI mode selection
-     *     0=4-wire, 1=3-wire
-     *
-     * Set filter bandwidth to 50Hz and scale to 16g
-     */
-    _register_write_xm(CTRL_REG2_XM, 0xE0);
+    _register_write_xm(CTRL_REG2_XM,
+            CTRL_REG2_XM_ABW_50Hz |
+            CTRL_REG2_XM_AFS_16G);
     _set_accel_scale(A_SCALE_16G);
     hal.scheduler->delay(1);
 
-    /*
-     * CTRL_REG3_XM is used to set interrupt generators on INT1_XM
-     *
-     * Bits (7-0): P1_BOOT P1_TAP P1_INT1 P1_INT2 P1_INTM P1_DRDYA P1_DRDYM P1_EMPTY
-     *
-     * Accel data ready on INT1
-     */
-    _register_write_xm(CTRL_REG3_XM, 0x04);
+    /* Accel data ready on INT1 */
+    _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA);
     hal.scheduler->delay(1);
 }
 
