@@ -61,7 +61,7 @@ void last_letter::start_last_letter(void)
         }
 
         char argHome[50];
-        sprintf(argHome,"home:=[%f,%f,%f]",home.lat*1.0e-7,home.lng*1.0e-7,(double)home.alt);
+        sprintf(argHome,"home:=[%f,%f,%f]",home.lat*1.0e-7,home.lng*1.0e-7,(double)home.alt*1.0e-2);
 
         int ret = execlp("roslaunch",
                          "roslaunch",
