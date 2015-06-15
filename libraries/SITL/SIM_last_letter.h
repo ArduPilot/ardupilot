@@ -48,7 +48,7 @@ private:
     struct servo_packet {
         uint16_t servos[16];
     };
-    
+
     /*
       reply packet sent from last_letter to ArduPilot
      */
@@ -66,7 +66,7 @@ private:
 
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
-    void start_last_letter(void);
+    void start_last_letter(const char *home_str);
 
     uint64_t last_timestamp_us;
     SocketAPM sock;

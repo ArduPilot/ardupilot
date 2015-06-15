@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string>
 
 extern const AP_HAL::HAL& hal;
 
@@ -43,13 +44,13 @@ last_letter::last_letter(const char *home_str, const char *frame_str) :
     sock.reuseaddress();
     sock.set_blocking(false);
 
-    start_last_letter();
+    start_last_letter(home_str);
 }
 
 /*
   start last_letter child
  */
-void last_letter::start_last_letter(void)
+void last_letter::start_last_letter(const char *home_str)
 {
     pid_t child_pid = fork();
     if (child_pid == 0) {
@@ -60,11 +61,24 @@ void last_letter::start_last_letter(void)
             close(i);
         }
 
-        int ret = execlp("roslaunch", 
-                         "roslaunch", 
+        std::string lat_s(std::to_string(home.lat));
+        std::string lon_s(std::to_string(home.lng));
+        std::string alt_s(std::to_string(home.alt));
+
+        //TODO: Is there a better way to do this? Are the strings guaranteed
+        //      to have 7 digits after the decimal?
+        lat_s.insert((lat_s.length() - 7 ), ".");
+        lon_s.insert((lon_s.length() - 7 ), ".");
+        alt_s.insert((alt_s.length() - 2 ), ".");
+
+        std::string loc = "home:=[" + lat_s + "," + lon_s + "," + alt_s + "]";
+
+        int ret = execlp("roslaunch",
+                         "roslaunch",
                          "last_letter",
                          "launcher.launch",
                          "ArduPlane:=true",
+                         loc.c_str(),
                          NULL);
         if (ret != 0) {
             perror("roslaunch");
