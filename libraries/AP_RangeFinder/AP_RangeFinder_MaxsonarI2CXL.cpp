@@ -58,7 +58,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder &_ranger, uint8_t instance
 bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(1)) {
@@ -69,7 +69,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::start_reading()
         { AP_RANGE_FINDER_MAXSONARI2CXL_COMMAND_TAKE_RANGE_READING };
 
     // send command to take reading
-    if (hal.i2c->write(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR,
+    if (hal.i2c0->write(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR,
                        1, tosend) != 0) {
         i2c_sem->give();
         return false;
@@ -87,7 +87,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     uint8_t buff[2];
 
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(1)) {
@@ -95,7 +95,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     }
 
     // take range reading and read back results
-    if (hal.i2c->read(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR, 2, buff) != 0) {
+    if (hal.i2c0->read(AP_RANGE_FINDER_MAXSONARI2CXL_DEFAULT_ADDR, 2, buff) != 0) {
         i2c_sem->give();
         return false;
     }

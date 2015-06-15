@@ -92,7 +92,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Flymaple::detect(AP_InertialSensor 
 bool AP_InertialSensor_Flymaple::_init_sensor(void) 
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
@@ -100,43 +100,43 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
 
     // Init the accelerometer
     uint8_t data;
-    hal.i2c->readRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DEVID, &data);
+    hal.i2c0->readRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DEVID, &data);
     if (data != FLYMAPLE_ACCELEROMETER_XL345_DEVID)
         hal.scheduler->panic(PSTR("AP_InertialSensor_Flymaple: could not find ADXL345 accelerometer sensor"));
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00);
+    hal.i2c0->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00);
     hal.scheduler->delay(5);
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff);
+    hal.i2c0->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff);
     hal.scheduler->delay(5);
     // Measure mode:
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x08);
+    hal.i2c0->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x08);
     hal.scheduler->delay(5);
     // Full resolution, 8g:
     // Caution, this must agree with FLYMAPLE_ACCELEROMETER_SCALE_1G
     // In full resoution mode, the scale factor need not change
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATA_FORMAT, 0x08);
+    hal.i2c0->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATA_FORMAT, 0x08);
     hal.scheduler->delay(5);
     // Normal power, 800Hz Output Data Rate, 400Hz bandwidth:
-    hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_BW_RATE, 0x0d);
+    hal.i2c0->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_BW_RATE, 0x0d);
     hal.scheduler->delay(5);
     // Power up default is FIFO bypass mode. FIFO is not used by the chip
 
     // Init the Gyro
     // Expect to read the same as the Gyro I2C adress:
-    hal.i2c->readRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_WHO_AM_I, &data);
+    hal.i2c0->readRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_WHO_AM_I, &data);
     if (data != FLYMAPLE_GYRO_ADDRESS)
         hal.scheduler->panic(PSTR("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor"));
-    hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_PWR_MGM, 0x00);
+    hal.i2c0->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_PWR_MGM, 0x00);
     hal.scheduler->delay(1);
     // Sample rate divider: with 8kHz internal clock (see FLYMAPLE_GYRO_DLPF_FS), 
     // get 500Hz sample rate, 2 samples
-    hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_SMPLRT_DIV, 0x0f);
+    hal.i2c0->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_SMPLRT_DIV, 0x0f);
     hal.scheduler->delay(1);
     // 2000 degrees/sec, 256Hz LPF, 8kHz internal sample rate
     // This is the least amount of filtering we can configure for this device
-    hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_DLPF_FS, 0x18);
+    hal.i2c0->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_DLPF_FS, 0x18);
     hal.scheduler->delay(1);
     // No interrupts
-    hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_INT_CFG, 0x00);
+    hal.i2c0->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_INT_CFG, 0x00);
     hal.scheduler->delay(1);
 
     // Set up the filter desired
@@ -205,7 +205,7 @@ bool AP_InertialSensor_Flymaple::update(void)
 void AP_InertialSensor_Flymaple::_accumulate(void)
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER))
@@ -217,7 +217,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     uint32_t now = hal.scheduler->micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_accel_timestamp) >= raw_sample_interval_us
-        && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
+        && hal.i2c0->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
     {
         // The order is a bit wierd here since the standard we have adopted for Flymaple 
         // sensor orientation is different to what the board designers intended
@@ -235,7 +235,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     now = hal.scheduler->micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_gyro_timestamp) >= raw_sample_interval_us
-        && hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
+        && hal.i2c0->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
     {
         // See above re order of samples in buffer
         int16_t y = -((((int16_t)buffer[0]) << 8) | buffer[1]);    // chip X axis

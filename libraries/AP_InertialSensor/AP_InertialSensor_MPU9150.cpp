@@ -374,7 +374,7 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
     uint8_t sensors;
 
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)){
@@ -383,20 +383,20 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
 
     // Init the sensor
     //  Reset the device
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->pwr_mgmt_1, 
                            BIT_RESET);
     hal.scheduler->delay(100);
     
     //  Wake up the chip
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->pwr_mgmt_1, 
                            0x00);
     
     // Check product revision
     //  This registers are not documented in the register map.
     uint8_t buff[6];
-    if (hal.i2c->readRegisters(st.hw->addr, st.reg->accel_offs, 6, buff) != 0) {
+    if (hal.i2c0->readRegisters(st.hw->addr, st.reg->accel_offs, 6, buff) != 0) {
         hal.console->printf("AP_InertialSensor_MPU9150: couldn't read the registers to determine revision");
         goto failed;
     }    
@@ -505,7 +505,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_gyro_fsr(uint16_t fsr)
         return -1;
     }
 
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->gyro_cfg,
                            data);
     return 0;
@@ -537,7 +537,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_accel_fsr(uint8_t fsr)
         return -1;
     }
 
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->accel_cfg,
                            data);
     return 0;
@@ -576,7 +576,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_lpf(uint16_t lpf)
         data = INV_FILTER_5HZ;
     }
 
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->lpf,
                            data);
     return 0;
@@ -601,7 +601,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_sample_rate(uint16_t rate)
     }
 
     data = 1000 / rate - 1;
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                                st.reg->rate_div,
                                data);
     
@@ -630,7 +630,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_compass_sample_rate(uint16_t rate, ui
     }
 
     div = chip_sample_rate / rate - 1;
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->s4_ctrl,
                            div);
     return 0;
@@ -680,7 +680,7 @@ int16_t AP_InertialSensor_MPU9150::set_int_enable(uint8_t enable)
     else {
         tmp = 0x00;
     }
-    hal.i2c->writeRegister(st.hw->addr, 
+    hal.i2c0->writeRegister(st.hw->addr,
                            st.reg->int_enable,
                            tmp);
     return 0;
@@ -695,23 +695,23 @@ int16_t AP_InertialSensor_MPU9150::mpu_reset_fifo(uint8_t sensors)
     uint8_t data;
 
     data = 0;
-    hal.i2c->writeRegister(st.hw->addr,st.reg->int_enable, data);
-    hal.i2c->writeRegister(st.hw->addr,st.reg->fifo_en, data);
-    hal.i2c->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->int_enable, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->fifo_en, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
     data = BIT_FIFO_RST;
-    hal.i2c->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
 
     data = BIT_FIFO_EN;
     // data = BIT_FIFO_EN | BIT_AUX_IF_EN;
-    hal.i2c->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->user_ctrl, data);
     hal.scheduler->delay(50);
 
     // interrupts for the DMP
     // data = BIT_DATA_RDY_EN;
     data = 0;
-    hal.i2c->writeRegister(st.hw->addr,st.reg->int_enable, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->int_enable, data);
     // enable FIFO
-    hal.i2c->writeRegister(st.hw->addr,st.reg->fifo_en, sensors);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->fifo_en, sensors);
     return 0;
 }
 
@@ -844,7 +844,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_sensors(uint8_t sensors)
     else {
         data = BIT_SLEEP;
     }
-    hal.i2c->writeRegister(st.hw->addr,st.reg->pwr_mgmt_1, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->pwr_mgmt_1, data);
     data = 0;
     if (!(sensors & INV_X_GYRO)){
         data |= BIT_STBY_XG;
@@ -858,7 +858,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_sensors(uint8_t sensors)
     if (!(sensors & INV_XYZ_ACCEL)){
         data |= BIT_STBY_XYZA;
     }
-    hal.i2c->writeRegister(st.hw->addr,st.reg->pwr_mgmt_2, data);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->pwr_mgmt_2, data);
 
 #if 0
     if (sensors && (sensors != INV_XYZ_ACCEL)){
@@ -928,7 +928,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_int_latched(uint8_t enable)
     if (st.chip_cfg.active_low_int){
         tmp |= BIT_ACTL;
     }
-    hal.i2c->writeRegister(st.hw->addr,st.reg->int_pin_cfg, tmp);
+    hal.i2c0->writeRegister(st.hw->addr,st.reg->int_pin_cfg, tmp);
     st.chip_cfg.latched_int = enable;
     return 0;
 }
@@ -968,7 +968,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
     packet_size = 12;
 
     // fifo_count_h register contains the number of samples in the FIFO
-    hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_count_h, 2, data);
+    hal.i2c0->readRegisters(st.hw->addr, st.reg->fifo_count_h, 2, data);
 
     fifo_count = (data[0] << 8) | data[1];
     if (fifo_count < packet_size){
@@ -977,7 +977,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
     // hal.console->printf_P(PTR("FIFO count: %hd\n", fifo_count));
     if (fifo_count > (st.hw->max_fifo >> 1)) {
         /* FIFO is 50% full, better check overflow bit. */        
-        hal.i2c->readRegister(st.hw->addr, st.reg->int_status, data);
+        hal.i2c0->readRegister(st.hw->addr, st.reg->int_status, data);
         if (data[0] & BIT_FIFO_OVERFLOW) {
             mpu_reset_fifo(sensors_aux);
             return -2;
@@ -986,7 +986,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
 
     *timestamp = hal.scheduler->millis();    
     // read the data
-    hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
+    hal.i2c0->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
     more[0] = fifo_count / packet_size - 1;
     sensors[0] = 0;
 
@@ -1023,7 +1023,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
 void AP_InertialSensor_MPU9150::_accumulate(void)
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take_nonblocking()){
@@ -1038,7 +1038,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
     int16_t accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z;
 
     // fifo_count_h register contains the number of samples in the FIFO
-    hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_count_h, 2, data);
+    hal.i2c0->readRegisters(st.hw->addr, st.reg->fifo_count_h, 2, data);
     fifo_count = (data[0] << 8) | data[1];
     if (fifo_count < packet_size){
         // give back i2c semaphore
@@ -1049,7 +1049,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
     // hal.console->printf_P(PTR("FIFO count: %hd\n", fifo_count));
     if (fifo_count > (st.hw->max_fifo >> 1)) {
         /* FIFO is 50% full, better check overflow bit. */        
-        hal.i2c->readRegister(st.hw->addr, st.reg->int_status, data);
+        hal.i2c0->readRegister(st.hw->addr, st.reg->int_status, data);
         if (data[0] & BIT_FIFO_OVERFLOW) {            
             mpu_reset_fifo(INV_XYZ_ACCEL| INV_XYZ_GYRO);
             i2c_sem->give();
@@ -1061,7 +1061,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
     for (uint16_t i=0; i< fifo_count; i++) {        
         // read the data
         // TODO check whether it's possible to read all the packages in a single call
-        hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
+        hal.i2c0->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
         // TODO, remove all the checking since it's being configured this way.
         if (index != packet_size) {
             accel_x = (int16_t) (data[index+0] << 8) | data[index+1];

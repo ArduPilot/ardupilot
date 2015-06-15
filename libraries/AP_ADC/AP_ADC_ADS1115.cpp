@@ -118,7 +118,7 @@ bool AP_ADC_ADS1115::init()
     hal.scheduler->suspend_timer_procs();
 
     _gain = ADS1115_PGA_4P096; 
-    _i2c_sem = hal.i2c->get_semaphore();
+    _i2c_sem = hal.i2c0->get_semaphore();
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS1115::_update, void));
     hal.scheduler->resume_timer_procs();
@@ -138,7 +138,7 @@ bool AP_ADC_ADS1115::_start_conversion(uint8_t channel)
 
     config.w = config.b[0] << 8 | config.b[1];
 
-    if (hal.i2c->writeRegisters((uint8_t)ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, (uint8_t *) &config) != 0) {
+    if (hal.i2c0->writeRegisters((uint8_t)ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, (uint8_t *) &config) != 0) {
         return false;
     }
 
@@ -211,7 +211,7 @@ void AP_ADC_ADS1115::_update()
         return;
     }
 
-    if ( hal.i2c->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, config.b) != 0 ) {
+    if ( hal.i2c0->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONFIG, 2, config.b) != 0 ) {
         error("i2c->readRegisters failed in ADS1115");
         _i2c_sem->give();
         return;
@@ -223,7 +223,7 @@ void AP_ADC_ADS1115::_update()
         return;
     }
 
-    if ( hal.i2c->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONVERSION, 2, word.b) != 0 ) {
+    if ( hal.i2c0->readRegisters(ADS1115_ADDRESS_ADDR_GND, ADS1115_RA_CONVERSION, 2, word.b) != 0 ) {
         _i2c_sem->give();
         return;
     }

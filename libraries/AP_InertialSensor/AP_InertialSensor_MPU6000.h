@@ -133,6 +133,7 @@ class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
         AP_HAL::Semaphore* get_semaphore();
 
     private:
+        AP_HAL::I2CDriver *_i2c;
         uint8_t _addr;
         AP_HAL::Semaphore *_i2c_sem;
 };

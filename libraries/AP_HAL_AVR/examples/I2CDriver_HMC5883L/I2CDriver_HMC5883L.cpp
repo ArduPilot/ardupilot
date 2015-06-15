@@ -25,7 +25,7 @@ void setup() {
     hal.console->printf_P(PSTR("Initializing HMC5883L at address %x\r\n"),
                                 HMC5883L);
 
-    uint8_t stat = hal.i2c->writeRegister(HMC5883L,0x02,0x00);
+    uint8_t stat = hal.i2c0->writeRegister(HMC5883L,0x02,0x00);
     if (stat == 0) {
         hal.console->printf_P(PSTR("successful init\r\n"));
     } else {
@@ -38,7 +38,7 @@ void setup() {
 void loop() {
     uint8_t data[6];
     //read 6 bytes (x,y,z) from the device
-    uint8_t stat = hal.i2c->readRegisters(HMC5883L,0x03,6, data);
+    uint8_t stat = hal.i2c0->readRegisters(HMC5883L,0x03,6, data);
 
     if (stat == 0){
         int x, y, z;
