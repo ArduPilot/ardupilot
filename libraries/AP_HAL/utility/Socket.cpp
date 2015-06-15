@@ -134,4 +134,13 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     return ::recv(fd, buf, size, 0);
 }
 
+ssize_t SocketAPM::recvfrom(void *buf, size_t size, uint32_t timeout_ms, const char *address, uint16_t port)
+{
+    struct sockaddr_in sockaddr;
+    make_sockaddr(address, port, sockaddr);
+    socklen_t socklen = sizeof(sockaddr);
+
+    return ::recvfrom(fd, buf, size, 0, (struct sockaddr *)&sockaddr, &socklen);
+}
+
 #endif // HAL_OS_SOCKETS
