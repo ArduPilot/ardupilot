@@ -15,6 +15,10 @@
 #include <linux/i2c.h>
 #endif
 
+#ifndef typeof
+    #define typeof __typeof__
+#endif
+
 using namespace Linux;
 
 /*
