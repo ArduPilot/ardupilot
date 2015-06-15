@@ -27,30 +27,27 @@
 class AP_MPU6000_BusDriver
 {
     public:
-        virtual void init();
-        virtual void read8(uint8_t addr, uint8_t *val);
-        virtual void write8(uint8_t addr, uint8_t val);
+        virtual void init() = 0;
+        virtual void read8(uint8_t reg, uint8_t *val) = 0;
+        virtual void write8(uint8_t reg, uint8_t val) = 0;
         enum bus_speed {
                 SPEED_LOW, SPEED_HIGH
         };
-        virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-        virtual uint8_t read_burst(uint8_t v[14]);
-        virtual AP_HAL::Semaphore* get_semaphore();
+        virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
+        virtual uint8_t read_burst(uint8_t v[14]) = 0;
+        virtual AP_HAL::Semaphore* get_semaphore() = 0;
 };
 
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
-    AP_InertialSensor_MPU6000(AP_InertialSensor &imu);
+    AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
 
     /* update accel and gyro state */
     bool update();
 
     bool gyro_sample_available(void) { return _sum_count >= _sample_count; }
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
-
-    // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
 #if MPU6000_DEBUG
@@ -110,8 +107,8 @@ class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
     public:
         void init();
-        void read8(uint8_t addr, uint8_t *val);
-        void write8(uint8_t addr, uint8_t val);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         uint8_t read_burst(uint8_t v[14]);
         AP_HAL::Semaphore* get_semaphore();
@@ -124,15 +121,16 @@ class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
     public:
+        AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
         void init();
-        void read8(uint8_t addr, uint8_t *val);
-        void write8(uint8_t addr, uint8_t val);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         uint8_t read_burst(uint8_t v[14]);
         AP_HAL::Semaphore* get_semaphore();
 
     private:
-        AP_HAL::I2CDriver *_i2c;
+        uint8_t _addr;
         AP_HAL::Semaphore *_i2c_sem;
 };
 

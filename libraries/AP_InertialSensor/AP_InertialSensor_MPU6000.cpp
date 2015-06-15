@@ -158,30 +158,32 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
+/* SPI bus driver implementation */
 void AP_MPU6000_BusDriver_SPI::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
+    // Disable I2C bus if SPI selected (Recommended in Datasheet
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 };
 
-void AP_MPU6000_BusDriver_SPI::read8(uint8_t addr, uint8_t *val)
+void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
 {
     uint8_t tx[2];
     uint8_t rx[2];
 
-    tx[0] = addr;
+    tx[0] = reg;
     tx[1] = 0;
     _spi->transaction(tx, rx, 2);
 
     *val = rx[1];
 }
 
-void AP_MPU6000_BusDriver_SPI::write8(uint8_t addr, uint8_t val)
+void AP_MPU6000_BusDriver_SPI::write8(uint8_t reg, uint8_t val)
 {
     uint8_t tx[2];
     uint8_t rx[2];
 
-    tx[0] = addr;
+    tx[0] = reg;
     tx[1] = val;
     _spi->transaction(tx, rx, 2);
 }
@@ -212,6 +214,46 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
     return _spi->get_semaphore();
 }
 
+/* I2C bus driver implementation */
+AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
+    _i2c(i2c),
+    _addr(addr)
+{}
+
+void AP_MPU6000_BusDriver_I2C::init()
+{}
+
+void AP_MPU6000_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
+{
+    _i2c->readRegister(_addr, reg, val);
+}
+
+void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
+{
+    _i2c->writeRegister(_addr, reg, val);
+}
+
+void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
+{}
+
+uint8_t AP_MPU6000_BusDriver_I2C::read_burst(uint8_t v[14])
+{
+    struct PACKED {
+        uint8_t int_status;
+        uint8_t d[14];
+    } rx;
+
+    _i2c->readRegisters(_addr, MPUREG_INT_STATUS, 15, (uint8_t *) &rx);
+    memcpy(v, rx.d, 14);
+
+    return rx.int_status;
+}
+
+AP_HAL::Semaphore* AP_MPU6000_BusDriver_I2C::get_semaphore()
+{
+    return _i2c->get_semaphore();
+}
+
 /*
  *  RM-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -226,10 +268,10 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532f / 16.4f);
  *  variants however
  */
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus) :
     AP_InertialSensor_Backend(imu),
     _drdy_pin(NULL),
-    _bus(NULL),
+    _bus(bus),
     _bus_sem(NULL),
     _last_accel_filter_hz(-1),
     _last_gyro_filter_hz(-1),
@@ -244,31 +286,6 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
 #endif
     _sum_count(0)
 {
-}
-
-/*
-  detect the sensor
- */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &_imu)
-{
-    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu);
-    if (sensor == NULL) {
-        return NULL;
-    }
-    if (!sensor->_init_sensor()) {
-        delete sensor;
-        return NULL;
-    }
-
-    return sensor;
-}
-
-/*
-  initialise the sensor
- */
-bool AP_InertialSensor_MPU6000::_init_sensor(void)
-{
-    _bus = new AP_MPU6000_BusDriver_SPI();
     _bus_sem = _bus->get_semaphore();
 
 #ifdef MPU6000_DRDY_PIN
@@ -284,17 +301,19 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_bus_sem->take(100)) {
-                return false;
+                return;
             }
             if (_data_ready()) {
                 _bus_sem->give();
                 break;
+            } else {
+                return;
             }
             _bus_sem->give();
         }
         if (tries++ > 5) {
             hal.console->print_P(PSTR("failed to boot MPU6000 5 times")); 
-            return false;
+            return;
         }
     } while (1);
 
@@ -311,7 +330,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
     _dump_registers();
 #endif
 
-    return true;
+    return;
 }
 
 
@@ -352,6 +371,9 @@ bool AP_InertialSensor_MPU6000::update( void )
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     accel.rotate(ROTATION_PITCH_180_YAW_90);
     gyro.rotate(ROTATION_PITCH_180_YAW_90);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    accel.rotate(ROTATION_YAW_270);
+    gyro.rotate(ROTATION_YAW_270);
 #endif
 
     _publish_accel(_accel_instance, accel);
@@ -555,9 +577,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
     hal.scheduler->delay(1);
 
-    // Disable I2C bus if SPI selected (Recommended in Datasheet
     _bus->init();
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     hal.scheduler->delay(1);
 
 #if MPU6000_FAST_SAMPLING
