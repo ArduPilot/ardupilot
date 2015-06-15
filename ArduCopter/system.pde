@@ -303,13 +303,20 @@ static void startup_ground(bool force_gyro_cal)
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 static bool position_ok()
 {
-    if (!ahrs.have_inertial_nav()) {
-        // do not allow navigation with dcm position
+    // return false if ekf failsafe has triggered
+    if (failsafe.ekf) {
         return false;
     }
 
-    // return false if ekf failsafe has triggered
-    if (failsafe.ekf) {
+    // check ekf position estimate
+    return ekf_position_ok();
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
         return false;
     }
 
