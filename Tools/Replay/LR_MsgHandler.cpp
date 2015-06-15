@@ -203,6 +203,44 @@ void LR_MsgHandler_IMU::process_message(uint8_t *msg)
     update_from_msg_imu(0, msg);
 }
 
+void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *msg)
+{
+    wait_timestamp_from_msg(msg);
+
+    uint8_t this_imu_mask = 1 << imu_offset;
+
+    float delta_time;
+    require_field(msg, "DelT", delta_time);
+    ins.set_delta_time(delta_time);
+
+    if (gyro_mask & this_imu_mask) {
+        Vector3f d_angle;
+        require_field(msg, "DelA", d_angle);
+        ins.set_delta_angle(imu_offset, d_angle);
+    }
+    if (accel_mask & this_imu_mask) {
+        float dvt;
+        require_field(msg, "DelvT", dvt);
+        Vector3f d_velocity;
+        require_field(msg, "DelV", d_velocity);
+        ins.set_delta_velocity(imu_offset, dvt, d_velocity);
+    }
+}
+
+void LR_MsgHandler_IMT::process_message(uint8_t *msg)
+{
+  update_from_msg_imt(0, msg);
+}
+
+void LR_MsgHandler_IMT2::process_message(uint8_t *msg)
+{
+  update_from_msg_imt(1, msg);
+}
+
+void LR_MsgHandler_IMT3::process_message(uint8_t *msg)
+{
+  update_from_msg_imt(2, msg);
+}
 
 void LR_MsgHandler_MAG2::process_message(uint8_t *msg)
 {

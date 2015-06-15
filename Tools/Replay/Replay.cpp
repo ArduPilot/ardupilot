@@ -114,8 +114,10 @@ private:
     uint16_t update_rate = 0;
     int32_t arm_time_ms = -1;
     bool ahrs_healthy;
-    bool have_imu2;
-    bool have_fram;
+    bool have_imu2 = false;
+    bool have_imt = false;
+    bool have_imt2 = false;
+    bool have_fram = false;
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
@@ -473,6 +475,12 @@ void Replay::read_sensors(const char *type)
     if (streq(type,"IMU2")) {
         have_imu2 = true;
     }
+    if (streq(type,"IMT")) {
+        have_imt = true;
+    }
+    if (streq(type,"IMT2")) {
+        have_imt2 = true;
+    }
 
     if (streq(type,"GPS")) {
         gps.update();
@@ -501,8 +509,16 @@ void Replay::read_sensors(const char *type)
         run_ahrs = true;
     }
 
+    if (have_imt) {
+        if ((streq(type,"IMT") && !have_imt2) ||
+            (streq(type,"IMT2") && have_imt2)) {
+            run_ahrs = true;
+        }
+    }
+
     // special handling of IMU messages as these trigger an ahrs.update()
     if (!have_fram && 
+        !have_imt &&
         ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2))) {
         run_ahrs = true;
     }

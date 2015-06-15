@@ -132,6 +132,18 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
 	    msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], dataflash,
                                                     last_timestamp_usec,
 						    accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMT")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], dataflash,
+                                                      last_timestamp_usec,
+                                                      accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMT2")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], dataflash,
+                                                       last_timestamp_usec,
+                                                       accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMT3")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], dataflash,
+                                                       last_timestamp_usec,
+                                                       accel_mask, gyro_mask, ins);
 	} else if (streq(name, "SIM")) {
 	  msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], dataflash,
                                                  last_timestamp_usec,
