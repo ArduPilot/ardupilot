@@ -1272,7 +1272,12 @@ check_sample:
     }
 
     now = hal.scheduler->micros();
-    _delta_time = (now - _last_sample_usec) * 1.0e-6f;
+    if (_hil_mode && _hil.delta_time > 0) {
+        _delta_time = _hil.delta_time;
+        _hil.delta_time = 0;
+    } else {
+        _delta_time = (now - _last_sample_usec) * 1.0e-6f;
+    }
     _last_sample_usec = now;
 
 #if 0
@@ -1333,6 +1338,37 @@ void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
         if (!_accel_healthy[_primary_accel]) {
             _primary_accel = instance;
         }
+    }
+}
+
+/*
+  set delta time for next ins.update()
+ */
+void AP_InertialSensor::set_delta_time(float delta_time)
+{
+    _hil.delta_time = delta_time;
+}
+
+/*
+  set delta velocity for next update
+ */
+void AP_InertialSensor::set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _delta_velocity_valid[instance] = true;
+        _delta_velocity[instance] = deltav;
+        _delta_velocity_dt[instance] = deltavt;
+    }
+}
+
+/*
+  set delta angle for next update
+ */
+void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa)
+{
+    if (instance < INS_MAX_INSTANCES) {
+        _delta_angle_valid[instance] = true;
+        _delta_angle[instance] = deltaa;
     }
 }
 
