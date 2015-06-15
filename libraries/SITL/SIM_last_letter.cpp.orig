@@ -24,7 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <string>
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,13 +44,21 @@ last_letter::last_letter(const char *home_str, const char *frame_str) :
     sock.reuseaddress();
     sock.set_blocking(false);
 
+<<<<<<< HEAD
+    start_last_letter();
+=======
 
+>>>>>>> a9526c3... Changed last_letter to set up in first loops of update() instead of when
 }
 
 /*
   start last_letter child
  */
+<<<<<<< HEAD
+void last_letter::start_last_letter(void)
+=======
 bool last_letter::start_last_letter(void)
+>>>>>>> a9526c3... Changed last_letter to set up in first loops of update() instead of when
 {
     pid_t child_pid = fork();
     if (child_pid == 0) {
@@ -62,6 +69,13 @@ bool last_letter::start_last_letter(void)
             close(i);
         }
 
+<<<<<<< HEAD
+        int ret = execlp("roslaunch", 
+                         "roslaunch", 
+                         "last_letter",
+                         "launcher.launch",
+                         "ArduPlane:=true",
+=======
         // char *saveptr=NULL;
         // char *s = strdup(home_str);
         // std::string lat_s(strtok_r(s, ",", &saveptr));
@@ -100,6 +114,7 @@ bool last_letter::start_last_letter(void)
                          "ArduPlane:=true",
                          loc.c_str(),
                          instance_str.c_str(),
+>>>>>>> a9526c3... Changed last_letter to set up in first loops of update() instead of when
                          NULL);
         if (ret != 0) {
             perror("roslaunch");
