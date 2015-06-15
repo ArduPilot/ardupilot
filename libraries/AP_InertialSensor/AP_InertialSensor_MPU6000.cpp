@@ -14,6 +14,8 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #include "../AP_HAL_Linux/GPIO.h"
 #define MPU6000_DRDY_PIN BBB_P8_14
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_BEBOP
+#define MPU6000_BUS_I2C true
 #endif
 #endif
 
@@ -158,30 +160,30 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
+/* SPI bus driver implementation */
 void AP_MPU6000_BusDriver_SPI::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
-    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 };
 
-void AP_MPU6000_BusDriver_SPI::read8(uint8_t addr, uint8_t *val)
+void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
 {
     uint8_t tx[2];
     uint8_t rx[2];
 
-    tx[0] = addr;
+    tx[0] = reg;
     tx[1] = 0;
     _spi->transaction(tx, rx, 2);
 
     *val = rx[1];
 }
 
-void AP_MPU6000_BusDriver_SPI::write8(uint8_t addr, uint8_t val)
+void AP_MPU6000_BusDriver_SPI::write8(uint8_t reg, uint8_t val)
 {
     uint8_t tx[2];
     uint8_t rx[2];
 
-    tx[0] = addr;
+    tx[0] = reg;
     tx[1] = val;
     _spi->transaction(tx, rx, 2);
 }
@@ -210,6 +212,45 @@ uint8_t AP_MPU6000_BusDriver_SPI::read_burst(uint8_t v[14])
 AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
 {
     return _spi->get_semaphore();
+}
+
+/* I2C bus driver implementation */
+AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(uint8_t addr) :
+    _addr(addr)
+{}
+
+void AP_MPU6000_BusDriver_I2C::init()
+{}
+
+void AP_MPU6000_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
+{
+    hal.i2c->readRegister(_addr, reg, val);
+}
+
+void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
+{
+    hal.i2c->writeRegister(_addr, reg, val);
+}
+
+void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
+{}
+
+uint8_t AP_MPU6000_BusDriver_I2C::read_burst(uint8_t v[14])
+{
+    struct PACKED {
+        uint8_t int_status;
+        uint8_t d[14];
+    } rx;
+
+    hal.i2c->readRegisters(_addr, MPUREG_INT_STATUS, 15, (uint8_t *) &rx);
+    memcpy(v, rx.d, 14);
+
+    return rx.int_status;
+}
+
+AP_HAL::Semaphore* AP_MPU6000_BusDriver_I2C::get_semaphore()
+{
+    return hal.i2c->get_semaphore();
 }
 
 /*
@@ -268,7 +309,11 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &
  */
 bool AP_InertialSensor_MPU6000::_init_sensor(void)
 {
+#ifdef MPU6000_BUS_I2C
+    _bus = new AP_MPU6000_BusDriver_I2C();
+#else
     _bus = new AP_MPU6000_BusDriver_SPI();
+#endif
     _bus_sem = _bus->get_semaphore();
 
 #ifdef MPU6000_DRDY_PIN
