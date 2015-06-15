@@ -98,7 +98,7 @@ void SocketAPM::set_blocking(bool blocking)
 /*
   send some data
  */
-ssize_t SocketAPM::send(void *buf, size_t size)
+ssize_t SocketAPM::send(const void *buf, size_t size)
 {
     return ::send(fd, buf, size, 0);
 }
@@ -106,7 +106,7 @@ ssize_t SocketAPM::send(void *buf, size_t size)
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
