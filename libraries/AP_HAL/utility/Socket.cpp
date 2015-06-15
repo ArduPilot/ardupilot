@@ -18,6 +18,8 @@
 
 #include <AP_HAL.h>
 #if HAL_OS_SOCKETS
+#include <poll.h>
+#include <cstdio>
 
 #include "Socket.h"
 
@@ -106,11 +108,34 @@ ssize_t SocketAPM::send(const void *buf, size_t size)
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port, uint32_t timeout)
 {
+    struct pollfd pollfd = {
+        .fd = fd,
+        .events = POLLOUT,
+    };
+
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
-    return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    socklen_t socklen = sizeof(sockaddr);
+
+    if (timeout == 0) {
+        return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, socklen);
+    }
+
+    int ret = poll(&pollfd, 1, timeout);
+    
+    if (ret > 0) {
+        if (pollfd.revents & POLLOUT) {
+            return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, socklen);
+        }
+    } else if (ret == -1) {
+        /* We cannot recover at the moment. Wait and hope. */
+    } else if (ret == 0) {
+        /* timeouted */
+    }
+
+    return -1;
 }
 
 /*
@@ -134,13 +159,30 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     return ::recv(fd, buf, size, 0);
 }
 
-ssize_t SocketAPM::recvfrom(void *buf, size_t size, uint32_t timeout_ms, const char *address, uint16_t port)
+ssize_t SocketAPM::recvfrom(void *buf, size_t size, uint32_t timeout)
 {
-    struct sockaddr_in sockaddr;
-    make_sockaddr(address, port, sockaddr);
-    socklen_t socklen = sizeof(sockaddr);
+    struct pollfd pollfd = {
+        .fd = fd,
+        .events = POLLIN,
+    };
 
-    return ::recvfrom(fd, buf, size, 0, (struct sockaddr *)&sockaddr, &socklen);
+    int ret = poll(&pollfd, 1, timeout);
+    
+    if (timeout == 0) {
+        return ::recvfrom(fd, buf, size, MSG_DONTWAIT, nullptr, nullptr);
+    }
+    
+    if (ret > 0) {
+        if (pollfd.revents & POLLIN) {
+            return ::recvfrom(fd, buf, size, MSG_DONTWAIT, nullptr, nullptr);
+        }
+    } else if (ret == -1) {
+        /* We cannot recover at the moment. Wait and hope. */
+    } else if (ret == 0) {
+        /* timeouted */
+    }
+
+    return -1;
 }
 
 #endif // HAL_OS_SOCKETS
