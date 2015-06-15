@@ -28,8 +28,8 @@ class AP_MPU6000_BusDriver
 {
     public:
         virtual void init();
-        virtual void read8(uint8_t addr, uint8_t *val);
-        virtual void write8(uint8_t addr, uint8_t val);
+        virtual void read8(uint8_t reg, uint8_t *val);
+        virtual void write8(uint8_t reg, uint8_t val);
         enum bus_speed {
                 SPEED_LOW, SPEED_HIGH
         };
@@ -110,8 +110,8 @@ class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
     public:
         void init();
-        void read8(uint8_t addr, uint8_t *val);
-        void write8(uint8_t addr, uint8_t val);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         uint8_t read_burst(uint8_t v[14]);
         AP_HAL::Semaphore* get_semaphore();
@@ -124,15 +124,16 @@ class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
     public:
+        AP_MPU6000_BusDriver_I2C(uint8_t addr);
         void init();
-        void read8(uint8_t addr, uint8_t *val);
-        void write8(uint8_t addr, uint8_t val);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         uint8_t read_burst(uint8_t v[14]);
         AP_HAL::Semaphore* get_semaphore();
 
     private:
-        AP_HAL::I2CDriver *_i2c;
+        uint8_t _addr;
         AP_HAL::Semaphore *_i2c_sem;
 };
 
