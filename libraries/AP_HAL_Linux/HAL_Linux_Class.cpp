@@ -24,11 +24,19 @@ static LinuxUARTDriver uartBDriver(false);
 static LinuxUARTDriver uartCDriver(false);
 static LinuxUARTDriver uartEDriver(false);
 
-static LinuxSemaphore  i2cSemaphore;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-2");
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-0");
+static LinuxSemaphore  i2cSemaphore1;
+static LinuxI2CDriver  i2cDriver1(&i2cSemaphore1, "/dev/i2c-1");
+static LinuxSemaphore  i2cSemaphore2;
+static LinuxI2CDriver  i2cDriver2(&i2cSemaphore2, "/dev/i2c-2");
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-2");
 #else
-static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-1");
 #endif
 static LinuxSPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
@@ -103,7 +111,15 @@ HAL_Linux::HAL_Linux() :
         &uartCDriver,
         NULL,            /* no uartD */
         &uartEDriver,
-        &i2cDriver,
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+        &i2cDriver0,
+        &i2cDriver1,
+        &i2cDriver2,
+#else
+        &i2cDriver0,
+        NULL,
+        NULL,
+#endif
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -183,7 +199,13 @@ void HAL_Linux::init(int argc,char* const argv[]) const
 
     scheduler->init(NULL);
     gpio->init();
-    i2c->begin();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    i2c0->begin();
+    i2c1->begin();
+    i2c2->begin();
+#else
+    i2c0->begin();
+#endif
     rcout->init(NULL);
     rcin->init(NULL);
     uartA->begin(115200);    

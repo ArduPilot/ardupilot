@@ -19,7 +19,9 @@ public:
         AP_HAL::UARTDriver* _uartC, // telem1
         AP_HAL::UARTDriver* _uartD, // telem2
         AP_HAL::UARTDriver* _uartE, // 2nd GPS
-        AP_HAL::I2CDriver*  _i2c,
+        AP_HAL::I2CDriver*  _i2c0,
+        AP_HAL::I2CDriver*  _i2c1,
+        AP_HAL::I2CDriver*  _i2c2,
         AP_HAL::SPIDeviceManager* _spi,
         AP_HAL::AnalogIn*   _analogin,
         AP_HAL::Storage*    _storage,
@@ -35,7 +37,9 @@ public:
         uartC(_uartC),
         uartD(_uartD),
         uartE(_uartE),
-        i2c(_i2c),
+        i2c(_i2c0),
+        i2c1(_i2c1),
+        i2c2(_i2c2),
         spi(_spi),
         analogin(_analogin),
         storage(_storage),
@@ -55,6 +59,8 @@ public:
     AP_HAL::UARTDriver* uartD;
     AP_HAL::UARTDriver* uartE;
     AP_HAL::I2CDriver*  i2c;
+    AP_HAL::I2CDriver*  i2c1;
+    AP_HAL::I2CDriver*  i2c2;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;
     AP_HAL::Storage*    storage;
