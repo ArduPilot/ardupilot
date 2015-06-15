@@ -91,7 +91,7 @@ bool Copter::ekf_over_threshold()
     }
 
     // return true immediately if position is bad
-    if (!position_ok() && !optflow_position_ok()) {
+    if (!ekf_position_ok() && !optflow_position_ok()) {
         return true;
     }
 

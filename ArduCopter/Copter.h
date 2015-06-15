@@ -876,6 +876,7 @@ private:
     void init_ardupilot();
     void startup_ground(bool force_gyro_cal);
     bool position_ok();
+    bool ekf_position_ok();
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);
