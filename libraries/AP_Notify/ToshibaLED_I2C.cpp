@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 bool ToshibaLED_I2C::hw_init()
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -39,17 +39,17 @@ bool ToshibaLED_I2C::hw_init()
     }
 
     // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
+    hal.i2c0->ignore_errors(true);
 
     // enable the led
-    bool ret = (hal.i2c->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
+    bool ret = (hal.i2c0->writeRegister(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_ENABLE, 0x03) == 0);
 
     // update the red, green and blue values to zero
     uint8_t val[3] = { _led_off, _led_off, _led_off };
-    ret &= (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
+    ret &= (hal.i2c0->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
 
     // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
+    hal.i2c0->ignore_errors(false);
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -61,7 +61,7 @@ bool ToshibaLED_I2C::hw_init()
 bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(5)) {
@@ -70,7 +70,7 @@ bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 
     // update the red value
     uint8_t val[3] = { (uint8_t)(blue>>4), (uint8_t)(green>>4), (uint8_t)(red>>4) };
-    bool success = (hal.i2c->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
+    bool success = (hal.i2c0->writeRegisters(TOSHIBA_LED_ADDRESS, TOSHIBA_LED_PWM0, 3, val) == 0);
 
     // give back i2c semaphore
     i2c_sem->give();

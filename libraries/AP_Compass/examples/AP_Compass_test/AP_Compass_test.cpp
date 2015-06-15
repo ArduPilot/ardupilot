@@ -111,7 +111,7 @@ void loop()
 			    (int)mag.x,
 			    (int)mag.y,
 			    (int)mag.z, 
-			    (unsigned)hal.i2c->lockup_count());
+			    (unsigned)hal.i2c0->lockup_count());
 
         // display offsets
         hal.console->printf(" offsets(%.2f, %.2f, %.2f)",

@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 bool NavioLED_I2C::hw_init()
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
@@ -35,13 +35,13 @@ bool NavioLED_I2C::hw_init()
     }
 
     // disable recording of i2c lockup errors
-    hal.i2c->ignore_errors(true);
+    hal.i2c0->ignore_errors(true);
 
     // enable the led
     bool ret = true;
 
     // re-enable recording of i2c lockup errors
-    hal.i2c->ignore_errors(false);
+    hal.i2c0->ignore_errors(false);
 
     // give back i2c semaphore
     i2c_sem->give();
@@ -53,7 +53,7 @@ bool NavioLED_I2C::hw_init()
 bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(5)) {
@@ -80,7 +80,7 @@ bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     };
 
 
-    bool success = (hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_PWM, sizeof(transaction), transaction) == 0);
+    bool success = (hal.i2c0->writeRegisters(PCA9685_ADDRESS, PCA9685_PWM, sizeof(transaction), transaction) == 0);
 
     // give back i2c semaphore
     i2c_sem->give();

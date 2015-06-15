@@ -224,12 +224,12 @@ void AP_MPU6000_BusDriver_I2C::init()
 
 void AP_MPU6000_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
 {
-    hal.i2c->readRegister(_addr, reg, val);
+    hal.i2c0->readRegister(_addr, reg, val);
 }
 
 void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
 {
-    hal.i2c->writeRegister(_addr, reg, val);
+    hal.i2c0->writeRegister(_addr, reg, val);
 }
 
 void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
@@ -242,7 +242,7 @@ uint8_t AP_MPU6000_BusDriver_I2C::read_burst(uint8_t v[14])
         uint8_t d[14];
     } rx;
 
-    hal.i2c->readRegisters(_addr, MPUREG_INT_STATUS, 15, (uint8_t *) &rx);
+    hal.i2c0->readRegisters(_addr, MPUREG_INT_STATUS, 15, (uint8_t *) &rx);
     memcpy(v, rx.d, 14);
 
     return rx.int_status;
@@ -250,7 +250,7 @@ uint8_t AP_MPU6000_BusDriver_I2C::read_burst(uint8_t v[14])
 
 AP_HAL::Semaphore* AP_MPU6000_BusDriver_I2C::get_semaphore()
 {
-    return hal.i2c->get_semaphore();
+    return hal.i2c0->get_semaphore();
 }
 
 /*

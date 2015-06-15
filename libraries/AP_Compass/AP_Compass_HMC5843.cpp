@@ -91,7 +91,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
 // read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
-    if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (hal.i2c0->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -101,7 +101,7 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 // write_register - update a register value
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
-    if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (hal.i2c0->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -113,8 +113,8 @@ bool AP_Compass_HMC5843::read_raw()
 {
     uint8_t buff[6];
 
-    if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
-        hal.i2c->setHighSpeed(false);
+    if (hal.i2c0->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
+        hal.i2c0->setHighSpeed(false);
         _retry_time = hal.scheduler->millis() + 1000;
         _i2c_sem->give();
         return false;
@@ -212,7 +212,7 @@ AP_Compass_HMC5843::init()
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
 
-    _i2c_sem = hal.i2c->get_semaphore();
+    _i2c_sem = hal.i2c0->get_semaphore();
     if (!_i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
     }
@@ -369,7 +369,7 @@ void AP_Compass_HMC5843::read()
         }
         if (!re_initialise()) {
             _retry_time = hal.scheduler->millis() + 1000;
-			hal.i2c->setHighSpeed(false);
+			hal.i2c0->setHighSpeed(false);
             return;
         }
     }
@@ -377,7 +377,7 @@ void AP_Compass_HMC5843::read()
 	if (_accum_count == 0) {
 	   accumulate();
        if (_retry_time != 0) {
-		  hal.i2c->setHighSpeed(false);
+		  hal.i2c0->setHighSpeed(false);
 		  return;
 	   }
 	}
