@@ -39,8 +39,8 @@ public:
     void reuseaddress();
     void set_blocking(bool blocking);
 
-    ssize_t send(void *pkt, size_t size);
-    ssize_t sendto(void *buf, size_t size, const char *address, uint16_t port);
+    ssize_t send(const void *pkt, size_t size);
+    ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
 private:
