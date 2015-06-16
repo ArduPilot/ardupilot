@@ -20,6 +20,7 @@ public:
 
     void set_accel_mask(uint8_t mask) { accel_mask = mask; }
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
+    void set_use_imt(bool _use_imt) { use_imt = _use_imt; }
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     virtual bool handle_log_format_msg(const struct log_Format &f);
@@ -36,6 +37,7 @@ private:
 
     uint8_t accel_mask;
     uint8_t gyro_mask;
+    bool use_imt = true;
 
     uint32_t ground_alt_cm;
 

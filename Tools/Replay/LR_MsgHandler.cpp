@@ -207,6 +207,10 @@ void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *ms
 {
     wait_timestamp_from_msg(msg);
 
+    if (!use_imt) {
+        return;
+    }
+
     uint8_t this_imu_mask = 1 << imu_offset;
 
     float delta_time;

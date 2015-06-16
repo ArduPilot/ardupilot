@@ -118,6 +118,7 @@ private:
     bool have_imt = false;
     bool have_imt2 = false;
     bool have_fram = false;
+    bool use_imt = true;
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
@@ -196,6 +197,7 @@ void Replay::usage(void)
     ::printf("\t--accel-mask MASK  set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
     ::printf("\t--gyro-mask MASK   set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
     ::printf("\t--arm-time time    arm at time (milliseconds)\n");
+    ::printf("\t--no-imt           don't use IMT data\n");
 }
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
@@ -208,6 +210,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"accel-mask",      true,   0, 'a'},
         {"gyro-mask",       true,   0, 'g'},
         {"arm-time",        true,   0, 'A'},
+        {"no-imt",          false,  0, 'n'},
         {0, false, 0, 0}
     };
 
@@ -235,6 +238,11 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case 'A':
             arm_time_ms = strtol(gopt.optarg, NULL, 0);
+            break;
+
+        case 'n':
+            use_imt = false;
+            logreader.set_use_imt(use_imt);
             break;
 
         case 'p':
@@ -475,10 +483,10 @@ void Replay::read_sensors(const char *type)
     if (streq(type,"IMU2")) {
         have_imu2 = true;
     }
-    if (streq(type,"IMT")) {
+    if (use_imt && streq(type,"IMT")) {
         have_imt = true;
     }
-    if (streq(type,"IMT2")) {
+    if (use_imt && streq(type,"IMT2")) {
         have_imt2 = true;
     }
 
