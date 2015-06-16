@@ -243,10 +243,10 @@ void AP_MotorsHeli::set_update_rate( uint16_t speed_hz )
 
     // setup fast channels
     uint32_t mask = 
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
-	    1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]) |
+        1U << pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]);
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -392,10 +392,6 @@ uint16_t AP_MotorsHeli::get_motor_mask()
     return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_AUX | 1U << AP_MOTORS_HELI_RSC);
 }
 
-//
-// protected methods
-//
-
 void AP_MotorsHeli::output_armed_not_stabilizing()
 {
     // stabilizing servos always operate for helicopters
@@ -434,10 +430,6 @@ void AP_MotorsHeli::output_disarmed()
     output_armed_stabilizing();
 }
 
-//
-// private methods
-//
-
 // reset_swash - free up swash for maximum movements. Used for set-up
 void AP_MotorsHeli::reset_swash()
 {
@@ -456,7 +448,7 @@ void AP_MotorsHeli::reset_swash()
     _roll_scaler = 1.0f;
     _pitch_scaler = 1.0f;
     _collective_scalar = ((float)(_throttle_radio_max - _throttle_radio_min))/1000.0f;
-	_collective_scalar_manual = 1.0f;
+    _collective_scalar_manual = 1.0f;
 
     // we must be in set-up mode so mark swash as uninitialised
     _heliflags.swash_initialised = false;
@@ -620,7 +612,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
 
         // scale collective pitch
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
-	
+    
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
