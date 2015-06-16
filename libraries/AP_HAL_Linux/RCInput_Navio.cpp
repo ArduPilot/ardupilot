@@ -26,28 +26,35 @@ void LinuxRCInput_Navio::init(void*)
     width_s0 = 0;
     width_s1 = 0;
     
-    // Kills pigpio daemon in case it was run with wrong parameters   
+    int error = -1;
     
-    unlink("/var/run/pigpio.pid");
-    system("killall pigpiod -q");
-    hal.scheduler->delay(1000);
+    // Kills pigpio daemon in case it was run with wrong parameters
+    error = unlink("/var/run/pigpio.pid");
+    // no error means the process was running and could be stopped
+    if(error == 0) {
+        error = system("killall pigpiod -q");
+        if(error != 0) {
+            hal.scheduler->panic("Killing pigpiod failed for RCInput (check permissions).");
+        }
+    }
     
     // Starts pigpio daemon with 1 microsecond sampling resolution
-    
-    system("pigpiod -s 1");
-    hal.scheduler->delay(1000);
+    error = system("pigpiod -s 1");
+    if(error == -1) {
+        hal.scheduler->panic("Starting pigpiod failed for RCInput");
+    }
     
     // Configures pigpiod to send GPIO change notifications to /dev/pigpio0
-    
-    system("pigs NO NB 0 0x10");
-    hal.scheduler->delay(1000);
+    error = system("pigs NO NB 0 0x10");
+    if(error == -1) {
+        hal.scheduler->panic("Change pigs notification configuration failed for RCInput");
+    }
     
     // Configures /dev/pigpio0 for non-blocking read
-    
     pigpio = open("/dev/pigpio0", O_RDONLY);
-    
-    if (pigpio == -1)
+    if(pigpio == -1) {
         hal.scheduler->panic("No pigpio interface for RCInput");
+    }
 }
 
 void LinuxRCInput_Navio::_timer_tick()
