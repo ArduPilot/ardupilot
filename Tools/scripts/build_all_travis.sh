@@ -27,9 +27,9 @@ build_platforms=(  ["ArduPlane"]="apm2 navio sitl linux px4-v2"
                    ["AntennaTracker"]="apm2 navio sitl linux px4-v2"
                    ["Tools/Replay"]="linux")
 
-build_concurrency=(["apm2"]="-j4"
+build_concurrency=(["apm2"]="-j2"
                    ["navio"]="-j2"
-                   ["sitl"]="-j4"
+                   ["sitl"]="-j2"
                    ["linux"]="-j2"
                    ["px4-v2"]="")
 
