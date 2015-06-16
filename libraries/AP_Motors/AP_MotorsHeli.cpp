@@ -838,8 +838,8 @@ void AP_MotorsHeli::update_throttle_filter()
 {
     _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
 
-    // prevent _rc_throttle.servo_out from wrapping at int16 max or min
-    _throttle_control_input = constrain_float(_throttle_filter.get(),-32000,32000);
+    // constrain throttle signal to 0-1000
+    _throttle_control_input = constrain_float(_throttle_filter.get(),0.0f,1000.0f);
 }
 
 // set_radio_passthrough used to pass radio inputs directly to outputs
