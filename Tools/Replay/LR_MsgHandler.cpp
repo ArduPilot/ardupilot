@@ -213,7 +213,7 @@ void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *ms
 
     uint8_t this_imu_mask = 1 << imu_offset;
 
-    float delta_time;
+    float delta_time = 0;
     require_field(msg, "DelT", delta_time);
     ins.set_delta_time(delta_time);
 
@@ -223,7 +223,7 @@ void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *ms
         ins.set_delta_angle(imu_offset, d_angle);
     }
     if (accel_mask & this_imu_mask) {
-        float dvt;
+        float dvt = 0;
         require_field(msg, "DelvT", dvt);
         Vector3f d_velocity;
         require_field(msg, "DelV", d_velocity);
