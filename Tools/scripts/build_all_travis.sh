@@ -10,12 +10,10 @@ set -x
 
 . ~/.profile
 
-travis_build_type_or_empty() {
-    if [ -z "$TRAVIS_BUILD_TYPE" ] || [ "$TRAVIS_BUILD_TYPE" = "$1" ]; then
-        return 0
-    fi
-    return 1
-}
+# If TRAVIS_BUILD_TARGET is not set, default to all of them
+if [ -z "$TRAVIS_BUILD_TARGET" ]; then
+    TRAVIS_BUILD_TARGET="sitl linux apm2 navio px4-v2"
+fi
 
 declare -A build_platforms
 declare -A build_concurrency
@@ -35,19 +33,21 @@ build_concurrency=(["apm2"]="-j2"
 
 build_extra_clean=(["px4-v2"]="make px4-cleandep")
 
-for d in "${!build_platforms[@]}"; do
-    if ! travis_build_type_or_empty "$d"; then
-        continue
-    fi
+echo "Targets: $TRAVIS_BUILD_TARGET"
+for t in $TRAVIS_BUILD_TARGET; do
+    for v in ${!build_platforms[@]}; do
+        if [[ ${build_platforms[$v]} != *$t* ]]; then
+            continue
+        fi
+        echo "Building $v for ${t}..."
 
-    pushd $d
-    for p in ${build_platforms["$d"]}; do
+        pushd $v
         make clean
-        if [ ${build_extra_clean[$p]+_} ]; then
-            ${build_extra_clean[$p]}
+        if [ ${build_extra_clean[$t]+_} ]; then
+            ${build_extra_clean[$t]}
         fi
 
-        make $p ${build_concurrency[$p]}
+        make $t ${build_concurrency[$t]}
+        popd
     done
-    popd
 done
