@@ -455,13 +455,13 @@ bool NavEKF::healthy(void) const
 // resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF::ResetPosition(void)
 {
-    if (constPosMode || (PV_AidingMode != AID_ABSOLUTE)) {
+    if (PV_AidingMode != AID_ABSOLUTE) {
         state.position.x = 0;
         state.position.y = 0;
     } else if (!gpsNotAvailable) {
         // write to state vector and compensate for GPS latency
-        state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*velNED.x*float(_msecPosDelay);
-        state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*velNED.y*float(_msecPosDelay);
+        state.position.x = gpsPosNE.x + gpsPosGlitchOffsetNE.x + 0.001f*gpsVelNED.x*float(_msecPosDelay);
+        state.position.y = gpsPosNE.y + gpsPosGlitchOffsetNE.y + 0.001f*gpsVelNED.y*float(_msecPosDelay);
         // the estimated states at the last GPS measurement are set equal to the GPS measurement to prevent transients on the first fusion
         statesAtPosTime.position.x = gpsPosNE.x;
         statesAtPosTime.position.y = gpsPosNE.y;
@@ -477,22 +477,22 @@ void NavEKF::ResetPosition(void)
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF::ResetVelocity(void)
 {
-    if (constPosMode || PV_AidingMode != AID_ABSOLUTE) {
+    if (PV_AidingMode != AID_ABSOLUTE) {
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
     } else if (!gpsNotAvailable) {
         // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
-        state.velocity.x  = velNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
-        state.velocity.y  = velNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
-        state.vel1.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU1 accel data
-        state.vel1.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU1 accel data
-        state.vel2.x      = velNED.x + gpsVelGlitchOffset.x; // north velocity from IMU2 accel data
-        state.vel2.y      = velNED.y + gpsVelGlitchOffset.y; // east velocity from IMU2 accel data
+        state.velocity.x  = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
+        state.velocity.y  = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
+        state.vel1.x      = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from IMU1 accel data
+        state.vel1.y      = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from IMU1 accel data
+        state.vel2.x      = gpsVelNED.x + gpsVelGlitchOffset.x; // north velocity from IMU2 accel data
+        state.vel2.y      = gpsVelNED.y + gpsVelGlitchOffset.y; // east velocity from IMU2 accel data
         // over write stored horizontal velocity states to prevent subsequent GPS measurements from being rejected
         for (uint8_t i=0; i<=49; i++){
-            storedStates[i].velocity.x = velNED.x + gpsVelGlitchOffset.x;
-            storedStates[i].velocity.y = velNED.y + gpsVelGlitchOffset.y;
+            storedStates[i].velocity.x = gpsVelNED.x + gpsVelGlitchOffset.x;
+            storedStates[i].velocity.y = gpsVelNED.y + gpsVelGlitchOffset.y;
         }
     }
 }
@@ -789,11 +789,7 @@ void NavEKF::SelectVelPosFusion()
                     // we can do optical flow only nav
                     _fusionModeGPS = 3;
                     PV_AidingMode = AID_RELATIVE;
-                    constVelMode = false;
-                    constPosMode = false;
                 } else {
-                    constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
-                    constPosMode = true;
                     PV_AidingMode = AID_NONE;
                     posTimeout = true;
                     velTimeout = true;
@@ -815,7 +811,7 @@ void NavEKF::SelectVelPosFusion()
         if (newDataGps && (PV_AidingMode == AID_ABSOLUTE)) {
             // reset data arrived flag
             newDataGps = false;
-            // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+            // reset state updates and counter used to spread fusion updates across several frames to reduce 5Hz pulsing
             memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
             gpsUpdateCount = 0;
             // use both if GPS use is enabled
@@ -839,31 +835,30 @@ void NavEKF::SelectVelPosFusion()
             fuseVelData = false;
             fusePosData = false;
         }
-    } else if (constPosMode && covPredStep) {
-        // in constant position mode use synthetic position measurements set to zero
+    } else if ((PV_AidingMode == AID_NONE) && (imuSampleTime_ms - lastConstPosTime_ms) > msecGpsAvg) {
+        lastConstPosTime_ms = imuSampleTime_ms;
+        // in constant position mode use synthetic GPS position measurements set to zero
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
-        // do not use velocity fusion to reduce the effect of movement on attitude
         if (accNavMag < 4.9f) {
             fusePosData = true;
+            // if constant position mode use the current states to calculate the predicted
+            // measurement to improve filter stability
+            statesAtPosTime = state;
         } else {
             fusePosData = false;
         }
-        fuseVelData = false;
-    } else if (constVelMode && covPredStep) {
-        // In constant velocity mode we fuse the last valid velocity vector
-        // Reset the stored velocity vector when we enter the mode
-        if (constVelMode && !lastConstVelMode) {
-            heldVelNE.x = state.velocity.x;
-            heldVelNE.y = state.velocity.y;
-        }
-        lastConstVelMode = constVelMode;
-        // We do not fuse when manoeuvring to avoid corrupting the attitude
-        if (accNavMag < 4.9f) {
-            fuseVelData = true;
-        } else {
+        // do not use velocity fusion after arming to reduce the effect of movement on attitude
+        if(vehicleArmed) {
             fuseVelData = false;
+        } else {
+            fuseVelData = true;
+            // if constant position mode use the current states to calculate the predicted
+            // measurement to improve filter stability
+            statesAtVelTime = state;
         }
-        fusePosData = false;
+        // reset state updates and counter used to spread fusion updates across several frames to reduce 5Hz pulsing
+        memset(&gpsIncrStateDelta[0], 0, sizeof(gpsIncrStateDelta));
+        gpsUpdateCount = 0;
     } else {
         fuseVelData = false;
         fusePosData = false;
@@ -997,8 +992,6 @@ void NavEKF::SelectFlowFusion()
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
-            constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
-            constPosMode = true;
             PV_AidingMode = AID_NONE;
             // reset the velocity
             ResetVelocity();
@@ -1030,7 +1023,7 @@ void NavEKF::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
-    if (flowDataValid && newDataFlow && tiltOK && !constPosMode)
+    if (flowDataValid && newDataFlow && tiltOK && (PV_AidingMode != AID_NONE))
     {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
         memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
@@ -1908,34 +1901,23 @@ void NavEKF::FuseVelPosNED()
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
 
-        // if constant position or constant velocity mode use the current states to calculate the predicted
-        // measurement rather than use states from a previous time. We need to do this
-        // because there may be no stored states due to lack of real measurements.
-        if (constPosMode) {
-            statesAtPosTime = state;
-        } else if (constVelMode) {
-            statesAtVelTime = state;
-        }
-
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
         if (useAirspeed()) gpsRetryTime = gpsRetryTimeUseTAS;
         else gpsRetryTime = gpsRetryTimeNoTAS;
 
-        // form the observation vector and zero velocity and horizontal position observations if in constant position mode
-        // If in constant velocity mode, hold the last known horizontal velocity vector
-        if (!constPosMode && !constVelMode) {
-            observation[0] = velNED.x + gpsVelGlitchOffset.x;
-            observation[1] = velNED.y + gpsVelGlitchOffset.y;
-            observation[2] = velNED.z;
+        // form the observation vector
+        if (PV_AidingMode == AID_ABSOLUTE) {
+            observation[0] = gpsVelNED.x + gpsVelGlitchOffset.x;
+            observation[1] = gpsVelNED.y + gpsVelGlitchOffset.y;
+            observation[2] = gpsVelNED.z;
             observation[3] = gpsPosNE.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsPosNE.y + gpsPosGlitchOffsetNE.y;
-        } else if (constPosMode){
-            for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
-        } else if (constVelMode) {
-            observation[0] = heldVelNE.x;
-            observation[1] = heldVelNE.y;
-            for (uint8_t i=2; i<=4; i++) observation[i] = 0.0f;
+        } else {
+            // if we are not doing absolute position aiding, we synthesise zero position and velocity measurements
+            for (uint8_t i=0; i<=4; i++) {
+                observation[i] = 0.0f;
+            }
         }
         observation[5] = -hgtMea;
 
@@ -2004,7 +1986,7 @@ void NavEKF::FuseVelPosNED()
             // declare a timeout condition if we have been too long without data or not aiding
             posTimeout = (((imuSampleTime_ms - lastPosPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy, timed out, or in constant position mode
-            if (posHealth || posTimeout || constPosMode) {
+            if (posHealth || posTimeout || (PV_AidingMode == AID_NONE)) {
                 posHealth = true;
                 // only reset the failed time and do glitch timeout checks if we are doing full aiding
                 if (PV_AidingMode == AID_ABSOLUTE) {
@@ -2036,7 +2018,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseVelData) {
             // test velocity measurements
             uint8_t imax = 2;
-            if (_fusionModeGPS == 1 || constVelMode) {
+            if (_fusionModeGPS == 1) {
                 imax = 1;
             }
             float K1 = 0; // innovation to error ratio for IMU1
@@ -2082,8 +2064,8 @@ void NavEKF::FuseVelPosNED()
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - lastVelPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
-            // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || velTimeout || constVelMode) {
+            // if data is healthy we fuse it
+            if (velHealth || velTimeout) {
                 velHealth = true;
                 // restart the timeout count
                 lastVelPassTime = imuSampleTime_ms;
@@ -2109,7 +2091,7 @@ void NavEKF::FuseVelPosNED()
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || constPosMode) {
+            if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE)) {
                 hgtHealth = true;
                 lastHgtPassTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
@@ -2124,25 +2106,19 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
+        if (fuseVelData && velHealth) {
             fuseData[0] = true;
             fuseData[1] = true;
-            fuseData[2] = true;
+            if (_fusionModeGPS == 0 && (PV_AidingMode != AID_NONE)) {
+                fuseData[2] = true;
+            }
         }
-        if (fuseVelData && _fusionModeGPS == 1 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
-            fuseData[0] = true;
-            fuseData[1] = true;
-        }
-        if ((fusePosData && posHealth && PV_AidingMode == AID_ABSOLUTE) || constPosMode) {
+        if (fusePosData && posHealth) {
             fuseData[3] = true;
             fuseData[4] = true;
         }
-        if ((fuseHgtData && hgtHealth) || constPosMode) {
+        if (fuseHgtData && hgtHealth) {
             fuseData[5] = true;
-        }
-        if (constVelMode) {
-            fuseData[0] = true;
-            fuseData[1] = true;
         }
 
         // fuse measurements sequentially
@@ -2262,7 +2238,7 @@ void NavEKF::FuseVelPosNED()
                 bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
                     if (i != 13) {
-                        if ((i <= 3 && highRates) || i >= 10 || constPosMode || constVelMode) {
+                        if ((i <= 3 && highRates) || i >= 10) {
                             states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                         } else {
                             if (obsIndex == 5) {
@@ -2402,41 +2378,37 @@ void NavEKF::FuseMagnetometer()
         SK_MX[3] = SH_MAG[7] + SH_MAG[8] - 2*magD*q2;
         SK_MX[4] = 2*q0*q2 - 2*q1*q3;
         SK_MX[5] = 2*q0*q3 + 2*q1*q2;
+        // Initialise Kalman gain matrix
+        memset(&Kfusion[0], 0, sizeof(Kfusion));
+        // We always update the yaw angle and yaw gyro bias
         Kfusion[0] = SK_MX[0]*(P[0][19] + P[0][1]*SH_MAG[0] + P[0][3]*SH_MAG[2] + P[0][0]*SK_MX[3] - P[0][2]*SK_MX[2] - P[0][16]*SK_MX[1] + P[0][17]*SK_MX[5] - P[0][18]*SK_MX[4]);
-        Kfusion[1] = SK_MX[0]*(P[1][19] + P[1][1]*SH_MAG[0] + P[1][3]*SH_MAG[2] + P[1][0]*SK_MX[3] - P[1][2]*SK_MX[2] - P[1][16]*SK_MX[1] + P[1][17]*SK_MX[5] - P[1][18]*SK_MX[4]);
-        Kfusion[2] = SK_MX[0]*(P[2][19] + P[2][1]*SH_MAG[0] + P[2][3]*SH_MAG[2] + P[2][0]*SK_MX[3] - P[2][2]*SK_MX[2] - P[2][16]*SK_MX[1] + P[2][17]*SK_MX[5] - P[2][18]*SK_MX[4]);
         Kfusion[3] = SK_MX[0]*(P[3][19] + P[3][1]*SH_MAG[0] + P[3][3]*SH_MAG[2] + P[3][0]*SK_MX[3] - P[3][2]*SK_MX[2] - P[3][16]*SK_MX[1] + P[3][17]*SK_MX[5] - P[3][18]*SK_MX[4]);
-        Kfusion[4] = SK_MX[0]*(P[4][19] + P[4][1]*SH_MAG[0] + P[4][3]*SH_MAG[2] + P[4][0]*SK_MX[3] - P[4][2]*SK_MX[2] - P[4][16]*SK_MX[1] + P[4][17]*SK_MX[5] - P[4][18]*SK_MX[4]);
-        Kfusion[5] = SK_MX[0]*(P[5][19] + P[5][1]*SH_MAG[0] + P[5][3]*SH_MAG[2] + P[5][0]*SK_MX[3] - P[5][2]*SK_MX[2] - P[5][16]*SK_MX[1] + P[5][17]*SK_MX[5] - P[5][18]*SK_MX[4]);
-        Kfusion[6] = SK_MX[0]*(P[6][19] + P[6][1]*SH_MAG[0] + P[6][3]*SH_MAG[2] + P[6][0]*SK_MX[3] - P[6][2]*SK_MX[2] - P[6][16]*SK_MX[1] + P[6][17]*SK_MX[5] - P[6][18]*SK_MX[4]);
-        Kfusion[7] = SK_MX[0]*(P[7][19] + P[7][1]*SH_MAG[0] + P[7][3]*SH_MAG[2] + P[7][0]*SK_MX[3] - P[7][2]*SK_MX[2] - P[7][16]*SK_MX[1] + P[7][17]*SK_MX[5] - P[7][18]*SK_MX[4]);
-        Kfusion[8] = SK_MX[0]*(P[8][19] + P[8][1]*SH_MAG[0] + P[8][3]*SH_MAG[2] + P[8][0]*SK_MX[3] - P[8][2]*SK_MX[2] - P[8][16]*SK_MX[1] + P[8][17]*SK_MX[5] - P[8][18]*SK_MX[4]);
-        Kfusion[9] = SK_MX[0]*(P[9][19] + P[9][1]*SH_MAG[0] + P[9][3]*SH_MAG[2] + P[9][0]*SK_MX[3] - P[9][2]*SK_MX[2] - P[9][16]*SK_MX[1] + P[9][17]*SK_MX[5] - P[9][18]*SK_MX[4]);
-        Kfusion[10] = SK_MX[0]*(P[10][19] + P[10][1]*SH_MAG[0] + P[10][3]*SH_MAG[2] + P[10][0]*SK_MX[3] - P[10][2]*SK_MX[2] - P[10][16]*SK_MX[1] + P[10][17]*SK_MX[5] - P[10][18]*SK_MX[4]);
-        Kfusion[11] = SK_MX[0]*(P[11][19] + P[11][1]*SH_MAG[0] + P[11][3]*SH_MAG[2] + P[11][0]*SK_MX[3] - P[11][2]*SK_MX[2] - P[11][16]*SK_MX[1] + P[11][17]*SK_MX[5] - P[11][18]*SK_MX[4]);
         Kfusion[12] = SK_MX[0]*(P[12][19] + P[12][1]*SH_MAG[0] + P[12][3]*SH_MAG[2] + P[12][0]*SK_MX[3] - P[12][2]*SK_MX[2] - P[12][16]*SK_MX[1] + P[12][17]*SK_MX[5] - P[12][18]*SK_MX[4]);
-        // this term has been zeroed to improve stability of the Z accel bias
-        Kfusion[13] = 0.0f;//SK_MX[0]*(P[13][19] + P[13][1]*SH_MAG[0] + P[13][3]*SH_MAG[2] + P[13][0]*SK_MX[3] - P[13][2]*SK_MX[2] - P[13][16]*SK_MX[1] + P[13][17]*SK_MX[5] - P[13][18]*SK_MX[4]);
-        // zero Kalman gains to inhibit wind state estimation
-        if (!inhibitWindStates) {
-            Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[3] - P[14][2]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[5] - P[14][18]*SK_MX[4]);
-            Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[3] - P[15][2]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[5] - P[15][18]*SK_MX[4]);
-        } else {
-            Kfusion[14] = 0.0f;
-            Kfusion[15] = 0.0f;
-        }
-        // zero Kalman gains to inhibit magnetic field state estimation
+        // If magnetic field state learning is inhibited, we do not update any other states because magnetometer offsets will cause bias errors in states
         if (!inhibitMagStates) {
+            Kfusion[1] = SK_MX[0]*(P[1][19] + P[1][1]*SH_MAG[0] + P[1][3]*SH_MAG[2] + P[1][0]*SK_MX[3] - P[1][2]*SK_MX[2] - P[1][16]*SK_MX[1] + P[1][17]*SK_MX[5] - P[1][18]*SK_MX[4]);
+            Kfusion[2] = SK_MX[0]*(P[2][19] + P[2][1]*SH_MAG[0] + P[2][3]*SH_MAG[2] + P[2][0]*SK_MX[3] - P[2][2]*SK_MX[2] - P[2][16]*SK_MX[1] + P[2][17]*SK_MX[5] - P[2][18]*SK_MX[4]);
+            Kfusion[4] = SK_MX[0]*(P[4][19] + P[4][1]*SH_MAG[0] + P[4][3]*SH_MAG[2] + P[4][0]*SK_MX[3] - P[4][2]*SK_MX[2] - P[4][16]*SK_MX[1] + P[4][17]*SK_MX[5] - P[4][18]*SK_MX[4]);
+            Kfusion[5] = SK_MX[0]*(P[5][19] + P[5][1]*SH_MAG[0] + P[5][3]*SH_MAG[2] + P[5][0]*SK_MX[3] - P[5][2]*SK_MX[2] - P[5][16]*SK_MX[1] + P[5][17]*SK_MX[5] - P[5][18]*SK_MX[4]);
+            Kfusion[6] = SK_MX[0]*(P[6][19] + P[6][1]*SH_MAG[0] + P[6][3]*SH_MAG[2] + P[6][0]*SK_MX[3] - P[6][2]*SK_MX[2] - P[6][16]*SK_MX[1] + P[6][17]*SK_MX[5] - P[6][18]*SK_MX[4]);
+            Kfusion[7] = SK_MX[0]*(P[7][19] + P[7][1]*SH_MAG[0] + P[7][3]*SH_MAG[2] + P[7][0]*SK_MX[3] - P[7][2]*SK_MX[2] - P[7][16]*SK_MX[1] + P[7][17]*SK_MX[5] - P[7][18]*SK_MX[4]);
+            Kfusion[8] = SK_MX[0]*(P[8][19] + P[8][1]*SH_MAG[0] + P[8][3]*SH_MAG[2] + P[8][0]*SK_MX[3] - P[8][2]*SK_MX[2] - P[8][16]*SK_MX[1] + P[8][17]*SK_MX[5] - P[8][18]*SK_MX[4]);
+            Kfusion[9] = SK_MX[0]*(P[9][19] + P[9][1]*SH_MAG[0] + P[9][3]*SH_MAG[2] + P[9][0]*SK_MX[3] - P[9][2]*SK_MX[2] - P[9][16]*SK_MX[1] + P[9][17]*SK_MX[5] - P[9][18]*SK_MX[4]);
+            Kfusion[10] = SK_MX[0]*(P[10][19] + P[10][1]*SH_MAG[0] + P[10][3]*SH_MAG[2] + P[10][0]*SK_MX[3] - P[10][2]*SK_MX[2] - P[10][16]*SK_MX[1] + P[10][17]*SK_MX[5] - P[10][18]*SK_MX[4]);
+            Kfusion[11] = SK_MX[0]*(P[11][19] + P[11][1]*SH_MAG[0] + P[11][3]*SH_MAG[2] + P[11][0]*SK_MX[3] - P[11][2]*SK_MX[2] - P[11][16]*SK_MX[1] + P[11][17]*SK_MX[5] - P[11][18]*SK_MX[4]);
+            // this term has been zeroed to improve stability of the Z accel bias
+            Kfusion[13] = 0.0f;//SK_MX[0]*(P[13][19] + P[13][1]*SH_MAG[0] + P[13][3]*SH_MAG[2] + P[13][0]*SK_MX[3] - P[13][2]*SK_MX[2] - P[13][16]*SK_MX[1] + P[13][17]*SK_MX[5] - P[13][18]*SK_MX[4]);
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[3] - P[14][2]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[5] - P[14][18]*SK_MX[4]);
+                Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[3] - P[15][2]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[5] - P[15][18]*SK_MX[4]);
+            }
             Kfusion[16] = SK_MX[0]*(P[16][19] + P[16][1]*SH_MAG[0] + P[16][3]*SH_MAG[2] + P[16][0]*SK_MX[3] - P[16][2]*SK_MX[2] - P[16][16]*SK_MX[1] + P[16][17]*SK_MX[5] - P[16][18]*SK_MX[4]);
             Kfusion[17] = SK_MX[0]*(P[17][19] + P[17][1]*SH_MAG[0] + P[17][3]*SH_MAG[2] + P[17][0]*SK_MX[3] - P[17][2]*SK_MX[2] - P[17][16]*SK_MX[1] + P[17][17]*SK_MX[5] - P[17][18]*SK_MX[4]);
             Kfusion[18] = SK_MX[0]*(P[18][19] + P[18][1]*SH_MAG[0] + P[18][3]*SH_MAG[2] + P[18][0]*SK_MX[3] - P[18][2]*SK_MX[2] - P[18][16]*SK_MX[1] + P[18][17]*SK_MX[5] - P[18][18]*SK_MX[4]);
             Kfusion[19] = SK_MX[0]*(P[19][19] + P[19][1]*SH_MAG[0] + P[19][3]*SH_MAG[2] + P[19][0]*SK_MX[3] - P[19][2]*SK_MX[2] - P[19][16]*SK_MX[1] + P[19][17]*SK_MX[5] - P[19][18]*SK_MX[4]);
             Kfusion[20] = SK_MX[0]*(P[20][19] + P[20][1]*SH_MAG[0] + P[20][3]*SH_MAG[2] + P[20][0]*SK_MX[3] - P[20][2]*SK_MX[2] - P[20][16]*SK_MX[1] + P[20][17]*SK_MX[5] - P[20][18]*SK_MX[4]);
             Kfusion[21] = SK_MX[0]*(P[21][19] + P[21][1]*SH_MAG[0] + P[21][3]*SH_MAG[2] + P[21][0]*SK_MX[3] - P[21][2]*SK_MX[2] - P[21][16]*SK_MX[1] + P[21][17]*SK_MX[5] - P[21][18]*SK_MX[4]);
-        } else {
-            for (uint8_t i=16; i<=21; i++) {
-                Kfusion[i] = 0.0f;
-            }
         }
 
         // calculate the observation innovation variance
@@ -2480,41 +2452,37 @@ void NavEKF::FuseMagnetometer()
         SK_MY[2] = SH_MAG[7] + SH_MAG[8] - 2*magD*q2;
         SK_MY[3] = 2*q0*q3 - 2*q1*q2;
         SK_MY[4] = 2*q0*q1 + 2*q2*q3;
+        // Initialise Kalman gain matrix
+        memset(&Kfusion[0], 0, sizeof(Kfusion));
+        // We always update the yaw angle and yaw gyro bias
         Kfusion[0] = SK_MY[0]*(P[0][20] + P[0][0]*SH_MAG[2] + P[0][1]*SH_MAG[1] + P[0][2]*SH_MAG[0] - P[0][3]*SK_MY[2] - P[0][17]*SK_MY[1] - P[0][16]*SK_MY[3] + P[0][18]*SK_MY[4]);
-        Kfusion[1] = SK_MY[0]*(P[1][20] + P[1][0]*SH_MAG[2] + P[1][1]*SH_MAG[1] + P[1][2]*SH_MAG[0] - P[1][3]*SK_MY[2] - P[1][17]*SK_MY[1] - P[1][16]*SK_MY[3] + P[1][18]*SK_MY[4]);
-        Kfusion[2] = SK_MY[0]*(P[2][20] + P[2][0]*SH_MAG[2] + P[2][1]*SH_MAG[1] + P[2][2]*SH_MAG[0] - P[2][3]*SK_MY[2] - P[2][17]*SK_MY[1] - P[2][16]*SK_MY[3] + P[2][18]*SK_MY[4]);
         Kfusion[3] = SK_MY[0]*(P[3][20] + P[3][0]*SH_MAG[2] + P[3][1]*SH_MAG[1] + P[3][2]*SH_MAG[0] - P[3][3]*SK_MY[2] - P[3][17]*SK_MY[1] - P[3][16]*SK_MY[3] + P[3][18]*SK_MY[4]);
-        Kfusion[4] = SK_MY[0]*(P[4][20] + P[4][0]*SH_MAG[2] + P[4][1]*SH_MAG[1] + P[4][2]*SH_MAG[0] - P[4][3]*SK_MY[2] - P[4][17]*SK_MY[1] - P[4][16]*SK_MY[3] + P[4][18]*SK_MY[4]);
-        Kfusion[5] = SK_MY[0]*(P[5][20] + P[5][0]*SH_MAG[2] + P[5][1]*SH_MAG[1] + P[5][2]*SH_MAG[0] - P[5][3]*SK_MY[2] - P[5][17]*SK_MY[1] - P[5][16]*SK_MY[3] + P[5][18]*SK_MY[4]);
-        Kfusion[6] = SK_MY[0]*(P[6][20] + P[6][0]*SH_MAG[2] + P[6][1]*SH_MAG[1] + P[6][2]*SH_MAG[0] - P[6][3]*SK_MY[2] - P[6][17]*SK_MY[1] - P[6][16]*SK_MY[3] + P[6][18]*SK_MY[4]);
-        Kfusion[7] = SK_MY[0]*(P[7][20] + P[7][0]*SH_MAG[2] + P[7][1]*SH_MAG[1] + P[7][2]*SH_MAG[0] - P[7][3]*SK_MY[2] - P[7][17]*SK_MY[1] - P[7][16]*SK_MY[3] + P[7][18]*SK_MY[4]);
-        Kfusion[8] = SK_MY[0]*(P[8][20] + P[8][0]*SH_MAG[2] + P[8][1]*SH_MAG[1] + P[8][2]*SH_MAG[0] - P[8][3]*SK_MY[2] - P[8][17]*SK_MY[1] - P[8][16]*SK_MY[3] + P[8][18]*SK_MY[4]);
-        Kfusion[9] = SK_MY[0]*(P[9][20] + P[9][0]*SH_MAG[2] + P[9][1]*SH_MAG[1] + P[9][2]*SH_MAG[0] - P[9][3]*SK_MY[2] - P[9][17]*SK_MY[1] - P[9][16]*SK_MY[3] + P[9][18]*SK_MY[4]);
-        Kfusion[10] = SK_MY[0]*(P[10][20] + P[10][0]*SH_MAG[2] + P[10][1]*SH_MAG[1] + P[10][2]*SH_MAG[0] - P[10][3]*SK_MY[2] - P[10][17]*SK_MY[1] - P[10][16]*SK_MY[3] + P[10][18]*SK_MY[4]);
-        Kfusion[11] = SK_MY[0]*(P[11][20] + P[11][0]*SH_MAG[2] + P[11][1]*SH_MAG[1] + P[11][2]*SH_MAG[0] - P[11][3]*SK_MY[2] - P[11][17]*SK_MY[1] - P[11][16]*SK_MY[3] + P[11][18]*SK_MY[4]);
         Kfusion[12] = SK_MY[0]*(P[12][20] + P[12][0]*SH_MAG[2] + P[12][1]*SH_MAG[1] + P[12][2]*SH_MAG[0] - P[12][3]*SK_MY[2] - P[12][17]*SK_MY[1] - P[12][16]*SK_MY[3] + P[12][18]*SK_MY[4]);
-        // this term has been zeroed to improve stability of the Z accel bias
-        Kfusion[13] = 0.0f;//SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
-        // zero Kalman gains to inhibit wind state estimation
-        if (!inhibitWindStates) {
-            Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
-            Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
-        } else {
-            Kfusion[14] = 0.0f;
-            Kfusion[15] = 0.0f;
-        }
-        // zero Kalman gains to inhibit magnetic field state estimation
+        // If magnetic field state learning is inhibited, we do not update any other states because magnetometer offsets will cause bias errors in states
         if (!inhibitMagStates) {
+            Kfusion[1] = SK_MY[0]*(P[1][20] + P[1][0]*SH_MAG[2] + P[1][1]*SH_MAG[1] + P[1][2]*SH_MAG[0] - P[1][3]*SK_MY[2] - P[1][17]*SK_MY[1] - P[1][16]*SK_MY[3] + P[1][18]*SK_MY[4]);
+            Kfusion[2] = SK_MY[0]*(P[2][20] + P[2][0]*SH_MAG[2] + P[2][1]*SH_MAG[1] + P[2][2]*SH_MAG[0] - P[2][3]*SK_MY[2] - P[2][17]*SK_MY[1] - P[2][16]*SK_MY[3] + P[2][18]*SK_MY[4]);
+            Kfusion[4] = SK_MY[0]*(P[4][20] + P[4][0]*SH_MAG[2] + P[4][1]*SH_MAG[1] + P[4][2]*SH_MAG[0] - P[4][3]*SK_MY[2] - P[4][17]*SK_MY[1] - P[4][16]*SK_MY[3] + P[4][18]*SK_MY[4]);
+            Kfusion[5] = SK_MY[0]*(P[5][20] + P[5][0]*SH_MAG[2] + P[5][1]*SH_MAG[1] + P[5][2]*SH_MAG[0] - P[5][3]*SK_MY[2] - P[5][17]*SK_MY[1] - P[5][16]*SK_MY[3] + P[5][18]*SK_MY[4]);
+            Kfusion[6] = SK_MY[0]*(P[6][20] + P[6][0]*SH_MAG[2] + P[6][1]*SH_MAG[1] + P[6][2]*SH_MAG[0] - P[6][3]*SK_MY[2] - P[6][17]*SK_MY[1] - P[6][16]*SK_MY[3] + P[6][18]*SK_MY[4]);
+            Kfusion[7] = SK_MY[0]*(P[7][20] + P[7][0]*SH_MAG[2] + P[7][1]*SH_MAG[1] + P[7][2]*SH_MAG[0] - P[7][3]*SK_MY[2] - P[7][17]*SK_MY[1] - P[7][16]*SK_MY[3] + P[7][18]*SK_MY[4]);
+            Kfusion[8] = SK_MY[0]*(P[8][20] + P[8][0]*SH_MAG[2] + P[8][1]*SH_MAG[1] + P[8][2]*SH_MAG[0] - P[8][3]*SK_MY[2] - P[8][17]*SK_MY[1] - P[8][16]*SK_MY[3] + P[8][18]*SK_MY[4]);
+            Kfusion[9] = SK_MY[0]*(P[9][20] + P[9][0]*SH_MAG[2] + P[9][1]*SH_MAG[1] + P[9][2]*SH_MAG[0] - P[9][3]*SK_MY[2] - P[9][17]*SK_MY[1] - P[9][16]*SK_MY[3] + P[9][18]*SK_MY[4]);
+            Kfusion[10] = SK_MY[0]*(P[10][20] + P[10][0]*SH_MAG[2] + P[10][1]*SH_MAG[1] + P[10][2]*SH_MAG[0] - P[10][3]*SK_MY[2] - P[10][17]*SK_MY[1] - P[10][16]*SK_MY[3] + P[10][18]*SK_MY[4]);
+            Kfusion[11] = SK_MY[0]*(P[11][20] + P[11][0]*SH_MAG[2] + P[11][1]*SH_MAG[1] + P[11][2]*SH_MAG[0] - P[11][3]*SK_MY[2] - P[11][17]*SK_MY[1] - P[11][16]*SK_MY[3] + P[11][18]*SK_MY[4]);
+            // this term has been zeroed to improve stability of the Z accel bias
+            Kfusion[13] = 0.0f;//SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
+                Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
+            }
             Kfusion[16] = SK_MY[0]*(P[16][20] + P[16][0]*SH_MAG[2] + P[16][1]*SH_MAG[1] + P[16][2]*SH_MAG[0] - P[16][3]*SK_MY[2] - P[16][17]*SK_MY[1] - P[16][16]*SK_MY[3] + P[16][18]*SK_MY[4]);
             Kfusion[17] = SK_MY[0]*(P[17][20] + P[17][0]*SH_MAG[2] + P[17][1]*SH_MAG[1] + P[17][2]*SH_MAG[0] - P[17][3]*SK_MY[2] - P[17][17]*SK_MY[1] - P[17][16]*SK_MY[3] + P[17][18]*SK_MY[4]);
             Kfusion[18] = SK_MY[0]*(P[18][20] + P[18][0]*SH_MAG[2] + P[18][1]*SH_MAG[1] + P[18][2]*SH_MAG[0] - P[18][3]*SK_MY[2] - P[18][17]*SK_MY[1] - P[18][16]*SK_MY[3] + P[18][18]*SK_MY[4]);
             Kfusion[19] = SK_MY[0]*(P[19][20] + P[19][0]*SH_MAG[2] + P[19][1]*SH_MAG[1] + P[19][2]*SH_MAG[0] - P[19][3]*SK_MY[2] - P[19][17]*SK_MY[1] - P[19][16]*SK_MY[3] + P[19][18]*SK_MY[4]);
             Kfusion[20] = SK_MY[0]*(P[20][20] + P[20][0]*SH_MAG[2] + P[20][1]*SH_MAG[1] + P[20][2]*SH_MAG[0] - P[20][3]*SK_MY[2] - P[20][17]*SK_MY[1] - P[20][16]*SK_MY[3] + P[20][18]*SK_MY[4]);
             Kfusion[21] = SK_MY[0]*(P[21][20] + P[21][0]*SH_MAG[2] + P[21][1]*SH_MAG[1] + P[21][2]*SH_MAG[0] - P[21][3]*SK_MY[2] - P[21][17]*SK_MY[1] - P[21][16]*SK_MY[3] + P[21][18]*SK_MY[4]);
-        } else {
-            for (uint8_t i=16; i<=21; i++) {
-                Kfusion[i] = 0.0f;
-            }
         }
 
         // calculate the observation innovation variance
@@ -2556,41 +2524,37 @@ void NavEKF::FuseMagnetometer()
         SK_MZ[3] = SH_MAG[7] + SH_MAG[8] - 2*magD*q2;
         SK_MZ[4] = 2*q0*q1 - 2*q2*q3;
         SK_MZ[5] = 2*q0*q2 + 2*q1*q3;
+        // Initialise Kalman gain matrix
+        memset(&Kfusion[0], 0, sizeof(Kfusion));
+        // We always update the yaw angle and yaw gyro bias
         Kfusion[0] = SK_MZ[0]*(P[0][21] + P[0][0]*SH_MAG[1] + P[0][3]*SH_MAG[0] - P[0][1]*SK_MZ[2] + P[0][2]*SK_MZ[3] + P[0][18]*SK_MZ[1] + P[0][16]*SK_MZ[5] - P[0][17]*SK_MZ[4]);
-        Kfusion[1] = SK_MZ[0]*(P[1][21] + P[1][0]*SH_MAG[1] + P[1][3]*SH_MAG[0] - P[1][1]*SK_MZ[2] + P[1][2]*SK_MZ[3] + P[1][18]*SK_MZ[1] + P[1][16]*SK_MZ[5] - P[1][17]*SK_MZ[4]);
-        Kfusion[2] = SK_MZ[0]*(P[2][21] + P[2][0]*SH_MAG[1] + P[2][3]*SH_MAG[0] - P[2][1]*SK_MZ[2] + P[2][2]*SK_MZ[3] + P[2][18]*SK_MZ[1] + P[2][16]*SK_MZ[5] - P[2][17]*SK_MZ[4]);
         Kfusion[3] = SK_MZ[0]*(P[3][21] + P[3][0]*SH_MAG[1] + P[3][3]*SH_MAG[0] - P[3][1]*SK_MZ[2] + P[3][2]*SK_MZ[3] + P[3][18]*SK_MZ[1] + P[3][16]*SK_MZ[5] - P[3][17]*SK_MZ[4]);
-        Kfusion[4] = SK_MZ[0]*(P[4][21] + P[4][0]*SH_MAG[1] + P[4][3]*SH_MAG[0] - P[4][1]*SK_MZ[2] + P[4][2]*SK_MZ[3] + P[4][18]*SK_MZ[1] + P[4][16]*SK_MZ[5] - P[4][17]*SK_MZ[4]);
-        Kfusion[5] = SK_MZ[0]*(P[5][21] + P[5][0]*SH_MAG[1] + P[5][3]*SH_MAG[0] - P[5][1]*SK_MZ[2] + P[5][2]*SK_MZ[3] + P[5][18]*SK_MZ[1] + P[5][16]*SK_MZ[5] - P[5][17]*SK_MZ[4]);
-        Kfusion[6] = SK_MZ[0]*(P[6][21] + P[6][0]*SH_MAG[1] + P[6][3]*SH_MAG[0] - P[6][1]*SK_MZ[2] + P[6][2]*SK_MZ[3] + P[6][18]*SK_MZ[1] + P[6][16]*SK_MZ[5] - P[6][17]*SK_MZ[4]);
-        Kfusion[7] = SK_MZ[0]*(P[7][21] + P[7][0]*SH_MAG[1] + P[7][3]*SH_MAG[0] - P[7][1]*SK_MZ[2] + P[7][2]*SK_MZ[3] + P[7][18]*SK_MZ[1] + P[7][16]*SK_MZ[5] - P[7][17]*SK_MZ[4]);
-        Kfusion[8] = SK_MZ[0]*(P[8][21] + P[8][0]*SH_MAG[1] + P[8][3]*SH_MAG[0] - P[8][1]*SK_MZ[2] + P[8][2]*SK_MZ[3] + P[8][18]*SK_MZ[1] + P[8][16]*SK_MZ[5] - P[8][17]*SK_MZ[4]);
-        Kfusion[9] = SK_MZ[0]*(P[9][21] + P[9][0]*SH_MAG[1] + P[9][3]*SH_MAG[0] - P[9][1]*SK_MZ[2] + P[9][2]*SK_MZ[3] + P[9][18]*SK_MZ[1] + P[9][16]*SK_MZ[5] - P[9][17]*SK_MZ[4]);
-        Kfusion[10] = SK_MZ[0]*(P[10][21] + P[10][0]*SH_MAG[1] + P[10][3]*SH_MAG[0] - P[10][1]*SK_MZ[2] + P[10][2]*SK_MZ[3] + P[10][18]*SK_MZ[1] + P[10][16]*SK_MZ[5] - P[10][17]*SK_MZ[4]);
-        Kfusion[11] = SK_MZ[0]*(P[11][21] + P[11][0]*SH_MAG[1] + P[11][3]*SH_MAG[0] - P[11][1]*SK_MZ[2] + P[11][2]*SK_MZ[3] + P[11][18]*SK_MZ[1] + P[11][16]*SK_MZ[5] - P[11][17]*SK_MZ[4]);
         Kfusion[12] = SK_MZ[0]*(P[12][21] + P[12][0]*SH_MAG[1] + P[12][3]*SH_MAG[0] - P[12][1]*SK_MZ[2] + P[12][2]*SK_MZ[3] + P[12][18]*SK_MZ[1] + P[12][16]*SK_MZ[5] - P[12][17]*SK_MZ[4]);
-        // this term has been zeroed to improve stability of the Z accel bias
-        Kfusion[13] = 0.0f;//SK_MZ[0]*(P[13][21] + P[13][0]*SH_MAG[1] + P[13][3]*SH_MAG[0] - P[13][1]*SK_MZ[2] + P[13][2]*SK_MZ[3] + P[13][18]*SK_MZ[1] + P[13][16]*SK_MZ[5] - P[13][17]*SK_MZ[4]);
-        // zero Kalman gains to inhibit wind state estimation
-        if (!inhibitWindStates) {
-            Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] + P[14][3]*SH_MAG[0] - P[14][1]*SK_MZ[2] + P[14][2]*SK_MZ[3] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[5] - P[14][17]*SK_MZ[4]);
-            Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] + P[15][3]*SH_MAG[0] - P[15][1]*SK_MZ[2] + P[15][2]*SK_MZ[3] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[5] - P[15][17]*SK_MZ[4]);
-        } else {
-            Kfusion[14] = 0.0f;
-            Kfusion[15] = 0.0f;
-        }
-        // zero Kalman gains to inhibit magnetic field state estimation
+        // If magnetic field state learning is inhibited, we do not update any other states because magnetometer offsets will cause bias errors in states
         if (!inhibitMagStates) {
+            Kfusion[1] = SK_MZ[0]*(P[1][21] + P[1][0]*SH_MAG[1] + P[1][3]*SH_MAG[0] - P[1][1]*SK_MZ[2] + P[1][2]*SK_MZ[3] + P[1][18]*SK_MZ[1] + P[1][16]*SK_MZ[5] - P[1][17]*SK_MZ[4]);
+            Kfusion[2] = SK_MZ[0]*(P[2][21] + P[2][0]*SH_MAG[1] + P[2][3]*SH_MAG[0] - P[2][1]*SK_MZ[2] + P[2][2]*SK_MZ[3] + P[2][18]*SK_MZ[1] + P[2][16]*SK_MZ[5] - P[2][17]*SK_MZ[4]);
+            Kfusion[4] = SK_MZ[0]*(P[4][21] + P[4][0]*SH_MAG[1] + P[4][3]*SH_MAG[0] - P[4][1]*SK_MZ[2] + P[4][2]*SK_MZ[3] + P[4][18]*SK_MZ[1] + P[4][16]*SK_MZ[5] - P[4][17]*SK_MZ[4]);
+            Kfusion[5] = SK_MZ[0]*(P[5][21] + P[5][0]*SH_MAG[1] + P[5][3]*SH_MAG[0] - P[5][1]*SK_MZ[2] + P[5][2]*SK_MZ[3] + P[5][18]*SK_MZ[1] + P[5][16]*SK_MZ[5] - P[5][17]*SK_MZ[4]);
+            Kfusion[6] = SK_MZ[0]*(P[6][21] + P[6][0]*SH_MAG[1] + P[6][3]*SH_MAG[0] - P[6][1]*SK_MZ[2] + P[6][2]*SK_MZ[3] + P[6][18]*SK_MZ[1] + P[6][16]*SK_MZ[5] - P[6][17]*SK_MZ[4]);
+            Kfusion[7] = SK_MZ[0]*(P[7][21] + P[7][0]*SH_MAG[1] + P[7][3]*SH_MAG[0] - P[7][1]*SK_MZ[2] + P[7][2]*SK_MZ[3] + P[7][18]*SK_MZ[1] + P[7][16]*SK_MZ[5] - P[7][17]*SK_MZ[4]);
+            Kfusion[8] = SK_MZ[0]*(P[8][21] + P[8][0]*SH_MAG[1] + P[8][3]*SH_MAG[0] - P[8][1]*SK_MZ[2] + P[8][2]*SK_MZ[3] + P[8][18]*SK_MZ[1] + P[8][16]*SK_MZ[5] - P[8][17]*SK_MZ[4]);
+            Kfusion[9] = SK_MZ[0]*(P[9][21] + P[9][0]*SH_MAG[1] + P[9][3]*SH_MAG[0] - P[9][1]*SK_MZ[2] + P[9][2]*SK_MZ[3] + P[9][18]*SK_MZ[1] + P[9][16]*SK_MZ[5] - P[9][17]*SK_MZ[4]);
+            Kfusion[10] = SK_MZ[0]*(P[10][21] + P[10][0]*SH_MAG[1] + P[10][3]*SH_MAG[0] - P[10][1]*SK_MZ[2] + P[10][2]*SK_MZ[3] + P[10][18]*SK_MZ[1] + P[10][16]*SK_MZ[5] - P[10][17]*SK_MZ[4]);
+            Kfusion[11] = SK_MZ[0]*(P[11][21] + P[11][0]*SH_MAG[1] + P[11][3]*SH_MAG[0] - P[11][1]*SK_MZ[2] + P[11][2]*SK_MZ[3] + P[11][18]*SK_MZ[1] + P[11][16]*SK_MZ[5] - P[11][17]*SK_MZ[4]);
+            // this term has been zeroed to improve stability of the Z accel bias
+            Kfusion[13] = 0.0f;//SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] + P[14][3]*SH_MAG[0] - P[14][1]*SK_MZ[2] + P[14][2]*SK_MZ[3] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[5] - P[14][17]*SK_MZ[4]);
+                Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] + P[15][3]*SH_MAG[0] - P[15][1]*SK_MZ[2] + P[15][2]*SK_MZ[3] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[5] - P[15][17]*SK_MZ[4]);
+            }
             Kfusion[16] = SK_MZ[0]*(P[16][21] + P[16][0]*SH_MAG[1] + P[16][3]*SH_MAG[0] - P[16][1]*SK_MZ[2] + P[16][2]*SK_MZ[3] + P[16][18]*SK_MZ[1] + P[16][16]*SK_MZ[5] - P[16][17]*SK_MZ[4]);
             Kfusion[17] = SK_MZ[0]*(P[17][21] + P[17][0]*SH_MAG[1] + P[17][3]*SH_MAG[0] - P[17][1]*SK_MZ[2] + P[17][2]*SK_MZ[3] + P[17][18]*SK_MZ[1] + P[17][16]*SK_MZ[5] - P[17][17]*SK_MZ[4]);
             Kfusion[18] = SK_MZ[0]*(P[18][21] + P[18][0]*SH_MAG[1] + P[18][3]*SH_MAG[0] - P[18][1]*SK_MZ[2] + P[18][2]*SK_MZ[3] + P[18][18]*SK_MZ[1] + P[18][16]*SK_MZ[5] - P[18][17]*SK_MZ[4]);
             Kfusion[19] = SK_MZ[0]*(P[19][21] + P[19][0]*SH_MAG[1] + P[19][3]*SH_MAG[0] - P[19][1]*SK_MZ[2] + P[19][2]*SK_MZ[3] + P[19][18]*SK_MZ[1] + P[19][16]*SK_MZ[5] - P[19][17]*SK_MZ[4]);
             Kfusion[20] = SK_MZ[0]*(P[20][21] + P[20][0]*SH_MAG[1] + P[20][3]*SH_MAG[0] - P[20][1]*SK_MZ[2] + P[20][2]*SK_MZ[3] + P[20][18]*SK_MZ[1] + P[20][16]*SK_MZ[5] - P[20][17]*SK_MZ[4]);
             Kfusion[21] = SK_MZ[0]*(P[21][21] + P[21][0]*SH_MAG[1] + P[21][3]*SH_MAG[0] - P[21][1]*SK_MZ[2] + P[21][2]*SK_MZ[3] + P[21][18]*SK_MZ[1] + P[21][16]*SK_MZ[5] - P[21][17]*SK_MZ[4]);
-        } else {
-            for (uint8_t i=16; i<=21; i++) {
-                Kfusion[i] = 0.0f;
-            }
         }
 
         // calculate the observation innovation variance
@@ -2619,18 +2583,18 @@ void NavEKF::FuseMagnetometer()
         // correct the state vector or store corrections to be applied incrementally
         for (uint8_t j= 0; j<=21; j++) {
             // If we are forced to use a bad compass in flight, we reduce the weighting by a factor of 4
-            if (!magHealth && !constPosMode) {
+            if (!magHealth && (PV_AidingMode != AID_NONE)) {
                 Kfusion[j] *= 0.25f;
             }
             // If in the air and there is no other form of heading reference or we are yawing rapidly which creates larger inertial yaw errors,
             // we strengthen the magnetometer attitude correction
-            if (vehicleArmed && (constPosMode || highYawRate) && j <= 3) {
+            if (vehicleArmed && ((PV_AidingMode == AID_NONE) || highYawRate) && j <= 3) {
                 Kfusion[j] *= 4.0f;
             }
-            // We don't need to spread corrections for non-dynamic states or if we are in a  constant postion mode
+            // We don't need to spread corrections for non-dynamic states
             // We can't spread corrections if there is not enough time remaining
             // We don't spread corrections to attitude states if we are rotating rapidly
-            if ((j <= 3 && highRates) || j >= 10 || constPosMode || minorFramesToGo < 1.5f ) {
+            if ((j <= 3 && highRates) || j >= 10 || minorFramesToGo < 1.5f ) {
                 states[j] = states[j] - Kfusion[j] * innovMag[obsIndex];
             } else {
                 // scale the correction based on the number of averaging frames left to go
@@ -2993,7 +2957,7 @@ void NavEKF::FuseOptFlow()
             Kfusion[14] = 0.0f;
             Kfusion[15] = 0.0f;
         }
-        if (inhibitMagStates) {
+        if (!inhibitMagStates) {
             Kfusion[16] = -SK_LOS[1]*(P[16][0]*tempVar[0] + P[16][1]*tempVar[1] - P[16][3]*tempVar[2] + P[16][2]*tempVar[7] - P[16][4]*tempVar[3] + P[16][6]*tempVar[4] - P[16][9]*tempVar[5] + P[16][5]*tempVar[6]);
             Kfusion[17] = -SK_LOS[1]*(P[17][0]*tempVar[0] + P[17][1]*tempVar[1] - P[17][3]*tempVar[2] + P[17][2]*tempVar[7] - P[17][4]*tempVar[3] + P[17][6]*tempVar[4] - P[17][9]*tempVar[5] + P[17][5]*tempVar[6]);
             Kfusion[18] = -SK_LOS[1]*(P[18][0]*tempVar[0] + P[18][1]*tempVar[1] - P[18][3]*tempVar[2] + P[18][2]*tempVar[7] - P[18][4]*tempVar[3] + P[18][6]*tempVar[4] - P[18][9]*tempVar[5] + P[18][5]*tempVar[6]);
@@ -3056,7 +3020,7 @@ void NavEKF::FuseOptFlow()
             Kfusion[14] = 0.0f;
             Kfusion[15] = 0.0f;
         }
-        if (inhibitMagStates) {
+        if (!inhibitMagStates) {
             Kfusion[16] = SK_LOS[0]*(P[16][0]*tempVar[0] + P[16][1]*tempVar[1] - P[16][2]*tempVar[2] + P[16][3]*tempVar[3] + P[16][5]*tempVar[4] - P[16][6]*tempVar[5] - P[16][9]*tempVar[6] + P[16][4]*tempVar[7]);
             Kfusion[17] = SK_LOS[0]*(P[17][0]*tempVar[0] + P[17][1]*tempVar[1] - P[17][2]*tempVar[2] + P[17][3]*tempVar[3] + P[17][5]*tempVar[4] - P[17][6]*tempVar[5] - P[17][9]*tempVar[6] + P[17][4]*tempVar[7]);
             Kfusion[18] = SK_LOS[0]*(P[18][0]*tempVar[0] + P[18][1]*tempVar[1] - P[18][2]*tempVar[2] + P[18][3]*tempVar[3] + P[18][5]*tempVar[4] - P[18][6]*tempVar[5] - P[18][9]*tempVar[6] + P[18][4]*tempVar[7]);
@@ -3857,7 +3821,7 @@ void NavEKF::SetFlightAndFusionModes()
     // if we are a fly forward type vehicle, then in-air mode can be determined through a combination of speed and height criteria
     if (assume_zero_sideslip()) {
         // Evaluate a numerical score that defines the likelihood we are in the air
-        float gndSpdSq = sq(velNED[0]) + sq(velNED[1]);
+        float gndSpdSq = sq(gpsVelNED[0]) + sq(gpsVelNED[1]);
         bool highGndSpd = false;
         bool highAirSpd = false;
         bool largeHgtChange = false;
@@ -3908,11 +3872,11 @@ void NavEKF::SetFlightAndFusionModes()
     // store current on-ground status for next time
     prevOnGround = onGround;
     // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
-    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || constPosMode);
+    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE));
     // request mag calibration for both in-air and manoeuvre threshold options
     bool magCalRequested = ((_magCal == 0) && !onGround) || ((_magCal == 1) && manoeuvring)  || (_magCal == 3);
     // deny mag calibration request if we aren't using the compass, are in the pre-arm constant position mode or it has been inhibited by the user
-    bool magCalDenied = !use_compass() || constPosMode || (_magCal == 2);
+    bool magCalDenied = !use_compass() || (PV_AidingMode == AID_NONE) || (_magCal == 2);
     // inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
 }
@@ -3951,11 +3915,11 @@ void NavEKF::CovarianceInit()
     P[14][14] = 0.0f;
     P[15][15]  = P[14][14];
     // earth magnetic field
-    P[16][16] = 0.0f;
+    P[16][16] = 1.0e-6f;
     P[17][17] = P[16][16];
     P[18][18] = P[16][16];
     // body magnetic field
-    P[19][19] = 0.0f;
+    P[19][19] = 1.0e-6f;
     P[20][20] = P[19][19];
     P[21][21] = P[19][19];
 
@@ -4123,7 +4087,7 @@ void NavEKF::readGpsData()
         RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
 
         // read the NED velocity from the GPS
-        velNED = _ahrs->get_gps().velocity();
+        gpsVelNED = _ahrs->get_gps().velocity();
 
         // Use the speed accuracy from the GPS if available, otherwise set it to zero.
         // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
@@ -4137,9 +4101,9 @@ void NavEKF::readGpsData()
         }
 
         // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-        if (_ahrs->get_gps().num_sats() >= 6 && !constPosMode) {
+        if (_ahrs->get_gps().num_sats() >= 6 && (PV_AidingMode != AID_NONE)) {
             gpsNoiseScaler = 1.0f;
-        } else if (_ahrs->get_gps().num_sats() == 5 && !constPosMode) {
+        } else if (_ahrs->get_gps().num_sats() == 5 && (PV_AidingMode != AID_NONE)) {
             gpsNoiseScaler = 1.4f;
         } else { // <= 4 satellites or in constant position mode
             gpsNoiseScaler = 2.0f;
@@ -4172,7 +4136,6 @@ void NavEKF::readGpsData()
             gpsPosNE.zero();
             // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
             if (vehicleArmed && _fusionModeGPS != 3) {
-                constPosMode = false;
                 PV_AidingMode = AID_ABSOLUTE;
                 gpsNotAvailable = false;
                 // Initialise EKF position and velocity states
@@ -4420,7 +4383,7 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
 // vector from GPS. It is used to align the yaw angle after launch or takeoff.
 void NavEKF::alignYawGPS()
 {
-    if ((sq(velNED[0]) + sq(velNED[1])) > 25.0f) {
+    if ((sq(gpsVelNED[0]) + sq(gpsVelNED[1])) > 25.0f) {
         float roll;
         float pitch;
         float oldYaw;
@@ -4431,7 +4394,7 @@ void NavEKF::alignYawGPS()
         // calculate course yaw angle
         oldYaw = atan2f(state.velocity.y,state.velocity.x);
         // calculate yaw angle from GPS velocity
-        newYaw = atan2f(velNED[1],velNED[0]);
+        newYaw = atan2f(gpsVelNED[1],gpsVelNED[0]);
         // estimate the yaw error
         yawErr = wrap_PI(newYaw - oldYaw);
         // If the inertial course angle disagrees with the GPS by more than 45 degrees, we declare the compass as bad
@@ -4563,6 +4526,7 @@ void NavEKF::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
+    lastConstPosTime_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -4587,7 +4551,7 @@ void NavEKF::InitialiseVariables()
     velDotNEDfilt.zero();
     summedDelAng.zero();
     summedDelVel.zero();
-    velNED.zero();
+    gpsVelNED.zero();
     gpsPosGlitchOffsetNE.zero();
     lastKnownPositionNE.zero();
     gpsPosNE.zero();
@@ -4614,16 +4578,12 @@ void NavEKF::InitialiseVariables()
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    constVelMode = false;
-    lastConstVelMode = false;
-    heldVelNE.zero();
     PV_AidingMode = AID_NONE;
     posTimeout = true;
     velTimeout = true;
     gpsVelGlitchOffset.zero();
     vehicleArmed = false;
     prevVehicleArmed = false;
-    constPosMode = true;
     memset(&faultStatus, 0, sizeof(faultStatus));
     hgtRate = 0.0f;
     mag_state.q0 = 1;
@@ -4783,7 +4743,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool notDeadReckoning = !constVelMode && !constPosMode;
+    bool notDeadReckoning = (PV_AidingMode != AID_NONE);
     bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
@@ -4798,7 +4758,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
-    status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
+    status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
     status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
@@ -4858,8 +4818,6 @@ void NavEKF::performArmingChecks()
         if (vehicleArmed) {
             posDownAtArming = state.position.z;
         }
-        // zero stored velocities used to do dead-reckoning
-        heldVelNE.zero();
         // reset the flag that indicates takeoff for use by optical flow navigation
         takeOffDetected = false;
         // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
@@ -4867,9 +4825,6 @@ void NavEKF::performArmingChecks()
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
             posTimeout = true;
             velTimeout = true;
-            constPosMode = true;
-            constVelMode = false; // always clear constant velocity mode if constant position mode is active
-            lastConstVelMode = false;
             // store the current position to be used to keep reporting the last known position when disarmed
             lastKnownPositionNE.x = state.position.x;
             lastKnownPositionNE.y = state.position.y;
@@ -4883,14 +4838,10 @@ void NavEKF::performArmingChecks()
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
-                constPosMode = false;
-                constVelMode = false;
             } else {
                 PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
-                constPosMode = true;
-                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
             // Reset the last valid flow measurement time
             flowValidMeaTime_ms = imuSampleTime_ms;
@@ -4907,14 +4858,10 @@ void NavEKF::performArmingChecks()
                 PV_AidingMode = AID_NONE; // we don't have have GPS data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
-                constPosMode = true;
-                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
                 posTimeout = false;
                 velTimeout = false;
-                constPosMode = false;
-                constVelMode = false;
                 // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
                 // this is becasue the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
                 lastFixTime_ms = imuSampleTime_ms;
@@ -4959,10 +4906,6 @@ void NavEKF::performArmingChecks()
         PV_AidingMode = AID_NONE;
         posTimeout = true;
         velTimeout = true;
-        // set constant position mode if aiding is inhibited
-        constPosMode = true;
-        constVelMode = false; // always clear constant velocity mode if constant position mode is active
-        lastConstVelMode = false;
     }
 
 }
@@ -5039,7 +4982,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // calculate absolute difference between GPS vert vel and inertial vert vel
     float velDiffAbs;
     if (_ahrs->get_gps().have_vertical_velocity()) {
-        velDiffAbs = fabsf(velNED.z - state.velocity.z);
+        velDiffAbs = fabsf(gpsVelNED.z - state.velocity.z);
     } else {
         velDiffAbs = 0.0f;
     }
