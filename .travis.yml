@@ -2,13 +2,13 @@ language: cpp
 sudo: required
 
 env:
-  - secure: "y81XpWA0pgw18ZszT93q/1RRhsOdYfgVNAfntrNNQHxb4bFmUgxNdumxDWJrW3M4JvZLLlSQtaiszB1Q5gIHYd9dBXMmn9fs7r0X924ivLUt9gtRcPuYISBphYMda1mkZtum3BRSMPZthy7h9QCaIIZEoLzwBezg3XlKb+LaUfs="
+- secure: y81XpWA0pgw18ZszT93q/1RRhsOdYfgVNAfntrNNQHxb4bFmUgxNdumxDWJrW3M4JvZLLlSQtaiszB1Q5gIHYd9dBXMmn9fs7r0X924ivLUt9gtRcPuYISBphYMda1mkZtum3BRSMPZthy7h9QCaIIZEoLzwBezg3XlKb+LaUfs=
 
 before_install:
   -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
 
 script:
-  - Tools/scripts/build_px4_v2_quad_travis.sh ${GITHUB_API_KEY}
+  - Tools/scripts/build_px4_v2_quad_travis.sh
 
 before_deploy:
   - mkdir deploy_files
@@ -18,7 +18,8 @@ before_deploy:
 
 deploy:
   provider: releases
-  api-key: ${GITHUB_API_KEY}
+  api_key:
+    secure: dPbOB5fE6nRAc3nQvVqBWCDYdRfSQ0659uLs0BOOhsqkHYEEHOqbdMExiIEmRGGBOnXmf52yHTYjPIKd3x77OMYYVRjolJ917RT+hf17ZbYjkXWyRaPcliTeAIZEdwPxFac4awJEmoLLs6Qmg+pT1eb69KlUpHWu8eeIQYb+fpTtWvuC19Mt2xz+3BzkJ8Ah2gY09GKur0TSeSho13VBe/Hd+VlIofygWwvxqp41Sft6zjofUPRSijYfhdckG+Fg2MbrCnaRrbVr8toszhNkk8CTz9X9rRg6HgXVvtDLWNNpgj/r7LWVDcKTKQxmva9g4WvWx6drhr3x0gbjuSyZZ+BscXXfGO2aiPZqDmzker+ahATGkEzozYcJG6LZTvy9eeGayNcvk1zsw+YY4Aw8k71ifi2Pioos5xAObfJr7iJQHx7NZ/q+KlDAq9AGnGEZhWxjQ/0J7Xd/tajo/dV/zSZ3L16/i6rY5PR+nYfUOtY3/ekBFLvNlunhccy9PAwZxFgTtzGbRkoxbQi76t1Z1UMkbiQgkPr+kew4tLLE6pPGVsKmnq5suXtp875oW8HgoVT0qYO4b8PquKDVxc0pJ4BpiLNVRHGOORvRnOPo6QTRG2mw+DurGbAyRNXca4htJSPztFWmzrrf/vguQSSrg+CbroMxcUmsu07TeDvmeT0=
   file:
   - "deploy_files/ArduCopter-v2.px4"
   - "deploy_files/fmu.elf"
