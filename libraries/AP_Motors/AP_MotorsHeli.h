@@ -115,7 +115,7 @@ public:
         _tail_direct_drive_out(0),
         _delta_phase_angle(0)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
 
         // initialise flags
         _heliflags.swash_initialised = 0;
