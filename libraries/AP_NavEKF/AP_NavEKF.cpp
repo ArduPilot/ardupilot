@@ -4066,7 +4066,7 @@ void NavEKF::readIMUData()
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     dtIMUavg = 1.0f/ins.get_sample_rate();
-    dtIMUactual = max(ins.get_delta_time(),1.0e-3f);
+    dtIMUactual = max(ins.get_delta_time(),1.0e-4f);
 
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
