@@ -874,7 +874,7 @@ void NavEKF::SelectVelPosFusion()
 
     // If we haven't received height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime = (_fusionModeGPS == 0 && !velTimeout) ? hgtRetryTimeMode0 : hgtRetryTimeMode12;
+    hgtRetryTime = (useGpsVertVel && !velTimeout) ? hgtRetryTimeMode0 : hgtRetryTimeMode12;
     if (imuSampleTime_ms - lastHgtMeasTime > hgtRetryTime) {
         hgtTimeout = true;
     }
@@ -1974,7 +1974,7 @@ void NavEKF::FuseVelPosNED()
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (_fusionModeGPS == 0 && fuseVelData && (imuSampleTime_ms - lastHgtMeasTime) <  (2 * msecHgtAvg)) {
+        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtMeasTime) <  (2 * msecHgtAvg)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = statesAtHgtTime.position.z - observation[5];
             float velDErr = statesAtVelTime.velocity.z - observation[2];
@@ -2124,7 +2124,7 @@ void NavEKF::FuseVelPosNED()
         }
 
         // set range for sequential fusion of velocity and position measurements depending on which data is available and its health
-        if (fuseVelData && _fusionModeGPS == 0 && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
+        if (fuseVelData && useGpsVertVel && velHealth && !constPosMode && PV_AidingMode == AID_ABSOLUTE) {
             fuseData[0] = true;
             fuseData[1] = true;
             fuseData[2] = true;
@@ -4140,11 +4140,10 @@ void NavEKF::readGpsData()
         }
 
         // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
-        if (!_ahrs->get_gps().have_vertical_velocity()) {
-            // vertical velocity should not be fused
-            if (_fusionModeGPS == 0) {
-                _fusionModeGPS = 1;
-            }
+        if (_ahrs->get_gps().have_vertical_velocity() && _fusionModeGPS == 0) {
+            useGpsVertVel = true;
+        } else {
+            useGpsVertVel = false;
         }
 
         // Monitor quality of the GPS velocity data for alignment
@@ -4778,7 +4777,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
     bool notDeadReckoning = !constVelMode && !constPosMode;
-    bool someVertRefData = (!velTimeout && (_fusionModeGPS == 0)) || !hgtTimeout;
+    bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
