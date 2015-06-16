@@ -42,7 +42,7 @@ DO NOT EDIT
         self.f.close()
     
     def start_libraries(self):
-        self.t += '\n\n<h1>Library Parameters</h1>\n\n'
+        pass
         
     def emit(self, g, f):    
         tag = '%s Parameters' % g.name
