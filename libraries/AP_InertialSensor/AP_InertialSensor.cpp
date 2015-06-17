@@ -1301,6 +1301,51 @@ check_sample:
     _have_sample = true;
 }
 
+
+/*
+  get delta angles
+ */
+bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const 
+{
+    if (_delta_angle_valid[i]) {
+        delta_angle = _delta_angle[i];
+        return true;
+    } else if (get_gyro_health(i)) {
+        // provide delta angle from raw gyro, so we use the same code
+        // at higher level
+        delta_angle = get_gyro(i) * get_delta_time();
+        return true;
+    }
+    return false;
+}
+
+/*
+  get delta velocity if available
+*/
+bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const
+{
+    if (_delta_velocity_valid[i]) {
+        delta_velocity = _delta_velocity[i];
+        return true;
+    } else if (get_accel_health(i)) {
+        delta_velocity = get_accel(i) * get_delta_time();
+        return true;
+    }
+    return false;
+}
+
+/*
+  return delta_time for the delta_velocity
+ */
+float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
+{
+    if (_delta_velocity_valid[i]) {
+        return _delta_velocity_dt[i];
+    }
+    return get_delta_time();
+}
+
+
 /*
   support for setting accel and gyro vectors, for use by HIL
  */
