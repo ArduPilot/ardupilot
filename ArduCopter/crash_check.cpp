@@ -15,7 +15,7 @@ void Copter::crash_check()
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
     // return immediately if disarmed
-    if (!motors.armed()) {
+    if (!motors.armed() || ap.land_complete) {
         crash_counter = 0;
         return;
     }
@@ -32,23 +32,24 @@ void Copter::crash_check()
         return;
     }
 
-    // check angles
-    float lean_max = aparm.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
-    if (ToDeg(pythagorous2(ahrs.roll, ahrs.pitch)) > lean_max) {
-        crash_counter++;
-
-        // check if inverted for 2 seconds
-        if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * MAIN_LOOP_RATE)) {
-            // log an error in the dataflash
-            Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
-            // send message to gcs
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Crash: Disarming"));
-            // disarm motors
-            init_disarm_motors();
-        }
-    }else{
-        // we are not inverted so reset counter
+    // check for angle error over 30 degrees
+    const Vector3f angle_error = attitude_control.angle_bf_error();
+    if (pythagorous2(angle_error.x, angle_error.y) <= 3000.0f) {
         crash_counter = 0;
+        return;
+    }
+
+    // we may be crashing
+    crash_counter++;
+
+    // check if crashing for 2 seconds
+    if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * MAIN_LOOP_RATE)) {
+        // log an error in the dataflash
+        Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
+        // send message to gcs
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Crash: Disarming"));
+        // disarm motors
+        init_disarm_motors();
     }
 }
 
