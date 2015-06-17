@@ -116,7 +116,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(update_notify),         8,     90 },
     { SCHED_TASK(one_hz_loop),         400,    100 },
     { SCHED_TASK(ekf_check),            40,     75 },
-    { SCHED_TASK(crash_check),          40,     75 },
     { SCHED_TASK(landinggear_update),   40,     75 },
     { SCHED_TASK(lost_vehicle_check),   40,     50 },
     { SCHED_TASK(gcs_check_input),       1,    180 },
@@ -268,8 +267,8 @@ void Copter::fast_loop()
     // update home from EKF if necessary
     update_home_from_EKF();
 
-    // check if we've landed
-    update_land_detector();
+    // check if we've landed or crashed
+    update_land_and_crash_detectors();
 }
 
 // rc_loops - reads user input from transmitter/receiver

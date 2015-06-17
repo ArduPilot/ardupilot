@@ -3,57 +3,42 @@
 #include "Copter.h"
 
 // Code to detect a crash main ArduCopter code
-#ifndef CRASH_CHECK_ITERATIONS_MAX
- # define CRASH_CHECK_ITERATIONS_MAX        20      // 2 second (ie. 10 iterations at 10hz) inverted indicates a crash
-#endif
-#ifndef CRASH_CHECK_ANGLE_DEVIATION_CD
- # define CRASH_CHECK_ANGLE_DEVIATION_CD    2000    // 20 degrees beyond angle max is signal we are inverted
-#endif
-#ifndef CRASH_CHECK_ALT_CHANGE_LIMIT_CM
- # define CRASH_CHECK_ALT_CHANGE_LIMIT_CM   50      // baro altitude must not change by more than 50cm
-#endif
+#define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+#define CRASH_CHECK_ANGLE_DEVIATION_CD  2000    // 20 degrees beyond angle max is signal we are inverted
+#define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // crash_check - disarms motors if a crash has been detected
 // crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
-// should be called at 10hz
+// called at MAIN_LOOP_RATE
 void Copter::crash_check()
 {
-    static uint8_t inverted_count;  // number of iterations we have been inverted
-    static int32_t baro_alt_prev;
+    static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
-#if PARACHUTE == ENABLED
-    // check parachute
-    parachute_check();
-#endif
-
-    // return immediately if motors are not armed or pilot's throttle is above zero
-    if (!motors.armed() || (!ap.throttle_zero && !failsafe.radio)) {
-        inverted_count = 0;
+    // return immediately if disarmed
+    if (!motors.armed()) {
+        crash_counter = 0;
         return;
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
     if (control_mode == ACRO || control_mode == FLIP) {
-        inverted_count = 0;
+        crash_counter = 0;
+        return;
+    }
+
+    // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
+    if (land_accel_ef_filter.get().length() >= CRASH_CHECK_ACCEL_MAX) {
+        crash_counter = 0;
         return;
     }
 
     // check angles
-    int32_t lean_max = aparm.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
-    if (labs(ahrs.roll_sensor) > lean_max || labs(ahrs.pitch_sensor) > lean_max) {
-        inverted_count++;
-
-        // if we have just become inverted record the baro altitude
-        if (inverted_count == 1) {
-            baro_alt_prev = baro_alt;
-
-        // exit if baro altitude change indicates we are moving (probably falling)
-        }else if (labs(baro_alt - baro_alt_prev) > CRASH_CHECK_ALT_CHANGE_LIMIT_CM) {
-            inverted_count = 0;
-            return;
+    float lean_max = aparm.angle_max + CRASH_CHECK_ANGLE_DEVIATION_CD;
+    if (ToDeg(pythagorous2(ahrs.roll, ahrs.pitch)) > lean_max) {
+        crash_counter++;
 
         // check if inverted for 2 seconds
-        }else if (inverted_count >= CRASH_CHECK_ITERATIONS_MAX) {
+        if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * MAIN_LOOP_RATE)) {
             // log an error in the dataflash
             Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
             // send message to gcs
@@ -63,26 +48,22 @@ void Copter::crash_check()
         }
     }else{
         // we are not inverted so reset counter
-        inverted_count = 0;
+        crash_counter = 0;
     }
 }
 
 #if PARACHUTE == ENABLED
 
 // Code to detect a crash main ArduCopter code
-#ifndef PARACHUTE_CHECK_ITERATIONS_MAX
- # define PARACHUTE_CHECK_ITERATIONS_MAX        10      // 1 second (ie. 10 iterations at 10hz) of loss of control triggers the parachute
-#endif
-#ifndef PARACHUTE_CHECK_ANGLE_DEVIATION_CD
- # define PARACHUTE_CHECK_ANGLE_DEVIATION_CD    3000    // 30 degrees off from target indicates a loss of control
-#endif
+#define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
+#define PARACHUTE_CHECK_ANGLE_DEVIATION_CD  3000    // 30 degrees off from target indicates a loss of control
 
 // parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
 // vehicle is considered to have a "serious loss of control" by the vehicle being more than 30 degrees off from the target roll and pitch angles continuously for 1 second
-// should be called at 10hz
+// called at MAIN_LOOP_RATE
 void Copter::parachute_check()
 {
-    static uint8_t control_loss_count;	// number of iterations we have been out of control
+    static uint16_t control_loss_count;	// number of iterations we have been out of control
     static int32_t baro_alt_start;
 
     // exit immediately if parachute is not enabled
@@ -125,8 +106,8 @@ void Copter::parachute_check()
         control_loss_count++;
 
         // don't let control_loss_count get too high
-        if (control_loss_count > PARACHUTE_CHECK_ITERATIONS_MAX) {
-            control_loss_count = PARACHUTE_CHECK_ITERATIONS_MAX;
+        if (control_loss_count > (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
+            control_loss_count = (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE);
         }
 
         // record baro alt if we have just started losing control
@@ -141,7 +122,7 @@ void Copter::parachute_check()
         // To-Do: add check that the vehicle is actually falling
 
         // check if loss of control for at least 1 second
-        }else if (control_loss_count >= PARACHUTE_CHECK_ITERATIONS_MAX) {
+        }else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
             // reset control loss counter
             control_loss_count = 0;
             // log an error in the dataflash

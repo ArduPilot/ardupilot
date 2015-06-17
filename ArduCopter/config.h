@@ -420,6 +420,9 @@
 #ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
 # define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
 #endif
+#ifndef LAND_DETECTOR_ACCEL_MAX
+# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
