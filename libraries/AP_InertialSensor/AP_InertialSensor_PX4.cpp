@@ -109,7 +109,6 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, GYROIOCSSAMPLERATE, 1000);
                 // set queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1000));
-                _gyro_sample_time[i] = 1.0f/1000;
                 break;
             case DRV_GYR_DEVTYPE_L3GD20:
                 // hardware LPF as high as possible
@@ -118,11 +117,12 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, GYROIOCSSAMPLERATE, 800);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(800));
-                _gyro_sample_time[i] = 1.0f/760;
                 break;
             default:
                 break;
         }
+        // calculate gyro sample time
+        _gyro_sample_time[i] = 1.0f / ioctl(fd,  GYROIOCGSAMPLERATE, 0);
     }
 
     for (uint8_t i=0; i<_num_accel_instances; i++) {
@@ -142,7 +142,6 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, ACCELIOCSSAMPLERATE, 1000);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1000));
-                _accel_sample_time[i] = 1.0f/1000;
                 break;
             case DRV_ACC_DEVTYPE_LSM303D:
                 // hardware LPF to ~1/10th sample rate for antialiasing
@@ -152,11 +151,12 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd,SENSORIOCSPOLLRATE, 1600);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1600));
-                _accel_sample_time[i] = 1.0f/1600;
                 break;
             default:
                 break;
         }
+        // calculate accel sample time
+        _accel_sample_time[i] = 1.0f / ioctl(fd,  ACCELIOCGSAMPLERATE, 0);
     }
 
     _set_accel_filter_frequency(_accel_filter_cutoff());
