@@ -1381,6 +1381,9 @@
                <entry value="3" name="SERIAL_CONTROL_DEV_GPS2">
                     <description>Second GPS port</description>
                </entry>
+               <entry value="10" name="SERIAL_CONTROL_DEV_SHELL">
+                    <description>system shell</description>
+               </entry>
           </enum>
           <enum name="SERIAL_CONTROL_FLAG">
                <description>SERIAL_CONTROL flags (bitmask)</description>
