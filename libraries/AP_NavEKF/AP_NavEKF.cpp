@@ -733,7 +733,7 @@ void NavEKF::UpdateFilter()
 
     // sum delta angles and time used by covariance prediction
     summedDelAng = summedDelAng + correctedDelAng;
-    summedDelVel = summedDelVel + correctedDelVel1;
+    summedDelVel = summedDelVel + correctedDelVel12;
     dt += dtIMUactual;
 
     // perform a covariance prediction if the total delta angle has exceeded the limit
