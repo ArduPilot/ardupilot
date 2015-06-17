@@ -41,6 +41,8 @@ private:
     uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_accel_update_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_gyro_update_timestamp[INS_MAX_INSTANCES];
+    float    _accel_sample_time[INS_MAX_INSTANCES];
+    float    _gyro_sample_time[INS_MAX_INSTANCES];
     uint64_t _last_get_sample_timestamp;
     uint64_t _last_sample_timestamp;
 
