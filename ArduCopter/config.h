@@ -30,7 +30,7 @@
 #ifdef USE_CMAKE_APM_CONFIG
  #include "APM_Config_cmake.h"  // <== Prefer cmake config if it exists
 #else
- #include "APM_Config.h" // <== THIS INCLUDE, DO NOT EDIT IT. EVER.
+ #include "APM_Config.h"
 #endif
 
 

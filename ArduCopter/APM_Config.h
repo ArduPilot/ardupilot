@@ -5,6 +5,16 @@
 // If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
 // valid! You should switch to using a HAL_BOARD flag in your local config.mk.
 
+
+
+
+/*************************************
+ *THIS INCLUDE, DO NOT EDIT IT. EVER.*
+ *************************************/
+
+
+
+
 //#define FRAME_CONFIG QUAD_FRAME
 /*  options:
  *  QUAD_FRAME
