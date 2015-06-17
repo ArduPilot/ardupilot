@@ -14,8 +14,6 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #include "../AP_HAL_Linux/GPIO.h"
 #define MPU6000_DRDY_PIN BBB_P8_14
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_BEBOP
-#define MPU6000_BUS_I2C true
 #endif
 #endif
 
@@ -215,7 +213,7 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
 }
 
 /* I2C bus driver implementation */
-AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(uint8_t addr) :
+AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
     _addr(addr)
 {}
 
@@ -267,10 +265,10 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532f / 16.4f);
  *  variants however
  */
 
-AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
+AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus) :
     AP_InertialSensor_Backend(imu),
     _drdy_pin(NULL),
-    _bus(NULL),
+    _bus(bus),
     _bus_sem(NULL),
     _last_accel_filter_hz(-1),
     _last_gyro_filter_hz(-1),
@@ -285,35 +283,6 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu) :
 #endif
     _sum_count(0)
 {
-}
-
-/*
-  detect the sensor
- */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect(AP_InertialSensor &_imu)
-{
-    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu);
-    if (sensor == NULL) {
-        return NULL;
-    }
-    if (!sensor->_init_sensor()) {
-        delete sensor;
-        return NULL;
-    }
-
-    return sensor;
-}
-
-/*
-  initialise the sensor
- */
-bool AP_InertialSensor_MPU6000::_init_sensor(void)
-{
-#ifdef MPU6000_BUS_I2C
-    _bus = new AP_MPU6000_BusDriver_I2C();
-#else
-    _bus = new AP_MPU6000_BusDriver_SPI();
-#endif
     _bus_sem = _bus->get_semaphore();
 
 #ifdef MPU6000_DRDY_PIN
@@ -329,17 +298,19 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_bus_sem->take(100)) {
-                return false;
+                return;
             }
             if (_data_ready()) {
                 _bus_sem->give();
                 break;
+            } else {
+                return;
             }
             _bus_sem->give();
         }
         if (tries++ > 5) {
             hal.console->print_P(PSTR("failed to boot MPU6000 5 times")); 
-            return false;
+            return;
         }
     } while (1);
 
@@ -356,7 +327,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
     _dump_registers();
 #endif
 
-    return true;
+    return;
 }
 
 
