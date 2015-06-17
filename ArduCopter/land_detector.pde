@@ -3,6 +3,25 @@
 // counter to verify landings
 uint32_t land_detector_count = 0;
 
+// run land and crash detectors
+// called at MAIN_LOOP_RATE
+static void update_land_and_crash_detectors()
+{
+    // update 1hz filtered acceleration
+    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    accel_ef.z += GRAVITY_MSS;
+    land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
+
+    update_land_detector();
+
+#if PARACHUTE == ENABLED
+    // check parachute
+    parachute_check();
+#endif
+
+    crash_check();
+}
+
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // called at MAIN_LOOP_RATE
 static void update_land_detector()
@@ -14,12 +33,6 @@ static void update_land_detector()
     // gyro output :                        on uneven surface the airframe may rock back an forth after landing
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
-
-    Vector3f accel_ef = ahrs.get_accel_ef_blended();
-    accel_ef.z += GRAVITY_MSS;
-
-    // lowpass filter on accel
-    accel_ef = land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
 
     if (!motors.armed()) {
         // if disarmed, always landed.
@@ -35,7 +48,7 @@ static void update_land_detector()
         bool motor_at_lower_limit = motors.limit.throttle_lower && motors.is_throttle_mix_min();
 
         // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-        bool accel_stationary = (accel_ef.length() < 1.0f);
+        bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX);
 
         if (motor_at_lower_limit && accel_stationary) {
             // landed criteria met - increment the counter and check if we've triggered
