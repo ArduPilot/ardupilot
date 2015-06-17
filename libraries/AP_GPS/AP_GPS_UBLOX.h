@@ -39,6 +39,16 @@
  */
 #define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
 
+//Configuration Sub-Sections
+#define SAVE_CFG_IO     (1<<0)
+#define SAVE_CFG_MSG    (1<<1)
+#define SAVE_CFG_INF    (1<<2)
+#define SAVE_CFG_NAV    (1<<3)
+#define SAVE_CFG_RXM    (1<<4)
+#define SAVE_CFG_RINV   (1<<9)
+#define SAVE_CFG_ANT    (1<<10)
+#define SAVE_CFG_ALL    (SAVE_CFG_IO|SAVE_CFG_MSG|SAVE_CFG_INF|SAVE_CFG_NAV|SAVE_CFG_RXM|SAVE_CFG_RINV|SAVE_CFG_ANT)
+
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
 public:
@@ -204,6 +214,11 @@ private:
         uint8_t clsID;
         uint8_t msgID;
     };
+    struct PACKED ubx_cfg_cfg {
+        uint32_t clearMask;
+        uint32_t saveMask;
+        uint32_t loadMask;
+    };
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -233,6 +248,7 @@ private:
         MSG_STATUS = 0x3,
         MSG_SOL = 0x6,
         MSG_VELNED = 0x12,
+        MSG_CFG_CFG = 0x09,
         MSG_CFG_PRT = 0x00,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
@@ -275,6 +291,7 @@ private:
 	// processing
     uint8_t			_fix_count;
     uint8_t         _class;
+    bool            _cfg_saved;
 
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
@@ -305,6 +322,7 @@ private:
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint8_t size);
     void		send_next_rate_update(void);
     void        _request_version(void);
+    void        _save_cfg(void);
 
     void unexpected_message(void);
     void write_logging_headers(void);
