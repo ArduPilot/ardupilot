@@ -4037,12 +4037,8 @@ bool NavEKF::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     if (ins_index < ins.get_accel_count()) {
-        if (ins.get_delta_velocity(ins_index,dVel)) {
-            dVel_dt = ins.get_delta_velocity_dt(ins_index);
-        } else {
-            dVel = ins.get_accel(ins_index) * dtIMUactual;
-            dVel_dt = dtIMUactual;
-        }
+        ins.get_delta_velocity(ins_index,dVel);
+        dVel_dt = ins.get_delta_velocity_dt(ins_index);
         return true;
     }
     return false;
@@ -4052,9 +4048,7 @@ bool NavEKF::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        if (!ins.get_delta_angle(ins_index,dAng)) {
-            dAng = ins.get_gyro(ins_index) * dtIMUactual;
-        }
+        ins.get_delta_angle(ins_index,dAng);
         return true;
     }
     return false;
