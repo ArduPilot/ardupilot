@@ -109,6 +109,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, GYROIOCSSAMPLERATE, 1000);
                 // set queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1000));
+                _gyro_sample_time[i] = 1.0f/1000;
                 break;
             case DRV_GYR_DEVTYPE_L3GD20:
                 // hardware LPF as high as possible
@@ -117,6 +118,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, GYROIOCSSAMPLERATE, 800);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(800));
+                _gyro_sample_time[i] = 1.0f/760;
                 break;
             default:
                 break;
@@ -140,6 +142,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd, ACCELIOCSSAMPLERATE, 1000);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1000));
+                _accel_sample_time[i] = 1.0f/1000;
                 break;
             case DRV_ACC_DEVTYPE_LSM303D:
                 // hardware LPF to ~1/10th sample rate for antialiasing
@@ -149,6 +152,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
                 ioctl(fd,SENSORIOCSPOLLRATE, 1600);
                 // 10ms queue depth
                 ioctl(fd, SENSORIOCSQUEUEDEPTH, _queue_depth(1600));
+                _accel_sample_time[i] = 1.0f/1600;
                 break;
             default:
                 break;
@@ -259,8 +263,8 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // apply filter for control path
     _accel_in[i] = _accel_filter[i].apply(accel);
 
-    // compute time since last sample
-    float dt = (accel_report.timestamp - _last_accel_timestamp[i]) * 1.0e-6f;
+    // get time since last sample
+    float dt = _accel_sample_time[i];
 
     // compute delta velocity
     Vector3f delVel = Vector3f(accel.x, accel.y, accel.z) * dt;
@@ -309,8 +313,8 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     // apply filter for control path
     _gyro_in[i] = _gyro_filter[i].apply(gyro);
 
-    // compute time since last sample - not more than 50ms
-    float dt = min((gyro_report.timestamp - _last_gyro_timestamp[i]) * 1.0e-6f, 0.05f);
+    // get time since last sample
+    float dt = _gyro_sample_time[i];
 
     // compute delta angle
     Vector3f delAng = (gyro+_last_gyro[i]) * 0.5f * dt;
