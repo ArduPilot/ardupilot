@@ -402,6 +402,8 @@ void Copter::full_rate_logging_loop()
 {
     if (should_log(MASK_LOG_IMU_FAST) && !should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMU(ins);
+    }
+    if (should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMUDT(ins);
     }
 }
