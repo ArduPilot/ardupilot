@@ -72,6 +72,11 @@ public:
     virtual void toneAlarm_set_tune(uint8_t tune) {}
     virtual void _toneAlarm_timer_tick() {}
 
+    /*
+      return a stream for access to a system shell, if available
+     */
+    virtual AP_HAL::Stream *get_shell_stream() { return NULL; }
+
 protected:
     bool soft_armed;
 };
