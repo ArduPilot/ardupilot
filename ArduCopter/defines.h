@@ -312,6 +312,7 @@ enum FlipState {
 #define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
+#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f

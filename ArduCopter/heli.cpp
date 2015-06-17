@@ -132,6 +132,9 @@ void Copter::heli_update_landing_swash()
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
 void Copter::heli_update_rotor_speed_targets()
 {
+
+    static bool rotor_runup_complete_last = false;
+
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
     int16_t rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
@@ -153,6 +156,12 @@ void Copter::heli_update_rotor_speed_targets()
             }
             break;
     }
+
+    // when rotor_runup_complete changes to true, log event
+    if (!rotor_runup_complete_last && motors.rotor_runup_complete()){
+        Log_Write_Event(DATA_ROTOR_RUNUP_COMPLETE);
+    }
+    rotor_runup_complete_last = motors.rotor_runup_complete();
 }
 
 // heli_radio_passthrough send RC inputs direct into motors library for use during manual passthrough for helicopter setup
