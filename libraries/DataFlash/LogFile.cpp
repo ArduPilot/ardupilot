@@ -878,8 +878,6 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
     ins.get_delta_velocity(0, delta_velocity);
 
     uint64_t time_us = hal.scheduler->micros64();
-    const Vector3f &gyro = ins.get_gyro(0);
-    const Vector3f &accel = ins.get_accel(0);
     struct log_IMUDT pkt = {
         LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
         time_us : time_us,
@@ -898,8 +896,6 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
     }
 #if INS_MAX_INSTANCES > 1
     delta_vel_t = ins.get_delta_velocity_dt(1);
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    const Vector3f &accel2 = ins.get_accel(1);
     if (!ins.get_delta_angle(1, delta_angle)) {
         delta_angle.zero();
     }
@@ -924,8 +920,6 @@ void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
         return;
     }
     delta_vel_t = ins.get_delta_velocity_dt(1);
-    const Vector3f &gyro3 = ins.get_gyro(2);
-    const Vector3f &accel3 = ins.get_accel(2);
     if (!ins.get_delta_angle(2, delta_angle)) {
         delta_angle.zero();
     }
