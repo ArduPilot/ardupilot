@@ -6,6 +6,7 @@
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS)
 
 // check if a message will fit in the payload space available
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_## id ##_LEN) return false
 
 void Rover::send_heartbeat(mavlink_channel_t chan)
@@ -350,6 +351,27 @@ void Rover::send_rangefinder(mavlink_channel_t chan)
         voltage);
 }
 
+/*
+  send PID tuning message
+ */
+void Rover::send_pid_tuning(mavlink_channel_t chan)
+{
+    const Vector3f &gyro = ahrs.get_gyro();
+    if (g.gcs_pid_mask & 1) {
+        const DataFlash_Class::PID_Info &pid_info = steerController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER, 
+                                    pid_info.desired,
+                                    degrees(gyro.z),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+}
+
 void Rover::send_current_waypoint(mavlink_channel_t chan)
 {
     mavlink_msg_mission_current_send(chan, mission.get_current_nav_index());
@@ -530,7 +552,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_LIMITS_STATUS:
     case MSG_FENCE_STATUS:
     case MSG_WIND:
-    case MSG_PID_TUNING:
     case MSG_VIBRATION:
         // unused
         break;
@@ -552,6 +573,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         rover.ahrs.get_NavEKF().send_status_report(chan);
 #endif
+        break;
+
+    case MSG_PID_TUNING:
+        CHECK_PAYLOAD_SIZE(PID_TUNING);
+        rover.send_pid_tuning(chan);
         break;
 
     case MSG_RETRY_DEFERRED:
@@ -765,8 +791,11 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
+        if (rover.control_mode != MANUAL) {
+            send_message(MSG_PID_TUNING);
+        }
     }
-
+    
     if (rover.gcs_out_of_time) return;
 
     if (stream_trigger(STREAM_EXTRA2)) {
