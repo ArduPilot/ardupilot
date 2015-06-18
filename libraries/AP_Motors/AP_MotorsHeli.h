@@ -107,7 +107,7 @@ public:
         _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
-        _rotor_desired(0),
+        _desired_rotor_speed(0),
         _rotor_out(0),
         _rsc_ramp_increment(0.0f),
         _rsc_runup_increment(0.0f),
@@ -174,7 +174,7 @@ public:
     int16_t get_rsc_setpoint() const { return _rsc_setpoint; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    void set_desired_rotor_speed(int16_t desired_speed);
+    void set_desired_rotor_speed(int16_t desired_speed) { _desired_rotor_speed = desired_speed; }
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
@@ -297,7 +297,7 @@ private:
     float           _collective_scalar_manual;  // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out;            // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm;        // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _rotor_desired;             // latest desired rotor speed from pilot
+    int16_t         _desired_rotor_speed;             // latest desired rotor speed from pilot
     float           _rotor_out;                 // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
     float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
