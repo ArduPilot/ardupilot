@@ -974,7 +974,7 @@ void Copter::autotune_save_tuning_gains()
     // if we successfully completed tuning
     if (autotune_state.mode == AUTOTUNE_MODE_SUCCESS) {
 
-        if (attitude_control.get_bf_feedforward()) {
+        if (!attitude_control.get_bf_feedforward()) {
             attitude_control.bf_feedforward_save(true);
             attitude_control.save_accel_roll_max(0.0f);
             attitude_control.save_accel_pitch_max(0.0f);
