@@ -176,6 +176,12 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(int16_t desired_speed) { _desired_rotor_speed = desired_speed; }
 
+    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
+    int16_t get_desired_rotor_speed() const { return _desired_rotor_speed; }
+
+    // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
+    int16_t get_estimated_rotor_speed() { return _rotor_speed_estimate; }
+
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
 
