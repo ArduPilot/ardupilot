@@ -4,7 +4,7 @@
 
 // Code to detect a crash main ArduCopter code
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
-#define CRASH_CHECK_ANGLE_DEVIATION_CD  2000    // 20 degrees beyond angle max is signal we are inverted
+#define CRASH_CHECK_ANGLE_DEVIATION_CD  3000.0f // 30 degrees beyond angle max is signal we are inverted
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // crash_check - disarms motors if a crash has been detected
@@ -34,7 +34,7 @@ void Copter::crash_check()
 
     // check for angle error over 30 degrees
     const Vector3f angle_error = attitude_control.angle_bf_error();
-    if (pythagorous2(angle_error.x, angle_error.y) <= 3000.0f) {
+    if (pythagorous2(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
         crash_counter = 0;
         return;
     }
@@ -98,42 +98,37 @@ void Copter::parachute_check()
         return;
     }
 
-    // get desired lean angles
-    const Vector3f& target_angle = attitude_control.angle_ef_targets();
-
-    // check roll and pitch angles
-    if (labs(ahrs.roll_sensor - target_angle.x) > CRASH_CHECK_ANGLE_DEVIATION_CD ||
-        labs(ahrs.pitch_sensor - target_angle.y) > CRASH_CHECK_ANGLE_DEVIATION_CD) {
-        control_loss_count++;
-
-        // don't let control_loss_count get too high
-        if (control_loss_count > (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
-            control_loss_count = (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE);
-        }
-
-        // record baro alt if we have just started losing control
-        if (control_loss_count == 1) {
-            baro_alt_start = baro_alt;
-
-        // exit if baro altitude change indicates we are not falling
-        }else if (baro_alt >= baro_alt_start) {
-            control_loss_count = 0;
-            return;
-
-        // To-Do: add check that the vehicle is actually falling
-
-        // check if loss of control for at least 1 second
-        }else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
-            // reset control loss counter
-            control_loss_count = 0;
-            // log an error in the dataflash
-            Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL);
-            // release parachute
-            parachute_release();
-        }
-    }else{
-        // we are not inverted so reset counter
+    // check for angle error over 30 degrees
+    const Vector3f angle_error = attitude_control.angle_bf_error();
+    if (pythagorous2(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
         control_loss_count = 0;
+        return;
+    }
+
+    // increment counter
+    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
+        control_loss_count++;
+    }
+
+    // record baro alt if we have just started losing control
+    if (control_loss_count == 1) {
+        baro_alt_start = baro_alt;
+
+    // exit if baro altitude change indicates we are not falling
+    } else if (baro_alt >= baro_alt_start) {
+        control_loss_count = 0;
+        return;
+
+    // To-Do: add check that the vehicle is actually falling
+
+    // check if loss of control for at least 1 second
+    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*MAIN_LOOP_RATE)) {
+        // reset control loss counter
+        control_loss_count = 0;
+        // log an error in the dataflash
+        Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL);
+        // release parachute
+        parachute_release();
     }
 }
 
