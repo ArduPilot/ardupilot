@@ -754,40 +754,36 @@ void Copter::autotune_backup_gains_and_initialise()
     orig_bf_feedforward = attitude_control.get_bf_feedforward();
 
     // backup original pids and initialise tuned pid values
-    if (autotune_roll_enabled()) {
-        orig_roll_rp = g.pid_rate_roll.kP();
-        orig_roll_ri = g.pid_rate_roll.kI();
-        orig_roll_rd = g.pid_rate_roll.kD();
-        orig_roll_sp = g.p_stabilize_roll.kP();
-        orig_roll_accel = attitude_control.get_accel_roll_max();
-        tune_roll_rp = g.pid_rate_roll.kP();
-        tune_roll_rd = g.pid_rate_roll.kD();
-        tune_roll_sp = g.p_stabilize_roll.kP();
-        tune_roll_accel = attitude_control.get_accel_roll_max();
-    }
-    if (autotune_pitch_enabled()) {
-        orig_pitch_rp = g.pid_rate_pitch.kP();
-        orig_pitch_ri = g.pid_rate_pitch.kI();
-        orig_pitch_rd = g.pid_rate_pitch.kD();
-        orig_pitch_sp = g.p_stabilize_pitch.kP();
-        orig_pitch_accel = attitude_control.get_accel_pitch_max();
-        tune_pitch_rp = g.pid_rate_pitch.kP();
-        tune_pitch_rd = g.pid_rate_pitch.kD();
-        tune_pitch_sp = g.p_stabilize_pitch.kP();
-        tune_pitch_accel = attitude_control.get_accel_pitch_max();
-    }
-    if (autotune_yaw_enabled()) {
-        orig_yaw_rp = g.pid_rate_yaw.kP();
-        orig_yaw_ri = g.pid_rate_yaw.kI();
-        orig_yaw_rd = g.pid_rate_yaw.kD();
-        orig_yaw_rLPF = g.pid_rate_yaw.filt_hz();
-        orig_yaw_accel = attitude_control.get_accel_yaw_max();
-        orig_yaw_sp = g.p_stabilize_yaw.kP();
-        tune_yaw_rp = g.pid_rate_yaw.kP();
-        tune_yaw_rLPF = g.pid_rate_yaw.filt_hz();
-        tune_yaw_sp = g.p_stabilize_yaw.kP();
-        tune_yaw_accel = attitude_control.get_accel_yaw_max();
-    }
+    orig_roll_rp = g.pid_rate_roll.kP();
+    orig_roll_ri = g.pid_rate_roll.kI();
+    orig_roll_rd = g.pid_rate_roll.kD();
+    orig_roll_sp = g.p_stabilize_roll.kP();
+    orig_roll_accel = attitude_control.get_accel_roll_max();
+    tune_roll_rp = g.pid_rate_roll.kP();
+    tune_roll_rd = g.pid_rate_roll.kD();
+    tune_roll_sp = g.p_stabilize_roll.kP();
+    tune_roll_accel = attitude_control.get_accel_roll_max();
+
+    orig_pitch_rp = g.pid_rate_pitch.kP();
+    orig_pitch_ri = g.pid_rate_pitch.kI();
+    orig_pitch_rd = g.pid_rate_pitch.kD();
+    orig_pitch_sp = g.p_stabilize_pitch.kP();
+    orig_pitch_accel = attitude_control.get_accel_pitch_max();
+    tune_pitch_rp = g.pid_rate_pitch.kP();
+    tune_pitch_rd = g.pid_rate_pitch.kD();
+    tune_pitch_sp = g.p_stabilize_pitch.kP();
+    tune_pitch_accel = attitude_control.get_accel_pitch_max();
+
+    orig_yaw_rp = g.pid_rate_yaw.kP();
+    orig_yaw_ri = g.pid_rate_yaw.kI();
+    orig_yaw_rd = g.pid_rate_yaw.kD();
+    orig_yaw_rLPF = g.pid_rate_yaw.filt_hz();
+    orig_yaw_accel = attitude_control.get_accel_yaw_max();
+    orig_yaw_sp = g.p_stabilize_yaw.kP();
+    tune_yaw_rp = g.pid_rate_yaw.kP();
+    tune_yaw_rLPF = g.pid_rate_yaw.filt_hz();
+    tune_yaw_sp = g.p_stabilize_yaw.kP();
+    tune_yaw_accel = attitude_control.get_accel_yaw_max();
 
     Log_Write_Event(DATA_AUTOTUNE_INITIALISED);
 }
