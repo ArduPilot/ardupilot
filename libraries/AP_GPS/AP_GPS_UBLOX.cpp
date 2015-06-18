@@ -468,7 +468,10 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_status,
               _buffer.status.fix_type);
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
-            if( _buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) {
+            if( (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) &&
+                (_buffer.status.fix_status & AP_GPS_UBLOX::NAV_STATUS_DGPS_USED)) {
+                next_fix = AP_GPS::GPS_OK_FIX_3D_DGPS;
+            }else if( _buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) {
                 next_fix = AP_GPS::GPS_OK_FIX_3D;
             }else if (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_2D) {
                 next_fix = AP_GPS::GPS_OK_FIX_2D;
@@ -490,7 +493,10 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
-            if( _buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) {
+            if( (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) &&
+                (_buffer.solution.fix_status & AP_GPS_UBLOX::NAV_STATUS_DGPS_USED)) {
+                next_fix = AP_GPS::GPS_OK_FIX_3D_DGPS;
+            }else if( _buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) {
                 next_fix = AP_GPS::GPS_OK_FIX_3D;
             }else if (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_2D) {
                 next_fix = AP_GPS::GPS_OK_FIX_2D;
