@@ -366,6 +366,9 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_Vibration(ins);
     }
+#if FRAME_CONFIG == HELI_FRAME
+    Log_Write_Heli();
+#endif
 }
 
 // fifty_hz_logging_loop
