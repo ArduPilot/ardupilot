@@ -255,6 +255,9 @@ public:
     // returns a zero rotation quaternion if the INS calculation was not performed on that time step.
     Quaternion getDeltaQuaternion(void) const;
 
+    // returns true of the EKF thinks the GPS is glitching
+    bool getGpsGlitchStatus(void) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
