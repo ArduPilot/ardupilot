@@ -143,6 +143,7 @@ public:
         k_param_land_abort_throttle_enable,
         k_param_rssi = 97,
         k_param_rpm_sensor,
+        k_param_parachute,
         
         // 100: Arming parameters
         k_param_arming = 100,
