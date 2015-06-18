@@ -47,19 +47,19 @@ void Copter::althold_run()
 
     // Alt Hold State Machine Determination
     if(!ap.auto_armed || !motors.get_interlock()) {
-        althold_state = AH_Disarmed;
+        althold_state = AltHold_Disarmed;
     } else if (ap.land_complete && takeoff_condition){
-        althold_state = AH_Takeoff;
+        althold_state = AltHold_Takeoff;
     } else if (ap.land_complete){
-        althold_state = AH_Landed;
+        althold_state = AltHold_Landed;
     } else {
-        althold_state = AH_Flying;
+        althold_state = AltHold_Flying;
     }
 
     // Alt Hold State Machine
     switch (althold_state) {
 
-    case AH_Disarmed:
+    case AltHold_Disarmed:
 
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
@@ -71,7 +71,7 @@ void Copter::althold_run()
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 
-    case AH_Takeoff:
+    case AltHold_Takeoff:
 
         // get takeoff adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
@@ -102,7 +102,7 @@ void Copter::althold_run()
         pos_control.update_z_controller();
         break;
 
-    case AH_Landed:
+    case AltHold_Landed:
 
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
@@ -114,7 +114,7 @@ void Copter::althold_run()
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
         break;
 
-    case AH_Flying:
+    case AltHold_Flying:
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         // body-frame rate controller is run directly from 100hz loop
