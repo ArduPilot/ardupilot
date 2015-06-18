@@ -321,6 +321,11 @@ void Rover::Log_Write_Attitude()
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
     DataFlash.Log_Write_POS(ahrs);
+
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
+    DataFlash.Log_Write_PID(LOG_PIDY_MSG, steerController.get_pid_info());
+#endif
+
 }
 
 struct PACKED log_Sonar {
