@@ -601,6 +601,9 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+#if FRAME_CONFIG == HELI_FRAME
+    void Log_Write_Heli(void);
+#endif
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);

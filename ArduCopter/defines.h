@@ -239,6 +239,7 @@ enum FlipState {
 #define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
+#define LOG_HELI_MSG                    0x20
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)

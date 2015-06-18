@@ -654,6 +654,27 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
     DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
+struct PACKED log_Heli {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t   desired_rotor_speed;
+    int16_t   estimated_rotor_speed;
+};
+
+#if FRAME_CONFIG == HELI_FRAME
+// Write an helicopter packet
+void Copter::Log_Write_Heli()
+{
+    struct log_Heli pkt_heli = {
+        LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
+        time_us                 : hal.scheduler->micros64(),
+        desired_rotor_speed     : motors.get_desired_rotor_speed(),
+        estimated_rotor_speed   : motors.get_estimated_rotor_speed(),
+    };
+    DataFlash.WriteBlock(&pkt_heli, sizeof(pkt_heli));
+}
+#endif
+
 const struct LogStructure Copter::log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
@@ -692,6 +713,8 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
       "DFLT",  "QBf",         "TimeUS,Id,Value" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
+    { LOG_HELI_MSG, sizeof(log_Heli),
+      "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
 };
 
 #if CLI_ENABLED == ENABLED
