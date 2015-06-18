@@ -77,6 +77,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(compass_save,         3000,   2500),
     SCHED_TASK(update_logging1,         5,   1700),
     SCHED_TASK(update_logging2,         5,   1700),
+    SCHED_TASK(parachute_check,         5,    500),
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   10,    100),
 #endif

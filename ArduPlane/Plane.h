@@ -94,6 +94,7 @@
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
+#include <AP_Parachute/AP_Parachute.h>
 
 // Configuration
 #include "config.h"
@@ -550,6 +551,10 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
 
 
+#if PARACHUTE == ENABLED
+    AP_Parachute parachute {relay};
+#endif
+
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain {ahrs, mission, rally};
@@ -971,6 +976,11 @@ private:
     void dataflash_periodic(void);
     uint16_t throttle_min(void) const;
     
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
+    void parachute_check();
+    void parachute_release();
+    void parachute_manual_release();
+
 public:
     void mavlink_delay_cb();
     void failsafe_check(void);

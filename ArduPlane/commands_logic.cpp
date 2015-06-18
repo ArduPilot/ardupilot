@@ -173,6 +173,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        do_parachute(cmd);
+        break;
+#endif
+
 #if MOUNT == ENABLED
     // Sets the region of interest (ROI) for a sensor set or the
     // vehicle itself. This can then be used by the vehicles control
@@ -255,6 +261,13 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
+
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        // assume parachute was released successfully
+        return true;
+        break;
+#endif
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -902,6 +915,27 @@ void Plane::do_take_picture()
     log_picture();
 #endif
 }
+
+#if PARACHUTE == ENABLED
+// do_parachute - configure or release parachute
+void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
+{
+    switch (cmd.p1) {
+        case PARACHUTE_DISABLE:
+            parachute.enabled(false);
+            break;
+        case PARACHUTE_ENABLE:
+            parachute.enabled(true);
+            break;
+        case PARACHUTE_RELEASE:
+            parachute_release();
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
+#endif
 
 // log_picture - log picture taken and send feedback to GCS
 void Plane::log_picture()

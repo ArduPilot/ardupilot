@@ -461,6 +461,16 @@
 #define HIL_SUPPORT ENABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// Parachute release
+#ifndef PARACHUTE
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+ # define PARACHUTE ENABLED
+#else
+ # define PARACHUTE DISABLED
+#endif
+#endif
+
 /*
   build a firmware version string.
   GIT_VERSION comes from Makefile builds
