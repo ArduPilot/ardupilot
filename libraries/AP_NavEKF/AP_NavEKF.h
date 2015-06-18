@@ -267,6 +267,9 @@ public:
     // this function should not have more than one client
     bool getLastYawResetAngle(float &yawAng);
 
+    // returns true of the EKF thinks the GPS is glitching
+    bool getGpsGlitchStatus(void) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:

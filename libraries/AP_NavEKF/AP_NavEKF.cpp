@@ -4849,7 +4849,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2) && gpsGoodToAlign && gpsAccuracyGood;
+    bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2) && gpsGoodToAlign;
     bool filterHealthy = healthy();
 
     // set individual flags
@@ -4857,7 +4857,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy && gpsAccuracyGood; // absolute horizontal position estimate valid
+    status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
@@ -5389,6 +5389,12 @@ void NavEKF::calcGpsGoodForFlight(void)
 
     // both GPS speed accuracy and EKF innovations must pass
     gpsAccuracyGood = gpsSpdAccPass && ekfInnovationsPass;
+}
+
+// returns true of the EKF thinks the GPS is glitching or unavailable
+bool NavEKF::getGpsGlitchStatus(void) const
+{
+    return !gpsAccuracyGood;
 }
 
 #endif // HAL_CPU_CLASS
