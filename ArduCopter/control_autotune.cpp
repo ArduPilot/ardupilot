@@ -900,7 +900,6 @@ void Copter::autotune_load_intra_test_gains()
 // called by autotune_attitude_control() just before it beings testing a gain (i.e. just before it twitches)
 void Copter::autotune_load_twitch_gains()
 {
-    bool failed = true;
     switch (autotune_state.axis) {
         case AUTOTUNE_AXIS_ROLL:
             g.pid_rate_roll.kP(tune_roll_rp);
