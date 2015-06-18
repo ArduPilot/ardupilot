@@ -43,3 +43,35 @@
 >>[Overview of license](http://dev.ardupilot.com/wiki/license-gplv3)
 
 >>[Full Text](https://github.com/diydrones/ardupilot/blob/master/COPYING.txt)
+
+### Maintainers ###
+>> Ardupilot is comprised of several parts, vehicles and boards. The list below
+>> contains the people that regularly contribute to the project and are responsible
+>> for reviewing patches on their specific area. See [CONTRIBUTING.md](CONTRIBUTING.md)
+>> for more information.
+>>
+>> - [Andrew Tridgell](https://github.com/tridge)
+>>   - ***Vehicle***: AntennaTracker, Plane
+>>   - ***Board***: APM1, APM2, Pixhawk
+>> - [Randy Mackay](https://github.com/rmackay9)
+>>   - ***Vehicle***: Copter
+>> - [Robert Lefebvre](https://github.com/R-Lefebvre)
+>>   - ***Vehicle***: TradHeli
+>> - [Grant Morphett](https://github.com/gmorph):
+>>   - ***Vehicle***: Rover
+>> - [Matthias Badaire](https://github.com/badzz)
+>>   - ***Subsystem***: FRSky
+>> - [Paul Riseborough](https://github.com/priseborough)
+>>   - ***Subsystem***: AP_NavEKF
+>> - [Lucas De Marchi](https://github.com/lucasdemarchi)
+>>   - ***Subsystem***: Linux
+>> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
+>>   - ***Board***: PXF
+>> - [Mirko Denecke](https://github.com/mirkix)
+>>   - ***Board***: BBBmini
+>> - [Emlid](https://github.com/emlid)
+>>   - ***Board***: NavIO
+>> - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
+>>   - ***Board***: VRBrain
+>> - [Mike McCauley](#)
+>>   - ***Board***: Flymaple
