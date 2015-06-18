@@ -204,6 +204,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 21, AP_MotorsHeli,  _direct_drive_tailspeed, AP_MOTOR_HELI_DDTAIL_DEFAULT),
 
+    // @Param: RSC_CRITICAL
+    // @DisplayName: Critical Rotor Speed
+    // @Description: Rotor speed below which flight is not possible
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_CRITICAL", 22, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
+
     // parameters 1 ~ 29 reserved for tradheli
     // parameters 30 ~ 39 reserved for tricopter
     // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
@@ -748,7 +756,7 @@ void AP_MotorsHeli::rotor_ramp(int16_t rotor_target)
     if (!_heliflags.rotor_runup_complete && rotor_target > 0 && _rotor_speed_estimate >= rotor_target) {
         _heliflags.rotor_runup_complete = true;
     }
-    if (_heliflags.rotor_runup_complete && rotor_target == 0 && _rotor_speed_estimate <= 0) {
+    if (_heliflags.rotor_runup_complete && _rotor_speed_estimate <= _rsc_critical) {
         _heliflags.rotor_runup_complete = false;
     }
 

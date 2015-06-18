@@ -70,6 +70,9 @@
 // default main rotor speed (ch8 out) as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_RSC_SETPOINT             700
 
+// default main rotor critical speed
+#define AP_MOTORS_HELI_RSC_CRITICAL             500
+
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
@@ -292,6 +295,7 @@ private:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
