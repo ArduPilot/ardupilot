@@ -873,14 +873,12 @@ void Copter::autotune_load_intra_test_gains()
         g.pid_rate_roll.kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_roll.kD(orig_roll_rd);
         g.p_stabilize_roll.kP(orig_roll_sp);
-        attitude_control.set_accel_roll_max(orig_roll_accel);
     }
     if (autotune_pitch_enabled()) {
         g.pid_rate_pitch.kP(orig_pitch_rp);
         g.pid_rate_pitch.kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
         g.pid_rate_pitch.kD(orig_pitch_rd);
         g.p_stabilize_pitch.kP(orig_pitch_sp);
-        attitude_control.set_accel_pitch_max(orig_pitch_accel);
     }
     if (autotune_yaw_enabled()) {
         g.pid_rate_yaw.kP(orig_yaw_rp);
@@ -888,7 +886,6 @@ void Copter::autotune_load_intra_test_gains()
         g.pid_rate_yaw.kD(orig_yaw_rd);
         g.pid_rate_yaw.filt_hz(orig_yaw_rLPF);
         g.p_stabilize_yaw.kP(orig_yaw_sp);
-        attitude_control.set_accel_pitch_max(orig_pitch_accel);
     }
 }
 
