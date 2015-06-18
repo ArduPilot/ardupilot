@@ -749,7 +749,7 @@ void Copter::autotune_backup_gains_and_initialise()
 
     autotune_desired_yaw = ahrs.yaw_sensor;
 
-    g.autotune_aggressiveness = constrain_float(g.autotune_aggressiveness, 0.05f, 0.1f);
+    g.autotune_aggressiveness = constrain_float(g.autotune_aggressiveness, 0.05f, 0.2f);
 
     orig_bf_feedforward = attitude_control.get_bf_feedforward();
 
