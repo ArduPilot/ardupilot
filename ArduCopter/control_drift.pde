@@ -29,6 +29,10 @@
 // drift_init - initialise drift controller
 static bool drift_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
+
     if (position_ok() || ignore_checks) {
         return true;
     }else{

@@ -20,6 +20,10 @@
 // auto_init - initialise auto controller
 static bool auto_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
+
     if ((position_ok() && mission.num_commands() > 1) || ignore_checks) {
         auto_mode = Auto_Loiter;
 

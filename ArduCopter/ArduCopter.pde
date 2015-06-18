@@ -411,6 +411,7 @@ static struct {
     uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
     uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
     uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
+    uint8_t gps_glitch          : 1; // 6   // true if gps glitch failsafe has occurred
 
     int8_t radio_counter;                  // number of iterations with throttle below throttle_fs_value
 
@@ -920,6 +921,8 @@ static void fast_loop()
     update_land_detector();
 
     update_motor_fail_detector();
+
+    gps_glitch_update();
 }
 
 // rc_loops - reads user input from transmitter/receiver

@@ -7,6 +7,10 @@
 // loiter_init - initialise loiter controller
 static bool loiter_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
+
     if (position_ok() || optflow_position_ok() || ignore_checks) {
 
         // set target to current position

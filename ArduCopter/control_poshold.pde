@@ -96,6 +96,10 @@ static struct {
 // poshold_init - initialise PosHold controller
 static bool poshold_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
+
     // fail to initialise PosHold mode if no GPS lock
     if (!position_ok() && !ignore_checks) {
         return false;
