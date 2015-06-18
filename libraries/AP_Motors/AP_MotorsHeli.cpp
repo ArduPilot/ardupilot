@@ -348,12 +348,6 @@ bool AP_MotorsHeli::allow_arming() const
     return true;
 }
 
-// set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-void AP_MotorsHeli::set_desired_rotor_speed(int16_t desired_speed)
-{
-    _rotor_desired = desired_speed;
-}
-
 // return true if the main rotor is up to speed
 bool AP_MotorsHeli::rotor_runup_complete() const
 {
@@ -616,7 +610,7 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
-        if ((_rotor_desired > 0) && _tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
+        if ((_desired_rotor_speed > 0) && _tail_type != AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTOR_HELI_COLYAW_RANGE, AP_MOTOR_HELI_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
@@ -682,12 +676,12 @@ void AP_MotorsHeli::rsc_control()
     }
 
     // ramp up or down main rotor and tail
-    if (_rotor_desired > 0) {
+    if (_desired_rotor_speed > 0) {
         // ramp up tail rotor (this does nothing if not using direct drive variable pitch tail)
         tail_ramp(_direct_drive_tailspeed);
         // note: this always returns true if not using direct drive variable pitch tail
         if (tail_rotor_runup_complete()) {
-            rotor_ramp(_rotor_desired);
+            rotor_ramp(_desired_rotor_speed);
         }
     }else{
         // shutting down main rotor
@@ -699,7 +693,7 @@ void AP_MotorsHeli::rsc_control()
     // direct drive fixed pitch tail servo gets copy of yaw servo out (ch4) while main rotor is running
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH) {
         // output fixed-pitch speed control if Ch8 is high
-        if (_rotor_desired > 0 || _rotor_speed_estimate > 0) {
+        if (_desired_rotor_speed > 0 || _rotor_speed_estimate > 0) {
             // copy yaw output to tail esc
             write_aux(_servo_4.servo_out);
         }else{
