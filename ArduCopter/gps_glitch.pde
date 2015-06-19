@@ -38,7 +38,7 @@ static bool gps_glitch_action_mode(uint8_t mode) {
 static void gps_glitch_on_event() {
     failsafe.gps_glitch = true;
 
-    if (gps_glitch_action_mode(control_mode) && !failsafe.radio) {
+    if (motors.armed() && gps_glitch_action_mode(control_mode) && !failsafe.radio) {
         gps_glitch_switch_mode_on_resolve = true;
 
         set_mode(ALT_HOLD);
