@@ -27,6 +27,7 @@
 #include "UARTDevice.h"
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
+#include "TCPClientDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -74,8 +75,9 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         switch (_parseDevicePath(device_path)){        
         case DEVICE_TCP:
         {
+            _device = new TCPClientDevice(_ip, _base_port);
+            _device->open();
             _connected = false;
-            ::fprintf(stderr, "Please, use UDP instead\n");
             break;
         }   
 
