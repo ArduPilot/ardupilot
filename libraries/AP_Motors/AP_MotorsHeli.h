@@ -70,6 +70,9 @@
 // default main rotor speed (ch8 out) as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_RSC_SETPOINT             700
 
+// default main rotor critical speed
+#define AP_MOTORS_HELI_RSC_CRITICAL             500
+
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
@@ -107,7 +110,7 @@ public:
         _collective_scalar_manual(1),
         _collective_out(0),
         _collective_mid_pwm(0),
-        _rotor_desired(0),
+        _desired_rotor_speed(0),
         _rotor_out(0),
         _rsc_ramp_increment(0.0f),
         _rsc_runup_increment(0.0f),
@@ -115,7 +118,7 @@ public:
         _tail_direct_drive_out(0),
         _delta_phase_angle(0)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
 
         // initialise flags
         _heliflags.swash_initialised = 0;
@@ -174,7 +177,13 @@ public:
     int16_t get_rsc_setpoint() const { return _rsc_setpoint; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    void set_desired_rotor_speed(int16_t desired_speed);
+    void set_desired_rotor_speed(int16_t desired_speed) { _desired_rotor_speed = desired_speed; }
+
+    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
+    int16_t get_desired_rotor_speed() const { return _desired_rotor_speed; }
+
+    // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
+    int16_t get_estimated_rotor_speed() { return _rotor_speed_estimate; }
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
@@ -286,6 +295,7 @@ private:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -297,7 +307,7 @@ private:
     float           _collective_scalar_manual;  // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out;            // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm;        // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _rotor_desired;             // latest desired rotor speed from pilot
+    int16_t         _desired_rotor_speed;             // latest desired rotor speed from pilot
     float           _rotor_out;                 // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
     float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
