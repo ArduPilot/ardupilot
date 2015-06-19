@@ -26,6 +26,7 @@ TRACKER_ARGS=""
 EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
+OVERRIDE_BUILD_TARGET=""
 
 usage()
 {
@@ -53,6 +54,7 @@ Options:
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
+    -b BUILD_TARGET  override SITL build target
     -j NUM_PROC      number of processors to use during build (default 1)
     -H               start HIL
     -e               use external simulator
@@ -73,7 +75,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -143,6 +145,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:" opt; do
     e)
       EXTERNAL_SIM=1
       ;;
+    b)
+      OVERRIDE_BUILD_TARGET="$OPTARG"
+      ;;
     h)
       usage
       exit 0
@@ -201,11 +206,6 @@ FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 }
 
 EXTRA_PARM=""
-EXTRA_SIM=""
-
-[ "$SPEEDUP" != "1" ] && {
-    EXTRA_SIM="$EXTRA_SIM --speedup=$SPEEDUP"
-}
 
 check_jsbsim_version()
 {
@@ -232,53 +232,48 @@ EOF
 case $FRAME in
     +|quad)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=quad"
         MODEL="+"
 	;;
     X)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
-        EXTRA_SIM="$EXTRA_SIM --frame=X"
         MODEL="X"
 	;;
     octa*)
 	BUILD_TARGET="sitl-octa"
-        EXTRA_SIM="$EXTRA_SIM --frame=octa"
         MODEL="$FRAME"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
-        EXTRA_SIM="$EXTRA_SIM --frame=heli"
         MODEL="heli"
 	;;
     IrisRos)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=IrisRos"
 	;;
     CRRCSim-heli)
 	BUILD_TARGET="sitl-heli"
-        EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim-heli"
         MODEL="$FRAME"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
 	;;
     jsbsim*)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
         check_jsbsim_version
 	;;
     *)
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
 	;;
 esac
 
 if [ $DEBUG_BUILD == 1 ]; then
     BUILD_TARGET="$BUILD_TARGET-debug"
+fi
+
+if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
+    BUILD_TARGET="$OVERRIDE_BUILD_TARGET"
 fi
 
 autotest=$(dirname $(readlink -e $0))
