@@ -4190,7 +4190,7 @@ void NavEKF::readGpsData()
         // Monitor quality of the GPS velocity data for alignment
         goodToAlign = calcGpsGoodToAlign();
 
-        // Monitor qulaity of GPS data inflight
+        // Monitor quality of GPS data inflight
         calcGpsGoodForFlight();
 
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
@@ -4608,6 +4608,7 @@ void NavEKF::InitialiseVariables()
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
+    timeAtDisarm_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -4694,6 +4695,9 @@ void NavEKF::InitialiseVariables()
     yawResetAngle = 0.0f;
     yawResetAngleWaiting = false;
     gpsAccuracyGood = false;
+    gpsDriftNE = 0.0f;
+    gpsVertVelFilt = 0.0f;
+    gpsHorizVelFilt = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
@@ -4941,6 +4945,18 @@ void NavEKF::performArmingChecks()
             meaHgtAtTakeOff = hgtMea;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             state.position.z = -hgtMea;
+            // record the time we disarmed
+            timeAtDisarm_ms = imuSampleTime_ms;
+            // if the GPS is not glitching when we land, we reset the timer used to check GPS quality
+            if (gpsAccuracyGood) {
+                lastGpsVelFail_ms = 0;
+                gpsGoodToAlign = true;
+            }
+            // we reset the GPS drift checks when disarming as the vehicle has been moving during flight
+            gpsDriftNE = 0.0f;
+            gpsVertVelFilt = 0.0f;
+            gpsHorizVelFilt = 0.0f;
+
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
@@ -5097,6 +5113,8 @@ void NavEKF::setTouchdownExpected(bool val)
 // Monitor GPS data to see if quality is good enough to initialise the EKF
 // Monitor magnetometer innovations to to see if the heading is good enough to use GPS
 // Return true if all criteria pass for 10 seconds
+// Once we have set the origin and are operating in GPS mode the status is set to true to avoid a race conditon with remote useage
+// If we have landed with good GPS, then the status is assumed good for 5 seconds to allow transients to settle
 bool NavEKF::calcGpsGoodToAlign(void)
 {
     static struct Location gpsloc_prev;    // LLH location of previous GPS measurement
@@ -5139,7 +5157,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // Check for significant change in GPS posiiton if disarmed which indicates bad GPS
     // Note: this assumes we are not flying from a moving vehicle, eg boat
     const struct Location &gpsloc = _ahrs->get_gps().location(); // Current location
-    static float gpsDriftNE = 0.0f; // amount of position drift detected
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsesd since last GPS fix and limit to prevent numerical errors
     float deltaTime = constrain_float(float(lastFixTime_ms - secondLastFixTime_ms)*0.001f,0.01f,posFiltTimeConst);
@@ -5156,7 +5173,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    static float gpsVertVelFilt = 0.0f;
     if (_ahrs->get_gps().have_vertical_velocity() && !vehicleArmed) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * velNED.z + 0.9f * gpsVertVelFilt;
@@ -5171,7 +5187,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // Check that the horizontal GPS vertical velocity is reasonable after noise filtering
     bool gpsHorizVelFail;
-    static float gpsHorizVelFilt;
     if (!vehicleArmed) {
         gpsHorizVelFilt = 0.1f * pythagorous2(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
@@ -5187,7 +5202,11 @@ bool NavEKF::calcGpsGoodToAlign(void)
     }
 
     // continuous period without fail required to return healthy
-    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+    // also return healthy if we already have an origin and are inflight to prevent a race condition when checking the status on the ground after landing
+    // Due to filter disturbances on landing and disarm we don't fail the GPS check status for the first 5 seconds provided the basic GPS accuracy check passes
+    bool disarmTimeout = ((imuSampleTime_ms - timeAtDisarm_ms) < 5000) && !vehicleArmed && gpsAccuracyGood;
+    bool usingInFlight = vehicleArmed && validOrigin && !constVelMode && !constPosMode;
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000 || usingInFlight || disarmTimeout) {
         return true;
     } else {
         return false;

@@ -690,6 +690,10 @@ private:
     bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
     bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
+    uint32_t timeAtDisarm_ms;       // time of last disarm event in msec
+    float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
+    float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
+    float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
