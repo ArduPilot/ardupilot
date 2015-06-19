@@ -99,7 +99,8 @@ void AP_SerialBus_SPI::sem_give()
 
 
 /// I2C SerialBus
-AP_SerialBus_I2C::AP_SerialBus_I2C(uint8_t addr) :
+AP_SerialBus_I2C::AP_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
+    _i2c(i2c),
     _addr(addr),
     _i2c_sem(NULL) 
 {
@@ -107,7 +108,7 @@ AP_SerialBus_I2C::AP_SerialBus_I2C(uint8_t addr) :
 
 void AP_SerialBus_I2C::init()
 {
-    _i2c_sem = hal.i2c0->get_semaphore();
+    _i2c_sem = _i2c->get_semaphore();
     if (_i2c_sem == NULL) {
         hal.scheduler->panic(PSTR("AP_SerialBus_I2C did not get valid I2C semaphore!"));
     }
@@ -116,7 +117,7 @@ void AP_SerialBus_I2C::init()
 uint16_t AP_SerialBus_I2C::read_16bits(uint8_t reg)
 {
     uint8_t buf[2];
-    if (hal.i2c0->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
+    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
         return (((uint16_t)(buf[0]) << 8) | buf[1]);
     }
     return 0;
@@ -125,7 +126,7 @@ uint16_t AP_SerialBus_I2C::read_16bits(uint8_t reg)
 uint32_t AP_SerialBus_I2C::read_24bits(uint8_t reg)
 {
     uint8_t buf[3];
-    if (hal.i2c0->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
+    if (_i2c->readRegisters(_addr, reg, sizeof(buf), buf) == 0) {
         return (((uint32_t)buf[0]) << 16) | (((uint32_t)buf[1]) << 8) | buf[2];
     }
     return 0;
@@ -133,7 +134,7 @@ uint32_t AP_SerialBus_I2C::read_24bits(uint8_t reg)
 
 void AP_SerialBus_I2C::write(uint8_t reg)
 {
-    hal.i2c0->write(_addr, 1, &reg);
+    _i2c->write(_addr, 1, &reg);
 }
 
 bool AP_SerialBus_I2C::sem_take_blocking() 

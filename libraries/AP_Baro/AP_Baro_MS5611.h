@@ -6,9 +6,6 @@
 #include <AP_HAL.h>
 #include "AP_Baro.h"
 
-#define MS5611_I2C_ADDR 0x77
-#define MS5607_I2C_ADDR 0x77
-
 /** Abstract serial bus device driver for I2C/SPI. */
 class AP_SerialBus
 {
@@ -60,7 +57,7 @@ private:
 class AP_SerialBus_I2C : public AP_SerialBus
 {
 public:
-    AP_SerialBus_I2C(uint8_t addr);
+    AP_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
     void init();
     uint16_t read_16bits(uint8_t reg);
     uint32_t read_24bits(uint8_t reg);
@@ -70,6 +67,7 @@ public:
     void sem_give();
 
 private:
+    AP_HAL::I2CDriver *_i2c;
     uint8_t _addr;
     AP_HAL::Semaphore *_i2c_sem;
 };
