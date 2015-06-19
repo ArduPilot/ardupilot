@@ -1,3 +1,56 @@
+Release 2.50, 19 June 2015
+==========================
+
+The ardupilot development team has released version 2.50 of
+APM:Rover.  This release is mostly a backend improvement to ArduPilot
+but a few new features and bug fixes are included.
+
+Re-do Accelerometer Calibration
+-------------------------------
+Due to a change in the maximum accelerometer range on the Pixhawk all
+users must re-do their accelerometer calibration for this release.
+
+
+Only 3D accel calibration
+-------------------------
+The old "1D" accelerometer calibration method has now been removed, so
+you must use the 3D accelerometer calibration method. The old method
+was removed because a significant number of users had poor experiences.
+
+
+Changes in this release are:
+
+        - CLI_ENABLED parameter added so the CLI can now be accessed
+          in Rover
+        - PID logging for the steering controller.  It its now
+          possible to graph what the P, I and D are doing as your
+          driving the rover around to enable much better tuning of the
+          vehicle.
+        - Transition from .pde file to .cpp files for improved
+          development.
+        - GIT Submodules created for PX4Firmware, PX4Nuttx and uavcan
+          git repositories for improved development.
+        - Followme mode now works for Rover
+        - GUIDED mode significantly improved.  If you have a GCS which is in
+          Followme mode if the user then changes mode with the RC transmitter to
+          HOLD or anything else then the Rover will STOP listening to the
+          Followme updated guided mode waypoints.
+        - When going into GUIDED mode the rover went into RTL - this
+          is fixed.
+        - Added EKF_STATUS_REPORT MAVLink message
+        - 64-bit timestamps in dataflash logs
+        - Numerous EKF improvements
+        - Added support for 4th Mavlink channel
+        - Added support for raw IMU logging
+        - updated Piksi RTK GPS driver
+        - improved support for GPS data injection (for Piksi RTK GPS)
+        - The SITL software in the loop simulation system has been completely
+          rewritten for this release. A major change is to make it possible to
+          run SITL on native windows without needing a Linux virtual
+          machine. (thanks Tridge)
+
+
+
 Release 2.49, March 4th 2015
 ----------------------------
 

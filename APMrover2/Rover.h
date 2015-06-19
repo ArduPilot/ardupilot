@@ -20,7 +20,7 @@
 #ifndef _ROVER_H_
 #define _ROVER_H_
 
-#define THISFIRMWARE "ArduRover v2.49"
+#define THISFIRMWARE "ArduRover v2.50"
 
 #include <math.h>
 #include <stdarg.h>
