@@ -28,6 +28,7 @@
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
 #include "TCPClientDevice.h"
+#include "TCPServerDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -71,24 +72,22 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (device_path == NULL) {
             return;
         }
-        
-        switch (_parseDevicePath(device_path)){        
+
+        switch (_parseDevicePath(device_path)) {
         case DEVICE_TCP:
         {
-            _device = new TCPClientDevice(_ip, _base_port);
-            _device->open();
-            _connected = false;
+            _tcp_start_connection();
             break;
-        }   
+        }
 
         case DEVICE_UDP:
         {
             _udp_start_connection();
             _flow_control = FLOW_CONTROL_ENABLE;
             break;
-        }   
+        }
 
-        case DEVICE_SERIAL:            
+        case DEVICE_SERIAL:
         {
             if (!_serial_start_connection()) {
                 break; /* Whatever it might mean */
@@ -253,6 +252,23 @@ void LinuxUARTDriver::_udp_start_connection(void)
 
     /* try to write on MAVLink packet boundaries if possible */
     _packetise = true;
+}
+
+void LinuxUARTDriver::_tcp_start_connection(void)
+{
+    if (_flag != NULL) {
+        if (!strcmp(_flag, "wait")) {    
+            _device = new TCPServerDevice(_ip, _base_port);
+        } else {
+            _device = new TCPClientDevice(_ip, _base_port);
+        }
+    } else {
+        _device = new TCPClientDevice(_ip, _base_port);
+    }
+
+    if (_device->open()) {
+        _connected = true;
+    }
 }
 
 /*
