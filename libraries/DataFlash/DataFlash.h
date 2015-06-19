@@ -104,6 +104,11 @@ public:
 
     bool logging_started(void);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    // currently only DataFlash_File support this:
+    void flush(void);
+#endif
+
 protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 

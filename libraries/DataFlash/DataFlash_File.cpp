@@ -608,6 +608,25 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
     port->println();    
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+void DataFlash_File::flush(void)
+{
+    uint16_t _tail;
+    uint32_t tnow = hal.scheduler->micros();
+    hal.scheduler->suspend_timer_procs();
+    while (_write_fd != -1 && _initialised && !_open_error &&
+           BUF_AVAILABLE(_writebuf)) {
+        // convince the IO timer that it really is OK to write out
+        // less than _writebuf_chunk bytes:
+        _last_write_time = tnow - 2000000;
+        _io_timer();
+    }
+    hal.scheduler->resume_timer_procs();
+    if (_write_fd != -1) {
+        ::fsync(_write_fd);
+    }
+}
+#endif
 
 void DataFlash_File::_io_timer(void)
 {

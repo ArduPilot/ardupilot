@@ -53,6 +53,10 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    void flush(void);
+#endif
+
 private:
     int _write_fd;
     int _read_fd;

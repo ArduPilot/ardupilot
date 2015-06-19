@@ -66,5 +66,11 @@ void DataFlash_Class::EnableWrites(bool enable) {
     backend->EnableWrites(enable);
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    // currently only DataFlash_File support this:
+void DataFlash_Class::flush(void) {
+    backend->flush();
+}
+#endif
 
 // end functions pass straight through to backend
