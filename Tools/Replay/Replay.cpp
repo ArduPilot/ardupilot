@@ -53,9 +53,10 @@
 #include <AP_RangeFinder.h>
 #include <stdio.h>
 #include <errno.h>
+#include <signal.h>
+#include <unistd.h>
 #include <getopt.h> // for optind only
 #include <utility/getopt_cpp.h>
-
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -201,6 +202,8 @@ public:
         filename("log.bin"),
         _vehicle(vehicle) { }
 
+    void flush_dataflash(void);
+
 private:
     const char *filename;
     ReplayVehicle &_vehicle;
@@ -288,6 +291,10 @@ enum {
     OPT_TOLERANCE_POS,
     OPT_TOLERANCE_VEL
 };
+
+void Replay::flush_dataflash(void) {
+    _vehicle.dataflash.flush();
+}
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
@@ -469,6 +476,15 @@ int find_update_rate(const char *filename) {
     exit(1);
 }
 
+// catch floating point exceptions
+static void _replay_sig_fpe(int signum)
+{
+    fprintf(stderr, "ERROR: Floating point exception - flushing dataflash...\n");
+    replay.flush_dataflash();
+    fprintf(stderr, "ERROR: ... and aborting.\n");
+    abort();
+}
+
 void Replay::setup()
 {
     ::printf("Starting\n");
@@ -479,6 +495,9 @@ void Replay::setup()
     hal.util->commandline_arguments(argc, argv);
 
     _parse_command_line(argc, argv);
+
+    // _parse_command_line sets up an FPE handler.  We can do better:
+    signal(SIGFPE, _replay_sig_fpe);
 
     hal.console->printf("Processing log %s\n", filename);
 
