@@ -14,7 +14,7 @@ endif
 
 # these can be overridden in developer.mk
 PX4FIRMWARE_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
-PX4NUTTX_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
+PX4NUTTX_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4NuttX
 UAVCAN_DIRECTORY ?= $(SKETCHBOOK)/modules/uavcan
 
 PX4_ROOT := $(shell cd $(PX4FIRMWARE_DIRECTORY) && pwd)
