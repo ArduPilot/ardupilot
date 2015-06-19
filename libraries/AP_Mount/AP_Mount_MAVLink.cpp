@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <AP_Mount_MAVLink.h>
+#include <DataFlash.h>
 #if AP_AHRS_NAVEKF_AVAILABLE
 #include <GCS_MAVLink.h>
 #include <stdio.h>
@@ -9,6 +10,8 @@
 #if MOUNT_DEBUG
 #include <stdio.h>
 #endif
+
+extern const AP_HAL::HAL& hal;
 
 AP_Mount_MAVLink::AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
@@ -21,6 +24,47 @@ void AP_Mount_MAVLink::init(const AP_SerialManager& serial_manager)
 {
     _initialised = true;
     set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
+}
+
+void AP_Mount_MAVLink::Log_Write_Gimbal(AP_Gimbal &gimbal)
+{
+    uint32_t tstamp = hal.scheduler->millis();
+    Quaternion quatEst;
+    gimbal._ekf.getQuat(quatEst);
+    Vector3f eulerEst;
+    quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+
+    struct log_Gimbal1 pkt1 = {
+        LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
+        time_ms : tstamp,
+        delta_time      : gimbal._measurement.delta_time,
+        delta_angles_x  : gimbal._measurement.delta_angles.x,
+        delta_angles_y  : gimbal._measurement.delta_angles.y,
+        delta_angles_z  : gimbal._measurement.delta_angles.z,
+        delta_velocity_x : gimbal._measurement.delta_velocity.x,
+        delta_velocity_y : gimbal._measurement.delta_velocity.y,
+        delta_velocity_z : gimbal._measurement.delta_velocity.z,
+        joint_angles_x  : gimbal._measurement.joint_angles.x,
+        joint_angles_y  : gimbal._measurement.joint_angles.y,
+        joint_angles_z  : gimbal._measurement.joint_angles.z
+    };
+    _frontend._dataflash->WriteBlock(&pkt1, sizeof(pkt1));
+
+    struct log_Gimbal2 pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
+        time_ms : tstamp,
+        est_sta : (uint8_t) gimbal._ekf.getStatus(),
+        est_x   : eulerEst.x,
+        est_y   : eulerEst.y,
+        est_z   : eulerEst.z,
+        rate_x  : gimbal.gimbalRateDemVec.x,
+        rate_y  : gimbal.gimbalRateDemVec.y,
+        rate_z  : gimbal.gimbalRateDemVec.z,
+        target_x: gimbal._angle_ef_target_rad.x,
+        target_y: gimbal._angle_ef_target_rad.y,
+        target_z: gimbal._angle_ef_target_rad.z
+       };
+    _frontend._dataflash->WriteBlock(&pkt2, sizeof(pkt2));
 }
 
 // update mount position - should be called periodically
@@ -104,6 +148,7 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
 {
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
+    Log_Write_Gimbal(_gimbal);
 }
 
 /*
