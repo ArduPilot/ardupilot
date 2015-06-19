@@ -10,7 +10,6 @@
 #include <AP_Param.h>
 #include <AP_GPS.h>
 #include <AP_InertialSensor.h>
-#include <AP_Gimbal.h>
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
@@ -83,7 +82,6 @@ public:
 	void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
-    void Log_Write_Gimbal(const AP_Gimbal &gimbal);
 
     bool logging_started(void) const { return _logging_started; }
 
