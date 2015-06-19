@@ -58,6 +58,11 @@ $(info Reading $(SKETCHBOOK)/config.mk)
 include $(SKETCHBOOK)/config.mk
 endif
 
+ifneq ($(wildcard $(SKETCHBOOK)/developer.mk),)
+$(info Reading $(SKETCHBOOK)/developer.mk)
+include $(SKETCHBOOK)/developer.mk
+endif
+
 #
 # Work out the sketch name from the name of the source directory.
 #

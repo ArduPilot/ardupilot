@@ -12,11 +12,15 @@ ifneq ($(UAVCAN_DIR),)
 $(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
+# these can be overridden in developer.mk
+PX4FIRMWARE_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
+PX4NUTTX_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
+UAVCAN_DIRECTORY ?= $(SKETCHBOOK)/modules/uavcan
 
-PX4_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4Firmware && pwd)
-NUTTX_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
+PX4_ROOT := $(shell cd $(PX4FIRMWARE_DIRECTORY) && pwd)
+NUTTX_ROOT := $(shell cd $(PX4NUTTX_DIRECTORY) && pwd)
 NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
-UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
+UAVCAN_DIR=$(shell cd $(UAVCAN_DIRECTORY) && pwd)/
 
 # warn if user has old PX4Firmware or PX4NuttX trees
 ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
