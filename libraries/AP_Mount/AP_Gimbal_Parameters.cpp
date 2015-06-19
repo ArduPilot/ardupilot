@@ -25,6 +25,11 @@ void AP_Gimbal_Parameters::receive_missing_parameters(mavlink_channel_t chan)
     }
 }
 
+void AP_Gimbal_Parameters::fetch_params()
+{
+    _mask = 0x00;
+}
+
 void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg)
 {
     mavlink_param_value_t packet;

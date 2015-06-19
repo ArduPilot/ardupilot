@@ -962,7 +962,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_PARAM_VALUE:{
         if(msg->compid == MAV_COMP_ID_GIMBAL){
-            camera_mount._externalParameters.handle_param_value(msg);
+            camera_mount._externalParameters.handle_param_value(&DataFlash, msg);
         }
         break;
     }

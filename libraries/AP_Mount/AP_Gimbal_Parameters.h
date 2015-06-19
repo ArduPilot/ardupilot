@@ -30,6 +30,7 @@ public:
     bool received_all();
 	void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg);
 	void receive_missing_parameters(mavlink_channel_t chan);
+    void fetch_params();
 
 	AP_Gimbal_Parameters(){
 		_mask = MAVLINK_GIMBAL_PARAM_MASK_NONE;
