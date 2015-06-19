@@ -41,7 +41,6 @@ class AP_Mount_Servo;
 class AP_Mount_MAVLink;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
-
 /*
   This is a workaround to allow the MAVLink backend access to the
   SmallEKF. It would be nice to find a neater solution to this

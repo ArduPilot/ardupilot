@@ -1,6 +1,9 @@
+#ifndef __AP_GIMBAL_PARAMETERS__
+#define __AP_GIMBAL_PARAMETERS__
 #include <AP_Math.h>
 #include <AP_Common.h>
 #include <GCS_MAVLink.h>
+#include <DataFlash.h>
 
 
 #define MAVLINK_GIMBAL_PARAM_GMB_OFF_JNT_X      0x001
@@ -25,7 +28,7 @@ public:
     float        K_gimbalRate;
     
     bool received_all();
-	void handle_param_value(mavlink_message_t *msg);
+	void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg);
 	void receive_missing_parameters(mavlink_channel_t chan);
 
 	AP_Gimbal_Parameters(){
@@ -36,3 +39,4 @@ private:
 	uint16_t     _mask;
 
 };
+#endif

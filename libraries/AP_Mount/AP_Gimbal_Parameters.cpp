@@ -25,7 +25,7 @@ void AP_Gimbal_Parameters::receive_missing_parameters(mavlink_channel_t chan)
     }
 }
 
-void AP_Gimbal_Parameters::handle_param_value(mavlink_message_t *msg)
+void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg)
 {
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
@@ -61,4 +61,5 @@ void AP_Gimbal_Parameters::handle_param_value(mavlink_message_t *msg)
         K_gimbalRate = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_K_RATE;
     }
+    dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
 }
