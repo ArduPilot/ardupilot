@@ -240,9 +240,11 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     if (airspeed.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
+#if GEOFENCE_ENABLED
     if (geofence_breached()) {
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
+#endif
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
