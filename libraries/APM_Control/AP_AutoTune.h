@@ -77,17 +77,17 @@ private:
     ATGains next_save;
 
     // time when we last saved
-    uint32_t last_save_ms;
+    uint32_t last_save_ms = 0;
 
     // the demanded/achieved state
     enum ATState {DEMAND_UNSATURATED,
                   DEMAND_UNDER_POS, 
                   DEMAND_OVER_POS,
                   DEMAND_UNDER_NEG,
-                  DEMAND_OVER_NEG} state;
+                  DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;
 
     // when we entered the current state
-    uint32_t state_enter_ms;
+    uint32_t state_enter_ms = 0;
 
     void check_save(void);
     void check_state_exit(uint32_t state_time_ms);

@@ -70,10 +70,12 @@ extern const AP_HAL::HAL& hal;
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
                          DataFlash_Class &_dataflash) :
+    running(false),
     current(_gains),
     type(_type),
     aparm(parms),
-    dataflash(_dataflash)
+    dataflash(_dataflash),
+    saturated_surfaces(false)
 {}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
