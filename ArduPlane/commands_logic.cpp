@@ -145,6 +145,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             }
         }    
 #endif
+        break;
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         autotune_enable(cmd.p1);
