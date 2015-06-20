@@ -97,7 +97,7 @@ void StorageManager::erase(void)
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = pgm_read_word(&area.length);
         uint16_t offset = pgm_read_word(&area.offset);
-        for (uint8_t ofs=0; length; ofs += sizeof(blk)) {
+        for (uint16_t ofs=0; ofs<length; ofs += sizeof(blk)) {
             uint8_t n = 16;
             if (ofs + n > length) {
                 n = length - ofs;
