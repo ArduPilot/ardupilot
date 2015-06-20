@@ -565,19 +565,19 @@ private:
     const struct Location &home = ahrs.get_home();
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set;
+    enum HomeState home_is_set = HOME_UNSET;
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-    Location prev_WP_loc;
+    Location prev_WP_loc {};
 
     // The plane's current location
-    struct Location current_loc;
+    struct Location current_loc {};
 
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-    Location next_WP_loc;
+    Location next_WP_loc {};
 
     // The location of the active waypoint in Guided mode.
-    struct Location guided_WP_loc;
+    struct Location guided_WP_loc {};
 
     // special purpose command used only after mission completed to return vehicle to home or rally point
     struct AP_Mission::Mission_Command auto_rtl_command;
@@ -603,7 +603,7 @@ private:
         // lookahead value for height error reporting
         float lookahead;
 #endif
-    } target_altitude;
+    } target_altitude {};
 
     // INS variables
     // The main loop execution time.  Seconds
@@ -612,21 +612,21 @@ private:
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    uint32_t perf_mon_timer;
+    uint32_t perf_mon_timer = 0;
 
     // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
-    uint32_t G_Dt_max;
-    uint32_t G_Dt_min;
+    uint32_t G_Dt_max = 0;
+    uint32_t G_Dt_min = 0;
 
     // System Timers
     // Time in microseconds of start of main control loop
-    uint32_t fast_loopTimer_us;
+    uint32_t fast_loopTimer_us = 0;
 
     // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop;
+    uint32_t delta_us_fast_loop = 0;
 
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
+    uint16_t mainLoop_count = 0;
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
@@ -643,13 +643,13 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    bool demoing_servos;
+    bool demoing_servos = false;
 
     // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
+    bool in_mavlink_delay = false;
 
     // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
+    bool gcs_out_of_time = false;
 
 
     void demo_servos(uint8_t i);
