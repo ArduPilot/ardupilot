@@ -115,8 +115,11 @@ void Plane::low_battery_event(void)
     }
     gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
                       (double)battery.voltage(), (double)battery.current_total_mah());
-    set_mode(RTL);
-    aparm.throttle_cruise.load();
+    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    	set_mode(RTL);
+    	aparm.throttle_cruise.load();
+    }
     failsafe.low_battery = true;
     AP_Notify::flags.failsafe_battery = true;
 }
