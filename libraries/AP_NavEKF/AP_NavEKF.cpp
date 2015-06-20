@@ -4948,8 +4948,9 @@ void NavEKF::performArmingChecks()
             // record the time we disarmed
             timeAtDisarm_ms = imuSampleTime_ms;
             // if the GPS is not glitching when we land, we reset the timer used to check GPS quality
+            // timer is not set to zero to avoid triggering an automatic fail
             if (gpsAccuracyGood) {
-                lastGpsVelFail_ms = 0;
+                lastGpsVelFail_ms = 1;
                 gpsGoodToAlign = true;
             }
             // we reset the GPS drift checks when disarming as the vehicle has been moving during flight
