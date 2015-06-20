@@ -236,8 +236,6 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
             if (_data_ready()) {
                 _spi_sem->give();
                 break;
-            } else {
-                return false;
             }
             _spi_sem->give();
         }
