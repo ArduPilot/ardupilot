@@ -31,5 +31,5 @@ addons:
       description: "Build submitted via Travis CI"
     notification_email: andrew-scan@tridgell.net
     build_command_prepend: "make clean"
-    build_command:   "make -j 4"
+    build_command:   "make"
     branch_pattern: coverity_scan
