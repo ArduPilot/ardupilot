@@ -751,10 +751,9 @@ bool Plane::arm_motors(AP_Arming::ArmingMethod method)
         return false;
     }
 
-    //only log if arming was successful
-    if (!px4io_override_enabled) {
-        channel_throttle->enable_out();
-    }
+    // only log if arming was successful
+    channel_throttle->enable_out();
+
     change_arm_state();
     return true;
 }

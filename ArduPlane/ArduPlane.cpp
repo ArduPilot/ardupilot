@@ -273,9 +273,7 @@ void Plane::obc_fs_check(void)
  */
 void Plane::update_aux(void)
 {
-    if (!px4io_override_enabled) {
-        RC_Channel_aux::enable_aux_servos();
-    }
+    RC_Channel_aux::enable_aux_servos();
 }
 
 void Plane::one_second_loop()
