@@ -18,7 +18,6 @@
 //  Modified by Paul Riseborough to implement a three loop autopilot
 //  topology
 //
-#include <AP_Math.h>
 #include <AP_HAL.h>
 #include "AP_YawController.h"
 

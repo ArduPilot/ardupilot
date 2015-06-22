@@ -9,7 +9,6 @@
 #include <AP_AutoTune.h>
 #include <DataFlash.h>
 #include <AP_Math.h>
-#include <DataFlash.h>
 
 class AP_RollController {
 public:
