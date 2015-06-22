@@ -45,8 +45,12 @@ public:
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
     
-    // use_flybar_passthrough - controls whether we pass-through control inputs to swash-plate
-	void use_flybar_passthrough(bool passthrough) {  _flags_heli.flybar_passthrough = passthrough; }
+    // use_flybar_passthrough - controls whether we pass-through
+    // control inputs to swash-plate and tail
+    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {  
+        _flags_heli.flybar_passthrough = passthrough; 
+        _flags_heli.tail_passthrough = tail_passthrough; 
+    }
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -60,6 +64,7 @@ private:
         uint8_t limit_yaw           :   1;  // 1 if we have requested larger yaw angle than tail servo can physically move
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
+        uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
 
     //
@@ -80,6 +85,9 @@ private:
     // pass through for roll and pitch
     int16_t _passthrough_roll;
     int16_t _passthrough_pitch;
+
+    // pass through for yaw if tail_passthrough is set
+    int16_t _passthrough_yaw;
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead

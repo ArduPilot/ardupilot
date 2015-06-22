@@ -14,9 +14,10 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
 // passthrough_bf_roll_pitch_rate_yaw - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
 void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf)
 {
-    // store roll and pitch passthroughs
+    // store roll, pitch and passthroughs
     _passthrough_roll = roll_passthrough;
     _passthrough_pitch = pitch_passthrough;
+    _passthrough_yaw = yaw_rate_bf;
 
     // set rate controller to use pass through
     _flags_heli.flybar_passthrough = true;
@@ -86,7 +87,11 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     } else {
         rate_bf_to_motor_roll_pitch(_rate_bf_target.x, _rate_bf_target.y);
     }
-    _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
+    if (_flags_heli.tail_passthrough) {
+        _motors.set_yaw(_passthrough_yaw);
+    } else {
+        _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target.z));
+    }
 }
 
 //
