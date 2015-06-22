@@ -492,6 +492,19 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+    if (g.gcs_pid_mask & 4) {
+        const DataFlash_Class::PID_Info &pid_info = yawController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
+                                    pid_info.desired,
+                                    degrees(gyro.z),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
     if (g.gcs_pid_mask & 8) {
         const DataFlash_Class::PID_Info &pid_info = steerController.get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER, 
