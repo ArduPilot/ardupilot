@@ -4,16 +4,20 @@ BleeduPilot is a port of Ardupilot 3.1.5 to MultiWii flight controllers using th
 about both projects is available on their respective pages - 
 http://www.megapirateng.com/ and http://dev.ardupilot.com/
 
-NOTE - This is a complete re-merge of the MPNG HAL code with ArduCopter 3.1.5. All features of ArduCopter 3.1.5 
-are available and the code plays nicely with the latest versions of Mission Planner. However, the AtMega 2560 processor is being 
-pushed to it's limits. You can easily push it beyond by enabling too much in APMConfig.h. Be Careful!!! This is especially true 
-on the Crius All-in-One v 2.0 which has dataflash logging (CPU hungry) and power issues. This is an experiment to see how far an 
-8-bit flight controller can be pushed without breaking. If that sounds like fun you are in the right place. If it sounds scary, 
-you are not. I am willing to sacrifice my flying ROBOTs to find a better algorithm. Not everyone is.
+NOTE - This is a complete re-merge of the MPNG HAL code with ArduCopter 3.1.5. (i.e. I forked Arducopter 3.1.5 and reintegrated 
+it with the HAL_MPNG of Megapriate... All features of ArduCopter 3.1.5 are available and the code plays nicely with the latest versions 
+of Mission Planner. However, the AtMega 2560 processor is being pushed to it's limits. You can easily push it beyond by enabling too 
+much in APMConfig.h. Be Careful!!! This is especially true on the Crius All-in-One v 2.0 which has dataflash logging (CPU hungry) and 
+power issues. This is an experiment to see how far an 8-bit flight controller can be pushed without breaking. If that sounds like fun 
+you are in the right place. If it sounds scary, you are not. I am willing to sacrifice my flying ROBOTs to find a better algorithm. 
+
+Not everyone is.
 
 ###This software is NOT supported. You Have Been Warned.
 
-(Note - The above having been said, I've been flying this firmware for several months now on Crius All-In-One v2 and MultiWii Pro boards [both Red HK and Witespy v2/3] without any flyaways, reboots, controller hangs or weird behavior. In addition SONAR, Power module, MAV/OSD, GPS, Autotune have ALL been tested and work normally. It has been tested with tricopter, quadcopter and traditional heliconfigurations. It has NOT been tested with Hex or Octo-copters yet. (CPU load may be an issue here as the board is generating twice as many PWM signals.) 
+This software works. But it is NOT supported.  
+
+(Note - The above having been said, I've been flying this firmware for over a year now on Crius All-In-One v2 and MultiWii Pro boards [both Red HK and Witespy v2/3] without any flyaways, reboots, controller hangs or weird behavior. In addition SONAR, Power module, MAV/OSD, GPS, Autotune have ALL been tested and work normally. It has been tested with tricopter, quadcopter and traditional heli configurations (only limited trad heli testing so far). It has NOT been tested with Hex or Octo-copters yet. (CPU load may be an issue here as the board is generating twice as many PWM signals.) 
 
 ## Getting the source
 
