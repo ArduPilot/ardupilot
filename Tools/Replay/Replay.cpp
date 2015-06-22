@@ -71,17 +71,10 @@
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-class Replay {
+class ReplayVehicle {
 public:
     void setup();
-    void loop();
-
-    Replay() : filename("log.bin") { }
-
-private:
-    const char *filename;
-
-    Parameters g;
+    void load_parameters(void);
 
     AP_InertialSensor ins;
     AP_Baro barometer;
@@ -95,62 +88,22 @@ private:
     AP_Airspeed airspeed{aparm};
     DataFlash_File dataflash{"logs"};
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
-#endif
-
-    LogReader logreader{ahrs, ins, barometer, compass, gps, airspeed, dataflash};
-
-    FILE *plotf;
-    FILE *plotf2;
-    FILE *ekf1f;
-    FILE *ekf2f;
-    FILE *ekf3f;
-    FILE *ekf4f;
-
-    bool done_parameters;
-    bool done_baro_init;
-    bool done_home_init;
-    uint16_t update_rate = 0;
-    int32_t arm_time_ms = -1;
-    bool ahrs_healthy;
-    bool have_imu2 = false;
-    bool have_imt = false;
-    bool have_imt2 = false;
-    bool have_fram = false;
-    bool use_imt = true;
-
-    void _parse_command_line(uint8_t argc, char * const argv[]);
-
-    uint8_t num_user_parameters;
-    struct {
-        char name[17];
-        float value;
-    } user_parameters[100];
+private:
+    Parameters g;
 
     // setup the var_info table
     AP_Param param_loader{var_info};
 
     static const AP_Param::Info var_info[];
-
-    void load_parameters(void);
-    void usage(void);
-    void set_user_parameters(void);
-    void read_sensors(const char *type);
-    
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
-    LOG_COMMON_STRUCTURES
-};
+ReplayVehicle replayvehicle;
 
-static Replay replay;
+#define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
+#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
+#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
 
-#define GSCALAR(v, name, def) { replay.g.v.vtype, name, Parameters::k_param_ ## v, &replay.g.v, {def_value : def} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replay.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replay.v, {group_info : class::var_info} }
-
-const AP_Param::Info Replay::var_info[] PROGMEM = {
+const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
@@ -182,12 +135,92 @@ const AP_Param::Info Replay::var_info[] PROGMEM = {
     AP_VAREND
 };
 
-void Replay::load_parameters(void)
+
+void ReplayVehicle::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         hal.scheduler->panic(PSTR("Bad parameter table"));
     }
 }
+
+static const struct LogStructure log_structure[] PROGMEM = {
+    LOG_COMMON_STRUCTURES
+};
+
+void ReplayVehicle::setup(void) {
+    dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    dataflash.StartNewLog();
+
+    ahrs.set_compass(&compass);
+    ahrs.set_fly_forward(true);
+    ahrs.set_wind_estimation(true);
+    ahrs.set_correct_centrifugal(true);
+    ahrs.set_ekf_use(true);
+
+    printf("Starting disarmed\n");
+    hal.util->set_soft_armed(false);
+
+    barometer.init();
+    barometer.setHIL(0);
+    barometer.update();
+    compass.init();
+    ins.set_hil_mode();
+}
+
+class Replay {
+public:
+    void setup();
+    void loop();
+
+    Replay(ReplayVehicle &vehicle) :
+        filename("log.bin"),
+        _vehicle(vehicle) { }
+
+private:
+    const char *filename;
+    ReplayVehicle &_vehicle;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL sitl;
+#endif
+
+    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash};
+
+    FILE *plotf;
+    FILE *plotf2;
+    FILE *ekf1f;
+    FILE *ekf2f;
+    FILE *ekf3f;
+    FILE *ekf4f;
+
+    bool done_parameters;
+    bool done_baro_init;
+    bool done_home_init;
+    uint16_t update_rate = 0;
+    int32_t arm_time_ms = -1;
+    bool ahrs_healthy;
+    bool have_imu2 = false;
+    bool have_imt = false;
+    bool have_imt2 = false;
+    bool have_fram = false;
+    bool use_imt = true;
+
+    void _parse_command_line(uint8_t argc, char * const argv[]);
+
+    uint8_t num_user_parameters;
+    struct {
+        char name[17];
+        float value;
+    } user_parameters[100];
+
+    void set_ins_update_rate(uint16_t update_rate);
+
+    void usage(void);
+    void set_user_parameters(void);
+    void read_sensors(const char *type);
+};
+
+Replay replay(replayvehicle);
 
 void Replay::usage(void)
 {
@@ -372,15 +405,13 @@ void Replay::setup()
 
     hal.console->printf("Using an update rate of %u Hz\n", update_rate);
 
-    load_parameters();
-
     if (!logreader.open_log(filename)) {
         perror(filename);
         exit(1);
     }
 
-    dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
-    dataflash.StartNewLog();
+    _vehicle.setup();
+    set_ins_update_rate(update_rate);
 
     logreader.wait_type("GPS");
     logreader.wait_type("IMU");
@@ -389,37 +420,6 @@ void Replay::setup()
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
 
-    ahrs.set_compass(&compass);
-    ahrs.set_fly_forward(true);
-    ahrs.set_wind_estimation(true);
-    ahrs.set_correct_centrifugal(true);
-
-    printf("Starting disarmed\n");
-    hal.util->set_soft_armed(false);
-
-    barometer.init();
-    barometer.setHIL(0);
-    barometer.update();
-    compass.init();
-    ins.set_hil_mode();
-
-    switch (update_rate) {
-    case 50:
-        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
-        break;
-    case 100:
-        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_100HZ);
-        break;
-    case 200:
-        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_200HZ);
-        break;
-    case 400:
-        ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
-        break;
-    default:
-        printf("Invalid update rate (%d); use 50, 100, 200 or 400\n",update_rate);
-        exit(1);
-    }
 
     plotf = fopen("plot.dat", "w");
     plotf2 = fopen("plot2.dat", "w");
@@ -435,8 +435,6 @@ void Replay::setup()
     fprintf(ekf3f, "timestamp TimeMS IVN IVE IVD IPN IPE IPD IMX IMY IMZ IVT\n");
     fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE FS DS\n");
 
-    ahrs.set_ekf_use(true);
-
     ::printf("Waiting for GPS\n");
     while (!done_home_init) {
         char type[5];
@@ -445,18 +443,38 @@ void Replay::setup()
         }
         read_sensors(type);
         if (streq(type, "GPS") &&
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+            (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
             done_baro_init && !done_home_init) {
-            const Location &loc = gps.location();
+            const Location &loc = _vehicle.gps.location();
             ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
                      loc.lat * 1.0e-7f, 
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
                      hal.scheduler->millis()*0.001f);
-            ahrs.set_home(loc);
-            compass.set_initial_location(loc.lat, loc.lng);
+            _vehicle.ahrs.set_home(loc);
+            _vehicle.compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
         }
+    }
+}
+
+void Replay::set_ins_update_rate(uint16_t update_rate) {
+    switch (update_rate) {
+    case 50:
+        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
+        break;
+    case 100:
+        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_100HZ);
+        break;
+    case 200:
+        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_200HZ);
+        break;
+    case 400:
+        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
+        break;
+    default:
+        printf("Invalid update rate (%d); use 50, 100, 200 or 400\n",update_rate);
+        exit(1);
     }
 }
 
@@ -491,20 +509,20 @@ void Replay::read_sensors(const char *type)
     }
 
     if (streq(type,"GPS")) {
-        gps.update();
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-            ahrs.estimate_wind();
+        _vehicle.gps.update();
+        if (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            _vehicle.ahrs.estimate_wind();
         }
     } else if (streq(type,"MAG")) {
-        compass.read();
+        _vehicle.compass.read();
     } else if (streq(type,"ARSP")) {
-        ahrs.set_airspeed(&airspeed);
+        _vehicle.ahrs.set_airspeed(&_vehicle.airspeed);
     } else if (streq(type,"BARO")) {
-        barometer.update();
+        _vehicle.barometer.update();
         if (!done_baro_init) {
             done_baro_init = true;
             ::printf("Barometer initialised\n");
-            barometer.update_calibration();
+            _vehicle.barometer.update_calibration();
         }
     } 
 
@@ -531,15 +549,15 @@ void Replay::read_sensors(const char *type)
         run_ahrs = true;
     }
     if (run_ahrs) {
-        ahrs.update();
-        if (ahrs.get_home().lat != 0) {
-            inertial_nav.update(ins.get_delta_time());
+        _vehicle.ahrs.update();
+        if (_vehicle.ahrs.get_home().lat != 0) {
+            _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
         }
-        dataflash.Log_Write_EKF(ahrs,false);
-        dataflash.Log_Write_AHRS2(ahrs);
-        dataflash.Log_Write_POS(ahrs);
-        if (ahrs.healthy() != ahrs_healthy) {
-            ahrs_healthy = ahrs.healthy();
+        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+        if (_vehicle.ahrs.healthy() != ahrs_healthy) {
+            ahrs_healthy = _vehicle.ahrs.healthy();
             printf("AHRS health: %u at %lu\n", 
                    (unsigned)ahrs_healthy,
                    (unsigned long)hal.scheduler->millis());
@@ -591,22 +609,22 @@ void Replay::loop()
             Vector2f offset;
             uint8_t faultStatus;
 
-            const Matrix3f &dcm_matrix = ahrs.AP_AHRS_DCM::get_dcm_matrix();
+            const Matrix3f &dcm_matrix = _vehicle.ahrs.AP_AHRS_DCM::get_dcm_matrix();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
-            EKF.getEulerAngles(ekf_euler);
-            EKF.getVelNED(velNED);
-            EKF.getPosNED(posNED);
-            EKF.getGyroBias(gyroBias);
-            EKF.getIMU1Weighting(accelWeighting);
-            EKF.getAccelZBias(accelZBias1, accelZBias2);
-            EKF.getWind(windVel);
-            EKF.getMagNED(magNED);
-            EKF.getMagXYZ(magXYZ);
-            EKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
-            EKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-            EKF.getFilterFaults(faultStatus);
-            EKF.getPosNED(ekf_relpos);
-            Vector3f inav_pos = inertial_nav.get_position() * 0.01f;
+            _vehicle.EKF.getEulerAngles(ekf_euler);
+            _vehicle.EKF.getVelNED(velNED);
+            _vehicle.EKF.getPosNED(posNED);
+            _vehicle.EKF.getGyroBias(gyroBias);
+            _vehicle.EKF.getIMU1Weighting(accelWeighting);
+            _vehicle.EKF.getAccelZBias(accelZBias1, accelZBias2);
+            _vehicle.EKF.getWind(windVel);
+            _vehicle.EKF.getMagNED(magNED);
+            _vehicle.EKF.getMagXYZ(magXYZ);
+            _vehicle.EKF.getInnovations(velInnov, posInnov, magInnov, tasInnov);
+            _vehicle.EKF.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+            _vehicle.EKF.getFilterFaults(faultStatus);
+            _vehicle.EKF.getPosNED(ekf_relpos);
+            Vector3f inav_pos = _vehicle.inertial_nav.get_position() * 0.01f;
             float temp = degrees(ekf_euler.z);
 
             if (temp < 0.0f) temp = temp + 360.0f;
@@ -615,7 +633,7 @@ void Replay::loop()
                     logreader.get_sim_attitude().x,
                     logreader.get_sim_attitude().y,
                     logreader.get_sim_attitude().z,
-                    barometer.get_altitude(),
+                    _vehicle.barometer.get_altitude(),
                     logreader.get_attitude().x,
                     logreader.get_attitude().y,
                     wrap_180_cd(logreader.get_attitude().z*100)*0.01f,
