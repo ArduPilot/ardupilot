@@ -166,7 +166,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	// Save to last value before application of limiter so that integrator limiting
 	// can detect exceedance next frame
 	// Scale using inverse dynamic pressure (1/V^2)
-	_last_out =  _K_D * (_integrator - rate_hp_out) * scaler * scaler;
+	_pid_info.I = _K_D * _integrator * scaler * scaler;
+	_pid_info.D = _K_D * (-rate_hp_out) * scaler * scaler;
+	_last_out =  _pid_info.I + _pid_info.D;
 
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
