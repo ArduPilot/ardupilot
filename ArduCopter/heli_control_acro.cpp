@@ -11,7 +11,7 @@
 bool Copter::heli_acro_init(bool ignore_checks)
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
-    attitude_control.use_flybar_passthrough(motors.has_flybar());
+    attitude_control.use_flybar_passthrough(motors.has_flybar(), motors.tail_type() == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO);
 
     // always successfully enter acro
     return true;
