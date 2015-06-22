@@ -16,6 +16,9 @@ bool Copter::althold_init(bool ignore_checks)
     // initialise altitude target to stopping point
     pos_control.set_target_to_stopping_point_z();
 
+    // stop takeoff if running
+    takeoff_stop();
+
     return true;
 }
 
@@ -43,7 +46,7 @@ void Copter::althold_run()
     // Alt Hold State Machine Determination
     if(!ap.auto_armed || !motors.get_interlock()) {
         althold_state = AltHold_Disarmed;
-    } else if (ap.land_complete && (takeoff_state.running || (channel_throttle->control_in > get_takeoff_trigger_throttle()))){
+    } else if (takeoff_state.running || (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()))){
         althold_state = AltHold_Takeoff;
     } else if (ap.land_complete){
         althold_state = AltHold_Landed;
@@ -68,17 +71,17 @@ void Copter::althold_run()
 
     case AltHold_Takeoff:
 
-        // get takeoff adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
+        // initiate take-off
         if (!takeoff_state.running) {
             takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            // indicate we are taking off
+            set_land_complete(false);
+            // clear i terms
+            set_throttle_takeoff();
         }
 
-        // indicate we are taking off
-        set_land_complete(false);
-        // clear i term when we're taking off
-        set_throttle_takeoff();
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
