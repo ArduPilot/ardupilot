@@ -723,6 +723,8 @@ Format characters in the format string for binary log messages
       "PIDY", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
+    { LOG_PIDS_MSG, sizeof(log_PID), \
+      "PIDS", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
@@ -799,6 +801,7 @@ enum LogMessages {
     LOG_PIDP_MSG,
     LOG_PIDY_MSG,
     LOG_PIDA_MSG,
+    LOG_PIDS_MSG,
     LOG_VIBE_MSG,
     LOG_IMUDT_MSG,
     LOG_IMUDT2_MSG,
