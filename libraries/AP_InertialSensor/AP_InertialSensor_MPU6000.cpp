@@ -162,6 +162,8 @@ extern const AP_HAL::HAL& hal;
 void AP_MPU6000_BusDriver_SPI::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
+    // Disable I2C bus if SPI selected (Recommended in Datasheet
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 };
 
 void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
@@ -369,6 +371,9 @@ bool AP_InertialSensor_MPU6000::update( void )
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     accel.rotate(ROTATION_PITCH_180_YAW_90);
     gyro.rotate(ROTATION_PITCH_180_YAW_90);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    accel.rotate(ROTATION_PITCH_180_YAW_270);
+    gyro.rotate(ROTATION_PITCH_180_YAW_270);
 #endif
 
     _publish_accel(_accel_instance, accel);
@@ -572,9 +577,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
     hal.scheduler->delay(1);
 
-    // Disable I2C bus if SPI selected (Recommended in Datasheet
     _bus->init();
-    _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     hal.scheduler->delay(1);
 
 #if MPU6000_FAST_SAMPLING
