@@ -16,6 +16,7 @@ githash=$(git rev-parse HEAD)
 hdate=$(date +"%Y-%m/%Y-%m-%d-%H:%m")
 mkdir -p binaries/$hdate
 binaries=$PWD/../buildlogs/binaries
+BASEDIR=$PWD
 
 error_count=0
 
@@ -68,6 +69,10 @@ skip_build() {
     [ "$oldversion" = "$newversion" ] && {
 	echo "Skipping build - version match $newversion"
 	return 0
+    }
+    [ -f $BASEDIR/.gitmodules ] || {
+        echo "Skipping build without submodules"
+        return 0
     }
     echo "$ldir needs rebuild"
     return 1
