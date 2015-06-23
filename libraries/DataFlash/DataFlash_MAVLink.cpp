@@ -24,7 +24,7 @@
 #define REMOTE_LOG_DEBUGGING 0
 
 #if REMOTE_LOG_DEBUGGING
- # define Debug(fmt, args ...)  do {Debug("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+ # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -71,40 +71,24 @@ void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_t
 /* Write a block of data at current offset */
 void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 {   
-    if (!_initialised) {
+    if (!_initialised || !_logging_started) {
         return;
     }
 
-
-    uint8_t block_address = _cur_block_address;
-
-    uint8_t remaining_size = _block_max_size - _latest_block_len;
-    uint8_t start_address = _latest_block_len;
-    if(remaining_size >= size){
-        //single memcpy
-        
-        memcpy(&_buf[block_address][start_address], pBuffer, size);
-        _latest_block_len+=size;
-
-        if(_latest_block_len == _block_max_size){
-            _block_num[block_address] = ++_latest_block_num;
-            send_log_block(block_address);  //block full send it
+    uint16_t copied = 0;
+    while (copied < size) {
+        uint16_t remaining_to_copy = size - copied;
+        uint16_t _curr_remaining = _block_max_size - _latest_block_len;
+        uint16_t to_copy = (remaining_to_copy > _curr_remaining) ? _curr_remaining : remaining_to_copy;
+        memcpy(&_buf[_cur_block_address][_latest_block_len], &((const uint8_t *)pBuffer)[copied], to_copy);
+        copied += to_copy;
+        _latest_block_len += to_copy;
+        if (_latest_block_len == _block_max_size) {
+            _block_num[_cur_block_address] = _latest_block_num++;
+            send_log_block(_cur_block_address);  //block full send it
             _cur_block_address = next_block_address();
+            _latest_block_len = 0;
         }
-    } else {
-        //do memcpy twice
-        memcpy(&_buf[block_address][start_address], pBuffer, remaining_size);
-
-        _block_num[block_address] = ++_latest_block_num;
-        //send data here
-        send_log_block(block_address);
-
-        _cur_block_address = next_block_address();
-        block_address = _cur_block_address;
-
-        Debug("%d\n",block_address);
-        memcpy(_buf[block_address], &((char *)pBuffer)[remaining_size], size - remaining_size);
-        _latest_block_len += (size-remaining_size);
     }
 }
 
@@ -116,10 +100,15 @@ int8_t DataFlash_MAVLink::next_block_address()
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[oldest_block_address] > _block_num[block]){
             oldest_block_address = block;
+            if (_block_num[oldest_block_address] == 0) {
+                break;
+            }
         }
     }
     
-    _latest_block_len=0;    //reset block size
+    if (_block_num[oldest_block_address] != 0) {
+        perf_count(_perf_overruns);
+    }
     Debug("%d \n", oldest_block_address);
     return oldest_block_address;
 }
@@ -129,18 +118,25 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     if (!_initialised) {
         return;
     }
-    if(block_num == 0){
+    if(block_num == 4294967294){ // 2^32-2
+        Debug("Received stop-logging packet\n");
+        _logging_started = false;
+        return;
+    }
+    if(block_num == 4294967295){
         Debug("\nStarting New Log!!\n");
         memset(_block_num, 0, sizeof(_block_num));
         _latest_block_num = 0;
         _cur_block_address = 0;
         _latest_block_len = 0;
+        _logging_started = true;
         StartNewLog();
         return;
     }
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             _block_num[block] = 0;                  //forget the block if ack is received
+            return;
         }
     }
 }
@@ -153,13 +149,16 @@ void DataFlash_MAVLink::handle_retry(uint32_t block_num)
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             send_log_block(block);
+            return;
         }
     }
 }
+
 void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
 {
     _chan = chan;
 }
+
 //TODO: handle full txspace properly
 void DataFlash_MAVLink::send_log_block(uint32_t block_address)
 {
