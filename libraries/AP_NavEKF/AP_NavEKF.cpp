@@ -4410,6 +4410,14 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
         // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
         // otherwise use existing heading
         if (!badMag) {
+            // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
+            Vector3f tempEuler;
+            state.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
+            yawResetAngle = wrap_PI(yaw - tempEuler.z);
+            // set the flag to indicate that an in-flight yaw reset has been performed
+            // this will be cleared when the reset value is retrieved
+            yawResetAngleWaiting = true;
+            // calculate an initial quaternion using the new yaw value
             initQuat.from_euler(roll, pitch, yaw);
         } else {
             initQuat = state.quat;
@@ -4670,6 +4678,8 @@ void NavEKF::InitialiseVariables()
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
     hgtInnovFiltState = 0.0f;
+    yawResetAngle = 0.0f;
+    yawResetAngleWaiting = false;
 }
 
 // return true if we should use the airspeed sensor
@@ -5388,6 +5398,21 @@ void NavEKF::calcGpsGoodForFlight(void)
 bool NavEKF::getGpsGlitchStatus(void) const
 {
     return !gpsAccuracyGood;
+}
+
+// return the amount of yaw angle change due to the last yaw angle reset in radians
+// returns true if a reset yaw angle has been updated and not queried
+// this function should not have more than one client
+bool NavEKF::getLastYawResetAngle(float &yawAng)
+{
+    if (yawResetAngleWaiting) {
+        yawAng = yawResetAngle;
+        yawResetAngleWaiting = false;
+        return true;
+    } else {
+        yawAng = yawResetAngle;
+        return false;
+    }
 }
 
 #endif // HAL_CPU_CLASS
