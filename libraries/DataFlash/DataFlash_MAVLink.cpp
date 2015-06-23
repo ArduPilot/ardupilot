@@ -24,29 +24,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-  constructor
- */
-DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
-    _chan(chan),
-    _initialised(false),
-    _total_blocks(80),
-    _block_max_size(200),
-    _latest_block_num(0),
-    _cur_block_address(0),
-    _latest_block_len(0)
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
-    _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
-#endif
-{ }
-
-
 // initialisation
 void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_types)
 {
     memset(_block_num, 0, sizeof(_block_num));  
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
 
     _initialised = true;
 }
@@ -55,44 +37,28 @@ void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_t
 /* Write a block of data at current offset */
 void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 {   
-    if (!_initialised) {
+    if (!_initialised || !_logging_started || !_writes_enabled) {
         return;
     }
 
-
-    uint8_t block_address = _cur_block_address;
-
-    uint8_t remaining_size = _block_max_size - _latest_block_len;
-    uint8_t start_address = _latest_block_len;
-    if(remaining_size >= size){
-        //single memcpy
-        
-        memcpy(&_buf[block_address][start_address], pBuffer, size);
-        _latest_block_len+=size;
-
-        if(_latest_block_len == _block_max_size){
-            _block_num[block_address] = ++_latest_block_num;
-            send_log_block(block_address);  //block full send it
+    uint16_t copied = 0;
+    while (copied < size) {
+        uint16_t remaining_to_copy = size - copied;
+        uint16_t _curr_remaining = _block_max_size - _latest_block_len;
+        uint16_t to_copy = (remaining_to_copy > _curr_remaining) ? _curr_remaining : remaining_to_copy;
+        memcpy(&_buf[_cur_block_address][_latest_block_len], &((const uint8_t *)pBuffer)[copied], to_copy);
+        copied += to_copy;
+        _latest_block_len += to_copy;
+        if (_latest_block_len == _block_max_size) {
+            _block_num[_cur_block_address] = _latest_block_num++;
+            send_log_block(_cur_block_address);  //block full send it
             _cur_block_address = next_block_address();
+            _latest_block_len = 0;
         }
-    } else {
-        //do memcpy twice
-        memcpy(&_buf[block_address][start_address], pBuffer, remaining_size);
-
-        _block_num[block_address] = ++_latest_block_num;
-        //send data here
-        send_log_block(block_address);
-
-        _cur_block_address = next_block_address();
-        block_address = _cur_block_address;
-
-        //printf("%d\n",block_address);
-        memcpy(_buf[block_address], &((char *)pBuffer)[remaining_size], size - remaining_size);
-        _latest_block_len += (size-remaining_size);
     }
 }
 
-//Get address of empty block to ovewrite
+//Get address of (hopefully empty) block to ovewrite
 int8_t DataFlash_MAVLink::next_block_address()
 {
 
@@ -100,10 +66,15 @@ int8_t DataFlash_MAVLink::next_block_address()
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[oldest_block_address] > _block_num[block]){
             oldest_block_address = block;
+            if (_block_num[oldest_block_address] == 0) {
+                break;
+            }
         }
     }
     
-    _latest_block_len=0;    //reset block size
+    if (_block_num[oldest_block_address] != 0) {
+        perf_count(_perf_overruns);
+    }
     //printf("%d \n", oldest_block_address);
     return oldest_block_address;
 }
@@ -113,18 +84,27 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     if (!_initialised) {
         return;
     }
-    if(block_num == 0){
-        printf("\nStarting New Log!!\n");
+    if(block_num == 4294967294){ // 2^32-2
+        // heads up - if you stop logging and start logging, your console
+        // will get a misleading "APM Initialising" message.
+        // printf("Received stop-logging packet\n");
+        _logging_started = false;
+        return;
+    }
+    if(block_num == 4294967295){
+        // printf("\nStarting New Log!!\n");
         memset(_block_num, 0, sizeof(_block_num));
         _latest_block_num = 0;
         _cur_block_address = 0;
         _latest_block_len = 0;
-        StartNewLog();
+        _front.StartNewLog();
+        _logging_started = true;
         return;
     }
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             _block_num[block] = 0;                  //forget the block if ack is received
+            return;
         }
     }
 }
@@ -137,6 +117,7 @@ void DataFlash_MAVLink::handle_retry(uint32_t block_num)
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             send_log_block(block);
+            return;
         }
     }
 }

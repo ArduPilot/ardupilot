@@ -116,6 +116,11 @@ public:
     void flush(void);
 #endif
 
+    // for DataFlash_MAVLink:
+    void handle_ack(uint32_t block_num);
+    void handle_retry(uint32_t block_num);
+    // end for DataFlash_MAVLink:
+
 protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 

@@ -18,11 +18,23 @@
 #define perf_count(x)
 #endif
 
-class DataFlash_MAVLink : public DataFlash_Class
+class DataFlash_MAVLink : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_MAVLink(mavlink_channel_t chan);
+    DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
+        DataFlash_Backend(front),
+        _chan(chan),
+        _initialised(false),
+        _cur_block_address(0),
+        _latest_block_len(0),
+        _latest_block_num(0),
+        _logging_started(false)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
+        _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
+#endif
+        { }
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
@@ -52,23 +64,25 @@ public:
     void DumpPageInfo(AP_HAL::BetterStream *port) {}
     void ShowDeviceInfo(AP_HAL::BetterStream *port) {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) {}
-    void send_log_block(uint32_t block_address);
-    void handle_ack(uint32_t block_num);
-    void handle_retry(uint32_t block_num);
+    virtual void send_log_block(uint32_t block_address);
+    virtual void handle_ack(uint32_t block_num);
+    virtual void handle_retry(uint32_t block_num);
 private:
 
     mavlink_channel_t _chan;
     bool _initialised;
 
-    uint16_t _total_blocks;
-    const uint16_t _block_max_size;
-    uint32_t _latest_block_num;
     uint8_t _cur_block_address;
     uint16_t _latest_block_len;
+    uint32_t _latest_block_num;
+    bool _logging_started;
 
     // write buffer
-    uint8_t _buf[80][200];
-    uint32_t _block_num[80];
+    // FIXME: allocate this like we do in DataFlash_File
+    static const uint16_t _total_blocks = 80;
+    static const uint16_t _block_max_size = 200;
+    uint8_t _buf[_total_blocks][_block_max_size];
+    uint32_t _block_num[_total_blocks];
 
     uint16_t start_new_log(void) { return 0; }
     bool ReadBlock(void *pkt, uint16_t size) { return false; }

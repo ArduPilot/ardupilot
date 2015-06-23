@@ -52,7 +52,7 @@ public:
 #endif // DATAFLASH_NO_CLI
 
     void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) { return log_write_started; }
 
     // initialisation this really shouldn't take structure and
     // num_types, however the CLI LogReadProcess function requires it.
@@ -72,6 +72,11 @@ public:
     // currently only DataFlash_File support this:
     virtual void flush(void) { }
 #endif
+
+    // for Dataflash_MAVlink
+    virtual void handle_ack(uint32_t block_num) { };
+    virtual void handle_retry(uint32_t block_num) { };
+    // end for Dataflash_MAVlink
 
 protected:
     DataFlash_Class &_front;

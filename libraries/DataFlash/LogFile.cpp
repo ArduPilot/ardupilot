@@ -23,7 +23,8 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
     backend = new DataFlash_APM2(*this);
 #elif defined(HAL_BOARD_LOG_DIRECTORY)
-    backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
+    backend = new DataFlash_MAVLink(*this, MAVLINK_COMM_0);
+//    backend = new DataFlash_MAVLink(*this, HAL_BOARD_LOG_DIRECTORY);
 #else
     // no dataflash driver
     backend = new DataFlash_Empty(*this);

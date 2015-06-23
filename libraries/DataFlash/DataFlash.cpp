@@ -59,7 +59,7 @@ void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
 #endif // DATAFLASH_NO_CLI
 
 bool DataFlash_Class::logging_started(void) {
-    return backend->log_write_started;
+    return backend->logging_started();
 }
 
 void DataFlash_Class::EnableWrites(bool enable) {
@@ -72,5 +72,15 @@ void DataFlash_Class::flush(void) {
     backend->flush();
 }
 #endif
+
+// for DataFlash_MAVLink
+void DataFlash_Class::handle_ack(uint32_t block_num) {
+    backend->handle_ack(block_num);
+}
+void DataFlash_Class::handle_retry(uint32_t block_num) {
+    backend->handle_retry(block_num);
+}
+// end for DataFlash_MAVLink
+
 
 // end functions pass straight through to backend
