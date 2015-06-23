@@ -43,10 +43,10 @@ checkout() {
 
     git checkout -f "$vtag" || git checkout -f "$vtag2" || {
         return 1
-        git submodule update
+        [ -f $BASEDIR/.gitmodules ] && git submodule update
     }
 
-    git submodule update
+    [ -f $BASEDIR/.gitmodules ] && git submodule update
     git log -1
 
     return 0
@@ -309,10 +309,12 @@ build_antennatracker() {
     popd
 }
 
-# make sure PX4 is rebuilt from scratch
-git submodule init
-git submodule update
+[ -f .gitmodules ] && {
+    git submodule init
+    git submodule update
+}
 
+# make sure PX4 is rebuilt from scratch
 pushd ArduPlane
 make px4-clean || exit 1
 popd
