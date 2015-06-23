@@ -206,7 +206,7 @@ public:
     //
 
      // set_throttle_out - to be called by upper throttle controllers when they wish to provide throttle output directly to motors
-     void set_throttle_out(float throttle_pwm, bool apply_angle_boost, float filt_cutoff);
+     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff);
 
      // outputs a throttle to all motors evenly with no stabilization
      void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
