@@ -28,7 +28,7 @@
 
 ### Dronecode.org ###
 
->>ArduPilot is part of Dronecode.org, a Linux Foundation collabortive project.  
+>>ArduPilot is part of Dronecode.org, a Linux Foundation collaborative project.
 
 >>Dronecode encompasses projects that control flight, enable mission planning, and otherwise make drone flight and advanced functionality possible.
 
