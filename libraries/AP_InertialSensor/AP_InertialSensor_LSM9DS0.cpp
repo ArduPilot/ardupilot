@@ -659,6 +659,37 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
 /**
  * Timer process to poll for new data from the LSM9DS0.
  */
+#if DRDY_GPIO_PIN_A != 0 && DRDY_GPIO_PIN_G != 0
+void AP_InertialSensor_LSM9DS0::_poll_data()
+{
+    bool gyro_ready = _gyro_data_ready();
+    bool accel_ready = _accel_data_ready();
+
+    if (!gyro_ready && !accel_ready) {
+        return;
+    }
+
+    if (!_spi_sem->take_nonblocking()) {
+        /*
+         *  the semaphore being busy is an expected condition when the
+         *  mainline code is calling wait_for_sample() which will
+         *  grab the semaphore. We return now and rely on the mainline
+         *  code grabbing the latest sample.
+         */
+        return;
+    }
+
+    if (gyro_ready) {
+        _read_data_transaction_g();
+    }
+
+    if (accel_ready) {
+        _read_data_transaction_a();
+    }
+
+    _spi_sem->give();
+}
+#else
 void AP_InertialSensor_LSM9DS0::_poll_data()
 {
     if (!_spi_sem->take_nonblocking()) {
@@ -681,6 +712,7 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
 
     _spi_sem->give();
 }
+#endif /* DRDY_GPIO_PIN_A != 0 && DRDY_GPIO_PIN_G != 0 */
 
 #if DRDY_GPIO_PIN_A != 0
 bool AP_InertialSensor_LSM9DS0::_accel_data_ready()
