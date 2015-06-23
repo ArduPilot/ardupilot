@@ -3690,6 +3690,34 @@ void NavEKF::resetGyroBias(void)
 
 }
 
+// Reset the baro so that it reads zero at the current height
+// Reset the EKF height to zero
+// Adjust the EKf origin height so that the EKF height + origin height is the same as before
+// Return true if the height datum reset has been performed
+// If using a range finder for height do not reset and return false
+bool NavEKF::resetHeightDatum(void)
+{
+    // if we are using a range finder for height, return false
+    if (_altSource == 1) {
+        return false;
+    }
+    // record the old height estimate
+    float oldHgt = -state.position.z;
+    // reset the barometer so that it reads zero at the current height
+    _baro.update_calibration();
+    // reset the height state
+    state.position.z = 0.0f;
+    // reset the stored height states from previous time steps
+    for (uint8_t i=0; i<=49; i++){
+        storedStates[i].position.z = state.position.z;
+    }
+    // adjust the height of the EKF origin so that the origin plus baro height before and afer the reset is the same
+    if (validOrigin) {
+        EKF_origin.alt += oldHgt*100;
+    }
+    return true;
+}
+
 // Commands the EKF to not use GPS.
 // This command must be sent prior to arming
 // This command is forgotten by the EKF each time the vehicle disarms

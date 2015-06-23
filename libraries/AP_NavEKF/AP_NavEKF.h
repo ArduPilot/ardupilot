@@ -122,6 +122,13 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
+    // Resets the baro so that it reads zero at the current height
+    // Resets the EKF height to zero
+    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Returns true if the height datum reset has been performed
+    // If using a range finder for height no reset is performed and it returns false
+    bool resetHeightDatum(void);
+
     // Commands the EKF to not use GPS.
     // This command must be sent prior to arming as it will only be actioned when the filter is in static mode
     // This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
