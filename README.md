@@ -85,5 +85,7 @@
 >>   - ***Board***: VRBrain
 >> - [Mike McCauley](#)
 >>   - ***Board***: Flymaple
->> - [Craig Elder] (https://github.com/CraigElder
+>> - [Jonathan Challinger] (https://github.com/3drobotics/ardupilot-solo)
+>>   - ***Vehicle***: 3DRobotics Solo ArduPilot maintainer
+>> - [Craig Elder] (https://github.com/CraigElder)
 >>   - ***Administration***: Dronecode Technical Community Manager
