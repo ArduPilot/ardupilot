@@ -85,6 +85,12 @@ void AC_AttitudeControl::relax_bf_rate_controller()
     _pid_rate_yaw.reset_I();
 }
 
+// shifts earth frame yaw target by yaw_shift_cd.  yaw_shift_cd should be in centi-degreesa and is added to the current target heading
+void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
+{
+    _angle_ef_target.z = wrap_360_cd_float(_angle_ef_target.z + yaw_shift_cd);
+}
+
 //
 // methods to be called by upper controllers to request and implement a desired attitude
 //

@@ -93,6 +93,9 @@ public:
     // set_yaw_target_to_current_heading - sets yaw target to current heading
     void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
 
+    // shifts earth frame yaw target by yaw_shift_cd.  yaw_shift_cd should be in centi-degreesa and is added to the current target heading
+    void shift_ef_yaw_target(float yaw_shift_cd);
+
     //
     // methods to be called by upper controllers to request and implement a desired attitude
     //
