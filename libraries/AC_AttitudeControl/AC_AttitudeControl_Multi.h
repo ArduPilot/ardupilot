@@ -24,6 +24,9 @@ public:
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
 
+    // get lean angle max for pilot input that prioritises altitude hold over lean angle
+    float get_althold_lean_angle_max() const;
+
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_boosted_throttle(float throttle_in);
 

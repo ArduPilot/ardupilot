@@ -43,6 +43,9 @@ public:
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
+    // get lean angle max for pilot input that prioritises altitude hold over lean angle
+    float get_althold_lean_angle_max() const;
+
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
     

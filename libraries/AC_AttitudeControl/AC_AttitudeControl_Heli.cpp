@@ -94,6 +94,13 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     }
 }
 
+// get lean angle max for pilot input that prioritises altitude hold over lean angle
+float AC_AttitudeControl_Heli::get_althold_lean_angle_max() const
+{
+    // calc maximum tilt angle based on throttle
+    return ToDeg(acos(constrain_float(_throttle_in_filt.get()/900.0f, 0.0f, 1000.0f) / 1000.0f)) * 100.0f;
+}
+
 //
 // private methods
 //

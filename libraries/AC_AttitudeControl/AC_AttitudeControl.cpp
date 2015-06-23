@@ -702,6 +702,7 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
  // provide 0 to cut motors
 void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_boost, float filter_cutoff)
 {
+    _throttle_in_filt.apply(throttle_out, _dt);
     _motors.set_stabilizing(true);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
     if (apply_angle_boost) {
@@ -716,6 +717,7 @@ void AC_AttitudeControl::set_throttle_out(float throttle_out, bool apply_angle_b
 // outputs a throttle to all motors evenly with no attitude stabilization
 void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
 {
+    _throttle_in_filt.apply(throttle_in, _dt);
     if (reset_attitude_control) {
         relax_bf_rate_controller();
         set_yaw_target_to_current_heading();
