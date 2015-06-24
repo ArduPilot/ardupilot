@@ -588,7 +588,6 @@ private:
     void Log_Write_Rate();
     void Log_Write_MotBatt();
     void Log_Write_Startup();
-    void Log_Write_EntireMission();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
@@ -891,7 +890,6 @@ private:
     void print_hit_enter();
     void tuning();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
 
