@@ -7,6 +7,8 @@
 class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
 public:
     LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
+    ~LinuxI2CDriver();
 
     void begin();
     void end();
@@ -44,7 +46,7 @@ private:
     bool set_address(uint8_t addr);
 
     AP_HAL::Semaphore* _semaphore;
-    const char *_device = NULL;
+    char *_device = NULL;
     int _fd = -1;
     uint8_t _addr;
 };
