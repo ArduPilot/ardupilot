@@ -238,9 +238,6 @@ struct PACKED log_Startup {
 
 void Plane::Log_Write_Startup(uint8_t type)
 {
-    // Write all current parameters
-    DataFlash.Log_Write_Parameters();
-
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : hal.scheduler->micros64(),
@@ -518,16 +515,8 @@ void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 void Plane::start_logging() 
 {
     DataFlash.StartNewLog();
-    DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
-#endif
 
-    // write system identifier as well if available
-    char sysid[40];
-    if (hal.util->get_system_id(sysid)) {
-        DataFlash.Log_Write_Message(sysid);
-    }
+    DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
 
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 }
