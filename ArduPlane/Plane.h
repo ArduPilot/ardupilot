@@ -672,7 +672,6 @@ private:
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_EntireMission();
     void Log_Write_Control_Tuning();
     void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
@@ -906,7 +905,6 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void run_cli(AP_HAL::UARTDriver *port);
     void log_init();
