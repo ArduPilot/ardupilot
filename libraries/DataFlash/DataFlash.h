@@ -62,6 +62,7 @@ public:
     /* logging methods common to all vehicles */
     uint16_t StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
+    void Log_Write_SysInfo(const prog_char_t *firmware_string);
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
