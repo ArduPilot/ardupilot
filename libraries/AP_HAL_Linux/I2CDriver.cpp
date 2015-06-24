@@ -20,9 +20,8 @@ using namespace Linux;
 /*
   constructor
  */
-LinuxI2CDriver::LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device) : 
+LinuxI2CDriver::LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device) :
     _semaphore(semaphore),
-    _fd(-1),
     _device(device)
 {
 }
