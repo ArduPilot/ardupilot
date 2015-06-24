@@ -576,13 +576,13 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
 #endif // DATAFLASH_NO_CLI
 
 // This function starts a new log file in the DataFlash, and writes
-// the format of supported messages in the log, plus all parameters
+// the format of supported messages in the log
 uint16_t DataFlash_Class::StartNewLog(void)
 {
     uint16_t ret;
     ret = start_new_log();
     if (ret == 0xFFFF) {
-        // don't write out parameters if we fail to open the log
+        // don't write out formats if we fail to open the log
         return ret;
     }
     // write log formats so the log is self-describing
@@ -859,6 +859,24 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
 #endif
+}
+
+void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+{
+    Log_Write_Message_P(firmware_string);
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
+
+    // write system identifier as well if available
+    char sysid[40];
+    if (hal.util->get_system_id(sysid)) {
+        Log_Write_Message(sysid);
+    }
+
+    // Write all current parameters
+    Log_Write_Parameters();
 }
 
 // Write a text message to the log
