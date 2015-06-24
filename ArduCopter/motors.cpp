@@ -153,8 +153,11 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    // Reset home position if it has already been set before (but not locked)
-    if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    if (ap.home_state == HOME_UNSET) {
+        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
+        ahrs.get_NavEKF().resetHeightDatum();
+    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+        // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
     }
     calc_distance_and_bearing();
