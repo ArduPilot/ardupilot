@@ -9,7 +9,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_Cmd(cmd);
+        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     // exit immediately if not in AUTO mode
