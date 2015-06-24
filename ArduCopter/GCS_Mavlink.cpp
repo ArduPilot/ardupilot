@@ -1016,11 +1016,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    // GCS has sent us a command from GCS, store to EEPROM
+    // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
     {
         if (handle_mission_item(msg, copter.mission)) {
-            copter.Log_Write_EntireMission();
+            copter.DataFlash.Log_Write_EntireMission(copter.mission);
         }
         break;
     }
