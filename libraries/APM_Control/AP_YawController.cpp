@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
 
 	// @Param: INT
-	// @DisplayName: Sidelsip control integrator
+	// @DisplayName: Sideslip control integrator
 	// @Description: This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
 	// @Range: 0 2
 	// @Increment: 0.25
