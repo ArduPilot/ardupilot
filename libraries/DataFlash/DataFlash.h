@@ -14,6 +14,7 @@
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include <AP_Vehicle.h>
+#include <AP_Mission.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
@@ -92,6 +93,10 @@ public:
     void Log_Write_Mode(uint8_t mode);
     void Log_Write_Parameters(void);
 
+    void Log_Write_EntireMission(const AP_Mission &mission);
+    void Log_Write_Mission_Cmd(const AP_Mission &mission,
+                               const AP_Mission::Mission_Command &cmd);
+
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
         float desired;
@@ -135,7 +140,6 @@ protected:
       read a block
     */
     virtual bool ReadBlock(void *pkt, uint16_t size) = 0;
-
 };
 
 /*
