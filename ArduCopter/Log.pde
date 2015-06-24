@@ -685,18 +685,9 @@ static void start_logging()
             ap.logging_started = true;
             in_mavlink_delay = true;
             DataFlash.StartNewLog();
+            DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
             in_mavlink_delay = false;
-            DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
-#endif
-
-            // write system identifier as well if available
-            char sysid[40];
-            if (hal.util->get_system_id(sysid)) {
-                DataFlash.Log_Write_Message(sysid);
-            }
             DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
 
             // log the flight mode
