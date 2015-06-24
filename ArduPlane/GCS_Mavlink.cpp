@@ -1460,11 +1460,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    // GCS has sent us a command from GCS, store to EEPROM
+    // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
     {
         if (handle_mission_item(msg, plane.mission)) {
-            plane.Log_Write_EntireMission();
+            plane.DataFlash.Log_Write_EntireMission(plane.mission);
         }
         break;
     }
