@@ -22,9 +22,6 @@
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Copter::Copter(void) :
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash(HAL_BOARD_LOG_DIRECTORY),
-#endif
     ins_sample_rate(AP_InertialSensor::RATE_400HZ),
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),

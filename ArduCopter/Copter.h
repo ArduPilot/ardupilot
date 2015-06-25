@@ -153,11 +153,7 @@ private:
     RC_Channel *channel_yaw;
 
     // Dataflash
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash;
-#else
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     // the rate we run the main loop at
     const AP_InertialSensor::Sample_rate ins_sample_rate;
