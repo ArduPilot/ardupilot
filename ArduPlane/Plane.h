@@ -158,17 +158,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    DataFlash_APM1 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    DataFlash_APM2 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash {HAL_BOARD_LOG_DIRECTORY};
-#else
-    // no dataflash driver
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     // has a log download started?
     bool in_log_download;
