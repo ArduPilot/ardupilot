@@ -1,5 +1,29 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc6 25-Jun-2015
+Changes from 3.3-rc5
+1) EKF related changes:
+    a) reset altitude even when arming without GPS lock
+    b) fix yaw twitch caused by EKF heading estimate reset
+    c) fix IMU time scaling bug that caused height estimate to deviate from the baro
+2) AutoTune improvements:
+    a) reduce aggressiveness
+    b) fix bug in saving maximum acceleration
+3) Improved crash check:
+    a) allow triggering even if pilot doesn't move throttle to zero
+    b) easier triggering by removing baro check and using angle error instead of absolute tilt angle 
+4) TradHeli:
+    a) swash moves while landed in AltHold
+    b) fix altitude drop when switching modes
+5) support Linux builds for NAVIO+ and Erle-Brain (http://firmware.diydrones.com/Copter/beta/)
+6) Small improvements / Bug Fixes:
+    a) sonar pre-arm checks only enforced if using optical flow
+    b) fix EKF failsafe bug that would not allow recovery
+    c) full rate IMU logging for improved vibration analysis (set LOG_BITMASK to All+FullIMU)
+    d) new VIBE dataflash message records vibration levels
+    e) default MNT_TYPE to "1" if servo gimbal rc outputs were defined
+    f) RC_FEEL defaults to medium
+------------------------------------------------------------------
 Copter 3.3-rc5 23-May-2015
 Changes from 3.3-rc4
 1) Fix AHRS bad gyro health message caused by timing jitter and log IMU health
