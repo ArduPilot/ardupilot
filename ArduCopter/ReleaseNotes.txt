@@ -7,8 +7,9 @@ Changes from 3.3-rc5
     b) fix yaw twitch caused by EKF heading estimate reset
     c) fix IMU time scaling bug that caused height estimate to deviate from the baro
 2) AutoTune improvements:
-    a) reduce aggressiveness
-    b) fix bug in saving maximum acceleration
+    a) improved yaw tuning by increasing yaw step magnitude
+    b) added logging of accelerations
+    c) improvements to step tests
 3) Improved crash check:
     a) allow triggering even if pilot doesn't move throttle to zero
     b) easier triggering by removing baro check and using angle error instead of absolute tilt angle 
