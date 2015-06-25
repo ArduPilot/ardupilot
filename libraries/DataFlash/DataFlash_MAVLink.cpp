@@ -41,7 +41,8 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
+DataFlash_MAVLink::DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
+    DataFlash_Backend(front),
     _chan(chan),
     _initialised(false),
     _total_blocks(NUM_BUFFER_BLOCKS),
@@ -63,7 +64,7 @@ DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
 void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_types)
 {
     memset(_block_num, 0, sizeof(_block_num));  
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
 
     mavlink.system_id = MAV_SYS_ID_LOG;
     mavlink.component_id = MAV_COMP_ID_LOG;
@@ -169,7 +170,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         _latest_block_num = 0;
         _cur_block_address = next_block_address();
         _logging_started = true;
-        StartNewLog();
+        _front.StartNewLog();
         return;
     }
     for(uint8_t block = 0; block < _total_blocks; block++){

@@ -19,11 +19,13 @@
 #endif
 
 
-class DataFlash_File : public DataFlash_Class
+#include "DataFlash_Backend.h"
+
+class DataFlash_File : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_File(const char *log_directory);
+    DataFlash_File(DataFlash_Class &front, const char *log_directory);
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);

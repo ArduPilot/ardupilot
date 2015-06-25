@@ -45,7 +45,8 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-DataFlash_File::DataFlash_File(const char *log_directory) :
+DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory) :
+    DataFlash_Backend(front),
     _write_fd(-1),
     _read_fd(-1),
     _read_offset(0),
@@ -94,7 +95,7 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
 // initialisation
 void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
     // create the log directory if need be
     int ret;
     struct stat st;

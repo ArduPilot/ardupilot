@@ -22,11 +22,11 @@
 #define BUFFER_BLOCK_SIZE 200
 
 
-class DataFlash_MAVLink : public DataFlash_Class
+class DataFlash_MAVLink : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_MAVLink(mavlink_channel_t chan);
+    DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan);
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);

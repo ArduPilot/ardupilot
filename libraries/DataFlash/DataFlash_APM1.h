@@ -44,6 +44,8 @@ private:
     bool		            _sem_take(uint8_t timeout);
 
 public:
+    DataFlash_APM1(DataFlash_Class &front) :
+        DataFlash_Block(front) { }
     void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();
