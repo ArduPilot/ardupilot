@@ -133,16 +133,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
-    // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    DataFlash_APM1 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    DataFlash_APM2 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash;
-#else
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     bool in_log_download;
 

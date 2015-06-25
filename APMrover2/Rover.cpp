@@ -25,9 +25,6 @@ Rover::Rover(void) :
     channel_steer(NULL),
     channel_throttle(NULL),
     channel_learn(NULL),
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash(HAL_BOARD_LOG_DIRECTORY),
-#endif
     in_log_download(false),
     modes(&g.mode1),
     L1_controller(ahrs),
