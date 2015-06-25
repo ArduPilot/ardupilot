@@ -86,7 +86,7 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed{aparm};
-    DataFlash_File dataflash{"logs"};
+    DataFlash_Class dataflash;
 
 private:
     Parameters g;
