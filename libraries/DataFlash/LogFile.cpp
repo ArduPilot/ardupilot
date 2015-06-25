@@ -16,7 +16,22 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 {
     _num_types = num_types;
     _structures = structure;
-    _writes_enabled = true;
+
+    // DataFlash
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    backend = new DataFlash_APM1(*this);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    backend = new DataFlash_APM2(*this);
+#elif defined(HAL_BOARD_LOG_DIRECTORY)
+    backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
+#else
+    // no dataflash driver
+    backend = new DataFlash_Empty(*this);
+#endif
+    if (backend == NULL) {
+        hal.scheduler->panic(PSTR("Unable to open dataflash"));
+    }
+    backend->Init(structure, num_types);
 }
 
 // This function determines the number of whole or partial log files in the DataFlash
@@ -275,10 +290,11 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 #ifndef DATAFLASH_NO_CLI
 /*
   read and print a log entry using the format strings from the given structure
+  - this really should in in the frontend, not the backend
  */
-void DataFlash_Class::_print_log_entry(uint8_t msg_type,
-                                       print_mode_fn print_mode,
-                                       AP_HAL::BetterStream *port)
+void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
+                                         print_mode_fn print_mode,
+                                         AP_HAL::BetterStream *port)
 {
     uint8_t i;
     for (i=0; i<_num_types; i++) {
@@ -605,9 +621,9 @@ void DataFlash_Class::AddLogFormats(const struct LogStructure *structures, uint8
 }
 
 /*
-  write a structure format to the log
+  write a structure format to the log - should be in frontend
  */
-void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
+void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
 {
     memset(&pkt, 0, sizeof(pkt));
     pkt.head1 = HEAD_BYTE1;

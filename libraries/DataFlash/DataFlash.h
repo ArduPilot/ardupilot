@@ -17,15 +17,14 @@
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
+#include <DataFlash_Backend.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
 #endif
 
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define DATAFLASH_NO_CLI
-#endif
+class DataFlash_Backend;
 
 class DataFlash_Class
 {
@@ -33,36 +32,36 @@ public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
 
     // initialisation
-    virtual void Init(const struct LogStructure *structure, uint8_t num_types);
-    virtual bool CardInserted(void) = 0;
+    void Init(const struct LogStructure *structure, uint8_t num_types);
+    bool CardInserted(void);
 
     // erase handling
-    virtual bool NeedErase(void) = 0;
-    virtual void EraseAll() = 0;
+    bool NeedErase(void);
+    void EraseAll();
 
     /* Write a block of data at current offset */
-    virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
+    void WriteBlock(const void *pBuffer, uint16_t size);
 
     // high level interface
-    virtual uint16_t find_last_log(void) = 0;
-    virtual void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) = 0;
-    virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
-    virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
-    virtual uint16_t get_num_logs(void) = 0;
+    uint16_t find_last_log(void);
+    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
+    uint16_t get_num_logs(void);
 #ifndef DATAFLASH_NO_CLI
-    virtual void LogReadProcess(uint16_t log_num,
+    void LogReadProcess(uint16_t log_num,
                                 uint16_t start_page, uint16_t end_page, 
                                 print_mode_fn printMode,
-                                AP_HAL::BetterStream *port) = 0;
-    virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
+                                AP_HAL::BetterStream *port);
+    void DumpPageInfo(AP_HAL::BetterStream *port);
+    void ShowDeviceInfo(AP_HAL::BetterStream *port);
+    void ListAvailableLogs(AP_HAL::BetterStream *port);
 #endif // DATAFLASH_NO_CLI
 
     /* logging methods common to all vehicles */
     uint16_t StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
-    void EnableWrites(bool enable) { _writes_enabled = enable; }
+    void EnableWrites(bool enable);
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
@@ -103,38 +102,19 @@ public:
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
 
-    bool logging_started(void) const { return log_write_started; }
-
-    /*
-      every logged packet starts with 3 bytes
-    */
-    struct log_Header {
-        uint8_t head1, head2, msgid;
-    };
+    bool logging_started(void);
 
 protected:
-    /*
-    read and print a log entry using the format strings from the given structure
-    */
-    void _print_log_entry(uint8_t msg_type, 
-                          print_mode_fn print_mode,
-                          AP_HAL::BetterStream *port);
-    
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
-    virtual uint16_t start_new_log(void) = 0;
+    uint16_t start_new_log(void);
 
     const struct LogStructure *_structures;
     uint8_t _num_types;
-    bool _writes_enabled;
-    bool log_write_started;
 
-    /*
-      read a block
-    */
-    virtual bool ReadBlock(void *pkt, uint16_t size) = 0;
-
+private:
+    DataFlash_Backend *backend;
 };
 
 /*
