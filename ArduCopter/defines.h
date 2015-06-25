@@ -210,6 +210,14 @@ enum AltHoldModeState {
     AltHold_Landed
 };
 
+// Loiter states
+enum LoiterModeState {
+    Loiter_Disarmed,
+    Loiter_Takeoff,
+    Loiter_Flying,
+    Loiter_Landed
+};
+
 // Flip states
 enum FlipState {
     Flip_Start,
