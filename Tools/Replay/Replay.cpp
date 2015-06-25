@@ -143,8 +143,32 @@ void ReplayVehicle::load_parameters(void)
     }
 }
 
+/*
+  Replay specific log structures
+ */
+struct PACKED log_Chek {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t roll;
+    int16_t pitch;
+    uint16_t yaw;
+    int32_t lat;
+    int32_t lng;
+    float alt;
+    float vnorth;
+    float veast;
+    float vdown;
+};
+
+
+enum {
+    LOG_CHEK_MSG=1
+};
+
 static const struct LogStructure log_structure[] PROGMEM = {
-    LOG_COMMON_STRUCTURES
+    LOG_COMMON_STRUCTURES,
+    { LOG_CHEK_MSG, sizeof(log_Chek),
+      "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
 };
 
 void ReplayVehicle::setup(void) {
@@ -204,6 +228,7 @@ private:
     bool have_imt2 = false;
     bool have_fram = false;
     bool use_imt = true;
+    bool chek_generate = false;
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
@@ -218,6 +243,7 @@ private:
     void usage(void);
     void set_user_parameters(void);
     void read_sensors(const char *type);
+    void log_chek_generate();
 };
 
 Replay replay(replayvehicle);
@@ -231,7 +257,14 @@ void Replay::usage(void)
     ::printf("\t--gyro-mask MASK   set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
     ::printf("\t--arm-time time    arm at time (milliseconds)\n");
     ::printf("\t--no-imt           don't use IMT data\n");
+    ::printf("\t--check-generate   generate CHEK messages in output\n");
 }
+
+
+enum {
+    OPT_CHECK = 100,
+    OPT_CHEK_GENERATE
+};
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
@@ -244,6 +277,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"gyro-mask",       true,   0, 'g'},
         {"arm-time",        true,   0, 'A'},
         {"no-imt",          false,  0, 'n'},
+        {"chek-generate",   false,  0, OPT_CHEK_GENERATE},
         {0, false, 0, 0}
     };
 
@@ -253,10 +287,6 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     int opt;
     while ((opt = gopt.getoption()) != -1) {
 		switch (opt) {
-        case 'h':
-            usage();
-            exit(0);
-
         case 'r':
 			update_rate = strtol(gopt.optarg, NULL, 0);
             break;
@@ -278,7 +308,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             logreader.set_use_imt(use_imt);
             break;
 
-        case 'p':
+        case 'p': {
             const char *eq = strchr(gopt.optarg, '=');
             if (eq == NULL) {
                 ::printf("Usage: -p NAME=VALUE\n");
@@ -293,6 +323,16 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
                 exit(1);
             }
             break;
+        }
+
+        case OPT_CHEK_GENERATE:
+            chek_generate = true;
+            break;
+
+        case 'h':
+        default:
+            usage();
+            exit(0);
         }
     }
 
@@ -458,7 +498,7 @@ void Replay::setup()
     }
 }
 
-void Replay::set_ins_update_rate(uint16_t update_rate) {
+void Replay::set_ins_update_rate(uint16_t _update_rate) {
     switch (update_rate) {
     case 50:
         _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
@@ -473,7 +513,7 @@ void Replay::set_ins_update_rate(uint16_t update_rate) {
         _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
         break;
     default:
-        printf("Invalid update rate (%d); use 50, 100, 200 or 400\n",update_rate);
+        printf("Invalid update rate (%d); use 50, 100, 200 or 400\n", _update_rate);
         exit(1);
     }
 }
@@ -562,7 +602,41 @@ void Replay::read_sensors(const char *type)
                    (unsigned)ahrs_healthy,
                    (unsigned long)hal.scheduler->millis());
         }
+        if (chek_generate) {
+            log_chek_generate();
+        }
     }
+}
+
+
+/*
+  copy current data to CHEK message
+ */
+void Replay::log_chek_generate(void)
+{
+    Vector3f euler;
+    Vector3f velocity;
+    Location loc {};
+
+    _vehicle.EKF.getEulerAngles(euler);
+    _vehicle.EKF.getVelNED(velocity);
+    _vehicle.EKF.getLLH(loc);
+
+    struct log_Chek packet = {
+        LOG_PACKET_HEADER_INIT(LOG_CHEK_MSG),
+        time_us : hal.scheduler->micros64(),
+        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+        lat     : loc.lat,
+        lng     : loc.lng,
+        alt     : loc.alt*0.01f,
+        vnorth  : velocity.x,
+        veast   : velocity.y,
+        vdown   : velocity.z
+    };
+
+    _vehicle.dataflash.WriteBlock(&packet, sizeof(packet));
 }
 
 void Replay::loop()
