@@ -221,14 +221,6 @@ void Plane::Log_Write_Performance()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a mission command. Total length : 36 bytes
-void Plane::Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
-{
-    mavlink_mission_item_t mav_cmd = {};
-    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
-    DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
-}
-
 struct PACKED log_Startup {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -238,9 +230,6 @@ struct PACKED log_Startup {
 
 void Plane::Log_Write_Startup(uint8_t type)
 {
-    // Write all current parameters
-    DataFlash.Log_Write_Parameters();
-
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : hal.scheduler->micros64(),
@@ -251,19 +240,7 @@ void Plane::Log_Write_Startup(uint8_t type)
 
     // write all commands to the dataflash as well
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_EntireMission();
-    }
-}
-
-void Plane::Log_Write_EntireMission()
-{
-    DataFlash.Log_Write_Message_P(PSTR("New mission"));
-
-    AP_Mission::Mission_Command cmd;
-    for (uint16_t i = 0; i < mission.num_commands(); i++) {
-        if (mission.read_cmd_from_storage(i,cmd)) {
-            Log_Write_Cmd(cmd);
-        }
+        DataFlash.Log_Write_EntireMission(mission);
     }
 }
 
@@ -518,16 +495,8 @@ void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 void Plane::start_logging() 
 {
     DataFlash.StartNewLog();
-    DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
-#endif
 
-    // write system identifier as well if available
-    char sysid[40];
-    if (hal.util->get_system_id(sysid)) {
-        DataFlash.Log_Write_Message(sysid);
-    }
+    DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
 
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 }

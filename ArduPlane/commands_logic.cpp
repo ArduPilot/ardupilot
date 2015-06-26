@@ -9,7 +9,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_Cmd(cmd);
+        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     // special handling for nav vs non-nav commands

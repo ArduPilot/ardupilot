@@ -1105,11 +1105,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-	// XXX receive a WP from GCS and store in EEPROM
+    // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
         {
             if (handle_mission_item(msg, rover.mission)) {
-                rover.Log_Write_EntireMission();
+                rover.DataFlash.Log_Write_EntireMission(rover.mission);
             }
             break;
         }
