@@ -60,6 +60,10 @@ skip_build() {
     ddir="$2"
     bname=$(basename $ddir)
     ldir=$(dirname $(dirname $(dirname $ddir)))/$tag/$bname
+    [ -f $BASEDIR/.gitmodules ] || {
+        echo "Skipping build without submodules"
+        return 0
+    }
     [ -d "$ldir" ] || {
 	echo "$ldir doesn't exist - building"
 	return 1
@@ -69,10 +73,6 @@ skip_build() {
     [ "$oldversion" = "$newversion" ] && {
 	echo "Skipping build - version match $newversion"
 	return 0
-    }
-    [ -f $BASEDIR/.gitmodules ] || {
-        echo "Skipping build without submodules"
-        return 0
     }
     echo "$ldir needs rebuild"
     return 1
