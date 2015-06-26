@@ -11,6 +11,14 @@ public:
     virtual void process_message(uint8_t *msg) = 0;
     bool set_parameter(const char *name, float value);
 
+    // state for CHEK message
+    struct CheckState {
+        uint64_t time_us;
+        Vector3f euler;
+        Location pos;
+        Vector3f velocity;
+    };
+
 protected:
     DataFlash_Class &dataflash;
     void wait_timestamp(uint32_t timestamp);
@@ -86,6 +94,20 @@ private:
     Vector3f &attitude;
 };
 
+
+class LR_MsgHandler_CHEK : public LR_MsgHandler
+{
+public:
+    LR_MsgHandler_CHEK(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec, CheckState &_check_state)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), 
+          check_state(_check_state)
+        { };
+    virtual void process_message(uint8_t *msg);
+
+private:
+    CheckState &check_state;
+};
 
 class LR_MsgHandler_BARO : public LR_MsgHandler
 {

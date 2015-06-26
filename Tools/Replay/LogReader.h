@@ -13,6 +13,7 @@ public:
     const Vector3f &get_inavpos(void) const { return inavpos; }
     const Vector3f &get_sim_attitude(void) const { return sim_attitude; }
     const float &get_relalt(void) const { return rel_altitude; }
+    const LR_MsgHandler::CheckState &get_check_state(void) const { return check_state; }
 
     VehicleType::vehicle_type vehicle;
 
@@ -49,6 +50,8 @@ private:
     Vector3f inavpos;
     float rel_altitude;
     uint64_t last_timestamp_usec;
+
+    LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
     void maybe_install_vehicle_specific_parsers();

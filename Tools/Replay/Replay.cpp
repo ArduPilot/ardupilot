@@ -18,6 +18,7 @@
 #include <AP_Progmem.h>
 #include <AP_Param.h>
 #include <StorageManager.h>
+#include <fenv.h>
 #include <AP_Math.h>
 #include <AP_HAL.h>
 #include <AP_HAL_AVR.h>
@@ -53,7 +54,6 @@
 #include <AP_RangeFinder.h>
 #include <stdio.h>
 #include <errno.h>
-#include <fenv.h>
 #include <VehicleType.h>
 #include <getopt.h> // for optind only
 #include <utility/getopt_cpp.h>
@@ -228,7 +228,20 @@ private:
     bool have_imt2 = false;
     bool have_fram = false;
     bool use_imt = true;
-    bool chek_generate = false;
+    bool check_generate = false;
+    bool check_solution = false;
+    float tolerance_euler = 3;
+    float tolerance_pos = 2;
+    float tolerance_vel = 2;
+
+    struct {
+        float max_roll_error;
+        float max_pitch_error;
+        float max_yaw_error;
+        float max_pos_error;
+        float max_alt_error;
+        float max_vel_error;
+    } check_result {};
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
@@ -243,7 +256,9 @@ private:
     void usage(void);
     void set_user_parameters(void);
     void read_sensors(const char *type);
-    void log_chek_generate();
+    void log_check_generate();
+    void log_check_solution();
+    void report_checks();
 };
 
 Replay replay(replayvehicle);
@@ -258,12 +273,19 @@ void Replay::usage(void)
     ::printf("\t--arm-time time    arm at time (milliseconds)\n");
     ::printf("\t--no-imt           don't use IMT data\n");
     ::printf("\t--check-generate   generate CHEK messages in output\n");
+    ::printf("\t--check            check solution against CHEK messages\n");
+    ::printf("\t--tolerance-euler  tolerance for euler angles in degrees\n");
+    ::printf("\t--tolerance-pos    tolerance for position in meters\n");
+    ::printf("\t--tolerance-vel    tolerance for velocity in meters/second\n");
 }
 
 
 enum {
-    OPT_CHECK = 100,
-    OPT_CHEK_GENERATE
+    OPT_CHECK = 128,
+    OPT_CHECK_GENERATE,
+    OPT_TOLERANCE_EULER,
+    OPT_TOLERANCE_POS,
+    OPT_TOLERANCE_VEL
 };
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
@@ -277,7 +299,11 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"gyro-mask",       true,   0, 'g'},
         {"arm-time",        true,   0, 'A'},
         {"no-imt",          false,  0, 'n'},
-        {"chek-generate",   false,  0, OPT_CHEK_GENERATE},
+        {"check-generate",  false,  0, OPT_CHECK_GENERATE},
+        {"check",           false,  0, OPT_CHECK},
+        {"tolerance-euler", true,   0, OPT_TOLERANCE_EULER},
+        {"tolerance-pos",   true,   0, OPT_TOLERANCE_POS},
+        {"tolerance-vel",   true,   0, OPT_TOLERANCE_VEL},
         {0, false, 0, 0}
     };
 
@@ -325,8 +351,24 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             break;
         }
 
-        case OPT_CHEK_GENERATE:
-            chek_generate = true;
+        case OPT_CHECK_GENERATE:
+            check_generate = true;
+            break;
+
+        case OPT_CHECK:
+            check_solution = true;
+            break;
+
+        case OPT_TOLERANCE_EULER:
+            tolerance_euler = atof(gopt.optarg);
+            break;
+
+        case OPT_TOLERANCE_POS:
+            tolerance_pos = atof(gopt.optarg);
+            break;
+
+        case OPT_TOLERANCE_VEL:
+            tolerance_vel = atof(gopt.optarg);
             break;
 
         case 'h':
@@ -588,6 +630,14 @@ void Replay::read_sensors(const char *type)
         ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2))) {
         run_ahrs = true;
     }
+
+    /*
+      always run AHRS on CHECK messages when checking the solution
+     */
+    if (check_solution) {
+        run_ahrs = streq(type, "CHEK");
+    }
+    
     if (run_ahrs) {
         _vehicle.ahrs.update();
         if (_vehicle.ahrs.get_home().lat != 0) {
@@ -602,8 +652,10 @@ void Replay::read_sensors(const char *type)
                    (unsigned)ahrs_healthy,
                    (unsigned long)hal.scheduler->millis());
         }
-        if (chek_generate) {
-            log_chek_generate();
+        if (check_generate) {
+            log_check_generate();
+        } else if (check_solution) {
+            log_check_solution();
         }
     }
 }
@@ -612,7 +664,7 @@ void Replay::read_sensors(const char *type)
 /*
   copy current data to CHEK message
  */
-void Replay::log_chek_generate(void)
+void Replay::log_check_generate(void)
 {
     Vector3f euler;
     Vector3f velocity;
@@ -639,6 +691,35 @@ void Replay::log_chek_generate(void)
     _vehicle.dataflash.WriteBlock(&packet, sizeof(packet));
 }
 
+
+/*
+  check current solution against CHEK message
+ */
+void Replay::log_check_solution(void)
+{
+    const LR_MsgHandler::CheckState &check_state = logreader.get_check_state();
+    Vector3f euler;
+    Vector3f velocity;
+    Location loc {};
+
+    _vehicle.EKF.getEulerAngles(euler);
+    _vehicle.EKF.getVelNED(velocity);
+    _vehicle.EKF.getLLH(loc);
+
+    float roll_error  = degrees(fabsf(euler.x - check_state.euler.x));
+    float pitch_error = degrees(fabsf(euler.y - check_state.euler.y));
+    float yaw_error = degrees(fabsf(euler.z - check_state.euler.z));
+    float vel_error = (velocity - check_state.velocity).length();
+    float pos_error = get_distance(check_state.pos, loc);
+
+    check_result.max_roll_error  = max(check_result.max_roll_error,  roll_error);
+    check_result.max_pitch_error = max(check_result.max_pitch_error, pitch_error);
+    check_result.max_yaw_error   = max(check_result.max_yaw_error,   yaw_error);
+    check_result.max_vel_error   = max(check_result.max_vel_error,   vel_error);
+    check_result.max_pos_error   = max(check_result.max_pos_error,   pos_error);
+}
+
+
 void Replay::loop()
 {
     while (true) {
@@ -654,7 +735,7 @@ void Replay::loop()
         if (!logreader.update(type)) {
             ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
             fclose(plotf);
-            exit(0);
+            break;
         }
         read_sensors(type);
 
@@ -868,6 +949,48 @@ void Replay::loop()
                     (int)offsetEast,
                     (int)faultStatus);
         }
+    }
+
+    if (check_solution) {
+        report_checks();
+    }
+    exit(0);
+}
+
+/*
+  report results of --check
+ */
+void Replay::report_checks(void)
+{
+    bool failed = false;
+    if (tolerance_euler < 0.01f) {
+        tolerance_euler = 0.01f;
+    }
+    if (check_result.max_roll_error > tolerance_euler) {
+        printf("Roll error %.2f > %.2f\n", check_result.max_roll_error, tolerance_euler);
+        failed = true;
+    }
+    if (check_result.max_pitch_error > tolerance_euler) {
+        printf("Pitch error %.2f > %.2f\n", check_result.max_pitch_error, tolerance_euler);
+        failed = true;
+    }
+    if (check_result.max_yaw_error > tolerance_euler) {
+        printf("Yaw error %.2f > %.2f\n", check_result.max_yaw_error, tolerance_euler);
+        failed = true;
+    }
+    if (check_result.max_pos_error > tolerance_pos) {
+        printf("Position error %.2f > %.2f\n", check_result.max_pos_error, tolerance_pos);
+        failed = true;
+    }
+    if (check_result.max_vel_error > tolerance_vel) {
+        printf("Velocity error %.2f > %.2f\n", check_result.max_vel_error, tolerance_vel);
+        failed = true;
+    }
+    if (failed) {
+        printf("Checks failed\n");
+        exit(1);
+    } else {
+        printf("Checks passed\n");
     }
 }
 

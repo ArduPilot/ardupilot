@@ -187,6 +187,10 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
 	} else if (streq(name, "FRAM")) {
 	    msgparser[f.type] = new LR_MsgHandler_FRAM(formats[f.type], dataflash,
                                                     last_timestamp_usec);
+	} else if (streq(name, "CHEK")) {
+	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], dataflash,
+                                                     last_timestamp_usec,
+                                                     check_state);
 	} else {
             ::printf("  No parser for (%s)\n", name);
 	}

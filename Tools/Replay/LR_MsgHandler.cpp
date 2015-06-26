@@ -83,6 +83,18 @@ void LR_MsgHandler_ATT::process_message(uint8_t *msg)
     attitude_from_msg(msg, attitude, "Roll", "Pitch", "Yaw");
 }
 
+void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
+{
+    wait_timestamp_from_msg(msg);
+    check_state.time_us = hal.scheduler->micros64();
+    attitude_from_msg(msg, check_state.euler, "Roll", "Pitch", "Yaw");
+    check_state.euler *= radians(1);
+    location_from_msg(msg, check_state.pos, "Lat", "Lng", "Alt");
+    require_field(msg, "VN", check_state.velocity.x);
+    require_field(msg, "VE", check_state.velocity.y);
+    require_field(msg, "VD", check_state.velocity.z);
+}
+
 
 void LR_MsgHandler_BARO::process_message(uint8_t *msg)
 {
