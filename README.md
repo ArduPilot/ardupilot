@@ -75,6 +75,8 @@
 >>   - ***Subsystem***: AP_NavEKF
 >> - [Lucas De Marchi](https://github.com/lucasdemarchi)
 >>   - ***Subsystem***: Linux
+>> - [Peter Barker](https://github.com/peterbarker)
+>>   - ***Subsystem***: DataFlash
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
 >>   - ***Board***: PXF
 >> - [Mirko Denecke](https://github.com/mirkix)
