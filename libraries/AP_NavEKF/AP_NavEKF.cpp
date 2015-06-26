@@ -4893,6 +4893,7 @@ void NavEKF::send_status_report(mavlink_channel_t chan)
     if (filt_state.flags.const_pos_mode) { flags |= EKF_CONST_POS_MODE; }
     if (filt_state.flags.pred_horiz_pos_rel) { flags |= EKF_PRED_POS_HORIZ_REL; }
     if (filt_state.flags.pred_horiz_pos_abs) { flags |= EKF_PRED_POS_HORIZ_ABS; }
+    if (filt_state.flags.gps_glitching) { flags |= (1<<15); }
 
     // get variances
     float velVar, posVar, hgtVar, tasVar;
