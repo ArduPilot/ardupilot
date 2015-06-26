@@ -32,8 +32,8 @@ bool Copter::loiter_init(bool ignore_checks)
 void Copter::loiter_run()
 {
     LoiterModeState loiter_state;
-    float target_yaw_rate = 0;
-    float target_climb_rate = 0;
+    float target_yaw_rate = 0.0f;
+    float target_climb_rate = 0.0f;
     float takeoff_climb_rate = 0.0f;
 
     // process pilot inputs unless we are in radio failsafe
@@ -50,9 +50,6 @@ void Copter::loiter_run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
         target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-
-        // get takeoff adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
     } else {
         // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
         wp_nav.clear_pilot_desired_acceleration();
@@ -100,19 +97,19 @@ void Copter::loiter_run()
             set_throttle_takeoff();
         }
 
+        // get takeoff adjusted pilot and takeoff climb rates
+        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
-        // body-frame rate controller is run directly from 100hz loop
-
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
         pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
-
         break;
 
     case Loiter_Landed:
@@ -127,7 +124,6 @@ void Copter::loiter_run()
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
 #endif
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
-
         break;
 
     case Loiter_Flying:
@@ -138,8 +134,6 @@ void Copter::loiter_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
-        // body-frame rate controller is run directly from 100hz loop
-
         // run altitude controller
         if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
             // if sonar is ok, use surface tracking
@@ -148,9 +142,7 @@ void Copter::loiter_run()
 
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
-        pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
-
         break;
     }
 }
