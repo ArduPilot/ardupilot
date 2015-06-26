@@ -313,7 +313,6 @@ private:
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
-    float           _dt;                        // main loop time
     int16_t         _delta_phase_angle;         // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough;    // roll control PWM direct from radio, used for manual control
     int16_t         _pitch_radio_passthrough;   // pitch control PWM direct from radio, used for manual control
