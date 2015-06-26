@@ -227,6 +227,9 @@ void AP_Compass_AK8963::read()
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    field.rotate(ROTATION_YAW_90);
+#endif
     publish_field(field, _compass_instance);
 }
 
