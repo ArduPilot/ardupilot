@@ -14,16 +14,19 @@ Changes from 3.3-rc5
     a) allow triggering even if pilot doesn't move throttle to zero
     b) easier triggering by removing baro check and using angle error instead of absolute tilt angle 
 4) TradHeli:
-    a) swash moves while landed in AltHold
-    b) fix altitude drop when switching modes
+    a) swash moves while landed in AltHold mode
+    b) improvements to land detector
+    c) fixed RSC Runup Time calculation
+    d) Rate FF Low-pass Filter changed from 5Hz to 10Hz, more responsive
 5) support Linux builds for NAVIO+ and Erle-Brain (http://firmware.diydrones.com/Copter/beta/)
-6) Small improvements / Bug Fixes:
+6) Other improvements / Bug Fixes:
     a) sonar pre-arm checks only enforced if using optical flow
     b) fix EKF failsafe bug that would not allow recovery
     c) full rate IMU logging for improved vibration analysis (set LOG_BITMASK to All+FullIMU)
     d) new VIBE dataflash message records vibration levels
     e) default MNT_TYPE to "1" if servo gimbal rc outputs were defined
     f) RC_FEEL defaults to medium
+    g) addition of SToRM32 serial support (supports mount angle feedback to GCS)
 ------------------------------------------------------------------
 Copter 3.3-rc5 23-May-2015
 Changes from 3.3-rc4
