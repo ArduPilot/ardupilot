@@ -69,6 +69,7 @@ public:
     virtual void send_log_block(uint32_t block_address);
     virtual void handle_ack(uint32_t block_num);
     virtual void handle_retry(uint32_t block_num);
+    virtual void remote_log_block_status_msg(mavlink_message_t* msg);
 private:
 
     mavlink_channel_t _chan;

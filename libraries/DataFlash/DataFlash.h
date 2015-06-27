@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <DataFlash_Backend.h>
 
+#include <GCS_MAVLink.h> // for mavlink_msg_t
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
 #endif
@@ -119,6 +121,7 @@ public:
     // for DataFlash_MAVLink:
     void handle_ack(uint32_t block_num);
     void handle_retry(uint32_t block_num);
+    void remote_log_block_status_msg(mavlink_message_t* msg);
     // end for DataFlash_MAVLink:
 
 protected:
