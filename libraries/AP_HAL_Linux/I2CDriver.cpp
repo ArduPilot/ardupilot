@@ -1,8 +1,8 @@
-
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "I2CDriver.h"
+#include "Util.h"
 
 #include <errno.h>
 #include <sys/types.h>
@@ -30,6 +30,9 @@ LinuxI2CDriver::LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device)
     _semaphore(semaphore)
 {
     _device = strdup(device);
+
+    if (!((LinuxUtil*)hal.util)->is_chardev_node(_device))
+        hal.scheduler->panic("I2C device is not a chardev node");
 }
 
 /* Match a given device by the prefix its devpath, i.e. the path returned by
@@ -78,6 +81,9 @@ LinuxI2CDriver::LinuxI2CDriver(AP_HAL::Semaphore* semaphore,
     }
 
     closedir(d);
+
+    if (!((LinuxUtil*)hal.util)->is_chardev_node(_device))
+        hal.scheduler->panic("I2C device is not a chardev node");
 }
 
 LinuxI2CDriver::~LinuxI2CDriver()
