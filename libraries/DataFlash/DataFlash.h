@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <DataFlash_Backend.h>
 
+#include <GCS_MAVLink.h> // for mavlink_msg_t
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
 #endif
@@ -85,6 +87,10 @@ public:
     void Log_Write_Mode(uint8_t mode);
 
     bool logging_started(void);
+
+    // for DataFlash_MAVLink:
+    void remote_log_block_status_msg(mavlink_message_t* msg);
+    // end for DataFlash_MAVLink:
 
 protected:
     /*

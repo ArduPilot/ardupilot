@@ -181,6 +181,16 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         }
     }
 }
+void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_message_t* msg)
+{
+    mavlink_remote_log_block_status_t packet;
+    mavlink_msg_remote_log_block_status_decode(msg, &packet);
+    if(packet.block_status == 0){
+        handle_retry(packet.block_cnt);
+    } else{
+        handle_ack(packet.block_cnt);
+    }
+}
 
 void DataFlash_MAVLink::handle_retry(uint32_t block_num)
 {

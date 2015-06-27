@@ -56,10 +56,13 @@ public:
     void DumpPageInfo(AP_HAL::BetterStream *port) {}
     void ShowDeviceInfo(AP_HAL::BetterStream *port) {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) {}
-    void send_log_block(uint32_t block_address);
-    void handle_ack(uint32_t block_num);
-    void handle_retry(uint32_t block_num);
-    void set_channel(mavlink_channel_t chan);
+
+    virtual void send_log_block(uint32_t block_address);
+    virtual void handle_ack(uint32_t block_num);
+    virtual void handle_retry(uint32_t block_num);
+    virtual void set_channel(mavlink_channel_t chan);
+    virtual void remote_log_block_status_msg(mavlink_message_t* msg);
+
 private:
 
     mavlink_channel_t _chan;

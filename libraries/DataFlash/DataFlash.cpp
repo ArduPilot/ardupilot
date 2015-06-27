@@ -69,5 +69,10 @@ void DataFlash_Class::EnableWrites(bool enable) {
     backend->EnableWrites(enable);
 }
 
+// for DataFlash_MAVLink
+void DataFlash_Class::remote_log_block_status_msg(mavlink_message_t* msg) {
+    backend->remote_log_block_status_msg(msg);
+}
+// end for DataFlash_MAVLink
 
 // end functions pass straight through to backend
