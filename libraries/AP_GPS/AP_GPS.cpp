@@ -84,8 +84,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: INJECT_TO
     // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
     // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
-    // @Values: 0,1: send to specified instance. 127: broadcast
-    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, 127),
+    // @Values: 0:send to first GPS, 1:send to 2nd GPS, 127:send to all
+    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
 #endif
 
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: SBP_LOGMASK
     // @DisplayName: Swift Binary Protocol Logging Mask
     // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
-    // @Values: 0x0000 for none, 0xFFFF for all, 0xFF00 for external only.
+    // @Values: 0x0000:None, 0xFFFF:All, 0xFF00:External only
     // @User: Advanced
     AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
 #endif
@@ -469,7 +469,7 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
 #if GPS_MAX_INSTANCES > 1
 
     //Support broadcasting to all GPSes.
-    if (_inject_to == 127) {
+    if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             inject_data(i, data, len);
         }
