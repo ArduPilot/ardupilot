@@ -4,23 +4,23 @@
 
 typedef struct __mavlink_remote_log_block_status_t
 {
- uint16_t block_cnt; ///< log data block count
+ uint32_t block_cnt; ///< log data block count
  uint8_t block_status; ///< 0:log data failed, 1:log received
 } mavlink_remote_log_block_status_t;
 
-#define MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN 3
-#define MAVLINK_MSG_ID_142_LEN 3
+#define MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN 5
+#define MAVLINK_MSG_ID_142_LEN 5
 
-#define MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_CRC 126
-#define MAVLINK_MSG_ID_142_CRC 126
+#define MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_CRC 113
+#define MAVLINK_MSG_ID_142_CRC 113
 
 
 
 #define MAVLINK_MESSAGE_INFO_REMOTE_LOG_BLOCK_STATUS { \
 	"REMOTE_LOG_BLOCK_STATUS", \
 	2, \
-	{  { "block_cnt", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_remote_log_block_status_t, block_cnt) }, \
-         { "block_status", NULL, MAVLINK_TYPE_UINT8_T, 0, 2, offsetof(mavlink_remote_log_block_status_t, block_status) }, \
+	{  { "block_cnt", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_remote_log_block_status_t, block_cnt) }, \
+         { "block_status", NULL, MAVLINK_TYPE_UINT8_T, 0, 4, offsetof(mavlink_remote_log_block_status_t, block_status) }, \
          } \
 }
 
@@ -36,12 +36,12 @@ typedef struct __mavlink_remote_log_block_status_t
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_remote_log_block_status_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
-						       uint16_t block_cnt, uint8_t block_status)
+						       uint32_t block_cnt, uint8_t block_status)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char buf[MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN];
-	_mav_put_uint16_t(buf, 0, block_cnt);
-	_mav_put_uint8_t(buf, 2, block_status);
+	_mav_put_uint32_t(buf, 0, block_cnt);
+	_mav_put_uint8_t(buf, 4, block_status);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN);
 #else
@@ -72,12 +72,12 @@ static inline uint16_t mavlink_msg_remote_log_block_status_pack(uint8_t system_i
  */
 static inline uint16_t mavlink_msg_remote_log_block_status_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
 							   mavlink_message_t* msg,
-						           uint16_t block_cnt,uint8_t block_status)
+						           uint32_t block_cnt,uint8_t block_status)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char buf[MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN];
-	_mav_put_uint16_t(buf, 0, block_cnt);
-	_mav_put_uint8_t(buf, 2, block_status);
+	_mav_put_uint32_t(buf, 0, block_cnt);
+	_mav_put_uint8_t(buf, 4, block_status);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN);
 #else
@@ -132,12 +132,12 @@ static inline uint16_t mavlink_msg_remote_log_block_status_encode_chan(uint8_t s
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_remote_log_block_status_send(mavlink_channel_t chan, uint16_t block_cnt, uint8_t block_status)
+static inline void mavlink_msg_remote_log_block_status_send(mavlink_channel_t chan, uint32_t block_cnt, uint8_t block_status)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char buf[MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN];
-	_mav_put_uint16_t(buf, 0, block_cnt);
-	_mav_put_uint8_t(buf, 2, block_status);
+	_mav_put_uint32_t(buf, 0, block_cnt);
+	_mav_put_uint8_t(buf, 4, block_status);
 
 #if MAVLINK_CRC_EXTRA
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS, buf, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_CRC);
@@ -165,12 +165,12 @@ static inline void mavlink_msg_remote_log_block_status_send(mavlink_channel_t ch
   is usually the receive buffer for the channel, and allows a reply to an
   incoming message with minimum stack space usage.
  */
-static inline void mavlink_msg_remote_log_block_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint16_t block_cnt, uint8_t block_status)
+static inline void mavlink_msg_remote_log_block_status_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint32_t block_cnt, uint8_t block_status)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
 	char *buf = (char *)msgbuf;
-	_mav_put_uint16_t(buf, 0, block_cnt);
-	_mav_put_uint8_t(buf, 2, block_status);
+	_mav_put_uint32_t(buf, 0, block_cnt);
+	_mav_put_uint8_t(buf, 4, block_status);
 
 #if MAVLINK_CRC_EXTRA
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS, buf, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN, MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_CRC);
@@ -201,9 +201,9 @@ static inline void mavlink_msg_remote_log_block_status_send_buf(mavlink_message_
  *
  * @return log data block count
  */
-static inline uint16_t mavlink_msg_remote_log_block_status_get_block_cnt(const mavlink_message_t* msg)
+static inline uint32_t mavlink_msg_remote_log_block_status_get_block_cnt(const mavlink_message_t* msg)
 {
-	return _MAV_RETURN_uint16_t(msg,  0);
+	return _MAV_RETURN_uint32_t(msg,  0);
 }
 
 /**
@@ -213,7 +213,7 @@ static inline uint16_t mavlink_msg_remote_log_block_status_get_block_cnt(const m
  */
 static inline uint8_t mavlink_msg_remote_log_block_status_get_block_status(const mavlink_message_t* msg)
 {
-	return _MAV_RETURN_uint8_t(msg,  2);
+	return _MAV_RETURN_uint8_t(msg,  4);
 }
 
 /**

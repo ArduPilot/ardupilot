@@ -5311,7 +5311,7 @@ static void mavlink_test_remote_log_block_status(uint8_t system_id, uint8_t comp
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_remote_log_block_status_t packet_in = {
-		17235,139
+		963497464,17
     };
 	mavlink_remote_log_block_status_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
