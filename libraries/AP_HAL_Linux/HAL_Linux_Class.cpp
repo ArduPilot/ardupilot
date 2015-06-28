@@ -4,7 +4,7 @@
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
 
-#include <getopt.h>
+#include <utility/getopt_cpp.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -120,27 +120,53 @@ void _usage(void)
     printf("\t-tcp:             -C tcp:192.168.2.15:1243:wait\n");
     printf("\t                  -A tcp:11.0.0.2:5678\n");    
     printf("\t                  -A udp:11.0.0.2:5678\n");    
+    printf("\t-custom log path:\n");        
+    printf("\t                  --log-directory /var/APM/logs\n");
+    printf("\t                  -l /var/APM/logs\n");
+    printf("\t-custom terrain path:\n");
+    printf("\t                   --terrain-directory /var/APM/terrain\n");
+    printf("\t                   -t /var/APM/terrain\n");
 }
 
 void HAL_Linux::init(int argc,char* const argv[]) const 
 {
     int opt;
+    const struct GetOptLong::option options[] = {
+        {"uartA",         true,  0, 'A'},
+        {"uartB",         true,  0, 'B'},
+        {"uartC",         true,  0, 'C'},
+        {"uartE",         true,  0, 'E'},
+        {"log-directory",       true,  0, 'l'},
+        {"terrain-directory",   true,  0, 't'},
+        {"help",                false,  0, 'h'},
+        {0, false, 0, 0}
+    };
+
+    GetOptLong gopt(argc, argv, "A:B:C:E:l:t:h",
+                    options);
+
     /*
       parse command line options
      */
-    while ((opt = getopt(argc, argv, "A:B:C:E:h")) != -1) {
+    while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'A':
-            uartADriver.set_device_path(optarg);
+            uartADriver.set_device_path(gopt.optarg);
             break;
         case 'B':
-            uartBDriver.set_device_path(optarg);
+            uartBDriver.set_device_path(gopt.optarg);
             break;
         case 'C':
-            uartCDriver.set_device_path(optarg);
+            uartCDriver.set_device_path(gopt.optarg);
             break;
         case 'E':
-            uartEDriver.set_device_path(optarg);
+            uartEDriver.set_device_path(gopt.optarg);
+            break;
+        case 'l':            
+            custom_log_directory = gopt.optarg;
+            break;
+        case 't':
+            custom_terrain_directory = gopt.optarg;            
             break;
         case 'h':
             _usage();
