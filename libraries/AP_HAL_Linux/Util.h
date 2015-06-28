@@ -32,7 +32,7 @@ public:
     void set_system_clock(uint64_t time_utc_usec);
 
 private:
-	static Linux::ToneAlarm _toneAlarm;
+	  static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
     char* const *saved_argv;
 };
