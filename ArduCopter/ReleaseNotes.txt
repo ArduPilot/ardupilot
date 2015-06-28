@@ -1,5 +1,10 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc7 28-Jun-2015
+Changes from 3.3-rc6
+1) reduce EKF gyro bias uncertainty that caused attitude estimate errors
+2) force 400hz IMU logging on (temporary for release candidate testing)
+------------------------------------------------------------------
 Copter 3.3-rc6 25-Jun-2015
 Changes from 3.3-rc5
 1) EKF related changes:
