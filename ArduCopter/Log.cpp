@@ -777,6 +777,11 @@ void Copter::log_init(void)
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
+
+    // force fast IMU logging on (for release candidate testing)
+    if (g.log_bitmask != 0) {
+        g.log_bitmask |= MASK_LOG_IMU_FAST;
+    }
 }
 
 #endif // LOGGING_DISABLED
