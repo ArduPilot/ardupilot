@@ -11,6 +11,7 @@
 extern const AP_HAL::HAL& hal;
 
 #include "Util.h"
+#include "HAL_Linux_Class.h"
 using namespace Linux;
 
 
