@@ -98,6 +98,11 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     }
 #endif
 
+    const char* custom_dir = hal.util->get_custom_log_directory();
+    if (custom_dir != NULL){
+        _log_directory = custom_dir;
+    }
+
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
