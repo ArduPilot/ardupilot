@@ -26,6 +26,9 @@ public:
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
 
+    virtual const char* get_custom_log_directory() { return NULL; } 
+    virtual const char* get_custom_terrain_directory() const { return NULL;  }
+
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
     // commands
