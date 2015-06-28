@@ -791,7 +791,6 @@ void AC_PosControl::pos_to_rate_xy(xy_mode mode, float dt, float ekfNavVelGainSc
 void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 {
     const Vector3f &vel_curr = _inav.get_velocity();  // current velocity in cm/s
-    float accel_total;                          // total acceleration in cm/s/s
     Vector2f vel_xy_p, vel_xy_i;
 
     // reset last velocity target to current target
@@ -839,9 +838,17 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
     // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     _accel_target.x = _accel_feedforward.x + (vel_xy_p.x + vel_xy_i.x) * ekfNavVelGainScaler;
     _accel_target.y = _accel_feedforward.y + (vel_xy_p.y + vel_xy_i.y) * ekfNavVelGainScaler;
+}
+
+/// accel_to_lean_angles - horizontal desired acceleration to lean angles
+///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
+void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
+{
+    float accel_total;                          // total acceleration in cm/s/s
+    float accel_right, accel_forward;
+    float lean_angle_max = _attitude_control.lean_angle_max();
 
     // scale desired acceleration if it's beyond acceptable limit
-    // To-Do: move this check down to the accel_to_lean_angle method?
     accel_total = pythagorous2(_accel_target.x, _accel_target.y);
     if (accel_total > POSCONTROL_ACCEL_XY_MAX && accel_total > 0.0f) {
         _accel_target.x = POSCONTROL_ACCEL_XY_MAX * _accel_target.x/accel_total;
@@ -851,14 +858,6 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
         // reset accel limit flag
         _limit.accel_xy = false;
     }
-}
-
-/// accel_to_lean_angles - horizontal desired acceleration to lean angles
-///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
-{
-    float accel_right, accel_forward;
-    float lean_angle_max = _attitude_control.lean_angle_max();
 
     // reset accel to current desired acceleration
     if (_flags.reset_accel_to_lean_xy) {
