@@ -34,7 +34,7 @@ public:
     bool is_chardev_node(const char *path);
 
 private:
-	static Linux::ToneAlarm _toneAlarm;
+	  static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
     char* const *saved_argv;
 };
