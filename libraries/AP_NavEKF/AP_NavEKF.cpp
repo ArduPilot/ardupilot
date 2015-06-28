@@ -55,7 +55,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    8E-06f
+#define GBIAS_PNOISE_DEFAULT    1E-06f
 #define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
@@ -79,7 +79,7 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.5f
-#define GBIAS_PNOISE_DEFAULT    8E-06f
+#define GBIAS_PNOISE_DEFAULT    1E-06f
 #define ABIAS_PNOISE_DEFAULT    0.00005f
 #define MAGE_PNOISE_DEFAULT     0.0003f
 #define MAGB_PNOISE_DEFAULT     0.0003f
@@ -106,7 +106,7 @@ extern const AP_HAL::HAL& hal;
 #define STARTUP_WIND_SPEED 3.0f
 
 // initial imu bias uncertainty (deg/sec)
-#define INIT_GYRO_BIAS_UNCERTAINTY  1.0f
+#define INIT_GYRO_BIAS_UNCERTAINTY  0.1f
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // Define tuning parameters
