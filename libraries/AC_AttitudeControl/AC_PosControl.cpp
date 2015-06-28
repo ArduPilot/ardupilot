@@ -579,7 +579,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler)
+void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler, bool use_althold_lean_angle)
 {
     // compute dt
     uint32_t now = hal.scheduler->millis();
@@ -604,7 +604,7 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
 
     // run position controller's acceleration to lean angle step
-    accel_to_lean_angles(dt, ekfNavVelGainScaler);
+    accel_to_lean_angles(dt, ekfNavVelGainScaler, use_althold_lean_angle);
 }
 
 float AC_PosControl::time_since_last_xy_update() const
@@ -666,7 +666,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     rate_to_accel_xy(dt, ekfNavVelGainScaler);
 
     // run acceleration to lean angle step
-    accel_to_lean_angles(dt, ekfNavVelGainScaler);
+    accel_to_lean_angles(dt, ekfNavVelGainScaler, false);
 
     // update altitude target
     set_alt_target_from_climb_rate(_vel_desired.z, dt, false);
@@ -842,17 +842,23 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 
 /// accel_to_lean_angles - horizontal desired acceleration to lean angles
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
+void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bool use_althold_lean_angle)
 {
     float accel_total;                          // total acceleration in cm/s/s
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
+    float accel_max = POSCONTROL_ACCEL_XY_MAX;
+
+    // limit acceleration if necessary
+    if (use_althold_lean_angle) {
+        accel_max = min(accel_max, GRAVITY_MSS * 100.0f * sinf(ToRad(constrain_float(_attitude_control.get_althold_lean_angle_max(),1000,8000)/100.0f)));
+    }
 
     // scale desired acceleration if it's beyond acceptable limit
     accel_total = pythagorous2(_accel_target.x, _accel_target.y);
-    if (accel_total > POSCONTROL_ACCEL_XY_MAX && accel_total > 0.0f) {
-        _accel_target.x = POSCONTROL_ACCEL_XY_MAX * _accel_target.x/accel_total;
-        _accel_target.y = POSCONTROL_ACCEL_XY_MAX * _accel_target.y/accel_total;
+    if (accel_total > accel_max && accel_total > 0.0f) {
+        _accel_target.x = accel_max * _accel_target.x/accel_total;
+        _accel_target.y = accel_max * _accel_target.y/accel_total;
         _limit.accel_xy = true;     // unused
     } else {
         // reset accel limit flag
