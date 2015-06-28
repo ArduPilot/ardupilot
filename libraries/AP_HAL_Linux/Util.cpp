@@ -10,6 +10,7 @@
 extern const AP_HAL::HAL& hal;
 
 #include "Util.h"
+#include "HAL_Linux_Class.h"
 using namespace Linux;
 
 
@@ -60,6 +61,16 @@ void LinuxUtil::set_system_clock(uint64_t time_utc_usec)
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
     clock_settime(CLOCK_REALTIME, &ts);    
 #endif    
+}
+
+const char* LinuxUtil::get_custom_log_directory()
+{
+    return ((HAL_Linux&)hal).get_custom_log_directory();
+}
+
+const char* LinuxUtil::get_custom_terrain_directory()
+{
+    return ((HAL_Linux&)hal).get_custom_terrain_directory();
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
