@@ -119,6 +119,7 @@ uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
 
 void LinuxRCOutput_Bebop::_start_prop()
 {
+#if 0
     if(!_i2c_sem->take(10))
         return;
     printf("start prop\n");
@@ -127,6 +128,18 @@ void LinuxRCOutput_Bebop::_start_prop()
                             bebop_motors_bitmask);
     _i2c_sem->give();
     _state = BEBOP_BLDC_STARTED;
+#else
+    uint8_t data = BEBOP_BLDC_STARTPROP;
+    printf("start_prop\n");
+
+    if(!_i2c_sem->take(10))
+        return;
+
+    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
+
+    _i2c_sem->give();
+    _state = BEBOP_BLDC_STARTED;
+#endif
 }
 
 void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
@@ -229,7 +242,7 @@ void LinuxRCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    //printf("clear error\n");
+    printf("clear error\n");
 
     if(!_i2c_sem->take(10))
         return;
@@ -285,7 +298,7 @@ uint16_t LinuxRCOutput_Bebop::get_freq(uint8_t ch)
 
 void LinuxRCOutput_Bebop::enable_ch(uint8_t ch)
 {
-    _clear_error();
+    //_clear_error();
 }
 
 void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
@@ -304,7 +317,7 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
     /* start propellers if the speed of the 4 motors is >= min speed
      * not clear when the motors are supposed to start, so let's put it to min_pwm*/
     for(i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
-        if(_period_us[i] <= _min_pwm)
+        if(_period_us[i] <= _min_pwm + 50)
             break;
     }
 
@@ -317,8 +330,8 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
     else {
         /* all the motor pwm values are higher than minimum
          * if the bldc is stopped, start it*/
-        //if(_state == BEBOP_BLDC_STOPPED)
-            //_start_prop();
+        if(_state == BEBOP_BLDC_STOPPED)
+            _start_prop();
     }
     _set_ref_speed(_rpm);
 }
