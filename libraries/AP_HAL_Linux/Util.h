@@ -29,10 +29,12 @@ public:
     /*
       set system clock in UTC microseconds
      */
-    void set_system_clock(uint64_t time_utc_usec);
+    void set_system_clock(uint64_t time_utc_usec);    
+    const char* get_custom_log_directory();
+    const char* get_custom_terrain_directory();
 
 private:
-	static Linux::ToneAlarm _toneAlarm;
+    static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
     char* const *saved_argv;
 };
