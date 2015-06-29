@@ -20,7 +20,11 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#define STORAGE_DIR "/data/ftp/internal_000/APM"
+#else
 #define STORAGE_DIR "/var/APM"
+#endif
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
@@ -35,6 +39,7 @@ void LinuxStorage::_storage_create(void)
     }
     for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
         if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
+            perror("write");
             hal.scheduler->panic("Error filling " STORAGE_FILE);            
         }
     }
