@@ -38,7 +38,7 @@ const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("ENGINE_MUL", 8, SITL,  engine_mul,  1),
     AP_GROUPINFO("WIND_SPD",   9, SITL,  wind_speed,  0),
     AP_GROUPINFO("WIND_DIR",  10, SITL,  wind_direction,  180),
-    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0.2f),
+    AP_GROUPINFO("WIND_TURB", 11, SITL,  wind_turbulance,  0),
     AP_GROUPINFO("GPS_TYPE",  12, SITL,  gps_type,  SITL::GPS_TYPE_UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",  13, SITL,  gps_byteloss,  0),
     AP_GROUPINFO("GPS_NUMSATS",   14, SITL,  gps_numsats,   10),

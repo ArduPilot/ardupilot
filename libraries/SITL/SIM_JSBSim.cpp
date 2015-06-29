@@ -281,7 +281,11 @@ bool JSBSim::open_control_socket(void)
     sock_control.set_blocking(false);
     opened_control_socket = true;
 
-    char startup[] = "info\nresume\nstep\n";
+    char startup[] = 
+        "info\n"
+        "resume\n"
+        "step\n"
+        "set atmosphere/turb-type 4\n";
     sock_control.send(startup, strlen(startup));
     return true;
 }
@@ -330,6 +334,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
         elevator = (ch2-ch1)/2.0f;
         rudder   = (ch2+ch1)/2.0f;
     }
+    float wind_speed_fps = input.wind.speed / FEET_TO_METERS;
     asprintf(&buf, 
              "set fcs/aileron-cmd-norm %f\n"
              "set fcs/elevator-cmd-norm %f\n"
@@ -337,10 +342,14 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set fcs/throttle-cmd-norm %f\n"
              "set atmosphere/psiw-rad %f\n"
              "set atmosphere/wind-mag-fps %f\n"
+             "set atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps %f\n"
+             "set atmosphere/turbulence/milspec/severity %f\n"
              "step\n",
              aileron, elevator, rudder, throttle,
              radians(input.wind.direction),
-             input.wind.speed / FEET_TO_METERS);
+             wind_speed_fps,
+             wind_speed_fps/3,
+             input.wind.turbulence);
     ssize_t buflen = strlen(buf);
     ssize_t sent = sock_control.send(buf, buflen);
     free(buf);

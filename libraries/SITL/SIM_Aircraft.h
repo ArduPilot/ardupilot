@@ -41,7 +41,7 @@ public:
         struct {
             float speed;      // m/s
             float direction;  // degrees 0..360
-            float turbulance;
+            float turbulence;
         } wind;
     };
 
