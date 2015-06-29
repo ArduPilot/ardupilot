@@ -400,6 +400,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
     }
     input.wind.speed = wind_speed;
     input.wind.direction = _sitl->wind_direction;
+    input.wind.turbulence = _sitl->wind_turbulance;
 
     for (i=0; i<11; i++) {
         if (pwm_output[i] == 0xFFFF) {
