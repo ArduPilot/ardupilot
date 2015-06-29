@@ -5,7 +5,7 @@
 
 $(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
 	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< -I$(SRCROOT) $(SKETCH_INCLUDES)
+	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
 
 $(BUILDROOT)/%.o: $(BUILDROOT)/make.flags $(SRCROOT)/%.cpp 
 	$(RULEHDR)
