@@ -1,7 +1,7 @@
 #ifndef AP_LR_MSGHANDLER_H
 #define AP_LR_MSGHANDLER_H
 
-#include <MsgHandler.h>
+#include "MsgHandler.h"
 
 class LR_MsgHandler : public MsgHandler {
 public:

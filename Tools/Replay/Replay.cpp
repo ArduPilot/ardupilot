@@ -48,16 +48,17 @@
 #include <AP_BattMonitor.h>
 #include <AP_Terrain.h>
 #include <AP_OpticalFlow.h>
-#include <Parameters.h>
 #include <AP_SerialManager.h>
 #include <RC_Channel.h>
 #include <AP_RangeFinder.h>
 #include <stdio.h>
 #include <errno.h>
-#include <VehicleType.h>
 #include <getopt.h> // for optind only
 #include <utility/getopt_cpp.h>
-#include <MsgHandler.h>
+
+#include "Parameters.h"
+#include "VehicleType.h"
+#include "MsgHandler.h"
 
 #ifndef INT16_MIN
 #define INT16_MIN -32768

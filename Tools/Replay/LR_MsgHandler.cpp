@@ -1,4 +1,4 @@
-#include <LR_MsgHandler.h>
+#include "LR_MsgHandler.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -292,7 +292,7 @@ void LR_MsgHandler_MAG::process_message(uint8_t *msg)
 }
 
 #include <AP_AHRS.h>
-#include <VehicleType.h>
+#include "VehicleType.h"
 
 void LR_MsgHandler_MSG::process_message(uint8_t *msg)
 {
