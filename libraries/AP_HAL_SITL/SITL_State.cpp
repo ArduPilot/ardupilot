@@ -342,7 +342,7 @@ void SITL_State::_apply_servo_filter(float deltat)
     if (max_change == 0) {
         max_change = 1;
     }
-    for (uint8_t i=0; i<11; i++) {
+    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
         int16_t change = (int16_t)pwm_output[i] - (int16_t)last_pwm_output[i];
         if (change > max_change) {
             pwm_output[i] = last_pwm_output[i] + max_change;
@@ -366,7 +366,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
     uint8_t i;
 
     if (last_update_usec == 0) {
-        for (i=0; i<11; i++) {
+        for (i=0; i<SITL_NUM_CHANNELS; i++) {
             pwm_output[i] = 1000;
         }
         if (_vehicle == ArduPlane) {
@@ -377,7 +377,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
             pwm_output[7] = 1800;
         }
-        for (i=0; i<11; i++) {
+        for (i=0; i<SITL_NUM_CHANNELS; i++) {
             last_pwm_output[i] = pwm_output[i];
         }
     }
@@ -402,7 +402,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
     input.wind.direction = _sitl->wind_direction;
     input.wind.turbulence = _sitl->wind_turbulance;
 
-    for (i=0; i<11; i++) {
+    for (i=0; i<SITL_NUM_CHANNELS; i++) {
         if (pwm_output[i] == 0xFFFF) {
             input.servos[i] = 0;
         } else {
@@ -461,7 +461,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
 void SITL_State::_simulator_output(bool synthetic_clock_mode)
 {
     struct {
-        uint16_t pwm[11];
+        uint16_t pwm[SITL_NUM_CHANNELS];
         uint16_t speed, direction, turbulance;
     } control;
     Aircraft::sitl_input input;
