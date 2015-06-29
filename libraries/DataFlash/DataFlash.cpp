@@ -1,5 +1,8 @@
 #include <DataFlash.h>
 
+const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
+};
+
 // start functions pass straight through to backend:
 void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
     backend->WriteBlock(pBuffer, size);

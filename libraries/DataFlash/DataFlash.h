@@ -34,6 +34,11 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
 
+    // constructor
+    DataFlash_Class(void) {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
     bool CardInserted(void);
@@ -123,6 +128,10 @@ public:
     void handle_retry(uint32_t block_num);
     void remote_log_block_status_msg(mavlink_message_t* msg);
     // end for DataFlash_MAVLink:
+
+    static const struct AP_Param::GroupInfo        var_info[];
+    struct {
+    } params;
 
 protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
