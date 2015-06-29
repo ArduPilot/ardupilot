@@ -52,12 +52,8 @@
 // sensor types
 
 //////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
- #define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
+// Battery monitoring
+//
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 # define BATTERY_PIN_1	  0
 # define CURRENT_PIN_1	  1
