@@ -42,7 +42,8 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define UBLOX_RXM_RAW_LOGGING 1
-#define UBLOX_MAX_RXM_RAW_SATS 16
+#define UBLOX_MAX_RXM_RAW_SATS 22
+#define UBLOX_MAX_RXM_RAWX_SATS 32
 #else
 #define UBLOX_RXM_RAW_LOGGING 0
 #endif
@@ -224,6 +225,28 @@ private:
             uint8_t lli;
         } svinfo[UBLOX_MAX_RXM_RAW_SATS];
     };
+    struct PACKED ubx_rxm_rawx {
+        double rcvTow;
+        uint16_t week;
+        int8_t leapS;
+        uint8_t numMeas;
+        uint8_t recStat;
+        uint8_t reserved1[3];
+        struct ubx_rxm_rawx_sv {
+            double prMes;
+            double cpMes;
+            float doMes;
+            uint8_t gnssId;
+            uint8_t svId;
+            uint8_t freqId;
+            uint16_t locktime;
+            uint8_t cno;
+            uint8_t prStdev;
+            uint8_t cpStdev;
+            uint8_t doStdev;
+            uint8_t trkStat;
+        } svinfo[UBLOX_MAX_RXM_RAWX_SATS];
+    };
 #endif
     // Receive buffer
     union PACKED {
@@ -239,6 +262,7 @@ private:
         ubx_nav_svinfo_header svinfo_header;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
+        ubx_rxm_rawx rxm_rawx;
 #endif
         uint8_t bytes[];
     } _buffer;
@@ -265,7 +289,8 @@ private:
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_NAV_SVINFO = 0x30,
-        MSG_RXM_RAW = 0x10
+        MSG_RXM_RAW = 0x10,
+        MSG_RXM_RAWX = 0x15
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -338,6 +363,7 @@ private:
     void log_mon_hw2(void);
     void log_accuracy(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
+    void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 };
 
 #endif // __AP_GPS_UBLOX_H__

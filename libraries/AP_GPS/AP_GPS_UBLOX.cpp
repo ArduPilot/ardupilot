@@ -123,9 +123,12 @@ AP_GPS_UBLOX::send_next_rate_update(void)
     case 7:
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAW, gps._raw_data);
         break;
+    case 8:
+        _configure_message_rate(CLASS_RXM, MSG_RXM_RAWX, gps._raw_data);
+        break;
 #endif
 #if UBLOX_VERSION_AUTODETECTION 
-    case 8:
+    case 9:
         _request_version();
         break;
 #endif
@@ -348,6 +351,45 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
         gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
     }
 }
+
+void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
+{
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
+        return;
+    }
+    uint64_t now = hal.scheduler->micros64();
+
+    struct log_GPS_RAWH header = {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_RAWH_MSG),
+        time_us    : now,
+        rcvTow     : raw.rcvTow,
+        week       : raw.week,
+        leapS      : raw.leapS,
+        numMeas    : raw.numMeas,
+        recStat    : raw.recStat
+    };
+    gps._DataFlash->WriteBlock(&header, sizeof(header));
+
+    for (uint8_t i=0; i<raw.numMeas; i++) {
+        struct log_GPS_RAWS pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_GPS_RAWS_MSG),
+            time_us    : now,
+            prMes      : raw.svinfo[i].prMes,
+            cpMes      : raw.svinfo[i].cpMes,
+            doMes      : raw.svinfo[i].doMes,
+            gnssId     : raw.svinfo[i].gnssId,
+            svId       : raw.svinfo[i].svId,
+            freqId     : raw.svinfo[i].freqId,
+            locktime   : raw.svinfo[i].locktime,
+            cno        : raw.svinfo[i].cno,
+            prStdev    : raw.svinfo[i].prStdev,
+            cpStdev    : raw.svinfo[i].cpStdev,
+            doStdev    : raw.svinfo[i].doStdev,
+            trkStat    : raw.svinfo[i].trkStat
+        };
+        gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    }
+}
 #endif // UBLOX_RXM_RAW_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
@@ -435,6 +477,9 @@ AP_GPS_UBLOX::_parse_gps(void)
 #if UBLOX_RXM_RAW_LOGGING
     if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
         log_rxm_raw(_buffer.rxm_raw);
+        return false;
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
+        log_rxm_rawx(_buffer.rxm_rawx);
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
