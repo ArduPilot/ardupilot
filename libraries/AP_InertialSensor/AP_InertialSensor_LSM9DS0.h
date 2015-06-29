@@ -27,7 +27,8 @@ public:
         A_SCALE_16G
     };
 
-    AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu);
+    AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
+                              int drdy_pin_num_a, int drdy_pin_num_b);
 
     bool update();
 
@@ -48,7 +49,15 @@ private:
     AP_HAL::SPIDeviceDriver *_gyro_spi;
     AP_HAL::Semaphore *_spi_sem;
 
+    /*
+     * If data-ready GPIO pins numbers are not defined (i.e. any negative
+     * value), the fallback approach used is to check if there's new data ready
+     * by reading the status register. It is *strongly* recommended to use
+     * data-ready GPIO pins for performance reasons.
+     */
+    int _drdy_pin_num_a;
     AP_HAL::DigitalSource *_drdy_pin_a;
+    int _drdy_pin_num_g;
     AP_HAL::DigitalSource *_drdy_pin_g;
 
     bool _gyro_sample_available;
