@@ -31,6 +31,8 @@ public:
      */
     void set_system_clock(uint64_t time_utc_usec);
 
+    bool is_chardev_node(const char *path);
+
 private:
 	static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
