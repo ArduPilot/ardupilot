@@ -26,6 +26,10 @@
 #include <uORB/topics/esc_status.h>
 #endif
 
+#define BACKEND_TYPE_LOCAL 0
+#define BACKEND_TYPE_MAVLINK 1
+#define BACKEND_TYPE_DEFAULT_VALUE BACKEND_TYPE_LOCAL
+
 
 class DataFlash_Backend;
 
@@ -41,6 +45,7 @@ public:
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
+
     bool CardInserted(void);
 
     // erase handling
@@ -131,6 +136,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
+        AP_Int8 type; // backend type to use
     } params;
 
 protected:
@@ -143,6 +149,9 @@ protected:
     uint8_t _num_types;
 
 private:
+    DataFlash_Backend *new_backend_local(void);
+    DataFlash_Backend *new_backend_mavlink(void);
+    void init_backend(const struct LogStructure *structure, uint8_t num_types);
     DataFlash_Backend *backend;
 };
 

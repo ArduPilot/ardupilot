@@ -1,6 +1,12 @@
 #include <DataFlash.h>
 
 const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
+    // @Param: _TYPE
+    // @DisplayName: Log storage type
+    // @Description: 8 byte value indicating backend to use (where applicable)
+    // @Values: 0:Default,1:MAVLink
+    // @User: Standard
+    AP_GROUPINFO("_TYPE", 0, DataFlash_Class, params.type, BACKEND_TYPE_DEFAULT_VALUE),
 };
 
 // start functions pass straight through to backend:
