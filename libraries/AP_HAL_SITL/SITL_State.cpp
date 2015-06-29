@@ -68,7 +68,7 @@ void SITL_State::_sitl_setup(void)
     _rcout_addr.sin_port = htons(_rcout_port);
     inet_pton(AF_INET, _fdm_address, &_rcout_addr.sin_addr);
 
-#ifndef HIL_MODE
+#if HIL_MODE == HIL_MODE_DISABLED
     _setup_fdm();
 #endif
     fprintf(stdout, "Starting SITL input\n");
@@ -83,7 +83,7 @@ void SITL_State::_sitl_setup(void)
 
     if (_sitl != NULL) {
         // setup some initial values
-#ifndef HIL_MODE
+#if HIL_MODE == HIL_MODE_DISABLED
         _update_barometer(100);
         _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
         _update_compass(0, 0, 0);
@@ -101,7 +101,7 @@ void SITL_State::_sitl_setup(void)
 }
 
 
-#ifndef HIL_MODE
+#if HIL_MODE == HIL_MODE_DISABLED
 /*
   setup a SITL FDM listening UDP port
  */
@@ -218,7 +218,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     }
 }
 
-#ifndef HIL_MODE
+#if HIL_MODE == HIL_MODE_DISABLED
 /*
   check for a SITL FDM packet
  */
