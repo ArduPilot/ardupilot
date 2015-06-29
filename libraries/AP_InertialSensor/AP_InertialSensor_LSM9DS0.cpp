@@ -27,18 +27,6 @@ extern const AP_HAL::HAL& hal;
 #define LSM9DS0_G_WHOAMI    0xD4
 #define LSM9DS0_XM_WHOAMI   0x49
 
-/*
- * If data-ready GPIO pins are not defined, the fallback approach used is to
- * check if there's new data ready by reading the status register. It is
- * *strongly* recommended to use data-ready GPIO pins for performance reasons.
- */
-#ifndef DRDY_GPIO_PIN_A
-    #define DRDY_GPIO_PIN_A 0
-#endif
-#ifndef DRDY_GPIO_PIN_G
-    #define DRDY_GPIO_PIN_G 0
-#endif
-
 ////////////////////////////
 // LSM9DS0 Gyro Registers //
 ////////////////////////////
@@ -382,7 +370,9 @@ extern const AP_HAL::HAL& hal;
 #define ACT_THS                                       0x3E
 #define ACT_DUR                                       0x3F
 
-AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu):
+AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
+                                                     int drdy_pin_num_a,
+                                                     int drdy_pin_num_g):
 	AP_InertialSensor_Backend(imu),
     _drdy_pin_a(NULL),
     _drdy_pin_g(NULL),
@@ -391,14 +381,19 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu):
     _accel_filter(800, 15),
     _gyro_filter(760, 15),
     _gyro_sample_available(false),
-    _accel_sample_available(false)
+    _accel_sample_available(false),
+    _drdy_pin_num_a(drdy_pin_num_a),
+    _drdy_pin_num_g(drdy_pin_num_g)
 {
     _product_id = AP_PRODUCT_ID_NONE;
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &_imu)
 {
-    AP_InertialSensor_LSM9DS0 *sensor = new AP_InertialSensor_LSM9DS0(_imu);
+    int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
+
+    AP_InertialSensor_LSM9DS0 *sensor =
+            new AP_InertialSensor_LSM9DS0(_imu, drdy_pin_num_a, drdy_pin_num_g);
 
     if (sensor == NULL) {
         return NULL;
@@ -418,19 +413,19 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
     _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_AM);
     _spi_sem = _gyro_spi->get_semaphore(); /* same semaphore for both */
 
-#if DRDY_GPIO_PIN_A != 0
-    _drdy_pin_a = hal.gpio->channel(DRDY_GPIO_PIN_A);
-    if (_drdy_pin_a == NULL) {
-        hal.scheduler->panic("LSM9DS0: null accel data-ready GPIO channel\n");
+    if (_drdy_pin_num_a >= 0) {
+        _drdy_pin_a = hal.gpio->channel(_drdy_pin_num_a);
+        if (_drdy_pin_a == NULL) {
+            hal.scheduler->panic("LSM9DS0: null accel data-ready GPIO channel\n");
+        }
     }
-#endif
 
-#if DRDY_GPIO_PIN_G != 0
-    _drdy_pin_g = hal.gpio->channel(DRDY_GPIO_PIN_G);
-    if (_drdy_pin_g == NULL) {
-        hal.scheduler->panic("LSM9DS0: null gyro data-ready GPIO channel\n");
+    if (_drdy_pin_num_g >= 0) {
+        _drdy_pin_g = hal.gpio->channel(_drdy_pin_num_g);
+        if (_drdy_pin_g == NULL) {
+            hal.scheduler->panic("LSM9DS0: null gyro data-ready GPIO channel\n");
+        }
     }
-#endif
 
     hal.scheduler->suspend_timer_procs();
 
@@ -659,17 +654,13 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
 /**
  * Timer process to poll for new data from the LSM9DS0.
  */
-#if DRDY_GPIO_PIN_A != 0 && DRDY_GPIO_PIN_G != 0
 void AP_InertialSensor_LSM9DS0::_poll_data()
 {
-    bool gyro_ready = _gyro_data_ready();
-    bool accel_ready = _accel_data_ready();
+    bool drdy_is_from_reg = _drdy_pin_num_a < 0 || _drdy_pin_num_g < 0;
+    bool gyro_ready;
+    bool accel_ready;
 
-    if (!gyro_ready && !accel_ready) {
-        return;
-    }
-
-    if (!_spi_sem->take_nonblocking()) {
+    if (drdy_is_from_reg && !_spi_sem->take_nonblocking()) {
         /*
          *  the semaphore being busy is an expected condition when the
          *  mainline code is calling wait_for_sample() which will
@@ -679,66 +670,46 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
         return;
     }
 
-    if (gyro_ready) {
-        _read_data_transaction_g();
-    }
+    gyro_ready = _gyro_data_ready();
+    accel_ready = _accel_data_ready();
 
-    if (accel_ready) {
-        _read_data_transaction_a();
-    }
+    if (gyro_ready || accel_ready) {
+        if (!drdy_is_from_reg && !_spi_sem->take_nonblocking()) {
+            return;
+        }
 
-    _spi_sem->give();
+        if (gyro_ready) {
+            _read_data_transaction_g();
+        }
+        if (accel_ready) {
+            _read_data_transaction_a();
+        }
+
+        _spi_sem->give();
+    } else if(drdy_is_from_reg) {
+        _spi_sem->give();
+    }
 }
-#else
-void AP_InertialSensor_LSM9DS0::_poll_data()
-{
-    if (!_spi_sem->take_nonblocking()) {
-        /*
-         *  the semaphore being busy is an expected condition when the
-         *  mainline code is calling wait_for_sample() which will
-         *  grab the semaphore. We return now and rely on the mainline
-         *  code grabbing the latest sample.
-         */
-        return;
-    }
 
-    if (_gyro_data_ready()) {
-        _read_data_transaction_g();
-    }
-
-    if (_accel_data_ready()) {
-        _read_data_transaction_a();
-    }
-
-    _spi_sem->give();
-}
-#endif /* DRDY_GPIO_PIN_A != 0 && DRDY_GPIO_PIN_G != 0 */
-
-#if DRDY_GPIO_PIN_A != 0
 bool AP_InertialSensor_LSM9DS0::_accel_data_ready()
 {
-    return _drdy_pin_a->read() != 0;
+    if (_drdy_pin_a != NULL) {
+        return _drdy_pin_a->read() != 0;
+    } else {
+        uint8_t status = _register_read_xm(STATUS_REG_A);
+        return status & STATUS_REG_A_ZYXADA;
+    }
 }
-#else
-bool AP_InertialSensor_LSM9DS0::_accel_data_ready()
-{
-    uint8_t status = _register_read_xm(STATUS_REG_A);
-    return status & STATUS_REG_A_ZYXADA;
-}
-#endif /* DRDY_GPIO_PIN_A != 0 */
 
-#if DRDY_GPIO_PIN_G != 0
 bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
 {
-    return _drdy_pin_g->read() != 0;
+    if (_drdy_pin_g != NULL) {
+        return _drdy_pin_g->read() != 0;
+    } else {
+        uint8_t status = _register_read_xm(STATUS_REG_G);
+        return status & STATUS_REG_G_ZYXDA;
+    }
 }
-#else
-bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
-{
-    uint8_t status = _register_read_xm(STATUS_REG_G);
-    return status & STATUS_REG_G_ZYXDA;
-}
-#endif /* DRDY_GPIO_PIN_G != 0 */
 
 void AP_InertialSensor_LSM9DS0::_accel_raw_data(struct sensor_raw_data *raw_data)
 {
