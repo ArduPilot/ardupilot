@@ -2,7 +2,7 @@
 #ifndef __AP_INERTIAL_SENSOR_LSM9DS0_H__
 #define __AP_INERTIAL_SENSOR_LSM9DS0_H__
 
-#define LSM9DS0_DEBUG 1
+#define LSM9DS0_DEBUG 0
 
 #include <AP_HAL.h>
 #include "AP_InertialSensor.h"
