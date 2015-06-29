@@ -25,6 +25,9 @@ struct PACKED sitl_fdm {
     uint32_t magic; // 0x4c56414f
 };
 
+// number of rc output channels
+#define SITL_NUM_CHANNELS 14
+
 
 class SITL
 {
