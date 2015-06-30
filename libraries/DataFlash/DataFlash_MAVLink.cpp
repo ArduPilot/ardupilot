@@ -83,7 +83,7 @@ int8_t DataFlash_MAVLink::next_block_address()
     return oldest_block_address;
 }
 
-void DataFlash_MAVLink::handle_ack(uint32_t block_num)
+void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan, uint32_t block_num)
 {
     if (!_initialised) {
         return;
@@ -99,6 +99,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         // printf("\nStarting New Log!!\n");
         _sending_to_client = true;
         memset(_block_num, 0, sizeof(_block_num));
+        _chan = chan;
         _latest_block_num = 0;
         _cur_block_address = 0;
         _latest_block_len = 0;
@@ -112,14 +113,15 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         }
     }
 }
-void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_message_t* msg)
+void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                    mavlink_message_t* msg)
 {
     mavlink_remote_log_block_status_t packet;
     mavlink_msg_remote_log_block_status_decode(msg, &packet);
     if(packet.block_status == 0){
         handle_retry(packet.block_cnt);
     } else{
-        handle_ack(packet.block_cnt);
+        handle_ack(chan, packet.block_cnt);
     }
 }
 

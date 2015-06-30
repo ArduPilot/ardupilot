@@ -75,9 +75,11 @@ public:
 #endif
 
     // for Dataflash_MAVlink
-    virtual void handle_ack(uint32_t block_num) { };
+    virtual void handle_ack(mavlink_channel_t chan,
+                            uint32_t block_num) { };
     virtual void handle_retry(uint32_t block_num) { };
-    virtual void remote_log_block_status_msg(mavlink_message_t* msg) { }
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg) { }
     // end for Dataflash_MAVlink
 
 protected:

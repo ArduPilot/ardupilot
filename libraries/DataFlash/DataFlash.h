@@ -129,9 +129,10 @@ public:
 #endif
 
     // for DataFlash_MAVLink:
-    void handle_ack(uint32_t block_num);
+    void handle_ack(mavlink_channel_t chan, uint32_t block_num);
     void handle_retry(uint32_t block_num);
-    void remote_log_block_status_msg(mavlink_message_t* msg);
+    void remote_log_block_status_msg(mavlink_channel_t chan,
+                                     mavlink_message_t* msg);
     // end for DataFlash_MAVLink:
 
     static const struct AP_Param::GroupInfo        var_info[];

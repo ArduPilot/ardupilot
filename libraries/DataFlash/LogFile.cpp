@@ -29,7 +29,7 @@ DataFlash_Backend *DataFlash_Class::new_backend_local(void)
 }
 
 DataFlash_Backend *DataFlash_Class::new_backend_mavlink(void) {
-    return new DataFlash_MAVLink(*this, MAVLINK_COMM_0);
+    return new DataFlash_MAVLink(*this);
 }
 
 void DataFlash_Class::init_backend(const struct LogStructure *structure, uint8_t num_types)

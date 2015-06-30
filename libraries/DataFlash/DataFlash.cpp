@@ -83,14 +83,15 @@ void DataFlash_Class::flush(void) {
 #endif
 
 // for DataFlash_MAVLink
-void DataFlash_Class::handle_ack(uint32_t block_num) {
-    backend->handle_ack(block_num);
+void DataFlash_Class::handle_ack(mavlink_channel_t chan, uint32_t block_num) {
+    backend->handle_ack(chan, block_num);
 }
 void DataFlash_Class::handle_retry(uint32_t block_num) {
     backend->handle_retry(block_num);
 }
-void DataFlash_Class::remote_log_block_status_msg(mavlink_message_t* msg) {
-    backend->remote_log_block_status_msg(msg);
+void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                  mavlink_message_t* msg) {
+    backend->remote_log_block_status_msg(chan, msg);
 }
 // end for DataFlash_MAVLink
 

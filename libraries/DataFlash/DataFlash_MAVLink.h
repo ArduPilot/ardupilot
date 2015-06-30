@@ -22,9 +22,8 @@ class DataFlash_MAVLink : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
+    DataFlash_MAVLink(DataFlash_Class &front) :
         DataFlash_Backend(front),
-        _chan(chan),
         _initialised(false),
         _cur_block_address(0),
         _latest_block_len(0),
@@ -67,9 +66,10 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) {}
     virtual void send_log_block(uint32_t block_address);
-    virtual void handle_ack(uint32_t block_num);
+    virtual void handle_ack(mavlink_channel_t chan, uint32_t block_num);
     virtual void handle_retry(uint32_t block_num);
-    virtual void remote_log_block_status_msg(mavlink_message_t* msg);
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg);
 private:
 
     mavlink_channel_t _chan;
