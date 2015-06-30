@@ -14,6 +14,7 @@
 #include <AP_Baro.h>
 #include <AP_AHRS.h>
 #include <AP_Vehicle.h>
+#include <AP_Mission.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
@@ -62,6 +63,7 @@ public:
     uint16_t StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable);
+    void Log_Write_SysInfo(const prog_char_t *firmware_string);
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
@@ -89,6 +91,10 @@ public:
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
     void Log_Write_Parameters(void);
+
+    void Log_Write_EntireMission(const AP_Mission &mission);
+    void Log_Write_Mission_Cmd(const AP_Mission &mission,
+                               const AP_Mission::Mission_Command &cmd);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {

@@ -398,7 +398,6 @@ private:
     void Log_Write_Performance();
     void Log_Write_Steering();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_EntireMission();
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();
@@ -481,7 +480,6 @@ private:
     void frsky_telemetry_send(void);
     void print_hit_enter();    
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
