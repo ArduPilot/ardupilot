@@ -88,14 +88,14 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan, uint32_t block_num)
     if (!_initialised) {
         return;
     }
-    if(block_num == 4294967294){ // 2^32-2
+    if(block_num == MAV_REMOTE_LOG_DATA_BLOCK_STOP){
         // heads up - if you stop logging and start logging, your console
         // will get a misleading "APM Initialising" message.
         // printf("Received stop-logging packet\n");
         _sending_to_client = false;
         return;
     }
-    if(block_num == 4294967295 && !_sending_to_client){
+    if(block_num == MAV_REMOTE_LOG_DATA_BLOCK_START && !_sending_to_client){
         // printf("\nStarting New Log!!\n");
         _sending_to_client = true;
         memset(_block_num, 0, sizeof(_block_num));
