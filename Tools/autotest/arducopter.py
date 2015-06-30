@@ -932,7 +932,7 @@ def fly_ArduCopter(viewerip=None, map=False):
     if map:
         options += ' --map'
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
@@ -1279,7 +1279,7 @@ def fly_CopterAVC(viewerip=None, map=False):
     if map:
         options += ' --map'
     mavproxy = util.start_MAVProxy_SIL('ArduCopter', options=options)
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
