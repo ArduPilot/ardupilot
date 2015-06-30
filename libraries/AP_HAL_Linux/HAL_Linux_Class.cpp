@@ -163,10 +163,10 @@ void HAL_Linux::init(int argc,char* const argv[]) const
             uartEDriver.set_device_path(gopt.optarg);
             break;
         case 'l':            
-            custom_log_directory = gopt.optarg;
+            utilInstance.set_custom_log_directory(gopt.optarg);
             break;
         case 't':
-            custom_terrain_directory = gopt.optarg;            
+            utilInstance.set_custom_terrain_directory(gopt.optarg);
             break;
         case 'h':
             _usage();

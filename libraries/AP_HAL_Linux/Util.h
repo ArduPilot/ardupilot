@@ -30,8 +30,11 @@ public:
       set system clock in UTC microseconds
      */
     void set_system_clock(uint64_t time_utc_usec);    
-    const char* get_custom_log_directory();
-    const char* get_custom_terrain_directory();
+    const char* get_custom_log_directory() { return custom_log_directory; }
+    const char* get_custom_terrain_directory() { return custom_terrain_directory; }
+
+    void set_custom_log_directory(const char *_custom_log_directory) { custom_log_directory = _custom_log_directory; }
+    void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
 
     bool is_chardev_node(const char *path);
 
@@ -39,6 +42,8 @@ private:
     static Linux::ToneAlarm _toneAlarm;
     int saved_argc;
     char* const *saved_argv;
+    const char* custom_log_directory = NULL;
+    const char* custom_terrain_directory = NULL;	
 };
 
 
