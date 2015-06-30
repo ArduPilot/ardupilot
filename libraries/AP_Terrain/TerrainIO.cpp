@@ -150,56 +150,48 @@ void AP_Terrain::open_file(void)
         // already open on right file
         return;
     }
-
-    char *path;
-    const char* custom_dir = hal.util->get_custom_terrain_directory();
-    if (custom_dir != NULL){
-        // build the pathname from the args provided
-        path = (char*) malloc(strlen(custom_dir)+strlen("/NxxExxx.DAT")+1);
-        if (!path) {
-            printf("Terrain degree file, malloc() failed: insufficient memory!\n");
-            exit(1);
+    if (file_path == NULL) {
+        const char* terrain_dir = hal.util->get_custom_terrain_directory();
+        if (terrain_dir == NULL) {
+            terrain_dir = HAL_BOARD_TERRAIN_DIRECTORY;
         }
-        strcpy(path, custom_dir);
-        strcat(path, "/NxxExxx.DAT");
-        char *p = &path[strlen(HAL_BOARD_TERRAIN_DIRECTORY)+1];
-        snprintf(p, 12, "%c%02u%c%03u.DAT",
-                 block.lat_degrees<0?'S':'N',
-                 abs(block.lat_degrees),
-                 block.lon_degrees<0?'W':'E',
-                 abs(block.lon_degrees));
-
-        // create directory if need be
-        if (!directory_created) {
-            mkdir(custom_dir, 0755);
-            directory_created = true;
+        if (asprintf(&file_path, "%s/NxxExxx.DAT", terrain_dir) <= 0) {
+            io_failure = true;
+            file_path = NULL;
+            return;
         }
-    } else {
-        // build the pathname to the degree file
-        char path_default[] = HAL_BOARD_TERRAIN_DIRECTORY "/NxxExxx.DAT";
-        char *p = &path_default[strlen(HAL_BOARD_TERRAIN_DIRECTORY)+1];
-        snprintf(p, 12, "%c%02u%c%03u.DAT",
-                 block.lat_degrees<0?'S':'N',
-                 abs(block.lat_degrees),
-                 block.lon_degrees<0?'W':'E',
-                 abs(block.lon_degrees));
+    }
+    if (file_path == NULL) {
+        io_failure = true;
+        return;
+    }
+    char *p = &file_path[strlen(file_path)-12];
+    if (*p != '/') {
+        io_failure = true;
+        return;        
+    }
+    snprintf(p, 13, "/%c%02u%c%03u.DAT",
+             block.lat_degrees<0?'S':'N',
+             abs(block.lat_degrees),
+             block.lon_degrees<0?'W':'E',
+             abs(block.lon_degrees));
 
-        path = path_default;
-        // create directory if need be
-        if (!directory_created) {
-            mkdir(HAL_BOARD_TERRAIN_DIRECTORY, 0755);
-            directory_created = true;
-        }
+    // create directory if need be
+    if (!directory_created) {
+        *p = 0;
+        mkdir(file_path, 0755);
+        directory_created = true;
+        *p = '/';
     }
 
     if (fd != -1) {
         ::close(fd);
     }
-    fd = ::open(path, O_RDWR|O_CREAT, 0644);
+    fd = ::open(file_path, O_RDWR|O_CREAT, 0644);
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",
-                            path, strerror(errno));
+                            file_path, strerror(errno));
 #endif
         io_failure = true;
         return;
