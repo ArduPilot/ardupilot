@@ -42,6 +42,20 @@ ssize_t DataFlashFileReader::read_input(void *buffer, const size_t count)
     return ret;
 }
 
+void DataFlashFileReader::format_type(uint16_t type, char dest[5])
+{
+    const struct log_Format &f = formats[type];
+    memset(dest,0,5);
+    if (f.length == 0) {
+        return;
+    }
+    strncpy(dest, f.name, 4);
+}
+void DataFlashFileReader::get_packet_counts(uint64_t dest[])
+{
+    memcpy(dest, packet_counts, sizeof(packet_counts));
+}
+
 bool DataFlashFileReader::update(char type[5])
 {
     uint8_t hdr[3];
@@ -52,6 +66,8 @@ bool DataFlashFileReader::update(char type[5])
         printf("bad log header\n");
         return false;
     }
+
+    packet_counts[hdr[2]]++;
 
     if (hdr[2] == LOG_FORMAT_MSG) {
         struct log_Format f;
