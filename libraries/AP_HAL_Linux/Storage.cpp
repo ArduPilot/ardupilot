@@ -50,15 +50,27 @@ void LinuxStorage::_storage_open(void)
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDONLY);
+    int fd = open(STORAGE_FILE, O_RDWR);
     if (fd == -1) {
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY);
+        fd = open(STORAGE_FILE, O_RDWR);
         if (fd == -1) {
             hal.scheduler->panic("Failed to open " STORAGE_FILE);
         }
     }
-    if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+    memset(_buffer, 0, sizeof(_buffer));
+    /*
+      we allow a read of size 4096 to cope with the old storage size
+      without forcing users to reset all parameters
+     */
+    ssize_t ret = read(fd, _buffer, sizeof(_buffer));
+    if (ret == 4096 && ret != sizeof(_buffer)) {
+        if (ftruncate(fd, sizeof(_buffer)) != 0) {
+            hal.scheduler->panic("Failed to expand " STORAGE_FILE);            
+        }
+        ret = sizeof(_buffer);
+    }
+    if (ret != sizeof(_buffer)) {
         close(fd);
         _storage_create();
         fd = open(STORAGE_FILE, O_RDONLY);
