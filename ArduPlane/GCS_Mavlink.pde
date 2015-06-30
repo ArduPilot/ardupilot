@@ -1610,7 +1610,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
         
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        plane.DataFlash.remote_log_block_status_msg(msg);
+        plane.DataFlash.remote_log_block_status_msg(chan, msg);
         break;
 
     } // end switch
