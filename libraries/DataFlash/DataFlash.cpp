@@ -73,8 +73,9 @@ void DataFlash_Class::EnableWrites(bool enable) {
 }
 
 // for DataFlash_MAVLink
-void DataFlash_Class::remote_log_block_status_msg(mavlink_message_t* msg) {
-    backend->remote_log_block_status_msg(msg);
+void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                  mavlink_message_t* msg) {
+    backend->remote_log_block_status_msg(chan, msg);
 }
 void DataFlash_Class::periodic_tasks() {
     backend->periodic_tasks();

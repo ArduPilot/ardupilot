@@ -100,9 +100,11 @@ public:
     bool logging_started(void);
 
     // for DataFlash_MAVLink:
-    void remote_log_block_status_msg(mavlink_message_t* msg);
-    void periodic_tasks(); // may want to split this into GCS/non-GCS duties
+    void remote_log_block_status_msg(mavlink_channel_t chan,
+                                     mavlink_message_t* msg);
     // end for DataFlash_MAVLink:
+
+    void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
     // this is out here for the trickle-startup-messages logging.
     // Think before calling.

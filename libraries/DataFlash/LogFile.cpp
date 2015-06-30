@@ -30,7 +30,7 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
     backend = new DataFlash_APM2(*this);
 #elif defined (HAL_BOARD_REMOTE_LOG_PORT)
-    backend = new DataFlash_MAVLink(*this, HAL_BOARD_REMOTE_LOG_PORT);
+    backend = new DataFlash_MAVLink(*this);
 #elif defined(HAL_BOARD_LOG_DIRECTORY)
     backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
 #else

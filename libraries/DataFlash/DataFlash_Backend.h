@@ -82,7 +82,8 @@ public:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
 
     // for Dataflash_MAVlink
-    virtual void remote_log_block_status_msg(mavlink_message_t* msg) { }
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg) { }
     // end for Dataflash_MAVlink
 
     virtual void periodic_tasks();
