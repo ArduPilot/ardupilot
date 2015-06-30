@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 /* 
-   DataFlash Remote(via serial) logging - file oriented variant
+   DataFlash Remote(via MAVLink) logging
 */
 
 #include <AP_HAL.h>
@@ -31,13 +31,17 @@ void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_t
     DataFlash_Backend::Init(structure, num_types);
 
     _initialised = true;
+    _logging_started = true; // in actual fact, we throw away
+                             // everything until a client connects.
+                             // This stops calls to start_new_log from
+                             // the vehicles
 }
 
 
 /* Write a block of data at current offset */
 void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 {   
-    if (!_initialised || !_logging_started || !_writes_enabled) {
+    if (!_initialised || !_sending_to_client || !_writes_enabled) {
         return;
     }
 
@@ -88,17 +92,17 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         // heads up - if you stop logging and start logging, your console
         // will get a misleading "APM Initialising" message.
         // printf("Received stop-logging packet\n");
-        _logging_started = false;
+        _sending_to_client = false;
         return;
     }
-    if(block_num == 4294967295){
+    if(block_num == 4294967295 && !_sending_to_client){
         // printf("\nStarting New Log!!\n");
+        _sending_to_client = true;
         memset(_block_num, 0, sizeof(_block_num));
         _latest_block_num = 0;
         _cur_block_address = 0;
         _latest_block_len = 0;
         _front.StartNewLog();
-        _logging_started = true;
         return;
     }
     for(uint8_t block = 0; block < _total_blocks; block++){

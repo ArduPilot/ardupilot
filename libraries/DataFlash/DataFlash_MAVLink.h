@@ -29,7 +29,8 @@ public:
         _cur_block_address(0),
         _latest_block_len(0),
         _latest_block_num(0),
-        _logging_started(false)
+        _logging_started(false),
+        _sending_to_client(false)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
         _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
@@ -39,6 +40,7 @@ public:
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
 
+    bool logging_started() { return _logging_started; }
 
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
@@ -76,6 +78,7 @@ private:
     uint16_t _latest_block_len;
     uint32_t _latest_block_num;
     bool _logging_started;
+    bool _sending_to_client;
 
     // write buffer
     // FIXME: allocate this like we do in DataFlash_File
