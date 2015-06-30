@@ -119,18 +119,7 @@ uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
 
 void LinuxRCOutput_Bebop::_start_prop()
 {
-#if 0
-    if(!_i2c_sem->take(10))
-        return;
-    printf("start prop\n");
-    hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR,
-                            BEBOP_BLDC_STARTPROP,
-                            bebop_motors_bitmask);
-    _i2c_sem->give();
-    _state = BEBOP_BLDC_STARTED;
-#else
     uint8_t data = BEBOP_BLDC_STARTPROP;
-    printf("start_prop\n");
 
     if(!_i2c_sem->take(10))
         return;
@@ -139,14 +128,12 @@ void LinuxRCOutput_Bebop::_start_prop()
 
     _i2c_sem->give();
     _state = BEBOP_BLDC_STARTED;
-#endif
 }
 
 void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 {
     struct bldc_ref_speed_data data;
     int i;
-    uint8_t *dump;
 
     data.cmd = BEBOP_BLDC_SETREFSPEED;
 
@@ -158,12 +145,6 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 
     if(!_i2c_sem->take(10))
         return;
-
-    dump = (uint8_t *) &data;
-#if 0
-    printf("send data 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X\n",
-            dump[0], dump[1], dump[2], dump[3], dump[4], dump[5], dump[6], dump[7], dump[8], dump[9], dump[10]);
-#endif
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, sizeof(data), (uint8_t *)&data);
 
@@ -227,7 +208,6 @@ void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
 void LinuxRCOutput_Bebop::_stop_prop()
 {
     uint8_t data = BEBOP_BLDC_STOP_PROP;
-    printf("stop_prop\n");
     _state = BEBOP_BLDC_STOPPED;
 
     if(!_i2c_sem->take(10))
@@ -241,8 +221,6 @@ void LinuxRCOutput_Bebop::_stop_prop()
 void LinuxRCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
-
-    printf("clear error\n");
 
     if(!_i2c_sem->take(10))
         return;
@@ -298,7 +276,6 @@ uint16_t LinuxRCOutput_Bebop::get_freq(uint8_t ch)
 
 void LinuxRCOutput_Bebop::enable_ch(uint8_t ch)
 {
-    //_clear_error();
 }
 
 void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
