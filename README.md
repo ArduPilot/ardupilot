@@ -1,3 +1,30 @@
+#Ardupilot Solo
+
+[![Build Status](https://travis-ci.org/3drobotics/ardupilot-solo.svg?branch=master)](https://travis-ci.org/3drobotics/ardupilot-solo)
+
+## How to access Solo
+
+### SSH Details
+
+| Host | IP |
+|------|----|
+| Solo | 10.1.1.10 |
+| Controller | 10.1.1.1 |
+
+### Default root password
+
+Contact open-source@3drobotics.com to request access to the default root
+password.
+
+## How to load to Pixhawk 2 on Solo
+
+- Make sure you are running at least Solo version v1.0.0 (from app)
+- Copy your firmware to **/firmware** on Solo (10.1.1.10)
+- reboot Solo
+- after rebot that the LED's on SOLO should change colours (party mode)
+
+---
+
 #ArduPilot Project#
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/diydrones/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
