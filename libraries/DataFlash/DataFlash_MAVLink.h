@@ -31,6 +31,7 @@ public:
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
 
+    bool logging_started() { return _logging_started; }
 
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
@@ -106,6 +107,7 @@ private:
     bool _logging_started;
     uint32_t _last_response_time;
     uint8_t _next_block_number_to_resend;
+    bool _sending_to_client;
 
     uint16_t bufferspace_available();
     // write buffer
