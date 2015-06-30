@@ -483,7 +483,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
-    _set_accel_max_abs_offset(_accel_instance, Vector3f(5.0f, 5.0f, 5.0f));
+    _set_accel_max_abs_offset(_accel_instance, 5.0f);
 
  #if LSM9DS0_DEBUG
     _dump_registers();

@@ -251,7 +251,7 @@ private:
     bool _calibrate_accel(const Vector3f accel_sample[6],
                           Vector3f& accel_offsets,
                           Vector3f& accel_scale,
-                          Vector3f& max_abs_offsets,
+                          float max_abs_offsets,
                           enum Rotation rotation);
     bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
                              AP_InertialSensor_UserInteract* interact);
@@ -297,7 +297,7 @@ private:
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
 
     // accelerometer max absolute offsets to be used for calibration
-    Vector3f _accel_max_abs_offsets[INS_MAX_INSTANCES];
+    float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];

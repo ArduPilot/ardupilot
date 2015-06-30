@@ -79,9 +79,9 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
-                                                          const Vector3f offset)
+                                                          float max_offset)
 {
-    _imu._accel_max_abs_offsets[instance] = offset;
+    _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
 // set accelerometer error_count

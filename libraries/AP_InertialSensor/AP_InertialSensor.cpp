@@ -302,7 +302,7 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_clip_count[i] = 0;
 #endif
 
-        _accel_max_abs_offsets[i] = Vector3f(3.5f, 3.5f, 3.5f);
+        _accel_max_abs_offsets[i] = 3.5f;
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
@@ -987,7 +987,7 @@ bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum
 bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
                                          Vector3f& accel_offsets,
                                          Vector3f& accel_scale,
-                                         Vector3f& max_abs_offsets,
+                                         float max_abs_offsets,
                                          enum Rotation rotation)
 {
     int16_t i;
@@ -1046,9 +1046,9 @@ bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
     }
 
     if (accel_offsets.is_nan() ||
-            fabsf(accel_offsets.x) > max_abs_offsets.x ||
-            fabsf(accel_offsets.y) > max_abs_offsets.y ||
-            fabsf(accel_offsets.z) > max_abs_offsets.z) {
+        fabsf(accel_offsets.x) > max_abs_offsets ||
+        fabsf(accel_offsets.y) > max_abs_offsets ||
+        fabsf(accel_offsets.z) > max_abs_offsets) {
         success = false;
     }
 
