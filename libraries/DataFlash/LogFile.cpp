@@ -995,6 +995,27 @@ void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
     Log_Write_Parameters();
 }
 
+// Write a mission command. Total length : 36 bytes
+void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
+                                            const AP_Mission::Mission_Command &cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
+    Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+}
+
+void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
+{
+    Log_Write_Message_P(PSTR("New mission"));
+
+    AP_Mission::Mission_Command cmd;
+    for (uint16_t i = 0; i < mission.num_commands(); i++) {
+        if (mission.read_cmd_from_storage(i,cmd)) {
+            Log_Write_Mission_Cmd(mission, cmd);
+        }
+    }
+}
+
 // Write a text message to the log
 void DataFlash_Class::Log_Write_Message(const char *message)
 {
