@@ -17,7 +17,6 @@
 #define perf_end(x)
 #define perf_count(x)
 #endif
-#include<stdio.h>
 
 #define NUM_BUFFER_BLOCKS 80
 #define BUFFER_BLOCK_SIZE 200
