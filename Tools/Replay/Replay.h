@@ -94,6 +94,7 @@ public:
     void loop() override;
 
     void flush_dataflash(void);
+    void show_packet_counts();
 
     bool check_solution = false;
     const char *log_filename = NULL;
@@ -142,6 +143,7 @@ private:
     bool logmatch = false;
     uint32_t output_counter = 0;
     uint64_t last_timestamp = 0;
+    bool packet_counts = false;
 
     struct {
         float max_roll_error;
