@@ -17,7 +17,6 @@
 #define perf_end(x)
 #define perf_count(x)
 #endif
-#include<stdio.h>
 
 class DataFlash_MAVLink : public DataFlash_Class
 {
