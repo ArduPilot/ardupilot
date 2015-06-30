@@ -106,7 +106,6 @@ extern const AP_HAL::HAL& hal;
 #define STARTUP_WIND_SPEED 3.0f
 
 // initial imu bias uncertainty (deg/sec)
-#define INIT_GYRO_BIAS_UNCERTAINTY  1.0f
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // Define tuning parameters
@@ -3696,7 +3695,7 @@ void NavEKF::resetGyroBias(void)
     state.gyro_bias.zero();
     zeroRows(P,10,12);
     zeroCols(P,10,12);
-    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMUavg));
+    P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtIMUavg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
 
@@ -3982,7 +3981,7 @@ void NavEKF::CovarianceInit()
     P[8][8]   = P[7][7];
     P[9][9]   = sq(_baroAltNoise);
     // delta angle biases
-    P[10][10] = sq(radians(INIT_GYRO_BIAS_UNCERTAINTY * dtIMUavg));
+    P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtIMUavg));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
     // Z delta velocity bias
@@ -4762,6 +4761,20 @@ bool NavEKF::assume_zero_sideslip(void) const
     // be quite sensitive to a rapid spin of the ground vehicle if
     // traction is lost
     return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
+}
+
+
+/* 
+   vehicle specific initial gyro bias uncertainty
+ */
+float NavEKF::InitialGyroBiasUncertainty(void) const
+{
+    switch (_ahrs->get_ins().get_sample_rate()) {
+    case AP_InertialSensor::RATE_50HZ:
+        return 1.0f;
+    default:
+        return 0.1f;
+    }
 }
 
 /*

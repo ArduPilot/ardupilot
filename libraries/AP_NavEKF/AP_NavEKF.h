@@ -831,6 +831,9 @@ private:
     
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
+
+    // vehicle specific initial gyro bias uncertainty
+    float InitialGyroBiasUncertainty(void) const;
 };
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4 && CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
