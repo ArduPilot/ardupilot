@@ -13,6 +13,7 @@ public:
     Scheduler() {}
     virtual void     init(void* implspecific) = 0;
     virtual void     delay(uint16_t ms) = 0;
+    virtual uint64_t get_start_time_micros64() { return 0; }
     virtual uint32_t millis() = 0;
     virtual uint32_t micros() = 0;
     virtual uint64_t millis64() = 0;

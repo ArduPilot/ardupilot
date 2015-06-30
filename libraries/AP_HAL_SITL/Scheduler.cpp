@@ -39,6 +39,12 @@ void SITLScheduler::init(void *unused)
     gettimeofday(&_sketch_start_time,NULL);
 }
 
+uint64_t SITLScheduler::get_start_time_micros64() 
+{
+    return (1.0e6 * _sketch_start_time.tv_sec +
+                    _sketch_start_time.tv_usec);
+}
+
 uint64_t SITLScheduler::_micros64()
 {
     struct timeval tp;
