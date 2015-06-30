@@ -65,18 +65,18 @@ private:
 
     mavlink_channel_t _chan;
     bool _initialised;
-    bool _logging_started;
+    bool _only_critical_blocks;
 
     uint16_t _total_blocks;
     const uint16_t _block_max_size;
     uint32_t _latest_block_num;
     uint8_t _cur_block_address;
     uint16_t _latest_block_len;
-
+    uint32_t _last_response_time;
     // write buffer
     uint8_t _buf[NUM_BUFFER_BLOCKS][BUFFER_BLOCK_SIZE];
     uint32_t _block_num[NUM_BUFFER_BLOCKS];
-
+    bool _is_critical_block[NUM_BUFFER_BLOCKS] = {0};
     struct {
         // socket to telem2 on aircraft
         bool connected;
@@ -90,6 +90,7 @@ private:
     uint16_t start_new_log(void) { return 0; }
     void ReadBlock(void *pkt, uint16_t size) {}
     int8_t next_block_address();
+    bool _buffer_empty();
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
     perf_counter_t  _perf_write;

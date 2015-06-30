@@ -70,13 +70,31 @@ void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_t
 
 /* Write a block of data at current offset */
 void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
-{   
+{
     if (!_initialised || !_logging_started) {
         return;
     }
 
+    //transfer nothing else when in the middle of doing critical blocks (Parameters and Formats) transaction
+    if(is_critical_block) {
+        _only_critical_blocks = true;
+    }
+    if(!is_critical_block && ((hal.scheduler->millis() - _last_response_time) > 2000 || _buffer_empty())) {
+        for(uint8_t block = 0; block < NUM_BUFFER_BLOCKS; block++) {
+            _is_critical_block[block] = false;
+        }
+        _only_critical_blocks = false;
+    }
+    if(!is_critical_block && _only_critical_blocks) {
+        return;
+    }
+
     uint16_t copied = 0;
+
     while (copied < size) {
+        if(is_critical_block) {
+            _is_critical_block[_cur_block_address] = true;
+        }
         uint16_t remaining_to_copy = size - copied;
         uint16_t _curr_remaining = _block_max_size - _latest_block_len;
         uint16_t to_copy = (remaining_to_copy > _curr_remaining) ? _curr_remaining : remaining_to_copy;
@@ -92,13 +110,29 @@ void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
     }
 }
 
+bool DataFlash_MAVLink::_buffer_empty()
+{
+    for(uint8_t block = 0; block < NUM_BUFFER_BLOCKS; block++) {
+        if(_is_critical_block[block]){
+            return false;
+        }
+    }
+    
+    return true;
+}
 //Get address of empty block to ovewrite
 int8_t DataFlash_MAVLink::next_block_address()
 {
+    //if everything is filled with faormat and param data, edit the last block which mostly is going to be 
+    //a parameter and wouldn't corrupt the file
+    uint8_t oldest_block_address = NUM_BUFFER_BLOCKS - 1;
 
-    uint8_t oldest_block_address = 0;
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[oldest_block_address] > _block_num[block]){
+            if(_is_critical_block[block]) {
+                continue;
+            }
+        
             oldest_block_address = block;
             if (_block_num[oldest_block_address] == 0) {
                 break;
@@ -118,6 +152,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     if (!_initialised) {
         return;
     }
+    _last_response_time = hal.scheduler->millis();
     if(block_num == 4294967294){ // 2^32-2
         Debug("Received stop-logging packet\n");
         _logging_started = false;
@@ -136,6 +171,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             _block_num[block] = 0;                  //forget the block if ack is received
+            _is_critical_block[block] = false;        //the block is ack'd forget that it was critical block if it was
             return;
         }
     }
@@ -146,6 +182,7 @@ void DataFlash_MAVLink::handle_retry(uint32_t block_num)
     if (!_initialised) {
         return;
     }
+    _last_response_time = hal.scheduler->millis();
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
             send_log_block(block);
@@ -163,7 +200,7 @@ void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
 void DataFlash_MAVLink::send_log_block(uint32_t block_address)
 {
     mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
-    if (!_initialised){
+    if (!_initialised || comm_get_txspace(chan) < 255){
        return; 
     }
     mavlink_message_t msg;
