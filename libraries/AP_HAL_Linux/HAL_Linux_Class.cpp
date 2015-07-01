@@ -186,7 +186,7 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     uartE->begin(115200);    
     spi->init(NULL);
     analogin->init(NULL);
-    utilInstance.init(argc, argv);
+    utilInstance.init(argc+gopt.optind, &argv[gopt.optind]);
 }
 
 const HAL_Linux AP_HAL_Linux;
