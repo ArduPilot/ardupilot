@@ -23,7 +23,6 @@
 #include <queue>
 
 
-
 enum state_t{
 				RCIN_NAVIO_INITIAL_STATE = -1,
 				RCIN_NAVIO_ZERO_STATE = 0,
@@ -45,51 +44,45 @@ typedef struct {
     stride, next, pad[2];
 } dma_cb_t;
 
-class Memory_table{
-	private:
+class Memory_table {
+// Allow LinuxRCInput_Navio access to private members of Memory_table
+friend class Linux::LinuxRCInput_Navio;
+  
+private:
     void** _virt_pages;
     void** _phys_pages;
     uint32_t _page_count;
 
-	public:
-    
+public:
     Memory_table();
-    
     Memory_table(uint32_t, int);
-
     ~Memory_table();
 
-    //Get physical address from the corresponding virtual adress from memory_table.
-    void* get_phys_addr(void* virt_addr);
-
-    //Get virtual address from the corresponding physical adress from memory_table.
-    void* get_virt_addr(void* phys_addr);
-
-    // This function returns virtual address with help of pointer, which is offset from the beginning of the buffer.
-    void* get_virt_from_pointer(uint32_t pointer);
+    //Get virtual address from the corresponding physical address from memory_table.
+    void* get_virt_addr(const uint32_t phys_addr) const;
 
     // This function returns physical address with help of pointer, which is offset from the beginning of the buffer.
-    void* get_phys_from_pointer(uint32_t pointer);
+    void* get_page(void **pages, const uint32_t addr) const;
 
-    // This function returns offset from the beginning of the buffer using virtual address and memory_table.
-    uint32_t get_pointer_from_virt(void* virt_addr);
+    // This function returns offset from the beginning of the buffer using (virtual) address in 'pages' and memory_table.
+    uint32_t get_offset(void **pages, const uint32_t addr) const;
 
     //How many bytes are available for reading in circle buffer?
-    uint32_t bytes_available(void* read_addr, void* write_addr);
+    uint32_t bytes_available(const uint32_t read_addr, const uint32_t write_addr) const;
 
-    uint32_t get_page_count();
+    uint32_t get_page_count() const;
 };
 
 
 class Linux::LinuxRCInput_Navio : public Linux::LinuxRCInput 
-{
-	public:
+{ 
+public:
     void init(void*);
     void _timer_tick(void);
     LinuxRCInput_Navio();
     ~LinuxRCInput_Navio();
     
-	private:
+private:
 
     //Physical adresses of peripherals. Are different on different Raspberries.
     uint32_t dma_base;
@@ -123,7 +116,7 @@ class Linux::LinuxRCInput_Navio : public Linux::LinuxRCInput
     
     AP_HAL::DigitalSource *enable_pin; 
 
-  void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
+    void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);
     void init_registers();
     void init_ctrl_data();

@@ -136,74 +136,54 @@ Memory_table::~Memory_table()
     free(_phys_pages);
 }
 
-//Get physical address from the corresponding virtual adress from memory_table.
-void* Memory_table::get_phys_addr(void* virt_addr)
-{
-    uint32_t i;
-    for (i = 0; i < _page_count; i++) {
-        if ((uint32_t) _virt_pages[i] == (((uint32_t) virt_addr) & 0xFFFFF000)) {
-            return (void*) (((uint32_t) _phys_pages[i] + ((uint32_t) virt_addr & 0xFFF)));
-        }
-    }
-    return NULL;
-}
-
-
-//Get virtual address from the corresponding physical adress from memory_table.
-void* Memory_table::get_virt_addr(void* phys_addr)
-{
-    uint32_t i;
-    //    phys_addr = (void*)((uint32_t) phys_addr);
-    for (i = 0; i < _page_count; i++) {
-        if ((uint32_t) _phys_pages[i] == (((uint32_t) phys_addr) & 0xFFFFF000)) {
-            return (void*) ((uint32_t) _virt_pages[i] + ((uint32_t) phys_addr & 0xFFF));
-        }
-    }
-    return NULL;
-}
-
-// This function returns virtual address with help of pointer, which is offset from the beginning of the buffer.
-void* Memory_table::get_virt_from_pointer(uint32_t pointer)
-{
-    if (pointer >= PAGE_SIZE * _page_count) {
-        return NULL;
-    }
-    return (uint8_t*)_virt_pages[(uint32_t) pointer / 4096] + pointer % 4096;
-}
-
 // This function returns physical address with help of pointer, which is offset from the beginning of the buffer.
-void* Memory_table::get_phys_from_pointer(uint32_t pointer)
+void* Memory_table::get_page(void** const pages, uint32_t addr) const
 {
-    if (pointer >= PAGE_SIZE * _page_count) {
+    if (addr >= PAGE_SIZE * _page_count) {
         return NULL;   
     }
-    return (uint8_t*)_phys_pages[(uint32_t) pointer / 4096] + pointer % 4096;
+    return (uint8_t*)pages[(uint32_t) addr / 4096] + addr % 4096;
 }
 
-// This function returns offset from the beginning of the buffer using virtual address and memory_table.
-uint32_t Memory_table::get_pointer_from_virt(void* virt_addr)
+//Get virtual address from the corresponding physical address from memory_table.
+void* Memory_table::get_virt_addr(const uint32_t phys_addr) const
 {
-    uint32_t i;
-    for (i = 0; i < _page_count; i++) {
-        if ((uint32_t) _virt_pages[i] == (((uint32_t) virt_addr) & 0xFFFFF000)) {
-            return (i*PAGE_SIZE + ((uint32_t) virt_addr & 0xFFF));
+    // FIXME: Can't the address be calculated directly?
+    // FIXME: if the address room  in _phys_pages is not fragmented one may avoid a complete loop ..
+    uint32_t i = 0;
+    for (; i < _page_count; i++) {
+        if ((uint32_t) _phys_pages[i] == (((uint32_t) phys_addr) & 0xFFFFF000)) {
+            return (void*) ((uint32_t) _virt_pages[i] + (phys_addr & 0xFFF));
+        }
+    }
+    return NULL;
+}
+
+// FIXME: in-congruent function style see above
+// This function returns offset from the beginning of the buffer using virtual address and memory_table.
+uint32_t Memory_table::get_offset(void ** const pages, const uint32_t addr) const
+{
+    uint32_t i = 0;
+    for (; i < _page_count; i++) {
+        if ((uint32_t) pages[i] == (addr & 0xFFFFF000) ) {
+            return (i*PAGE_SIZE + (addr & 0xFFF));
         }
     }
     return -1;
 }
 
 //How many bytes are available for reading in circle buffer?
-uint32_t Memory_table::bytes_available(void* read_addr, void* write_addr)
+uint32_t Memory_table::bytes_available(const uint32_t read_addr, const uint32_t write_addr) const
 {
     if (write_addr > read_addr) {
-        return ((uint32_t) write_addr - (uint32_t) read_addr);
+        return (write_addr - read_addr);
     }
     else {
-        return _page_count * PAGE_SIZE - ((uint32_t) read_addr - (uint32_t) write_addr);
+        return _page_count * PAGE_SIZE - (read_addr - write_addr);
     }
 }
 
-uint32_t Memory_table::get_page_count()
+uint32_t Memory_table::get_page_count() const
 {
     return _page_count;
 }
@@ -240,7 +220,6 @@ int get_raspberry_pi_version()
 }
 
 //Physical addresses of peripheral depends on Raspberry Pi's version
-
 void LinuxRCInput_Navio::set_physical_addresses(int version)
 {
     if (version == 1) {
@@ -297,7 +276,6 @@ void LinuxRCInput_Navio::stop_dma_and_exit(int param)
 void LinuxRCInput_Navio::init_ctrl_data()
 {
     uint32_t phys_fifo_addr;
-    uint64_t i;
     uint32_t dest = 0;
     uint32_t cbp = 0;
     dma_cb_t* cbp_curr;
@@ -320,20 +298,21 @@ void LinuxRCInput_Navio::init_ctrl_data()
     */
     //    fprintf(stderr, "ERROR SEARCH1\n");
 
-    for (i = 0; i < 56 * 128 * RCIN_NAVIO_BUFFER_LENGTH; i++) 
+  uint32_t i = 0;
+  for (i = 0; i < 56 * 128 * RCIN_NAVIO_BUFFER_LENGTH; i++) // 8 * 56 * 128 == 57344
 	{
-	    //Transfer timer every 56th sample
-	    if(i % 56 == 0){
-		cbp_curr = (dma_cb_t*)con_blocks->get_virt_from_pointer(cbp);
+      //Transfer timer every 56th sample
+      if(i % 56 == 0) {
+          cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
 
-		init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP | RCIN_NAVIO_DMA_DEST_INC | RCIN_NAVIO_DMA_SRC_INC, RCIN_NAVIO_TIMER_BASE, (uint32_t) circle_buffer->get_phys_from_pointer(dest), 8, 0, (uint32_t) con_blocks->get_phys_from_pointer(cbp + sizeof(dma_cb_t)));
-		dest += 8;
-		cbp += sizeof(dma_cb_t);
-	    } 
+          init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP | RCIN_NAVIO_DMA_DEST_INC | RCIN_NAVIO_DMA_SRC_INC, RCIN_NAVIO_TIMER_BASE, (uint32_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest), 8, 0, (uint32_t) con_blocks->get_page(con_blocks->_phys_pages, cbp + sizeof(dma_cb_t)));
+          dest += 8;
+          cbp += sizeof(dma_cb_t);
+      } 
 
 	    // Transfer GPIO (1 byte)
-	    cbp_curr = (dma_cb_t*)con_blocks->get_virt_from_pointer(cbp);
-	    init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP, RCIN_NAVIO_GPIO_LEV0_ADDR, (uint32_t) circle_buffer->get_phys_from_pointer(dest), 1, 0, (uint32_t) con_blocks->get_phys_from_pointer(cbp + sizeof(dma_cb_t)));
+	    cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
+	    init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP, RCIN_NAVIO_GPIO_LEV0_ADDR, (uint32_t) circle_buffer->get_page(circle_buffer->_phys_pages, dest), 1, 0, (uint32_t) con_blocks->get_page(con_blocks->_phys_pages, cbp + sizeof(dma_cb_t)));
 	    dest += 1;
 	    cbp += sizeof(dma_cb_t);	  
 
@@ -341,13 +320,13 @@ void LinuxRCInput_Navio::init_ctrl_data()
 	    /* DMA is waiting data request signal (DREQ) from PCM. PCM is set for 1 MhZ freqency, so,
 	       each sample of GPIO is limited by writing to PCA queue.
 	    */
-	    cbp_curr = (dma_cb_t*)con_blocks->get_virt_from_pointer(cbp);
-	    init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP | RCIN_NAVIO_DMA_D_DREQ | RCIN_NAVIO_DMA_PER_MAP(2), RCIN_NAVIO_TIMER_BASE, phys_fifo_addr, 4, 0, (uint32_t)  con_blocks->get_phys_from_pointer(cbp + sizeof(dma_cb_t)));
+	    cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
+	    init_dma_cb(&cbp_curr, RCIN_NAVIO_DMA_NO_WIDE_BURSTS | RCIN_NAVIO_DMA_WAIT_RESP | RCIN_NAVIO_DMA_D_DREQ | RCIN_NAVIO_DMA_PER_MAP(2), RCIN_NAVIO_TIMER_BASE, phys_fifo_addr, 4, 0, (uint32_t)  con_blocks->get_page(con_blocks->_phys_pages, cbp + sizeof(dma_cb_t)));
 	    cbp += sizeof(dma_cb_t);
 	}
     //Make last control block point to the first (to make circle) 
     cbp -= sizeof(dma_cb_t);
-    ((dma_cb_t*)con_blocks->get_virt_from_pointer(cbp))->next = (uint32_t) con_blocks->get_phys_from_pointer(0);
+    ((dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp))->next = (uint32_t) con_blocks->get_page(con_blocks->_phys_pages, 0);
 }
 
 
@@ -388,7 +367,7 @@ void LinuxRCInput_Navio::init_DMA()
     dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = RCIN_NAVIO_DMA_RESET;                 //Reset DMA
     hal.scheduler->delay_microseconds(100);
     dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = RCIN_NAVIO_DMA_INT | RCIN_NAVIO_DMA_END;
-    dma_reg[RCIN_NAVIO_DMA_CONBLK_AD | RCIN_NAVIO_DMA_CHANNEL << 8] = reinterpret_cast<uint32_t>(con_blocks->get_phys_from_pointer(0));//Set first control block address
+    dma_reg[RCIN_NAVIO_DMA_CONBLK_AD | RCIN_NAVIO_DMA_CHANNEL << 8] = reinterpret_cast<uint32_t>(con_blocks->get_page(con_blocks->_phys_pages, 0));//Set first control block address
     dma_reg[RCIN_NAVIO_DMA_DEBUG | RCIN_NAVIO_DMA_CHANNEL << 8] = 7;                      // clear debug error flags
     dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = 0x10880001;                // go, mid priority, wait for outstanding writes    
 }
@@ -424,7 +403,6 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
     circle_buffer = new Memory_table(RCIN_NAVIO_BUFFER_LENGTH * 2, version);
     con_blocks = new Memory_table(RCIN_NAVIO_BUFFER_LENGTH * 113, version);
-
 }
 
 LinuxRCInput_Navio::~LinuxRCInput_Navio()
@@ -460,10 +438,10 @@ void LinuxRCInput_Navio::init(void*)
     hal.scheduler->delay(300);
 
     //Reading first sample
-    curr_tick = *((uint64_t*) circle_buffer->get_virt_from_pointer(curr_pointer));
+    curr_tick = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
     prev_tick = curr_tick;
     curr_pointer += 8;
-    curr_signal = *((uint8_t*) circle_buffer->get_virt_from_pointer(curr_pointer)) & 0x10 ? 1 : 0;
+    curr_signal = *((uint8_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer)) & 0x10 ? 1 : 0;
     last_signal = curr_signal;
     curr_pointer++;
 }
@@ -476,15 +454,15 @@ void LinuxRCInput_Navio::_timer_tick()
     void* x;
 
     //Now we are getting address in which DMAC is writing at current moment
-    dma_cb_t* ad = (dma_cb_t*) con_blocks->get_virt_addr((void*)dma_reg[RCIN_NAVIO_DMA_CONBLK_AD | RCIN_NAVIO_DMA_CHANNEL << 8]);
+    dma_cb_t* ad = (dma_cb_t*) con_blocks->get_virt_addr(dma_reg[RCIN_NAVIO_DMA_CONBLK_AD | RCIN_NAVIO_DMA_CHANNEL << 8]);
     for(j = 1; j >= -1; j--){
-	x = circle_buffer->get_virt_addr((void*)(ad + j)->dst);
-	if(x != NULL) {
-	    break;}
+    x = circle_buffer->get_virt_addr((ad + j)->dst);
+    if(x != NULL) {
+        break;}
     }
     
     //How many bytes have DMA transfered (and we can process)?
-    counter = circle_buffer->bytes_available((void*)curr_pointer, (void*)circle_buffer->get_pointer_from_virt(x));
+    counter = circle_buffer->bytes_available(curr_pointer, circle_buffer->get_offset(circle_buffer->_virt_pages, (uint32_t)x));
     //We can't stay in method for a long time, because it may lead to delays
     if (counter > RCIN_NAVIO_MAX_COUNTER) {
         counter = RCIN_NAVIO_MAX_COUNTER;
@@ -494,12 +472,12 @@ void LinuxRCInput_Navio::_timer_tick()
     for (;counter > 0x40;counter--) {
         //Is it timer samle?
         if (curr_pointer %  (64) == 0) {
-            curr_tick = *((uint64_t*) circle_buffer->get_virt_from_pointer(curr_pointer));
+            curr_tick = *((uint64_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
             curr_pointer+=8;
             counter-=8;
         }
         //Reading required bit
-        curr_signal = *((uint8_t*) circle_buffer->get_virt_from_pointer(curr_pointer)) & 0x10 ? 1 : 0;
+        curr_signal = *((uint8_t*) circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer)) & 0x10 ? 1 : 0;
         //If the signal changed
         if (curr_signal != last_signal) {
             delta_time = curr_tick - prev_tick;
