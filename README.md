@@ -81,7 +81,7 @@
 >>   - ***Board***: PXF
 >> - [Mirko Denecke](https://github.com/mirkix)
 >>   - ***Board***: BBBmini
->> - [Emlid](https://github.com/emlid)
+>> - [Georgii Staroselskii](https://github.com/staroselskii)
 >>   - ***Board***: NavIO
 >> - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
 >>   - ***Board***: VRBrain
