@@ -432,6 +432,8 @@ private:
         // used to 'wiggle' servos in idle mode to prevent them freezing
         // at high altitudes
         uint8_t idle_wiggle_stage;
+        // crash detection
+        bool is_crashed:1;
 
         // Altitude threshold to complete a takeoff command in autonomous
         // modes.  Centimeters above home
@@ -855,7 +857,8 @@ private:
     void set_servos_idle(void);
     void set_servos();
     void update_aux();
-    void determine_is_flying(void);
+    void is_flying_update(void);
+    void crash_detection_update(void);
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();
