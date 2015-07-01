@@ -344,21 +344,25 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
     if (vp == NULL) {
         return false;
     }
+    float old_value = 0;
     if (var_type == AP_PARAM_FLOAT) {
+        old_value = ((AP_Float *)vp)->cast_to_float();
         ((AP_Float *)vp)->set(value);
-        ::printf("Set %s to %f\n", name, value);
     } else if (var_type == AP_PARAM_INT32) {
+        old_value = ((AP_Int32 *)vp)->cast_to_float();
         ((AP_Int32 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else if (var_type == AP_PARAM_INT16) {
+        old_value = ((AP_Int16 *)vp)->cast_to_float();
         ((AP_Int16 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else if (var_type == AP_PARAM_INT8) {
+        old_value = ((AP_Int8 *)vp)->cast_to_float();
         ((AP_Int8 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
     } else {
         // we don't support mavlink set on this parameter
         return false;
+    }
+    if (fabsf(old_value - value) > 1.0e-4) {
+        ::printf("Changed %s to %.6f from %.6f\n", name, value, old_value);
     }
     return true;
 }

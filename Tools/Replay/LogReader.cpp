@@ -17,6 +17,13 @@
 
 #include "MsgHandler.h"
 
+#define DEBUG 0
+#if DEBUG
+# define debug(fmt, args...)     printf(fmt "\n", ##args)
+#else
+# define debug(fmt, args...)
+#endif
+
 #define streq(x, y) (!strcmp(x, y))
 
 extern const AP_HAL::HAL& hal;
@@ -92,7 +99,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
 	char name[5];
 	memset(name, '\0', 5);
 	memcpy(name, f.name, 4);
-	::printf("Defining log format for type (%d) (%s)\n", f.type, name);
+	debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
         if (!in_list(name, generated_names)) {
             // any messages which we won't be generating internally in
@@ -192,7 +199,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
                                                      last_timestamp_usec,
                                                      check_state);
 	} else {
-            ::printf("  No parser for (%s)\n", name);
+            debug("  No parser for (%s)\n", name);
 	}
 
         return true;
