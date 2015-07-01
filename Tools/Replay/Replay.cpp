@@ -55,7 +55,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
-#include <getopt.h> // for optind only
 #include <utility/getopt_cpp.h>
 #include "Parameters.h"
 #include "VehicleType.h"
@@ -164,7 +163,7 @@ struct PACKED log_Chek {
 
 
 enum {
-    LOG_CHEK_MSG=1
+    LOG_CHEK_MSG=100
 };
 
 static const struct LogStructure log_structure[] PROGMEM = {
@@ -316,7 +315,6 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     };
 
     GetOptLong gopt(argc, argv, "r:p:ha:g:A:", options);
-    gopt.optind = optind;
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
