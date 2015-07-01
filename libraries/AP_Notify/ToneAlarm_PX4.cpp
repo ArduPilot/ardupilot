@@ -151,8 +151,8 @@ void ToneAlarm_PX4::update()
     }
     flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
 
-    //play tone if UBLOX gps not detected after 3 seconds since startup: Solo Specific
-    if(hal.scheduler->millis() >=10000){
+    //play tone if UBLOX gps not detected : Solo Specific
+    if(!AP_Notify::flags.initialising && hal.scheduler->millis() > 20000){
         if (AP_Notify::flags.gps_connected != flags.gps_connected) {
             if(!AP_Notify::flags.gps_connected) {
                 play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
