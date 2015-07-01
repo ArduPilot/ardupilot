@@ -151,6 +151,12 @@ bool AK8963_MPU9250_SPI_Backend::init()
     }
 
     _spi_sem = _spi->get_semaphore();
+
+    // start at low speed for
+    // initialisation. AP_InertialSensor_MPU9250 driver will raise
+    // speed
+    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+
     return true;
 }
 
