@@ -274,6 +274,18 @@ uint16_t DataFlash_File::find_last_log(void)
     return ret;
 }
 
+bool DataFlash_File::_log_exists(uint16_t log_num)
+{
+    char *fname = _log_file_name(log_num);
+    if (fname == NULL) {
+        return 0;
+    }
+    struct stat st;
+    // stat return 0 if the file exists:
+    bool ret = ::stat(fname, &st) ? false : true;
+    free(fname);
+    return ret;
+}
 
 uint32_t DataFlash_File::_get_log_size(uint16_t log_num)
 {
@@ -395,7 +407,7 @@ uint16_t DataFlash_File::get_num_logs(void)
     uint16_t ret;
     uint16_t high = find_last_log();
     for (ret=0; ret<high; ret++) {
-        if (_get_log_size(high - ret) <= 0) {
+        if (!_log_exists(high - ret)) {
             break;
         }
     }
@@ -587,7 +599,6 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
         char *filename = _log_file_name(log_num);
         if (filename != NULL) {
             size = _get_log_size(log_num);
-            if (size != 0) {
                 struct stat st;
                 if (stat(filename, &st) == 0) {
                     struct tm *tm = gmtime(&st.st_mtime);
@@ -601,7 +612,6 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
                                    (unsigned)tm->tm_hour,
                                    (unsigned)tm->tm_min);
                 }
-            }
             free(filename);
         }
     }
