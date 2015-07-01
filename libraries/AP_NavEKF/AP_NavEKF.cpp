@@ -381,6 +381,13 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE",    32, NavEKF, _altSource, 1),
 
+    // @Param: GPS_CHECK
+    // @DisplayName: GPS preflight check bypass
+    // @Description: 1 byte bitmap of GPS preflight checks to bypass. Set to 0 to use all checks. Set to 255 to bypass all checks. Set to 252 to check just number of satellites and HDoP.
+    // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:horiz pos error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed
+    // @User: Advanced
+    AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 0),
+
     AP_GROUPEND
 };
 
@@ -5130,19 +5137,19 @@ bool NavEKF::calcGpsGoodToAlign(void)
     }
 
     // fail if velocity difference or reported speed accuracy greater than threshold
-    bool gpsVelFail = (velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f);
+    bool gpsVelFail = ((velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f)) && !(_gpsCheck & MASK_GPS_SPD_ERR);
 
     // fail if not enough sats
-    bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
+    bool numSatsFail = _ahrs->get_gps().num_sats() < 6 && !(_gpsCheck & MASK_GPS_NSATS);
 
     // fail if satellite geometry is poor
-    bool hdopFail = _ahrs->get_gps().get_hdop() > 250;
+    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250) && !(_gpsCheck & MASK_GPS_HDOP);
 
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
     if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = hAcc > 5.0f;
+        hAccFail = (hAcc > 5.0f) && !(_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
     }
@@ -5150,7 +5157,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if (magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) {
+    if (((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f)) && !(_gpsCheck & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;
@@ -5171,7 +5178,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     gpsDriftNE = min(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst pre-armed when the vehicle is supposed to be stationary
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
-    bool gpsDriftFail = gpsDriftNE > 3.0f && !vehicleArmed;
+    bool gpsDriftFail = gpsDriftNE > 3.0f && !vehicleArmed && !(_gpsCheck & MASK_GPS_POS_DRIFT);
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
@@ -5179,20 +5186,20 @@ bool NavEKF::calcGpsGoodToAlign(void)
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * velNED.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f);
-    } else if ((_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
+        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && !(_gpsCheck & MASK_GPS_VERT_SPD);
+    } else if ((_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity() && !(_gpsCheck & MASK_GPS_VERT_SPD)) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
     } else {
         gpsVertVelFail = false;
     }
 
-    // Check that the horizontal GPS vertical velocity is reasonable after noise filtering
+    // Check that the horizontal GPS velocity is reasonable after noise filtering
     bool gpsHorizVelFail;
     if (!vehicleArmed) {
         gpsHorizVelFilt = 0.1f * pythagorous2(velNED.x,velNED.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f);
+        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && !(_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
