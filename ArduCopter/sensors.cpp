@@ -174,6 +174,13 @@ void Copter::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
+void Copter::compass_cal_update()
+{
+    if (!hal.util->get_soft_armed()) {
+        compass.compass_cal_update();
+    }
+}
+
 #if EPM_ENABLED == ENABLED
 // epm update - moves epm pwm output back to neutral after grab or release is completed
 void Copter::epm_update()
