@@ -31,8 +31,10 @@ LinuxI2CDriver::LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device)
 {
     _device = strdup(device);
 
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     if (!((LinuxUtil*)hal.util)->is_chardev_node(_device))
         hal.scheduler->panic("I2C device is not a chardev node");
+#endif
 }
 
 /* Match a given device by the prefix its devpath, i.e. the path returned by
