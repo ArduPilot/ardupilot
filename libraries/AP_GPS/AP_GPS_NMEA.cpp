@@ -63,8 +63,9 @@ extern const AP_HAL::HAL& hal;
 // Note that we may see a MediaTek in NMEA mode if we are connected to a non-DIYDrones
 // MediaTek-based GPS.
 //
+//rmc needs for date in dataflash Log and update property last_gps_time_ms for inav system 
 #define MTK_INIT_MSG \
-    "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n" /* GGA & VTG once every fix */ \
+    "$PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n" /* RMC, GGA & VTG once every fix */ \
     "$PMTK330,0*2E\r\n"                                 /* datum = WGS84 */ \
     "$PMTK313,1*2E\r\n"                                 /* SBAS on */ \
     "$PMTK301,2*2E\r\n"                                 /* use SBAS data for DGPS */
@@ -87,12 +88,14 @@ const prog_char AP_GPS_NMEA::_initialisation_blob[] PROGMEM = SIRF_INIT_MSG MTK_
 
 // NMEA message identifiers ////////////////////////////////////////////////////
 //
-const char AP_GPS_NMEA::_gprmc_string[] PROGMEM = "GPRMC";
-const char AP_GPS_NMEA::_gpgga_string[] PROGMEM = "GPGGA";
-const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
+
+const char AP_GPS_NMEA::_gprmc_string[] PROGMEM = "RMC"; //gps GPRMC glonass GNRMC ignore first part of prefix 
+const char AP_GPS_NMEA::_gpgga_string[] PROGMEM = "GGA";
+const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "VTG";
 
 // Convenience macros //////////////////////////////////////////////////////////
-//
+
+
 #define DIGIT_TO_VAL(_x)        (_x - '0')
 #define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
 
@@ -266,6 +269,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    state.last_gps_time_ms = hal.scheduler->millis(); //gpgga update lat lon for INAV too (if gps module is not support rmc)
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
@@ -291,11 +295,11 @@ bool AP_GPS_NMEA::_term_complete()
 
     // the first term determines the sentence type
     if (_term_number == 0) {
-        if (!strcmp_P(_term, _gprmc_string)) {
+        if (!strcmp_P(_term+2, _gprmc_string)) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
-        } else if (!strcmp_P(_term, _gpgga_string)) {
+        } else if (!strcmp_P(_term+2, _gpgga_string)) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
-        } else if (!strcmp_P(_term, _gpvtg_string)) {
+        } else if (!strcmp_P(_term+2, _gpvtg_string)) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
