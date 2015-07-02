@@ -5,16 +5,6 @@
 #include <AP_HAL_Linux.h>
 #include "Semaphores.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
-#define LINUX_SPI_DEVICE_NUM_DEVICES 6
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-#define LINUX_SPI_DEVICE_NUM_DEVICES 2
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-#define LINUX_SPI_DEVICE_NUM_DEVICES 2
-#else
-#define LINUX_SPI_DEVICE_NUM_DEVICES 0
-#endif
-
 // Most platforms won't need to declare the spidev bus offset
 #ifndef LINUX_SPIDEV_BUS_OFFSET
 #define LINUX_SPIDEV_BUS_OFFSET 0
@@ -65,7 +55,7 @@ public:
     static void transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len);
 
 private:
-    static LinuxSPIDeviceDriver _device[LINUX_SPI_DEVICE_NUM_DEVICES];
+    static LinuxSPIDeviceDriver _device[];
     static LinuxSemaphore _semaphore[LINUX_SPI_MAX_BUSES];
 };
 
