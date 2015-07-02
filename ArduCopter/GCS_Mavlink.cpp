@@ -426,10 +426,10 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.x),
-                                    pid_info.FF*0.01,
-                                    pid_info.P*0.01,
-                                    pid_info.I*0.01,
-                                    pid_info.D*0.01);
+                                    pid_info.FF*0.01f,
+                                    pid_info.P*0.01f,
+                                    pid_info.I*0.01f,
+                                    pid_info.D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
