@@ -3,7 +3,7 @@
 run Replay over a set of logs to check for code regressions
 '''
 
-import optparse, os
+import optparse, os, sys
 
 parser = optparse.OptionParser("CheckLogs")
 parser.add_option("--logdir", type='string', default='testlogs', help='directory of logs to use')
