@@ -254,6 +254,8 @@ private:
         float value;
     } user_parameters[100];
 
+    const char *log_filename = NULL;
+
     void set_ins_update_rate(uint16_t update_rate);
 
     void usage(void);
@@ -498,6 +500,9 @@ void Replay::setup()
     signal(SIGFPE, _replay_sig_fpe);
 
     hal.console->printf("Processing log %s\n", filename);
+
+    // remember filename for reporting
+    log_filename = filename;
 
     if (update_rate == 0) {
         update_rate = find_update_rate(filename);
@@ -983,6 +988,17 @@ void Replay::report_checks(void)
     bool failed = false;
     if (tolerance_euler < 0.01f) {
         tolerance_euler = 0.01f;
+    }
+    FILE *f = fopen("replay_results.txt","a");
+    if (f != NULL) {
+        fprintf(f, "%s %.3f %.3f %.3f %.3f %.3f\n",
+                log_filename, 
+                check_result.max_roll_error,
+                check_result.max_pitch_error,
+                check_result.max_yaw_error,
+                check_result.max_pos_error,
+                check_result.max_vel_error);
+        fclose(f);
     }
     if (check_result.max_roll_error > tolerance_euler) {
         printf("Roll error %.2f > %.2f\n", check_result.max_roll_error, tolerance_euler);
