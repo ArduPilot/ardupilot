@@ -80,7 +80,7 @@
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
-#include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
+#include <AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_Circle.h>          // circle navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence.h>           // Arducopter Fence library
@@ -95,10 +95,10 @@
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
 #if EPM_ENABLED == ENABLED
-#include <AP_EPM.h>				// EPM cargo gripper stuff
+#include <AP_EPM.h>             // EPM cargo gripper stuff
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute.h>		// Parachute release library
+#include <AP_Parachute.h>       // Parachute release library
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
