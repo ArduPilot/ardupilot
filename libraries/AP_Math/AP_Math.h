@@ -82,6 +82,14 @@ static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf
 // is a float is zero
 static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
 
+// Round a float up, bias: 0.5
+// fVal ~ 0: 0
+// fVal > 0: round up positive values
+// fVal < 0: round up for negative values
+static inline double round_half(const double fVal) {
+  return is_zero(fVal) ? 0 : fVal < 0 ? floor(fVal - 0.5) : floor(fVal + 0.5);
+}
+
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
 
@@ -96,7 +104,7 @@ enum Rotation           rotation_combination(enum Rotation r1, enum Rotation r2,
 #endif
 
 // longitude_scale - returns the scaler to compensate for shrinking longitude as you move north or south from the equator
-// Note: this does not include the scaling to convert longitude/latitude points to meters or centimeters
+// Note: this does not include the scaling to convert longitude/latitude points to meters or centimetres
 float                   longitude_scale(const struct Location &loc);
 
 // return distance in meters between two locations
