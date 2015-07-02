@@ -26,6 +26,17 @@ public:
     bool gyro_sample_available(void) { return _have_sample_available; }
     bool accel_sample_available(void) { return _have_sample_available; }
 
+    /* Put the MPU9250 in a known state so it can be
+     * used both for the InertialSensor and as for backend of other drivers.
+     *
+     * The SPI semaphore must be taken and timer_procs suspended.
+     *
+     * This method puts the bus in low speed. If the initialization is
+     * successful the bus is left on low speed so the caller can finish the
+     * initialization of its driver.
+     */
+    static bool initialize_driver_state();
+
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
