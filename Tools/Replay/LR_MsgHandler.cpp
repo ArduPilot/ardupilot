@@ -154,12 +154,17 @@ void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *ms
         ! field_value(msg, "HDp", hdop)) {
         hdop = 20;
     }
+    uint8_t nsats = 0;
+    if (! field_value(msg, "NSats", nsats) &&
+        ! field_value(msg, "numSV", nsats)) {
+        field_not_found(msg, "NSats");
+    }
     gps.setHIL(gps_offset,
                (AP_GPS::GPS_Status)status,
                uint32_t(time_us/1000),
                loc,
                vel,
-               require_field_uint8_t(msg, "NSats"),
+               nsats,
                hdop,
                require_field_float(msg, "VZ") != 0);
     if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {

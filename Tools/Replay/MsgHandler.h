@@ -67,7 +67,6 @@ private:
     void init_field_types();
     void add_field_type(char type, size_t size);
     uint8_t size_for_type(char type);
-    void field_not_found(uint8_t *msg, const char *label);
 
 protected:
     struct log_Format f; // the format we are a parser for
@@ -87,6 +86,7 @@ protected:
 			   const char *label_roll,
 			   const char *label_pitch,
 			   const char *label_yaw);
+    void field_not_found(uint8_t *msg, const char *label);
 };
 
 template<typename R>
