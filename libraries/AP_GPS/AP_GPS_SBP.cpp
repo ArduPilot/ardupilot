@@ -229,8 +229,9 @@ AP_GPS_SBP::_sbp_process_message() {
         }
 
         default:
-            // Break out of any logging if it's an unsupported message
-            return;
+            // log anyway if it's an unsupported message. 
+            // The log mask will be used to adjust or suppress logging
+            break; 
     }
 
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
@@ -501,7 +502,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         sender_id       : sender_id,
         msg_len         : msg_len,
     };
-    memcpy(pkt.data1, msg_buff, max(msg_len,64)); 
+    memcpy(pkt.data1, msg_buff, min(msg_len,64)); 
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));    
 
     if (msg_len > 64) {
