@@ -1,19 +1,18 @@
 #!/usr/bin/env python
+'''
+run Replay over a set of logs to check for code regressions
+'''
 
 import optparse, os
 
 parser = optparse.OptionParser("CheckLogs")
 parser.add_option("--logdir", type='string', default='testlogs', help='directory of logs to use')
+parser.add_option("--create-checked-logs", action='store_true', default=False, help="created logs with CHEK messages")
 parser.add_option("--tolerance-euler", type=float, default=3, help="tolerance for euler angles in degrees");
 parser.add_option("--tolerance-pos", type=float, default=2, help="tolerance for position angles in meters");
 parser.add_option("--tolerance-vel", type=float, default=2, help="tolerance for velocity in meters/second");
 
 opts, args = parser.parse_args()
-
-'''
-gather results and create html file
-
-'''
 
 def run_cmd(cmd, dir=".", show=False, output=False, checkfail=True):
     '''run a shell command'''
@@ -140,16 +139,49 @@ Tolerance Velocity: %.3f meters/second
     f.close()
     infile.close()
 
-log_list = get_log_list()
+def check_logs():
+    '''run log checking'''
+    log_list = get_log_list()
 
-# remove old results file
-try:
-    os.unlink("replay_results.txt")
-except Exception as ex:
-    print(ex)
-    pass
+    # remove old results file
+    try:
+        os.unlink("replay_results.txt")
+    except Exception as ex:
+        print(ex)
+        pass
 
-for logfile in log_list:
-    run_replay(logfile)
+    for logfile in log_list:
+        run_replay(logfile)
 
-create_html_results()
+    create_html_results()
+
+def create_checked_logs():
+    '''create a set of CHEK logs'''
+    import glob, os, sys
+    pattern = os.path.join(opts.logdir, "*.bin")
+    full_file_list = glob.glob(pattern)
+    file_list = []
+    for f in full_file_list:
+        if not f.endswith("-checked.bin"):
+            file_list.append(f)
+    for f in file_list:
+        print("Processing %s" % f)
+        log_list_current = set(glob.glob("logs/*.BIN"))
+        cmd = "./Replay.elf -- --check-generate %s" % f
+        run_cmd(cmd, checkfail=True)
+        log_list_after = set(glob.glob("logs/*.BIN"))
+        changed = log_list_after.difference(log_list_current)
+        if len(changed) != 1:
+            print("Failed to generate log for %s" % f)
+            sys.exit(1)
+        outlog = list(changed)[0]
+        name, ext = os.path.splitext(f)
+        newname = name + '-checked.bin'
+        os.rename(outlog, newname)
+        print("Created %s" % newname)
+
+if opts.create_checked_logs:
+    create_checked_logs()
+    sys.exit(0)
+
+check_logs()
