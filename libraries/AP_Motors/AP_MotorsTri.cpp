@@ -27,9 +27,9 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsTri::var_info[] PROGMEM = {
     // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_Motors, 0),
+    AP_NESTEDGROUPINFO(AP_Motors_Multirotor, 0),
 
-    // parameters 1 ~ 29 reserved for tradheli
+    // parameters 1 ~ 29 were reserved for tradheli
     // parameters 30 ~ 39 reserved for tricopter
     // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
 
