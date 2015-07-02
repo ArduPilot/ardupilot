@@ -103,8 +103,8 @@ void Copter::auto_takeoff_start(float final_alt_above_home)
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 
-    // tell motors to do a slow start
-    motors.slow_start(true);
+    // clear i term when we're taking off
+    set_throttle_takeoff();
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -123,8 +123,8 @@ void Copter::auto_takeoff_run()
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
-        // tell motors to do a slow start
-        motors.slow_start(true);
+        // clear i term when we're taking off
+        set_throttle_takeoff();
         return;
     }
 
@@ -175,8 +175,8 @@ void Copter::auto_wp_run()
 #else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
-        // tell motors to do a slow start
-        motors.slow_start(true);
+        // clear i term when we're taking off
+        set_throttle_takeoff();
         return;
     }
 
@@ -239,8 +239,8 @@ void Copter::auto_spline_run()
 #else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
-        // tell motors to do a slow start
-        motors.slow_start(true);
+        // clear i term when we're taking off
+        set_throttle_takeoff();
         return;
     }
 
