@@ -69,7 +69,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (motors.armed()) {
+    if (copter.motors.armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -741,11 +741,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break; // just here to prevent a warning
 
     case MSG_MAG_CAL_PROGRESS:
-        compass.send_mag_cal_progress(chan);
+        copter.compass.send_mag_cal_progress(chan);
         break;
 
     case MSG_MAG_CAL_REPORT:
-        compass.send_mag_cal_report(chan);
+        copter.compass.send_mag_cal_report(chan);
         break;
     }
 
@@ -1468,7 +1468,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_DO_START_MAG_CAL: {
             result = MAV_RESULT_ACCEPTED;
-            if(motors.armed() || packet.param1 < 0 || packet.param1 > 255) {
+            if(copter.motors.armed() || packet.param1 < 0 || packet.param1 > 255) {
                 result = MAV_RESULT_FAILED;
                 break;
             }
@@ -1479,11 +1479,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             float delay = packet.param4;
 
             if (mag_mask == 0) { // 0 means all
-                if (!compass.start_calibration_all(retry, autosave, delay)) {
+                if (!copter.compass.start_calibration_all(retry, autosave, delay)) {
                     result = MAV_RESULT_FAILED;
                 }
             } else {
-                if (!compass.start_calibration_mask(mag_mask, retry, autosave, delay)) {
+                if (!copter.compass.start_calibration_mask(mag_mask, retry, autosave, delay)) {
                     result = MAV_RESULT_FAILED;
                 }
             }
@@ -1501,13 +1501,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t mag_mask = packet.param1;
 
             if (mag_mask == 0) { // 0 means all
-                if(!compass.accept_calibration_all()) {
+                if(!copter.compass.accept_calibration_all()) {
                     result = MAV_RESULT_FAILED;
                 }
                 break;
             }
 
-            if(!compass.accept_calibration_mask(mag_mask)) {
+            if(!copter.compass.accept_calibration_mask(mag_mask)) {
                 result = MAV_RESULT_FAILED;
             }
             break;
@@ -1523,11 +1523,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t mag_mask = packet.param1;
 
             if (mag_mask == 0) { // 0 means all
-                compass.cancel_calibration_all();
+                copter.compass.cancel_calibration_all();
                 break;
             }
 
-            compass.cancel_calibration_mask(mag_mask);
+            copter.compass.cancel_calibration_mask(mag_mask);
             break;
         }
 
