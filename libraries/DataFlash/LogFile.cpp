@@ -69,7 +69,7 @@ uint16_t DataFlash_Block::start_new_log(void)
         SetFileNumber(1);
         StartWrite(1);
         //Serial.println("start log from 0");
-        log_write_started = true;
+        _logging_started = true;
         return 1;
     }
 
@@ -90,7 +90,7 @@ uint16_t DataFlash_Block::start_new_log(void)
         SetFileNumber(new_log_num);
         StartWrite(last_page + 1);
     }
-    log_write_started = true;
+    _logging_started = true;
     return new_log_num;
 }
 

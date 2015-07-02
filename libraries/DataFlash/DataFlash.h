@@ -85,7 +85,7 @@ public:
     void Log_Write_Mode(uint8_t mode);
     void Log_Write_Gimbal(const AP_Gimbal &gimbal);
 
-    bool logging_started(void) const { return log_write_started; }
+    bool logging_started(void) const { return _logging_started; }
 
 	/*
       every logged packet starts with 3 bytes
@@ -111,7 +111,7 @@ protected:
     const struct LogStructure *_structures;
     uint8_t _num_types;
     bool _writes_enabled;
-    bool log_write_started;
+    bool _logging_started;
 
     /*
       read a block

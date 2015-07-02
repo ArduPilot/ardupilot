@@ -37,7 +37,7 @@ void DataFlash_Block::FinishWrite(void)
 
 void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
-    if (!CardInserted() || !log_write_started || !_writes_enabled) {
+    if (!CardInserted() || !_logging_started || !_writes_enabled) {
         return;
     }
     while (size > 0) {
@@ -89,7 +89,7 @@ void DataFlash_Block::StartRead(uint16_t PageAdr)
     df_Read_PageAdr   = PageAdr;
 
     // disable writing while reading
-    log_write_started = false;
+    _logging_started = false;
 
     WaitReady();
 
@@ -156,7 +156,7 @@ uint16_t DataFlash_Block::GetFilePage()
 
 void DataFlash_Block::EraseAll()
 {
-    log_write_started = false;
+    _logging_started = false;
     for (uint16_t j = 1; j <= (df_NumPages+1)/8; j++) {
         BlockErase(j);
         if (j%6 == 0) {
@@ -167,10 +167,10 @@ void DataFlash_Block::EraseAll()
     hal.scheduler->delay(100);
     StartWrite(df_NumPages+1);
     uint32_t version = DF_LOGGING_FORMAT;
-    log_write_started = true;
+    _logging_started = true;
     _writes_enabled = true;
     WriteBlock(&version, sizeof(version));
-    log_write_started = false;
+    _logging_started = false;
     FinishWrite();
     hal.scheduler->delay(100);
 }
@@ -202,7 +202,7 @@ int16_t DataFlash_Block::get_log_data_raw(uint16_t log_num, uint16_t page, uint3
             page = 1 + page - df_NumPages;
         }
     }
-    if (log_write_started || df_Read_PageAdr != page) {
+    if (_logging_started || df_Read_PageAdr != page) {
         StartRead(page);
     }
 
