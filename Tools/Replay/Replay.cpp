@@ -214,7 +214,7 @@ private:
     SITL sitl;
 #endif
 
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash};
+    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, log_structure, sizeof(log_structure)/sizeof(log_structure[0])};
 
     FILE *plotf;
     FILE *plotf2;

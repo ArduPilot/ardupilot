@@ -5,7 +5,7 @@
 class LogReader : public DataFlashFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *structure, uint8_t num_types);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -36,6 +36,9 @@ private:
     AP_Airspeed &airspeed;
     DataFlash_Class &dataflash;
 
+    const struct LogStructure *structure;
+    uint8_t num_types;
+
     uint8_t accel_mask;
     uint8_t gyro_mask;
     bool use_imt = true;
@@ -51,10 +54,18 @@ private:
     float rel_altitude;
     uint64_t last_timestamp_usec;
 
+    // mapping from original msgid to output msgid
+    uint8_t mapped_msgid[256] {};
+
+    // next available msgid for mapping
+    uint8_t next_msgid = 1;
+
     LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
     void maybe_install_vehicle_specific_parsers();
 
     bool in_list(const char *type, const char *list[]);
+
+    uint8_t map_fmt_type(const char *name, uint8_t intype);
 };

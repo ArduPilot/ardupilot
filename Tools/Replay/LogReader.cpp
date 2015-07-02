@@ -28,7 +28,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash) :
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, uint8_t _num_types) :
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -37,11 +37,14 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     gps(_gps),
     airspeed(_airspeed),
     dataflash(_dataflash),
+    structure(_structure),
+    num_types(_num_types),
     accel_mask(7),
     gyro_mask(7),
     last_timestamp_usec(0),
     installed_vehicle_specific_parsers(false)
-{}
+{
+}
 
 struct log_Format deferred_formats[LOGREADER_MAX_FORMATS];
 
@@ -95,6 +98,27 @@ bool LogReader::in_list(const char *type, const char *list[])
     return false;
 }
 
+/*
+  map from an incoming format type to an outgoing format type
+ */
+uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
+{
+    if (mapped_msgid[intype] != 0) {
+        // already mapped
+        return mapped_msgid[intype];
+    }
+    // see if it is in our structure list
+    for (uint8_t i=0; i<num_types; i++) {
+        if (strcmp(name, structure[i].name) == 0) {
+            mapped_msgid[intype] = structure[i].msg_type;
+            return mapped_msgid[intype];
+        }
+    }
+    // it is a new one, allocate an ID
+    mapped_msgid[intype] = next_msgid++;
+    return mapped_msgid[intype];    
+}
+
 bool LogReader::handle_log_format_msg(const struct log_Format &f) {
 	char name[5];
 	memset(name, '\0', 5);
@@ -102,9 +126,15 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
 	debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
         if (!in_list(name, generated_names)) {
-            // any messages which we won't be generating internally in
-            // replay should get the original FMT header
-            dataflash.WriteBlock(&f, sizeof(f));
+            /* 
+               any messages which we won't be generating internally in
+               replay should get the original FMT header
+               We need to remap the type in the FMT header to avoid
+               conflicts with our current table
+            */
+            struct log_Format f_mapped = f;
+            f_mapped.type = map_fmt_type(name, f.type);
+            dataflash.WriteBlock(&f_mapped, sizeof(f_mapped));
         }
 
 	// map from format name to a parser subclass:
@@ -211,6 +241,11 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
     memcpy(name, f.name, 4);
 
     if (!in_list(name, generated_names)) {
+        if (mapped_msgid[msg[2]] == 0) {
+            printf("Unknown msgid %u\n", (unsigned)msg[2]);
+            exit(1);
+        }
+        msg[2] = mapped_msgid[msg[2]];
         dataflash.WriteBlock(msg, f.length);        
         // a MsgHandler would probably have found a timestamp and
         // caled stop_clock.  This runs IO, clearing dataflash's
