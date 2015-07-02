@@ -26,8 +26,6 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_Motors, 0),
 
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
