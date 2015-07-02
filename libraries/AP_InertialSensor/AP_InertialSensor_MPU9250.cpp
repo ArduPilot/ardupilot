@@ -263,7 +263,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
 
 #if MPU9250_DEBUG
-    _dump_registers();
+    _dump_registers(_spi);
 #endif
     return true;
 }
@@ -358,30 +358,42 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 /*
   read an 8 bit register
  */
-uint8_t AP_InertialSensor_MPU9250::_register_read( uint8_t reg )
+uint8_t AP_InertialSensor_MPU9250::_register_read(AP_HAL::SPIDeviceDriver *spi,
+                                                  uint8_t reg)
 {
     uint8_t addr = reg | 0x80; // Set most significant bit
-
     uint8_t tx[2];
     uint8_t rx[2];
 
     tx[0] = addr;
     tx[1] = 0;
-    _spi->transaction(tx, rx, 2);
+    spi->transaction(tx, rx, 2);
+
     return rx[1];
 }
 
 /*
   write an 8 bit register
  */
-void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
+void AP_InertialSensor_MPU9250::_register_write(AP_HAL::SPIDeviceDriver *spi,
+                                                uint8_t reg, uint8_t val)
 {
     uint8_t tx[2];
     uint8_t rx[2];
 
     tx[0] = reg;
     tx[1] = val;
-    _spi->transaction(tx, rx, 2);
+    spi->transaction(tx, rx, 2);
+}
+
+inline uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
+{
+    return _register_read(_spi, reg);
+}
+
+inline void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
+{
+    _register_write(_spi, reg, val);
 }
 
 /*
@@ -472,11 +484,11 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 
 #if MPU9250_DEBUG
 // dump all config registers - used for debug
-void AP_InertialSensor_MPU9250::_dump_registers(void)
+void AP_InertialSensor_MPU9250::_dump_registers(AP_HAL::SPIDeviceDriver *spi)
 {
     hal.console->println_P(PSTR("MPU9250 registers"));
     for (uint8_t reg=0; reg<=126; reg++) {
-        uint8_t v = _register_read(reg);
+        uint8_t v = _register_read(spi, reg);
         hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
         if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
             hal.console->println();

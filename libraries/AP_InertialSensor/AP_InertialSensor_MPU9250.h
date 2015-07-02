@@ -30,8 +30,12 @@ public:
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
-    bool                 _init_sensor(void);
 
+    static uint8_t _register_read(AP_HAL::SPIDeviceDriver *spi, uint8_t reg);
+    static void _register_write(AP_HAL::SPIDeviceDriver *spi, uint8_t reg,
+                                uint8_t val);
+
+    bool                 _init_sensor(void);
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
@@ -77,7 +81,7 @@ private:
     enum Rotation _default_rotation;
 
 #if MPU9250_DEBUG
-    void						_dump_registers(void);
+    static void _dump_registers(AP_HAL::SPIDeviceDriver *spi);
 #endif
 };
 
