@@ -1013,7 +1013,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 #else
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
-    GOBJECT(motors, "MOT_",         AP_Motors),
+    GOBJECT(motors, "MOT_",         AP_Motors_Multirotor),
 #endif
 
     // @Group: RCMAP_
