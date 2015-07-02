@@ -102,6 +102,7 @@
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
+#include <AC_Booster.h>
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -295,6 +296,13 @@ private:
 #endif
 
     MOTOR_CLASS motors;
+
+#if BOOSTER == ENABLED
+    AC_BoosterSingle booster_backend;
+    AC_BoosterController booster;
+#else
+    AC_BoosterController booster;
+#endif
 
     // GPS variables
     // Sometimes we need to remove the scaling for distance calcs
@@ -641,6 +649,7 @@ private:
     void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
+    void auto_stop();
     void auto_takeoff_start(float final_alt_above_home);
     void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
@@ -691,6 +700,7 @@ private:
     void circle_run();
     bool drift_init(bool ignore_checks);
     void drift_run();
+    void drift_stop();
     int16_t get_throttle_assist(float velz, int16_t pilot_throttle_scaled);
     bool flip_init(bool ignore_checks);
     void flip_run();
@@ -733,6 +743,7 @@ private:
 
     bool rtl_init(bool ignore_checks);
     void rtl_run();
+    void rtl_stop();
     void rtl_climb_start();
     void rtl_return_start();
     void rtl_climb_return_run();
@@ -747,6 +758,7 @@ private:
     void sport_run();
     bool stabilize_init(bool ignore_checks);
     void stabilize_run();
+    void stabilize_stop();
     void crash_check();
     void parachute_check();
     void parachute_release();
@@ -788,6 +800,7 @@ private:
     void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out);
     bool heli_stabilize_init(bool ignore_checks);
     void heli_stabilize_run();
+    void heli_stabilize_stop();
     void read_inertia();
     void read_inertial_altitude();
     bool land_complete_maybe();

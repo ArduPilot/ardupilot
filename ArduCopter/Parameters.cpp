@@ -934,6 +934,12 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(sprayer,                "SPRAY_",       AC_Sprayer),
 #endif
 
+#if BOOSTER == ENABLED
+    // @Group: BOOSTER_
+    // @Path: ../libraries/AC_Booster/AC_BoosterController.cpp
+    GOBJECT(booster,                "BOOSTER_",     AC_BoosterController),
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     GOBJECT(sitl, "SIM_", SITL),
 #endif

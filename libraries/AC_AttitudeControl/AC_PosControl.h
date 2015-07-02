@@ -12,7 +12,7 @@
 #include <AC_AttitudeControl.h> // Attitude control library
 #include <AP_Motors.h>          // motors library
 #include <AP_Vehicle.h>         // common vehicle parameters
-
+#include <AC_Booster.h>         // booster library
 
 // position controller default definitions
 #define POSCONTROL_THROTTLE_HOVER               500.0f  // default throttle required to maintain hover
@@ -50,7 +50,7 @@ public:
 
     /// Constructor
     AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
-                  const AP_Motors& motors, AC_AttitudeControl& attitude_control,
+                  const AP_Motors& motors, AC_AttitudeControl& attitude_control, AC_BoosterController& booster,
                   AC_P& p_pos_z, AC_P& p_vel_z, AC_PID& pid_accel_z,
                   AC_P& p_pos_xy, AC_PI_2D& pi_vel_xy);
 
@@ -252,6 +252,7 @@ public:
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
     float get_pitch() const { return _pitch_target; }
+    float get_boost() const { return _boost_target; }
 
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
@@ -342,6 +343,7 @@ private:
     const AP_InertialNav&       _inav;
     const AP_Motors&            _motors;
     AC_AttitudeControl&         _attitude_control;
+    AC_BoosterController&       _booster;
 
     // references to pid controllers
     AC_P&       _p_pos_z;
@@ -372,6 +374,7 @@ private:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    int16_t     _boost_target;          // desired boost
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home

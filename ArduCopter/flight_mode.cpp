@@ -212,20 +212,32 @@ void Copter::update_flight_mode()
 // exit_mode - high level call to organise cleanup as a flight mode is exited
 void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 {
-#if AUTOTUNE_ENABLED == ENABLED
-    if (old_control_mode == AUTOTUNE) {
-        autotune_stop();
-    }
-#endif
+    switch (old_control_mode) {
+        case STABILIZE:
+            #if FRAME_CONFIG == HELI_FRAME
+                heli_stabilize_stop();
+            #else
+                stabilize_stop();
+            #endif
+            break;
 
-    // stop mission when we leave auto mode
-    if (old_control_mode == AUTO) {
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
-        }
-#if MOUNT == ENABLED
-        camera_mount.set_mode_to_default();
-#endif  // MOUNT == ENABLED
+        case DRIFT:
+            drift_stop();
+            break;
+
+        case AUTO:
+            auto_stop();
+            break;
+
+        case RTL:
+            rtl_stop();
+            break;
+
+#if AUTOTUNE_ENABLED == ENABLED
+        case AUTOTUNE:
+            autotune_stop();
+            break;
+#endif
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes

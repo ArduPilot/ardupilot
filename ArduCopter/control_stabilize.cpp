@@ -13,14 +13,24 @@ bool Copter::stabilize_init(bool ignore_checks)
     // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
     pos_control.set_alt_target(0);
 
+    booster.set_active(true);
+
     // stabilize should never be made to fail
     return true;
+}
+
+// stabilize_stop
+void Copter::stabilize_stop()
+{
+    booster.set_active(false);
 }
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
 void Copter::stabilize_run()
 {
+    booster.set_active(true);
+
     float target_roll, target_pitch;
     float target_yaw_rate;
     int16_t pilot_throttle_scaled;
@@ -43,7 +53,10 @@ void Copter::stabilize_run()
 
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
-
+    
+    // engage the booster if it's active and scale the target pitch
+    target_pitch = booster.set_boost_and_scale_pitch(target_pitch, aparm.angle_max);
+    
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 

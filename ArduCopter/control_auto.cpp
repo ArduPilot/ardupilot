@@ -90,6 +90,21 @@ void Copter::auto_run()
     }
 }
 
+// auto_stop - stops the auto controller
+void Copter::auto_stop()
+{
+    booster.set_active(false);
+
+    // stop mission when we leave auto mode
+    if (mission.state() == AP_Mission::MISSION_RUNNING) {
+        mission.stop();
+    }
+
+#if MOUNT == ENABLED
+    camera_mount.set_mode_to_default();
+#endif  // MOUNT == ENABLED
+}
+
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void Copter::auto_takeoff_start(float final_alt_above_home)
 {
@@ -111,6 +126,9 @@ void Copter::auto_takeoff_start(float final_alt_above_home)
 //      called by auto_run at 100hz or more
 void Copter::auto_takeoff_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // initialise wpnav targets
@@ -158,6 +176,9 @@ void Copter::auto_wp_start(const Vector3f& destination)
 //      called by auto_run at 100hz or more
 void Copter::auto_wp_run()
 {
+    // use the booster
+    booster.set_active(true);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
@@ -192,6 +213,9 @@ void Copter::auto_wp_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
     }
+
+    // engage booster
+    booster.set_boost(wp_nav.get_boost());
 }
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
@@ -216,6 +240,9 @@ void Copter::auto_spline_start(const Vector3f& destination, bool stopped_at_star
 //      called by auto_run at 100hz or more
 void Copter::auto_spline_run()
 {
+    // use the booster
+    booster.set_active(true);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
@@ -250,6 +277,9 @@ void Copter::auto_spline_run()
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(), true);
     }
+
+    // engage booster
+    booster.set_boost(wp_nav.get_boost());
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -276,12 +306,18 @@ void Copter::auto_land_start(const Vector3f& destination)
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
+
+    // don't use the booster when landing
+    booster.set_active(false);
 }
 
 // auto_land_run - lands in auto mode
 //      called by auto_run at 100hz or more
 void Copter::auto_land_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     int16_t roll_control = 0, pitch_control = 0;
     float target_yaw_rate = 0;
 
@@ -389,6 +425,9 @@ void Copter::auto_circle_start()
 //      called by auto_run at 100hz or more
 void Copter::auto_circle_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     // call circle controller
     circle_nav.update();
 
@@ -451,6 +490,9 @@ bool Copter::auto_loiter_start()
 //      called by auto_run at 100hz or more
 void Copter::auto_loiter_run()
 {
+    // don't use the booster
+    booster.set_active(false);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
