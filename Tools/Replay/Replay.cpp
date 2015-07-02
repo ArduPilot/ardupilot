@@ -203,6 +203,9 @@ public:
 
     void flush_dataflash(void);
 
+    bool check_solution = false;
+    const char *log_filename = NULL;
+
 private:
     const char *filename;
     ReplayVehicle &_vehicle;
@@ -232,7 +235,6 @@ private:
     bool have_fram = false;
     bool use_imt = true;
     bool check_generate = false;
-    bool check_solution = false;
     float tolerance_euler = 3;
     float tolerance_pos = 2;
     float tolerance_vel = 2;
@@ -253,8 +255,6 @@ private:
         char name[17];
         float value;
     } user_parameters[100];
-
-    const char *log_filename = NULL;
 
     void set_ins_update_rate(uint16_t update_rate);
 
@@ -482,6 +482,12 @@ static void _replay_sig_fpe(int signum)
     fprintf(stderr, "ERROR: Floating point exception - flushing dataflash...\n");
     replay.flush_dataflash();
     fprintf(stderr, "ERROR: ... and aborting.\n");
+    if (replay.check_solution) {
+        FILE *f = fopen("replay_results.txt","a");
+        fprintf(f, "%s\tFPE\tFPE\tFPE\tFPE\tFPE\n",
+                replay.log_filename);
+        fclose(f);
+    }
     abort();
 }
 
@@ -991,7 +997,7 @@ void Replay::report_checks(void)
     }
     FILE *f = fopen("replay_results.txt","a");
     if (f != NULL) {
-        fprintf(f, "%s %.3f %.3f %.3f %.3f %.3f\n",
+        fprintf(f, "%s\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n",
                 log_filename, 
                 check_result.max_roll_error,
                 check_result.max_pitch_error,
