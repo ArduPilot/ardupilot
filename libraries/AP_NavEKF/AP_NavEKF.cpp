@@ -2402,8 +2402,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_xmag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[19][19] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 1;
             faultStatus.bad_xmag = true;
             return;
@@ -2481,8 +2481,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_ymag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[20][20] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 2;
             faultStatus.bad_ymag = true;
             return;
@@ -2556,8 +2556,8 @@ void NavEKF::FuseMagnetometer()
             faultStatus.bad_zmag = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
-            // we increase the state variances and try again next time
-            P[21][21] += 0.1f*R_MAG;
+            // we reset the covariance matrix and try again next measurement
+            CovarianceInit();
             obsIndex = 3;
             faultStatus.bad_zmag = true;
             return;
