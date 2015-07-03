@@ -7,7 +7,7 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 static void mavlink_snoop_static(const mavlink_message_t* msg)
 {
-    return tracker.mavlink_snoop(msg);
+    tracker.mavlink_snoop(msg);
 }
 
 static void mavlink_delay_cb_static()
