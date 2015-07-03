@@ -24,7 +24,9 @@
 
 #include <AP_Math.h>
 #include <AP_HAL.h>
+
 #include "AP_Compass_AK8963.h"
+#include "../AP_InertialSensor/AP_InertialSensor_MPU9250.h"
 
 #define READ_FLAG                   0x80
 #define MPUREG_I2C_SLV0_ADDR        0x25
@@ -148,43 +150,58 @@ bool AP_Compass_AK8963::init()
 
     _spi_sem = _spi->get_semaphore();
 
+    hal.scheduler->suspend_timer_procs();
+
+    if (!_spi_sem->take(100)) {
+        hal.console->printf("AK8963: Unable to get MPU9250 semaphore");
+        goto fail_sem;
+    }
+
     if (!_configure_mpu9250()) {
         hal.console->printf_P(PSTR("AK8963: MPU9250 not configured for AK8963\n"));
-        return false;
+        goto fail;
     }
 
     if (!_configure()) {
         hal.console->printf_P(PSTR("AK8963: not configured\n"));
-        return false;
+        goto fail;
     }
 
     if (!_check_id()) {
         hal.console->printf_P(PSTR("AK8963: wrong id\n"));
-        return false;
+        goto fail;
     }
 
     if (!_calibrate()) {
         hal.console->printf_P(PSTR("AK8963: not calibrated\n"));
-        return false;
+        goto fail;
     }
 
     if (!_start_conversion()) {
         hal.console->printf_P(PSTR("AK8963: conversion not started\n"));
-        return false;
+        goto fail;
     }
-
 
     _state = STATE_SAMPLE;
     _initialized = true;
 
-    hal.scheduler->suspend_timer_procs();
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
+
+    _spi_sem->give();
+
     hal.scheduler->resume_timer_procs();
 
     return true;
+
+fail:
+    _spi_sem->give();
+fail_sem:
+    hal.scheduler->resume_timer_procs();
+
+    return false;
 }
 
 void AP_Compass_AK8963::read()
@@ -256,7 +273,12 @@ bool AP_Compass_AK8963::_check_id()
 
 bool AP_Compass_AK8963::_configure_mpu9250()
 {
-    _bus_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS | BIT_USER_CTRL_I2C_MST_EN);    
+    if (!AP_InertialSensor_MPU9250::initialize_driver_state())
+        return false;
+
+    uint8_t user_ctrl;
+    _register_read(MPUREG_USER_CTRL, &user_ctrl, 1);
+    _bus_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
     _bus_write(MPUREG_I2C_MST_CTRL, I2C_MST_CLOCK_400KHZ);
 
     return true;
