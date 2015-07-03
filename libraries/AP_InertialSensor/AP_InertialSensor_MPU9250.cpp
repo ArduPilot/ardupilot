@@ -237,10 +237,22 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state() {
     // initially run the bus at low speed
     spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
 
-
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
+        uint8_t user_ctrl = _register_read(spi, MPUREG_USER_CTRL);
+
+        /* First disable the master I2C to avoid hanging the slaves on the
+         * aulixiliar I2C bus */
+        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
+            _register_write(spi, MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+            hal.scheduler->delay(10);
+        }
+
+        // reset device
+        _register_write(spi, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+        hal.scheduler->delay(100);
+
         // disable I2C as recommended by the datasheet
         _register_write(spi, MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
