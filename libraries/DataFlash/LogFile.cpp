@@ -1493,3 +1493,17 @@ void DataFlash_Class::Log_Write_PID(uint8_t msg_type, const PID_Info &info)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void DataFlash_Class::Log_Write_Origin(uint8_t origin_type, const Location &loc)
+{
+    uint64_t time_us = hal.scheduler->micros64();
+    struct log_ORGN pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
+        time_us     : time_us,
+        origin_type : origin_type,
+        latitude    : loc.lat,
+        longitude   : loc.lng,
+        altitude    : loc.alt
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
