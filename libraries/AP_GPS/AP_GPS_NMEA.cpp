@@ -235,6 +235,33 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     return ret;
 }
 
+/*
+  see if we have a new set of NMEA messages
+ */
+bool AP_GPS_NMEA::_have_new_message()
+{
+    if (_last_GPRMC_ms == 0 ||
+        _last_GPGGA_ms == 0) {
+        return false;
+    }
+    uint32_t now = hal.scheduler->millis();
+    if (now - _last_GPRMC_ms > 150 ||
+        now - _last_GPGGA_ms > 150) {
+        return false;
+    }
+    if (_last_GPVTG_ms != 0 && 
+        now - _last_GPVTG_ms > 150) {
+        return false;
+    }
+    // prevent these messages being used again
+    if (_last_GPVTG_ms != 0) {
+        _last_GPVTG_ms = 1;
+    }
+    _last_GPGGA_ms = 1;
+    _last_GPRMC_ms = 1;
+    return true;
+}
+
 // Processes a just-completed term
 // Returns true if new sentence has just passed checksum test and is validated
 bool AP_GPS_NMEA::_term_complete()
@@ -257,6 +284,7 @@ bool AP_GPS_NMEA::_term_complete()
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status           = AP_GPS::GPS_OK_FIX_3D;
                     fill_3d_velocity();
+                    _last_GPRMC_ms = state.last_gps_time_ms;
                     break;
                 case _GPS_SENTENCE_GPGGA:
                     state.location.alt  = _new_altitude;
@@ -266,10 +294,12 @@ bool AP_GPS_NMEA::_term_complete()
                     state.hdop          = _new_hdop;
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status        = AP_GPS::GPS_OK_FIX_3D;
+                    _last_GPGGA_ms = hal.scheduler->millis();
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = _new_course;
+                    _last_GPVTG_ms = hal.scheduler->millis();
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
@@ -282,8 +312,8 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status = AP_GPS::NO_FIX;
                 }
             }
-            // we got a good message
-            return true;
+            // see if we got a good message
+            return _have_new_message();
         }
         // we got a bad message, ignore it
         return false;
