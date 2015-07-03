@@ -18,16 +18,21 @@
 #ifndef LOWPASSFILTER2P_H
 #define LOWPASSFILTER2P_H
 
+#include <AP_Math.h>
+#include <inttypes.h>
+
 /// @file   LowPassFilter2p.h
 /// @brief  A class to implement a second order low pass filter
 /// Author: Leonard Hall <LeonardTHall@gmail.com>
 
+template <class T>
 class DigitalBiquadFilter
 {
 public:
-    DigitalBiquadFilter() :
-    _delay_element_1(0.0f),
-    _delay_element_2(0.0f){}
+    DigitalBiquadFilter() {
+      _delay_element_1 = T();
+      _delay_element_2 = T();
+    }
 
     struct biquad_params {
         float cutoff_freq;
@@ -39,17 +44,46 @@ public:
         float b2;
     };
 
-    float apply(float sample, const struct biquad_params &params);
+    T apply(T sample, const struct biquad_params &params) {
+        if(is_zero(params.cutoff_freq) || is_zero(params.sample_freq)) {
+            return sample;
+        }
 
-    void reset() { _delay_element_1 = _delay_element_2 = 0.0f; }
+        T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
+        if (isnan(delay_element_0) || isinf(delay_element_0)) {
+            delay_element_0 = sample;
+        }
+        T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
 
-    static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret);
+        _delay_element_2 = _delay_element_1;
+        _delay_element_1 = delay_element_0;
 
+        return output;
+    }
+
+    void reset() { _delay_element_1 = _delay_element_2 = T(); }
+
+    static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret) {
+        ret.cutoff_freq = cutoff_freq;
+        ret.sample_freq = sample_freq;
+
+        float fr = sample_freq/cutoff_freq;
+        float ohm = tanf(PI/fr);
+        float c = 1.0f+2.0f*cosf(PI/4.0f)*ohm + ohm*ohm;
+
+        ret.b0 = ohm*ohm/c;
+        ret.b1 = 2.0f*ret.b0;
+        ret.b2 = ret.b0;
+        ret.a1 = 2.0f*(ohm*ohm-1.0f)/c;
+        ret.a2 = (1.0f-2.0f*cosf(PI/4.0f)*ohm+ohm*ohm)/c;
+    }
+    
 private:
-    float _delay_element_1;
-    float _delay_element_2;
+    T _delay_element_1;
+    T _delay_element_2;
 };
 
+template <class T>
 class LowPassFilter2p
 {
 public:
@@ -62,7 +96,7 @@ public:
 
     // change parameters
     void set_cutoff_frequency(float sample_freq, float cutoff_freq) {
-        DigitalBiquadFilter::compute_params(sample_freq, cutoff_freq, _params);
+        DigitalBiquadFilter<T>::compute_params(sample_freq, cutoff_freq, _params);
     }
 
     // return the cutoff frequency
@@ -73,49 +107,20 @@ public:
     float get_sample_freq(void) const {
         return _params.sample_freq;
     }
-
-protected:
-    struct DigitalBiquadFilter::biquad_params _params;
-};
-
-class LowPassFilter2pfloat : public LowPassFilter2p
-{
-public:
-    LowPassFilter2pfloat() :
-    LowPassFilter2p() {}
-
-    LowPassFilter2pfloat(float sample_freq, float cutoff_freq):
-    LowPassFilter2p(sample_freq,cutoff_freq) {}
-
-    float apply(float sample) {
+    
+    T apply(T sample) {
         return _filter.apply(sample, _params);
     }
+
+protected:
+    struct DigitalBiquadFilter<T>::biquad_params _params;
+    
 private:
-    DigitalBiquadFilter _filter;
+    DigitalBiquadFilter<T> _filter;
 };
 
-class LowPassFilter2pVector3f : public LowPassFilter2p
-{
-public:
-    LowPassFilter2pVector3f() :
-    LowPassFilter2p() {}
-
-    LowPassFilter2pVector3f(float sample_freq, float cutoff_freq) :
-    LowPassFilter2p(sample_freq,cutoff_freq) {}
-
-    Vector3f apply(const Vector3f &sample) {
-        Vector3f ret;
-        ret.x = _filter_x.apply(sample.x, _params);
-        ret.y = _filter_y.apply(sample.y, _params);
-        ret.z = _filter_z.apply(sample.z, _params);
-        return ret;
-    }
-
-private:
-    DigitalBiquadFilter _filter_x;
-    DigitalBiquadFilter _filter_y;
-    DigitalBiquadFilter _filter_z;
-};
+typedef LowPassFilter2p<float> LowPassFilter2pfloat;
+typedef LowPassFilter2p<Vector3f> LowPassFilter2pVector3f;
 
 
 #endif // LOWPASSFILTER2P_H

@@ -68,7 +68,7 @@ class Vector3
 
 public:
     T        x, y, z;
-
+    
     // trivial ctor
     Vector3<T>() {
         x = y = z = 0;
@@ -78,6 +78,9 @@ public:
     Vector3<T>(const T x0, const T y0, const T z0) : x(x0), y(y0), z(z0) {
     }
 
+    // type conversion for sanity checks (isnan, isinf, ..)
+    operator T () const { return x*y*z; }
+    
     // function call operator
     void operator ()(const T x0, const T y0, const T z0)
     {

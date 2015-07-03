@@ -48,6 +48,9 @@ struct Vector2
     Vector2<T>(const T x0, const T y0) : x(x0), y(y0) {
     }
 
+    // type conversion for sanity checks (isnan, isinf, ..)
+    operator T () const { return x*y; }
+    
     // function call operator
     void operator ()(const T x0, const T y0)
     {
