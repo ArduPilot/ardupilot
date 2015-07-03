@@ -14,8 +14,8 @@ WARNFLAGS      +=   -Wwrite-strings -Wformat=2
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 
-CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
-COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
+CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char -fno-asynchronous-unwind-tables
+COPTS           =   -ffunction-sections -fdata-sections -fsigned-char -fno-asynchronous-unwind-table
 
 ASOPTS          =   -x assembler-with-cpp 
 
