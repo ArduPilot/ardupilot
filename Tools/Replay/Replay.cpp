@@ -172,8 +172,11 @@ static const struct LogStructure log_structure[] PROGMEM = {
       "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }
 };
 
-void ReplayVehicle::setup(void) {
-    dataflash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+void ReplayVehicle::setup(void) 
+{
+    // we pass zero log structures, as we will be outputting the log
+    // structures we need manually, to prevent FMT duplicates
+    dataflash.Init(log_structure, 0);
     dataflash.StartNewLog();
 
     ahrs.set_compass(&compass);
