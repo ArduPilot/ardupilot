@@ -45,7 +45,7 @@ private:
 
     uint32_t ground_alt_cm;
 
-    class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS];
+    class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS] {};
 
     Vector3f attitude;
     Vector3f ahr2_attitude;

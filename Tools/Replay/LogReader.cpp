@@ -119,7 +119,8 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
     return mapped_msgid[intype];    
 }
 
-bool LogReader::handle_log_format_msg(const struct log_Format &f) {
+bool LogReader::handle_log_format_msg(const struct log_Format &f) 
+{
 	char name[5];
 	memset(name, '\0', 5);
 	memcpy(name, f.name, 4);
@@ -135,6 +136,10 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f) {
             struct log_Format f_mapped = f;
             f_mapped.type = map_fmt_type(name, f.type);
             dataflash.WriteBlock(&f_mapped, sizeof(f_mapped));
+        }
+
+        if (msgparser[f.type] != NULL) {
+            return true;
         }
 
 	// map from format name to a parser subclass:

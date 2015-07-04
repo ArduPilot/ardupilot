@@ -34,7 +34,7 @@ def run_replay(logfile):
         opts.tolerance_euler,
         opts.tolerance_pos,
         opts.tolerance_vel)
-    run_cmd(cmd, checkfail=True)
+    run_cmd(cmd, checkfail=False)
 
 def get_log_list():
     '''get a list of log files to process'''
@@ -158,12 +158,18 @@ def check_logs():
 def create_checked_logs():
     '''create a set of CHEK logs'''
     import glob, os, sys
-    pattern = os.path.join(opts.logdir, "*.bin")
-    full_file_list = glob.glob(pattern)
+    if os.path.isfile(opts.logdir):
+        full_file_list = [opts.logdir]
+    else:
+        pattern = os.path.join(opts.logdir, "*.bin")
+        full_file_list = glob.glob(pattern)
     file_list = []
     for f in full_file_list:
         if not f.endswith("-checked.bin"):
             file_list.append(f)
+    if len(file_list) == 0:
+        print("No files to process")
+        sys.exit(1)
     for f in file_list:
         print("Processing %s" % f)
         log_list_current = set(glob.glob("logs/*.BIN"))

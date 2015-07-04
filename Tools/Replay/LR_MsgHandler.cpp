@@ -24,7 +24,7 @@ void LR_MsgHandler::wait_timestamp(uint32_t timestamp)
 void LR_MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
 {
     uint64_t time_us;
-    uint64_t time_ms;
+    uint32_t time_ms;
 
     if (field_value(msg, "TimeUS", time_us)) {
         // 64-bit timestamp present - great!

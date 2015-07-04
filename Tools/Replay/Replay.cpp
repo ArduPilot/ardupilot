@@ -206,6 +206,14 @@ public:
     bool check_solution = false;
     const char *log_filename = NULL;
 
+    /*
+      information about a log from find_log_info
+     */
+    struct log_information {
+        uint16_t update_rate;
+        bool have_imu2;
+    } log_info {};
+
 private:
     const char *filename;
     ReplayVehicle &_vehicle;
@@ -226,10 +234,8 @@ private:
     bool done_parameters;
     bool done_baro_init;
     bool done_home_init;
-    uint16_t update_rate = 0;
     int32_t arm_time_ms = -1;
     bool ahrs_healthy;
-    bool have_imu2 = false;
     bool have_imt = false;
     bool have_imt2 = false;
     bool have_fram = false;
@@ -263,7 +269,9 @@ private:
     void read_sensors(const char *type);
     void log_check_generate();
     void log_check_solution();
+    bool show_error(const char *text, float max_error, float tolerance);
     void report_checks();
+    bool find_log_info(struct log_information &info);
 };
 
 Replay replay(replayvehicle);
@@ -271,7 +279,6 @@ Replay replay(replayvehicle);
 void Replay::usage(void)
 {
     ::printf("Options:\n");
-    ::printf("\t--rate RATE        set IMU rate in Hz\n");
     ::printf("\t--parm NAME=VALUE  set parameter NAME to VALUE\n");
     ::printf("\t--accel-mask MASK  set accel mask (1=accel1 only, 2=accel2 only, 3=both)\n");
     ::printf("\t--gyro-mask MASK   set gyro mask (1=gyro1 only, 2=gyro2 only, 3=both)\n");
@@ -300,7 +307,6 @@ void Replay::flush_dataflash(void) {
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
     const struct GetOptLong::option options[] = {
-        {"rate",            true,   0, 'r'},
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
         {"help",            false,  0, 'h'},
@@ -321,10 +327,6 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     int opt;
     while ((opt = gopt.getoption()) != -1) {
 		switch (opt) {
-        case 'r':
-			update_rate = strtol(gopt.optarg, NULL, 0);
-            break;
-
         case 'g':
             logreader.set_gyro_mask(strtol(gopt.optarg, NULL, 0));
             break;
@@ -394,86 +396,87 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     }
 }
 
-class IMU2Counter : public DataFlashFileReader {
+class IMUCounter : public DataFlashFileReader {
 public:
-    IMU2Counter() {}
+    IMUCounter() {}
     bool handle_log_format_msg(const struct log_Format &f);
     bool handle_msg(const struct log_Format &f, uint8_t *msg);
 
-    uint64_t last_imu2_timestamp;
+    uint64_t last_imu_timestamp;
 private:
     MsgHandler *handler;
 };
-bool IMU2Counter::handle_log_format_msg(const struct log_Format &f) {
-    if (!strncmp(f.name,"IMU2",4)) {
-        // an IMU2 message
+
+bool IMUCounter::handle_log_format_msg(const struct log_Format &f) {
+    if (!strncmp(f.name,"IMU",4)) {
+        // an IMU message
         handler = new MsgHandler(f);
     }
 
     return true;
 };
-bool IMU2Counter::handle_msg(const struct log_Format &f, uint8_t *msg) {
-    if (strncmp(f.name,"IMU2",4)) {
-        // not an IMU2 message
+
+bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg) {
+    if (strncmp(f.name,"IMU",4)) {
+        // not an IMU message
         return true;
     }
 
-    if (handler->field_value(msg, "TimeUS", last_imu2_timestamp)) {
-//        ::printf("Found timestamp %ld\n", last_imu2_timestamp);
-    } else if (handler->field_value(msg, "TimeMS", last_imu2_timestamp)) {
-//        ::printf("Found millisecond timestamp %ld\n", last_imu2_timestamp);
-        last_imu2_timestamp *= 1000;
+    if (handler->field_value(msg, "TimeUS", last_imu_timestamp)) {
+    } else if (handler->field_value(msg, "TimeMS", last_imu_timestamp)) {
+        last_imu_timestamp *= 1000;
     } else {
-        ::printf("Unable to find timestamp in IMU2 message");
+        ::printf("Unable to find timestamp in IMU message");
     }
     return true;
 }
 
-int find_update_rate(const char *filename) {
-    IMU2Counter reader;
+/*
+  find information about the log
+ */
+bool Replay::find_log_info(struct log_information &info) 
+{
+    IMUCounter reader;
     if (!reader.open_log(filename)) {
         perror(filename);
         exit(1);
     }
     int samplecount = 0;
     uint64_t prev = 0;
-    uint64_t samplesum = 0;
+    uint64_t smallest_delta = 0;
     prev = 0;
-    while (samplecount < 10) {
+    while (samplecount < 1000) {
         char type[5];
         if (!reader.update(type)) {
             break;
         }
-        if (streq(type, "IMU2")) {
+        if (streq(type, "IMU")) {
             if (prev == 0) {
-                prev = reader.last_imu2_timestamp;
+                prev = reader.last_imu_timestamp;
             } else {
+                uint64_t delta = reader.last_imu_timestamp - prev;
+                if (smallest_delta == 0 || delta < smallest_delta) {
+                    smallest_delta = delta;
+                }
                 samplecount++;
-                samplesum += reader.last_imu2_timestamp - prev;
-                prev = reader.last_imu2_timestamp;
             }
         }
+        if (streq(type, "IMU2") && !info.have_imu2) {
+            info.have_imu2 = true;
+        }
     }
-    if (samplecount < 10) {
-        ::printf("Unable to determine log rate - insufficient IMU2 messages?!");
-        exit(1);
+    if (smallest_delta == 0) {
+        ::printf("Unable to determine log rate - insufficient IMU messages?!");
+        return false;
     }
 
-    float rate = 1000000/int(samplesum/samplecount);
-    if (abs(rate - 50) < 5) {
-        return 50;
+    float rate = 1.0e6f/smallest_delta;
+    if (rate < 100) {
+        info.update_rate = 50;
+    } else {
+        info.update_rate = 400;
     }
-    if (abs(rate - 100) < 10) {
-        return 100;
-    }
-    if (abs(rate - 200) < 10) {
-        return 200;
-    }
-    if (abs(rate - 400) < 20) { // I have a log which is 10 off...
-        return 400;
-    }
-    ::printf("Unable to determine log rate - %f matches no rate\n", rate);
-    exit(1);
+    return true;
 }
 
 // catch floating point exceptions
@@ -510,11 +513,12 @@ void Replay::setup()
     // remember filename for reporting
     log_filename = filename;
 
-    if (update_rate == 0) {
-        update_rate = find_update_rate(filename);
+    if (!find_log_info(log_info)) {
+        printf("Update to get log information\n");
+        exit(1);
     }
 
-    hal.console->printf("Using an update rate of %u Hz\n", update_rate);
+    hal.console->printf("Using an update rate of %u Hz\n", log_info.update_rate);
 
     if (!logreader.open_log(filename)) {
         perror(filename);
@@ -522,12 +526,7 @@ void Replay::setup()
     }
 
     _vehicle.setup();
-    set_ins_update_rate(update_rate);
-
-    logreader.wait_type("GPS");
-    logreader.wait_type("IMU");
-    logreader.wait_type("GPS");
-    logreader.wait_type("IMU");
+    set_ins_update_rate(log_info.update_rate);
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
 
@@ -545,32 +544,10 @@ void Replay::setup()
     fprintf(ekf2f, "timestamp TimeMS AX AY AZ VWN VWE MN ME MD MX MY MZ\n");
     fprintf(ekf3f, "timestamp TimeMS IVN IVE IVD IPN IPE IPD IMX IMY IMZ IVT\n");
     fprintf(ekf4f, "timestamp TimeMS SV SP SH SMX SMY SMZ SVT OFN EFE FS DS\n");
-
-    ::printf("Waiting for GPS\n");
-    while (!done_home_init) {
-        char type[5];
-        if (!logreader.update(type)) {
-            break;
-        }
-        read_sensors(type);
-        if (streq(type, "GPS") &&
-            (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
-            done_baro_init && !done_home_init) {
-            const Location &loc = _vehicle.gps.location();
-            ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
-                     loc.lat * 1.0e-7f, 
-                     loc.lng * 1.0e-7f,
-                     loc.alt * 0.01f,
-                     hal.scheduler->millis()*0.001f);
-            _vehicle.ahrs.set_home(loc);
-            _vehicle.compass.set_initial_location(loc.lat, loc.lng);
-            done_home_init = true;
-        }
-    }
 }
 
 void Replay::set_ins_update_rate(uint16_t _update_rate) {
-    switch (update_rate) {
+    switch (_update_rate) {
     case 50:
         _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
         break;
@@ -609,14 +586,26 @@ void Replay::read_sensors(const char *type)
         done_parameters = true;
         set_user_parameters();
     }
-    if (streq(type,"IMU2")) {
-        have_imu2 = true;
-    }
     if (use_imt && streq(type,"IMT")) {
         have_imt = true;
     }
     if (use_imt && streq(type,"IMT2")) {
         have_imt2 = true;
+    }
+
+    if (!done_home_init) {
+        if (streq(type, "GPS") &&
+            (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
+            const Location &loc = _vehicle.gps.location();
+            ::printf("GPS Lock at %.7f %.7f %.2fm time=%.1f seconds\n", 
+                     loc.lat * 1.0e-7f, 
+                     loc.lng * 1.0e-7f,
+                     loc.alt * 0.01f,
+                     hal.scheduler->millis()*0.001f);
+            _vehicle.ahrs.set_home(loc);
+            _vehicle.compass.set_initial_location(loc.lat, loc.lng);
+            done_home_init = true;
+        }
     }
 
     if (streq(type,"GPS")) {
@@ -656,7 +645,7 @@ void Replay::read_sensors(const char *type)
     // special handling of IMU messages as these trigger an ahrs.update()
     if (!have_fram && 
         !have_imt &&
-        ((streq(type,"IMU") && !have_imu2) || (streq(type, "IMU2") && have_imu2))) {
+        ((streq(type,"IMU") && !log_info.have_imu2) || (streq(type, "IMU2") && log_info.have_imu2))) {
         run_ahrs = true;
     }
 
@@ -980,10 +969,24 @@ void Replay::loop()
         }
     }
 
+    flush_dataflash();
+
     if (check_solution) {
         report_checks();
     }
     exit(0);
+}
+
+
+bool Replay::show_error(const char *text, float max_error, float tolerance)
+{
+    bool failed = max_error > tolerance;
+    printf("%s:\t%.2f %c %.2f\n", 
+           text,
+           max_error,
+           failed?'>':'<',
+           tolerance);
+    return failed;
 }
 
 /*
@@ -1006,26 +1009,11 @@ void Replay::report_checks(void)
                 check_result.max_vel_error);
         fclose(f);
     }
-    if (check_result.max_roll_error > tolerance_euler) {
-        printf("Roll error %.2f > %.2f\n", check_result.max_roll_error, tolerance_euler);
-        failed = true;
-    }
-    if (check_result.max_pitch_error > tolerance_euler) {
-        printf("Pitch error %.2f > %.2f\n", check_result.max_pitch_error, tolerance_euler);
-        failed = true;
-    }
-    if (check_result.max_yaw_error > tolerance_euler) {
-        printf("Yaw error %.2f > %.2f\n", check_result.max_yaw_error, tolerance_euler);
-        failed = true;
-    }
-    if (check_result.max_pos_error > tolerance_pos) {
-        printf("Position error %.2f > %.2f\n", check_result.max_pos_error, tolerance_pos);
-        failed = true;
-    }
-    if (check_result.max_vel_error > tolerance_vel) {
-        printf("Velocity error %.2f > %.2f\n", check_result.max_vel_error, tolerance_vel);
-        failed = true;
-    }
+    failed |= show_error("Roll error", check_result.max_roll_error, tolerance_euler);
+    failed |= show_error("Pitch error", check_result.max_pitch_error, tolerance_euler);
+    failed |= show_error("Yaw error", check_result.max_yaw_error, tolerance_euler);
+    failed |= show_error("Position error", check_result.max_pos_error, tolerance_pos);
+    failed |= show_error("Velocity error", check_result.max_vel_error, tolerance_vel);
     if (failed) {
         printf("Checks failed\n");
         exit(1);
