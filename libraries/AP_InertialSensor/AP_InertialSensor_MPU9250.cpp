@@ -147,6 +147,11 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_WHOAMI_MPU9250                           0x71
 #define MPUREG_WHOAMI_MPU9255                           0x73
 
+/* bit definitions for MPUREG_USER_CTRL */
+#define MPUREG_I2C_MST_CTRL                             0x24
+#        define I2C_SLV0_EN                             0x80
+#        define I2C_MST_CLOCK_400KHZ                    0x0D
+#        define I2C_MST_CLOCK_258KHZ                    0x08
 
 // Configuration bits MPU 3000, MPU 6000 and MPU9250
 #define BITS_DLPF_CFG_256HZ_NOLPF2              0x00
@@ -417,8 +422,12 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
-        // disable I2C as recommended by the datasheet
-        _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+
+        /* disable I2C as recommended by the datasheet and enable I2C master 
+         * mode to make AK8963 work */ 
+        _register_write(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS | BIT_USER_CTRL_I2C_MST_EN);
+        /* Select appropriate I2C speed */
+        _register_write(MPUREG_I2C_MST_CTRL, I2C_MST_CLOCK_400KHZ);
 
         // Wake up device and select GyroZ clock. Note that the
         // MPU6000 starts up in sleep mode, and it can take some time
