@@ -25,7 +25,11 @@ static LinuxUARTDriver uartCDriver(false);
 static LinuxUARTDriver uartEDriver(false);
 
 static LinuxSemaphore  i2cSemaphore;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-2");
+#else
 static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
+#endif
 static LinuxSPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static NavioAnalogIn analogIn;
