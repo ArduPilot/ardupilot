@@ -641,6 +641,8 @@ private:
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time = false;
 
+    // alt_offset smoothed to inhibit step inputs from the differential baro
+    int16_t alt_offset_filtered = 0;
 
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);

@@ -223,7 +223,7 @@ int32_t Plane::relative_target_altitude_cm(void)
     }
 #endif
     int32_t relative_alt = target_altitude.amsl_cm - home.alt;
-    relative_alt += int32_t(g.alt_offset)*100;
+    relative_alt += int32_t(plane.alt_offset_filtered)*100;
     relative_alt += rangefinder_correction() * 100;
     return relative_alt;
 }
@@ -424,7 +424,7 @@ void Plane::setup_terrain_target_alt(Location &loc)
  */
 int32_t Plane::adjusted_altitude_cm(void)
 {
-    return current_loc.alt - (g.alt_offset*100);
+    return current_loc.alt - (plane.alt_offset_filtered*100);
 }
 
 /*
