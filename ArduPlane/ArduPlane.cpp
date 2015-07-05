@@ -809,6 +809,11 @@ void Plane::update_alt()
     geofence_check(true);
 
     update_flight_stage();
+
+    // if there has been an update to the baro, it must be Low-Passed to reduce step-input glitches in EKF
+    if (g.alt_offset != plane.alt_offset_filtered) {
+        plane.alt_offset_filtered = (0.95f*plane.alt_offset_filtered + 0.05f*g.alt_offset) + 0.5f; // add 0.5f for rounding
+    }
 }
 
 /*

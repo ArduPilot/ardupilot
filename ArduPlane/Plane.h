@@ -646,6 +646,9 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
+    // alt_offset smoothed to inhibit step inputs from the differential baro
+    int16_t alt_offset_filtered = 0;
+
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
