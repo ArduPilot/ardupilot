@@ -662,7 +662,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
         return true;
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), auto_state.sink_rate);
+        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), (double)auto_state.sink_rate);
         return true;        
     }
 
