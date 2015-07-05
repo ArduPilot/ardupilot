@@ -101,6 +101,9 @@ bool Copter::set_home(const Location& loc)
         }
     }
 
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
     // return success
     return true;
 }

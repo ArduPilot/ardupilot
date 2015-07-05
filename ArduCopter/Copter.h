@@ -597,6 +597,7 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+    void Log_Write_Home_And_Origin();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif
