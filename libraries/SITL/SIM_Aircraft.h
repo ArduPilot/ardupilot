@@ -130,8 +130,8 @@ protected:
     double rand_normal(double mean, double stddev);
 
 private:
-    uint64_t last_time_us;
-    uint32_t frame_counter;
+    uint64_t last_time_us = 0;
+    uint32_t frame_counter = 0;
     const uint32_t min_sleep_time;
 };
 

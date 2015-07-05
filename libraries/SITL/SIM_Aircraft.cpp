@@ -49,7 +49,6 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     gyro_noise(radians(0.1f)),
     accel_noise(0.3),
     rate_hz(400),
-    last_time_us(0),
     autotest_dir(NULL),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
