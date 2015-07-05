@@ -39,6 +39,8 @@ public:
     bool        init(void);
     void        read(void);
     void        accumulate(void);
+    uint32_t    get_expected_magfield() override;
+    uint32_t    get_max_offset() override;
 
     // detect the sensor
     static AP_Compass_Backend *detect(Compass &compass);

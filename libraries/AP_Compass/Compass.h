@@ -105,6 +105,9 @@ public:
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
+    uint32_t get_expected_magfield(uint8_t i) const { return _backends[i]->get_expected_magfield(); }
+    uint32_t get_expected_magfield(void) const { return get_expected_magfield(get_primary()); }
+
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
     bool healthy(void) const { return healthy(get_primary()); }
@@ -115,6 +118,8 @@ public:
     ///
     const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
+    uint32_t get_max_offset(uint8_t i) const { return _backends[i]->get_max_offset();}
+    uint32_t get_max_offset() const { return get_max_offset(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///

@@ -47,6 +47,32 @@ AP_Compass_Backend *AP_Compass_HIL::detect(Compass &compass)
     return sensor;
 }
 
+
+uint32_t AP_Compass_HIL::get_max_offset()
+{
+// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+ #ifndef COMPASS_OFFSETS_MAX
+  static const uint32_t COMPASS_OFFSETS_MAX = 600;         // PX4 onboard compass has high offsets
+ #endif
+#else   // SITL, FLYMAPLE, etc
+ #ifndef COMPASS_OFFSETS_MAX
+  static const uint32_t COMPASS_OFFSETS_MAX = 500;
+ #endif
+#endif
+    return COMPASS_OFFSETS_MAX;
+}
+
+uint32_t AP_Compass_HIL::get_expected_magfield()
+{
+    #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 330;       // pre arm will fail if mag field > 544 or < 115
+    #else // PX4, SITL
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 530;       // pre arm will fail if mag field > 874 or < 185
+    #endif
+    return COMPASS_MAGFIELD_EXPECTED;
+}
+
 bool
 AP_Compass_HIL::init(void)
 {

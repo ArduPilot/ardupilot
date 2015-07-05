@@ -62,6 +62,29 @@ AP_Compass_Backend *AP_Compass_PX4::detect(Compass &compass)
     return sensor;
 }
 
+uint32_t AP_Compass_PX4::get_expected_magfield()
+{
+    static const uint32_t COMPASS_MAGFIELD_EXPECTED = 530;
+
+    return COMPASS_MAGFIELD_EXPECTED;
+}
+
+uint32_t AP_Compass_PX4::get_max_offset()
+{
+// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+ #ifndef COMPASS_OFFSETS_MAX
+  static const uint32_t COMPASS_OFFSETS_MAX = 600;         // PX4 onboard compass has high offsets
+ #endif
+#else   // SITL, FLYMAPLE, etc
+ #ifndef COMPASS_OFFSETS_MAX
+  static const uint32_t COMPASS_OFFSETS_MAX = 500;
+ #endif
+#endif
+    return COMPASS_OFFSETS_MAX;
+}
+
+
 bool AP_Compass_PX4::init(void)
 {
 	_mag_fd[0] = open(MAG_BASE_DEVICE_PATH"0", O_RDONLY);
