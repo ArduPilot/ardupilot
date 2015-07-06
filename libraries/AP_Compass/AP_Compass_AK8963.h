@@ -99,4 +99,24 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 };
 
+class AP_AK8963_SerialBus_I2C: public AP_AK8963_SerialBus
+{
+public:
+    AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+    void register_read(uint8_t address, uint8_t *value, uint8_t count);
+    void register_write(uint8_t address, uint8_t value);
+    AP_HAL::Semaphore* get_semaphore();
+    bool start_conversion(){return true;}
+    bool configure(){return true;}
+    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+private:
+    void _read(uint8_t address, uint8_t *value, uint32_t count);
+    void _write(uint8_t address, const uint8_t *value,  uint32_t count);
+    void _write(uint8_t address, const uint8_t value) {
+        _write(address, &value, 1);
+    }
+    AP_HAL::I2CDriver *_i2c;
+    uint8_t _addr;
+    AP_HAL::Semaphore *_i2c_sem;
+};
 #endif

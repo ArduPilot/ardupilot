@@ -349,7 +349,7 @@ Compass::_detect_backends(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _add_backend(AP_Compass_HMC5843::detect);
     _backends[_backend_count++] = new AP_Compass_AK8963(*this,
                                     new AP_AK8963_SerialBus_MPU9250());
@@ -357,6 +357,10 @@ Compass::_detect_backends(void)
     _add_backend(AP_Compass_HIL::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
     _add_backend(AP_Compass_HMC5843::detect);
+#elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
+    _backends[_backend_count++] = new AP_Compass_AK8963(*this,
+                                    new AP_AK8963_SerialBus_I2C(
+                                        hal.i2c1, HAL_COMPASS_AK8963_I2C_ADDR));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     _add_backend(AP_Compass_PX4::detect);
 #else
