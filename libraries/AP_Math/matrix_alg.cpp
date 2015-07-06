@@ -114,7 +114,7 @@ float detnxn(const float C[],const uint8_t n)
 
 bool inversenxn(const float x[], float y[], const uint8_t n)
 {
-    if(fabsf(detnxn(x,n)) < TINY_FLOAT) {
+    if (is_zero(detnxn(x,n))) {
         return false;
     }
 
@@ -248,7 +248,7 @@ bool inverse3x3(float m[], float invOut[])
     float  det = m[0] * (m[4] * m[8] - m[7] * m[5]) -
     m[1] * (m[3] * m[8] - m[5] * m[6]) +
     m[2] * (m[3] * m[7] - m[4] * m[6]);
-    if(fabsf(det) < TINY_FLOAT){
+    if (is_zero(det)){
         return false;
     }
 
@@ -400,7 +400,7 @@ bool inverse4x4(float m[],float invOut[])
 
     det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
-    if(fabsf(det) < TINY_FLOAT){
+    if (is_zero(det)){
         return false;
     }
 
