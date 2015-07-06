@@ -58,7 +58,22 @@
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
  *
  * The sample acceptance distance is determined as follows:
- * < EXPLANATION OF SAMPLE ACCEPTANCE TO BE FILLED IN BY SID >
+ * Every point should be atleast separated by D distance:
+ *
+ *         where:
+ *             D = distance between any two sample points
+ *             (Surface Area of Sphere)/(2 * (Area of equilateral triangle)) = NUM_SAMPLES
+ *         =>  D >= (5.38709 * Radius) / (sqrt(NUM_SAMPLES) * 2)
+ *         but for the sake of leniency to the user let's halve this distance. This will ensure
+ *         atleast 1/3rd coverage of sphere. The rest will be taken care of by Gauss-Newton.
+ *             D >= (5.38709 * Radius) / (sqrt(NUM_SAMPLES) * 3)
+ *
+ * Explaination: If we are to consider a sphere and place discrete points which are uniformly
+ *               spread. The simplest possible polygon that can be created using distinct closest
+ *               points is an equilateral triangle. The number of such triangles will be NUM_SAMPLES
+ *               and will all be totally distinct. The side of such triangles also represent the
+ *               minimum distance between any two samples for 100% coverage. But since this would
+ *               be very-difficult/impossible for user to achieve, we reduce it to minimum 1/3rd coverage.
  *
  */
 
