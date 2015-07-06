@@ -126,6 +126,7 @@ private:
     static void stop_dma_and_exit(int param);
     void set_sigaction();
     void set_physical_addresses(int version);
+    void deinit() override;
 
 };
 
