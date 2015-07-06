@@ -13,6 +13,7 @@
 bool Copter::rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
+        wp_nav.set_speed_xy(WPNAV_WP_SPEED);
         rtl_climb_start();
         return true;
     }else{
