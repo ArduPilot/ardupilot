@@ -523,7 +523,7 @@ void Plane::start_logging()
  */
 void Plane::log_init(void)
 {
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
