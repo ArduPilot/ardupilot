@@ -411,6 +411,11 @@ LinuxRCInput_Navio::~LinuxRCInput_Navio()
     delete con_blocks;
 }
 
+void LinuxRCInput_Navio::deinit()
+{
+    stop_dma_and_exit(0);
+}
+
 //Initializing necessary registers
 void LinuxRCInput_Navio::init_registers()
 {
