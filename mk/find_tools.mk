@@ -65,7 +65,7 @@ BBONE_LD      :=  arm-linux-gnueabihf-g++
 BBONE_GDB     :=  gdb
 BBONE_OBJCOPY :=  objcopy
 
-# toolchains for beagleboneblack
+# toolchains for parrot bebop
 PARROTP7_CXX     :=  arm-none-linux-gnueabi-g++
 PARROTP7_CC      :=  arm-none-linux-gnueabi-gcc
 PARROTP7_AS      :=  arm-none-linux-gnueabi-gcc
