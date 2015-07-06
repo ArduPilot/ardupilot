@@ -25,26 +25,20 @@
 #endif
 
 #define MAX_DATA_READ 1024
-/* one resister address followed by seven 2-byte registers */
-struct PACKED data_frame {
-    uint8_t cmd;
-    uint8_t int_status;
-    uint8_t d[MAX_DATA_READ];
-};
 
 class AP_MPU6000_BusDriver
 {
     public:
-        virtual void init(bool &fifo_mode) = 0;
+        virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
         virtual void read8(uint8_t reg, uint8_t *val) = 0;
         virtual void write8(uint8_t reg, uint8_t val) = 0;
         enum bus_speed {
                 SPEED_LOW, SPEED_HIGH
         };
         virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
-        virtual void read_burst(struct data_frame *rx,
+        virtual void read_burst(uint8_t* samples,
                                 AP_HAL::DigitalSource *_drdy_pin,
-                                uint8_t &n_samples, uint8_t &sample_size) = 0;
+                                uint8_t &n_samples) = 0;
         virtual AP_HAL::Semaphore* get_semaphore() = 0;
 };
 
@@ -79,7 +73,7 @@ private:
     void                 _register_write( uint8_t reg, uint8_t val );
     void                 _register_write_check(uint8_t reg, uint8_t val);
     bool                 _hardware_init(void);
-    void                 _accumulate(struct data_frame *rx, uint8_t n_samples, uint8_t sample_size);
+    void                 _accumulate(uint8_t *samples, uint8_t n_samples);
 
     AP_MPU6000_BusDriver *_bus;
     AP_HAL::Semaphore    *_bus_sem;
@@ -110,18 +104,19 @@ private:
 #endif
     volatile uint16_t _sum_count;
     bool _fifo_mode;
+    uint8_t *_samples;
 };
 
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
     public:
-        void init(bool &fifo_mode);
+        void init(bool &fifo_mode, uint8_t &max_samples);
         void read8(uint8_t reg, uint8_t *val);
         void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-        void read_burst(struct data_frame *rx,
+        void read_burst(uint8_t* samples,
                         AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t &n_samples, uint8_t &sample_size);
+                        uint8_t &n_samples);
         AP_HAL::Semaphore* get_semaphore();
 
     private:
@@ -135,19 +130,20 @@ class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
     public:
         AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-        void init(bool &fifo_mode);
+        void init(bool &fifo_mode, uint8_t &max_samples);
         void read8(uint8_t reg, uint8_t *val);
         void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-        void read_burst(struct data_frame *rx,
+        void read_burst(uint8_t* samples,
                         AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t &n_samples, uint8_t &sample_size);
+                        uint8_t &n_samples);
         AP_HAL::Semaphore* get_semaphore();
 
     private:
         AP_HAL::I2CDriver *_i2c;
         uint8_t _addr;
         AP_HAL::Semaphore *_i2c_sem;
+        uint8_t _rx[MAX_DATA_READ];
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__
