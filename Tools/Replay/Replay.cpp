@@ -225,7 +225,7 @@ private:
     SITL sitl;
 #endif
 
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, log_structure, sizeof(log_structure)/sizeof(log_structure[0])};
+    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.barometer, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, log_structure, ARRAY_SIZE(log_structure)};
 
     FILE *plotf;
     FILE *plotf2;
@@ -357,7 +357,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             strncpy(user_parameters[num_user_parameters].name, gopt.optarg, eq-gopt.optarg);
             user_parameters[num_user_parameters].value = atof(eq+1);
             num_user_parameters++;
-            if (num_user_parameters >= sizeof(user_parameters)/sizeof(user_parameters[0])) {
+            if (num_user_parameters >= ARRAY_SIZE(user_parameters)) {
                 ::printf("Too many user parameters\n");
                 exit(1);
             }
