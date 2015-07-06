@@ -64,7 +64,7 @@ extern const AP_HAL::HAL& hal;
 // MediaTek-based GPS.
 //
 #define MTK_INIT_MSG \
-    "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n" /* GGA & VTG once every fix */ \
+    "$PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n" /* RMC, GGA & VTG once every fix */ \
     "$PMTK330,0*2E\r\n"                                 /* datum = WGS84 */ \
     "$PMTK313,1*2E\r\n"                                 /* SBAS on */ \
     "$PMTK301,2*2E\r\n"                                 /* use SBAS data for DGPS */
