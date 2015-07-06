@@ -187,6 +187,7 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
+    set_dev_id(_compass_instance, AP_COMPASS_TYPE_AK8963_MPU9250);
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 

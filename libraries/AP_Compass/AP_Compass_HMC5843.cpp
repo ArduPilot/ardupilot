@@ -348,6 +348,7 @@ AP_Compass_HMC5843::init()
     if (success) {
         // register the compass instance in the frontend
         _compass_instance = register_compass();
+        set_dev_id(_compass_instance, _product_id);
     }
 
     return success;
