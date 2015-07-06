@@ -366,8 +366,8 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
         // we don't support mavlink set on this parameter
         return false;
     }
-    if (fabsf(old_value - value) > 1.0e-4) {
-        ::printf("Changed %s to %.6f from %.6f\n", name, value, old_value);
+    if (fabsf(old_value - value) > 1.0e-12) {
+        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
     }
     return true;
 }
