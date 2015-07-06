@@ -751,7 +751,7 @@ void Copter::start_logging()
 
 void Copter::log_init(void)
 {
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
