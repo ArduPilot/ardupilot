@@ -1354,6 +1354,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
+                plane.Log_Write_Home_And_Origin();
                 result = MAV_RESULT_ACCEPTED;
                 plane.gcs_send_text_fmt(PSTR("set home to %.6f %.6f at %um"),
                                         (double)(new_home_loc.lat*1.0e-7f),

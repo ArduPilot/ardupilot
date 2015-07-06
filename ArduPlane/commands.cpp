@@ -104,6 +104,7 @@ void Plane::init_home()
 
     ahrs.set_home(gps.location());
     home_is_set = HOME_SET_NOT_LOCKED;
+    Log_Write_Home_And_Origin();
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
@@ -124,6 +125,7 @@ void Plane::update_home()
 {
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         ahrs.set_home(gps.location());
+        Log_Write_Home_And_Origin();
     }
     barometer.update_calibration();
 }
