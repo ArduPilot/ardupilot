@@ -65,7 +65,7 @@ void Tracker::setup()
     init_tracker();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 /**
