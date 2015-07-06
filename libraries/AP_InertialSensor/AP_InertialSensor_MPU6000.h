@@ -35,7 +35,7 @@ struct PACKED data_frame {
 class AP_MPU6000_BusDriver
 {
     public:
-        virtual void init(bool *fifo_mode) = 0;
+        virtual void init(bool &fifo_mode) = 0;
         virtual void read8(uint8_t reg, uint8_t *val) = 0;
         virtual void write8(uint8_t reg, uint8_t val) = 0;
         enum bus_speed {
@@ -44,7 +44,7 @@ class AP_MPU6000_BusDriver
         virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
         virtual void read_burst(struct data_frame *rx,
                                 AP_HAL::DigitalSource *_drdy_pin,
-                                uint8_t *n_samples, uint8_t *sample_size) = 0;
+                                uint8_t &n_samples, uint8_t &sample_size) = 0;
         virtual AP_HAL::Semaphore* get_semaphore() = 0;
 };
 
@@ -115,13 +115,13 @@ private:
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
     public:
-        void init(bool *fifo_mode);
+        void init(bool &fifo_mode);
         void read8(uint8_t reg, uint8_t *val);
         void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         void read_burst(struct data_frame *rx,
                         AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t *n_samples, uint8_t *sample_size);
+                        uint8_t &n_samples, uint8_t &sample_size);
         AP_HAL::Semaphore* get_semaphore();
 
     private:
@@ -135,13 +135,13 @@ class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
     public:
         AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-        void init(bool *fifo_mode);
+        void init(bool &fifo_mode);
         void read8(uint8_t reg, uint8_t *val);
         void write8(uint8_t reg, uint8_t val);
         void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
         void read_burst(struct data_frame *rx,
                         AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t *n_samples, uint8_t *sample_size);
+                        uint8_t &n_samples, uint8_t &sample_size);
         AP_HAL::Semaphore* get_semaphore();
 
     private:

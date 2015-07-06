@@ -170,9 +170,9 @@ extern const AP_HAL::HAL& hal;
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
 /* SPI bus driver implementation */
-void AP_MPU6000_BusDriver_SPI::init(bool *fifo_mode)
+void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode)
 {
-    *fifo_mode = false;
+    fifo_mode = false;
     _error_count = 0;
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     // Disable I2C bus if SPI selected (Recommended in Datasheet
@@ -208,12 +208,12 @@ void AP_MPU6000_BusDriver_SPI::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed 
 
 void AP_MPU6000_BusDriver_SPI::read_burst(struct data_frame *rx,
                                          AP_HAL::DigitalSource *_drdy_pin,
-                                         uint8_t *n_samples, uint8_t *sample_size)
+                                         uint8_t &n_samples, uint8_t &sample_size)
 {
     /* one resister address followed by seven 2-byte registers */
     struct data_frame tx = { cmd : MPUREG_INT_STATUS | 0x80, };
 
-    _spi->transaction((const uint8_t *)&tx, (uint8_t *)rx, sizeof(*rx));
+    _spi->transaction((const uint8_t *)&tx, (uint8_t *)rx, sizeof(rx));
 
     /*
       detect a bad SPI bus transaction by looking for all 14 bytes
@@ -231,8 +231,8 @@ void AP_MPU6000_BusDriver_SPI::read_burst(struct data_frame *rx,
         }
     }
 
-    *n_samples = 1;
-    *sample_size = 14;
+    n_samples = 1;
+    sample_size = 14;
     return;
 }
 
@@ -247,10 +247,10 @@ AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8
     _addr(addr)
 {}
 
-void AP_MPU6000_BusDriver_I2C::init(bool *fifo_mode)
+void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode)
 {
     // enable fifo mode
-    *fifo_mode = true;
+    fifo_mode = true;
     write8(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                            BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN | BIT_USER_CTRL_FIFO_RESET);
@@ -271,7 +271,7 @@ void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed 
 
 void AP_MPU6000_BusDriver_I2C::read_burst(struct data_frame *rx,
                                           AP_HAL::DigitalSource *_drdy_pin,
-                                          uint8_t *n_samples, uint8_t *sample_size)
+                                          uint8_t &n_samples, uint8_t &sample_size)
 {
 	uint16_t bytes_read;
     uint8_t *d = rx->d;
@@ -287,11 +287,11 @@ void AP_MPU6000_BusDriver_I2C::read_burst(struct data_frame *rx,
          * hopefully catch up */
     }
 
-    *n_samples = bytes_read / 12;
-    *sample_size = 12;
+    n_samples = bytes_read / 12;
+    sample_size = 12;
 
-    if(*n_samples != 0)
-        _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, *n_samples * *sample_size, d);
+    if(n_samples != 0)
+        _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * sample_size, d);
 
     return;
 }
@@ -541,7 +541,7 @@ void AP_InertialSensor_MPU6000::_read_data_transaction()
     struct data_frame rx;
     uint8_t n_samples, sample_size;
 
-    _bus->read_burst(&rx, _drdy_pin, &n_samples, &sample_size);
+    _bus->read_burst(&rx, _drdy_pin, n_samples, sample_size);
     _accumulate(&rx, n_samples, sample_size);
 }
 
@@ -638,7 +638,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
     hal.scheduler->delay(1);
 
-    _bus->init(&_fifo_mode);
+    _bus->init(_fifo_mode);
     hal.scheduler->delay(1);
 
 #if MPU6000_FAST_SAMPLING
