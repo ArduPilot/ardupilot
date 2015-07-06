@@ -166,17 +166,30 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
+#define MPU6000_SAMPLE_SIZE 12
+#define MPU6000_MAX_FIFO_SAMPLES 3
+
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
 /* SPI bus driver implementation */
-void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode)
+void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
 {
     fifo_mode = false;
     _error_count = 0;
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     // Disable I2C bus if SPI selected (Recommended in Datasheet
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+    /* maximum number of samples read by a burst
+     * a sample is an array containing :
+     * gyro_x
+     * gyro_y
+     * gyro_z
+     * accel_x
+     * accel_y
+     * accel_z
+     */
+    max_samples = 1;
 };
 
 void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
@@ -206,14 +219,18 @@ void AP_MPU6000_BusDriver_SPI::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed 
     _spi->set_bus_speed(speed);
 }
 
-void AP_MPU6000_BusDriver_SPI::read_burst(struct data_frame *rx,
+void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
                                          AP_HAL::DigitalSource *_drdy_pin,
-                                         uint8_t &n_samples, uint8_t &sample_size)
+                                         uint8_t &n_samples)
 {
     /* one resister address followed by seven 2-byte registers */
-    struct data_frame tx = { cmd : MPUREG_INT_STATUS | 0x80, };
+    struct PACKED {
+        uint8_t cmd;
+        uint8_t int_status;
+        uint8_t d[14];
+    } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
 
-    _spi->transaction((const uint8_t *)&tx, (uint8_t *)rx, sizeof(rx));
+    _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
 
     /*
       detect a bad SPI bus transaction by looking for all 14 bytes
@@ -222,9 +239,9 @@ void AP_MPU6000_BusDriver_SPI::read_burst(struct data_frame *rx,
     */
     uint8_t i;
     for (i=0; i<14; i++) {
-        if (rx->d[i] != 0) break;
+        if (rx.d[i] != 0) break;
     }
-    if ((rx->int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
+    if ((rx.int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
         // likely a bad bus transaction
         if (++_error_count > 4) {
             set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
@@ -232,7 +249,10 @@ void AP_MPU6000_BusDriver_SPI::read_burst(struct data_frame *rx,
     }
 
     n_samples = 1;
-    sample_size = 14;
+    /* remove temperature and cmd from data sample */
+    memcpy(&samples[0], &rx.d[0], 6);
+    memcpy(&samples[6], &rx.d[8], 6);
+
     return;
 }
 
@@ -247,13 +267,23 @@ AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8
     _addr(addr)
 {}
 
-void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode)
+void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
 {
     // enable fifo mode
     fifo_mode = true;
     write8(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                            BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN | BIT_USER_CTRL_FIFO_RESET);
+    /* maximum number of samples read by a burst
+     * a sample is an array containing :
+     * gyro_x
+     * gyro_y
+     * gyro_z
+     * accel_x
+     * accel_y
+     * accel_z
+     */
+    max_samples = MPU6000_MAX_FIFO_SAMPLES;
 }
 
 void AP_MPU6000_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
@@ -269,29 +299,43 @@ void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
 void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
 {}
 
-void AP_MPU6000_BusDriver_I2C::read_burst(struct data_frame *rx,
+void AP_MPU6000_BusDriver_I2C::read_burst(uint8_t *samples,
                                           AP_HAL::DigitalSource *_drdy_pin,
-                                          uint8_t &n_samples, uint8_t &sample_size)
+                                          uint8_t &n_samples)
 {
 	uint16_t bytes_read;
-    uint8_t *d = rx->d;
+    uint8_t ret = 0;
 
-    _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, d);
+    ret = _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, _rx);
+    if(ret != 0) {
+        hal.console->printf_P(PSTR("MPU6000: error in i2c read\n"));
+        n_samples = 0;
+        return;
+    }
 
-    bytes_read = uint16_val(d, 0);
+    bytes_read = uint16_val(_rx, 0);
 
     if(bytes_read == 1024) {
-        hal.console->printf_P(PSTR("bytes read = %d, fifo ofw\n")
-                                ,bytes_read);
+        hal.console->printf_P(PSTR("fifo ofw\n"));
         /* Proceed anyway, this will empty the fifo and we will
          * hopefully catch up */
     }
 
-    n_samples = bytes_read / 12;
-    sample_size = 12;
+    n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
+
+    if(n_samples > 3)
+        hal.console->printf_P(PSTR("n_samples %d > 3, dropping samples\n"), n_samples);
 
     if(n_samples != 0)
-        _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * sample_size, d);
+        ret = _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * MPU6000_SAMPLE_SIZE, _rx);
+
+    if(ret != 0) {
+        hal.console->printf_P(PSTR("MPU6000: error in i2c read %d bytes\n"),
+                                   n_samples * MPU6000_SAMPLE_SIZE);
+        n_samples = 0;
+    }
+
+    memcpy(samples, _rx, MPU6000_SAMPLE_SIZE * MPU6000_MAX_FIFO_SAMPLES);
 
     return;
 }
@@ -480,29 +524,10 @@ void AP_InertialSensor_MPU6000::_poll_data(void)
     _bus_sem->give();
 }
 
-void AP_InertialSensor_MPU6000::_accumulate(struct data_frame *rx, uint8_t n_samples, uint8_t sample_size)
+void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 {
     for(uint8_t i=0; i < n_samples; i++) {
-        uint8_t *data = rx->d + sample_size * i;
-        if(sample_size == 14) {
-#if MPU6000_FAST_SAMPLING
-            _accel_filtered = _accel_filter.apply(Vector3f(int16_val(data, 1),
-                                                           int16_val(data, 0),
-                                                          -int16_val(data, 2)));
-
-            _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(data, 5),
-                                                         int16_val(data, 4),
-                                                        -int16_val(data, 6)));
-#else
-            _accel_sum.x += int16_val(data, 1);
-            _accel_sum.y += int16_val(data, 0);
-            _accel_sum.z -= int16_val(data, 2);
-            _gyro_sum.x  += int16_val(data, 5);
-            _gyro_sum.y  += int16_val(data, 4);
-            _gyro_sum.z  -= int16_val(data, 6);
-#endif
-        }
-        else if(sample_size == 12) {
+        uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
 #if MPU6000_FAST_SAMPLING
             _accel_filtered = _accel_filter.apply(Vector3f(int16_val(data, 1),
                                                            int16_val(data, 0),
@@ -519,11 +544,6 @@ void AP_InertialSensor_MPU6000::_accumulate(struct data_frame *rx, uint8_t n_sam
             _gyro_sum.y  += int16_val(data, 3);
             _gyro_sum.z  -= int16_val(data, 5);
 #endif
-        }
-        else {
-            hal.scheduler->panic(PSTR("MPU6000: Bad sample size"));
-        }
-
         _sum_count++;
 
 #if !MPU6000_FAST_SAMPLING
@@ -538,11 +558,10 @@ void AP_InertialSensor_MPU6000::_accumulate(struct data_frame *rx, uint8_t n_sam
 
 void AP_InertialSensor_MPU6000::_read_data_transaction()
 {
-    struct data_frame rx;
-    uint8_t n_samples, sample_size;
+    uint8_t n_samples;
 
-    _bus->read_burst(&rx, _drdy_pin, n_samples, sample_size);
-    _accumulate(&rx, n_samples, sample_size);
+    _bus->read_burst(_samples, _drdy_pin, n_samples);
+    _accumulate(_samples, n_samples);
 }
 
 uint8_t AP_InertialSensor_MPU6000::_register_read( uint8_t reg )
@@ -602,6 +621,8 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
+    uint8_t max_samples;
+
     if (!_bus_sem->take(100)) {
         hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
     }
@@ -638,7 +659,9 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
     hal.scheduler->delay(1);
 
-    _bus->init(_fifo_mode);
+    _bus->init(_fifo_mode, max_samples);
+    /* each sample is on 16 bits */
+    _samples = new uint8_t[max_samples * MPU6000_SAMPLE_SIZE];
     hal.scheduler->delay(1);
 
 #if MPU6000_FAST_SAMPLING
