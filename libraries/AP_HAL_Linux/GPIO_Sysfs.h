@@ -6,10 +6,28 @@
 
 #include "AP_HAL_Linux.h"
 
+#include "GPIO.h"
+
+class Linux::LinuxDigitalSource_Sysfs : public AP_HAL::DigitalSource {
+    friend class Linux::LinuxGPIO_Sysfs;
+public:
+    ~LinuxDigitalSource_Sysfs();
+    uint8_t read();
+    void write(uint8_t value);
+    void mode(uint8_t output);
+    void toggle();
+private:
+    /* Only LinuxGPIO_Sysfs will be able to instantiate */
+    LinuxDigitalSource_Sysfs(unsigned pin, int value_fd);
+    int _value_fd;
+    unsigned _pin;
+};
+
 /**
  * Generic implementation of AP_HAL::GPIO for Linux based boards.
  */
 class Linux::LinuxGPIO_Sysfs : public AP_HAL::GPIO {
+    friend class Linux::LinuxDigitalSource_Sysfs;
 public:
     /* Fill this table with the real pin numbers. */
     static const unsigned pin_table[];

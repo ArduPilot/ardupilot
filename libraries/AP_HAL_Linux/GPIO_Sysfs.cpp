@@ -19,6 +19,51 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+LinuxDigitalSource_Sysfs::LinuxDigitalSource_Sysfs(unsigned pin, int value_fd) :
+    _pin(pin),
+    _value_fd(value_fd)
+{
+}
+
+LinuxDigitalSource_Sysfs::~LinuxDigitalSource_Sysfs()
+{
+    if (_value_fd >= 0) {
+        ::close(_value_fd);
+    }
+}
+
+uint8_t LinuxDigitalSource_Sysfs::read()
+{
+    char char_value;
+    int r = ::pread(_value_fd, &char_value, 1, 0);
+    if (r < 0) {
+        hal.console->printf("warning: unable to read GPIO value for pin %u\n",
+                            _pin);
+        return LOW;
+    }
+    return char_value == '1' ? HIGH : LOW;
+}
+
+void LinuxDigitalSource_Sysfs::write(uint8_t value)
+{
+    int r = ::pwrite(_value_fd, value == HIGH ? "1" : "0", 1, 0);
+    if (r < 0) {
+        hal.console->printf("warning: unable to write GPIO value for pin %u\n",
+                            _pin);
+    }
+}
+
+void LinuxDigitalSource_Sysfs::mode(uint8_t output)
+{
+    LinuxGPIO_Sysfs *gpio_sysfs = static_cast<LinuxGPIO_Sysfs*>(hal.gpio);
+    gpio_sysfs->_pinMode(_pin, output);
+}
+
+void LinuxDigitalSource_Sysfs::toggle()
+{
+    write(!read());
+}
+
 void LinuxGPIO_Sysfs::init()
 {
 }
