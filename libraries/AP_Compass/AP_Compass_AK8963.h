@@ -23,6 +23,7 @@ public:
     virtual bool start_conversion() = 0;
     virtual bool configure() = 0;
     virtual bool read_raw(float &mag_x, float &mag_y, float &mag_z) = 0;
+    virtual uint32_t get_dev_id() = 0;
 };
 
 class AP_Compass_AK8963 : public AP_Compass_Backend
@@ -89,6 +90,7 @@ public:
     bool start_conversion();
     bool configure();
     bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
     void _write(uint8_t address, const uint8_t *value,  uint32_t count);
@@ -109,6 +111,7 @@ public:
     bool start_conversion(){return true;}
     bool configure(){return true;}
     bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
     void _write(uint8_t address, const uint8_t *value,  uint32_t count);
