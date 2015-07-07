@@ -29,6 +29,8 @@
  # define Debug(fmt, args ...)
 #endif
 
+#define UNUSED_BLOCK 4294967295
+
 extern const AP_HAL::HAL& hal;
 #ifndef MAV_SYS_ID_LOG
 #define MAV_SYS_ID_LOG  1
@@ -126,19 +128,20 @@ int8_t DataFlash_MAVLink::next_block_address()
     uint8_t oldest_block_address = NUM_BUFFER_BLOCKS - 1;
 
     for(uint8_t block = 0; block < _total_blocks; block++){
+        if (_block_num[block] == UNUSED_BLOCK) {
+            oldest_block_address = block;
+            break;
+        }
         if(_block_num[oldest_block_address] > _block_num[block]){
             if(_is_critical_block[block]) {
                 continue;
             }
         
             oldest_block_address = block;
-            if (_block_num[oldest_block_address] == 0) {
-                break;
-            }
         }
     }
     
-    if (_block_num[oldest_block_address] != 0) {
+    if (_block_num[oldest_block_address] != UNUSED_BLOCK) {
         perf_count(_perf_overruns);
     }
     Debug("%d \n", oldest_block_address);
@@ -169,7 +172,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     }
     for(uint8_t block = 0; block < _total_blocks; block++){
         if(_block_num[block] == block_num) {
-            _block_num[block] = 0;                  //forget the block if ack is received
+            _block_num[block] = UNUSED_BLOCK;                  //forget the block if ack is received
             _is_critical_block[block] = false;        //the block is ack'd forget that it was critical block if it was
             return;
         }
