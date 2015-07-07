@@ -32,6 +32,7 @@ Changes from 3.3-rc5
     e) default MNT_TYPE to "1" if servo gimbal rc outputs were defined
     f) RC_FEEL defaults to medium
     g) addition of SToRM32 serial support (supports mount angle feedback to GCS)
+    h) new tricopter's tail servo parameters (MOT_YAW_SV_MIN, MAX, TRIM, REV)
 ------------------------------------------------------------------
 Copter 3.3-rc5 23-May-2015
 Changes from 3.3-rc4
