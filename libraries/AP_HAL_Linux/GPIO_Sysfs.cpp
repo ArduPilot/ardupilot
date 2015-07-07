@@ -170,7 +170,24 @@ int8_t LinuxGPIO_Sysfs::analogPinToDigitalPin(uint8_t pin)
 
 AP_HAL::DigitalSource* LinuxGPIO_Sysfs::channel(VirtualPin vpin)
 {
-    return nullptr;
+    unsigned pin = pin_table[vpin];
+    int value_fd = -1;
+
+    if (export_pin(vpin)) {
+        char value_path[PATH_MAX];
+        snprintf(value_path, PATH_MAX, GPIO_PATH_FORMAT "/value", pin);
+
+        value_fd = open(value_path, O_RDWR | O_CLOEXEC);
+        if (value_fd < 0) {
+            hal.console->printf("unable to open %s\n", value_path);
+        }
+    }
+
+    /* Even if we couldn't open the fd, return a new DigitalSource and let
+     * reads and writes fail later due to invalid. Otherwise we
+     * could crash in undesired places */
+
+    return new LinuxDigitalSource_Sysfs(pin, value_fd);
 }
 
 bool LinuxGPIO_Sysfs::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
