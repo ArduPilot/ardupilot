@@ -5,7 +5,7 @@
 class LogReader : public DataFlashFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *structure, uint8_t num_types);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *structure, uint8_t num_types, const char **&nottypes);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -26,6 +26,8 @@ public:
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     virtual bool handle_log_format_msg(const struct log_Format &f);
     virtual bool handle_msg(const struct log_Format &f, uint8_t *msg);
+
+    static bool in_list(const char *type, const char *list[]);
 
 protected:
     virtual void end_format_msgs(void) override;
@@ -66,9 +68,9 @@ private:
     LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
-    void maybe_install_vehicle_specific_parsers();
+    const char **&nottypes;
 
-    bool in_list(const char *type, const char *list[]);
+    void maybe_install_vehicle_specific_parsers();
 
     uint8_t map_fmt_type(const char *name, uint8_t intype);
 };

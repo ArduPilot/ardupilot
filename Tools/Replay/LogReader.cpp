@@ -28,7 +28,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, uint8_t _num_types) :
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, uint8_t _num_types, const char **&_nottypes) :
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -42,7 +42,8 @@ LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Co
     accel_mask(7),
     gyro_mask(7),
     last_timestamp_usec(0),
-    installed_vehicle_specific_parsers(false)
+    installed_vehicle_specific_parsers(false),
+    nottypes(_nottypes)
 {
 }
 
@@ -90,6 +91,9 @@ static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
  */
 bool LogReader::in_list(const char *type, const char *list[])
 {
+    if (list == NULL) {
+        return false;
+    }
     for (uint8_t i=0; list[i] != NULL; i++) {
         if (strcmp(type, list[i]) == 0) {
             return true;
@@ -251,7 +255,9 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
             exit(1);
         }
         msg[2] = mapped_msgid[msg[2]];
-        dataflash.WriteBlock(msg, f.length);        
+        if (!in_list(name, nottypes)) {
+            dataflash.WriteBlock(msg, f.length);        
+        }
         // a MsgHandler would probably have found a timestamp and
         // caled stop_clock.  This runs IO, clearing dataflash's
         // buffer.
