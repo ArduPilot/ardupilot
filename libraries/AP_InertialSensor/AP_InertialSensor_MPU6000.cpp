@@ -538,20 +538,20 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
     for(uint8_t i=0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
 #if MPU6000_FAST_SAMPLING
-            _accel_filtered = _accel_filter.apply(Vector3f(int16_val(data, 1),
-                                                           int16_val(data, 0),
-                                                          -int16_val(data, 2)));
+        _accel_filtered = _accel_filter.apply(Vector3f(int16_val(data, 1),
+                                                       int16_val(data, 0),
+                                                      -int16_val(data, 2)));
 
-            _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(data, 4),
-                                                         int16_val(data, 3),
-                                                        -int16_val(data, 5)));
+        _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(data, 4),
+                                                     int16_val(data, 3),
+                                                    -int16_val(data, 5)));
 #else
-            _accel_sum.x += int16_val(data, 1);
-            _accel_sum.y += int16_val(data, 0);
-            _accel_sum.z -= int16_val(data, 2);
-            _gyro_sum.x  += int16_val(data, 4);
-            _gyro_sum.y  += int16_val(data, 3);
-            _gyro_sum.z  -= int16_val(data, 5);
+        _accel_sum.x += int16_val(data, 1);
+        _accel_sum.y += int16_val(data, 0);
+        _accel_sum.z -= int16_val(data, 2);
+        _gyro_sum.x  += int16_val(data, 4);
+        _gyro_sum.y  += int16_val(data, 3);
+        _gyro_sum.z  -= int16_val(data, 5);
 #endif
         _sum_count++;
 
