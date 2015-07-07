@@ -248,6 +248,8 @@ private:
     float tolerance_pos = 2;
     float tolerance_vel = 2;
     const char **nottypes = NULL;
+    uint16_t downsample = 0;
+    uint32_t output_counter = 0;
 
     struct {
         float max_roll_error;
@@ -295,6 +297,7 @@ void Replay::usage(void)
     ::printf("\t--tolerance-pos    tolerance for position in meters\n");
     ::printf("\t--tolerance-vel    tolerance for velocity in meters/second\n");
     ::printf("\t--nottypes         list of msg types not to output, comma separated\n");
+    ::printf("\t--downsample       downsampling rate for output\n");
 }
 
 
@@ -304,7 +307,8 @@ enum {
     OPT_TOLERANCE_EULER,
     OPT_TOLERANCE_POS,
     OPT_TOLERANCE_VEL,
-    OPT_NOTTYPES
+    OPT_NOTTYPES,
+    OPT_DOWNSAMPLE
 };
 
 void Replay::flush_dataflash(void) {
@@ -355,6 +359,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"tolerance-pos",   true,   0, OPT_TOLERANCE_POS},
         {"tolerance-vel",   true,   0, OPT_TOLERANCE_VEL},
         {"nottypes",        true,   0, OPT_NOTTYPES},
+        {"downsample",      true,   0, OPT_DOWNSAMPLE},
         {0, false, 0, 0}
     };
 
@@ -419,6 +424,10 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 
         case OPT_NOTTYPES:
             nottypes = parse_list_from_string(gopt.optarg);
+            break;
+
+        case OPT_DOWNSAMPLE:
+            downsample = atoi(gopt.optarg);
             break;
 
         case 'h':
@@ -701,14 +710,16 @@ void Replay::read_sensors(const char *type)
         if (_vehicle.ahrs.get_home().lat != 0) {
             _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
         }
-        if (!LogReader::in_list("EKF", nottypes)) {
-            _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
-        }
-        if (!LogReader::in_list("AHRS2", nottypes)) {
-            _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
-        }
-        if (!LogReader::in_list("POS", nottypes)) {
-            _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+        if (downsample == 0 || ++output_counter % downsample == 0) {
+            if (!LogReader::in_list("EKF", nottypes)) {
+                _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs,false);
+            }
+            if (!LogReader::in_list("AHRS2", nottypes)) {
+                _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+            }
+            if (!LogReader::in_list("POS", nottypes)) {
+                _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+            }
         }
         if (_vehicle.ahrs.healthy() != ahrs_healthy) {
             ahrs_healthy = _vehicle.ahrs.healthy();
