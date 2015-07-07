@@ -316,25 +316,32 @@ void AP_MPU6000_BusDriver_I2C::read_burst(uint8_t *samples,
 
     bytes_read = uint16_val(_rx, 0);
 
-    if(bytes_read == 1024) {
-        hal.console->printf_P(PSTR("fifo ofw\n"));
-        /* Proceed anyway, this will empty the fifo and we will
-         * hopefully catch up */
-    }
-
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
-    if(n_samples > 3)
+    if(n_samples > 3) {
         hal.console->printf_P(PSTR("bytes_read = %d, n_samples %d > 3, dropping samples\n"),
                                    bytes_read, n_samples);
 
-    if(n_samples != 0)
+        /* Too many samples, do a FIFO RESET */
+        write8(MPUREG_USER_CTRL, 0);
+        write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_SIG_COND_RESET);
+        write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
+        n_samples = 0;
+        return;
+    }
+    else if (n_samples == 0) {
+        /* Not enough data in FIFO */
+        return;
+    }
+    else {
         ret = _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * MPU6000_SAMPLE_SIZE, _rx);
+    }
 
     if(ret != 0) {
         hal.console->printf_P(PSTR("MPU6000: error in i2c read %d bytes\n"),
                                    n_samples * MPU6000_SAMPLE_SIZE);
         n_samples = 0;
+        return;
     }
 
     memcpy(samples, _rx, MPU6000_SAMPLE_SIZE * MPU6000_MAX_FIFO_SAMPLES);
