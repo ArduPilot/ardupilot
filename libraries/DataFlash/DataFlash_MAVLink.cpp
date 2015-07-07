@@ -102,10 +102,8 @@ void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
         copied += to_copy;
         _latest_block_len += to_copy;
         if (_latest_block_len == _block_max_size) {
-            _block_num[_cur_block_address] = _latest_block_num++;
             send_log_block(_cur_block_address);  //block full send it
             _cur_block_address = next_block_address();
-            _latest_block_len = 0;
         }
     }
 }
@@ -144,6 +142,8 @@ int8_t DataFlash_MAVLink::next_block_address()
         perf_count(_perf_overruns);
     }
     Debug("%d \n", oldest_block_address);
+    _block_num[oldest_block_address] = _latest_block_num++;
+    _latest_block_len = 0;
     return oldest_block_address;
 }
 
@@ -162,8 +162,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
         Debug("\nStarting New Log!!\n");
         memset(_block_num, 0, sizeof(_block_num));
         _latest_block_num = 0;
-        _cur_block_address = 0;
-        _latest_block_len = 0;
+        _cur_block_address = next_block_address();
         _logging_started = true;
         StartNewLog();
         return;
