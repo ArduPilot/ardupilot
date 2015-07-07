@@ -167,7 +167,8 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, AP_COMPASS_TYPE_AK8963_MPU9250);
+
+    set_dev_id(_compass_instance, _bus->get_dev_id());
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
@@ -473,6 +474,11 @@ bool AP_AK8963_SerialBus_MPU9250::start_conversion()
     return true;
 }
 
+uint32_t AP_AK8963_SerialBus_MPU9250::get_dev_id()
+{
+    return AP_COMPASS_TYPE_AK8963_MPU9250;
+}
+
 /* I2C implementation of the AK8963 */
 AP_AK8963_SerialBus_I2C::AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
     _i2c(i2c),
@@ -519,6 +525,11 @@ bool AP_AK8963_SerialBus_I2C::read_raw(float &mag_x, float &mag_y, float &mag_z)
 AP_HAL::Semaphore * AP_AK8963_SerialBus_I2C::get_semaphore()
 {
     return _i2c->get_semaphore();
+}
+
+uint32_t AP_AK8963_SerialBus_I2C::get_dev_id()
+{
+    return AP_COMPASS_TYPE_AK8963_I2C;
 }
 
 #endif // CONFIG_HAL_BOARD
