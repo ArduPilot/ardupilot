@@ -273,7 +273,8 @@ void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
     fifo_mode = true;
     write8(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
                            BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
-    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN | BIT_USER_CTRL_FIFO_RESET);
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_SIG_COND_RESET);
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
     /* maximum number of samples read by a burst
      * a sample is an array containing :
      * gyro_x
@@ -324,7 +325,8 @@ void AP_MPU6000_BusDriver_I2C::read_burst(uint8_t *samples,
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
     if(n_samples > 3)
-        hal.console->printf_P(PSTR("n_samples %d > 3, dropping samples\n"), n_samples);
+        hal.console->printf_P(PSTR("bytes_read = %d, n_samples %d > 3, dropping samples\n"),
+                                   bytes_read, n_samples);
 
     if(n_samples != 0)
         ret = _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * MPU6000_SAMPLE_SIZE, _rx);
@@ -694,10 +696,10 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
-    // Therefore the sample rate value is 8kHz/SMPLRT_DIV
+    // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
     // So we have to set it to 8 to have a 1kHz sampling
     // rate on the gyro
-    _register_write(MPUREG_SMPLRT_DIV, 8);
+    _register_write(MPUREG_SMPLRT_DIV, 7);
 #else
     _set_filter_register(_accel_filter_cutoff());
 
