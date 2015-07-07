@@ -118,25 +118,11 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
         Matrix3f Tvg;
-        float cosPhi = cosf(_measurement.joint_angles.x);
-        float cosTheta = cosf(_measurement.joint_angles.y);
-        float sinPhi = sinf(_measurement.joint_angles.x);
-        float sinTheta = sinf(_measurement.joint_angles.y);
-        float sinPsi = sinf(_measurement.joint_angles.z);
-        float cosPsi = cosf(_measurement.joint_angles.z);
-        Tvg[0][0] = cosTheta*cosPsi-sinPsi*sinPhi*sinTheta;
-        Tvg[1][0] = -sinPsi*cosPhi;
-        Tvg[2][0] = cosPsi*sinTheta+cosTheta*sinPsi*sinPhi;
-        Tvg[0][1] = cosTheta*sinPsi+cosPsi*sinPhi*sinTheta;
-        Tvg[1][1] = cosPsi*cosPhi;
-        Tvg[2][1] = sinPsi*sinTheta-cosTheta*cosPsi*sinPhi;
-        Tvg[0][2] = -sinTheta*cosPhi;
-        Tvg[1][2] = sinPhi;
-        Tvg[2][2] = cosTheta*cosPhi;
+        vehicle_to_gimbal_quat_filt.inverse().rotation_matrix(Tvg);
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.z;
+        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * filtered_joint_angles.z;
         if (gimbalRateDemVecYaw.z > 0.0f){
             gimbalRateDemVecYaw.z = +0.2f*gimbalRateDemVecYaw.z*gimbalRateDemVecYaw.z;
         }else{
@@ -222,27 +208,13 @@ Vector3f AP_Gimbal::getGimbalRateBodyLock()
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
         Matrix3f Tvg;
-        float cosPhi = cosf(_measurement.joint_angles.x);
-        float cosTheta = cosf(_measurement.joint_angles.y);
-        float sinPhi = sinf(_measurement.joint_angles.x);
-        float sinTheta = sinf(_measurement.joint_angles.y);
-        float sinPsi = sinf(_measurement.joint_angles.z);
-        float cosPsi = cosf(_measurement.joint_angles.z);
-        Tvg[0][0] = cosTheta*cosPsi-sinPsi*sinPhi*sinTheta;
-        Tvg[1][0] = -sinPsi*cosPhi;
-        Tvg[2][0] = cosPsi*sinTheta+cosTheta*sinPsi*sinPhi;
-        Tvg[0][1] = cosTheta*sinPsi+cosPsi*sinPhi*sinTheta;
-        Tvg[1][1] = cosPsi*cosPhi;
-        Tvg[2][1] = sinPsi*sinTheta-cosTheta*cosPsi*sinPhi;
-        Tvg[0][2] = -sinTheta*cosPhi;
-        Tvg[1][2] = sinPhi;
-        Tvg[2][2] = cosTheta*cosPhi;
+        vehicle_to_gimbal_quat_filt.inverse().rotation_matrix(Tvg);
 
         // multiply the joint angles by a gain to calculate a rate vector required to keep the joints centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.x = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.x;
-        gimbalRateDemVecYaw.y = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.y;
-        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * _measurement.joint_angles.z;
+        gimbalRateDemVecYaw.x = - _gimbalParams.K_gimbalRate * filtered_joint_angles.x;
+        gimbalRateDemVecYaw.y = - _gimbalParams.K_gimbalRate * filtered_joint_angles.y;
+        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * filtered_joint_angles.z;
 
         // Add a feedforward term from vehicle gyros
         gimbalRateDemVecYaw += Tvg * _ahrs.get_gyro();
