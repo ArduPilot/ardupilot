@@ -342,15 +342,15 @@ void AP_MotorsHeli::output_test(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// allow_arming - returns true if main rotor is spinning and it is ok to arm
+// allow_arming - check if it's safe to arm
 bool AP_MotorsHeli::allow_arming() const
 {
-    // ensure main rotor has started
-    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _servo_rsc.control_in > 0) {
+    // returns false if main rotor desired speed is not zero
+    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _desired_rotor_speed > 0) {
         return false;
     }
 
-    // all other cases it is ok to arm
+    // all other cases it is OK to arm
     return true;
 }
 
