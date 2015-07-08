@@ -7,30 +7,30 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "TCPClientDevice.h"
+#include "TCPServerDevice.h"
 
-TCPClientDevice::TCPClientDevice(const char *ip, uint16_t port):
+TCPServerDevice::TCPServerDevice(const char *ip, uint16_t port):
     _ip(ip),
     _port(port)
 {
 }
 
-TCPClientDevice::~TCPClientDevice()
+TCPServerDevice::~TCPServerDevice()
 {
 
 }
 
-ssize_t TCPClientDevice::write(const uint8_t *buf, uint16_t n)
+ssize_t TCPServerDevice::write(const uint8_t *buf, uint16_t n)
 {
     return listener.send(buf, n);
 }
 
-ssize_t TCPClientDevice::read(uint8_t *buf, uint16_t n)
+ssize_t TCPServerDevice::read(uint8_t *buf, uint16_t n)
 {
     return listener.recv(buf, n, 1);
 }
 
-bool TCPClientDevice::open()
+bool TCPServerDevice::open()
 {
     listener.reuseaddress();
 
@@ -47,17 +47,17 @@ bool TCPClientDevice::open()
     return true;
 }
 
-bool TCPClientDevice::close()
+bool TCPServerDevice::close()
 {
     return true;
 }
 
-void TCPClientDevice::set_blocking(bool blocking)
+void TCPServerDevice::set_blocking(bool blocking)
 {
     listener.set_blocking(blocking);
 }
 
-void TCPClientDevice::set_speed(uint32_t speed)
+void TCPServerDevice::set_speed(uint32_t speed)
 {
 
 }
