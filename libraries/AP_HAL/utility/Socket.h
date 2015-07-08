@@ -34,13 +34,16 @@
 class SocketAPM {
 public:
     SocketAPM(bool _datagram);
+    ~SocketAPM();
+
     bool connect(const char *address, uint16_t port);
     bool bind(const char *address, uint16_t port);
     void reuseaddress();
     void set_blocking(bool blocking);
 
-    ssize_t send(void *pkt, size_t size);
-    ssize_t sendto(void *buf, size_t size, const char *address, uint16_t port);
+    ssize_t send(const void *pkt, size_t size);
+    ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port, uint32_t timeout = 0);
+    ssize_t recvfrom(void *pkt, size_t size, const char *address, uint16_t port, uint32_t timeout = 0);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
 private:
