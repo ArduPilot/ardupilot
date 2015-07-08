@@ -53,8 +53,8 @@ void Copter::guided_takeoff_start(float final_alt_above_home)
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 
-    // tell motors to do a slow start
-    motors.slow_start(true);
+    // clear i term when we're taking off
+    set_throttle_takeoff();
 }
 
 // initialise guided mode's position controller
@@ -163,7 +163,13 @@ void Copter::guided_run()
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
         // To-Do: reset waypoint controller?
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
         // To-Do: handle take-offs - these may not only be immediately after auto_armed becomes true
         return;
     }
@@ -201,10 +207,16 @@ void Copter::guided_takeoff_run()
     if(!ap.auto_armed || !motors.get_interlock()) {
         // initialise wpnav targets
         wp_nav.shift_wp_origin_to_current_pos();
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        // tell motors to do a slow start
-        motors.slow_start(true);
+#endif
+        // clear i term when we're taking off
+        set_throttle_takeoff();
         return;
     }
 

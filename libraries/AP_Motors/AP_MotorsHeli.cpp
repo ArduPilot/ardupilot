@@ -26,8 +26,6 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
-    // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_Motors, 0),
 
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
@@ -344,15 +342,27 @@ void AP_MotorsHeli::output_test(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// allow_arming - returns true if main rotor is spinning and it is ok to arm
+// allow_arming - check if it's safe to arm
 bool AP_MotorsHeli::allow_arming() const
 {
-    // ensure main rotor has started
-    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _servo_rsc.control_in > 0) {
+    // returns false if main rotor speed is not zero
+    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _rotor_speed_estimate > 0) {
         return false;
     }
 
-    // all other cases it is ok to arm
+    // all other cases it is OK to arm
+    return true;
+}
+
+// parameter_check - check if helicopter specific parameters are sensible
+bool AP_MotorsHeli::parameter_check() const
+{
+    // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
+    if (_rsc_critical >= _rsc_setpoint) {
+        return false;
+    }
+
+    // all other cases parameters are OK
     return true;
 }
 
