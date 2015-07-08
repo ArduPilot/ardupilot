@@ -354,6 +354,18 @@ bool AP_MotorsHeli::allow_arming() const
     return true;
 }
 
+// parameter_check - check if helicopter specific parameters are sensible
+bool AP_MotorsHeli::parameter_check() const
+{
+    // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
+    if (_rsc_critical >= _rsc_setpoint) {
+        return false;
+    }
+
+    // all other cases parameters are OK
+    return true;
+}
+
 // return true if the main rotor is up to speed
 bool AP_MotorsHeli::rotor_runup_complete() const
 {
