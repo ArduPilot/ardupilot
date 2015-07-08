@@ -27,7 +27,7 @@
 #include "UARTDevice.h"
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
-#include "TCPClientDevice.h"
+#include "TCPServerDevice.h"
 #include "TCPBlockingServerDevice.h"
 
 extern const AP_HAL::HAL& hal;
@@ -260,10 +260,10 @@ void LinuxUARTDriver::_tcp_start_connection(void)
         if (!strcmp(_flag, "wait")) {    
             _device = new TCPBlockingServerDevice(_ip, _base_port);
         } else {
-            _device = new TCPClientDevice(_ip, _base_port);
+            _device = new TCPServerDevice(_ip, _base_port);
         }
     } else {
-        _device = new TCPClientDevice(_ip, _base_port);
+        _device = new TCPServerDevice(_ip, _base_port);
     }
 
     if (_device->open()) {
