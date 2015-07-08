@@ -151,6 +151,9 @@ public:
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
 
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check() const;
+
     // _tail_type - returns the tail type (servo, servo with ext gyro, direct drive var pitch, direct drive fixed pitch)
     int16_t tail_type() const { return _tail_type; }
 
