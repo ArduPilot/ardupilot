@@ -1,9 +1,16 @@
 #include <AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#include "RCOutput_Bebop.h"
 #include <endian.h>
 #include <stdio.h>
+#include <sys/time.h>
+#include <poll.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <pthread.h>
+#include "RCOutput_Bebop.h"
 
 /* BEBOP BLDC motor controller address and registers description */
 #define BEBOP_BLDC_I2C_ADDR 0x08
@@ -32,7 +39,7 @@ struct bldc_obs_data {
     uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
     uint16_t    batt_mv;
     uint8_t     status;
-    uint8_t     errno;
+    uint8_t     error;
     uint8_t     motors_err;
     uint8_t     temp;
     uint8_t     checksum;
@@ -86,6 +93,13 @@ static const uint8_t bebop_bldc_motors[BEBOP_BLDC_MOTORS_NUM] = { BEBOP_BLDC_RIG
 #define BEBOP_BLDC_MAX_PERIOD_US 1900
 #define BEBOP_BLDC_MIN_RPM 3000
 #define BEBOP_BLDC_MAX_RPM 11000
+
+/* Priority of the thread controlling the BLDC via i2c
+ * set to 14, which is the same as the UART 
+ */
+#define RCOUT_BEBOP_RTPRIO 14
+/* Set timeout to 500ms */
+#define BEBOP_BLDC_TIMEOUT_NS 500000000
 
 enum {
     BEBOP_BLDC_STARTED,
@@ -154,7 +168,7 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
                                         uint16_t *batt_mv,
                                         uint8_t *status,
-                                        uint8_t *errno,
+                                        uint8_t *error,
                                         uint8_t *motors_err,
                                         uint8_t *temp)
 {
@@ -185,8 +199,8 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
     if(status != NULL)
         *status = data.status;
 
-    if(errno != NULL)
-        *errno = data.errno;
+    if(error != NULL)
+        *error = data.error;
 
     if(motors_err != NULL)
         *motors_err = data.motors_err;
@@ -252,16 +266,55 @@ uint16_t LinuxRCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
 
 void LinuxRCOutput_Bebop::init(void* dummy)
 {
+    int ret=0;
+    struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };
+    pthread_attr_t attr;
+
     _i2c_sem = hal.i2c1->get_semaphore();
     if (_i2c_sem == NULL) {
         hal.scheduler->panic(PSTR("RCOutput_Bebop: can't get i2c sem"));
         return; /* never reached */
     }
 
+    /* Initialize thread, cond, and mutex */
+    ret = pthread_mutex_init(&_mutex, NULL);
+    if(ret != 0) {
+        perror("RCout_Bebop: failed to init mutex\n");
+        goto err_mutex;
+    }
+
+    pthread_mutex_lock(&_mutex);
+
+    ret = pthread_cond_init(&_cond, NULL);
+
+    if(ret != 0) {
+        perror("RCout_Bebop: failed to init cond\n");
+        goto err_mutex;
+    }
+
+    ret = pthread_attr_init(&attr);
+    if(ret != 0) {
+        perror("RCOut_Bebop: failed to init attr\n");
+        goto err_mutex;
+    }
+    pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    pthread_attr_setschedparam(&attr, &param);
+    ret = pthread_create(&_thread, &attr, _control_thread, this);
+    if(ret != 0) {
+        perror("RCOut_Bebop: failed to create thread\n");
+        goto err_mutex;
+    }
+
     _clear_error();
 
     /* Set an initial dummy frequency */
     _frequency = 50;
+    return;
+
+err_mutex:
+    pthread_mutex_unlock(&_mutex);
+    return;
 }
 
 void LinuxRCOutput_Bebop::set_freq(uint32_t chmask, uint16_t freq_hz)
@@ -285,32 +338,11 @@ void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
 
 void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
 {
-    unsigned int i;
-    uint8_t motor = bebop_bldc_motors[ch];
 
+    pthread_mutex_lock(&_mutex);
     _period_us[ch] = period_us;
-    _rpm[motor] = _period_us_to_rpm(period_us);
-
-    /* start propellers if the speed of the 4 motors is >= min speed
-     * not clear when the motors are supposed to start, so let's put it to min_pwm*/
-    for(i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
-        if(_period_us[i] <= _min_pwm + 50)
-            break;
-    }
-
-    if(i < BEBOP_BLDC_MOTORS_NUM) {
-        /* one motor pwm value is at minimum (or under)
-         * if the motors are started, stop them*/
-        if(_state == BEBOP_BLDC_STARTED)
-            _stop_prop();
-    }
-    else {
-        /* all the motor pwm values are higher than minimum
-         * if the bldc is stopped, start it*/
-        if(_state == BEBOP_BLDC_STOPPED)
-            _start_prop();
-    }
-    _set_ref_speed(_rpm);
+    pthread_cond_signal(&_cond);
+    pthread_mutex_unlock(&_mutex);
 }
 
 void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t* period_us, uint8_t len)
@@ -339,5 +371,70 @@ void LinuxRCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
 {
     _min_pwm = min_pwm;
     _max_pwm = max_pwm;
+}
+
+/* Separate thread to handle the Bebop motors controller */
+void* LinuxRCOutput_Bebop::_control_thread(void *arg) {
+    LinuxRCOutput_Bebop* rcout = (LinuxRCOutput_Bebop *) arg;
+
+    rcout->_run_rcout();
+    return NULL;
+}
+
+void LinuxRCOutput_Bebop::_run_rcout()
+{
+    uint16_t current_period_us[BEBOP_BLDC_MOTORS_NUM];
+    uint8_t i;
+    int ret;
+    struct timespec ts;
+
+    memset(current_period_us, 0, sizeof(current_period_us));
+
+    while(true) {
+        ret = clock_gettime(CLOCK_REALTIME, &ts);
+        if(ret != 0)
+            printf("failed to get time\n");
+
+        if(ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
+        {
+            ts.tv_sec += 1;
+            ts.tv_nsec = ts.tv_nsec + BEBOP_BLDC_TIMEOUT_NS - 1000000000;
+        }
+        else {
+            ts.tv_nsec += BEBOP_BLDC_TIMEOUT_NS;
+        }
+
+        ret = 0;
+        while((memcmp(_period_us, current_period_us, sizeof(_period_us)) == 0) && (ret == 0))
+            ret = pthread_cond_timedwait(&_cond, &_mutex, &ts);
+
+        memcpy(current_period_us, _period_us, sizeof(_period_us));
+        pthread_mutex_unlock(&_mutex);
+
+        /* start propellers if the speed of the 4 motors is >= min speed
+         * min speed set to min_pwm + 50*/
+        for(i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
+            if(current_period_us[i] <= _min_pwm + 50)
+                break;
+            _rpm[bebop_bldc_motors[i]] = _period_us_to_rpm(current_period_us[i]);
+        }
+
+        if(i < BEBOP_BLDC_MOTORS_NUM) {
+            /* one motor pwm value is at minimum (or under)
+             * if the motors are started, stop them*/
+            if(_state == BEBOP_BLDC_STARTED) {
+                _stop_prop();
+                _clear_error();
+            }
+        }
+        else {
+            /* all the motor pwm values are higher than minimum
+             * if the bldc is stopped, start it*/
+            if(_state == BEBOP_BLDC_STOPPED)
+                _start_prop();
+        }
+        _set_ref_speed(_rpm);
+        pthread_mutex_lock(&_mutex);
+    }
 }
 #endif

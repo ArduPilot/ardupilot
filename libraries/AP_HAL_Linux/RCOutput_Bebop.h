@@ -47,7 +47,7 @@ private:
     void _get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
                     uint16_t *batt_mv,
                     uint8_t *status,
-                    uint8_t *errno,
+                    uint8_t *error,
                     uint8_t *motors_err,
                     uint8_t *temp);
     void _toggle_gpio(uint8_t mask);
@@ -55,6 +55,13 @@ private:
     void _clear_error();
     void _play_sound(uint8_t sound);
     uint16_t _period_us_to_rpm(uint16_t period_us);
+
+    /* thread related members */
+    pthread_t _thread;
+    pthread_mutex_t _mutex;
+    pthread_cond_t _cond;
+    void _run_rcout();
+    static void *_control_thread(void *arg);
 };
 
 #endif // __AP_HAL_LINUX_RCOUTPUT_BEBOP_H__
