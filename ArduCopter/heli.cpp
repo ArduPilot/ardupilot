@@ -137,24 +137,30 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors.get_rsc_mode();
-    int16_t rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
 
-    switch (rsc_control_mode) {
-        case AP_MOTORS_HELI_RSC_MODE_NONE:
-            // even though pilot passes rotors speed directly to rotor ESC via receiver, motor lib needs to know if
-            // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
-        case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
-            // pass through pilot desired rotor speed
-            motors.set_desired_rotor_speed(rsc_control_deglitched);
-            break;
-        case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
-            // pass setpoint through as desired rotor speed
-            if (rsc_control_deglitched > 0) {
-                motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
-            }else{
-                motors.set_desired_rotor_speed(0);
-            }
-            break;
+    rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
+
+    if (motors.armed()) {
+        switch (rsc_control_mode) {
+            case AP_MOTORS_HELI_RSC_MODE_NONE:
+                // even though pilot passes rotors speed directly to rotor ESC via receiver, motor lib needs to know if
+                // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
+            case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
+                // pass through pilot desired rotor speed
+                motors.set_desired_rotor_speed(rsc_control_deglitched);
+                break;
+            case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
+                // pass setpoint through as desired rotor speed
+                if (rsc_control_deglitched > 0) {
+                    motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+                }else{
+                    motors.set_desired_rotor_speed(0);
+                }
+                break;
+        }
+    } else {
+        // if disarmed, force desired_rotor_speed to Zero
+        motors.set_desired_rotor_speed(0);
     }
 
     // when rotor_runup_complete changes to true, log event

@@ -702,15 +702,15 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check if rotor is spinning on heli
-    #if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // heli specific arming check
-    if (!motors.allow_arming()){
+    if ((rsc_control_deglitched > 0) || !motors.allow_arming()){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor Control Engaged"));
         }
         return false;
     }
-    #endif  // HELI_FRAME
+#endif  // HELI_FRAME
 
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
