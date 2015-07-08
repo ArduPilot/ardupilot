@@ -28,7 +28,6 @@
 extern const AP_HAL::HAL& hal;
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
-#define BMP085_EOC 30        // End of conversion pin PC7 on APM1
 
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
@@ -36,12 +35,15 @@ extern const AP_HAL::HAL& hal;
 // is not available to the arduino digitalRead function.
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
+// End of conversion pin PC7
+#define BMP085_EOC 30
 #else
 // No EOC connection from Baro
 // Use times instead.
 // Temp conversion time is 4.5ms
 // Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
 #define BMP_DATA_READY() (BMP085_State == 0 ? hal.scheduler->millis() > (_last_temp_read_command_time + 5) : hal.scheduler->millis() > (_last_press_read_command_time + 26))
+#define BMP085_EOC -1
 #endif
 
 // oversampling 3 gives 26ms conversion time. We then average
@@ -71,8 +73,10 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
         hal.scheduler->panic(PSTR("BMP085: unable to get semaphore"));
     }
 
-    // End Of Conversion (PC7) input
-    hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);
+    if (BMP085_EOC > 0) {
+        // End Of Conversion input
+        hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);
+    }
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
@@ -98,7 +102,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     //Send a command to read Temp
     Command_ReadTemp();
-    
+
     BMP085_State = 0;
 
     i2c_sem->give();
