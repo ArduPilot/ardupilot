@@ -536,6 +536,15 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 #endif
+#if FRAME_CONFIG == HELI_FRAME
+        // check helicopter parameters
+        if (!motors.parameter_check()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Heli Parameters"));
+            }
+            return false;
+        }
+#endif // HELI_FRAME
     }
 
     // check throttle is above failsafe throttle
