@@ -62,12 +62,11 @@ void Copter::calc_wp_bearing()
 // calc_home_distance_and_bearing - calculate distance and bearing to home for reporting and autopilot decisions
 void Copter::calc_home_distance_and_bearing()
 {
-    Vector3f curr = inertial_nav.get_position();
-
     // calculate home distance and bearing
     if (position_ok()) {
-        home_distance = pythagorous2(curr.x, curr.y);
         Vector3f home = pv_location_to_vector(ahrs.get_home());
+        Vector3f curr = inertial_nav.get_position();
+        home_distance = pv_get_horizontal_distance_cm(curr, home);
         home_bearing = pv_get_bearing_cd(curr,home);
 
         // update super simple bearing (if required) because it relies on home_bearing
