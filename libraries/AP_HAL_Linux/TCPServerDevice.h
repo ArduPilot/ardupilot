@@ -4,10 +4,10 @@
 #include "SerialDevice.h"
 #include "../AP_HAL/utility/Socket.h"
 
-class TCPClientDevice: public SerialDevice {
+class TCPServerDevice: public SerialDevice {
 public:
-    TCPClientDevice(const char *ip, uint16_t port);
-    virtual ~TCPClientDevice();
+    TCPServerDevice(const char *ip, uint16_t port);
+    virtual ~TCPServerDevice();
 
     virtual bool open() override;
     virtual bool close() override;
