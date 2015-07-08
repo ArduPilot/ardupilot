@@ -191,6 +191,9 @@ public:
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
 
+    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
+    bool rotor_speed_above_critical() const { return _rotor_speed_estimate > _rsc_critical; }
+
     // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
     void recalc_scalers();
 
