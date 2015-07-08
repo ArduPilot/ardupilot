@@ -29,7 +29,9 @@ public:
         _latest_block_len(0),
         _latest_block_num(0),
         _logging_started(false),
-        _sending_to_client(false)
+        _sending_to_client(false),
+        _only_critical_blocks(false),
+        _is_critical_block{0}
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
         _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
@@ -70,16 +72,20 @@ public:
     virtual void handle_retry(uint32_t block_num);
     virtual void remote_log_block_status_msg(mavlink_channel_t chan,
                                              mavlink_message_t* msg);
+    void WriteCriticalBlock(const void *pBuffer, uint16_t size);
+    void _WriteBlock(const void *pBuffer, uint16_t size, bool iscritical);
 private:
 
     mavlink_channel_t _chan;
     bool _initialised;
+    uint32_t _last_response_time;
 
     uint8_t _cur_block_address;
     uint16_t _latest_block_len;
     uint32_t _latest_block_num;
     bool _logging_started;
     bool _sending_to_client;
+    bool _only_critical_blocks;
 
     // write buffer
     // FIXME: allocate this like we do in DataFlash_File
@@ -87,10 +93,12 @@ private:
     static const uint16_t _block_max_size = 200;
     uint8_t _buf[_total_blocks][_block_max_size];
     uint32_t _block_num[_total_blocks];
+    bool _is_critical_block[_total_blocks];
 
     uint16_t start_new_log(void) { return 0; }
     bool ReadBlock(void *pkt, uint16_t size) { return false; }
     int8_t next_block_address();
+    bool _buffer_empty();
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
     perf_counter_t  _perf_write;

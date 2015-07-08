@@ -35,6 +35,9 @@ public:
 
     /* Write a block of data at current offset */
     virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
+    virtual void WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+        WriteBlock(pBuffer, size);
+    };
 
     // high level interface
     virtual uint16_t find_last_log(void) = 0;

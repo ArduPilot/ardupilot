@@ -666,7 +666,7 @@ void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Log_Fill_Format(s, pkt);
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -681,7 +681,7 @@ void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
         value : value
     };
     strncpy(pkt.name, name, sizeof(pkt.name));
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*

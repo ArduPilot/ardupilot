@@ -1,5 +1,6 @@
 #include <DataFlash.h>
 
+
 const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
     // @Param: _TYPE
     // @DisplayName: Log storage type
@@ -12,6 +13,9 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
 // start functions pass straight through to backend:
 void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
     backend->WriteBlock(pBuffer, size);
+}
+void DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+    backend->WriteCriticalBlock(pBuffer, size);
 }
 uint16_t DataFlash_Class::start_new_log() {
     return backend->start_new_log();
