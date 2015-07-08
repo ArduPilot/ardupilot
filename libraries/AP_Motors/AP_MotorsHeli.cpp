@@ -345,8 +345,8 @@ void AP_MotorsHeli::output_test(uint8_t motor_seq, int16_t pwm)
 // allow_arming - check if it's safe to arm
 bool AP_MotorsHeli::allow_arming() const
 {
-    // returns false if main rotor desired speed is not zero
-    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _desired_rotor_speed > 0) {
+    // returns false if main rotor speed is not zero
+    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _rotor_speed_estimate > 0) {
         return false;
     }
 
