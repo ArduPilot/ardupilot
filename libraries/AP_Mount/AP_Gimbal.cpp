@@ -160,18 +160,10 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(const Quaternion &quatEst)
         //divide the demanded quaternion by the estimated to get the error
         Quaternion quatErr = quatDem / quatEst;
 
-        // Convert to a delta rotation using a small angle approximation
+        // Convert to a delta rotation
         quatErr.normalize();
         Vector3f deltaAngErr;
-        float scaler;
-        if (quatErr[0] >= 0.0f) {
-            scaler = 2.0f;
-        } else {
-            scaler = -2.0f;
-        }
-        deltaAngErr.x = scaler * quatErr[1];
-        deltaAngErr.y = scaler * quatErr[2];
-        deltaAngErr.z = scaler * quatErr[3];
+        quatErr.to_axis_angle(deltaAngErr);
 
         // multiply the angle error vector by a gain to calculate a demanded gimbal rate required to control tilt
         Vector3f gimbalRateDemVecTilt = deltaAngErr * _gimbalParams.K_gimbalRate;
