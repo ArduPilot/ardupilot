@@ -44,7 +44,22 @@ void Copter::althold_run()
     target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
 
 #if FRAME_CONFIG == HELI_FRAME
+    // helicopters are held on the ground until rotor speed runup has finished
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()) && motors.rotor_runup_complete());
+
+    if(!motors.armed()) {
+        heli_flags.init_targets_on_arming=true;
+        attitude_control.set_yaw_target_to_current_heading();
+    }
+
+    // if we have recently armed and rotor is just ramping up speed, relax yaw controller
+    if(motors.armed() && heli_flags.init_targets_on_arming) {
+        attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        if (motors.rotor_speed_above_critical()) {
+            heli_flags.init_targets_on_arming=false;
+        }
+    }   
 #else
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()));
 #endif
