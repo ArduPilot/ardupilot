@@ -8,6 +8,7 @@ static void compass_cal_update() {
 
     static bool cal_has_run = false;
     if (compass.is_calibrating()) {
+        camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
         cal_has_run = true;
         if(!motors.armed() && g.rc_4.control_in < -4000 && g.rc_3.control_in > 900) {
             compass.cancel_calibration_all();
