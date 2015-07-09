@@ -78,16 +78,14 @@ void loop()
             hal.console->println("not healthy");
             return;
         }
-        hal.console->print("Pressure:");
-        hal.console->print(barometer.get_pressure());
-        hal.console->print(" Temperature:");
-        hal.console->print(barometer.get_temperature());
-        hal.console->print(" Altitude:");
-        hal.console->print(alt);
-        hal.console->printf(" climb=%.2f t=%u",
+        hal.console->printf("Pressure: %.2f Pa "
+                            "Temperature: %.2f ºC "
+                            "Altitude: %.2f m "
+                            "climb:%.2f m/s"
+                            "t:%u usec\n", barometer.get_pressure(),
+                            barometer.get_temperature(), alt,
                             barometer.get_climb_rate(),
                             (unsigned)read_time);
-        hal.console->println();
     }
 }
 
