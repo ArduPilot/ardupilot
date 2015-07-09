@@ -135,7 +135,7 @@ void LinuxRCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -157,7 +157,7 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, sizeof(data), (uint8_t *)&data);
@@ -177,7 +177,7 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
 
     memset(&data, 0, sizeof(data));
 
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR,
@@ -211,7 +211,7 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
 
 void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_TOGGLE_GPIO, mask);
@@ -224,7 +224,7 @@ void LinuxRCOutput_Bebop::_stop_prop()
     uint8_t data = BEBOP_BLDC_STOP_PROP;
     _state = BEBOP_BLDC_STOPPED;
 
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -236,7 +236,7 @@ void LinuxRCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -246,7 +246,7 @@ void LinuxRCOutput_Bebop::_clear_error()
 
 void LinuxRCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    if(!_i2c_sem->take(10))
+    if(!_i2c_sem->take(0))
         return;
 
     hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_PLAY_SOUND, sound);
