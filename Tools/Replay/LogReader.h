@@ -22,6 +22,7 @@ public:
     void set_accel_mask(uint8_t mask) { accel_mask = mask; }
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
     void set_use_imt(bool _use_imt) { use_imt = _use_imt; }
+    void set_save_chek_messages(bool _save_chek_messages) { save_chek_messages = _save_chek_messages; }
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     virtual bool handle_log_format_msg(const struct log_Format &f);
@@ -70,7 +71,11 @@ private:
     bool installed_vehicle_specific_parsers;
     const char **&nottypes;
 
+    bool save_chek_messages;
+
     void maybe_install_vehicle_specific_parsers();
 
     uint8_t map_fmt_type(const char *name, uint8_t intype);
+
+    bool save_message_type(const char *name);
 };

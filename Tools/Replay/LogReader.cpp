@@ -28,7 +28,9 @@
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, uint8_t _num_types, const char **&_nottypes) :
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
+                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, 
+                     uint8_t _num_types, const char **&_nottypes):
     vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
@@ -123,6 +125,15 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
     return mapped_msgid[intype];    
 }
 
+bool LogReader::save_message_type(const char *name)
+{
+    bool save_message = !in_list(name, generated_names);
+    if (save_chek_messages && strcmp(name, "CHEK") == 0) {
+        save_message = true;
+    }
+    return save_message;
+}
+
 bool LogReader::handle_log_format_msg(const struct log_Format &f) 
 {
 	char name[5];
@@ -130,7 +141,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	memcpy(name, f.name, 4);
 	debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
-        if (!in_list(name, generated_names)) {
+        if (save_message_type(name)) {
             /* 
                any messages which we won't be generating internally in
                replay should get the original FMT header
@@ -249,7 +260,7 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
     memset(name, '\0', 5);
     memcpy(name, f.name, 4);
 
-    if (!in_list(name, generated_names)) {
+    if (save_message_type(name)) {
         if (mapped_msgid[msg[2]] == 0) {
             printf("Unknown msgid %u\n", (unsigned)msg[2]);
             exit(1);

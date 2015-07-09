@@ -554,6 +554,10 @@ void Replay::setup()
 
     _parse_command_line(argc, argv);
 
+    if (!check_generate) {
+        logreader.set_save_chek_messages(true);
+    }
+
     // _parse_command_line sets up an FPE handler.  We can do better:
     signal(SIGFPE, _replay_sig_fpe);
 
