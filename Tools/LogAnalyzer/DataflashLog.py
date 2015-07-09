@@ -110,6 +110,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         'i': ctypes.c_int32,
         'I': ctypes.c_uint32,
         'f': ctypes.c_float,
+        'd': ctypes.c_double,
         'n': ctypes.c_char * 4,
         'N': ctypes.c_char * 16,
         'Z': ctypes.c_char * 64,
@@ -168,7 +169,11 @@ class BinaryFormat(ctypes.LittleEndianStructure):
                 if scale is not None:
                     p = property(lambda x:getattr(x, attributename) / scale) 
                 members[propertyname] = p
-                fields.append((attributename, BinaryFormat.FIELD_FORMAT[format]))
+                try:
+                    fields.append((attributename, BinaryFormat.FIELD_FORMAT[format]))
+                except KeyError:
+                    print('ERROR: Failed to add FMT type: {}, with format: {}'.format(attributename, format))
+                    raise
             createproperty(label, _type)
         members['_fields_'] = fields
 
