@@ -25,6 +25,8 @@
 #include <AP_Math.h>
 #include <AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
 #include "AP_Compass_AK8963.h"
 #include "../AP_InertialSensor/AP_InertialSensor_MPU9250.h"
 
@@ -474,3 +476,4 @@ void AP_Compass_AK8963::_bus_write(uint8_t address, const uint8_t *buf, uint32_t
 
     _spi->transaction(tx, NULL, count + 1);
 }
+#endif // CONFIG_HAL_BOARD
