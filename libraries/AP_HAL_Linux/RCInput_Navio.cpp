@@ -264,11 +264,16 @@ void LinuxRCInput_Navio::init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t sou
     (*cbp)->stride = stride;
 }
 
-//Non-stoping DMA when the process is finished will lead to crash
-void LinuxRCInput_Navio::stop_dma_and_exit(int param)
+void LinuxRCInput_Navio::stop_dma()
 {
-    dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = 0;    // stop dma 
-    exit(1);
+    dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = 0;
+}
+
+/* We need to be sure that the DMA is stopped upon termination */
+void LinuxRCInput_Navio::termination_handler(int signum)
+{
+    stop_dma();
+    hal.scheduler->panic("Interrupted");
 }
 
 
@@ -380,7 +385,7 @@ void LinuxRCInput_Navio::set_sigaction()
         //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
-        sa.sa_handler = LinuxRCInput_Navio::stop_dma_and_exit;
+        sa.sa_handler = LinuxRCInput_Navio::termination_handler;
         sigaction(i, &sa, NULL);
     }
 }
@@ -413,7 +418,7 @@ LinuxRCInput_Navio::~LinuxRCInput_Navio()
 
 void LinuxRCInput_Navio::deinit()
 {
-    stop_dma_and_exit(0);
+    stop_dma();
 }
 
 //Initializing necessary registers

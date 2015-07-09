@@ -123,7 +123,8 @@ private:
     void init_PCM();
     void init_DMA();
     void init_buffer();
-    static void stop_dma_and_exit(int param);
+    static void stop_dma();
+    static void termination_handler(int signum);
     void set_sigaction();
     void set_physical_addresses(int version);
     void deinit() override;
