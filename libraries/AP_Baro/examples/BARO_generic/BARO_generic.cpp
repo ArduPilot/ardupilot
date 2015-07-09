@@ -41,6 +41,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 static AP_Baro barometer;
 
 static uint32_t timer;
+static uint8_t counter;
 
 void setup()
 {
@@ -62,8 +63,14 @@ void setup()
 
 void loop()
 {
-    if((hal.scheduler->micros() - timer) > 100000UL) {
+    // run accumulate() at 50Hz and update() at 10Hz
+    if((hal.scheduler->micros() - timer) > 20*1000UL) {
         timer = hal.scheduler->micros();
+        barometer.accumulate();
+        if (counter++ < 5) {
+            return;
+        }
+        counter = 0;
         barometer.update();
         uint32_t read_time = hal.scheduler->micros() - timer;
         float alt = barometer.get_altitude();
