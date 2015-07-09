@@ -186,7 +186,7 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
                             (uint8_t *)&data);
 
     if (data.checksum != _checksum((uint8_t *)&data, sizeof(data)))
-        hal.console->println_P(PSTR("RCOutput_Bebop: bad checksum in obs data"));
+        hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
 
     if (rpm != NULL) {
         for(i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
@@ -392,7 +392,7 @@ void LinuxRCOutput_Bebop::_run_rcout()
     while (true) {
         ret = clock_gettime(CLOCK_REALTIME, &ts);
         if (ret != 0)
-            printf("failed to get time\n");
+            hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
 
         if (ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
         {
