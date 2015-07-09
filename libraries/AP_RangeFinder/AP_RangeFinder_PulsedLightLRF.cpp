@@ -49,7 +49,7 @@ bool AP_RangeFinder_PulsedLightLRF::detect(RangeFinder &_ranger, uint8_t instanc
 bool AP_RangeFinder_PulsedLightLRF::start_reading()
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(1)) {
@@ -57,7 +57,7 @@ bool AP_RangeFinder_PulsedLightLRF::start_reading()
     }
 
     // send command to take reading
-    if (hal.i2c->writeRegister(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
+    if (hal.i2c0->writeRegister(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR,
                                AP_RANGEFINDER_PULSEDLIGHTLRF_MEASURE_REG, 
                                AP_RANGEFINDER_PULSEDLIGHTLRF_MSRREG_ACQUIRE) != 0) {
         i2c_sem->give();
@@ -76,7 +76,7 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
     uint8_t buff[2];
 
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // exit immediately if we can't take the semaphore
     if (i2c_sem == NULL || !i2c_sem->take(1)) {
@@ -84,7 +84,7 @@ bool AP_RangeFinder_PulsedLightLRF::get_reading(uint16_t &reading_cm)
     }
 
     // read the high and low byte distance registers
-    if (hal.i2c->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR, 
+    if (hal.i2c0->readRegisters(AP_RANGEFINDER_PULSEDLIGHTLRF_ADDR,
                                AP_RANGEFINDER_PULSEDLIGHTLRF_DISTHIGH_REG, 2, &buff[0]) != 0) {
         i2c_sem->give();
         return false;

@@ -347,7 +347,7 @@ void Copter::Log_Write_Performance()
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
         pm_test          : pmTest1,
-        i2c_lockup_count : hal.i2c->lockup_count(),
+        i2c_lockup_count : hal.i2c0->lockup_count(),
         ins_error_count  : ins.error_count()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
