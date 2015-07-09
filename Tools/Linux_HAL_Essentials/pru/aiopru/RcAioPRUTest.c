@@ -85,7 +85,7 @@ int main (void)
    usleep(5 * 1000);
 
    // Load firmware
-   for(i = 0; i < sizeof(PRUcode); i++) {
+   for(i = 0; i < ARRAY_SIZE(PRUcode); i++) {
       *(iram + i) = PRUcode[i];
    }
 
