@@ -67,8 +67,8 @@ void HAL_AVR_APM2::init(int argc, char * const argv[]) const {
     rcin->init((void*)&isrRegistry);
     rcout->init(NULL);
     spi->init(NULL);
-    i2c->begin();
-    i2c->setTimeout(100);
+    i2c0->begin();
+    i2c0->setTimeout(100);
     analogin->init(NULL);
 
     /* Enable the pullups on the RX pins of the 3 UARTs This is important when
