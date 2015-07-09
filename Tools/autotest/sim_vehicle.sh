@@ -277,7 +277,7 @@ if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
 fi
 
 autotest="../Tools/autotest"
-[ -d "$autotest"] && {
+[ -d "$autotest" ] && {
     autotest=$(dirname $(readlink -e $0))
 }
 pushd $autotest/../../$VEHICLE || {
