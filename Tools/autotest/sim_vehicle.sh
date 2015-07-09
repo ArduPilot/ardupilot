@@ -285,6 +285,8 @@ pushd $autotest/../../$VEHICLE || {
     usage
     exit 1
 }
+AUTOTEST=$autotest
+export AUTOTEST
 VEHICLEDIR=$(pwd)
 
 if [ $NO_REBUILD == 0 ]; then
