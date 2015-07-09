@@ -195,10 +195,12 @@ void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
 
 void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
 {
+    uint8_t addr = reg | 0x80; // Set most significant bit
+
     uint8_t tx[2];
     uint8_t rx[2];
 
-    tx[0] = reg;
+    tx[0] = addr;
     tx[1] = 0;
     _spi->transaction(tx, rx, 2);
 
