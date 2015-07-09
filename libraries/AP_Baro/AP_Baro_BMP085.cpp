@@ -60,8 +60,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
     _count(0),
     BMP085_State(0),
     ac1(0), ac2(0), ac3(0), b1(0), b2(0), mb(0), mc(0), md(0),
-    ac4(0), ac5(0), ac6(0),
-    _retry_time(0)
+    ac4(0), ac5(0), ac6(0)
 {
     uint8_t buff[22];
 
@@ -179,7 +178,6 @@ bool AP_Baro_BMP085::ReadPress()
     uint8_t buf[3];
 
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
-        _retry_time = hal.scheduler->millis() + 1000;
         hal.i2c->setHighSpeed(false);
         return false;
     }

@@ -31,7 +31,6 @@ private:
     int16_t                         ac1, ac2, ac3, b1, b2, mb, mc, md;
     uint16_t                        ac4, ac5, ac6;
 
-    uint32_t                        _retry_time;
     int32_t                         RawPress;
     int32_t                         RawTemp;
 
