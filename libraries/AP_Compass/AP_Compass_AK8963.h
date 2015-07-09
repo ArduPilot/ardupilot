@@ -31,7 +31,8 @@ class AP_Compass_AK8963 : public AP_Compass_Backend
 public:
     AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus);
 
-    static AP_Compass_Backend *detect(Compass &compass);
+    static AP_Compass_Backend *detect_mpu9250(Compass &compass);
+    static AP_Compass_Backend *detect_i2c1(Compass &compass);
 
     bool        init(void);
     void        read(void);
