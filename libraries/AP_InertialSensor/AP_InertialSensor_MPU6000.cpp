@@ -701,7 +701,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     // set sample rate to 1000Hz and apply a software filter
     // In this configuration, the gyro sample rate is 8kHz
     // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
-    // So we have to set it to 8 to have a 1kHz sampling
+    // So we have to set it to 7 to have a 1kHz sampling
     // rate on the gyro
     _register_write(MPUREG_SMPLRT_DIV, 7);
 #else
