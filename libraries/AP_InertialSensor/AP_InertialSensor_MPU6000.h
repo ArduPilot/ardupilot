@@ -24,7 +24,9 @@
 #include <LowPassFilter2p.h>
 #endif
 
-#define MAX_DATA_READ 1024
+#define MPU6000_SAMPLE_SIZE 12
+#define MPU6000_MAX_FIFO_SAMPLES 3
+#define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
 class AP_MPU6000_BusDriver
 {

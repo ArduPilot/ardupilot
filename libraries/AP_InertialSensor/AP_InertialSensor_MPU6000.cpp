@@ -166,9 +166,6 @@ extern const AP_HAL::HAL& hal;
 #define MPU6000_REV_D8                          0x58    // 0101			1000
 #define MPU6000_REV_D9                          0x59    // 0101			1001
 
-#define MPU6000_SAMPLE_SIZE 12
-#define MPU6000_MAX_FIFO_SAMPLES 3
-
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
