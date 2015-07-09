@@ -280,7 +280,7 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     ret = pthread_mutex_init(&_mutex, NULL);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
-        goto err_mutex;
+        return;
     }
 
     pthread_mutex_lock(&_mutex);
@@ -289,13 +289,13 @@ void LinuxRCOutput_Bebop::init(void* dummy)
 
     if (ret != 0) {
         perror("RCout_Bebop: failed to init cond\n");
-        goto err_mutex;
+        goto exit;
     }
 
     ret = pthread_attr_init(&attr);
     if (ret != 0) {
         perror("RCOut_Bebop: failed to init attr\n");
-        goto err_mutex;
+        goto exit;
     }
     pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
@@ -303,16 +303,15 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     ret = pthread_create(&_thread, &attr, _control_thread, this);
     if (ret != 0) {
         perror("RCOut_Bebop: failed to create thread\n");
-        goto err_mutex;
+        goto exit;
     }
 
     _clear_error();
 
     /* Set an initial dummy frequency */
     _frequency = 50;
-    return;
 
-err_mutex:
+exit:
     pthread_mutex_unlock(&_mutex);
     return;
 }
@@ -390,6 +389,7 @@ void LinuxRCOutput_Bebop::_run_rcout()
     memset(current_period_us, 0, sizeof(current_period_us));
 
     while (true) {
+        pthread_mutex_lock(&_mutex);
         ret = clock_gettime(CLOCK_REALTIME, &ts);
         if (ret != 0)
             hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
@@ -431,7 +431,6 @@ void LinuxRCOutput_Bebop::_run_rcout()
                 _start_prop();
         }
         _set_ref_speed(_rpm);
-        pthread_mutex_lock(&_mutex);
     }
 }
 #endif
