@@ -48,6 +48,8 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
+    static AP_InertialSensor_Backend *detect_i2c2(AP_InertialSensor &_imu);
+    static AP_InertialSensor_Backend *detect_spi(AP_InertialSensor &_imu);
 
     /* update accel and gyro state */
     bool update();
@@ -65,7 +67,6 @@ private:
     uint8_t _accel_instance;
 
     AP_HAL::DigitalSource *_drdy_pin;
-
     bool                 _init_sensor(void);
     bool                 _sample_available();
     void                 _read_data_transaction();

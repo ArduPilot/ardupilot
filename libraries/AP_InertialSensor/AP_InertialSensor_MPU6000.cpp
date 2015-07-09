@@ -169,6 +169,10 @@ extern const AP_HAL::HAL& hal;
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
+#if !defined(HAL_INS_MPU60XX_I2C_ADDR)
+#define HAL_INS_MPU60XX_I2C_ADDR 0x68
+#endif
+
 /* SPI bus driver implementation */
 void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
 {
@@ -382,6 +386,43 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 #endif
     _sum_count(0)
 {
+
+}
+
+/*
+  detect the sensor
+ */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_spi(AP_InertialSensor &_imu)
+{
+    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu, new AP_MPU6000_BusDriver_SPI());
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->_init_sensor()) {
+        delete sensor;
+        return NULL;
+    }
+
+    return sensor;
+}
+
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c2(AP_InertialSensor &_imu)
+{
+    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu,
+                                        new AP_MPU6000_BusDriver_I2C(hal.i2c2, HAL_INS_MPU60XX_I2C_ADDR));
+    if (sensor == NULL) {
+        return NULL;
+    }
+    if (!sensor->_init_sensor()) {
+        delete sensor;
+        return NULL;
+    }
+
+    return sensor;
+}
+
+bool AP_InertialSensor_MPU6000::_init_sensor(void)
+{
     _bus_sem = _bus->get_semaphore();
 
 #ifdef MPU6000_DRDY_PIN
@@ -397,19 +438,17 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_bus_sem->take(100)) {
-                return;
+                return false;
             }
             if (_data_ready()) {
                 _bus_sem->give();
                 break;
-            } else {
-                return;
             }
             _bus_sem->give();
         }
         if (tries++ > 5) {
             hal.console->print_P(PSTR("failed to boot MPU6000 5 times")); 
-            return;
+            return false;
         }
     } while (1);
 
@@ -426,9 +465,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _dump_registers();
 #endif
 
-    return;
+    return true;
 }
-
 /*
   process any 
  */
