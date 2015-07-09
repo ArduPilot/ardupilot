@@ -276,7 +276,10 @@ if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
     BUILD_TARGET="$OVERRIDE_BUILD_TARGET"
 fi
 
-autotest=$(dirname $(readlink -e $0))
+autotest="../Tools/autotest"
+[ -d "$autotest"] && {
+    autotest=$(dirname $(readlink -e $0))
+}
 pushd $autotest/../../$VEHICLE || {
     echo "Failed to change to vehicle directory for $VEHICLE"
     usage
