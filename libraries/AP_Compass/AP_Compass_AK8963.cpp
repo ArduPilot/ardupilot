@@ -247,6 +247,7 @@ void AP_Compass_AK8963::read()
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     field.rotate(ROTATION_YAW_90);
 #endif
+
     publish_field(field, _compass_instance);
 }
 
@@ -260,20 +261,19 @@ void AP_Compass_AK8963::_update()
         return;
     }
 
-    switch (_state)
-    {
-        case STATE_SAMPLE:
-            if (!_collect_samples()) {
-                _state = STATE_ERROR;
-            }
-            break;
-        case STATE_ERROR:
-            if (_bus->start_conversion()) {
-                _state = STATE_SAMPLE;
-            }
-            break;
-        default:
-            break;
+    switch (_state) {
+    case STATE_SAMPLE:
+        if (!_collect_samples()) {
+            _state = STATE_ERROR;
+        }
+        break;
+    case STATE_ERROR:
+        if (_bus->start_conversion()) {
+            _state = STATE_SAMPLE;
+        }
+        break;
+    default:
+        break;
     }
 
     _last_update_timestamp = hal.scheduler->micros();
@@ -283,7 +283,7 @@ void AP_Compass_AK8963::_update()
 bool AP_Compass_AK8963::_check_id()
 {
     for (int i = 0; i < 5; i++) {
-        uint8_t deviceid;
+        uint8_t deviceid = 0;
         _bus->register_read(AK8963_WIA, &deviceid, 0x01); /* Read AK8963's id */
 
         if (deviceid == AK8963_Device_ID) {
@@ -310,7 +310,8 @@ bool AP_Compass_AK8963::_calibrate()
 {
     uint8_t cntl1 = _bus->register_read(AK8963_CNTL1);
 
-    _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | _magnetometer_adc_resolution); /* Enable FUSE-mode in order to be able to read calibreation data */
+    /* Enable FUSE-mode in order to be able to read calibration data */
+    _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | _magnetometer_adc_resolution);
 
     uint8_t response[3];
     _bus->register_read(AK8963_ASAX, response, 3);
@@ -334,17 +335,17 @@ bool AP_Compass_AK8963::_collect_samples()
 
     if (!_bus->read_raw(_mag_x, _mag_y, _mag_z)) {
         return false;
-    } else {
-        _mag_x_accum += _mag_x;
-        _mag_y_accum += _mag_y;
-        _mag_z_accum += _mag_z;
-        _accum_count++;
-        if (_accum_count == 10) {
-             _mag_x_accum /= 2;
-             _mag_y_accum /= 2;
-             _mag_z_accum /= 2;
-             _accum_count = 5;
-        }
+    }
+
+    _mag_x_accum += _mag_x;
+    _mag_y_accum += _mag_y;
+    _mag_z_accum += _mag_z;
+    _accum_count++;
+    if (_accum_count == 10) {
+        _mag_x_accum /= 2;
+        _mag_y_accum /= 2;
+        _mag_z_accum /= 2;
+        _accum_count = 5;
     }
 
     return true;
@@ -364,22 +365,21 @@ bool AP_Compass_AK8963::_sem_take_nonblocking()
 {
     static int _sem_failure_count = 0;
 
-    bool got = _bus_sem->take_nonblocking();
-
-    if (!got) {
-        if (!hal.scheduler->system_initializing()) {
-            _sem_failure_count++;
-            if (_sem_failure_count > 100) {
-                hal.scheduler->panic(PSTR("PANIC: failed to take _bus->sem "
-                                          "100 times in a row, in "
-                                          "AP_Compass_AK8963"));
-            }
-        }
-        return false; /* never reached */
-    } else {
+    if (_bus_sem->take_nonblocking()) {
         _sem_failure_count = 0;
+        return true;
     }
-    return got;
+
+    if (!hal.scheduler->system_initializing() ) {
+        _sem_failure_count++;
+        if (_sem_failure_count > 100) {
+            hal.scheduler->panic(PSTR("PANIC: failed to take _bus->sem "
+                                      "100 times in a row, in "
+                                      "AP_Compass_AK8963"));
+        }
+    }
+
+    return false;
 }
 
 void AP_Compass_AK8963::_dump_registers()
@@ -478,19 +478,19 @@ bool AP_AK8963_SerialBus_MPU9250::read_raw(float &mag_x, float &mag_y, float &ma
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
 
-    if(!(st2 & 0x08)) {
-        mag_x = (float) int16_val(rx, 1);
-        mag_y = (float) int16_val(rx, 2);
-        mag_z = (float) int16_val(rx, 3);
-
-        if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
-            return false;
-        }
-
-        return true;
-    } else {
+    if (st2 & 0x08) {
         return false;
     }
+
+    mag_x = (float) int16_val(rx, 1);
+    mag_y = (float) int16_val(rx, 2);
+    mag_z = (float) int16_val(rx, 3);
+
+    if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
+        return false;
+    }
+
+    return true;
 }
 
 AP_HAL::Semaphore * AP_AK8963_SerialBus_MPU9250::get_semaphore()
@@ -545,19 +545,19 @@ bool AP_AK8963_SerialBus_I2C::read_raw(float &mag_x, float &mag_y, float &mag_z)
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
 
-    if(!(st2 & 0x08)) {
-        mag_x = (float) int16_val(rx, 1);
-        mag_y = (float) int16_val(rx, 2);
-        mag_z = (float) int16_val(rx, 3);
-
-        if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
-            return false;
-        }
-
-        return true;
-    } else {
+    if (st2 & 0x08) {
         return false;
     }
+
+    mag_x = (float) int16_val(rx, 1);
+    mag_y = (float) int16_val(rx, 2);
+    mag_z = (float) int16_val(rx, 3);
+
+    if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
+        return false;
+    }
+
+    return true;
 }
 
 AP_HAL::Semaphore * AP_AK8963_SerialBus_I2C::get_semaphore()
