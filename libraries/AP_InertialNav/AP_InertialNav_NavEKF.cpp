@@ -125,7 +125,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
  *
  * @return
  */
-bool AP_InertialNav_NavEKF::get_hagl(float height) const
+bool AP_InertialNav_NavEKF::get_hagl(float &height) const
 {
     // true when estimate is valid
     bool valid = _ahrs_ekf.get_NavEKF().getHAGL(height);
