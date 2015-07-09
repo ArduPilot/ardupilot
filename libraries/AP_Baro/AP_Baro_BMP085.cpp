@@ -29,6 +29,15 @@ extern const AP_HAL::HAL& hal;
 
 #define BMP085_ADDRESS 0x77  //(0xEE >> 1)
 
+#define BMP085_CALIBRATION_DATA_START   0xAA
+#define BMP085_CALIBRATION_DATA_LENGTH  22  /* 16 bit values */
+#define BMP085_CTRL_REG                 0xF4
+#define BMP085_TEMP_MEASUREMENT         0x2E
+#define BMP085_PRESSURE_MEASUREMENT     0x34
+#define BMP085_CONVERSION_REGISTER_MSB  0xF6
+#define BMP085_CONVERSION_REGISTER_LSB  0xF7
+#define BMP085_CONVERSION_REGISTER_XLSB 0xF8
+
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
 // On APM2 prerelease hw, the data ready port is hooked up to PE7, which
@@ -55,7 +64,7 @@ extern const AP_HAL::HAL& hal;
 AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
     AP_Baro_Backend(baro)
 {
-    uint8_t buff[22];
+    uint8_t buff[BMP085_CALIBRATION_DATA_LENGTH];
 
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
@@ -71,7 +80,8 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
     }
 
     // We read the calibration data registers
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
+    if (hal.i2c->readRegisters(BMP085_ADDRESS, BMP085_CALIBRATION_DATA_START,
+                               BMP085_CALIBRATION_DATA_LENGTH, buff) != 0) {
         hal.scheduler->panic(PSTR("BMP085: bad calibration registers"));
     }
 
@@ -160,8 +170,8 @@ void AP_Baro_BMP085::update(void)
 void AP_Baro_BMP085::_command_read_press()
 {
     // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
-    hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4,
-                           0x34+(OVERSAMPLING << 6));
+    hal.i2c->writeRegister(BMP085_ADDRESS, BMP085_CTRL_REG,
+                           BMP085_PRESSURE_MEASUREMENT + (OVERSAMPLING << 6));
     _last_press_read_command_time = hal.scheduler->millis();
 }
 
@@ -170,7 +180,8 @@ bool AP_Baro_BMP085::_read_press()
 {
     uint8_t buf[3];
 
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
+    if (hal.i2c->readRegisters(BMP085_ADDRESS, BMP085_CONVERSION_REGISTER_MSB,
+                               3, buf) != 0) {
         hal.i2c->setHighSpeed(false);
         return false;
     }
@@ -186,7 +197,8 @@ bool AP_Baro_BMP085::_read_press()
 // Send Command to Read Temperature
 void AP_Baro_BMP085::_command_read_temp()
 {
-    hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E);
+    hal.i2c->writeRegister(BMP085_ADDRESS, BMP085_CTRL_REG,
+                           BMP085_TEMP_MEASUREMENT);
     _last_temp_read_command_time = hal.scheduler->millis();
 }
 
@@ -196,7 +208,8 @@ void AP_Baro_BMP085::_read_temp()
     uint8_t buf[2];
     int32_t _temp_sensor;
 
-    if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 2, buf) != 0) {
+    if (hal.i2c->readRegisters(BMP085_ADDRESS, BMP085_CONVERSION_REGISTER_MSB,
+                               2, buf) != 0) {
         hal.i2c->setHighSpeed(false);
         return;
     }
