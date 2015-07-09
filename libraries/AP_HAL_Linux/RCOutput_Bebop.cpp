@@ -125,7 +125,7 @@ uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
     uint8_t checksum = data[0];
     unsigned int i;
 
-    for(i = 1; i < len; i++)
+    for (i = 1; i < len; i++)
         checksum = checksum ^ data[i];
 
     return checksum;
@@ -135,7 +135,7 @@ void LinuxRCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -151,13 +151,13 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 
     data.cmd = BEBOP_BLDC_SETREFSPEED;
 
-    for(i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
+    for (i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
         data.rpm[i] = htobe16(rpm[i]);
 
     data.enable_security = 0;
     data.checksum = _checksum((uint8_t *) &data, sizeof(data) - 1);
 
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, sizeof(data), (uint8_t *)&data);
@@ -177,7 +177,7 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
 
     memset(&data, 0, sizeof(data));
 
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR,
@@ -185,33 +185,33 @@ void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
                             sizeof(data),
                             (uint8_t *)&data);
 
-    if(data.checksum != _checksum((uint8_t *)&data, sizeof(data)))
+    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data)))
         hal.console->println_P(PSTR("RCOutput_Bebop: bad checksum in obs data"));
 
-    if(rpm != NULL) {
+    if (rpm != NULL) {
         for(i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
             rpm[i] = be16toh(data.rpm[i]);
     }
 
-    if(batt_mv != NULL)
+    if (batt_mv != NULL)
         *batt_mv = be16toh(data.batt_mv);
 
-    if(status != NULL)
+    if (status != NULL)
         *status = data.status;
 
-    if(error != NULL)
+    if (error != NULL)
         *error = data.error;
 
-    if(motors_err != NULL)
+    if (motors_err != NULL)
         *motors_err = data.motors_err;
 
-    if(temp != NULL)
+    if (temp != NULL)
         *temp = data.temp;
 }
 
 void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_TOGGLE_GPIO, mask);
@@ -224,7 +224,7 @@ void LinuxRCOutput_Bebop::_stop_prop()
     uint8_t data = BEBOP_BLDC_STOP_PROP;
     _state = BEBOP_BLDC_STOPPED;
 
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -236,7 +236,7 @@ void LinuxRCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
@@ -246,7 +246,7 @@ void LinuxRCOutput_Bebop::_clear_error()
 
 void LinuxRCOutput_Bebop::_play_sound(uint8_t sound)
 {
-    if(!_i2c_sem->take(0))
+    if (!_i2c_sem->take(0))
         return;
 
     hal.i2c1->writeRegister(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_PLAY_SOUND, sound);
@@ -278,7 +278,7 @@ void LinuxRCOutput_Bebop::init(void* dummy)
 
     /* Initialize thread, cond, and mutex */
     ret = pthread_mutex_init(&_mutex, NULL);
-    if(ret != 0) {
+    if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
         goto err_mutex;
     }
@@ -287,13 +287,13 @@ void LinuxRCOutput_Bebop::init(void* dummy)
 
     ret = pthread_cond_init(&_cond, NULL);
 
-    if(ret != 0) {
+    if (ret != 0) {
         perror("RCout_Bebop: failed to init cond\n");
         goto err_mutex;
     }
 
     ret = pthread_attr_init(&attr);
-    if(ret != 0) {
+    if (ret != 0) {
         perror("RCOut_Bebop: failed to init attr\n");
         goto err_mutex;
     }
@@ -301,7 +301,7 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
     pthread_attr_setschedparam(&attr, &param);
     ret = pthread_create(&_thread, &attr, _control_thread, this);
-    if(ret != 0) {
+    if (ret != 0) {
         perror("RCOut_Bebop: failed to create thread\n");
         goto err_mutex;
     }
@@ -353,10 +353,9 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t* period_us, uint8_t len)
 
 uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)
 {
-    if(ch < BEBOP_BLDC_MOTORS_NUM) {
+    if (ch < BEBOP_BLDC_MOTORS_NUM) {
         return _period_us[ch];
-    }
-    else {
+    } else {
         return 0;
     }
 }
@@ -390,22 +389,21 @@ void LinuxRCOutput_Bebop::_run_rcout()
 
     memset(current_period_us, 0, sizeof(current_period_us));
 
-    while(true) {
+    while (true) {
         ret = clock_gettime(CLOCK_REALTIME, &ts);
-        if(ret != 0)
+        if (ret != 0)
             printf("failed to get time\n");
 
-        if(ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
+        if (ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
         {
             ts.tv_sec += 1;
             ts.tv_nsec = ts.tv_nsec + BEBOP_BLDC_TIMEOUT_NS - 1000000000;
-        }
-        else {
+        } else {
             ts.tv_nsec += BEBOP_BLDC_TIMEOUT_NS;
         }
 
         ret = 0;
-        while((memcmp(_period_us, current_period_us, sizeof(_period_us)) == 0) && (ret == 0))
+        while ((memcmp(_period_us, current_period_us, sizeof(_period_us)) == 0) && (ret == 0))
             ret = pthread_cond_timedwait(&_cond, &_mutex, &ts);
 
         memcpy(current_period_us, _period_us, sizeof(_period_us));
@@ -413,24 +411,23 @@ void LinuxRCOutput_Bebop::_run_rcout()
 
         /* start propellers if the speed of the 4 motors is >= min speed
          * min speed set to min_pwm + 50*/
-        for(i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
-            if(current_period_us[i] <= _min_pwm + 50)
+        for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
+            if (current_period_us[i] <= _min_pwm + 50)
                 break;
             _rpm[bebop_bldc_motors[i]] = _period_us_to_rpm(current_period_us[i]);
         }
 
-        if(i < BEBOP_BLDC_MOTORS_NUM) {
+        if (i < BEBOP_BLDC_MOTORS_NUM) {
             /* one motor pwm value is at minimum (or under)
              * if the motors are started, stop them*/
-            if(_state == BEBOP_BLDC_STARTED) {
+            if (_state == BEBOP_BLDC_STARTED) {
                 _stop_prop();
                 _clear_error();
             }
-        }
-        else {
+        } else {
             /* all the motor pwm values are higher than minimum
              * if the bldc is stopped, start it*/
-            if(_state == BEBOP_BLDC_STOPPED)
+            if (_state == BEBOP_BLDC_STOPPED)
                 _start_prop();
         }
         _set_ref_speed(_rpm);
