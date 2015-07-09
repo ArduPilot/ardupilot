@@ -297,7 +297,7 @@ void AP_Baro::init(void)
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5607 && HAL_BARO_MS5607_I2C_BUS == 1
     {
-        drivers[0] = new AP_Baro_MS5607(*this, new AP_SerialBus_I2C(hal.i2c1, HAL_BARO_MS5607_I2C_ADDR), false);
+        drivers[0] = new AP_Baro_MS5607(*this, new AP_SerialBus_I2C(hal.i2c1, HAL_BARO_MS5607_I2C_ADDR), true);
         _num_drivers = 1;
     }
 #endif    
