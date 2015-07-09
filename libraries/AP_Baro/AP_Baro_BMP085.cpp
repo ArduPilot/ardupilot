@@ -104,12 +104,12 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 // acumulate a new sensor reading
 void AP_Baro_BMP085::accumulate(void)
 {
-    // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
-
     if (!BMP_DATA_READY()) {
         return;
     }
+
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(1))
@@ -139,7 +139,7 @@ void AP_Baro_BMP085::accumulate(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_count == 0 && BMP_DATA_READY()) {
+    if (_count == 0) {
         accumulate();
     }
     if (_count == 0) {
