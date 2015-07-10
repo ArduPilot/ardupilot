@@ -374,6 +374,16 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             ofs += sizeof(v);
             break;
         }
+        case 'd': {
+            double v;
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            // note that %f here *really* means a single-precision
+            // float, so we lose precision printing this double out
+            // dtoa_engine needed....
+            port->printf_P(PSTR("%f"), (double)v);
+            ofs += sizeof(v);
+            break;
+        }
         case 'c': {
             int16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
