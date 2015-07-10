@@ -57,7 +57,7 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 
     //apply joint angle compensation
     _measurement.joint_angles -= _gimbalParams.joint_angles_offsets;
-    _measurement.delta_velocity -= _gimbalParams.delta_velocity_offsets;
+    //_measurement.delta_velocity -= _gimbalParams.delta_velocity_offsets;
     _measurement.delta_angles -= _gimbalParams.delta_angles_offsets;
 
     // get complementary filter inputs
