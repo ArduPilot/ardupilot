@@ -21,6 +21,7 @@
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Navio.h"
 #include "RCOutput_ZYNQ.h"
+#include "RCOutput_Bebop.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarmDriver.h"

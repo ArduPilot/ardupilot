@@ -97,6 +97,8 @@ static LinuxRCOutput_AioPRU rcoutDriver;
 static LinuxRCOutput_Navio rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static LinuxRCOutput_ZYNQ rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxRCOutput_Bebop rcoutDriver;
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
@@ -200,11 +202,11 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     scheduler->init(NULL);
     gpio->init();
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    i2c0->begin();
+    i2c->begin();
     i2c1->begin();
     i2c2->begin();
 #else
-    i2c0->begin();
+    i2c->begin();
 #endif
     rcout->init(NULL);
     rcin->init(NULL);
