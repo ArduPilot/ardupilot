@@ -80,10 +80,22 @@
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
 
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+/*
+ * Returns the number of elements in a array
+ */
+#if __cplusplus < 199711L // < cxx11
+    template <typename T, size_t N>
+    char(&COUNTOF_REQUIRES_ARRAY_ARGUMENT(T(&)[N]))[N];
+    #define ARRAY_SIZE(x) sizeof(COUNTOF_REQUIRES_ARRAY_ARGUMENT(x))
+#else  // >= cxx11
+    template <typename T, size_t N>
+    constexpr size_t ARRAY_SIZE(T const (&)[N]) noexcept
+    {
+        return N;
+    }
+#endif
 
 // @}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Types
