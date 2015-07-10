@@ -173,12 +173,18 @@ extern const AP_HAL::HAL& hal;
 #define HAL_INS_MPU60XX_I2C_ADDR 0x68
 #endif
 
+
 /* SPI bus driver implementation */
+
+AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void)
+{
+    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
+}
+
 void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
 {
     fifo_mode = false;
     _error_count = 0;
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
     // Disable I2C bus if SPI selected (Recommended in Datasheet
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     /* maximum number of samples read by a burst

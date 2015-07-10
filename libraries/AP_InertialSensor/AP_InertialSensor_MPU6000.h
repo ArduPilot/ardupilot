@@ -113,6 +113,7 @@ private:
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
     public:
+        AP_MPU6000_BusDriver_SPI(void);
         void init(bool &fifo_mode, uint8_t &max_samples);
         void read8(uint8_t reg, uint8_t *val);
         void write8(uint8_t reg, uint8_t val);
