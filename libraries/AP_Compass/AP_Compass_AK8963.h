@@ -9,12 +9,30 @@
 #include "Compass.h"
 #include "AP_Compass_Backend.h"
 
+class AP_AK8963_SerialBus
+{
+public:
+    virtual void register_read(uint8_t address, uint8_t *value, uint8_t count) = 0;
+    uint8_t register_read(uint8_t address) {
+        uint8_t reg;
+        register_read(address, &reg, 1);
+        return reg;
+    }
+    virtual void register_write(uint8_t address, uint8_t value) = 0;
+    virtual AP_HAL::Semaphore* get_semaphore() = 0;
+    virtual bool start_conversion() = 0;
+    virtual bool configure() = 0;
+    virtual bool read_raw(float &mag_x, float &mag_y, float &mag_z) = 0;
+    virtual uint32_t get_dev_id() = 0;
+};
+
 class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
-    AP_Compass_AK8963(Compass &compass);
+    AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus);
 
-    static AP_Compass_Backend *detect(Compass &compass);
+    static AP_Compass_Backend *detect_mpu9250(Compass &compass);
+    static AP_Compass_Backend *detect_i2c1(Compass &compass);
 
     bool        init(void);
     void        read(void);
@@ -29,38 +47,16 @@ private:
         STATE_ERROR
     } state_t;
 
-    bool _read_raw();
-
     bool _reset();
     bool _configure();
     bool _check_id();
     bool _calibrate();
 
     void _update();
-    bool _start_conversion();
     bool _collect_samples();
     void _dump_registers();
-
-    bool _configure_mpu9250();
-    void _bus_read(uint8_t address, uint8_t *value, uint32_t count);
-    void _bus_write(uint8_t address, const uint8_t *value,  uint32_t count);
-
-    void _bus_write(uint8_t address, const uint8_t value) {
-        _bus_write(address, &value, 1);
-    }
-
-    void _register_read(uint8_t address, uint8_t *value, uint8_t count);
-
-    uint8_t _register_read(uint8_t address) {
-        uint8_t reg;
-        _register_read(address, &reg, 1);
-        return reg;
-    }
-
-    void _register_write(uint8_t address, uint8_t value);
-
-    bool _sem_take_nonblocking();
     bool _sem_take_blocking();
+    bool _sem_take_nonblocking();
     bool _sem_give();
 
     state_t             _state;
@@ -81,8 +77,50 @@ private:
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
 
-    AP_HAL::Semaphore   *_spi_sem;
-    AP_HAL::SPIDeviceDriver   *_spi;
+    AP_AK8963_SerialBus *_bus;
+    AP_HAL::Semaphore *_bus_sem;
 };
 
+class AP_AK8963_SerialBus_MPU9250: public AP_AK8963_SerialBus
+{
+public:
+    AP_AK8963_SerialBus_MPU9250();
+    void register_read(uint8_t address, uint8_t *value, uint8_t count);
+    void register_write(uint8_t address, uint8_t value);
+    AP_HAL::Semaphore* get_semaphore();
+    bool start_conversion();
+    bool configure();
+    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    uint32_t get_dev_id();
+private:
+    void _read(uint8_t address, uint8_t *value, uint32_t count);
+    void _write(uint8_t address, const uint8_t *value,  uint32_t count);
+    void _write(uint8_t address, const uint8_t value) {
+        _write(address, &value, 1);
+    }
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
+};
+
+class AP_AK8963_SerialBus_I2C: public AP_AK8963_SerialBus
+{
+public:
+    AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+    void register_read(uint8_t address, uint8_t *value, uint8_t count);
+    void register_write(uint8_t address, uint8_t value);
+    AP_HAL::Semaphore* get_semaphore();
+    bool start_conversion(){return true;}
+    bool configure(){return true;}
+    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    uint32_t get_dev_id();
+private:
+    void _read(uint8_t address, uint8_t *value, uint32_t count);
+    void _write(uint8_t address, const uint8_t *value,  uint32_t count);
+    void _write(uint8_t address, const uint8_t value) {
+        _write(address, &value, 1);
+    }
+    AP_HAL::I2CDriver *_i2c;
+    uint8_t _addr;
+    AP_HAL::Semaphore *_i2c_sem;
+};
 #endif

@@ -406,8 +406,10 @@ AP_InertialSensor::_detect_backends(void)
     }
 #if HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect);
-#elif HAL_INS_DEFAULT == HAL_INS_MPU6000
-    _add_backend(AP_InertialSensor_MPU6000::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
+    _add_backend(AP_InertialSensor_MPU6000::detect_spi);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && HAL_INS_MPU60XX_I2C_BUS == 2
+    _add_backend(AP_InertialSensor_MPU6000::detect_i2c2);
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
     _add_backend(AP_InertialSensor_PX4::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN

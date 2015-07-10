@@ -30,6 +30,7 @@ namespace Linux {
     class LinuxRCOutput_AioPRU;
     class LinuxRCOutput_Navio;
     class LinuxRCOutput_ZYNQ;
+    class LinuxRCOutput_Bebop;
     class LinuxSemaphore;
     class LinuxScheduler;
     class LinuxUtil;

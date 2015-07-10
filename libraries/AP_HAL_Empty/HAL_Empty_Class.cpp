@@ -29,6 +29,8 @@ HAL_Empty::HAL_Empty() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
+        NULL, /* only one i2c */
+        NULL, /* only one i2c */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,

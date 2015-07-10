@@ -46,6 +46,10 @@ pxf: HAL_BOARD = HAL_BOARD_LINUX
 pxf: TOOLCHAIN = BBONE
 pxf: all
 
+bebop: HAL_BOARD = HAL_BOARD_LINUX
+bebop: TOOLCHAIN = BBONE
+bebop: all
+
 navio: HAL_BOARD = HAL_BOARD_LINUX
 navio: TOOLCHAIN = RPI
 navio: all

@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 bool AP_Airspeed_I2C::init(void)
 {
     // get pointer to i2c bus semaphore
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     // take i2c bus sempahore
     if (!i2c_sem->take(200))
@@ -53,7 +53,7 @@ bool AP_Airspeed_I2C::init(void)
 void AP_Airspeed_I2C::_measure(void)
 {
     _measurement_started_ms = 0;
-    if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
+    if (hal.i2c0->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
         _measurement_started_ms = hal.scheduler->millis();
     }
 }
@@ -65,7 +65,7 @@ void AP_Airspeed_I2C::_collect(void)
 
     _measurement_started_ms = 0;
 
-    if (hal.i2c->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
+    if (hal.i2c0->read(I2C_ADDRESS_MS4525DO, 4, data) != 0) {
         return;
     }
     
@@ -104,7 +104,7 @@ void AP_Airspeed_I2C::_collect(void)
 // 1kHz timer
 void AP_Airspeed_I2C::_timer(void)
 {
-    AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
+    AP_HAL::Semaphore* i2c_sem = hal.i2c0->get_semaphore();
 
     if (!i2c_sem->take_nonblocking())
         return;
