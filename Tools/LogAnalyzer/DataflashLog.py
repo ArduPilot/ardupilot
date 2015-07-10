@@ -110,6 +110,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         'i': ctypes.c_int32,
         'I': ctypes.c_uint32,
         'f': ctypes.c_float,
+        'd': ctypes.c_double,
         'n': ctypes.c_char * 4,
         'N': ctypes.c_char * 16,
         'Z': ctypes.c_char * 64,
@@ -119,6 +120,8 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         'E': ctypes.c_uint32,# * 100,
         'L': ctypes.c_int32,
         'M': ctypes.c_uint8,
+        'q': ctypes.c_int64,
+        'Q': ctypes.c_uint64,
     }
 
     FIELD_SCALE = {
@@ -470,11 +473,16 @@ class DataflashLog(object):
         # TODO: switch duration calculation to use TimeMS values rather than GPS timestemp
         if "GPS" in self.channels:
             # the GPS time label changed at some point, need to handle both
-            timeLabel = "TimeMS"
-            if timeLabel not in self.channels["GPS"]:
-                timeLabel = "Time"
+            timeLabel = None
+            for i in 'TimeMS','TimeUS','Time':
+                if i in self.channels["GPS"]:
+                    timeLabel = i
+                    break
             firstTimeGPS = self.channels["GPS"][timeLabel].listData[0][1]
             lastTimeGPS  = self.channels["GPS"][timeLabel].listData[-1][1]
+            if timeLabel == 'TimeUS':
+                firstTimeGPS /= 1000
+                lastTimeGPS /= 1000
             self.durationSecs = (lastTimeGPS-firstTimeGPS) / 1000
 
         # TODO: calculate logging rate based on timestamps
