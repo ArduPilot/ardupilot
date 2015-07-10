@@ -14,10 +14,11 @@ class TestBrownout(Test):
 		self.result = TestResult()
 		self.result.status = TestResult.StatusType.GOOD
 
+                isArmed = False
+                # FIXME: cope with LOG_ARM_DISARM_MSG message
 		if "EV" in logdata.channels:
 			# step through the arm/disarm events in order, to see if they're symmetrical
 			# note: it seems landing detection isn't robust enough to rely upon here, so we'll only consider arm+disarm, not takeoff+land
-			isArmed = False
 			for line,ev in logdata.channels["EV"]["Id"].listData:
 				if ev == 10:
 					isArmed = True
