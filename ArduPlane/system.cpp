@@ -184,8 +184,10 @@ void Plane::init_ardupilot()
         }
     }
     
+#if OPTFLOW == ENABLED
     // make optflow available to libraries
     ahrs.set_optflow(&optflow);
+#endif
 
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay

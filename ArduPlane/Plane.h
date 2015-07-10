@@ -259,8 +259,10 @@ private:
     AP_Camera camera {&relay};
 #endif
 
+#if OPTFLOW == ENABLED
     // Optical flow sensor
     OpticalFlow optflow;
+#endif
 
     // Rally Ponints
     AP_Rally rally {ahrs};
