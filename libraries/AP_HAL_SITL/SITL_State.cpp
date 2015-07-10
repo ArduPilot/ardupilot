@@ -80,6 +80,7 @@ void SITL_State::_sitl_setup(void)
     _compass = (Compass *)AP_Param::find_object("COMPASS_");
     _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
     _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
+    _range_finder = (RangeFinder *)AP_Param::find_object("RNGFND");
 
     if (_sitl != NULL) {
         // setup some initial values
@@ -88,6 +89,7 @@ void SITL_State::_sitl_setup(void)
         _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
         _update_compass(0, 0, 0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
+	_update_range_finder(0);
 #endif
         if (enable_gimbal) {
             gimbal = new Gimbal(_sitl->state);
@@ -203,6 +205,7 @@ void SITL_State::_fdm_input_step(void)
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
         _update_flow();
+	_update_range_finder(_sitl->state.altitude);
     }
 
     // trigger all APM timers.

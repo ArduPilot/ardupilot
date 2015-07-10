@@ -56,3 +56,9 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
         state.range_valid_count = 0;
     }
 }
+
+// update the frontend
+void AP_RangeFinder_Backend::_update_frontend(uint8_t instance, const struct RangeFinder::RangeFinder_State &state)
+{
+	ranger.state[instance] = state;
+}
