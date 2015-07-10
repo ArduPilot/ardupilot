@@ -104,6 +104,10 @@
 #endif
 #endif
 
+#if !defined(HAL_COMPASS_AK8963_I2C_ADDR)
+#define HAL_COMPASS_AK8963_I2C_ADDR 0xC
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus) :
@@ -118,7 +122,41 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _mag_x =_mag_y = _mag_z = 0;
     _accum_count = 0;
     _magnetometer_adc_resolution = AK8963_16BIT_ADC;
-    init();
+}
+
+AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
+{
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass,
+                                                  new AP_AK8963_SerialBus_MPU9250());
+
+    if (sensor == nullptr) {
+        return nullptr;
+    }
+
+    if (!sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+}
+
+AP_Compass_Backend *AP_Compass_AK8963::detect_i2c1(Compass &compass)
+{
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass,
+                                                  new AP_AK8963_SerialBus_I2C(
+                                                  hal.i2c1, HAL_COMPASS_AK8963_I2C_ADDR));
+
+    if (sensor == nullptr) {
+        return nullptr;
+    }
+
+    if (!sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
 }
 
 /* stub to satisfy Compass API*/
@@ -167,7 +205,8 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-    set_dev_id(_compass_instance, AP_COMPASS_TYPE_AK8963_MPU9250);
+
+    set_dev_id(_compass_instance, _bus->get_dev_id());
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
@@ -205,6 +244,9 @@ void AP_Compass_AK8963::read()
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    field.rotate(ROTATION_YAW_90);
+#endif
     publish_field(field, _compass_instance);
 }
 
@@ -359,6 +401,7 @@ void AP_Compass_AK8963::_dump_registers()
 #endif
 }
 
+/* MPU9250 implementation of the AK8963 */
 AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
@@ -468,4 +511,63 @@ bool AP_AK8963_SerialBus_MPU9250::start_conversion()
 
     return true;
 }
+
+uint32_t AP_AK8963_SerialBus_MPU9250::get_dev_id()
+{
+    return AP_COMPASS_TYPE_AK8963_MPU9250;
+}
+
+/* I2C implementation of the AK8963 */
+AP_AK8963_SerialBus_I2C::AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
+    _i2c(i2c),
+    _addr(addr)
+{
+}
+
+void AP_AK8963_SerialBus_I2C::register_write(uint8_t address, uint8_t value)
+{
+    _i2c->writeRegister(_addr, address, value);
+}
+
+void AP_AK8963_SerialBus_I2C::register_read(uint8_t address, uint8_t *value, uint8_t count)
+{
+    _i2c->readRegisters(_addr, address, count, value);
+}
+
+bool AP_AK8963_SerialBus_I2C::read_raw(float &mag_x, float &mag_y, float &mag_z)
+{
+    uint8_t rx[9] = {0};
+
+    const uint8_t count = 9;
+    _i2c->readRegisters(_addr, AK8963_INFO, count, rx);
+
+    uint8_t st2 = rx[8]; /* End data read by reading ST2 register */
+
+#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
+
+    if(!(st2 & 0x08)) {
+        mag_x = (float) int16_val(rx, 1);
+        mag_y = (float) int16_val(rx, 2);
+        mag_z = (float) int16_val(rx, 3);
+
+        if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
+            return false;
+        }
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+AP_HAL::Semaphore * AP_AK8963_SerialBus_I2C::get_semaphore()
+{
+    return _i2c->get_semaphore();
+}
+
+uint32_t AP_AK8963_SerialBus_I2C::get_dev_id()
+{
+    return AP_COMPASS_TYPE_AK8963_I2C;
+}
+
 #endif // CONFIG_HAL_BOARD
