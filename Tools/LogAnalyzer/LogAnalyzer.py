@@ -77,6 +77,10 @@ class TestSuite(object):
     def run(self, logdata, verbose):
         '''run all registered tests in a single call, gathering execution timing info'''
         self.logdata = logdata
+        if 'GPS' not in self.logdata.channels and 'GPS2' in self.logdata.channels:
+            # *cough*
+            self.logdata.channels['GPS'] = self.logdata.channels['GPS2']
+
         self.logfile = logdata.filename
         for test in self.tests:
             # run each test in turn, gathering timing info
