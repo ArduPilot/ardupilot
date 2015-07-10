@@ -51,8 +51,6 @@ LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[] = {
 LinuxSPIDeviceDriver LinuxSPIDeviceManager::_device[0];
 #endif
 
-#define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(LinuxSPIDeviceManager::_device)
-
 // have a separate semaphore per bus
 LinuxSemaphore LinuxSPIDeviceManager::_semaphore[LINUX_SPI_MAX_BUSES];
 
@@ -128,7 +126,7 @@ void LinuxSPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
 
 void LinuxSPIDeviceManager::init(void *)
 {
-    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._bus >= LINUX_SPI_MAX_BUSES) {
             hal.scheduler->panic("SPIDriver: invalid bus number");
         }
@@ -151,13 +149,13 @@ void LinuxSPIDeviceManager::init(void *)
 void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
 {
     uint16_t bus = 0, i;
-    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._type == type) {
             bus = _device[i]._bus;
             break;
         }
     }
-    if (i == LINUX_SPI_DEVICE_NUM_DEVICES) {
+    if (i == ARRAY_SIZE(LinuxSPIDeviceManager::_device)) {
         hal.scheduler->panic("Bad device type");
     }
 
@@ -165,7 +163,7 @@ void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
     if(_device[i]._cs_pin == SPI_CS_KERNEL)
         return;
 
-    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._bus != bus) {
             // not the same bus
             continue;
@@ -177,7 +175,7 @@ void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
             }
         }
     }
-    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._type == type) {
             _device[i]._cs->write(0);
         }
@@ -187,13 +185,13 @@ void LinuxSPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
 void LinuxSPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
 {
     uint16_t bus = 0, i;
-    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._type == type) {
             bus = _device[i]._bus;
             break;
         }
     }
-    if (i == LINUX_SPI_DEVICE_NUM_DEVICES) {
+    if (i == ARRAY_SIZE(LinuxSPIDeviceManager::_device)) {
         hal.scheduler->panic("Bad device type");
     }
 
@@ -201,7 +199,7 @@ void LinuxSPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
     if(_device[i]._cs_pin == SPI_CS_KERNEL)
         return;
 
-    for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._bus != bus) {
             // not the same bus
             continue;
@@ -241,7 +239,7 @@ void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint
  */
 AP_HAL::SPIDeviceDriver *LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev)
 {
-    for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(LinuxSPIDeviceManager::_device); i++) {
         if (_device[i]._type == dev) {
             return &_device[i];
         }
