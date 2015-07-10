@@ -240,8 +240,7 @@ void AP_Compass_AK8963::_update()
         return;
     }
 
-    switch (_state)
-    {
+    switch (_state) {
         case STATE_SAMPLE:
             if (!_collect_samples()) {
                 _state = STATE_ERROR;
@@ -263,7 +262,7 @@ void AP_Compass_AK8963::_update()
 bool AP_Compass_AK8963::_check_id()
 {
     for (int i = 0; i < 5; i++) {
-        uint8_t deviceid;
+        uint8_t deviceid = 0;
         _register_read(AK8963_WIA, &deviceid, 0x01); /* Read AK8963's id */
 
         if (deviceid == AK8963_Device_ID) {
@@ -276,8 +275,9 @@ bool AP_Compass_AK8963::_check_id()
 
 bool AP_Compass_AK8963::_configure_mpu9250()
 {
-    if (!AP_InertialSensor_MPU9250::initialize_driver_state())
+    if (!AP_InertialSensor_MPU9250::initialize_driver_state() ) {
         return false;
+    }
 
     uint8_t user_ctrl;
     _register_read(MPUREG_USER_CTRL, &user_ctrl, 1);
@@ -304,7 +304,7 @@ bool AP_Compass_AK8963::_calibrate()
 {
     uint8_t cntl1 = _register_read(AK8963_CNTL1);
 
-    _register_write(AK8963_CNTL1, AK8963_FUSE_MODE | _magnetometer_adc_resolution); /* Enable FUSE-mode in order to be able to read calibreation data */
+    _register_write(AK8963_CNTL1, AK8963_FUSE_MODE | _magnetometer_adc_resolution); /* Enable FUSE-mode in order to be able to read calibration data */
 
     uint8_t response[3];
     _register_read(AK8963_ASAX, response, 3);
@@ -335,24 +335,29 @@ bool AP_Compass_AK8963::_start_conversion()
 }
 
 bool AP_Compass_AK8963::_collect_samples()
-{
+{  
+    // number of samples to take for smoothing
+    const int accums = 10;
+
     if (!_initialized) {
         return false;
     }
 
-    if (!_read_raw()) {
+    if (!_read_raw() ) {
         return false;
-    } else {
-        _mag_x_accum += _mag_x;
-        _mag_y_accum += _mag_y;
-        _mag_z_accum += _mag_z;
-        _accum_count++;
-        if (_accum_count == 10) {
-             _mag_x_accum /= 2;
-             _mag_y_accum /= 2;
-             _mag_z_accum /= 2;
-             _accum_count = 5;
-        }
+    } 
+    
+    _mag_x_accum += _mag_x;
+    _mag_y_accum += _mag_y;
+    _mag_z_accum += _mag_z;
+    
+    _accum_count++;
+    
+    if (_accum_count == accums) {
+         _mag_x_accum /= 2;
+         _mag_y_accum /= 2;
+         _mag_z_accum /= 2;
+         _accum_count = (accums/2);
     }
 
     return true;
@@ -372,22 +377,25 @@ bool AP_Compass_AK8963::_sem_take_nonblocking()
 {
     static int _sem_failure_count = 0;
 
-    bool got = _spi_sem->take_nonblocking();
-
-    if (!got) {
-        if (!hal.scheduler->system_initializing()) {
-            _sem_failure_count++;
-            if (_sem_failure_count > 100) {
-                hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                                          "100 times in a row, in "
-                                          "AP_Compass_AK8963::_update"));
-            }
-        }
-        return false; /* never reached */
-    } else {
-        _sem_failure_count = 0;
+    // return true if method succeeds
+    if(_spi_sem->take_nonblocking() ) {
+      _sem_failure_count = 0;
+      return true;
     }
-    return got;
+
+    // if: taking/initializing fails, count the number of failed attempts and ..
+    if (!hal.scheduler->system_initializing() ) {
+      _sem_failure_count++;
+    }
+    
+    // .. throw a panic :(
+    if (_sem_failure_count >= 100) {
+        hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
+                                  "100 times in a row, in "
+                                  "AP_Compass_AK8963::_update") );
+    }
+    
+    return false;
 }
 
 void AP_Compass_AK8963::_dump_registers()
@@ -417,23 +425,21 @@ bool AP_Compass_AK8963::_read_raw()
     _bus_read(MPUREG_EXT_SENS_DATA_00, rx, count);
 
     uint8_t st2 = rx[8]; /* End data read by reading ST2 register */
-
-#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
-
-    if(!(st2 & 0x08)) {
-        _mag_x = (float) int16_val(rx, 1);
-        _mag_y = (float) int16_val(rx, 2);
-        _mag_z = (float) int16_val(rx, 3);
-
-        if (is_zero(_mag_x) && is_zero(_mag_y) && is_zero(_mag_z)) {
-            return false;
-        }
-
-        return true;
-    } else {
+    if((st2 & 0x08) ) {
         return false;
     }
-
+    
+    #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
+    _mag_x = (float) int16_val(rx, 1);
+    _mag_y = (float) int16_val(rx, 2);
+    _mag_z = (float) int16_val(rx, 3);
+  
+    // small sanity check
+    if (is_zero(_mag_x) && is_zero(_mag_y) & is_zero(_mag_z)) {
+      return false;
+    }
+  
+    return true;
 }
 void AP_Compass_AK8963::_register_write(uint8_t address, uint8_t value)
 {
