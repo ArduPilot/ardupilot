@@ -33,24 +33,33 @@ class TestIMUMatch(Test):
         imu1 = logdata.channels["IMU"]
         imu2 = logdata.channels["IMU2"]
 
-        imu1_timems = imu1["TimeMS"].listData
+        timeLabel = None
+        for i in 'TimeMS','TimeUS','Time':
+            if i in logdata.channels["GPS"]:
+                timeLabel = i
+                break
+        imu1_timems = imu1[timeLabel].listData
         imu1_accx = imu1["AccX"].listData
         imu1_accy = imu1["AccY"].listData
         imu1_accz = imu1["AccZ"].listData
 
-        imu2_timems = imu2["TimeMS"].listData
+        imu2_timems = imu2[timeLabel].listData
         imu2_accx = imu2["AccX"].listData
         imu2_accy = imu2["AccY"].listData
         imu2_accz = imu2["AccZ"].listData
+
+        imu_multiplier = 1.0E-3
+        if timeLabel == 'TimeUS':
+            imu_multiplier = 1.0E-6
 
         imu1 = []
         imu2 = []
 
         for i in range(len(imu1_timems)):
-            imu1.append({ 't': imu1_timems[i][1]*1.0E-3, 'x': imu1_accx[i][1], 'y': imu1_accy[i][1], 'z': imu1_accz[i][1]})
+            imu1.append({ 't': imu1_timems[i][1]*imu_multiplier, 'x': imu1_accx[i][1], 'y': imu1_accy[i][1], 'z': imu1_accz[i][1]})
 
         for i in range(len(imu2_timems)):
-            imu2.append({ 't': imu2_timems[i][1]*1.0E-3, 'x': imu2_accx[i][1], 'y': imu2_accy[i][1], 'z': imu2_accz[i][1]})
+            imu2.append({ 't': imu2_timems[i][1]*imu_multiplier, 'x': imu2_accx[i][1], 'y': imu2_accy[i][1], 'z': imu2_accz[i][1]})
 
         imu1.sort(key=lambda x: x['t'])
         imu2.sort(key=lambda x: x['t'])
