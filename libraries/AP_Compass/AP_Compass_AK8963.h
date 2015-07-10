@@ -80,9 +80,6 @@ private:
     uint8_t             _magnetometer_adc_resolution;
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
-
-    AP_HAL::Semaphore   *_spi_sem;
-    AP_HAL::SPIDeviceDriver   *_spi;
 };
 
 #endif
