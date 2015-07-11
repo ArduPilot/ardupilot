@@ -1005,6 +1005,7 @@ void NavEKF::SelectFlowFusion()
         flowRadXY[0]        = 0.0f;
         flowRadXY[1]        = 0.0f;
         omegaAcrossFlowTime.zero();
+        flowDataValid = true;
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
