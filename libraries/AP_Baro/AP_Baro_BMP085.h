@@ -28,8 +28,6 @@ private:
     AP_HAL::DigitalSource *_eoc;
 
     uint8_t _instance;
-    float _temp_sum;
-    float _press_sum;
     uint8_t _count;
 
     // Boards with no EOC pin: use times instead
@@ -46,4 +44,6 @@ private:
     uint32_t _retry_time;
     int32_t _raw_pressure;
     int32_t _raw_temp;
+    int32_t _temp;
+    float _press_sum;
 };
