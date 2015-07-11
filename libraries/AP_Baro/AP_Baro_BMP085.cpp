@@ -22,12 +22,16 @@
 
 extern const AP_HAL::HAL &hal;
 
+#define BMP085_OVERSAMPLING_ULTRALOWPOWER 0
+#define BMP085_OVERSAMPLING_STANDARD      1
+#define BMP085_OVERSAMPLING_HIGHRES       2
+#define BMP085_OVERSAMPLING_ULTRAHIGHRES  3
+
 #ifndef BMP085_EOC
 #define BMP085_EOC -1
 #endif
 
-// oversampling 3 gives 26ms conversion time. We then average
-#define OVERSAMPLING 3
+#define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
 
 AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_Baro_Backend(baro)
@@ -136,7 +140,6 @@ void AP_Baro_BMP085::update(void)
 // Send command to Read Pressure
 void AP_Baro_BMP085::_cmd_read_pressure()
 {
-    // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
     _dev->write_register(0xF4, 0x34 + (OVERSAMPLING << 6));
     _last_press_read_command_time = AP_HAL::millis();
 }
@@ -237,5 +240,23 @@ bool AP_Baro_BMP085::_data_ready()
         return AP_HAL::millis() > _last_temp_read_command_time + 5;
     }
 
-    return AP_HAL::millis() > _last_press_read_command_time + 26;
+    uint32_t conversion_time_msec;
+
+    switch (OVERSAMPLING) {
+    case BMP085_OVERSAMPLING_ULTRALOWPOWER:
+        conversion_time_msec = 5;
+        break;
+    case BMP085_OVERSAMPLING_STANDARD:
+        conversion_time_msec = 8;
+        break;
+    case BMP085_OVERSAMPLING_HIGHRES:
+        conversion_time_msec = 14;
+        break;
+    case BMP085_OVERSAMPLING_ULTRAHIGHRES:
+        conversion_time_msec = 26;
+    default:
+        break;
+    }
+
+    return AP_HAL::millis() > _last_press_read_command_time + conversion_time_msec;
 }
