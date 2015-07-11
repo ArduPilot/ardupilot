@@ -39,6 +39,7 @@ private:
     bool            _read_press();
     void            _read_temp();
     void            _calculate();
+    bool            _data_ready();
 };
 
 #endif // __AP_BARO_BMP085_H__

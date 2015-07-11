@@ -38,25 +38,22 @@ extern const AP_HAL::HAL& hal;
 #define BMP085_CONVERSION_REGISTER_LSB  0xF7
 #define BMP085_CONVERSION_REGISTER_XLSB 0xF8
 
+#define BMP085_OVERSAMPLING_ULTRALOWPOWER 0
+#define BMP085_OVERSAMPLING_STANDARD      1
+#define BMP085_OVERSAMPLING_HIGHRES       2
+#define BMP085_OVERSAMPLING_ULTRAHIGHRES  3
+
 // the apm2 hardware needs to check the state of the
 // chip using a direct IO port
 // On APM2 prerelease hw, the data ready port is hooked up to PE7, which
 // is not available to the arduino digitalRead function.
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-#define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
-// End of conversion pin PC7
 #define BMP085_EOC 30
 #else
-// No EOC connection from Baro
-// Use time instead:
-//     Temperature conversion time is 4.5ms
-//     Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
-#define BMP_DATA_READY() (_state == 0 ? hal.scheduler->millis() > (_last_temp_read_command_time + 5) : hal.scheduler->millis() > (_last_press_read_command_time + 26))
 #define BMP085_EOC -1
 #endif
 
-// oversampling 3 gives 26ms conversion time. We then average
-#define OVERSAMPLING 3
+#define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
 
 /*
   constructor
@@ -114,7 +111,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 // acumulate a new sensor reading
 void AP_Baro_BMP085::accumulate(void)
 {
-    if (!BMP_DATA_READY()) {
+    if (!_data_ready()) {
         return;
     }
 
@@ -169,7 +166,6 @@ void AP_Baro_BMP085::update(void)
 // Send command to Read Pressure
 void AP_Baro_BMP085::_command_read_press()
 {
-    // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
     hal.i2c->writeRegister(BMP085_ADDRESS, BMP085_CTRL_REG,
                            BMP085_PRESSURE_MEASUREMENT + (OVERSAMPLING << 6));
     _last_press_read_command_time = hal.scheduler->millis();
@@ -261,4 +257,21 @@ void AP_Baro_BMP085::_calculate()
         _press_sum *= 0.5f;
         _count /= 2;
     }
+}
+
+bool AP_Baro_BMP085::_data_ready()
+{
+#if BMP085_EOC != -1
+    return hal.gpio->read(BMP085_EOC);
+#endif
+
+    // No EOC connection from Baro: use time instead. See datasheet Rev 1.2,
+    // page 10
+    uint32_t last;
+    if (_state == 0)
+        last = _last_temp_read_command_time + 5;
+    else
+        last = _last_press_read_command_time + (3 << OVERSAMPLING) + 2;
+
+    return hal.scheduler->millis() > last;
 }
