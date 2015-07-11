@@ -29,9 +29,10 @@ extern const AP_HAL::HAL &hal;
 
 #ifndef BMP085_EOC
 #define BMP085_EOC -1
-#endif
-
 #define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
+#else
+#define OVERSAMPLING BMP085_OVERSAMPLING_HIGHRES
+#endif
 
 AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_Baro_Backend(baro)
