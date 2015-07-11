@@ -49,11 +49,11 @@ extern const AP_HAL::HAL& hal;
 // is not available to the arduino digitalRead function.
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #define BMP085_EOC 30
+#define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
 #else
 #define BMP085_EOC -1
+#define OVERSAMPLING BMP085_OVERSAMPLING_HIGHRES
 #endif
-
-#define OVERSAMPLING BMP085_OVERSAMPLING_ULTRAHIGHRES
 
 /*
   constructor
