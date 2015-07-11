@@ -18,9 +18,9 @@ public:
 
 private:
     uint8_t         _instance;
-    float           _temp_sum = 0.f;
-    float           _press_sum = 0.f;
     uint8_t         _count = 0;
+    int32_t         _temp = 0;
+    float           _press_sum = 0.f;
     AP_HAL::DigitalSource *_eoc = nullptr;
 
     // For boards with no EOC pin, use time instead

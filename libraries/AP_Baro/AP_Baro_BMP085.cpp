@@ -130,7 +130,7 @@ void AP_Baro_BMP085::accumulate(void)
         }
     }
     _state++;
-    if (_state == 5) {
+    if (_state == 25) {
         _state = 0;
         _command_read_temp();
     } else {
@@ -153,11 +153,10 @@ void AP_Baro_BMP085::update(void)
         return;
     }
 
-    float temperature = 0.1f * _temp_sum / _count;
+    float temperature = 0.1f * _temp;
     float pressure = _press_sum / _count;
 
     _count = 0;
-    _temp_sum = 0;
     _press_sum = 0;
 
     _copy_to_frontend(_instance, pressure, temperature);
@@ -229,7 +228,7 @@ void AP_Baro_BMP085::_calculate()
     x1 = ((int32_t)_raw_temp - _ac6) * _ac5 >> 15;
     x2 = ((int32_t)_mc << 11) / (x1 + _md);
     b5 = x1 + x2;
-    _temp_sum += (b5 + 8) >> 4;
+    _temp = (b5 + 8) >> 4;
 
     // Pressure calculations
     b6 = b5 - 4000;
@@ -253,7 +252,6 @@ void AP_Baro_BMP085::_calculate()
 
     _count++;
     if (_count == 254) {
-        _temp_sum *= 0.5f;
         _press_sum *= 0.5f;
         _count /= 2;
     }
