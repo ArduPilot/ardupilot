@@ -48,9 +48,9 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         AP_HAL::panic("BMP085: unable to get semaphore");
     }
 
-    // End Of Conversion (PC7) input
     if (BMP085_EOC >= 0) {
-        hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);
+        _eoc = hal.gpio->channel(BMP085_EOC);
+        _eoc->mode(HAL_GPIO_INPUT);
     }
 
     // We read the calibration data registers
@@ -233,7 +233,7 @@ void AP_Baro_BMP085::_calculate()
 bool AP_Baro_BMP085::_data_ready()
 {
     if (BMP085_EOC >= 0) {
-        return hal.gpio->read(BMP085_EOC);
+        return _eoc->read();
     }
 
     // No EOC pin: use time from last read instead.
