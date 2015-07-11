@@ -20,7 +20,6 @@
   Substantially modified by Andrew Tridgell
 */
 
-#include <AP_HAL.h>
 #include <AP_Common.h>
 
 #include "AP_Baro.h"
@@ -73,7 +72,8 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     if (BMP085_EOC > 0) {
         // End Of Conversion input
-        hal.gpio->pinMode(BMP085_EOC, HAL_GPIO_INPUT);
+        _eoc = hal.gpio->channel(BMP085_EOC);
+        _eoc->mode(HAL_GPIO_INPUT);
     }
 
     // We read the calibration data registers
@@ -262,7 +262,7 @@ void AP_Baro_BMP085::_calculate()
 bool AP_Baro_BMP085::_data_ready()
 {
 #if BMP085_EOC != -1
-    return hal.gpio->read(BMP085_EOC);
+    return _eoc->read();
 #endif
 
     // No EOC connection from Baro: use time instead. See datasheet Rev 1.2,

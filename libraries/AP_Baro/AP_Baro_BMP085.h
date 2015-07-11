@@ -2,6 +2,8 @@
 #ifndef __AP_BARO_BMP085_H__
 #define __AP_BARO_BMP085_H__
 
+#include <AP_HAL.h>
+
 #include "AP_Baro.h"
 
 class AP_Baro_BMP085 : public AP_Baro_Backend
@@ -19,6 +21,7 @@ private:
     float           _temp_sum = 0.f;
     float           _press_sum = 0.f;
     uint8_t         _count = 0;
+    AP_HAL::DigitalSource *_eoc = nullptr;
 
     // For boards with no EOC pin, use time instead
     uint32_t        _last_press_read_command_time;
