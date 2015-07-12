@@ -272,6 +272,11 @@ void Copter::fast_loop()
 
     // check if we've landed or crashed
     update_land_and_crash_detectors();
+
+    // log sensor health
+    if (should_log(MASK_LOG_ANY)) {
+        Log_Sensor_Health();
+    }
 }
 
 // rc_loops - reads user input from transmitter/receiver

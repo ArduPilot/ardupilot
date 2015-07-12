@@ -271,6 +271,12 @@ private:
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
     } failsafe;
 
+    // sensor health for logging
+    struct {
+        uint8_t baro        : 1;    // true if baro is healthy
+        uint8_t compass     : 1;    // true if compass is healthy
+    } sensor_health;
+
     // Motor Output
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
@@ -598,6 +604,7 @@ private:
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
     void Log_Write_Home_And_Origin();
+    void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif

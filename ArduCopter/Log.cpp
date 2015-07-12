@@ -646,6 +646,22 @@ void Copter::Log_Write_Home_And_Origin()
     }
 }
 
+// logs when baro or compass becomes unhealthy
+void Copter::Log_Sensor_Health()
+{
+    // check baro
+    if (sensor_health.baro != barometer.healthy()) {
+        sensor_health.baro = barometer.healthy();
+        Log_Write_Error(ERROR_SUBSYSTEM_BARO, (sensor_health.baro ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
+
+    // check compass
+    if (sensor_health.compass != compass.healthy()) {
+        sensor_health.compass = compass.healthy();
+        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS, (sensor_health.compass ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
+}
+
 struct PACKED log_Heli {
     LOG_PACKET_HEADER;
     uint64_t time_us;

@@ -353,6 +353,7 @@ enum FlipState {
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
+#define ERROR_CODE_UNHEALTHY                4
 // subsystem specific error codes -- radio
 #define ERROR_CODE_RADIO_LATE_FRAME         2
 // subsystem specific error codes -- failsafe_thr, batt, gps
