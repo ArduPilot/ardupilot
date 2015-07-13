@@ -494,6 +494,10 @@
  # define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
 #endif
 
+#ifndef RTL_CLIMB_MIN_DEFAULT
+ # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#endif
+
 #ifndef RTL_LOITER_TIME
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
 #endif

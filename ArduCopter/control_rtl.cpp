@@ -389,8 +389,8 @@ void Copter::rtl_land_run()
 //      altitude is in cm above home
 float Copter::get_RTL_alt()
 {
-    // maximum of current altitude and rtl altitude
-    float rtl_alt = max(current_loc.alt, g.rtl_altitude);
+    // maximum of current altitude + climb_min and rtl altitude
+    float rtl_alt = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
     rtl_alt = max(rtl_alt, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED

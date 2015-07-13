@@ -335,7 +335,8 @@ public:
         k_param_autotune_axis_bitmask,
         k_param_autotune_aggressiveness,
         k_param_pi_vel_xy,
-        k_param_fs_ekf_action, // 248
+        k_param_fs_ekf_action,
+        k_param_rtl_climb_min,  // 249
 
         // 254,255: reserved
     };
@@ -370,6 +371,7 @@ public:
     AP_Int8         compass_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
+    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         rssi_pin;
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 

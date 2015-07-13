@@ -196,6 +196,15 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
+    // @Units: Centimeters
+    // @Range: 0 3000
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
+
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is RSSI_RANGE for max rssi, 0V for minimum
