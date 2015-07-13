@@ -13,7 +13,8 @@ enum ESCCalibrationModes {
     ESCCAL_NONE = 0,
     ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH = 1,
     ESCCAL_PASSTHROUGH_ALWAYS = 2,
-    ESCCAL_AUTO = 3
+    ESCCAL_AUTO = 3,
+    ESCCAL_DISABLED = 9,
 };
 
 // check if we should enter esc calibration mode
@@ -23,7 +24,7 @@ void Copter::esc_calibration_startup_check()
     pre_arm_rc_checks();
     if (!ap.pre_arm_rc_check) {
         // clear esc flag for next time
-        if (g.esc_calibrate != ESCCAL_NONE) {
+        if ((g.esc_calibrate != ESCCAL_NONE) && (g.esc_calibrate != ESCCAL_DISABLED)) {
             g.esc_calibrate.set_and_save(ESCCAL_NONE);
         }
         return;
@@ -59,12 +60,16 @@ void Copter::esc_calibration_startup_check()
             // perform automatic ESC calibration
             esc_calibration_auto();
             break;
+        case ESCCAL_DISABLED:
         default:
             // do nothing
             break;
     }
+
     // clear esc flag for next time
-    g.esc_calibrate.set_and_save(ESCCAL_NONE);
+    if (g.esc_calibrate != ESCCAL_DISABLED) {
+        g.esc_calibrate.set_and_save(ESCCAL_NONE);
+    }
 }
 
 // esc_calibration_passthrough - pass through pilot throttle to escs
