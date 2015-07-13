@@ -89,6 +89,9 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
         uart->write(0x30);
         uart->write(0x20);
     }
+    // since tcdrain() and TCSADRAIN may not be implemented...
+    hal.scheduler->delay(1);
+    
     uart->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
