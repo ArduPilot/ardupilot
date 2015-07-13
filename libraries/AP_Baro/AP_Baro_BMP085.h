@@ -4,6 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include <Filter/Filter.h>
 
 #include "AP_Baro_Backend.h"
 
@@ -28,7 +29,7 @@ private:
     AP_HAL::DigitalSource *_eoc;
 
     uint8_t _instance;
-    uint8_t _count;
+    bool _has_sample;
 
     // Boards with no EOC pin: use times instead
     uint32_t _last_press_read_command_time;
@@ -45,5 +46,5 @@ private:
     int32_t _raw_pressure;
     int32_t _raw_temp;
     int32_t _temp;
-    float _press_sum;
+    AverageIntegralFilter<int32_t, int32_t, 10> _pressure_filter;
 };
