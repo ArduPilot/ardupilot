@@ -69,9 +69,11 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
         base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
     }
+#endif
 
     // we are armed if we are not initialising
     if (control_mode != INITIALISING && hal.util->get_soft_armed()) {
@@ -366,6 +368,7 @@ void Plane::send_servo_out(mavlink_channel_t chan)
 
 void Plane::send_radio_out(mavlink_channel_t chan)
 {
+#if HIL_SUPPORT
     if (g.hil_mode==1 && !g.hil_servos) {
         mavlink_msg_servo_output_raw_send(
             chan,
@@ -381,6 +384,7 @@ void Plane::send_radio_out(mavlink_channel_t chan)
             RC_Channel::rc_channel(7)->radio_out);
         return;
     }
+#endif
     mavlink_msg_servo_output_raw_send(
         chan,
         micros(),
@@ -416,14 +420,16 @@ void Plane::send_vfr_hud(mavlink_channel_t chan)
 /*
   keep last HIL_STATE message to allow sending SIM_STATE
  */
+#if HIL_SUPPORT
 static mavlink_hil_state_t last_hil_state;
+#endif
 
 // report simulator state
 void Plane::send_simstate(mavlink_channel_t chan)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.simstate_send(chan);
-#else
+#elif HIL_SUPPORT
     if (g.hil_mode == 1) {
         mavlink_msg_simstate_send(chan,
                                   last_hil_state.roll,
@@ -637,10 +643,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_SERVO_OUT:
+#if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
             CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
             plane.send_servo_out(chan);
         }
+#endif
         break;
 
     case MSG_RADIO_IN:
@@ -937,6 +945,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (plane.gcs_out_of_time) return;
 
     if (plane.in_mavlink_delay) {
+#if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
             // in HIL we need to keep sending servo values to ensure
             // the simulator doesn't pause, otherwise our sensor
@@ -948,6 +957,7 @@ GCS_MAVLINK::data_stream_send(void)
                 send_message(MSG_RADIO_OUT);
             }
         }
+#endif
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -1606,6 +1616,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_HIL_STATE:
     {
+#if HIL_SUPPORT
         if (plane.g.hil_mode != 1) {
             break;
         }
@@ -1656,6 +1667,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
              wrap_PI(fabsf(packet.yaw - plane.ahrs.yaw)) > ToRad(plane.g.hil_err_limit))) {
             plane.ahrs.reset_attitude(packet.roll, packet.pitch, packet.yaw);
         }
+#endif
         break;
     }
 

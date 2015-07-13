@@ -95,12 +95,14 @@ void Plane::init_ardupilot()
     //
     load_parameters();
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // set sensors to HIL mode
         ins.set_hil_mode();
         compass.set_hil_mode();
         barometer.set_hil_mode();
     }
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
@@ -536,6 +538,7 @@ void Plane::check_short_failsafe()
 
 void Plane::startup_INS_ground(void)
 {
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         while (barometer.get_last_update() == 0) {
             // the barometer begins updating when we get the first
@@ -544,6 +547,7 @@ void Plane::startup_INS_ground(void)
             hal.scheduler->delay(1000);
         }
     }
+#endif
 
     AP_InertialSensor::Start_style style;
     if (g.skip_gyro_cal) {
@@ -679,12 +683,14 @@ void Plane::print_comma(void)
  */
 void Plane::servo_write(uint8_t ch, uint16_t pwm)
 {
+#if HIL_SUPPORT
     if (g.hil_mode==1 && !g.hil_servos) {
         if (ch < 8) {
             RC_Channel::rc_channel(ch)->radio_out = pwm;
         }
         return;
     }
+#endif
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
 }
