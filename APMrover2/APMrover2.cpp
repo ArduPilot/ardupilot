@@ -154,8 +154,10 @@ void Rover::ahrs_update()
     if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
-    if (should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMUDT(ins);
+    }
 }
 
 /*
