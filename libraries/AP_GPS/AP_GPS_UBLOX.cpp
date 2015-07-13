@@ -126,12 +126,12 @@ AP_GPS_UBLOX::send_next_rate_update(void)
     case 8:
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAW, gps._raw_data);
         break;
-    case 8:
+    case 9:
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAWX, gps._raw_data);
         break;
 #endif
 #if UBLOX_VERSION_AUTODETECTION 
-    case 9:
+    case 10:
         _request_version();
         break;
 #endif
