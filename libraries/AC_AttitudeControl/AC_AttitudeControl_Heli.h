@@ -7,6 +7,7 @@
 #define AC_ATTITUDECONTROL_HELI_H
 
 #include <AC_AttitudeControl.h>
+#include <AP_MotorsHeli.h>
 #include <AC_HELI_PID.h>
 #include <Filter.h>
 
