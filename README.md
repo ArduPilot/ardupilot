@@ -20,8 +20,8 @@ password.
 
 - Make sure you are running at least Solo version v1.0.0 (from app)
 - Copy your firmware to **/firmware** on Solo (10.1.1.10)
-- reboot Solo
-- after rebot that the LED's on SOLO should change colours (party mode)
+- Reboot Solo
+- After reboot the LED's on SOLO should change colours (party mode)
 
 ---
 
