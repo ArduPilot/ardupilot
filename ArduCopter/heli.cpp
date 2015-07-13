@@ -54,7 +54,7 @@ void Copter::check_dynamic_flight(void)
         moving = (velocity >= HELI_DYNAMIC_FLIGHT_SPEED_MIN);
     }else{
         // with no GPS lock base it on throttle and forward lean angle
-        moving = (motors.get_throttle() > 800.0 || ahrs.pitch_sensor < -1500);
+        moving = (motors.get_throttle() > 800.0f || ahrs.pitch_sensor < -1500);
     }
 
     if (moving) {
