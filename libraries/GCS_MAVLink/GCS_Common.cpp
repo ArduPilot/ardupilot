@@ -218,8 +218,8 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
-    struct Location loc;
-    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
+    struct Location loc {};
+    if (ahrs.get_secondary_attitude(euler)) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
                                euler.y,
