@@ -30,6 +30,7 @@ PX4UARTDriver::PX4UARTDriver(const char *devpath, const char *perf_name) :
     _initialised(false),
     _in_timer(false),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
+    _os_start_auto_space(-1),
     _flow_control(FLOW_CONTROL_DISABLE)
 {
 }
@@ -111,17 +112,6 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		if (_fd == -1) {
 			return;
 		}
-
-        // work out the OS write buffer size by looking at how many
-        // bytes could be written when we first open the port
-        int nwrite = 0;
-        if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
-            _os_write_buffer_size = nwrite;
-            if (_os_write_buffer_size & 1) {
-                // it is reporting one short
-                _os_write_buffer_size += 1;
-            }
-        }
 	}
 
 	if (_baudrate != 0) {
@@ -140,9 +130,6 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		tcgetattr(_fd, &t);
 		t.c_cflag |= CRTS_IFLOW;
 		tcsetattr(_fd, TCSANOW, &t);
-
-		// reset _total_written to reset flow control auto check
-		_total_written = 0;
 	}
 
     if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
@@ -173,6 +160,11 @@ void PX4UARTDriver::set_flow_control(enum flow_control fcontrol)
         t.c_cflag &= ~CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
+    if (fcontrol == FLOW_CONTROL_AUTO) {
+        // reset flow control auto state machine
+        _total_written = 0;
+        _first_write_time = 0;
+    }
     _flow_control = fcontrol;
 }
 
@@ -382,19 +374,33 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     // the FIONWRITE check is to cope with broken O_NONBLOCK behaviour
     // in NuttX on ttyACM0
+
+    // FIONWRITE is also used for auto flow control detection
+    // Assume output flow control is not working if:
+    //     port is configured for auto flow control
+    // and this is not the first write since flow control turned on
+    // and no data has been removed from the buffer since flow control turned on
+    // and more than .5 seconds elapsed after writing a total of > 5 characters
+    //
+    
     int nwrite = 0;
 
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
-        if (nwrite == 0 &&
-            _flow_control == FLOW_CONTROL_AUTO &&
-            _last_write_time != 0 &&
-            _total_written != 0 &&
-            _os_write_buffer_size == _total_written &&
-            (hal.scheduler->micros64() - _last_write_time) > 500*1000UL) {
-            // it doesn't look like hw flow control is working
-            ::printf("disabling flow control on %s _total_written=%u\n", 
-                     _devpath, (unsigned)_total_written);
-            set_flow_control(FLOW_CONTROL_DISABLE);
+        if (_flow_control == FLOW_CONTROL_AUTO) {
+            if (_first_write_time == 0) {
+                if (_total_written == 0) {
+                    // save the remaining buffer bytes for comparison next write
+                    _os_start_auto_space = nwrite;
+                }
+            } else {
+                if (_os_start_auto_space - nwrite + 1 >= _total_written &&
+                    (hal.scheduler->micros64() - _first_write_time) > 500*1000UL) {
+                    // it doesn't look like hw flow control is working
+                    ::printf("disabling flow control on %s _total_written=%u\n", 
+                             _devpath, (unsigned)_total_written);
+                    set_flow_control(FLOW_CONTROL_DISABLE);
+                }
+            }
         }
         if (nwrite > n) {
             nwrite = n;
@@ -408,6 +414,9 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
         BUF_ADVANCEHEAD(_writebuf, ret);
         _last_write_time = hal.scheduler->micros64();
         _total_written += ret;
+        if (! _first_write_time && _total_written > 5) {
+            _first_write_time = _last_write_time;
+        }
         return ret;
     }
 
