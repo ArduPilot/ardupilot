@@ -30,3 +30,4 @@ LIBRARIES += Filter
 LIBRARIES += GCS_MAVLink
 LIBRARIES += SITL
 LIBRARIES += StorageManager
+LIBRARIES += AP_OpticalFlow
