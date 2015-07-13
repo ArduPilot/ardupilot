@@ -38,23 +38,12 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _speed_hz(speed_hz),
     _throttle_radio_min(1100),
     _throttle_radio_max(1900),
-    _spin_when_armed_ramped(0),
-    _batt_voltage(0.0f),
-    _batt_voltage_resting(0.0f),
-    _batt_current(0.0f),
-    _batt_current_resting(0.0f),
-    _batt_resistance(0.0f),
-    _batt_timer(0),
-    _air_density_ratio(1.0f),
-    _lift_max(1.0f),
-    _throttle_limit(1.0f),
     _throttle_in(0.0f),
-    _throttle_filter()
+    _throttle_filter(),
+    _batt_voltage(0.0f),
+    _batt_current(0.0f),
+    _air_density_ratio(1.0f)
 {
-    // slow start motors from zero to min throttle
-    _flags.slow_start = true;
-    _flags.slow_start_low_end = true;
-
     // init other flags
     _flags.armed = false;
     _flags.stabilizing = false;
@@ -75,8 +64,5 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 void AP_Motors::armed(bool arm)
 {
     _flags.armed = arm;
-    if (!_flags.armed) {
-        _flags.slow_start_low_end = true;
-    }
     AP_Notify::flags.armed = arm;
 };
