@@ -67,8 +67,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
-    _last_5hz_time(0),
-    _last_hw_status(0)
+    _last_5hz_time(0)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
