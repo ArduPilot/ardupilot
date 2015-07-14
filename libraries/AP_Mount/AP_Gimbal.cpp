@@ -57,8 +57,11 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 
     //apply joint angle compensation
     _measurement.joint_angles -= _gimbalParams.joint_angles_offsets;
-    //_measurement.delta_velocity -= _gimbalParams.delta_velocity_offsets;
-    _measurement.delta_angles -= _gimbalParams.delta_angles_offsets;
+    _measurement.delta_velocity -= _gimbalParams.accelerometer_offsets * _measurement.delta_time;
+    _measurement.delta_velocity.x *= _gimbalParams.accelerometer_gains.x;
+    _measurement.delta_velocity.y *= _gimbalParams.accelerometer_gains.y;
+    _measurement.delta_velocity.z *= _gimbalParams.accelerometer_gains.z;
+    _measurement.delta_angles -= _gimbalParams.gyro_offsets * _measurement.delta_time;
 
     // get complementary filter inputs
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);

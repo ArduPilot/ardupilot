@@ -36,22 +36,31 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
     mavlink_msg_param_value_decode(msg, &packet);
     
     if (!strcmp(packet.param_id, "GMB_OFF_ACC_X")){
-        delta_velocity_offsets.x = packet.param_value;
+        accelerometer_offsets.x = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_X;
     }else if (!strcmp(packet.param_id, "GMB_OFF_ACC_Y")){
-        delta_velocity_offsets.y = packet.param_value;
+        accelerometer_offsets.y = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_Y;
     }else if (!strcmp(packet.param_id, "GMB_OFF_ACC_Z")){
-        delta_velocity_offsets.z = packet.param_value;
+        accelerometer_offsets.z = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_Z;
+    }else if (!strcmp(packet.param_id, "GMB_GN_ACC_X")){
+        accelerometer_gains.x = packet.param_value;
+        _mask|= MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_X;
+    }else if (!strcmp(packet.param_id, "GMB_GN_ACC_Y")){
+        accelerometer_gains.y = packet.param_value;
+        _mask|= MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_Y;
+    }else if (!strcmp(packet.param_id, "GMB_GN_ACC_Z")){
+        accelerometer_gains.z = packet.param_value;
+        _mask|= MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_Z;
     }else if (!strcmp(packet.param_id, "GMB_OFF_GYRO_X")){
-        delta_angles_offsets.x = packet.param_value;
+        gyro_offsets.x = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_X;
     }else if (!strcmp(packet.param_id, "GMB_OFF_GYRO_Y")){
-        delta_angles_offsets.y = packet.param_value;
+        gyro_offsets.y = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_Y;
     }else if (!strcmp(packet.param_id, "GMB_OFF_GYRO_Z")){
-        delta_angles_offsets.z = packet.param_value;
+        gyro_offsets.z = packet.param_value;
         _mask|= MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_Z;
     }else if (!strcmp(packet.param_id, "GMB_OFF_JNT_X")){
         joint_angles_offsets.x = packet.param_value;
