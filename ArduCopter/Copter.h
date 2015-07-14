@@ -64,7 +64,7 @@
 #include <AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_P.h>               // P library
-#include <AC_AttitudeControl.h> // Attitude control library
+#include <AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_PosControl.h>      // Position control library
 #include <RC_Channel.h>         // RC Channel Library
@@ -411,7 +411,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     AC_AttitudeControl_Heli attitude_control;
 #else
-    AC_AttitudeControl attitude_control;
+    AC_AttitudeControl_Multi attitude_control;
 #endif
     AC_PosControl pos_control;
     AC_WPNav wp_nav;
