@@ -452,6 +452,50 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
+    if (_class == CLASS_CFG && _msg_id == MSG_CFG_GNSS && gps._gnss_mode != 0) {
+        uint8_t gnssCount = 0;
+        Debug("Got GNSS Settings %u %u %u %u:\n",
+            (unsigned)_buffer.gnss.msgVer,
+            (unsigned)_buffer.gnss.numTrkChHw,
+            (unsigned)_buffer.gnss.numTrkChUse,
+            (unsigned)_buffer.gnss.numConfigBlocks);
+#if UBLOX_DEBUG
+        for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
+            Debug("  %u %u %u 0x%08x\n",
+            (unsigned)_buffer.gnss.configBlock[i].gnssId,
+            (unsigned)_buffer.gnss.configBlock[i].resTrkCh,
+            (unsigned)_buffer.gnss.configBlock[i].maxTrkCh,
+            (unsigned)_buffer.gnss.configBlock[i].flags);
+        }
+#endif
+
+        for(int i = 1; i <= UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
+            if((gps._gnss_mode & (1 << i)) && i != GNSS_SBAS) {
+                gnssCount++;
+            }
+        }
+
+        for(int i = 0; i < _buffer.gnss.numConfigBlocks; i++) {
+            // Reserve an equal portion of channels for all enabled systems
+            if(gps._gnss_mode & (1 << _buffer.gnss.configBlock[i].gnssId)) {
+                if(GNSS_SBAS !=_buffer.gnss.configBlock[i].gnssId) {
+                    _buffer.gnss.configBlock[i].resTrkCh = (_buffer.gnss.numTrkChHw - 3) / (gnssCount * 2);
+                    _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
+                } else {
+                    _buffer.gnss.configBlock[i].resTrkCh = 1;
+                    _buffer.gnss.configBlock[i].resTrkCh = 3;
+                }
+                _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
+            } else {
+                _buffer.gnss.configBlock[i].resTrkCh = 0;
+                _buffer.gnss.configBlock[i].maxTrkCh = 0;
+                _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags & 0xFFFFFFFE;
+            }
+        }
+        _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
+        return false;
+    }
+
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
 		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
               (unsigned)_buffer.sbas.mode,
@@ -755,6 +799,7 @@ AP_GPS_UBLOX::_configure_gps(void)
     // ask for the current navigation settings
 	Debug("Asking for engine setting\n");
     _send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
+    _send_message(CLASS_CFG, MSG_CFG_GNSS, NULL, 0);
 }
 
 
