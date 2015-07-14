@@ -255,10 +255,6 @@ void Copter::init_ardupilot()
 
     startup_ground(true);
 
-#if LOGGING_ENABLED == ENABLED
-    Log_Write_Startup();
-#endif
-
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly

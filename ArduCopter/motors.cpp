@@ -822,9 +822,6 @@ void Copter::init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
-    // send disarm command to motors
-    motors.armed(false);
-
     // save compass offsets learned by the EKF
     Vector3f magOffsets;
     if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
@@ -840,11 +837,14 @@ void Copter::init_disarm_motors()
     set_land_complete(true);
     set_land_complete_maybe(true);
 
-    // reset the mission
-    mission.reset();
-
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
+
+    // send disarm command to motors
+    motors.armed(false);
+
+    // reset the mission
+    mission.reset();
 
     // suspend logging
     if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {

@@ -448,11 +448,6 @@ void Copter::Log_Write_Startup()
         time_us         : hal.scheduler->micros64()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-
-    // write all commands to the dataflash as well
-    if (should_log(MASK_LOG_CMD)) {
-        DataFlash.Log_Write_EntireMission(mission);
-    }
 }
 
 struct PACKED log_Event {
@@ -754,6 +749,11 @@ void Copter::start_logging()
             in_mavlink_delay = false;
 
             DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
+
+            // write mission commands
+            if (MASK_LOG_CMD & g.log_bitmask) {
+                DataFlash.Log_Write_EntireMission(mission);
+            }
 
             Log_Write_Startup();
 
