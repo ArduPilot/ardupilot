@@ -81,13 +81,13 @@ void AP_Gimbal::update_state()
     // Add the control rate vectors
     if(lockedToBody){
         gimbalRateDemVec.zero();
-        gimbalRateDemVec += getGimbalRateBodyLock();    
+        gimbalRateDemVec += getGimbalRateBodyLock();
     }else{
         gimbalRateDemVec.zero();
         gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
-        gimbalRateDemVec += getGimbalRateDemVecGyroBias();   
+        gimbalRateDemVec += getGimbalRateDemVecGyroBias();
     }
 
     update_joint_angle_est();
@@ -114,8 +114,6 @@ void AP_Gimbal::update_joint_angle_est()
 
     vehicle_to_gimbal_quat_filt.from_vector312(filtered_joint_angles.x,filtered_joint_angles.y,filtered_joint_angles.z);
 }
-
-
 
 void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
 {
