@@ -130,6 +130,7 @@ const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
 const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+const prog_char AP_GPS::_initialisation_raw_blob[] PROGMEM = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
   send some more initialisation string bytes if there is room in the
@@ -213,6 +214,11 @@ AP_GPS::detect_instance(uint8_t instance)
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
+#if UBLOX_RXM_RAW_LOGGING
+    if(_raw_data != 0)
+        send_blob_start(instance, _initialisation_raw_blob, sizeof(_initialisation_raw_blob));
+    else
+#endif
         send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
     }
 
