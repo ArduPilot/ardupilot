@@ -747,8 +747,6 @@ AP_GPS_UBLOX::_configure_navigation_rate(uint16_t rate_ms)
 void
 AP_GPS_UBLOX::_configure_gps(void)
 {
-    port->begin(38400U);
-
     // start the process of updating the GPS rates
     need_rate_update = true;
     _last_5hz_time = hal.scheduler->millis();

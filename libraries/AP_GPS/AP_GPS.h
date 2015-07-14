@@ -407,6 +407,7 @@ private:
 
     static const uint32_t  _baudrates[];
     static const prog_char _initialisation_blob[];
+    static const prog_char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
