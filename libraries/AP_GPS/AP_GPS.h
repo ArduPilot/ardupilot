@@ -412,6 +412,8 @@ private:
     void update_instance(uint8_t instance);
 };
 
+#define GPS_BAUD_TIME_MS 1200
+
 #include <GPS_Backend.h>
 #include <AP_GPS_UBLOX.h>
 #include <AP_GPS_MTK.h>

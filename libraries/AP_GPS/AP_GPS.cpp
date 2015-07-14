@@ -203,7 +203,7 @@ AP_GPS::detect_instance(uint8_t instance)
         dstate->detect_started_ms = now;
     }
 
-    if (now - dstate->last_baud_change_ms > 1200) {
+    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
 		dstate->last_baud++;
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
@@ -218,7 +218,8 @@ AP_GPS::detect_instance(uint8_t instance)
 
     send_blob_update(instance);
 
-    while (_port[instance]->available() > 0 && new_gps == NULL) {
+    while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0
+            && new_gps == NULL) {
         uint8_t data = _port[instance]->read();
         /*
           running a uBlox at less than 38400 will lead to packet
@@ -257,7 +258,7 @@ AP_GPS::detect_instance(uint8_t instance)
 			hal.console->print_P(PSTR(" SIRF "));
 			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
 		}
-		else if (now - dstate->detect_started_ms > 5000) {
+		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
