@@ -5,43 +5,50 @@
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 
+#define MAVLINK_GIMBAL_NUM_TRACKED_PARAMS 15
 
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_JNT_X      0x001
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_JNT_Y      0x002
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_JNT_Z      0x004
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_X      0x008
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_Y      0x010
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_ACC_Z      0x020
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_X     0x040
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_Y     0x080
-#define MAVLINK_GIMBAL_PARAM_GMB_OFF_GYRO_Z     0x0100
-#define MAVLINK_GIMBAL_PARAM_GMB_K_RATE         0x0200
-#define MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_X       0x0400
-#define MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_Y       0x0800
-#define MAVLINK_GIMBAL_PARAM_GMB_GN_ACC_Z       0x1000
-#define MAVLINK_GIMBAL_PARAM_MASK_ALL           0x1FFF
-#define MAVLINK_GIMBAL_PARAM_MASK_NONE          0x0000
+enum param_state_t {
+    GMB_PARAM_NOT_YET_READ=0, // parameter has yet to be initialized
+    GMB_PARAM_FETCH_AGAIN=1, // parameter is being fetched
+    GMB_PARAM_ATTEMPTING_TO_SET=2, // parameter is being set
+    GMB_PARAM_CONSISTENT=3, // parameter is consistent
+    GMB_PARAM_NONEXISTANT=4 // parameter does not seem to exist
+};
 
 class AP_Gimbal_Parameters
 {
 public:
-    Vector3f     gyro_offsets;
-    Vector3f     accelerometer_offsets;
-    Vector3f     accelerometer_gains;
-    Vector3f     joint_angles_offsets;
-    float        K_gimbalRate;
-    
+    AP_Gimbal_Parameters();
+
+    bool initialized();
     bool received_all();
-	void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg);
-	void receive_missing_parameters(mavlink_channel_t chan);
     void fetch_params();
 
-	AP_Gimbal_Parameters(){
-		_mask = MAVLINK_GIMBAL_PARAM_MASK_NONE;
-	};
+    void get_param(char const* name, float& value, float def_val = 0.0f);
+    void set_param(mavlink_channel_t chan, char const* name, float value);
+
+    void update(mavlink_channel_t chan);
+    void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg);
+
+    Vector3f get_accel_bias();
+    Vector3f get_accel_gain();
+    Vector3f get_gyro_bias();
+    Vector3f get_joint_bias();
+    float get_K_rate();
 
 private:
-	uint16_t     _mask;
+    static const char _names[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS][16];
 
+    static const uint32_t _retry_period;
+    static const uint8_t _max_fetch_attempts;
+    float _values[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
+    param_state_t _states[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
+
+    uint8_t _fetch_attempts[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
+    bool _param_seen[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
+
+    uint32_t _last_request_ms;
 };
+
+
 #endif

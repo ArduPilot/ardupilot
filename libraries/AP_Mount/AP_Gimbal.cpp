@@ -11,14 +11,14 @@
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-    if(!_gimbalParams.received_all()){
-        _gimbalParams.receive_missing_parameters(chan);
+    _gimbalParams.update(chan);
+    if(!_gimbalParams.initialized()){
         return;
     }
 
     decode_feedback(msg);
     update_state();
-    if (_gimbalParams.K_gimbalRate!=0.0f){
+    if (_gimbalParams.get_K_rate()!=0.0f){
         if (lockedToBody){
             send_control(chan);
         }else{
@@ -56,12 +56,12 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
     _measurement.joint_angles.z = report_msg.joint_az;
 
     //apply joint angle compensation
-    _measurement.joint_angles -= _gimbalParams.joint_angles_offsets;
-    _measurement.delta_velocity -= _gimbalParams.accelerometer_offsets * _measurement.delta_time;
-    _measurement.delta_velocity.x *= _gimbalParams.accelerometer_gains.x;
-    _measurement.delta_velocity.y *= _gimbalParams.accelerometer_gains.y;
-    _measurement.delta_velocity.z *= _gimbalParams.accelerometer_gains.z;
-    _measurement.delta_angles -= _gimbalParams.gyro_offsets * _measurement.delta_time;
+    _measurement.joint_angles -= _gimbalParams.get_joint_bias();
+    _measurement.delta_velocity -= _gimbalParams.get_accel_bias() * _measurement.delta_time;
+    _measurement.delta_velocity.x *= _gimbalParams.get_accel_gain().x;
+    _measurement.delta_velocity.y *= _gimbalParams.get_accel_gain().y;
+    _measurement.delta_velocity.z *= _gimbalParams.get_accel_gain().z;
+    _measurement.delta_angles -= _gimbalParams.get_gyro_bias() * _measurement.delta_time;
 
     // get complementary filter inputs
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
@@ -152,14 +152,14 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * filtered_joint_angles.z;
+        gimbalRateDemVecYaw.z = - _gimbalParams.get_K_rate() * filtered_joint_angles.z;
 
         // Get filtered vehicle turn rate in earth frame
         vehicleYawRateFilt = (1.0f - yawRateFiltPole * _measurement.delta_time) * vehicleYawRateFilt + yawRateFiltPole * _measurement.delta_time * _ahrs.get_yaw_rate_earth();
         Vector3f vehicle_rate_ef(0,0,vehicleYawRateFilt);
 
          // calculate the maximum steady state rate error corresponding to the maximum permitted yaw angle error
-        float maxRate = _gimbalParams.K_gimbalRate * yawErrorLimit;
+        float maxRate = _gimbalParams.get_K_rate() * yawErrorLimit;
         float vehicle_rate_mag_ef = vehicle_rate_ef.length();
         float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
@@ -196,7 +196,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecTilt(const Quaternion &quatEst)
         quatErr.to_axis_angle(deltaAngErr);
 
         // multiply the angle error vector by a gain to calculate a demanded gimbal rate required to control tilt
-        Vector3f gimbalRateDemVecTilt = deltaAngErr * _gimbalParams.K_gimbalRate;
+        Vector3f gimbalRateDemVecTilt = deltaAngErr * _gimbalParams.get_K_rate();
         return gimbalRateDemVecTilt;
 }
 
@@ -229,9 +229,9 @@ Vector3f AP_Gimbal::getGimbalRateBodyLock()
 
         // multiply the joint angles by a gain to calculate a rate vector required to keep the joints centred
         Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.x = - _gimbalParams.K_gimbalRate * filtered_joint_angles.x;
-        gimbalRateDemVecYaw.y = - _gimbalParams.K_gimbalRate * filtered_joint_angles.y;
-        gimbalRateDemVecYaw.z = - _gimbalParams.K_gimbalRate * filtered_joint_angles.z;
+        gimbalRateDemVecYaw.x = - _gimbalParams.get_K_rate() * filtered_joint_angles.x;
+        gimbalRateDemVecYaw.y = - _gimbalParams.get_K_rate() * filtered_joint_angles.y;
+        gimbalRateDemVecYaw.z = - _gimbalParams.get_K_rate() * filtered_joint_angles.z;
 
         // Add a feedforward term from vehicle gyros
         gimbalRateDemVecYaw += Tvg * _ahrs.get_gyro();
