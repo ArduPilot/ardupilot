@@ -90,6 +90,9 @@ private:
     Vector3f getGimbalRateDemVecGyroBias();
     Vector3f getGimbalRateBodyLock();
 
+    void gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates);
+    void joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel);
+
     // joint angle filter states
     Vector3f vehicle_delta_angles = Vector3f(0,0,0);
 

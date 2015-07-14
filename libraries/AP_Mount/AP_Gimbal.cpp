@@ -114,6 +114,37 @@ void AP_Gimbal::update_joint_angle_est()
     vehicle_to_gimbal_quat_filt.to_vector312(filtered_joint_angles.x,filtered_joint_angles.y,filtered_joint_angles.z);
 }
 
+
+
+void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
+{
+    float sin_theta = sinf(_measurement.joint_angles.y);
+    float cos_theta = cosf(_measurement.joint_angles.y);
+
+    float sin_phi = sinf(_measurement.joint_angles.x);
+    float cos_phi = cosf(_measurement.joint_angles.x);
+    float sec_phi = 1.0f/cos_phi;
+    float tan_phi = sin_phi/cos_phi;
+
+    joint_rates.x = ang_vel.x*cos_theta+ang_vel.z*sin_theta;
+    joint_rates.y = ang_vel.x*sin_theta*(sin_phi/cos_phi)-ang_vel.z*cos_theta*(sin_phi/cos_phi)+ang_vel.y;
+    joint_rates.z = (1.0f/cos_phi)*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
+}
+
+void AP_Gimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)
+{
+    float sin_theta = sinf(_measurement.joint_angles.y);
+    float cos_theta = cosf(_measurement.joint_angles.y);
+
+    float sin_phi = sinf(_measurement.joint_angles.x);
+    float cos_phi = cosf(_measurement.joint_angles.x);
+
+    ang_vel.x = cos_theta*joint_rates.x-sin_theta*cos_phi*joint_rates.z;
+    ang_vel.y = joint_rates.y + sin_phi*joint_rates.z;
+    ang_vel.z = sin_theta*joint_rates.x+cos_theta*cos_phi*joint_rates.z;
+}
+
+
 Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
         // Define rotation from vehicle to gimbal using a 312 rotation sequence
