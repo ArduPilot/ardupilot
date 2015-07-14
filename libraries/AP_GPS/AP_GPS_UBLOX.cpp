@@ -112,29 +112,36 @@ AP_GPS_UBLOX::send_next_rate_update(void)
     case 5:
         _configure_message_rate(CLASS_NAV, MSG_DOP, 1); // 18+8 bytes
         break;
-#if UBLOX_HW_LOGGING
     case 6:
+#if UBLOX_HW_LOGGING
         // gather MON_HW at 0.5Hz
         _configure_message_rate(CLASS_MON, MSG_MON_HW, 2); // 64+8 bytes
+#endif
         break;
     case 7:
+#if UBLOX_HW_LOGGING
         // gather MON_HW2 at 0.5Hz
         _configure_message_rate(CLASS_MON, MSG_MON_HW2, 2); // 24+8 bytes
-        break;
 #endif
-#if UBLOX_RXM_RAW_LOGGING
+        break;
+
     case 8:
+#if UBLOX_RXM_RAW_LOGGING
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAW, gps._raw_data);
+#endif
         break;
     case 9:
+#if UBLOX_RXM_RAW_LOGGING
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAWX, gps._raw_data);
-        break;
 #endif
-#if UBLOX_VERSION_AUTODETECTION 
+        break;
+
     case 10:
+#if UBLOX_VERSION_AUTODETECTION
         _request_version();
-        break;
 #endif
+        break;
+
     default:
         need_rate_update = false;
         rate_update_step = 0;
