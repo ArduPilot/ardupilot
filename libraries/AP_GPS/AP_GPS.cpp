@@ -106,6 +106,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
 #endif
 
+    // @Param: GNSS_MODE
+    // @DisplayName: GNSS system configuration
+    // @Description: Bitmask for what GNSS system to use
+    // @Values: 0: Leave as currently configured 1: GPS 2: SBAS 4: Galileo 8: Beidou 16: IMES 32: QZSS 64: GLONASS
+    // @User: Advanced
+    AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
+
     AP_GROUPEND
 };
 
