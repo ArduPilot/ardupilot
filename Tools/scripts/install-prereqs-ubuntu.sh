@@ -60,7 +60,7 @@ sudo usermod -a -G dialout $USER
 $APT_GET remove modemmanager
 $APT_GET update
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS $UBUNTU64_PKGS $AVR_PKGS
-sudo pip -q install $PYTHON_PKGS
+sudo pip2 -q install $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
