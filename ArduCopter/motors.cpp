@@ -201,9 +201,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-    // set hover throttle
-    motors.set_hover_throttle(g.throttle_mid);
-
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
