@@ -21,20 +21,20 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     decode_feedback(msg);
     update_state();
     if (_gimbalParams.get_K_rate()!=0.0f){
-        if (lockedToBody){
+        if (lockedToBody || isCopterFlipped()){
             _gimbalParams.set_param(chan, "GMB_POS_HOLD", 1);
         }else{
-            if (_ekf.getStatus() && !isCopterFlipped()){
+            if (_ekf.getStatus()){
                 send_control(chan); 
                 _gimbalParams.set_param(chan, "GMB_POS_HOLD", 0);
             }
         }
     }
 
-    if (hal.util->get_soft_armed()) {
-        _gimbalParams.set_param(chan, "GMB_MAX_TORQUE", 0);
-    } else {
+    if (!hal.util->get_soft_armed() || joints_near_limits()) {
         _gimbalParams.set_param(chan, "GMB_MAX_TORQUE", 5000);
+    } else {
+        _gimbalParams.set_param(chan, "GMB_MAX_TORQUE", 0);
     }
 }
 
@@ -263,7 +263,7 @@ Vector3f AP_Gimbal::getGimbalEstimateEF()
 
 bool AP_Gimbal::isCopterFlipped()
 {
-    return fabsf(_ahrs.roll)>0.7f || _ahrs.pitch > 1.0f || _ahrs.pitch < -0.8f;
+    return _ahrs.get_dcm_matrix().c.z < 0;
 }
 
 bool AP_Gimbal::joints_near_limits()
