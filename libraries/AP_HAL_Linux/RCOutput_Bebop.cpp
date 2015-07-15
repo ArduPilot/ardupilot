@@ -269,6 +269,7 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     int ret=0;
     struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };
     pthread_attr_t attr;
+    pthread_condattr_t cond_attr;
 
     _i2c_sem = hal.i2c1->get_semaphore();
     if (_i2c_sem == NULL) {
@@ -285,8 +286,10 @@ void LinuxRCOutput_Bebop::init(void* dummy)
 
     pthread_mutex_lock(&_mutex);
 
-    ret = pthread_cond_init(&_cond, NULL);
-
+    pthread_condattr_init(&cond_attr);
+    pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+    ret = pthread_cond_init(&_cond, &cond_attr);
+    pthread_condattr_destroy(&cond_attr);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init cond\n");
         goto exit;
@@ -390,7 +393,7 @@ void LinuxRCOutput_Bebop::_run_rcout()
 
     while (true) {
         pthread_mutex_lock(&_mutex);
-        ret = clock_gettime(CLOCK_REALTIME, &ts);
+        ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         if (ret != 0)
             hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
 
