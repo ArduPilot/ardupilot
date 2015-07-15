@@ -148,6 +148,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm);
 
+    // slow_start - ignored by helicopters
+    void                slow_start(bool true_false) {};
+
     //
     // heli specific methods
     //
