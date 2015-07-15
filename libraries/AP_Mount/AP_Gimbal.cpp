@@ -268,7 +268,7 @@ bool AP_Gimbal::isCopterFlipped()
 
 bool AP_Gimbal::joints_near_limits()
 {
-    return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < radians(135);
+    return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < -radians(135);
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
