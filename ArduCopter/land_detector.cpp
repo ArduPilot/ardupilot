@@ -113,6 +113,7 @@ void Copter::set_land_complete_maybe(bool b)
 //  has no effect when throttle is above hover throttle
 void Copter::update_throttle_thr_mix()
 {
+#if FRAME_CONFIG != HELI_FRAME
     // if disarmed prioritise throttle
     if(!motors.armed()) {
         motors.set_throttle_mix_min();
@@ -151,4 +152,5 @@ void Copter::update_throttle_thr_mix()
             motors.set_throttle_mix_min();
         }
     }
+#endif
 }
