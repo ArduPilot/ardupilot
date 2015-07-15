@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
     // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_Motors_Multirotor, 0),
+    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
 
     // parameters 1 ~ 29 were reserved for tradheli
     // parameters 30 ~ 39 reserved for tricopter
@@ -64,9 +64,6 @@ const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
 // init
 void AP_MotorsSingle::Init()
 {
-    // call parent Init function to set-up throttle curve
-    AP_Motors::Init();
-
     // set update rate for the 3 motors (but not the servo on channel 7)
     set_update_rate(_speed_hz);
 
