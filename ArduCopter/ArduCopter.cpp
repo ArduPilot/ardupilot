@@ -466,8 +466,10 @@ void Copter::one_hz_loop()
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
 
+#if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
         motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
+#endif
     }
 
     // update assigned functions and enable auxiliar servos
