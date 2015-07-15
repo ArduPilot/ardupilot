@@ -167,7 +167,7 @@ void Copter::guided_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         // To-Do: handle take-offs - these may not only be immediately after auto_armed becomes true
@@ -211,7 +211,7 @@ void Copter::guided_takeoff_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif

@@ -41,7 +41,7 @@ void Copter::circle_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
         pos_control.set_alt_target_to_current_alt();
