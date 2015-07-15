@@ -1,12 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/// @file	AP_Motors_Multirotor.h
-/// @brief	Motor control class for Multirotors
+/// @file	AP_MotorsMulticopter.h
+/// @brief	Motor control class for Multicopters
 
-#ifndef __AP_MOTORS_MULTIROTOR_H__
-#define __AP_MOTORS_MULTIROTOR_H__
+#ifndef __AP_MOTORS_MULTICOPTER_H__
+#define __AP_MOTORS_MULTICOPTER_H__
 
 #include "AP_Motors_Class.h"
+
+#define AP_MOTORS_DEFAULT_MIN_THROTTLE  130
+#define AP_MOTORS_DEFAULT_MID_THROTTLE  500
+#define AP_MOTORS_DEFAULT_MAX_THROTTLE  1000
 
 #define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
@@ -32,12 +36,12 @@
  #define AP_MOTOR_SLOW_START_LOW_END_INCREMENT   1       // min throttle ramp speed (i.e. motors will speed up from zero to _spin_when_armed speed in about 0.3 second)
 #endif
 
-/// @class      AP_Motors_Multirotor
-class AP_Motors_Multirotor :public AP_Motors {
+/// @class      AP_MotorsMulticopter
+class AP_MotorsMulticopter : public AP_Motors {
 public:
 
     // Constructor
-    AP_Motors_Multirotor(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // output - sends commands to the motors
     virtual void        output();
@@ -56,13 +60,12 @@ public:
     void                set_throttle_mix_max() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MAX_DEFAULT; }
 
     // get_throttle_thr_mix - get low throttle compensation value
-    bool                is_throttle_mix_min() { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
+    bool                is_throttle_mix_min() const { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
 
     // returns warning throttle
-    float               get_throttle_warn() { return rel_pwm_to_thr_range(_spin_when_armed); }
+    float               get_throttle_warn() const { return rel_pwm_to_thr_range(_spin_when_armed); }
 
-    int16_t             throttle_min() const { return _min_throttle;}
-    int16_t             throttle_max() const { return _max_throttle;}
+    int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
     // also sets throttle channel minimum and maximum pwm
@@ -79,6 +82,18 @@ public:
     // throttle_pass_through - passes provided pwm directly to all motors - dangerous but used for initialising ESCs
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void                throttle_pass_through(int16_t pwm);
+
+    // get_lift_max - get maximum lift ratio - for logging purposes only
+    float               get_lift_max() { return _lift_max; }
+
+    // get_batt_voltage_filt - get battery voltage ratio - for logging purposes only
+    float               get_batt_voltage_filt() const { return _batt_voltage_filt.get(); }
+
+    // get_batt_resistance - get battery resistance approximation - for logging purposes only
+    float               get_batt_resistance() const { return _batt_resistance; }
+
+    // get_throttle_limit - throttle limit ratio - for logging purposes only
+    float               get_throttle_limit() const { return _throttle_limit; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
@@ -112,6 +127,21 @@ protected:
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;
 
+    // convert RPY and Throttle servo ranges from legacy controller scheme back into PWM values
+    // RPY channels typically +/-45 degrees servo travel between +/-400 PWM
+    // Throttle channel typically 0-1000 range converts to 1100-1900 PWM for final output signal to motors
+    // ToDo: this should all be handled as floats +/- 1.0 instead of PWM and fake angle ranges
+    int16_t             calc_roll_pwm() { return (_roll_control_input / 11.25f);}
+    int16_t             calc_pitch_pwm() { return (_pitch_control_input / 11.25f);}
+    int16_t             calc_yaw_pwm() { return (_yaw_control_input / 11.25f);}
+    int16_t             calc_throttle_radio_output() { return (_throttle_control_input * _throttle_pwm_scalar) + _throttle_radio_min;}
+
+    // flag bitmask
+    struct {
+        uint8_t slow_start         : 1;    // 1 if slow start is active
+        uint8_t slow_start_low_end : 1;    // 1 just after arming so we can ramp up the spin_when_armed value
+    } _multicopter_flags;
+
     // parameters
     AP_Int16            _spin_when_armed;       // used to control whether the motors always spin when armed.  pwm value above radio_min
 
@@ -124,11 +154,21 @@ protected:
     AP_Float            _thr_mix_min;           // current over which maximum throttle is limited
 
     // internal variables
+    bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
+    int16_t             _spin_when_armed_ramped;    // equal to _spin_when_armed parameter but slowly ramped up from zero
     float               _throttle_thr_mix_desired;  // desired throttle_low_comp value, actual throttle_low_comp is slewed towards this value over 1~2 seconds
     float               _throttle_thr_mix;          // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     int16_t             _min_throttle;              // the minimum throttle to be sent to the motors when they're on (prevents motors stalling while flying)
     int16_t             _max_throttle;              // the maximum throttle to be sent to the motors (sometimes limited by slow start)
     int16_t             _hover_out;                 // the estimated hover throttle as pct * 10 (i.e. 0 ~ 1000)
 
+    // battery voltage, current and air pressure compensation variables
+    float               _batt_voltage_resting;  // battery voltage reading at minimum throttle
+    LowPassFilterFloat  _batt_voltage_filt;     // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
+    float               _batt_current_resting;  // battery's current when motors at minimum
+    float               _batt_resistance;       // battery's resistance calculated by comparing resting voltage vs in flight voltage
+    int16_t             _batt_timer;            // timer used in battery resistance calcs
+    float               _lift_max;              // maximum lift ratio from battery voltage
+    float               _throttle_limit;        // ratio of throttle limit between hover and maximum
 };
-#endif  // __AP_MOTORS_MULTIROTOR_H__
+#endif  // __AP_MOTORS_MULTICOPTER_H__
