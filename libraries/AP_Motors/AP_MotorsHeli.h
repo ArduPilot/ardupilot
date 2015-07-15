@@ -116,7 +116,11 @@ public:
         _rsc_runup_increment(0.0f),
         _rotor_speed_estimate(0.0f),
         _tail_direct_drive_out(0),
-        _delta_phase_angle(0)
+        _delta_phase_angle(0),
+        _roll_radio_passthrough(0),
+        _pitch_radio_passthrough(0),
+        _throttle_radio_passthrough(0),
+        _yaw_radio_passthrough(0)
     {
         AP_Param::setup_object_defaults(this, var_info);
 
