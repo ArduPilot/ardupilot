@@ -27,9 +27,6 @@ extern const AP_HAL::HAL& hal;
 // Init
 void AP_MotorsMatrix::Init()
 {
-    // call parent Init function to set-up throttle curve
-    AP_Motors::Init();
-
     // setup the motors
     setup_motors();
 
