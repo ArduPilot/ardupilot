@@ -87,6 +87,7 @@ private:
     void update_joint_angle_est();
 
     bool isCopterFlipped();
+    bool joints_near_limits();
 
     // Control loop functions
     Vector3f getGimbalRateDemVecYaw(const Quaternion &quatEst);

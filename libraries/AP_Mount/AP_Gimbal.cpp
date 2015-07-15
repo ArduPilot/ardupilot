@@ -266,4 +266,9 @@ bool AP_Gimbal::isCopterFlipped()
     return fabsf(_ahrs.roll)>0.7f || _ahrs.pitch > 1.0f || _ahrs.pitch < -0.8f;
 }
 
+bool AP_Gimbal::joints_near_limits()
+{
+    return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < radians(135);
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
