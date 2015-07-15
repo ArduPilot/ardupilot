@@ -126,8 +126,8 @@ void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f&
     float tan_phi = sin_phi/cos_phi;
 
     joint_rates.x = ang_vel.x*cos_theta+ang_vel.z*sin_theta;
-    joint_rates.y = ang_vel.x*sin_theta*(sin_phi/cos_phi)-ang_vel.z*cos_theta*(sin_phi/cos_phi)+ang_vel.y;
-    joint_rates.z = (1.0f/cos_phi)*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
+    joint_rates.y = ang_vel.x*sin_theta*tan_phi-ang_vel.z*cos_theta*tan_phi+ang_vel.y;
+    joint_rates.z = sec_phi*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
 }
 
 void AP_Gimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)

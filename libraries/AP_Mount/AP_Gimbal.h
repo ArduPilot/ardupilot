@@ -33,7 +33,12 @@ public:
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
         lockedToBody(false),
-        yawErrorLimit(0.1f)
+        yawErrorLimit(0.1f),
+        vehicle_delta_angles(),
+        vehicle_to_gimbal_quat(),
+        vehicle_to_gimbal_quat_filt(),
+        filtered_joint_angles(),
+        last_vehicle_gyro()
     {
     }
 
@@ -94,12 +99,12 @@ private:
     void joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel);
 
     // joint angle filter states
-    Vector3f vehicle_delta_angles = Vector3f(0,0,0);
+    Vector3f vehicle_delta_angles;
 
-    Quaternion vehicle_to_gimbal_quat = Quaternion();
-    Quaternion vehicle_to_gimbal_quat_filt = Quaternion();
-    Vector3f filtered_joint_angles = Vector3f(0,0,0);
-    Vector3f last_vehicle_gyro = Vector3f(0,0,0);
+    Quaternion vehicle_to_gimbal_quat;
+    Quaternion vehicle_to_gimbal_quat_filt;
+    Vector3f filtered_joint_angles;
+    Vector3f last_vehicle_gyro;
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
