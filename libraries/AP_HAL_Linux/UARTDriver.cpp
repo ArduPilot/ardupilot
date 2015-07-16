@@ -97,7 +97,8 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         default:
         {
             // Notify that the option is not valid and select standart input and output
-            ::printf("LinuxUARTDriver parsing failed, using default\n");
+            ::printf("Argument is not valid. Fallback to console.\n");
+            ::printf("Launch with --help to see an example.\n");
 
             _device = new ConsoleDevice();
             _device->open();
@@ -188,48 +189,65 @@ void LinuxUARTDriver::_deallocate_buffers()
 LinuxUARTDriver::device_type LinuxUARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
-    _flag = NULL; // init flag
 
+    if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
+        return DEVICE_SERIAL;
+    } else if (strncmp(arg, "tcp:", 4) != 0 && 
+               strncmp(arg, "udp:", 4) != 0) {
+        return DEVICE_UNKNOWN;
+    }
 
     char *devstr = strdup(arg);
     if (devstr == NULL) {
         return DEVICE_UNKNOWN;
     }
 
-    if (stat(devstr, &st) == 0 && S_ISCHR(st.st_mode)) {
-        free(devstr);
-        return DEVICE_SERIAL;
-    } else if (strncmp(devstr, "tcp:", 4) == 0 ||
-               strncmp(devstr, "udp:", 4) == 0) {
-        char *saveptr = NULL;
-        // Parse the string        
-        char *protocol, *ip, *port, *flag;
-        protocol = strtok_r(devstr, ":", &saveptr);
-        ip = strtok_r(NULL, ":", &saveptr);
-        port = strtok_r(NULL, ":", &saveptr);
-        flag = strtok_r(NULL, ":", &saveptr);        
-        
-        _base_port = (uint16_t) atoi(port);
-        if (_ip) free(_ip);
-        _ip = NULL;
-        if (ip) {
-            _ip = strdup(ip);        
-        }
-        if (_flag) free(_flag);
-        _flag = NULL;
-        if (flag) {
-            _flag = strdup(flag);
-        }
-        if (strcmp(protocol, "udp") == 0) {
-            free(devstr);
-            return DEVICE_UDP;
-        }
-        free(devstr);
-        return DEVICE_TCP;
+    char *saveptr = NULL;
+    char *protocol, *ip, *port, *flag;
+
+    protocol = strtok_r(devstr, ":", &saveptr);
+    ip = strtok_r(NULL, ":", &saveptr);
+    port = strtok_r(NULL, ":", &saveptr);
+    flag = strtok_r(NULL, ":", &saveptr);
+
+    device_type type = DEVICE_UNKNOWN;
+
+    if (ip == NULL || port == NULL) {
+        fprintf(stderr, "IP or port is set incorrectly.\n");
+        type = DEVICE_UNKNOWN;
+        goto errout;
     }
+
+    if (_ip) {
+        free(_ip);
+        _ip = NULL;
+    }
+
+    if (_flag) {
+        free(_flag);
+        _flag = NULL;
+    }
+
+    _base_port = (uint16_t) atoi(port);
+    _ip = strdup(ip);
+
+    /* Optional flag for TCP */
+    if (flag != NULL) {
+        _flag = strdup(flag);
+    }
+
+    if (strcmp(protocol, "udp") == 0) {
+        type = DEVICE_UDP;
+    } else {
+        type = DEVICE_TCP;
+    }
+
+errout:
+
     free(devstr);
-    return DEVICE_UNKNOWN;
+    return type;
 }
+
 
 bool LinuxUARTDriver::_serial_start_connection()
 {
