@@ -169,9 +169,9 @@ bool AP_Arming::ins_checks(bool report)
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
-                // allow for up to 0.5 m/s/s difference. Has to pass
+                // allow for up to 0.75 m/s/s difference. Has to pass
                 // in last 10 seconds
-                float threshold = 0.5f;
+                float threshold = 0.75f;
                 if (i >= 2) {
                     /*
                       we allow for a higher threshold for IMU3 as it
