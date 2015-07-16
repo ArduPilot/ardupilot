@@ -549,6 +549,15 @@ void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
     _backends[instance]->control_msg(msg);
 }
 
+void AP_Mount::update_fast()
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != NULL) {
+            _backends[instance]->update_fast();
+        }
+    }
+}
+
 /// Return mount status information
 void AP_Mount::status_msg(mavlink_channel_t chan)
 {

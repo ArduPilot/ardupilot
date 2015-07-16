@@ -43,6 +43,35 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     }
 }
 
+void AP_Gimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+    const AP_InertialSensor &ins = _ahrs.get_ins();
+
+    if (ins_index < ins.get_gyro_count()) {
+        if (!ins.get_delta_angle(ins_index,dAng)) {
+            dAng = ins.get_gyro(ins_index) / ins.get_sample_rate();
+        }
+    }
+}
+
+void AP_Gimbal::update_fast() {
+    const AP_InertialSensor &ins = _ahrs.get_ins();
+
+    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
+        // dual gyro mode - average first two gyros
+        Vector3f dAng;
+        readVehicleDeltaAngle(0, dAng);
+        vehicle_delta_angles += dAng*0.5f;
+        readVehicleDeltaAngle(1, dAng);
+        vehicle_delta_angles += dAng*0.5f;
+    } else {
+        // single gyro mode - one of the first two gyros are unhealthy or don't exist
+        // just read primary gyro
+        Vector3f dAng;
+        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
+        vehicle_delta_angles += dAng;
+    }
+}
+
 void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 {
     _last_report_msg_ms = hal.scheduler->millis();
@@ -71,8 +100,6 @@ void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
 
     // get complementary filter inputs
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
-    vehicle_delta_angles = (last_vehicle_gyro + _ahrs.get_gyro())*_measurement.delta_time*0.5f;
-    last_vehicle_gyro = _ahrs.get_gyro();
 }
 
 void AP_Gimbal::update_state()
@@ -119,6 +146,8 @@ void AP_Gimbal::update_joint_angle_est()
     filtered_joint_angles += (_measurement.joint_angles-filtered_joint_angles)*alpha;
 
     vehicle_to_gimbal_quat_filt.from_vector312(filtered_joint_angles.x,filtered_joint_angles.y,filtered_joint_angles.z);
+
+    vehicle_delta_angles.zero();
 }
 
 void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)

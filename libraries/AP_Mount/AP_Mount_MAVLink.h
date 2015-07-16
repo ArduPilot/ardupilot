@@ -47,6 +47,8 @@ public:
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(mavlink_channel_t chan);
 
+    virtual void update_fast();
+
 private:
     // internal variables
     bool _initialised;              // true once the driver has been initialised

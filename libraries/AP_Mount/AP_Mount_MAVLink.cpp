@@ -67,6 +67,11 @@ void AP_Mount_MAVLink::Log_Write_Gimbal(AP_Gimbal &gimbal)
     _frontend._dataflash->WriteBlock(&pkt2, sizeof(pkt2));
 }
 
+void AP_Mount_MAVLink::update_fast()
+{
+    _gimbal.update_fast();
+}
+
 // update mount position - should be called periodically
 void AP_Mount_MAVLink::update()
 {
