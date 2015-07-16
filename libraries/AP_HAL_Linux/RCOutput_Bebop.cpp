@@ -14,16 +14,15 @@
 
 /* BEBOP BLDC motor controller address and registers description */
 #define BEBOP_BLDC_I2C_ADDR 0x08
-
 #define BEBOP_BLDC_STARTPROP 0x40
-#define     BEBOP_BLDC_CLOCKWISE 1
-#define     BEBOP_BLDC_COUNTERCLOCKWISE 0
+#define BEBOP_BLDC_CLOCKWISE 1
+#define BEBOP_BLDC_COUNTERCLOCKWISE 0
 
 static const uint8_t bebop_motors_bitmask = (BEBOP_BLDC_COUNTERCLOCKWISE  <<
-                            (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_BACK)) |
-                            (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_BACK))|
-                            (BEBOP_BLDC_COUNTERCLOCKWISE  << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_FRONT))|
-                            (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_FRONT));
+    (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_BACK)) |
+    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_BACK))|
+    (BEBOP_BLDC_COUNTERCLOCKWISE  << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_FRONT))|
+    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_FRONT));
 
 
 #define BEBOP_BLDC_SETREFSPEED 0x02
@@ -45,28 +44,10 @@ struct bldc_obs_data {
     uint8_t     checksum;
 }__attribute__((packed));
 
-/* description of the bldc status */
-#define BEBOP_BLDC_STATUS_INIT          0
-#define BEBOP_BLDC_STATUS_IDLE          1
-#define BEBOP_BLDC_STATUS_RAMPING       2
-#define BEBOP_BLDC_STATUS_SPINNING_1    3
-#define BEBOP_BLDC_STATUS_SPINNING_2    4
-#define BEBOP_BLDC_STATUS_STOPPING      5
-#define BEBOP_BLDC_STATUS_CRITICAL      6
-
-/* description of the bldc errno */
-#define BEBOP_BLDC_ERRNO_EEPROM         1
-#define BEBOP_BLDC_ERRNO_MOTOR_STALLED  2
-#define BEBOP_BLDC_ERRNO_PROP_SECU      3
-#define BEBOP_BLDC_ERRNO_COM_LOST       4
-#define BEBOP_BLDC_ERRNO_BATT_LEVEL     9
-#define BEBOP_BLDC_ERRNO_LIPO           10
-#define BEBOP_BLDC_ERRNO_MOTOR_HW       11
-
 #define BEBOP_BLDC_TOGGLE_GPIO 0x4d
-#define     BEBOP_BLDC_GPIO_RESET   (1 << 0)
-#define     BEBOP_BLDC_GPIO_RED     (1 << 1)
-#define     BEBOP_BLDC_GPIO_GREEN   (1 << 2)
+#define BEBOP_BLDC_GPIO_RESET   (1 << 0)
+#define BEBOP_BLDC_GPIO_RED     (1 << 1)
+#define BEBOP_BLDC_GPIO_GREEN   (1 << 2)
 
 #define BEBOP_BLDC_STOP_PROP 0x60
 
@@ -166,48 +147,40 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_Bebop::_get_obs_data(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM],
-                                        uint16_t *batt_mv,
-                                        uint8_t *status,
-                                        uint8_t *error,
-                                        uint8_t *motors_err,
-                                        uint8_t *temp)
+int LinuxRCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 {
     struct bldc_obs_data data;
     int i;
 
     memset(&data, 0, sizeof(data));
-
     if (!_i2c_sem->take(0))
-        return;
+        return -EBUSY;
 
-    hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR,
-                            BEBOP_BLDC_GETOBSDATA,
-                            sizeof(data),
-                            (uint8_t *)&data);
+    hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_GETOBSDATA,
+                            sizeof(data), (uint8_t *)&data);
 
-    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data)))
-        hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
+    _i2c_sem->give();
 
-    if (rpm != NULL) {
-        for(i=0; i<BEBOP_BLDC_MOTORS_NUM; i++)
-            rpm[i] = be16toh(data.rpm[i]);
+    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1))
+        hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
+
+    /* fill obs class */
+    for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
+        /* extract 'rpm saturation bit' */
+        obs.rpm_saturated[i] = (data.rpm[i] & (1 << 7)) ? 1 : 0;
+        /* clear 'rpm saturation bit' */
+        data.rpm[i] &= (uint16_t)(~(1 << 7));
+        obs.rpm[i] = be16toh(data.rpm[i]);
+        if (obs.rpm[i] == 0)
+            obs.rpm_saturated[i] = 0;
     }
 
-    if (batt_mv != NULL)
-        *batt_mv = be16toh(data.batt_mv);
-
-    if (status != NULL)
-        *status = data.status;
-
-    if (error != NULL)
-        *error = data.error;
-
-    if (motors_err != NULL)
-        *motors_err = data.motors_err;
-
-    if (temp != NULL)
-        *temp = data.temp;
+    obs.batt_mv = be16toh(data.batt_mv);
+    obs.status = data.status;
+    obs.error = data.error;
+    obs.motors_err = data.motors_err;
+    obs.temperature = data.temp;
+    return 0;
 }
 
 void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
