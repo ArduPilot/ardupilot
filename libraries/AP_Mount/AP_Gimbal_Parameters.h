@@ -59,11 +59,13 @@ private:
 
     static const uint32_t _retry_period;
     static const uint8_t _max_fetch_attempts;
-    float _values[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
-    gmb_param_state_t _states[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
 
-    uint8_t _fetch_attempts[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
-    bool _param_seen[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
+    struct {
+        float value;
+        gmb_param_state_t state;
+        uint8_t fetch_attempts;
+        bool seen;
+    } _params[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
 
     uint32_t _last_request_ms;
 };
