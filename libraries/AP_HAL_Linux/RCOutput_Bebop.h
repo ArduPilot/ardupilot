@@ -34,6 +34,7 @@ class Linux::LinuxRCOutput_Bebop : public AP_HAL::RCOutput {
 
 private:
     AP_HAL::Semaphore *_i2c_sem;
+    uint16_t _request_period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _rpm[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _frequency;

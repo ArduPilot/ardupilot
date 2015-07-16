@@ -117,6 +117,7 @@ LinuxRCOutput_Bebop::LinuxRCOutput_Bebop():
     _state(BEBOP_BLDC_STOPPED)
 {
     memset(_period_us, 0, sizeof(_period_us));
+    memset(_request_period_us, 0, sizeof(_request_period_us));
     memset(_rpm, 0, sizeof(_rpm));
 }
 
@@ -340,11 +341,19 @@ void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
 
 void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch >= BEBOP_BLDC_MOTORS_NUM)
+        return;
 
-    pthread_mutex_lock(&_mutex);
-    _period_us[ch] = period_us;
-    pthread_cond_signal(&_cond);
-    pthread_mutex_unlock(&_mutex);
+    _request_period_us[ch] = period_us;
+
+    /* write command to motors only when all channels are set */
+    if (ch == (BEBOP_BLDC_MOTORS_NUM - 1)) {
+        pthread_mutex_lock(&_mutex);
+        memcpy(_period_us, _request_period_us, sizeof(_period_us));
+        pthread_cond_signal(&_cond);
+        pthread_mutex_unlock(&_mutex);
+        memset(_request_period_us, 0 ,sizeof(_request_period_us));
+    }
 }
 
 void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t* period_us, uint8_t len)
