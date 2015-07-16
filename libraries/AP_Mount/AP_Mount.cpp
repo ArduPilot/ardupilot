@@ -471,7 +471,6 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
     // initialise backend pointers and mode
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
         _backends[i] = NULL;
-        state[i]._mode = (enum MAV_MOUNT_MODE)state[i]._default_mode.get();
     }
 }
 
@@ -497,6 +496,9 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        // default instance's state
+        state[instance]._mode = (enum MAV_MOUNT_MODE)state[instance]._default_mode.get();
+
         MountType mount_type = get_mount_type(instance);
 
         // check for servo mounts
