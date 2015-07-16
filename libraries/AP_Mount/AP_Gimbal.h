@@ -84,7 +84,7 @@ private:
 
     void send_control(mavlink_channel_t chan);
     void update_state();
-    void decode_feedback(mavlink_message_t *msg);
+    void extract_feedback(const mavlink_gimbal_report_t& report_msg);
     void update_joint_angle_est();
 
     bool isCopterFlipped();

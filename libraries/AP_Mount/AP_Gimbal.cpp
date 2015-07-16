@@ -23,7 +23,14 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
         return;
     }
 
-    decode_feedback(msg);
+    mavlink_gimbal_report_t report_msg;
+    mavlink_msg_gimbal_report_decode(msg, &report_msg);
+    extract_feedback(report_msg);
+
+    if(report_msg.target_system != 1) {
+        _gimbalParams.set_param(chan, "GMB_SYSID", 1);
+    }
+
     update_state();
     if (_gimbalParams.get_K_rate()!=0.0f){
         if (lockedToBody || isCopterFlipped()){
@@ -72,12 +79,9 @@ void AP_Gimbal::update_fast() {
     }
 }
 
-void AP_Gimbal::decode_feedback(mavlink_message_t *msg)
+void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
 {
     _last_report_msg_ms = hal.scheduler->millis();
-
-    mavlink_gimbal_report_t report_msg;
-    mavlink_msg_gimbal_report_decode(msg, &report_msg);
 
     _measurement.delta_time = report_msg.delta_time;
     _measurement.delta_angles.x = report_msg.delta_angle_x;

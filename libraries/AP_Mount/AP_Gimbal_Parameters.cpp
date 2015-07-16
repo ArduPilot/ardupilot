@@ -21,7 +21,8 @@ const char AP_Gimbal_Parameters::_names[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS][16] =
     "GMB_OFF_JNT_Z",
     "GMB_K_RATE",
     "GMB_POS_HOLD",
-    "GMB_MAX_TORQUE"
+    "GMB_MAX_TORQUE",
+    "GMB_SYSID"
 };
 
 AP_Gimbal_Parameters::AP_Gimbal_Parameters():

@@ -5,7 +5,7 @@
 #include <GCS_MAVLink.h>
 #include <DataFlash.h>
 
-#define MAVLINK_GIMBAL_NUM_TRACKED_PARAMS 15
+#define MAVLINK_GIMBAL_NUM_TRACKED_PARAMS 16
 
 enum param_state_t {
     GMB_PARAM_NOT_YET_READ=0, // parameter has yet to be initialized
