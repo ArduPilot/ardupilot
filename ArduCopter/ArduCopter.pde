@@ -924,6 +924,8 @@ static void fast_loop()
     update_motor_fail_detector();
 
     gps_glitch_update();
+
+    camera_mount.update_fast();
 }
 
 // rc_loops - reads user input from transmitter/receiver
