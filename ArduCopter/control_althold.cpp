@@ -46,20 +46,6 @@ void Copter::althold_run()
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are held on the ground until rotor speed runup has finished
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()) && motors.rotor_runup_complete());
-
-    if(!motors.armed()) {
-        heli_flags.init_targets_on_arming=true;
-        attitude_control.set_yaw_target_to_current_heading();
-    }
-
-    // if we have recently armed and rotor is just ramping up speed, relax yaw controller
-    if(motors.armed() && heli_flags.init_targets_on_arming) {
-        attitude_control.relax_bf_rate_controller();
-        attitude_control.set_yaw_target_to_current_heading();
-        if (motors.rotor_speed_above_critical()) {
-            heli_flags.init_targets_on_arming=false;
-        }
-    }   
 #else
     bool takeoff_triggered = (ap.land_complete && (channel_throttle->control_in > get_takeoff_trigger_throttle()));
 #endif
@@ -81,6 +67,7 @@ void Copter::althold_run()
     case AltHold_Disarmed:
 
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_yaw_target_to_current_heading();
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
@@ -116,6 +103,7 @@ void Copter::althold_run()
     case AltHold_Landed:
 
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        attitude_control.set_yaw_target_to_current_heading();
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
