@@ -55,6 +55,7 @@ DataFlash_MAVLink::DataFlash_MAVLink(mavlink_channel_t chan) :
 #endif
 {
     memset(&mavlink, 0, sizeof(mavlink));
+    memset(_is_critical_block, 0, sizeof(_is_critical_block));
 }
 
 

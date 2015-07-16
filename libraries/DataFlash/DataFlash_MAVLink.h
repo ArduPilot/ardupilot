@@ -73,10 +73,11 @@ private:
     uint8_t _cur_block_address;
     uint16_t _latest_block_len;
     uint32_t _last_response_time;
+
     // write buffer
     uint8_t _buf[NUM_BUFFER_BLOCKS][BUFFER_BLOCK_SIZE];
     uint32_t _block_num[NUM_BUFFER_BLOCKS];
-    bool _is_critical_block[NUM_BUFFER_BLOCKS] = {0};
+    bool _is_critical_block[NUM_BUFFER_BLOCKS];
     struct {
         // socket to telem2 on aircraft
         bool connected;
