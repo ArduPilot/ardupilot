@@ -2609,6 +2609,8 @@
         <!-- remote log messages -->
         <message id="141" name="REMOTE_LOG_DATA_BLOCK">
             <description>Send a block of log data to remote</description>
+            <field type="uint8_t" name="target_system">System ID</field>
+            <field type="uint8_t" name="target_component">Component ID</field>
             <field type="uint8_t" name="block_size">size of log data block i.e. being sent</field>
             <field type="uint32_t" name="block_cnt">log data block count</field>
             <field type="uint8_t[200]" name="data">log data block</field>
@@ -2616,6 +2618,8 @@
 
         <message id="142" name="REMOTE_LOG_BLOCK_STATUS">
             <description>Get log block from autopilot board</description>
+            <field type="uint8_t" name="target_system">System ID</field>
+            <field type="uint8_t" name="target_component">Component ID</field>
             <field type="uint32_t" name="block_cnt">log data block count</field>
             <field type="uint8_t" name="block_status">0:log data failed, 1:log received</field>
         </message>
