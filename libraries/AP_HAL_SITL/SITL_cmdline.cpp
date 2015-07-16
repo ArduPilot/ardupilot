@@ -17,6 +17,7 @@
 #include <SIM_Helicopter.h>
 #include <SIM_Rover.h>
 #include <SIM_CRRCSim.h>
+#include <SIM_Gazebo.h>
 #include <SIM_last_letter.h>
 #include <SIM_JSBSim.h>
 #include <SIM_Tracker.h>
@@ -62,6 +63,7 @@ static const struct {
     { "rover",     Rover::create },
     { "crrcsim",   CRRCSim::create },
     { "jsbsim",    JSBSim::create },
+    { "gazebo",    Gazebo::create },
     { "last_letter", last_letter::create },
     { "tracker",   Tracker::create },
     { "balloon",   Balloon::create }
