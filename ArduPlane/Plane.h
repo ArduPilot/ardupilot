@@ -786,7 +786,7 @@ private:
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();
-    void rudder_arm_check();
+    void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
     void trim_control_surfaces();
