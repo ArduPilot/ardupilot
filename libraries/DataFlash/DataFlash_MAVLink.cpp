@@ -212,8 +212,10 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
     chan_status->current_tx_seq = mavlink.seq++;
     Debug("Data Sent!!\n");
     uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink.system_id, 
-                                                          mavlink.component_id, 
+                                                          mavlink.component_id,
                                                           &msg,
+                                                          255,                      //GCS SYS ID
+                                                          0,
                                                           _block_max_size,
                                                           _block_num[block_address],
                                                           _buf[block_address]);

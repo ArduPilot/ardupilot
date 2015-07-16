@@ -475,11 +475,11 @@ void MAVLink_routing::get_targets(const mavlink_message_t* msg, int16_t &sysid, 
         sysid  = mavlink_msg_gimbal_control_get_target_system(msg);
         compid = mavlink_msg_gimbal_control_get_target_component(msg);
         break;
-    case REMOTE_LOG_DATA_BLOCK:
+    case MAVLINK_MSG_ID_REMOTE_LOG_DATA_BLOCK:
         sysid  = mavlink_msg_remote_log_data_block_get_target_system(msg);
         compid = mavlink_msg_remote_log_data_block_get_target_component(msg);
         break;
-    case REMOTE_LOG_BLOCK_STATUS:
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         sysid  = mavlink_msg_remote_log_block_status_get_target_system(msg);
         compid = mavlink_msg_remote_log_block_status_get_target_component(msg);
         break;
