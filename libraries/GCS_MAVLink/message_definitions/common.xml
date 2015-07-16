@@ -280,7 +280,7 @@
                <entry value="0" name="MAV_COMP_ID_ALL">
                     <description/>
                </entry>
-               <entry value="1" name="MAV_COMP_ID_LOG">
+               <entry value="50" name="MAV_COMP_ID_LOG">
                     <description/>
                </entry>
                <entry value="220" name="MAV_COMP_ID_GPS">
