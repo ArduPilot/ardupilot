@@ -250,6 +250,11 @@ case $FRAME in
     IrisRos)
 	BUILD_TARGET="sitl"
 	;;
+    Gazebo)
+	BUILD_TARGET="sitl"
+        EXTRA_SIM="$EXTRA_SIM --frame=Gazebo"
+        MODEL="$FRAME"
+	;;
     CRRCSim-heli)
 	BUILD_TARGET="sitl-heli"
         MODEL="$FRAME"
