@@ -28,25 +28,25 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     extract_feedback(report_msg);
 
     if(report_msg.target_system != 1) {
-        _gimbalParams.set_param(chan, "GMB_SYSID", 1);
+        _gimbalParams.set_param(chan, GMB_PARAM_GMB_SYSID, 1);
     }
 
     update_state();
     if (_gimbalParams.get_K_rate()!=0.0f){
         if (lockedToBody || isCopterFlipped()){
-            _gimbalParams.set_param(chan, "GMB_POS_HOLD", 1);
+            _gimbalParams.set_param(chan, GMB_PARAM_GMB_POS_HOLD, 1);
         }else{
             if (_ekf.getStatus()){
                 send_control(chan); 
-                _gimbalParams.set_param(chan, "GMB_POS_HOLD", 0);
+                _gimbalParams.set_param(chan, GMB_PARAM_GMB_POS_HOLD, 0);
             }
         }
     }
 
     if (!hal.util->get_soft_armed() || joints_near_limits()) {
-        _gimbalParams.set_param(chan, "GMB_MAX_TORQUE", 5000);
+        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, 5000);
     } else {
-        _gimbalParams.set_param(chan, "GMB_MAX_TORQUE", 0);
+        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, 0);
     }
 }
 
