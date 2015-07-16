@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 #define MAV_SYS_ID_LOG  1
 #endif
 #ifndef MAV_COMP_ID_LOG
-#define MAV_COMP_ID_LOG 1
+#define MAV_COMP_ID_LOG 50
 #endif
 /*
   constructor
