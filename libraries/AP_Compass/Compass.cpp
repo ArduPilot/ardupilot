@@ -275,7 +275,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
-    _last_update_usec(0),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
@@ -286,6 +285,7 @@ Compass::Compass(void) :
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
+        _state[i].last_update_usec = 0;
     }    
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -604,7 +604,7 @@ void Compass::setHIL(uint8_t instance, const Vector3f &mag)
 {
     _hil.field[instance] = mag;
     _hil.healthy[instance] = true;
-    _last_update_usec = hal.scheduler->micros();
+    _state[instance].last_update_usec = hal.scheduler->micros();
 }
 
 const Vector3f& Compass::getHIL(uint8_t instance) const 
