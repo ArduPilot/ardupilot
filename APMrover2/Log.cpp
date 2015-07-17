@@ -428,7 +428,7 @@ void Rover::start_logging()
 {
     in_mavlink_delay = true;
     DataFlash.StartNewLog();
-    DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
+    DataFlash.Log_Write_SysInfo();
     in_mavlink_delay = false;
 }
 
