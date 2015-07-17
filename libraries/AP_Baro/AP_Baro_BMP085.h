@@ -2,6 +2,8 @@
 #ifndef __AP_BARO_BMP085_H__
 #define __AP_BARO_BMP085_H__
 
+#include <AP_HAL.h>
+
 #include "AP_Baro.h"
 
 class AP_Baro_BMP085 : public AP_Baro_Backend
@@ -16,30 +18,31 @@ public:
 
 private:
     uint8_t         _instance;
-    float		    _temp_sum;
-    float			_press_sum;
-    uint8_t			_count;
+    uint8_t         _count = 0;
+    int32_t         _temp = 0;
+    float           _press_sum = 0.f;
+    AP_HAL::DigitalSource *_eoc = nullptr;
 
-    // Flymaple has no EOC pin, so use times instead
+    // For boards with no EOC pin, use time instead
     uint32_t        _last_press_read_command_time;
     uint32_t        _last_temp_read_command_time;
-    
+
     // State machine
-    uint8_t                         BMP085_State;
+    uint8_t         _state;
 
     // Internal calibration registers
-    int16_t                         ac1, ac2, ac3, b1, b2, mb, mc, md;
-    uint16_t                        ac4, ac5, ac6;
+    int16_t         _ac1, _ac2, _ac3, _b1, _b2, _mb, _mc, _md;
+    uint16_t        _ac4, _ac5, _ac6;
 
-    uint32_t                        _retry_time;
-    int32_t                         RawPress;
-    int32_t                         RawTemp;
+    int32_t         _raw_press;
+    int32_t         _raw_temp;
 
-    void                            Command_ReadPress();
-    void                            Command_ReadTemp();
-    bool                            ReadPress();
-    void                            ReadTemp();
-    void                            Calculate();
+    void            _command_read_press();
+    void            _command_read_temp();
+    bool            _read_press();
+    void            _read_temp();
+    void            _calculate();
+    bool            _data_ready();
 };
 
 #endif // __AP_BARO_BMP085_H__
