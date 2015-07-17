@@ -1000,9 +1000,9 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
 #endif
 }
 
-void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+void DataFlash_Class::Log_Write_SysInfo()
 {
-    Log_Write_Message_P(firmware_string);
+    Log_Write_Message_P(_firmware_string);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
     Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));

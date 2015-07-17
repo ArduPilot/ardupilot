@@ -94,7 +94,7 @@ private:
 
     // write buffer
     // FIXME: allocate this like we do in DataFlash_File
-    static const uint16_t _total_blocks = 80;
+    static const uint16_t _total_blocks = 120;
     static const uint16_t _block_max_size = 200;
     uint8_t _buf[_total_blocks][_block_max_size];
     uint32_t _block_num[_total_blocks];

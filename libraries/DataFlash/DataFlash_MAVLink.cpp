@@ -153,6 +153,7 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
         _target_system_id = msg->sysid;
         _target_component_id = msg->compid;
         _front.StartNewLog();
+        _front.Log_Write_SysInfo();
         return;
     }
     for(uint8_t block = 0; block < _total_blocks; block++){

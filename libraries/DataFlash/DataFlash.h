@@ -39,7 +39,8 @@ public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
 
     // constructor
-    DataFlash_Class(void) {
+    DataFlash_Class(const prog_char_t *firmware_string) :
+        _firmware_string(firmware_string) {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -76,7 +77,7 @@ public:
     uint16_t StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable);
-    void Log_Write_SysInfo(const prog_char_t *firmware_string);
+    void Log_Write_SysInfo();
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
@@ -155,6 +156,7 @@ private:
     DataFlash_Backend *new_backend_mavlink(void);
     void init_backend(const struct LogStructure *structure, uint8_t num_types);
     DataFlash_Backend *backend;
+    const prog_char_t *_firmware_string;
 };
 
 /*
