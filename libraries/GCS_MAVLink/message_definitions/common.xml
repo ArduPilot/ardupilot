@@ -358,6 +358,9 @@
                <entry value="154" name="MAV_COMP_ID_GIMBAL">
                     <description/>
                </entry>
+               <entry value="155" name="MAV_COMP_ID_LOG">
+                    <description/>
+               </entry>
           </enum>
           <enum name="MAV_SYS_STATUS_SENSOR">
                <description>These encode the sensors whose status is sent as part of the SYS_STATUS message.</description>
