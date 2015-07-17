@@ -66,8 +66,6 @@ static const struct {
       Vector2f(-2, 2), true },
 };
 
-#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-
 static struct Location location_from_point(Vector2f pt)
 {
     struct Location loc = {0};
@@ -79,7 +77,7 @@ static struct Location location_from_point(Vector2f pt)
 static void test_passed_waypoint(void)
 {
     hal.console->println("waypoint tests starting");
-    for (uint8_t i=0; i<ARRAY_LENGTH(test_points); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(test_points); i++) {
         struct Location loc = location_from_point(test_points[i].location);
         struct Location wp1 = location_from_point(test_points[i].wp1);
         struct Location wp2 = location_from_point(test_points[i].wp2);
@@ -135,7 +133,7 @@ static void test_offset(void)
     loc.lat = -35*1.0e7f;
     loc.lng = 149*1.0e7f;
 
-    for (uint8_t i=0; i<ARRAY_LENGTH(test_offsets); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(test_offsets); i++) {
         test_one_offset(loc,
                         test_offsets[i].ofs_north,
                         test_offsets[i].ofs_east,
