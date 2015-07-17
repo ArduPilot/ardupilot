@@ -198,7 +198,7 @@ void AP_Mission::update()
     }
 
     // check if we have an active do command
-    if (!_flags.do_cmd_loaded || _do_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+    if (!_flags.do_cmd_loaded) {
         advance_current_do_cmd();
     }else{
         // run the active do command
@@ -346,6 +346,11 @@ bool AP_Mission::set_current_cmd(uint16_t index)
             index = cmd.index+1;
         }
 
+        // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
+        if (!_flags.do_cmd_loaded) {
+            _flags.do_cmd_all_done = true;
+        }
+
         // if we got this far then the mission can safely be "resumed" from the specified index so we set the state to "stopped"
         _flags.state = MISSION_STOPPED;
         return true;
@@ -381,6 +386,11 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         }
         // move onto next command
         index = cmd.index+1;
+    }
+
+    // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
+    if (!_flags.do_cmd_loaded) {
+        _flags.do_cmd_all_done = true;
     }
 
     // if we got this far we must have successfully advanced the nav command
@@ -1126,6 +1136,11 @@ bool AP_Mission::advance_current_nav_cmd()
         }
         // move onto next command
         cmd_index = cmd.index+1;
+    }
+
+    // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
+    if (!_flags.do_cmd_loaded) {
+        _flags.do_cmd_all_done = true;
     }
 
     // if we got this far we must have successfully advanced the nav command
