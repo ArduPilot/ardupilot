@@ -168,6 +168,25 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
 }
 
 /*
+  handle a GIMBAL_REPORT message
+ */
+void AP_Mount_MAVLink::handle_gimbal_torque_report(mavlink_channel_t chan, mavlink_message_t *msg)
+{
+    uint32_t tstamp = hal.scheduler->millis();
+    mavlink_gimbal_torque_cmd_report_t report_msg;
+    mavlink_msg_gimbal_torque_cmd_report_decode(msg, &report_msg);
+
+    struct log_Gimbal3 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_GIMBAL3_MSG),
+        time_ms : tstamp,
+        rl_torque_cmd: report_msg.rl_torque_cmd, 
+        el_torque_cmd: report_msg.el_torque_cmd,
+        az_torque_cmd: report_msg.az_torque_cmd
+    };
+    _frontend._dataflash->WriteBlock(&pkt, sizeof(pkt));
+}
+
+/*
   send a GIMBAL_REPORT message to the GCS
  */
 void AP_Mount_MAVLink::send_gimbal_report(mavlink_channel_t chan)
