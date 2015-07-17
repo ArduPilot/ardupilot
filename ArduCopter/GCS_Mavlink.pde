@@ -1029,7 +1029,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         //Log_Write_Gimbal();
         break;
     }
-
+    
+    case MAVLINK_MSG_ID_GIMBAL_TORQUE_CMD_REPORT:
+    {
+#if MOUNT == ENABLED
+        handle_gimbal_torque_report(camera_mount, msg);
+#endif
+        break;
+    }
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:       // MAV ID: 70
     {
         // allow override of RC channel values for HIL
