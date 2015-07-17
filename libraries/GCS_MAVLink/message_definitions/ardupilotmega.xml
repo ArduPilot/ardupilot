@@ -865,6 +865,16 @@
 		<field name="target_system" type="uint8_t">System ID</field>
         <field name="target_component" type="uint8_t">Component ID</field>
 	</message>
+    <message name="GIMBAL_TORQUE_CMD_REPORT" id="214">
+        <description>
+            100 Hz gimbal torque command telemetry
+        </description>
+        <field name="target_system" type="uint8_t">System ID</field>
+        <field name="target_component" type="uint8_t">Component ID</field>
+        <field name="rl_torque_cmd" type="int16_t">Roll Torque Command</field>
+        <field name="el_torque_cmd" type="int16_t">Elevation Torque Command</field>
+        <field name="az_torque_cmd" type="int16_t">Azimuth Torque Command</field>
+    </message>
     <!-- 214 RESERVED for more GIMBAL -->
 
     <!-- GoPro Messages -->
