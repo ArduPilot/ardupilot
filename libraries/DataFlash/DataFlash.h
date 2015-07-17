@@ -236,6 +236,14 @@ struct PACKED log_Gimbal2 {
     float target_z;
 };
 
+struct PACKED log_Gimbal3 {
+    LOG_PACKET_HEADER;
+    uint32_t time_ms;
+    int16_t rl_torque_cmd;
+    int16_t el_torque_cmd;
+    int16_t az_torque_cmd;
+};
+
 struct PACKED log_RCIN {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
@@ -673,6 +681,8 @@ Format characters in the format string for binary log messages
       "GMB1", "Iffffffffff", "TimeMS,dt,dax,day,daz,dvx,dvy,dvz,jx,jy,jz" }, \
     { LOG_GIMBAL2_MSG, sizeof(log_Gimbal2), \
       "GMB2", "IBfffffffff", "TimeMS,es,ex,ey,ez,rx,ry,rz,tx,ty,tz" }, \
+    { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
+      "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd" }, \
     { LOG_ACC1_MSG, sizeof(log_ACCEL), \
       "ACC1", "IIfff",        "TimeMS,TimeUS,AccX,AccY,AccZ" }, \
     { LOG_ACC2_MSG, sizeof(log_ACCEL), \
@@ -740,16 +750,17 @@ Format characters in the format string for binary log messages
 #define LOG_MODE_MSG      170
 #define LOG_GIMBAL1_MSG   171
 #define LOG_GIMBAL2_MSG   172
-#define LOG_GPS_RAW_MSG   173
-#define LOG_ACC1_MSG      174
-#define LOG_ACC2_MSG      175
-#define LOG_ACC3_MSG      176
-#define LOG_GYR1_MSG      177
-#define LOG_GYR2_MSG      178
-#define LOG_GYR3_MSG      179
-#define LOG_UACK_MSG      180
-#define LOG_UNAK_MSG      181
-#define LOG_USTG_MSG      182
+#define LOG_GIMBAL3_MSG   173
+#define LOG_GPS_RAW_MSG   174
+#define LOG_ACC1_MSG      175
+#define LOG_ACC2_MSG      176
+#define LOG_ACC3_MSG      177
+#define LOG_GYR1_MSG      178
+#define LOG_GYR2_MSG      179
+#define LOG_GYR3_MSG      180
+#define LOG_UACK_MSG      181
+#define LOG_UNAK_MSG      182
+#define LOG_USTG_MSG      183
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use
