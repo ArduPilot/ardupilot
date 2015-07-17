@@ -124,13 +124,14 @@ void AP_Gimbal::update_state()
         gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
         gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
-        gimbalRateDemVec += getGimbalRateDemVecGyroBias();
     }
 
     float gimbalRateDemVecLen = gimbalRateDemVec.length();
     if (gimbalRateDemVecLen > radians(400)) {
         gimbalRateDemVec *= radians(400)/gimbalRateDemVecLen;
     }
+
+    gimbalRateDemVec += getGimbalRateDemVecGyroBias();
 
     update_joint_angle_est();
 }
