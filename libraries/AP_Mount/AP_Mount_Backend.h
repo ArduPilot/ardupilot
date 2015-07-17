@@ -32,7 +32,10 @@ public:
     AP_Mount_Backend(AP_Mount &frontend, AP_Mount::mount_state& state, uint8_t instance) :
         _frontend(frontend),
         _state(state),
-        _instance(instance)
+        _instance(instance),
+        _roll_rc_valid(false),
+        _tilt_rc_valid(false),
+        _pan_rc_valid(false)
     {}
 
     // Virtual destructor
@@ -93,6 +96,9 @@ protected:
     AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+    bool        _roll_rc_valid;
+    bool        _tilt_rc_valid;
+    bool        _pan_rc_valid;
 };
 
 #endif // __AP_MOUNT_BACKEND_H__

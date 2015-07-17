@@ -90,31 +90,52 @@ void AP_Mount_Backend::update_targets_from_rc()
     uint8_t tilt_rc_in = _state._tilt_rc_in;
     uint8_t pan_rc_in = _state._pan_rc_in;
 
-    // if joystick_speed is defined then pilot input defines a rate of change of the angle
-    if (_frontend._joystick_speed) {
-        // allow pilot speed position input to come directly from an RC_Channel
-        if (roll_rc_in && rc_ch(roll_rc_in)) {
-            _angle_ef_target_rad.x += rc_ch(roll_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.x, radians(_state._roll_angle_min*0.01f), radians(_state._roll_angle_max*0.01f));
+    RC_Channel* roll_rc_ch = rc_ch(roll_rc_in);
+    RC_Channel* tilt_rc_ch = rc_ch(tilt_rc_in);
+    RC_Channel* pan_rc_ch = rc_ch(pan_rc_in);
+
+    if (roll_rc_in && roll_rc_ch) {
+        if (!_roll_rc_valid) {
+            _roll_rc_valid = (roll_rc_ch->radio_in != 0);
         }
-        if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
-            _angle_ef_target_rad.y += rc_ch(tilt_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.y, radians(_state._tilt_angle_min*0.01f), radians(_state._tilt_angle_max*0.01f));
+
+        if (_roll_rc_valid && roll_rc_ch->radio_in != 0) {
+            if (_frontend._joystick_speed) {
+                _angle_ef_target_rad.x += roll_rc_ch->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
+                constrain_float(_angle_ef_target_rad.x, radians(_state._roll_angle_min*0.01f), radians(_state._roll_angle_max*0.01f));
+            } else {
+                _angle_ef_target_rad.x = angle_input_rad(roll_rc_ch, _state._roll_angle_min, _state._roll_angle_max);
+            }
         }
-        if (pan_rc_in && (rc_ch(pan_rc_in))) {
-            _angle_ef_target_rad.z += rc_ch(pan_rc_in)->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-            constrain_float(_angle_ef_target_rad.z, radians(_state._pan_angle_min*0.01f), radians(_state._pan_angle_max*0.01f));
+    }
+
+    if (tilt_rc_in && tilt_rc_ch) {
+        if (!_tilt_rc_valid) {
+            _tilt_rc_valid = (tilt_rc_ch->radio_in != 0);
         }
-    } else {
-        // allow pilot position input to come directly from an RC_Channel
-        if (roll_rc_in && (rc_ch(roll_rc_in))) {
-            _angle_ef_target_rad.x = angle_input_rad(rc_ch(roll_rc_in), _state._roll_angle_min, _state._roll_angle_max);
+
+        if (_tilt_rc_valid && tilt_rc_ch->radio_in != 0) {
+            if (_frontend._joystick_speed) {
+                _angle_ef_target_rad.y += tilt_rc_ch->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
+                constrain_float(_angle_ef_target_rad.y, radians(_state._tilt_angle_min*0.01f), radians(_state._tilt_angle_max*0.01f));
+            } else {
+                _angle_ef_target_rad.y = angle_input_rad(tilt_rc_ch, _state._tilt_angle_min, _state._tilt_angle_max);
+            }
         }
-        if (tilt_rc_in && (rc_ch(tilt_rc_in))) {
-            _angle_ef_target_rad.y = angle_input_rad(rc_ch(tilt_rc_in), _state._tilt_angle_min, _state._tilt_angle_max);
+    }
+
+    if (pan_rc_in && pan_rc_ch) {
+        if (!_pan_rc_valid) {
+            _pan_rc_valid = (pan_rc_ch->radio_in != 0);
         }
-        if (pan_rc_in && (rc_ch(pan_rc_in))) {
-            _angle_ef_target_rad.z = angle_input_rad(rc_ch(pan_rc_in), _state._pan_angle_min, _state._pan_angle_max);
+
+        if (_pan_rc_valid && pan_rc_ch->radio_in != 0) {
+            if (_frontend._joystick_speed) {
+                _angle_ef_target_rad.z += pan_rc_ch->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
+                constrain_float(_angle_ef_target_rad.z, radians(_state._pan_angle_min*0.01f), radians(_state._pan_angle_max*0.01f));
+            } else {
+                _angle_ef_target_rad.z = angle_input_rad(pan_rc_ch, _state._pan_angle_min, _state._pan_angle_max);
+            }
         }
     }
 }
