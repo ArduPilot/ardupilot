@@ -31,7 +31,8 @@ public:
         _logging_started(false),
         _sending_to_client(false),
         _only_critical_blocks(false),
-        _is_critical_block{0}
+        _is_critical_block{0},
+        mavlink_seq(0)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
         _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
@@ -94,6 +95,7 @@ private:
     uint8_t _buf[_total_blocks][_block_max_size];
     uint32_t _block_num[_total_blocks];
     bool _is_critical_block[_total_blocks];
+    uint8_t mavlink_seq;
 
     uint16_t start_new_log(void) { return 0; }
     bool ReadBlock(void *pkt, uint16_t size) { return false; }

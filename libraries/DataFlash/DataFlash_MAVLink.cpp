@@ -187,13 +187,25 @@ void DataFlash_MAVLink::handle_retry(uint32_t block_num)
 //TODO: handle full txspace properly
 void DataFlash_MAVLink::send_log_block(uint32_t block_address)
 {
-
-    if (!_initialised || comm_get_txspace(_chan) < 255){
+    if (!_initialised) {
        return; 
     }
+    mavlink_message_t msg;
+    mavlink_status_t *chan_status = mavlink_get_channel_status(_chan);
+    uint8_t saved_seq = chan_status->current_tx_seq;
+    chan_status->current_tx_seq = mavlink_seq++;
     //printf("Data Sent!!\n");
-    mavlink_msg_remote_log_data_block_send(_chan,_block_max_size,_block_num[block_address],_buf[block_address]);
-    
+    uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink_system.sysid,
+                                                          MAV_COMP_ID_LOG,
+                                                          &msg,
+                                                          _block_max_size,
+                                                          _block_num[block_address],
+                                                          _buf[block_address]);
+    if (comm_get_txspace(_chan) < len) {
+        return;
+    }
+    chan_status->current_tx_seq = saved_seq;
+    _mavlink_resend_uart(_chan, &msg);
 }
 #endif // HAL_OS_POSIX_IO
 
