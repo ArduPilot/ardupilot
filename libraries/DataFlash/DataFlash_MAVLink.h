@@ -69,7 +69,8 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) {}
     virtual void send_log_block(uint32_t block_address);
-    virtual void handle_ack(mavlink_channel_t chan, uint32_t block_num);
+    virtual void handle_ack(mavlink_channel_t chan, mavlink_message_t* msg,
+                            uint32_t block_num);
     virtual void handle_retry(uint32_t block_num);
     virtual void remote_log_block_status_msg(mavlink_channel_t chan,
                                              mavlink_message_t* msg);
@@ -78,6 +79,9 @@ public:
 private:
 
     mavlink_channel_t _chan;
+    uint8_t _target_system_id;
+    uint8_t _target_component_id;
+
     bool _initialised;
     uint32_t _last_response_time;
 

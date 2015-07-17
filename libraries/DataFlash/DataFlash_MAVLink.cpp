@@ -129,7 +129,9 @@ int8_t DataFlash_MAVLink::next_block_address()
     return oldest_block_address;
 }
 
-void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan, uint32_t block_num)
+void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
+                                   mavlink_message_t* msg,
+                                   uint32_t block_num)
 {
     if (!_initialised) {
         return;
@@ -148,6 +150,8 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan, uint32_t block_num)
         _chan = chan;
         _latest_block_num = 0;
         _cur_block_address = next_block_address();
+        _target_system_id = msg->sysid;
+        _target_component_id = msg->compid;
         _front.StartNewLog();
         return;
     }
@@ -167,7 +171,7 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
     if(packet.block_status == 0){
         handle_retry(packet.block_cnt);
     } else{
-        handle_ack(chan, packet.block_cnt);
+        handle_ack(chan, msg, packet.block_cnt);
     }
     _last_response_time = hal.scheduler->millis();
 }
@@ -198,6 +202,8 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
     uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink_system.sysid,
                                                           MAV_COMP_ID_LOG,
                                                           &msg,
+                                                          _target_system_id,
+                                                          _target_component_id,
                                                           _block_max_size,
                                                           _block_num[block_address],
                                                           _buf[block_address]);
