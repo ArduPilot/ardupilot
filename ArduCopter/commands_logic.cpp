@@ -164,46 +164,48 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 //  called at 10hz or higher
 bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
 {
+    bool cmd_complete;
+
     switch(cmd.id) {
 
     //
     // navigation commands
     //
     case MAV_CMD_NAV_TAKEOFF:
-        return verify_takeoff();
+        cmd_complete = verify_takeoff();
         break;
 
     case MAV_CMD_NAV_WAYPOINT:
-        return verify_nav_wp(cmd);
+        cmd_complete = verify_nav_wp(cmd);
         break;
 
     case MAV_CMD_NAV_LAND:
-        return verify_land();
+        cmd_complete = verify_land();
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        return verify_loiter_unlimited();
+        cmd_complete = verify_loiter_unlimited();
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_circle(cmd);
+        cmd_complete = verify_circle(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
-        return verify_loiter_time();
+        cmd_complete = verify_loiter_time();
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        return verify_RTL();
+        cmd_complete = verify_RTL();
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
-        return verify_spline_wp(cmd);
+        cmd_complete = verify_spline_wp(cmd);
         break;
 
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:
-        return verify_nav_guided_enable(cmd);
+        cmd_complete = verify_nav_guided_enable(cmd);
         break;
 #endif
 
@@ -211,33 +213,38 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     /// conditional commands
     ///
     case MAV_CMD_CONDITION_DELAY:
-        return verify_wait_delay();
+        cmd_complete = verify_wait_delay();
         break;
 
     case MAV_CMD_CONDITION_DISTANCE:
-        return verify_within_distance();
+        cmd_complete = verify_within_distance();
         break;
 
     case MAV_CMD_CONDITION_CHANGE_ALT:
-        return verify_change_alt();
+        cmd_complete = verify_change_alt();
         break;
 
     case MAV_CMD_CONDITION_YAW:
-        return verify_yaw();
+        cmd_complete = verify_yaw();
         break;
 
-#if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
-        return true;
+        cmd_complete = true;
         break;
-#endif
 
     default:
         // return true if we do not recognise the command so that we move on to the next command
-        return true;
+        cmd_complete = true;
         break;
     }
+
+    // send message to GCS
+    if (cmd_complete) {
+        gcs_send_mission_item_reached(cmd.index);
+    }
+
+    return cmd_complete;
 }
 
 // exit_mission - function that is called once the mission completes
