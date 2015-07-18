@@ -1831,3 +1831,15 @@ void Copter::gcs_send_text_fmt(const prog_char_t *fmt, ...)
         }
     }
 }
+
+/*
+ *  send mission_item_reached message to all GCSs
+ */
+void Copter::gcs_send_mission_item_reached(uint16_t seq)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_mission_item_reached(seq);
+        }
+    }
+}
