@@ -480,7 +480,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
-      "ARM", "QHB", "TimeUS,ArmState,ArmChecks" },
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_STATUS_MSG, sizeof(log_Status),
