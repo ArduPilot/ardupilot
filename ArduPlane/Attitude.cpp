@@ -909,13 +909,11 @@ void Plane::set_servos(void)
         } else {
             flapSpeedSource = aparm.throttle_cruise;
         }
-        if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
-            auto_flap_percent = 0;
-        } else if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
+        if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
             auto_flap_percent = g.flap_2_percent;
-        } else {
+        } else if ( g.flap_1_speed != 0 && flapSpeedSource <= g.flap_1_speed) {
             auto_flap_percent = g.flap_1_percent;
-        }
+        } //else flaps stay at default zero deflection
 
         /*
           special flap levels for takeoff and landing. This works
