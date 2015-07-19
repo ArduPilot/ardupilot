@@ -263,7 +263,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecGyroBias()
 {
     Vector3f gyroBias;
     _ekf.getGyroBias(gyroBias);
-    return gyroBias;
+    return gyroBias + _gimbalParams.get_gyro_bias();
 }
 
 Vector3f AP_Gimbal::getGimbalRateBodyLock()
