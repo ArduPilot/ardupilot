@@ -173,11 +173,11 @@ ssize_t SocketAPM::recvfrom(void *buf, size_t size, uint32_t timeout)
         .events = POLLIN,
     };
 
-    int ret = poll(&pollfd, 1, timeout);
-    
     if (timeout == 0) {
         return ::recvfrom(fd, buf, size, MSG_DONTWAIT, nullptr, nullptr);
     }
+    
+    int ret = poll(&pollfd, 1, timeout);
     
     if (ret > 0) {
         if (pollfd.revents & POLLIN) {
