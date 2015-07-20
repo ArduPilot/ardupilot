@@ -159,53 +159,69 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
+// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
+{
+    if (control_mode == AUTO) {
+        bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached(cmd.index);
+        }
+
+        return cmd_complete;
+    }
+    return false;
+}
+
+
 // verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
 //  should return true once the active navigation command completes successfully
 //  called at 10hz or higher
 bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
 {
-    bool cmd_complete;
-
     switch(cmd.id) {
 
     //
     // navigation commands
     //
     case MAV_CMD_NAV_TAKEOFF:
-        cmd_complete = verify_takeoff();
+        return verify_takeoff();
         break;
 
     case MAV_CMD_NAV_WAYPOINT:
-        cmd_complete = verify_nav_wp(cmd);
+        return verify_nav_wp(cmd);
         break;
 
     case MAV_CMD_NAV_LAND:
-        cmd_complete = verify_land();
+        return verify_land();
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        cmd_complete = verify_loiter_unlimited();
+        return verify_loiter_unlimited();
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        cmd_complete = verify_circle(cmd);
+        return verify_circle(cmd);
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:
-        cmd_complete = verify_loiter_time();
+        return verify_loiter_time();
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        cmd_complete = verify_RTL();
+        return verify_RTL();
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
-        cmd_complete = verify_spline_wp(cmd);
+        return verify_spline_wp(cmd);
         break;
 
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:
-        cmd_complete = verify_nav_guided_enable(cmd);
+        return verify_nav_guided_enable(cmd);
         break;
 #endif
 
@@ -213,38 +229,31 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
     /// conditional commands
     ///
     case MAV_CMD_CONDITION_DELAY:
-        cmd_complete = verify_wait_delay();
+        return verify_wait_delay();
         break;
 
     case MAV_CMD_CONDITION_DISTANCE:
-        cmd_complete = verify_within_distance();
+        return verify_within_distance();
         break;
 
     case MAV_CMD_CONDITION_CHANGE_ALT:
-        cmd_complete = verify_change_alt();
+        return verify_change_alt();
         break;
 
     case MAV_CMD_CONDITION_YAW:
-        cmd_complete = verify_yaw();
+        return verify_yaw();
         break;
 
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
-        cmd_complete = true;
+        return true;
         break;
 
     default:
         // return true if we do not recognise the command so that we move on to the next command
-        cmd_complete = true;
+        return true;
         break;
     }
-
-    // send message to GCS
-    if (cmd_complete) {
-        gcs_send_mission_item_reached(cmd.index);
-    }
-
-    return cmd_complete;
 }
 
 // exit_mission - function that is called once the mission completes
