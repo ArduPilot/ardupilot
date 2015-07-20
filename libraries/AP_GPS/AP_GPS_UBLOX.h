@@ -77,7 +77,7 @@ private:
         uint8_t numTrkChHw;
         uint8_t numTrkChUse;
         uint8_t numConfigBlocks;
-        struct configBlock {
+        PACKED struct configBlock {
             uint8_t gnssId;
             uint8_t resTrkCh;
             uint8_t maxTrkCh;
@@ -260,12 +260,13 @@ private:
         uint8_t numMeas;
         uint8_t recStat;
         uint8_t reserved1[3];
-        struct ubx_rxm_rawx_sv {
+        PACKED struct ubx_rxm_rawx_sv {
             double prMes;
             double cpMes;
             float doMes;
             uint8_t gnssId;
             uint8_t svId;
+            uint8_t reserved2;
             uint8_t freqId;
             uint16_t locktime;
             uint8_t cno;
@@ -273,6 +274,7 @@ private:
             uint8_t cpStdev;
             uint8_t doStdev;
             uint8_t trkStat;
+            uint8_t reserved3;
         } svinfo[UBLOX_MAX_RXM_RAWX_SATS];
     };
 #endif
