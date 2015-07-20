@@ -588,7 +588,15 @@ bool Plane::verify_loiter_to_alt()
                                        next_nav_cmd)) {
             //no next waypoint to shoot for -- go ahead and break out of loiter
             return true;        
-        } 
+        }
+
+        if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+            /* Whenever next waypoint is within the loiter radius, 
+               maintaining loiter would prevent us from ever pointing toward the next waypoint.
+               Hence break out of loiter immediately
+             */
+            return true;
+        }
 
         // Bearing in radians
         int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
