@@ -132,7 +132,14 @@ void Rover::exit_mission()
 bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
-        return verify_command(cmd);
+        bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached(cmd.index);
+        }
+
+        return cmd_complete;
     }
 
     // exit immediately if not in AUTO mode
