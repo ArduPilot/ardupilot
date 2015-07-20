@@ -138,7 +138,6 @@ void AP_MotorsSingle::output_armed_not_stabilizing()
 {
     int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
     int16_t out_min = _throttle_radio_min + _min_throttle;
-    int16_t min_thr = rel_pwm_to_thr_range(_spin_when_armed_ramped);
 
     // initialize limits flags
     limit.roll_pitch = true;
@@ -146,8 +145,9 @@ void AP_MotorsSingle::output_armed_not_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    if (_throttle_control_input <= min_thr) {
-        _throttle_control_input = min_thr;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
         limit.throttle_lower = true;
     }
     if (_throttle_control_input >= _max_throttle) {
@@ -196,8 +196,9 @@ void AP_MotorsSingle::output_armed_stabilizing()
     limit.throttle_upper = false;
 
     // Throttle is 0 to 1000 only
-    if (_throttle_control_input <= _min_throttle) {
-        _throttle_control_input = _min_throttle;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
             limit.throttle_lower = true;
         }
     if (_throttle_control_input >= _max_throttle) {
