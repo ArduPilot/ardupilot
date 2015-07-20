@@ -901,6 +901,7 @@ private:
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
