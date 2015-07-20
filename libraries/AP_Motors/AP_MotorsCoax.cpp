@@ -178,8 +178,9 @@ void AP_MotorsCoax::output_armed_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    if (_throttle_control_input <= _min_throttle) {
-        _throttle_control_input = _min_throttle;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
         limit.throttle_lower = true;
     }
     if (_throttle_control_input >= _max_throttle) {
