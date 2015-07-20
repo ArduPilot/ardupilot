@@ -245,15 +245,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_CONDITION_DELAY:
         return verify_wait_delay();
-        break;
 
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
-        break;
 
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
-        break;
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -854,7 +851,14 @@ bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
 bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
-        return verify_command(cmd);
+        bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached_message(MSG_MISSION_ITEM_REACHED, cmd.index);
+        }
+
+        return cmd_complete;
     }
     return false;
 }
