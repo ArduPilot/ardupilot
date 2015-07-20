@@ -229,9 +229,9 @@ AP_GPS_UBLOX::read(void)
             _ck_b += (_ck_a += data);                   // checksum byte
 
             _payload_length += (uint16_t)(data<<8);
-            if (_payload_length > 512) {
+            if (_payload_length > sizeof(_buffer)) {
                 Debug("large payload %u", (unsigned)_payload_length);
-                // assume very large payloads are line noise
+                // assume any payload bigger then what we know about is noise
                 _payload_length = 0;
                 _step = 0;
 				goto reset;
