@@ -430,11 +430,12 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
 }
 
 void
-AP_InertialSensor::init(Sample_rate sample_rate)
+AP_InertialSensor::init(Sample_rate sample_rate, AP_AccelCal* acal)
 {
     // remember the sample rate
     _sample_rate = sample_rate;
-
+    _acal = acal;
+    _acal->register_client(this);
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
     }
@@ -1612,4 +1613,75 @@ bool AP_InertialSensor::is_still()
     return (vibe.x < _still_threshold) &&
            (vibe.y < _still_threshold) &&
            (vibe.z < _still_threshold);
+}
+
+void AP_InertialSensor::_acal_save_calibrations()
+{
+    for (uint8_t i=0; i<_accel_count; i++) {
+        if (_accel_calibrator[i].get_status() == ACCEL_CAL_SUCCESS) {
+            Vector3f bias, gain;
+            _accel_calibrator[i].get_calibration(bias, gain);
+            _accel_offset[i].set_and_save(bias);
+            _accel_scale[i].set_and_save(gain);
+        }
+    }
+
+    Vector3f aligned_sample;
+    Vector3f misaligned_sample;
+    if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
+        // determine trim from aligned sample vs misaligned sample
+        Vector3f cross = (misaligned_sample%aligned_sample);
+        float dot = (misaligned_sample*aligned_sample);
+        Quaternion q(sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
+        q.normalize();
+        _trim_roll = q.get_euler_roll();
+        _trim_pitch = q.get_euler_pitch();
+        _new_trim = true;
+    }
+}
+
+bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
+{
+    if (_new_trim) {
+        trim_roll = _trim_roll;
+        trim_pitch = _trim_pitch;
+        _new_trim = false;
+        return true;
+    }
+    return false;
+}
+
+bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
+{
+#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
+    return false;
+#endif
+    if (_accel_count != 3 || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
+        return false;
+    }
+    _accel_calibrator[2].get_sample_corrected(sample_num, ret);
+    ret.rotate(_board_orientation);
+    return true;
+}
+
+bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
+{
+    uint8_t count = 0;
+    Vector3f avg = Vector3f(0,0,0);
+    for(uint8_t i=0; i<min(_accel_count,2); i++) {
+        if (_accel_calibrator[i].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[i].get_num_samples_collected()) {
+            continue;
+        }
+        Vector3f sample;
+        _accel_calibrator[i].get_sample_corrected(sample_num, sample);
+        avg += sample;
+        count++;
+    }
+    if(count == 0) {
+        return false;
+    }
+    avg /= count;
+    ret = avg;
+    ret.rotate(_board_orientation);
+    return true;
 }

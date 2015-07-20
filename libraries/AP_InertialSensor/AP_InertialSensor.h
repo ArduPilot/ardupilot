@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include "AP_InertialSensor_UserInteract.h"
 #include <Filter/LowPassFilter.h>
 #include <Filter/LowPassFilter2p.h>
@@ -41,13 +42,15 @@ class DataFlash_Class;
  * blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
  * original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
  */
-class AP_InertialSensor
+class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
 
 public:
-    AP_InertialSensor();
+
     static AP_InertialSensor *get_instance();
+
+    AP_InertialSensor();
 
     // the rate that updates will be available to the application
     enum Sample_rate {
@@ -70,7 +73,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(Sample_rate sample_rate);
+    void init(Sample_rate sample_rate,AP_AccelCal *acal);
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
@@ -231,6 +234,13 @@ public:
 
     void detect_backends(void);
 
+    AP_AccelCal& get_acal() const { return *_acal; }
+
+    bool get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const;
+    bool get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const;
+
+    bool get_new_trim(float& trim_roll, float &trim_pitch);
+
 private:
 
     // load backend drivers
@@ -387,6 +397,15 @@ private:
     DataFlash_Class *_dataflash;
 
     static AP_InertialSensor *_s_instance;
+    AP_AccelCal* _acal;
+
+    AccelCalibrator _accel_calibrator[INS_MAX_INSTANCES];
+    void _acal_save_calibrations();
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
+
+    float _trim_pitch;
+    float _trim_roll;
+    bool _new_trim;
 };
 
 #include "AP_InertialSensor_Backend.h"
