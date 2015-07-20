@@ -127,14 +127,22 @@ void Rover::exit_mission()
 //      Returns true if command complete
 /********************************************************************************/
 
-bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
+// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
-    // exit immediately if not in AUTO mode
-    // we return true or we will continue to be called by ap-mission
-    if (control_mode != AUTO) {
-        return true;
+    if (control_mode == AUTO) {
+        return verify_command(cmd);
     }
 
+    // exit immediately if not in AUTO mode
+    // we return true or we will continue to be called by ap-mission
+    return true;
+}
+
+
+bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
+{
 	switch(cmd.id) {
 
 		case MAV_CMD_NAV_WAYPOINT:
