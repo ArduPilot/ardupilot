@@ -341,8 +341,8 @@
 	</enum>
         <enum name="MAV_REMOTE_LOG_DATA_BLOCK_STATUSES">
           <description>Possible remote log data block statuses</description>
-          <entry value="0" name="MAV_REMOTE_LOG_DATA_BLOCK_NACK">
-            <description>This block has NOT been received</description>
+          <entry value="0" name="MAV_REMOTE_LOG_DATA_BLOCK_SEND">
+            <description>Client requests server to send a specific block</description>
           </entry>
           <entry value="1" name="MAV_REMOTE_LOG_DATA_BLOCK_ACK">
             <description>This block has been received</description>
