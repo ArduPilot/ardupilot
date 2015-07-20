@@ -1383,3 +1383,17 @@ void Rover::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
 }
+
+
+/*
+ *  send mission_item_reached message to all GCSs
+ */
+void Rover::gcs_send_mission_item_reached(uint16_t seq)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_mission_item_reached(seq);
+        }
+    }
+}
+

@@ -394,6 +394,7 @@ private:
     void gcs_update(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
     void gcs_retry_deferred(void);
+    void gcs_send_mission_item_reached(uint16_t seq);
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
