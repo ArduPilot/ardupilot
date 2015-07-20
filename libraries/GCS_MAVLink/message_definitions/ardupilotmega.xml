@@ -330,6 +330,25 @@
           <entry name="PID_TUNING_STEER" value="5"></entry>
         </enum>
 
+        <enum name="MAV_REMOTE_LOG_DATA_BLOCK_COMMANDS">
+          <description>Special ACK block numbers control activation of dataflash log streaming</description>
+          <entry value="4294967294" name="MAV_REMOTE_LOG_DATA_BLOCK_STOP">
+            <description>UAV to stop sending DataFlash blocks</description>
+          </entry>
+          <entry value="4294967295" name="MAV_REMOTE_LOG_DATA_BLOCK_START">
+            <description>UAV to start sending DataFlash blocks</description>
+          </entry>
+	</enum>
+        <enum name="MAV_REMOTE_LOG_DATA_BLOCK_STATUSES">
+          <description>Possible remote log data block statuses</description>
+          <entry value="0" name="MAV_REMOTE_LOG_DATA_BLOCK_NACK">
+            <description>This block has NOT been received</description>
+          </entry>
+          <entry value="1" name="MAV_REMOTE_LOG_DATA_BLOCK_ACK">
+            <description>This block has been received</description>
+          </entry>
+	</enum>
+
       </enums>
 
      <messages>
@@ -698,6 +717,24 @@
         <description>Request the autopilot version from the system/component.</description>
         <field type="uint8_t" name="target_system">System ID</field>
         <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
+
+    <!-- remote log messages -->
+    <message id="184" name="REMOTE_LOG_DATA_BLOCK">
+      <description>Send a block of log data to remote location</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint8_t" name="block_size">size of log data block i.e. being sent</field>
+      <field type="uint32_t" name="block_cnt" enum="MAV_REMOTE_LOG_DATA_BLOCK_COMMANDS">log data block count</field>
+      <field type="uint8_t[200]" name="data">log data block</field>
+    </message>
+
+    <message id="185" name="REMOTE_LOG_BLOCK_STATUS">
+      <description>Send Status of each log block that autopilot board might have sent</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint32_t" name="block_cnt">log data block count</field>
+      <field type="uint8_t" name="block_status" enum="MAV_REMOTE_LOG_DATA_BLOCK_STATUSES">log data block status</field>
     </message>
 
     <message name="LED_CONTROL" id="186">
