@@ -451,7 +451,7 @@ AP_GPS_SBP::logging_write_headers(void)
 {
     if (!logging_started) {
         logging_started = true;
-        gps._DataFlash->AddLogFormats(sbp_log_structures, sizeof(sbp_log_structures) / sizeof(LogStructure));
+        gps._DataFlash->AddLogFormats(sbp_log_structures, ARRAY_SIZE(sbp_log_structures));
     }
 }
 
