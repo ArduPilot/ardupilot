@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <AP_HAL.h>
 #include <AP_Math.h>
+#include <AP_AccelCal.h>
 #include "AP_InertialSensor_UserInteract.h"
 
 class AP_InertialSensor_Backend;
@@ -40,12 +41,12 @@ class DataFlash_Class;
  * blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
  * original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
  */
-class AP_InertialSensor
+class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
 
 public:
-    AP_InertialSensor();
+    AP_InertialSensor(AP_AccelCal& accelcal);
 
     enum Start_style {
         COLD_START = 0,
@@ -220,6 +221,13 @@ public:
     // enable/disable raw gyro/accel logging
     void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
+    AP_AccelCal& get_acal() const { return _acal; }
+
+    bool get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const;
+    bool get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const;
+
+    bool get_new_trim(float& trim_roll, float &trim_pitch);
+
 private:
 
     // load backend drivers
@@ -339,6 +347,16 @@ private:
     uint32_t _startup_ms;
 
     DataFlash_Class *_dataflash;
+
+    AP_AccelCal& _acal;
+
+    AccelCalibrator _accel_calibrator[INS_MAX_INSTANCES];
+    void _acal_save_calibrations();
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
+
+    float _trim_pitch;
+    float _trim_roll;
+    bool _new_trim;
 };
 
 #include "AP_InertialSensor_Backend.h"
