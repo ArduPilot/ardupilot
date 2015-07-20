@@ -37,7 +37,8 @@ public:
         vehicle_delta_angles(),
         vehicle_to_gimbal_quat(),
         vehicle_to_gimbal_quat_filt(),
-        filtered_joint_angles()
+        filtered_joint_angles(),
+        _max_torque(5000.0f)
     {
     }
 
@@ -110,6 +111,8 @@ private:
     Vector3f filtered_joint_angles;
 
     uint32_t _last_report_msg_ms;
+
+    float _max_torque;
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

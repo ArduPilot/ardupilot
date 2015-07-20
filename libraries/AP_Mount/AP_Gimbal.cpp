@@ -43,8 +43,14 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
         }
     }
 
+    float max_torque;
+    _gimbalParams.get_param(GMB_PARAM_GMB_MAX_TORQUE, max_torque, 0);
+    if (max_torque != _max_torque && max_torque != 0) {
+        _max_torque = max_torque;
+    }
+
     if (!hal.util->get_soft_armed() || joints_near_limits()) {
-        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, 5000);
+        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, _max_torque);
     } else {
         _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, 0);
     }
