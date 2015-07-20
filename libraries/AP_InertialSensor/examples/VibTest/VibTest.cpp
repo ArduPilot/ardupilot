@@ -108,7 +108,7 @@ void setup(void)
     ioctl(accel_fd[1], ACCELIOCSSAMPLERATE, 1600);
     ioctl(accel_fd[1], SENSORIOCSQUEUEDEPTH, 100);
 
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     DataFlash.StartNewLog();
 }
 
