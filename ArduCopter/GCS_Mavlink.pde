@@ -1210,19 +1210,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else if (packet.param4 == 1) {
                 result = MAV_RESULT_UNSUPPORTED;
             } else if (packet.param5 == 1) {
-                // 3d accel calibration
-                float trim_roll, trim_pitch;
-                // this blocks
-                AP_InertialSensor_UserInteract_MAVLink interact(this);
-                if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-                    // reset ahrs's trim to suggested values from calibration routine
-                    ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                    hal.scheduler->delay(1000);
-                    hal.scheduler->reboot(false);
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
+                accelcal.start(this);
             } else if (packet.param6 == 1) {
                 // compassmot calibration
                 result = mavlink_compassmot(chan);
@@ -1451,6 +1439,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     case MAVLINK_MSG_ID_COMMAND_ACK:        // MAV ID: 77
     {
+        if (accelcal.get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
+            accelcal.collect_sample();
+        }
         command_ack_counter++;
         break;
     }

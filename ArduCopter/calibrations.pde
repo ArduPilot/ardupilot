@@ -31,3 +31,11 @@ static void compass_cal_update() {
         }
     }
 }
+
+static void accel_cal_update() {
+    accelcal.update();
+    float trim_roll, trim_pitch;
+    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+    }
+}
