@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include "AP_InertialSensor_UserInteract.h"
 #include <Filter/LowPassFilter.h>
 #include <Filter/LowPassFilter2p.h>
@@ -41,12 +42,13 @@ class DataFlash_Class;
  * blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
  * original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
  */
-class AP_InertialSensor
+class AP_InertialSensor : AP_AccelCal_Client
 {
     friend class AP_InertialSensor_Backend;
 
 public:
     AP_InertialSensor();
+
     static AP_InertialSensor *get_instance();
 
     enum Gyro_Calibration_Timing {
@@ -69,11 +71,6 @@ public:
     uint8_t register_gyro(uint16_t raw_sample_rate_hz);
     uint8_t register_accel(uint16_t raw_sample_rate_hz);
 
-    // perform accelerometer calibration including providing user instructions
-    // and feedback
-    bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
-                         float& trim_roll,
-                         float& trim_pitch);
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
@@ -226,6 +223,24 @@ public:
 
     void detect_backends(void);
 
+    //Returns accel calibrator interface object pointer
+    AP_AccelCal* get_acal() const { return _acal; }
+
+    // Returns body fixed accelerometer level data averaged during accel calibration's first step
+    bool get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const;
+
+    // Returns primary accelerometer level data averaged during accel calibration's first step
+    bool get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const;
+
+    // Returns newly calculated trim values if calculated
+    bool get_new_trim(float& trim_roll, float &trim_pitch);
+
+    // initialise and register accel calibrator
+    // called during the startup of accel cal
+    void acal_init();
+
+    // update accel calibrator
+    void acal_update();
 private:
 
     // load backend drivers
@@ -240,17 +255,6 @@ private:
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
-    // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(const Vector3f accel_sample[6],
-                          Vector3f& accel_offsets,
-                          Vector3f& accel_scale,
-                          float max_abs_offsets,
-                          enum Rotation rotation);
-    bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
-                             AP_InertialSensor_UserInteract* interact);
-    void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
-    void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
-    void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 
     // save parameters to eeprom
@@ -380,9 +384,27 @@ private:
         float delta_time;
     } _hil {};
 
+    // Trim options
+    AP_Int8 _acc_body_aligned;
+    AP_Int8 _trim_option;
+
     DataFlash_Class *_dataflash;
 
     static AP_InertialSensor *_s_instance;
+    AP_AccelCal* _acal;
+
+    AccelCalibrator *_accel_calibrator;
+
+    //save accelerometer bias and scale factors
+    void _acal_save_calibrations();
+    void _acal_event_failure();
+
+    // Returns AccelCalibrator objects pointer for specified acceleromter
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
+
+    float _trim_pitch;
+    float _trim_roll;
+    bool _new_trim;
 };
 
 #include "AP_InertialSensor_Backend.h"
