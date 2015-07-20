@@ -116,7 +116,7 @@ float PX4AnalogSource::read_latest()
 float PX4AnalogSource::_pin_scaler(void)
 {
     float scaling = PX4_VOLTAGE_SCALING;
-    uint8_t num_scalings = sizeof(pin_scaling)/sizeof(pin_scaling[0]);
+    uint8_t num_scalings = ARRAY_SIZE(pin_scaling);
     for (uint8_t i=0; i<num_scalings; i++) {
         if (pin_scaling[i].pin == _pin) {
             scaling = pin_scaling[i].scaling;
