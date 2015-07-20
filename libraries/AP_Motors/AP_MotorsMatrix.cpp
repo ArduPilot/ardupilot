@@ -318,12 +318,18 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // do we need to reduce roll, pitch, yaw command
     // earlier code does not allow both limit's to be passed simultaneously with abs(_yaw_factor)<1
     if ((rpy_low+out_best_thr_pwm)+thr_adj < out_min_pwm){
-        rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
+        // protect against divide by zero
+        if (rpy_low != 0) {
+            rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
+        }
         // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
         limit.roll_pitch = true;
         limit.yaw = true;
     }else if((rpy_high+out_best_thr_pwm)+thr_adj > out_max_pwm){
-        rpy_scale = (float)(out_max_pwm-thr_adj-out_best_thr_pwm)/rpy_high;
+        // protect against divide by zero
+        if (rpy_high != 0) {
+            rpy_scale = (float)(out_max_pwm-thr_adj-out_best_thr_pwm)/rpy_high;
+        }
         // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
         limit.roll_pitch = true;
         limit.yaw = true;
