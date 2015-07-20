@@ -175,7 +175,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     }
 
     if (model_str && home_str) {
-        for (uint8_t i=0; i<sizeof(model_constructors)/sizeof(model_constructors[0]); i++) {
+        for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
             if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
                 sitl_model = model_constructors[i].constructor(home_str, model_str);
                 sitl_model->set_speedup(speedup);
