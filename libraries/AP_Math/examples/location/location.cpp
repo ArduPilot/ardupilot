@@ -232,7 +232,7 @@ static const struct {
 
 static void test_wrap_cd(void)
 {
-    for (uint8_t i=0; i<sizeof(wrap_180_tests)/sizeof(wrap_180_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_180_tests); i++) {
         int32_t r = wrap_180_cd(wrap_180_tests[i].v);
         if (r != wrap_180_tests[i].wv) {
             hal.console->printf("wrap_180: v=%ld wv=%ld r=%ld\n",
@@ -242,7 +242,7 @@ static void test_wrap_cd(void)
         }
     }
 
-    for (uint8_t i=0; i<sizeof(wrap_360_tests)/sizeof(wrap_360_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_360_tests); i++) {
         int32_t r = wrap_360_cd(wrap_360_tests[i].v);
         if (r != wrap_360_tests[i].wv) {
             hal.console->printf("wrap_360: v=%ld wv=%ld r=%ld\n",
@@ -252,7 +252,7 @@ static void test_wrap_cd(void)
         }
     }
 
-    for (uint8_t i=0; i<sizeof(wrap_PI_tests)/sizeof(wrap_PI_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_PI_tests); i++) {
         float r = wrap_PI(wrap_PI_tests[i].v);
         if (fabsf(r - wrap_PI_tests[i].wv) > 0.001f) {
             hal.console->printf("wrap_PI: v=%f wv=%f r=%f\n",
