@@ -124,7 +124,7 @@ public:
     // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
     int16_t             get_hover_throttle_as_pwm() const;
 
-    int16_t             throttle_min() const { return _min_throttle;}
+    int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
     int16_t             throttle_max() const { return _max_throttle;}
 
     // set_roll, set_pitch, set_yaw, set_throttle
