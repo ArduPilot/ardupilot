@@ -123,7 +123,7 @@ private:
         _write(address, &value, 1);
     }
     AP_HAL::I2CDriver *_i2c;
-    uint8_t _addr;
     AP_HAL::Semaphore *_i2c_sem;
+    uint8_t _addr;
 };
 #endif
