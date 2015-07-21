@@ -54,7 +54,7 @@ private:
       double timestamp;
       double imu_angular_velocity_rpy[3];
       double imu_linear_acceleration_xyz[3];
-      double imu_orientation_quat[3];
+      double imu_orientation_quat[4];
       double velocity_xyz[3];
       double position_xyz[3];
     };
