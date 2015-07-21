@@ -137,12 +137,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                 if (comm_get_txspace(routes[i].channel) >= 
                     ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
 #if ROUTING_DEBUG
-                    ::printf("fwd msg %u from chan %u on chan %u sysid=%u compid=%u\n",
+                    ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
                              msg->msgid,
                              (unsigned)in_channel,
                              (unsigned)routes[i].channel,
-                             (unsigned)target_system,
-                             (unsigned)target_component);
+                             (int)target_system,
+                             (int)target_component);
 #endif
                     _mavlink_resend_uart(routes[i].channel, msg);
                 }
