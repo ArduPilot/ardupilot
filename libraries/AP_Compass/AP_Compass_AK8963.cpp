@@ -119,7 +119,6 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _bus(bus)
 {
     _mag_x_accum =_mag_y_accum = _mag_z_accum = 0;
-    _mag_x =_mag_y = _mag_z = 0;
     _accum_count = 0;
     _magnetometer_adc_resolution = AK8963_16BIT_ADC;
 }
@@ -329,17 +328,28 @@ bool AP_Compass_AK8963::_calibrate()
 
 bool AP_Compass_AK8963::_collect_samples()
 {
+    struct AP_AK8963_SerialBus::raw_value rv;
+
     if (!_initialized) {
         return false;
     }
 
-    if (!_bus->read_raw(_mag_x, _mag_y, _mag_z)) {
+    _bus->read_raw(&rv);
+    if ((rv.st2 & 0x08)) {
         return false;
     }
 
-    _mag_x_accum += _mag_x;
-    _mag_y_accum += _mag_y;
-    _mag_z_accum += _mag_z;
+    float mag_x = (float) rv.val[0];
+    float mag_y = (float) rv.val[1];
+    float mag_z = (float) rv.val[2];
+
+    if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
+        return false;
+    }
+
+    _mag_x_accum += mag_x;
+    _mag_y_accum += mag_y;
+    _mag_z_accum += mag_z;
     _accum_count++;
     if (_accum_count == 10) {
         _mag_x_accum /= 2;
@@ -467,30 +477,9 @@ bool AP_AK8963_SerialBus_MPU9250::configure()
     return true;
 }
 
-bool AP_AK8963_SerialBus_MPU9250::read_raw(float &mag_x, float &mag_y, float &mag_z)
+void AP_AK8963_SerialBus_MPU9250::read_raw(struct raw_value *rv)
 {
-    uint8_t rx[14] = {0};
-
-    const uint8_t count = 9;
-    _read(MPUREG_EXT_SENS_DATA_00, rx, count);
-
-    uint8_t st2 = rx[8]; /* End data read by reading ST2 register */
-
-#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
-
-    if (st2 & 0x08) {
-        return false;
-    }
-
-    mag_x = (float) int16_val(rx, 1);
-    mag_y = (float) int16_val(rx, 2);
-    mag_z = (float) int16_val(rx, 3);
-
-    if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
-        return false;
-    }
-
-    return true;
+    _read(MPUREG_EXT_SENS_DATA_00, (uint8_t *) rv, sizeof(*rv));
 }
 
 AP_HAL::Semaphore * AP_AK8963_SerialBus_MPU9250::get_semaphore()
@@ -500,13 +489,11 @@ AP_HAL::Semaphore * AP_AK8963_SerialBus_MPU9250::get_semaphore()
 
 bool AP_AK8963_SerialBus_MPU9250::start_conversion()
 {
-    static const uint8_t address = AK8963_INFO;
-    /* Read registers from INFO through ST2 */
-    static const uint8_t count = 0x09;
+    const uint8_t count = sizeof(struct raw_value);
 
     configure();
     _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);  /* Set the I2C slave addres of AK8963 and set for read. */
-    _write(MPUREG_I2C_SLV0_REG, address); /* I2C slave 0 register address from where to begin data transfer */
+    _write(MPUREG_I2C_SLV0_REG, AK8963_INFO); /* I2C slave 0 register address from where to begin data transfer */
     _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count); /* Enable I2C and set @count byte */
 
     return true;
@@ -534,30 +521,9 @@ void AP_AK8963_SerialBus_I2C::register_read(uint8_t address, uint8_t *value, uin
     _i2c->readRegisters(_addr, address, count, value);
 }
 
-bool AP_AK8963_SerialBus_I2C::read_raw(float &mag_x, float &mag_y, float &mag_z)
+void AP_AK8963_SerialBus_I2C::read_raw(struct raw_value *rv)
 {
-    uint8_t rx[9] = {0};
-
-    const uint8_t count = 9;
-    _i2c->readRegisters(_addr, AK8963_INFO, count, rx);
-
-    uint8_t st2 = rx[8]; /* End data read by reading ST2 register */
-
-#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx + 1] << 8) | v[2*idx]))
-
-    if (st2 & 0x08) {
-        return false;
-    }
-
-    mag_x = (float) int16_val(rx, 1);
-    mag_y = (float) int16_val(rx, 2);
-    mag_z = (float) int16_val(rx, 3);
-
-    if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
-        return false;
-    }
-
-    return true;
+    _i2c->readRegisters(_addr, AK8963_INFO, sizeof(*rv), (uint8_t *) rv);
 }
 
 AP_HAL::Semaphore * AP_AK8963_SerialBus_I2C::get_semaphore()

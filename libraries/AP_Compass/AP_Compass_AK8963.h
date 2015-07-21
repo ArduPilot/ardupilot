@@ -12,6 +12,13 @@
 class AP_AK8963_SerialBus
 {
 public:
+    struct PACKED raw_value {
+        uint8_t info;
+        uint8_t st1;
+        int16_t val[3];
+        uint8_t st2;
+    };
+
     virtual void register_read(uint8_t address, uint8_t *value, uint8_t count) = 0;
     uint8_t register_read(uint8_t address) {
         uint8_t reg;
@@ -22,7 +29,7 @@ public:
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
     virtual bool start_conversion() = 0;
     virtual bool configure() = 0;
-    virtual bool read_raw(float &mag_x, float &mag_y, float &mag_z) = 0;
+    virtual void read_raw(struct raw_value *rv) = 0;
     virtual uint32_t get_dev_id() = 0;
 };
 
@@ -62,9 +69,6 @@ private:
     state_t             _state;
 
     float               _magnetometer_ASA[3] {0, 0, 0};
-    float               _mag_x;
-    float               _mag_y;
-    float               _mag_z;
     uint8_t             _compass_instance;
 
     float               _mag_x_accum;
@@ -90,7 +94,7 @@ public:
     AP_HAL::Semaphore* get_semaphore();
     bool start_conversion();
     bool configure();
-    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
@@ -111,7 +115,7 @@ public:
     AP_HAL::Semaphore* get_semaphore();
     bool start_conversion(){return true;}
     bool configure(){return true;}
-    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
