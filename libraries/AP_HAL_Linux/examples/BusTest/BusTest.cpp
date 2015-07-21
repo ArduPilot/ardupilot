@@ -40,7 +40,7 @@ void loop(void)
 
     hal.console->printf("Scanning SPI bus devices\n");
 
-    for (uint8_t i=0; i<sizeof(whoami_list)/sizeof(whoami_list[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(whoami_list); i++) {
         spi = hal.spi->device(whoami_list[i].dev);
         if (spi == NULL) {
             hal.console->printf("Failed to get SPI device for %s\n", whoami_list[i].name);

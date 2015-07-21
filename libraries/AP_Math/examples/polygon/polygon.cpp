@@ -61,8 +61,6 @@ static const struct {
     { Vector2l(-266092111, 1518747419), false },
 };
 
-#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-
 /*
  *  polygon tests
  */
@@ -74,20 +72,20 @@ void setup(void)
 
     hal.console->println("polygon unit tests\n");
 
-    if (!Polygon_complete(OBC_boundary, ARRAY_LENGTH(OBC_boundary))) {
+    if (!Polygon_complete(OBC_boundary, ARRAY_SIZE(OBC_boundary))) {
         hal.console->println("OBC boundary is not complete!");
         all_passed = false;
     }
 
-    if (Polygon_complete(OBC_boundary, ARRAY_LENGTH(OBC_boundary)-1)) {
+    if (Polygon_complete(OBC_boundary, ARRAY_SIZE(OBC_boundary)-1)) {
         hal.console->println("Polygon_complete test failed");
         all_passed = false;
     }
 
-    for (i=0; i<ARRAY_LENGTH(test_points); i++) {
+    for (i=0; i<ARRAY_SIZE(test_points); i++) {
         bool result;
         result = Polygon_outside(test_points[i].point,
-                OBC_boundary, ARRAY_LENGTH(OBC_boundary));
+                OBC_boundary, ARRAY_SIZE(OBC_boundary));
         hal.console->printf_P(PSTR("%10f,%10f  %s  %s\n"),
                         1.0e-7f*test_points[i].point.x,
                         1.0e-7f*test_points[i].point.y,
@@ -102,17 +100,17 @@ void setup(void)
     hal.console->println("Speed test:");
     start_time = hal.scheduler->micros();
     for (count=0; count<1000; count++) {
-        for (i=0; i<ARRAY_LENGTH(test_points); i++) {
+        for (i=0; i<ARRAY_SIZE(test_points); i++) {
             bool result;
             result = Polygon_outside(test_points[i].point,
-                    OBC_boundary, ARRAY_LENGTH(OBC_boundary));
+                    OBC_boundary, ARRAY_SIZE(OBC_boundary));
             if (result != test_points[i].outside) {
                 all_passed = false;
             }
         }
     }
     hal.console->printf("%u usec/call\n", (unsigned)((hal.scheduler->micros() 
-                    - start_time)/(count*ARRAY_LENGTH(test_points))));
+                    - start_time)/(count*ARRAY_SIZE(test_points))));
     hal.console->println(all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }
 

@@ -206,7 +206,7 @@ AP_GPS::detect_instance(uint8_t instance)
     if (now - dstate->last_baud_change_ms > 1200) {
         // try the next baud rate
 		dstate->last_baud++;
-		if (dstate->last_baud == sizeof(_baudrates) / sizeof(_baudrates[0])) {
+		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);

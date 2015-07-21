@@ -83,7 +83,7 @@ void SchedTest::setup(void)
 			 AP_InertialSensor::RATE_50HZ);
 
     // initialise the scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 void SchedTest::loop(void)

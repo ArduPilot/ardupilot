@@ -108,15 +108,13 @@ static void test_euler(float roll, float pitch, float yaw)
     check_result("test_euler", roll, pitch, yaw, roll2, pitch2, yaw2);
 }
 
-#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-
 static const float angles[] = { 0, PI/8, PI/4, PI/2, PI,
                                 -PI/8, -PI/4, -PI/2, -PI};
 
 void test_matrix_eulers(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("rotation matrix unit tests\n");
 
@@ -155,7 +153,7 @@ static void test_quaternion(float roll, float pitch, float yaw)
 void test_quaternion_eulers(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("quaternion unit tests\n");
 
@@ -215,7 +213,7 @@ static void test_conversion(float roll, float pitch, float yaw)
 void test_conversions(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("matrix/quaternion tests\n");
 
