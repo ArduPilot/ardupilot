@@ -77,7 +77,6 @@ private:
     uint32_t            _accum_count;
 
     bool                _initialized;
-    uint8_t             _magnetometer_adc_resolution;
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
 
