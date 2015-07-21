@@ -64,7 +64,7 @@
 #include <AC_PI_2D.h>           // PID library (2-axis)
 #include <AC_HELI_PID.h>        // Heli specific Rate PID library
 #include <AC_P.h>               // P library
-#include <AC_AttitudeControl.h> // Attitude control library
+#include <AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_PosControl.h>      // Position control library
 #include <RC_Channel.h>         // RC Channel Library
@@ -80,7 +80,7 @@
 #include <AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
-#include <AC_WPNav.h>     		// ArduCopter waypoint navigation library
+#include <AC_WPNav.h>           // ArduCopter waypoint navigation library
 #include <AC_Circle.h>          // circle navigation library
 #include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence.h>           // Arducopter Fence library
@@ -95,10 +95,10 @@
 #include <AC_Sprayer.h>         // crop sprayer library
 #endif
 #if EPM_ENABLED == ENABLED
-#include <AP_EPM.h>				// EPM cargo gripper stuff
+#include <AP_EPM.h>             // EPM cargo gripper stuff
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute.h>		// Parachute release library
+#include <AP_Parachute.h>       // Parachute release library
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
@@ -153,11 +153,7 @@ private:
     RC_Channel *channel_yaw;
 
     // Dataflash
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash;
-#else
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     // the rate we run the main loop at
     const AP_InertialSensor::Sample_rate ins_sample_rate;
@@ -275,6 +271,12 @@ private:
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
     } failsafe;
 
+    // sensor health for logging
+    struct {
+        uint8_t baro        : 1;    // true if baro is healthy
+        uint8_t compass     : 1;    // true if compass is healthy
+    } sensor_health;
+
     // Motor Output
 #if FRAME_CONFIG == QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsQuad
@@ -367,7 +369,7 @@ private:
     float target_sonar_alt;      // desired altitude in cm above the ground
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
-    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land detector test
+    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
@@ -409,7 +411,7 @@ private:
 #if FRAME_CONFIG == HELI_FRAME
     AC_AttitudeControl_Heli attitude_control;
 #else
-    AC_AttitudeControl attitude_control;
+    AC_AttitudeControl_Multi attitude_control;
 #endif
     AC_PosControl pos_control;
     AC_WPNav wp_nav;
@@ -499,6 +501,8 @@ private:
     // governor.  Even a single "off" frame can cause the rotor to slow dramatically and take a long time to restart.
     ModeFilterInt16_Size5 rotor_speed_deglitch_filter {4};
 
+    int16_t rsc_control_deglitched;
+
     // Tradheli flags
     struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
@@ -545,6 +549,7 @@ private:
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out);
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
+    void check_ekf_yaw_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
     void update_thr_average();
@@ -579,8 +584,9 @@ private:
     void gcs_data_stream_send(void);
     void gcs_check_input(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
+    void gcs_send_mission_item_reached(uint16_t seq);
     void do_erase_logs(void);
-    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp);
+    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
@@ -591,7 +597,6 @@ private:
     void Log_Write_Rate();
     void Log_Write_MotBatt();
     void Log_Write_Startup();
-    void Log_Write_EntireMission();
     void Log_Write_Event(uint8_t id);
     void Log_Write_Data(uint8_t id, int32_t value);
     void Log_Write_Data(uint8_t id, uint32_t value);
@@ -601,6 +606,11 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Baro(void);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
+    void Log_Write_Home_And_Origin();
+    void Log_Sensor_Health();
+#if FRAME_CONFIG == HELI_FRAME
+    void Log_Write_Heli(void);
+#endif
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
@@ -792,6 +802,7 @@ private:
     void read_inertia();
     void read_inertial_altitude();
     bool land_complete_maybe();
+    void update_land_and_crash_detectors();
     void update_land_detector();
     void update_throttle_thr_mix();
     void landinggear_update();
@@ -884,15 +895,15 @@ private:
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
-    void takeoff_timer_start(float alt);
+    void takeoff_timer_start(float alt_cm);
     void takeoff_stop();
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     void print_hit_enter();
     void tuning();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
 
     bool do_guided(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);

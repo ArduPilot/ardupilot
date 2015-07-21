@@ -17,9 +17,12 @@ notifications:
 
 env:
   global:
-   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-   #   via the "travis encrypt" command using the project repo's public key
-   - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+  matrix:
+    - TRAVIS_BUILD_TARGET="px4-v2"
+    - TRAVIS_BUILD_TARGET="sitl linux apm2 navio"
 
 addons:
   coverity_scan:
@@ -28,5 +31,5 @@ addons:
       description: "Build submitted via Travis CI"
     notification_email: andrew-scan@tridgell.net
     build_command_prepend: "make clean"
-    build_command:   "make -j 4"
+    build_command:   "make"
     branch_pattern: coverity_scan

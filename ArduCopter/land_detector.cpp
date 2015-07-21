@@ -6,6 +6,25 @@
 // counter to verify landings
 static uint32_t land_detector_count = 0;
 
+// run land and crash detectors
+// called at MAIN_LOOP_RATE
+void Copter::update_land_and_crash_detectors()
+{
+    // update 1hz filtered acceleration
+    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    accel_ef.z += GRAVITY_MSS;
+    land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
+
+    update_land_detector();
+
+#if PARACHUTE == ENABLED
+    // check parachute
+    parachute_check();
+#endif
+
+    crash_check();
+}
+
 // update_land_detector - checks if we have landed and updates the ap.land_complete flag
 // called at MAIN_LOOP_RATE
 void Copter::update_land_detector()
@@ -18,18 +37,17 @@ void Copter::update_land_detector()
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
 
-    Vector3f accel_ef = ahrs.get_accel_ef_blended();
-    accel_ef.z += GRAVITY_MSS;
-
-    // lowpass filter on accel
-    accel_ef = land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
-
     if (!motors.armed()) {
         // if disarmed, always landed.
         set_land_complete(true);
     } else if (ap.land_complete) {
+#if FRAME_CONFIG == HELI_FRAME
+        // if rotor speed and collective pitch are high then clear landing flag
+        if (motors.get_throttle() > get_non_takeoff_throttle() && motors.rotor_runup_complete()) {
+#else
         // if throttle output is high then clear landing flag
         if (motors.get_throttle() > get_non_takeoff_throttle()) {
+#endif
             set_land_complete(false);
         }
     } else {
@@ -43,7 +61,7 @@ void Copter::update_land_detector()
 #endif
 
         // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
-        bool accel_stationary = (accel_ef.length() < 1.0f);
+        bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX);
 
         if (motor_at_lower_limit && accel_stationary) {
             // landed criteria met - increment the counter and check if we've triggered
@@ -95,9 +113,16 @@ void Copter::set_land_complete_maybe(bool b)
 //  has no effect when throttle is above hover throttle
 void Copter::update_throttle_thr_mix()
 {
+#if FRAME_CONFIG != HELI_FRAME
+    // if disarmed prioritise throttle
+    if(!motors.armed()) {
+        motors.set_throttle_mix_min();
+        return;
+    }
+
     if (mode_has_manual_throttle(control_mode)) {
         // manual throttle
-        if(!motors.armed() || channel_throttle->control_in <= 0) {
+        if(channel_throttle->control_in <= 0) {
             motors.set_throttle_mix_min();
         } else {
             motors.set_throttle_mix_mid();
@@ -127,4 +152,5 @@ void Copter::update_throttle_thr_mix()
             motors.set_throttle_mix_min();
         }
     }
+#endif
 }

@@ -68,7 +68,7 @@ static uint16_t log_num;
 
 void setup()
 {
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 
     hal.console->println("Dataflash Log Test 1.0");
 

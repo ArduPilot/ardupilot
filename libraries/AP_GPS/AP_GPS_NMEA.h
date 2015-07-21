@@ -115,6 +115,9 @@ private:
     ///					an update to the GPS state.
     bool                        _term_complete();
 
+    /// return true if we have a new set of NMEA messages
+    bool _have_new_message(void);
+
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     bool _is_checksum_term;                                     ///< current term is the checksum
     char _term[15];                                                     ///< buffer for the current term within the current sentence
@@ -135,6 +138,10 @@ private:
     int32_t _new_course;                                        ///< course parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
+
+    uint32_t _last_GPRMC_ms = 0;
+    uint32_t _last_GPGGA_ms = 0;
+    uint32_t _last_GPVTG_ms = 0;
 
     /// @name	Init strings
     ///			In ::init, an attempt is made to configure the GPS

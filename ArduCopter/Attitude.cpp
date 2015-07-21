@@ -45,6 +45,15 @@ float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
     return stick_angle * g.acro_yaw_p;
 }
 
+// check for ekf yaw reset and adjust target heading
+void Copter::check_ekf_yaw_reset()
+{
+    float yaw_angle_change_rad = 0.0f;
+    if (ahrs.get_NavEKF().getLastYawResetAngle(yaw_angle_change_rad)) {
+        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+    }
+}
+
 /*************************************************************
  * yaw controllers
  *************************************************************/
@@ -210,7 +219,13 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
     float in_min = g.throttle_min;
     float in_max = get_takeoff_trigger_throttle();
 
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters swash will move from bottom to 1/2 of mid throttle
+    float out_min = 0;
+#else
+    // multicopters will output between spin-when-armed and 1/2 of mid throttle
     float out_min = motors.get_throttle_warn();
+#endif
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {

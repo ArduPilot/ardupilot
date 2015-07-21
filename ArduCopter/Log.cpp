@@ -160,28 +160,30 @@ struct PACKED log_AutoTune {
     uint64_t time_us;
     uint8_t axis;           // roll or pitch
     uint8_t tune_step;      // tuning PI or D up or down
-    float   rate_target;    // target achieved rotation rate
-    float   rate_min;       // maximum achieved rotation rate
-    float   rate_max;       // maximum achieved rotation rate
+    float   meas_target;    // target achieved rotation rate
+    float   meas_min;       // maximum achieved rotation rate
+    float   meas_max;       // maximum achieved rotation rate
     float   new_gain_rp;    // newly calculated gain
     float   new_gain_rd;    // newly calculated gain
     float   new_gain_sp;    // newly calculated gain
+    float   new_ddt;        // newly calculated gain
 };
 
 // Write an Autotune data packet
-void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float rate_target, float rate_min, float rate_max, float new_gain_rp, float new_gain_rd, float new_gain_sp)
+void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
         time_us     : hal.scheduler->micros64(),
         axis        : axis,
         tune_step   : tune_step,
-        rate_target : rate_target,
-        rate_min    : rate_min,
-        rate_max    : rate_max,
+        meas_target : meas_target,
+        meas_min    : meas_min,
+        meas_max    : meas_max,
         new_gain_rp : new_gain_rp,
         new_gain_rd : new_gain_rd,
-        new_gain_sp : new_gain_sp
+        new_gain_sp : new_gain_sp,
+        new_ddt     : new_ddt
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -351,18 +353,11 @@ void Copter::Log_Write_Performance()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a mission command. Total length : 36 bytes
-void Copter::Log_Write_Cmd(const AP_Mission::Mission_Command &cmd)
-{
-    mavlink_mission_item_t mav_cmd = {};
-    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
-    DataFlash.Log_Write_MavCmd(mission.num_commands(),mav_cmd);
-}
-
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.angle_ef_targets();
+    targets.z = wrap_360_cd_float(targets.z);
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
  #if OPTFLOW == ENABLED
@@ -430,6 +425,7 @@ struct PACKED log_MotBatt {
 // Write an rate packet
 void Copter::Log_Write_MotBatt()
 {
+#if FRAME_CONFIG != HELI_FRAME
     struct log_MotBatt pkt_mot = {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
         time_us         : hal.scheduler->micros64(),
@@ -439,6 +435,7 @@ void Copter::Log_Write_MotBatt()
         th_limit        : (float)(motors.get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
+#endif
 }
 
 struct PACKED log_Startup {
@@ -449,31 +446,11 @@ struct PACKED log_Startup {
 // Write Startup packet
 void Copter::Log_Write_Startup()
 {
-    // Write all current parameters
-    DataFlash.Log_Write_Parameters();
-
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : hal.scheduler->micros64()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
-
-    // write all commands to the dataflash as well
-    if (should_log(MASK_LOG_CMD)) {
-        Log_Write_EntireMission();
-    }
-}
-
-void Copter::Log_Write_EntireMission()
-{
-    DataFlash.Log_Write_Message_P(PSTR("New mission"));
-
-    AP_Mission::Mission_Command cmd;
-    for (uint16_t i = 0; i < mission.num_commands(); i++) {
-        if (mission.read_cmd_from_storage(i,cmd)) {
-            Log_Write_Cmd(cmd);
-        }
-    }
 }
 
 struct PACKED log_Event {
@@ -652,11 +629,63 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
     DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
+// log EKF origin and ahrs home to dataflash
+void Copter::Log_Write_Home_And_Origin()
+{
+    // log ekf origin if set
+    Location ekf_orig;
+    if (ahrs.get_NavEKF_const().getOriginLLH(ekf_orig)) {
+        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+    }
+
+    // log ahrs home if set
+    if (ap.home_state != HOME_UNSET) {
+        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
+    }
+}
+
+// logs when baro or compass becomes unhealthy
+void Copter::Log_Sensor_Health()
+{
+    // check baro
+    if (sensor_health.baro != barometer.healthy()) {
+        sensor_health.baro = barometer.healthy();
+        Log_Write_Error(ERROR_SUBSYSTEM_BARO, (sensor_health.baro ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
+
+    // check compass
+    if (sensor_health.compass != compass.healthy()) {
+        sensor_health.compass = compass.healthy();
+        Log_Write_Error(ERROR_SUBSYSTEM_COMPASS, (sensor_health.compass ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
+}
+
+struct PACKED log_Heli {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int16_t   desired_rotor_speed;
+    int16_t   estimated_rotor_speed;
+};
+
+#if FRAME_CONFIG == HELI_FRAME
+// Write an helicopter packet
+void Copter::Log_Write_Heli()
+{
+    struct log_Heli pkt_heli = {
+        LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
+        time_us                 : hal.scheduler->micros64(),
+        desired_rotor_speed     : motors.get_desired_rotor_speed(),
+        estimated_rotor_speed   : motors.get_estimated_rotor_speed(),
+    };
+    DataFlash.WriteBlock(&pkt_heli, sizeof(pkt_heli));
+}
+#endif
+
 const struct LogStructure Copter::log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),
-      "ATUN", "QBBffffff",       "TimeUS,Axis,TuneStep,RateTarg,RateMin,RateMax,RP,RD,SP" },
+      "ATUN", "QBBfffffff",       "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt" },
     { LOG_AUTOTUNEDETAILS_MSG, sizeof(log_AutoTuneDetails),
       "ATDE", "Qff",          "TimeUS,Angle,Rate" },
 #endif
@@ -690,6 +719,8 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
       "DFLT",  "QBf",         "TimeUS,Id,Value" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode" },
+    { LOG_HELI_MSG, sizeof(log_Heli),
+      "HELI",  "Qhh",         "TimeUS,DRRPM,ERRPM" },
 };
 
 #if CLI_ENABLED == ENABLED
@@ -717,19 +748,15 @@ void Copter::start_logging()
             ap.logging_started = true;
             in_mavlink_delay = true;
             DataFlash.StartNewLog();
+            DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
             in_mavlink_delay = false;
-            DataFlash.Log_Write_Message_P(PSTR(FIRMWARE_STRING));
 
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
-#endif
-
-            // write system identifier as well if available
-            char sysid[40];
-            if (hal.util->get_system_id(sysid)) {
-                DataFlash.Log_Write_Message(sysid);
-            }
             DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
+
+            // write mission commands
+            if (MASK_LOG_CMD & g.log_bitmask) {
+                DataFlash.Log_Write_EntireMission(mission);
+            }
 
             Log_Write_Startup();
 
@@ -743,7 +770,7 @@ void Copter::start_logging()
 
 void Copter::log_init(void)
 {
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);

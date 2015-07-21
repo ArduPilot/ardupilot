@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <drivers/drv_pwm_output.h>
 #include <systemlib/mixer/mixer.h>
+#include <modules/px4iofirmware/protocol.h>
 
 #define PX4_LIM_RC_MIN 900
 #define PX4_LIM_RC_MAX 2100
@@ -307,7 +308,7 @@ bool Plane::setup_failsafe_mixing(void)
             config.rc_trim = constrain_int16(ch->radio_trim, config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
-        config.rc_assignment = i;
+
         // we set reverse as false, as users of ArduPilot will have
         // input reversed on transmitter, so from the point of view of
         // the mixer the input is never reversed. The one exception is
@@ -318,6 +319,25 @@ bool Plane::setup_failsafe_mixing(void)
         } else {
             config.rc_reverse = false;
         }
+
+        if (i+1 == g.override_channel.get()) {
+            /*
+              This is an OVERRIDE_CHAN channel. We want IO to trigger
+              override with a channel input of over 1750. The px4io
+              code is setup for triggering below 10% of full range. To
+              map this to values above 1750 we need to reverse the
+              direction and set the rc range for this channel to 1000
+              to 1833 (1833 = 1000 + 750/0.9)
+             */
+            config.rc_assignment = PX4IO_P_RC_CONFIG_ASSIGNMENT_MODESWITCH;
+            config.rc_reverse = true;
+            config.rc_max = 1833;
+            config.rc_min = 1000;
+            config.rc_trim = 1500;
+        } else {
+            config.rc_assignment = i;
+        }
+
         if (ioctl(px4io_fd, PWM_SERVO_SET_RC_CONFIG, (unsigned long)&config) != 0) {
             hal.console->printf("SET_RC_CONFIG failed\n");
             goto failed;

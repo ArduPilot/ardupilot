@@ -20,7 +20,7 @@
 #ifndef _ROVER_H_
 #define _ROVER_H_
 
-#define THISFIRMWARE "ArduRover v2.49"
+#define THISFIRMWARE "ArduRover v2.50"
 
 #include <math.h>
 #include <stdarg.h>
@@ -133,16 +133,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
-    // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    DataFlash_APM1 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    DataFlash_APM2 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash;
-#else
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     bool in_log_download;
 
@@ -393,6 +384,7 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_hwstatus(mavlink_channel_t chan);
+    void send_pid_tuning(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_statustext(mavlink_channel_t chan);
@@ -406,7 +398,6 @@ private:
     void Log_Write_Performance();
     void Log_Write_Steering();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_EntireMission();
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();
@@ -414,6 +405,7 @@ private:
     void Log_Write_Attitude();
     void Log_Write_RC(void);
     void Log_Write_Baro(void);
+    void Log_Write_Home_And_Origin();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void start_logging() ;
@@ -489,7 +481,6 @@ private:
     void frsky_telemetry_send(void);
     void print_hit_enter();    
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

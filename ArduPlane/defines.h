@@ -30,9 +30,11 @@ enum failsafe_state {
 enum gcs_failsafe {
     GCS_FAILSAFE_OFF        = 0, // no GCS failsafe
     GCS_FAILSAFE_HEARTBEAT  = 1, // failsafe if we stop receiving heartbeat
-    GCS_FAILSAFE_HB_RSSI    = 2  // failsafe if we stop receiving
+    GCS_FAILSAFE_HB_RSSI    = 2, // failsafe if we stop receiving
                                  // heartbeat or if RADIO.remrssi
                                  // drops to 0
+    GCS_FAILSAFE_HB_AUTO    = 3  // failsafe if we stop receiving heartbeat
+                                 // while in AUTO mode
 };
 
 

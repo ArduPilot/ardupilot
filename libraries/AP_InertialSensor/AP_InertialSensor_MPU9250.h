@@ -26,12 +26,27 @@ public:
     bool gyro_sample_available(void) { return _have_sample_available; }
     bool accel_sample_available(void) { return _have_sample_available; }
 
+    /* Put the MPU9250 in a known state so it can be
+     * used both for the InertialSensor and as for backend of other drivers.
+     *
+     * The SPI semaphore must be taken and timer_procs suspended.
+     *
+     * This method puts the bus in low speed. If the initialization is
+     * successful the bus is left on low speed so the caller can finish the
+     * initialization of its driver.
+     */
+    static bool initialize_driver_state();
+
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
-    bool                 _init_sensor(void);
 
+    static uint8_t _register_read(AP_HAL::SPIDeviceDriver *spi, uint8_t reg);
+    static void _register_write(AP_HAL::SPIDeviceDriver *spi, uint8_t reg,
+                                uint8_t val);
+
+    bool                 _init_sensor(void);
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
@@ -72,8 +87,12 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
+    // The default rotation for the IMU, its value depends on how the IMU is
+    // placed by default on the system
+    enum Rotation _default_rotation;
+
 #if MPU9250_DEBUG
-    void						_dump_registers(void);
+    static void _dump_registers(AP_HAL::SPIDeviceDriver *spi);
 #endif
 };
 

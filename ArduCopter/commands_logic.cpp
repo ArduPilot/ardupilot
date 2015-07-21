@@ -7,7 +7,7 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: logging when new commands start/end
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_Cmd(cmd);
+        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     switch(cmd.id) {
@@ -159,6 +159,24 @@ bool Copter::start_command(const AP_Mission::Mission_Command& cmd)
 // Verify command Handlers
 /********************************************************************************/
 
+// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
+{
+    if (control_mode == AUTO) {
+        bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached(cmd.index);
+        }
+
+        return cmd_complete;
+    }
+    return false;
+}
+
+
 // verify_command - this will be called repeatedly by ap_mission lib to ensure the active commands are progressing
 //  should return true once the active navigation command completes successfully
 //  called at 10hz or higher
@@ -226,12 +244,10 @@ bool Copter::verify_command(const AP_Mission::Mission_Command& cmd)
         return verify_yaw();
         break;
 
-#if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:
         // assume parachute was released successfully
         return true;
         break;
-#endif
 
     default:
         // return true if we do not recognise the command so that we move on to the next command

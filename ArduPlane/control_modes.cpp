@@ -81,10 +81,6 @@ void Plane::read_control_switch()
             }
         } else if (!override && px4io_override_enabled) {
             px4io_override_enabled = false;
-            // re-enable output channels
-            for (uint8_t i=0; i<8; i++) {
-                hal.rcout->enable_ch(i);
-            }
             RC_Channel_aux::enable_aux_servos();
             gcs_send_text_P(SEVERITY_LOW, PSTR("PX4IO Override disabled"));
         }
@@ -94,17 +90,6 @@ void Plane::read_control_switch()
             // with a in-flight reboot it gives a way for the pilot to
             // re-arm and take manual control
             hal.rcout->force_safety_off();
-        }
-        if (px4io_override_enabled) {
-            /*
-              ensure that all channels are disabled from the FMU. If
-              PX4IO receives any channel input from the FMU then it
-              will think the FMU is still active and won't enable the
-              internal mixer.
-             */
-            for (uint8_t i=0; i<16; i++) {
-                hal.rcout->disable_ch(i);
-            }
         }
     }
 #endif // CONFIG_HAL_BOARD

@@ -186,9 +186,11 @@ void Copter::tuning() {
         g.pid_rate_roll.kD(tuning_value);
         break;
 
+#if FRAME_CONFIG != HELI_FRAME
     case TUNING_RATE_MOT_YAW_HEADROOM:
         motors.set_yaw_headroom(tuning_value*1000);
         break;
+#endif
 
      case TUNING_RATE_YAW_FILT:
          g.pid_rate_yaw.filt_hz(tuning_value);

@@ -44,6 +44,8 @@
 #define GPS_RTK_AVAILABLE 0
 #endif
 
+#define GPS_RTK_INJECT_TO_ALL 127
+
 /**
  * save flash by skipping NMEA and SIRF support on copter and plane
  * for APM1/APM2

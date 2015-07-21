@@ -12,11 +12,15 @@ ifneq ($(UAVCAN_DIR),)
 $(error UAVCAN_DIR found in config.mk - Please see http://dev.ardupilot.com/wiki/git-submodules/)
 endif
 
+# these can be overridden in developer.mk
+PX4FIRMWARE_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4Firmware
+PX4NUTTX_DIRECTORY ?= $(SKETCHBOOK)/modules/PX4NuttX
+UAVCAN_DIRECTORY ?= $(SKETCHBOOK)/modules/uavcan
 
-PX4_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4Firmware && pwd)
-NUTTX_ROOT := $(shell cd $(SKETCHBOOK)/modules/PX4NuttX && pwd)
+PX4_ROOT := $(shell cd $(PX4FIRMWARE_DIRECTORY) && pwd)
+NUTTX_ROOT := $(shell cd $(PX4NUTTX_DIRECTORY) && pwd)
 NUTTX_SRC := $(NUTTX_ROOT)/nuttx/
-UAVCAN_DIR=$(shell cd $(SKETCHBOOK)/modules/uavcan && pwd)/
+UAVCAN_DIR=$(shell cd $(UAVCAN_DIRECTORY) && pwd)/
 
 # warn if user has old PX4Firmware or PX4NuttX trees
 ifneq ($(wildcard $(SKETCHBOOK)/../PX4Firmware),)
@@ -40,7 +44,7 @@ EXTRAFLAGS += -DUAVCAN=1
 PX4_V1_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v1_APM.mk
 PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
 
-SKETCHFLAGS=$(SKETCHLIBINCLUDES) -I$(PWD) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
+SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
 WARNFLAGS = -Werror -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
 
@@ -51,7 +55,7 @@ PYTHONPATH=$(SKETCHBOOK)/mk/PX4/Tools/genmsg/src:$(SKETCHBOOK)/mk/PX4/Tools/genc
 export PYTHONPATH
 
 PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
-PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os" 
+PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
 
 HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
 
@@ -149,17 +153,16 @@ px4-io: px4-io-v1 px4-io-v2
 
 
 $(PX4_ROOT)/Archives/px4fmu-v1.export:
-	$(v) $(PX4_MAKE_ARCHIVES)
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v1"
 
 $(PX4_ROOT)/Archives/px4fmu-v2.export:
-	$(v) $(PX4_MAKE_ARCHIVES)
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v2"
 
 $(PX4_ROOT)/Archives/px4io-v1.export:
-	$(v) $(PX4_MAKE_ARCHIVES)
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1"
 
 $(PX4_ROOT)/Archives/px4io-v2.export:
-	$(v) $(PX4_MAKE_ARCHIVES)
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v2"
 
 px4-archives:
-	$(v) $(PX4_MAKE_ARCHIVES)
-
+	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4io-v1 px4io-v2 px4fmu-v1 px4fmu-v2"

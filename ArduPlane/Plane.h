@@ -158,17 +158,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    DataFlash_APM1 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    DataFlash_APM2 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash_File DataFlash {HAL_BOARD_LOG_DIRECTORY};
-#else
-    // no dataflash driver
-    DataFlash_Empty DataFlash;
-#endif
+    DataFlash_Class DataFlash;
 
     // has a log download started?
     bool in_log_download;
@@ -269,8 +259,10 @@ private:
     AP_Camera camera {&relay};
 #endif
 
+#if OPTFLOW == ENABLED
     // Optical flow sensor
     OpticalFlow optflow;
+#endif
 
     // Rally Ponints
     AP_Rally rally {ahrs};
@@ -565,19 +557,19 @@ private:
     const struct Location &home = ahrs.get_home();
 
     // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState home_is_set;
+    enum HomeState home_is_set = HOME_UNSET;
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
-    Location prev_WP_loc;
+    Location prev_WP_loc {};
 
     // The plane's current location
-    struct Location current_loc;
+    struct Location current_loc {};
 
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
-    Location next_WP_loc;
+    Location next_WP_loc {};
 
     // The location of the active waypoint in Guided mode.
-    struct Location guided_WP_loc;
+    struct Location guided_WP_loc {};
 
     // special purpose command used only after mission completed to return vehicle to home or rally point
     struct AP_Mission::Mission_Command auto_rtl_command;
@@ -603,7 +595,7 @@ private:
         // lookahead value for height error reporting
         float lookahead;
 #endif
-    } target_altitude;
+    } target_altitude {};
 
     // INS variables
     // The main loop execution time.  Seconds
@@ -612,21 +604,21 @@ private:
 
     // Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    uint32_t perf_mon_timer;
+    uint32_t perf_mon_timer = 0;
 
     // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
-    uint32_t G_Dt_max;
-    uint32_t G_Dt_min;
+    uint32_t G_Dt_max = 0;
+    uint32_t G_Dt_min = 0;
 
     // System Timers
     // Time in microseconds of start of main control loop
-    uint32_t fast_loopTimer_us;
+    uint32_t fast_loopTimer_us = 0;
 
     // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop;
+    uint32_t delta_us_fast_loop = 0;
 
     // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count;
+    uint16_t mainLoop_count = 0;
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
@@ -643,13 +635,13 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    bool demoing_servos;
+    bool demoing_servos = false;
 
     // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
+    bool in_mavlink_delay = false;
 
     // true if we are out of time in our event timeslice
-    bool gcs_out_of_time;
+    bool gcs_out_of_time = false;
 
 
     void demo_servos(uint8_t i);
@@ -682,7 +674,6 @@ private:
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
-    void Log_Write_EntireMission();
     void Log_Write_Control_Tuning();
     void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
@@ -696,6 +687,7 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Baro(void);
     void Log_Write_Airspeed(void);
+    void Log_Write_Home_And_Origin();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
     void start_logging();
     void load_parameters(void);
@@ -916,7 +908,6 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void Log_Write_Cmd(const AP_Mission::Mission_Command &cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void run_cli(AP_HAL::UARTDriver *port);
     void log_init();

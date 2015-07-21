@@ -45,7 +45,7 @@ LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
 /*
   set the tty device to use for this UART
  */
-void LinuxUARTDriver::set_device_path(char *path)
+void LinuxUARTDriver::set_device_path(const char *path)
 {
     device_path = path;
 }

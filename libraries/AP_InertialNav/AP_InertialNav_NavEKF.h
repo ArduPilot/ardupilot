@@ -92,7 +92,7 @@ public:
      * getHgtAboveGnd - get latest altitude estimate above ground level in centimetres and validity flag
      * @return
      */
-    bool       get_hagl(float hagl) const;
+    bool       get_hagl(float &hagl) const;
 
     /**
      * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag

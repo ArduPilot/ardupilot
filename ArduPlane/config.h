@@ -420,7 +420,11 @@
 
 // use this to disable geo-fencing
 #ifndef GEOFENCE_ENABLED
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
  # define GEOFENCE_ENABLED ENABLED
+#else
+ # define GEOFENCE_ENABLED DISABLE
+#endif
 #endif
 
 // pwm value on FENCE_CHANNEL to use to enable fenced mode

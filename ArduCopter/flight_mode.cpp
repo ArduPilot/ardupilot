@@ -240,7 +240,7 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_control_mode == ACRO) {
-        attitude_control.use_flybar_passthrough(false);
+        attitude_control.use_flybar_passthrough(false, false);
     }
 
     // reset RC Passthrough to motors

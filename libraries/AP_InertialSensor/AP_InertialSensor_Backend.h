@@ -73,6 +73,9 @@ protected:
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct = true);
 
+    // set accelerometer max absolute offset for calibration
+    void _set_accel_max_abs_offset(uint8_t instance, float offset);
+
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 

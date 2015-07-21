@@ -301,6 +301,8 @@ AP_InertialSensor::AP_InertialSensor() :
 #if INS_VIBRATION_CHECK
         _accel_clip_count[i] = 0;
 #endif
+
+        _accel_max_abs_offsets[i] = 3.5f;
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
@@ -404,8 +406,10 @@ AP_InertialSensor::_detect_backends(void)
     }
 #if HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect);
-#elif HAL_INS_DEFAULT == HAL_INS_MPU6000
-    _add_backend(AP_InertialSensor_MPU6000::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
+    _add_backend(AP_InertialSensor_MPU6000::detect_spi);
+#elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && HAL_INS_MPU60XX_I2C_BUS == 2
+    _add_backend(AP_InertialSensor_MPU6000::detect_i2c2);
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
     _add_backend(AP_InertialSensor_PX4::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN
@@ -414,6 +418,8 @@ AP_InertialSensor::_detect_backends(void)
     _add_backend(AP_InertialSensor_MPU9250::detect);
 #elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
     _add_backend(AP_InertialSensor_Flymaple::detect);
+#elif HAL_INS_DEFAULT == HAL_INS_LSM9DS0
+    _add_backend(AP_InertialSensor_LSM9DS0::detect);
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
@@ -578,7 +584,11 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
             continue;
         }
 
-        bool success = _calibrate_accel(samples[k], new_offsets[k], new_scaling[k], saved_orientation);
+        bool success = _calibrate_accel(samples[k],
+                                        new_offsets[k],
+                                        new_scaling[k],
+                                        _accel_max_abs_offsets[k],
+                                        saved_orientation);
 
         interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
                             (unsigned)k,
@@ -977,7 +987,9 @@ bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum
 // accel_scale are output from the calibration routine
 // returns true if successful
 bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
-                                         Vector3f& accel_offsets, Vector3f& accel_scale,
+                                         Vector3f& accel_offsets,
+                                         Vector3f& accel_scale,
+                                         float max_abs_offsets,
                                          enum Rotation rotation)
 {
     int16_t i;
@@ -1034,8 +1046,11 @@ bool AP_InertialSensor::_calibrate_accel(const Vector3f accel_sample[6],
     if( accel_scale.is_nan() || fabsf(accel_scale.x-1.0f) > 0.1f || fabsf(accel_scale.y-1.0f) > 0.1f || fabsf(accel_scale.z-1.0f) > 0.1f ) {
         success = false;
     }
-    // sanity check offsets (3.5 is roughly 3/10th of a G, 5.0 is roughly half a G)
-    if( accel_offsets.is_nan() || fabsf(accel_offsets.x) > 3.5f || fabsf(accel_offsets.y) > 3.5f || fabsf(accel_offsets.z) > 3.5f ) {
+
+    if (accel_offsets.is_nan() ||
+        fabsf(accel_offsets.x) > max_abs_offsets ||
+        fabsf(accel_offsets.y) > max_abs_offsets ||
+        fabsf(accel_offsets.z) > max_abs_offsets) {
         success = false;
     }
 
@@ -1300,6 +1315,51 @@ check_sample:
 
     _have_sample = true;
 }
+
+
+/*
+  get delta angles
+ */
+bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const 
+{
+    if (_delta_angle_valid[i]) {
+        delta_angle = _delta_angle[i];
+        return true;
+    } else if (get_gyro_health(i)) {
+        // provide delta angle from raw gyro, so we use the same code
+        // at higher level
+        delta_angle = get_gyro(i) * get_delta_time();
+        return true;
+    }
+    return false;
+}
+
+/*
+  get delta velocity if available
+*/
+bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const
+{
+    if (_delta_velocity_valid[i]) {
+        delta_velocity = _delta_velocity[i];
+        return true;
+    } else if (get_accel_health(i)) {
+        delta_velocity = get_accel(i) * get_delta_time();
+        return true;
+    }
+    return false;
+}
+
+/*
+  return delta_time for the delta_velocity
+ */
+float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
+{
+    if (_delta_velocity_valid[i]) {
+        return _delta_velocity_dt[i];
+    }
+    return get_delta_time();
+}
+
 
 /*
   support for setting accel and gyro vectors, for use by HIL

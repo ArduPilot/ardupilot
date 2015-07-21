@@ -70,6 +70,8 @@ private:
 
     uint64_t last_timestamp_us;
     SocketAPM sock;
+
+    const char *frame_str;
 };
 
 

@@ -72,6 +72,8 @@ HAL_PX4::HAL_PX4() :
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
         &i2cDriver, /* i2c */
+        NULL,   /* only one i2c */
+        NULL,   /* only one i2c */
         &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */

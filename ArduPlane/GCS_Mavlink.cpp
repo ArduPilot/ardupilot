@@ -240,9 +240,11 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
     if (airspeed.healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
+#if GEOFENCE_ENABLED
     if (geofence_breached()) {
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
     }
+#endif
 
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -490,6 +492,19 @@ void Plane::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+    if (g.gcs_pid_mask & 4) {
+        const DataFlash_Class::PID_Info &pid_info = yawController.get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
+                                    pid_info.desired,
+                                    degrees(gyro.z),
+                                    pid_info.FF,
+                                    pid_info.P,
+                                    pid_info.I,
+                                    pid_info.D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
     if (g.gcs_pid_mask & 8) {
         const DataFlash_Class::PID_Info &pid_info = steerController.get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER, 
@@ -551,6 +566,7 @@ bool Plane::telemetry_delayed(mavlink_channel_t chan)
 
 // check if a message will fit in the payload space available
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
+#define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
@@ -579,7 +595,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
         plane.send_extended_status1(chan);
-        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         plane.gcs[chan-MAVLINK_COMM_0].send_power_status();
         break;
 
@@ -692,7 +708,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         plane.send_simstate(chan);
-        CHECK_PAYLOAD_SIZE(AHRS2);
+        CHECK_PAYLOAD_SIZE2(AHRS2);
         plane.gcs[chan-MAVLINK_COMM_0].send_ahrs2(plane.ahrs);
         break;
 
@@ -1338,18 +1354,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
+                plane.Log_Write_Home_And_Origin();
                 result = MAV_RESULT_ACCEPTED;
                 plane.gcs_send_text_fmt(PSTR("set home to %.6f %.6f at %um"),
-                                        new_home_loc.lat*1.0e-7f,
-                                        new_home_loc.lng*1.0e-7f,
-                                        (unsigned)(new_home_loc.alt*0.01f));
+                                        (double)(new_home_loc.lat*1.0e-7f),
+                                        (double)(new_home_loc.lng*1.0e-7f),
+                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }
 
         case MAV_CMD_DO_AUTOTUNE_ENABLE:
             // param1 : enable/disable
-            plane.autotune_enable(packet.param1);
+            plane.autotune_enable(!is_zero(packet.param1));
             break;
 
         default:
@@ -1444,11 +1461,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    // GCS has sent us a command from GCS, store to EEPROM
+    // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:
     {
         if (handle_mission_item(msg, plane.mission)) {
-            plane.Log_Write_EntireMission();
+            plane.DataFlash.Log_Write_EntireMission(plane.mission);
         }
         break;
     }

@@ -118,24 +118,15 @@ public:
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
     //get delta angle if available
-    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
-        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
-        return _delta_angle_valid[i];
-    }
-
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const;
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
 
     //get delta velocity if available
-    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
-        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
-        return _delta_velocity_valid[i];
-    }
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
     bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
 
-    float get_delta_velocity_dt(uint8_t i) const {
-        return _delta_velocity_dt[i];
-    }
-    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
+    float get_delta_velocity_dt(uint8_t i) const;
+    float get_delta_velocity_dt() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
@@ -257,7 +248,11 @@ private:
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _calibrate_accel(const Vector3f accel_sample[6],
+                          Vector3f& accel_offsets,
+                          Vector3f& accel_scale,
+                          float max_abs_offsets,
+                          enum Rotation rotation);
     bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
                              AP_InertialSensor_UserInteract* interact);
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
@@ -300,6 +295,9 @@ private:
     AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+
+    // accelerometer max absolute offsets to be used for calibration
+    float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
@@ -374,6 +372,7 @@ private:
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_Flymaple.h"
 #include "AP_InertialSensor_MPU9150.h"
+#include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"

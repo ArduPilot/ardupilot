@@ -80,12 +80,6 @@ enum aux_sw_func {
 #define SINGLE_FRAME 8
 #define COAX_FRAME 9
 
-// Internal defines, don't edit and expect things to work
-// -------------------------------------------------------
-
-#define ToRad(x) radians(x)	// *pi/180
-#define ToDeg(x) degrees(x)	// *180/pi
-
 // HIL enumerations
 #define HIL_MODE_DISABLED               0
 #define HIL_MODE_SENSORS                1
@@ -202,6 +196,22 @@ enum RTLState {
     RTL_Land
 };
 
+// Alt_Hold states
+enum AltHoldModeState {
+    AltHold_Disarmed,
+    AltHold_Takeoff,
+    AltHold_Flying,
+    AltHold_Landed
+};
+
+// Loiter states
+enum LoiterModeState {
+    Loiter_Disarmed,
+    Loiter_Takeoff,
+    Loiter_Flying,
+    Loiter_Landed
+};
+
 // Flip states
 enum FlipState {
     Flip_Start,
@@ -239,6 +249,7 @@ enum FlipState {
 #define LOG_RATE_MSG                    0x1D
 #define LOG_MOTBATT_MSG                 0x1E
 #define LOG_PARAMTUNE_MSG               0x1F
+#define LOG_HELI_MSG                    0x20
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
 #define MASK_LOG_ATTITUDE_MED           (1<<1)
@@ -312,6 +323,9 @@ enum FlipState {
 #define DATA_MOTORS_EMERGENCY_STOP_CLEARED  55
 #define DATA_MOTORS_INTERLOCK_DISABLED      56
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
+#define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
+#define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
+#define DATA_EKF_ALT_RESET                  60
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -339,6 +353,7 @@ enum FlipState {
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
+#define ERROR_CODE_UNHEALTHY                4
 // subsystem specific error codes -- radio
 #define ERROR_CODE_RADIO_LATE_FRAME         2
 // subsystem specific error codes -- failsafe_thr, batt, gps
@@ -354,7 +369,7 @@ enum FlipState {
 // subsystem specific error codes -- flip
 #define ERROR_CODE_FLIP_ABANDONED           2
 // subsystem specific error codes -- autotune
-#define ERROR_CODE_AUTOTUNE_BAD_GAINS       2
+
 // parachute failed to deploy because of low altitude or landed
 #define ERROR_CODE_PARACHUTE_TOO_LOW        2
 #define ERROR_CODE_PARACHUTE_LANDED         3

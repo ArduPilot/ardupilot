@@ -9,7 +9,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_Cmd(cmd);
+        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     // exit immediately if not in AUTO mode
@@ -282,6 +282,7 @@ void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
 	} else {
         ahrs.set_home(cmd.content.location);
 		home_is_set = true;
+		Log_Write_Home_And_Origin();
 	}
 }
 

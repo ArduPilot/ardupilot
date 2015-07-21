@@ -402,6 +402,8 @@ private:
 
     // grid spacing during rally check
     uint16_t last_rally_spacing;
+
+    char *file_path = NULL;    
 };
 #endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__

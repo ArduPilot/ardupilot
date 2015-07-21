@@ -255,10 +255,6 @@ void Copter::init_ardupilot()
 
     startup_ground(true);
 
-#if LOGGING_ENABLED == ENABLED
-    Log_Write_Startup();
-#endif
-
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
@@ -369,6 +365,13 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
+#if FRAME_CONFIG == HELI_FRAME 
+        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
+        // so that rotor runup is checked again before attempting to take-off
+        if(ap.land_complete && !motors.rotor_runup_complete()) {
+            set_auto_armed(false);
+        }
+#endif // HELI_FRAME
     }else{
         // arm checks
         

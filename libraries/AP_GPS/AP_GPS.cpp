@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
 #endif
 
 #if GPS_RTK_AVAILABLE
-    // @Param: DGPS_MIN_LOCK
+    // @Param: MIN_DGPS
     // @DisplayName: Minimum Lock Type Accepted for DGPS
     // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
     // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
@@ -84,8 +84,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: INJECT_TO
     // @DisplayName: Destination for GPS_INJECT_DATA MAVLink packets
     // @Description: The GGS can send raw serial packets to inject data to multiple GPSes.
-    // @Values: 0,1: send to specified instance. 127: broadcast
-    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, 127),
+    // @Values: 0:send to first GPS, 1:send to 2nd GPS, 127:send to all
+    AP_GROUPINFO("INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
 #endif
 
@@ -93,16 +93,16 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Param: SBP_LOGMASK
     // @DisplayName: Swift Binary Protocol Logging Mask
     // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
-    // @Values: 0x0000 for none, 0xFFFF for all, 0xFF00 for external only.
+    // @Values: 0x0000:None, 0xFFFF:All, 0xFF00:External only
     // @User: Advanced
     AP_GROUPINFO("SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, 0xFF00),
 #endif
 
 #if GPS_RTK_AVAILABLE
-    // @Param: RXM_RAW
+    // @Param: RAW_DATA
     // @DisplayName: Raw data logging
     // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
-    // @Values: 0:Disabled,1:log at 1MHz,5:log at 5MHz.
+    // @Values: 0:Disabled,1:log at 1MHz,5:log at 5MHz
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
 #endif
 
@@ -125,7 +125,7 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 }
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U};
+const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
@@ -206,7 +206,7 @@ AP_GPS::detect_instance(uint8_t instance)
     if (now - dstate->last_baud_change_ms > 1200) {
         // try the next baud rate
 		dstate->last_baud++;
-		if (dstate->last_baud == sizeof(_baudrates) / sizeof(_baudrates[0])) {
+		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
 		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
@@ -428,12 +428,11 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     istate.location = _location;
     istate.location.options = 0;
     istate.velocity = _velocity;
-    istate.have_vertical_velocity = true;
     istate.ground_speed = pythagorous2(istate.velocity.x, istate.velocity.y);
     istate.ground_course_cd = degrees(atan2f(istate.velocity.y, istate.velocity.x)) * 100UL;
     istate.hdop = hdop;
     istate.num_sats = _num_sats;
-    istate.have_vertical_velocity = _have_vertical_velocity;
+    istate.have_vertical_velocity |= _have_vertical_velocity;
     istate.last_gps_time_ms = tnow;
     uint64_t gps_time_ms = time_epoch_ms - (17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL);
     istate.time_week     = gps_time_ms / (86400*7*(uint64_t)1000);
@@ -470,7 +469,7 @@ AP_GPS::inject_data(uint8_t *data, uint8_t len)
 #if GPS_MAX_INSTANCES > 1
 
     //Support broadcasting to all GPSes.
-    if (_inject_to == 127) {
+    if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
         for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             inject_data(i, data, len);
         }

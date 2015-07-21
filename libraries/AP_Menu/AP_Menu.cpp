@@ -106,7 +106,7 @@ Menu::_run_command(bool prompt_on_enter)
     // XXX should an empty line by itself back out of the current menu?
     while (argc <= _args_max) {
         _argv[argc].str = strtok_r(NULL, " ", &s);
-        if ('\0' == _argv[argc].str)
+        if ('\0' == _argv[argc].str[0])
             break;
         _argv[argc].i = atol(_argv[argc].str);
         _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !

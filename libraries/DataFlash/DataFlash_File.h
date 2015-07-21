@@ -19,11 +19,13 @@
 #endif
 
 
-class DataFlash_File : public DataFlash_Class
+#include "DataFlash_Backend.h"
+
+class DataFlash_File : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_File(const char *log_directory);
+    DataFlash_File(DataFlash_Class &front, const char *log_directory);
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
@@ -42,6 +44,7 @@ public:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs(void);
+    bool _log_exists(uint16_t log_num);
     uint16_t start_new_log(void);
     void LogReadProcess(uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
@@ -50,6 +53,10 @@ public:
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    void flush(void);
+#endif
 
 private:
     int _write_fd;

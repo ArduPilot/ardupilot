@@ -100,7 +100,7 @@ def drive_APMrover2(viewerip=None, map=False):
 
     sil = util.start_SIL('APMrover2', model='rover', home=home, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('APMrover2', options=options)
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 

@@ -66,8 +66,6 @@ static const struct {
       Vector2f(-2, 2), true },
 };
 
-#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-
 static struct Location location_from_point(Vector2f pt)
 {
     struct Location loc = {0};
@@ -79,7 +77,7 @@ static struct Location location_from_point(Vector2f pt)
 static void test_passed_waypoint(void)
 {
     hal.console->println("waypoint tests starting");
-    for (uint8_t i=0; i<ARRAY_LENGTH(test_points); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(test_points); i++) {
         struct Location loc = location_from_point(test_points[i].location);
         struct Location wp1 = location_from_point(test_points[i].wp1);
         struct Location wp2 = location_from_point(test_points[i].wp2);
@@ -135,7 +133,7 @@ static void test_offset(void)
     loc.lat = -35*1.0e7f;
     loc.lng = 149*1.0e7f;
 
-    for (uint8_t i=0; i<ARRAY_LENGTH(test_offsets); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(test_offsets); i++) {
         test_one_offset(loc,
                         test_offsets[i].ofs_north,
                         test_offsets[i].ofs_east,
@@ -234,7 +232,7 @@ static const struct {
 
 static void test_wrap_cd(void)
 {
-    for (uint8_t i=0; i<sizeof(wrap_180_tests)/sizeof(wrap_180_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_180_tests); i++) {
         int32_t r = wrap_180_cd(wrap_180_tests[i].v);
         if (r != wrap_180_tests[i].wv) {
             hal.console->printf("wrap_180: v=%ld wv=%ld r=%ld\n",
@@ -244,7 +242,7 @@ static void test_wrap_cd(void)
         }
     }
 
-    for (uint8_t i=0; i<sizeof(wrap_360_tests)/sizeof(wrap_360_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_360_tests); i++) {
         int32_t r = wrap_360_cd(wrap_360_tests[i].v);
         if (r != wrap_360_tests[i].wv) {
             hal.console->printf("wrap_360: v=%ld wv=%ld r=%ld\n",
@@ -254,7 +252,7 @@ static void test_wrap_cd(void)
         }
     }
 
-    for (uint8_t i=0; i<sizeof(wrap_PI_tests)/sizeof(wrap_PI_tests[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(wrap_PI_tests); i++) {
         float r = wrap_PI(wrap_PI_tests[i].v);
         if (fabsf(r - wrap_PI_tests[i].wv) > 0.001f) {
             hal.console->printf("wrap_PI: v=%f wv=%f r=%f\n",

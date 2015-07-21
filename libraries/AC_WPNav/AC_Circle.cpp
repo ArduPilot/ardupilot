@@ -137,7 +137,7 @@ void AC_Circle::update()
             target.z = _pos_control.get_alt_target();
 
             // update position controller target
-            _pos_control.set_pos_target(target);
+            _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
             _yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
@@ -149,7 +149,7 @@ void AC_Circle::update()
             target.z = _pos_control.get_alt_target();
 
             // update position controller target
-            _pos_control.set_pos_target(target);
+            _pos_control.set_xy_target(target.x, target.y);
 
             // heading is same as _angle but converted to centi-degrees
             _yaw = _angle * AC_CIRCLE_DEGX100;

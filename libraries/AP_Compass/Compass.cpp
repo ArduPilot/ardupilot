@@ -153,7 +153,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: PRIMARY
     // @DisplayName: Choose primary compass
     // @Description: If more than one compass is available this selects which compass is the primary. Normally 0=External, 1=Internal. If no External compass is attached this parameter is ignored
-    // @Values: 0:FirstCompass,1:SecondCompass
+    // @Values: 0:FirstCompass,1:SecondCompass,2:ThirdCompass
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
 #endif
@@ -275,7 +275,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
-    _last_update_usec(0),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
@@ -286,6 +285,7 @@ Compass::Compass(void) :
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
+        _state[i].last_update_usec = 0;
     }    
 
 #if COMPASS_MAX_INSTANCES > 1
@@ -349,17 +349,17 @@ Compass::_detect_backends(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _add_backend(AP_Compass_HMC5843::detect);
-    _add_backend(AP_Compass_AK8963_MPU9250::detect);
+    _add_backend(AP_Compass_AK8963::detect_mpu9250);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
     _add_backend(AP_Compass_HMC5843::detect);
+#elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
+    _add_backend(AP_Compass_AK8963::detect_i2c1);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     _add_backend(AP_Compass_PX4::detect);
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
-    _add_backend(AP_Compass_AK8963_MPU9250::detect);
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
@@ -604,7 +604,7 @@ void Compass::setHIL(uint8_t instance, const Vector3f &mag)
 {
     _hil.field[instance] = mag;
     _hil.healthy[instance] = true;
-    _last_update_usec = hal.scheduler->micros();
+    _state[instance].last_update_usec = hal.scheduler->micros();
 }
 
 const Vector3f& Compass::getHIL(uint8_t instance) const 

@@ -4,6 +4,7 @@
 #define __AP_MOTORS_H__
 
 #include "AP_Motors_Class.h"
+#include "AP_MotorsMulticopter.h"
 #include "AP_MotorsMatrix.h"
 #include "AP_MotorsTri.h"
 #include "AP_MotorsQuad.h"

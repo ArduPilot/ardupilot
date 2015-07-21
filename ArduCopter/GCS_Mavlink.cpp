@@ -426,10 +426,10 @@ void Copter::send_pid_tuning(mavlink_channel_t chan)
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL, 
                                     pid_info.desired*0.01f,
                                     degrees(gyro.x),
-                                    pid_info.FF*0.01,
-                                    pid_info.P*0.01,
-                                    pid_info.I*0.01,
-                                    pid_info.D*0.01);
+                                    pid_info.FF*0.01f,
+                                    pid_info.P*0.01f,
+                                    pid_info.I*0.01f,
+                                    pid_info.D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -1016,11 +1016,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    // GCS has sent us a command from GCS, store to EEPROM
+    // GCS has sent us a mission item, store to EEPROM
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
     {
         if (handle_mission_item(msg, copter.mission)) {
-            copter.Log_Write_EntireMission();
+            copter.DataFlash.Log_Write_EntireMission(copter.mission);
         }
         break;
     }
@@ -1828,6 +1828,18 @@ void Copter::gcs_send_text_fmt(const prog_char_t *fmt, ...)
         if (gcs[i].initialised) {
             gcs[i].pending_status = gcs[0].pending_status;
             gcs[i].send_message(MSG_STATUSTEXT);
+        }
+    }
+}
+
+/*
+ *  send mission_item_reached message to all GCSs
+ */
+void Copter::gcs_send_mission_item_reached(uint16_t seq)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_mission_item_reached(seq);
         }
     }
 }

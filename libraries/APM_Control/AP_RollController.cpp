@@ -18,7 +18,6 @@
 //  Modified by Paul Riseborough
 //
 
-#include <AP_Math.h>
 #include <AP_HAL.h>
 #include "AP_RollController.h"
 

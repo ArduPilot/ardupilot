@@ -445,7 +445,7 @@ def fly_ArduPlane(viewerip=None, map=False):
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
     util.expect_setup_callback(mavproxy, expect_callback)
 
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
 
     # setup test parameters
@@ -460,7 +460,7 @@ def fly_ArduPlane(viewerip=None, map=False):
 
     sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 

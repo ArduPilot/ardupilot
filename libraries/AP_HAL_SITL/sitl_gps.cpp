@@ -49,7 +49,7 @@ ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 #ifdef FIONREAD
     // use FIONREAD to get exact value if possible
     int num_ready;
-    while (ioctl(fd, FIONREAD, &num_ready) == 0 && num_ready > 256) {
+    while (ioctl(fd, FIONREAD, &num_ready) == 0 && num_ready > 3000) {
         // the pipe is filling up - drain it
         uint8_t tmp[128];
         if (read(fd, tmp, sizeof(tmp)) != sizeof(tmp)) {

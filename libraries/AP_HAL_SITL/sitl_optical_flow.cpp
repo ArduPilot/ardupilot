@@ -71,7 +71,7 @@ void SITL_State::_update_flow(void)
 
     // estimate range to centre of image
     float range;
-    if (rotmat.c.z > 0.05f) {
+    if (rotmat.c.z > 0.05f && height_agl() > 0) {
         range = height_agl() / rotmat.c.z;
     } else {
         range = 1e38f;
