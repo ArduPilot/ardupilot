@@ -138,7 +138,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
-    void send_autopilot_version(void) const;
+    void send_autopilot_version(uint64_t capabilities = 0) const;
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_mission_item_reached(uint16_t seq) const;
