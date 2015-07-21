@@ -103,24 +103,7 @@ public:
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),
-        _servo_4(yaw_servo),
-        _roll_scaler(1),
-        _pitch_scaler(1),
-        _collective_scalar(1),
-        _collective_scalar_manual(1),
-        _collective_out(0),
-        _collective_mid_pwm(0),
-        _desired_rotor_speed(0),
-        _rotor_out(0),
-        _rsc_ramp_increment(0.0f),
-        _rsc_runup_increment(0.0f),
-        _rotor_speed_estimate(0.0f),
-        _tail_direct_drive_out(0),
-        _delta_phase_angle(0),
-        _roll_radio_passthrough(0),
-        _pitch_radio_passthrough(0),
-        _throttle_radio_passthrough(0),
-        _yaw_radio_passthrough(0)
+        _servo_4(yaw_servo)
     {
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -314,23 +297,23 @@ private:
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
-    float           _roll_scaler;               // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
-    float           _pitch_scaler;              // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
-    float           _collective_scalar;         // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
-    float           _collective_scalar_manual;  // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
-    int16_t         _collective_out;            // actual collective pitch value.  Required by the main code for calculating cruise throttle
-    int16_t         _collective_mid_pwm;        // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _desired_rotor_speed;             // latest desired rotor speed from pilot
-    float           _rotor_out;                 // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
-    float           _rsc_ramp_increment;        // the amount we can increase the rotor output during each 100hz iteration
-    float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
-    float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
-    int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
-    int16_t         _delta_phase_angle;         // phase angle dynamic compensation
-    int16_t         _roll_radio_passthrough;    // roll control PWM direct from radio, used for manual control
-    int16_t         _pitch_radio_passthrough;   // pitch control PWM direct from radio, used for manual control
-    int16_t         _throttle_radio_passthrough;// throttle control PWM direct from radio, used for manual control
-    int16_t         _yaw_radio_passthrough;     // yaw control PWM direct from radio, used for manual control
+    float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
+    float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
+    float           _collective_scalar = 1;          // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
+    float           _collective_scalar_manual = 1;   // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
+    int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
+    int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
+    int16_t         _desired_rotor_speed = 0;        // latest desired rotor speed from pilot
+    float           _rotor_out = 0;                  // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
+    float           _rsc_ramp_increment = 0.0f;      // the amount we can increase the rotor output during each 100hz iteration
+    float           _rsc_runup_increment = 0.0f;     // the amount we can increase the rotor's estimated speed during each 100hz iteration
+    float           _rotor_speed_estimate = 0.0f;    // estimated speed of the main rotor (0~1000)
+    int16_t         _tail_direct_drive_out = 0;      // current ramped speed of output on ch7 when using direct drive variable pitch tail type
+    int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
+    int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
+    int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
+    int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
+    int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
 };
 
 #endif  // AP_MOTORSHELI
