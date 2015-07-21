@@ -120,7 +120,6 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
 {
     _mag_x_accum =_mag_y_accum = _mag_z_accum = 0;
     _accum_count = 0;
-    _magnetometer_adc_resolution = AK8963_16BIT_ADC;
 }
 
 AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
@@ -294,7 +293,7 @@ bool AP_Compass_AK8963::_check_id()
 }
 
 bool AP_Compass_AK8963::_configure() {
-    _bus->register_write(AK8963_CNTL1, AK8963_CONTINUOUS_MODE2 | _magnetometer_adc_resolution);
+    _bus->register_write(AK8963_CNTL1, AK8963_CONTINUOUS_MODE2 | AK8963_16BIT_ADC);
     return true;
 }
 
@@ -310,7 +309,7 @@ bool AP_Compass_AK8963::_calibrate()
     uint8_t cntl1 = _bus->register_read(AK8963_CNTL1);
 
     /* Enable FUSE-mode in order to be able to read calibration data */
-    _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | _magnetometer_adc_resolution);
+    _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | AK8963_16BIT_ADC);
 
     uint8_t response[3];
     _bus->register_read(AK8963_ASAX, response, 3);
