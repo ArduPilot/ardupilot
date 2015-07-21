@@ -46,9 +46,6 @@ public:
     // output - sends commands to the motors
     virtual void        output();
 
-    // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
-    int16_t             get_hover_throttle_as_pwm() const;
-
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
@@ -123,6 +120,9 @@ protected:
 
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
+
+    // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
+    int16_t             get_hover_throttle_as_pwm() const;
 
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;

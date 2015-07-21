@@ -120,12 +120,6 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _batt_voltage_filt.reset(1.0f);
 };
 
-// get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
-int16_t AP_MotorsMulticopter::get_hover_throttle_as_pwm() const
-{
-    return (_throttle_radio_min + (float)(_throttle_radio_max - _throttle_radio_min) * _hover_out / 1000.0f);
-}
-
 // output - sends commands to the motors
 void AP_MotorsMulticopter::output()
 {
@@ -311,6 +305,12 @@ void AP_MotorsMulticopter::update_throttle_thr_mix()
         _throttle_thr_mix -= min(0.5f/_loop_rate, _throttle_thr_mix-_throttle_thr_mix_desired);
     }
     _throttle_thr_mix = constrain_float(_throttle_thr_mix, 0.1f, 1.0f);
+}
+
+// get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
+int16_t AP_MotorsMulticopter::get_hover_throttle_as_pwm() const
+{
+    return (_throttle_radio_min + (float)(_throttle_radio_max - _throttle_radio_min) * _hover_out / 1000.0f);
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
