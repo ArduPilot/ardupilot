@@ -74,7 +74,7 @@ void AP_Notify::init(bool enable_external_leds)
 
     AP_Notify::flags.external_leds = enable_external_leds;
 
-    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->init();
     }
 }
@@ -82,7 +82,7 @@ void AP_Notify::init(bool enable_external_leds)
 // main update function, called at 50Hz
 void AP_Notify::update(void)
 {
-    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->update();
     }
 
@@ -93,7 +93,7 @@ void AP_Notify::update(void)
 // handle a LED_CONTROL message
 void AP_Notify::handle_led_control(mavlink_message_t *msg)
 {
-    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_led_control(msg);
     }
 }
