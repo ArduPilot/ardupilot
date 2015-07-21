@@ -37,22 +37,10 @@
 #define MPUREG_EXT_SENS_DATA_00     0x49
 #define MPUREG_I2C_SLV0_DO          0x63
 
-#define MPUREG_PWR_MGMT_1                               0x6B
-#       define BIT_PWR_MGMT_1_CLK_INTERNAL              0x00            // clock set to internal 8Mhz oscillator
-#       define BIT_PWR_MGMT_1_CLK_XGYRO                 0x01            // PLL with X axis gyroscope reference
-#       define BIT_PWR_MGMT_1_CLK_YGYRO                 0x02            // PLL with Y axis gyroscope reference
-#       define BIT_PWR_MGMT_1_CLK_ZGYRO                 0x03            // PLL with Z axis gyroscope reference
-#       define BIT_PWR_MGMT_1_CLK_EXT32KHZ              0x04            // PLL with external 32.768kHz reference
-#       define BIT_PWR_MGMT_1_CLK_EXT19MHZ              0x05            // PLL with external 19.2MHz reference
-#       define BIT_PWR_MGMT_1_CLK_STOP                  0x07            // Stops the clock and keeps the timing generator in reset
-#       define BIT_PWR_MGMT_1_TEMP_DIS                  0x08            // disable temperature sensor
-#       define BIT_PWR_MGMT_1_CYCLE                     0x20            // put sensor into cycle mode.  cycles between sleep mode and waking up to take a single sample of data from active sensors at a rate determined by LP_WAKE_CTRL
-#       define BIT_PWR_MGMT_1_SLEEP                     0x40            // put sensor into low power sleep mode
-#       define BIT_PWR_MGMT_1_DEVICE_RESET              0x80            // reset entire device
-
 /* bit definitions for MPUREG_USER_CTRL */
 #define MPUREG_USER_CTRL                                0x6A
-#       define BIT_USER_CTRL_I2C_MST_EN                 0x20            /* Enable MPU to act as the I2C Master to external slave sensors */
+/* Enable MPU to act as the I2C Master to external slave sensors */
+#       define BIT_USER_CTRL_I2C_MST_EN                 0x20
 #       define BIT_USER_CTRL_I2C_IF_DIS                 0x10
 
 /* bit definitions for MPUREG_MST_CTRL */
@@ -76,19 +64,16 @@
 
 /* bit definitions for AK8963 CNTL1 */
 #define AK8963_CNTL1                                    0x0A
-#        define    AK8963_CONTINUOUS_MODE1              0x2
-#        define    AK8963_CONTINUOUS_MODE2              0x6
-#        define    AK8963_SELFTEST_MODE                 0x8
-#        define    AK8963_POWERDOWN_MODE                0x0
-#        define    AK8963_FUSE_MODE                     0xf
+#        define    AK8963_CONTINUOUS_MODE1              0x02
+#        define    AK8963_CONTINUOUS_MODE2              0x06
+#        define    AK8963_SELFTEST_MODE                 0x08
+#        define    AK8963_POWERDOWN_MODE                0x00
+#        define    AK8963_FUSE_MODE                     0x0f
 #        define    AK8963_16BIT_ADC                     0x10
 #        define    AK8963_14BIT_ADC                     0x00
 
 #define AK8963_CNTL2                                    0x0B
 #        define AK8963_RESET                            0x01
-
-#define AK8963_ASTC                                     0x0C
-#        define AK8983_SELFTEST_MAGNETIC_FIELD_ON       0x40
 
 #define AK8963_ASAX                                     0x10
 
