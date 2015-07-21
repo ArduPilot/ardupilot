@@ -26,15 +26,15 @@ struct AP_Notify::notify_events_type AP_Notify::events;
     ToneAlarm_PX4 tonealarm;
 #if OREOLED_ENABLED
     OreoLED_PX4 oreoled;
-    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm, &oreoled};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm, &oreoled};
 #else
-    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
     AP_BoardLED boardled;
     ExternalLED externalled;
     Buzzer buzzer;
-    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &externalled, &buzzer};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &externalled, &buzzer};
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     Buzzer buzzer;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
@@ -44,24 +44,26 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 #endif
     ToshibaLED_I2C toshibaled;
     ExternalLED externalled;
-    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &externalled, &buzzer};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &externalled, &buzzer};
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
         AP_BoardLED boardled;
         NavioLED_I2C navioled;
         ToshibaLED_I2C toshibaled;
-        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &navioled, &toshibaled};
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &navioled, &toshibaled};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
         ToneAlarm_Linux tonealarm;
-        NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled, &tonealarm};
+        NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled, &tonealarm};
     #endif
 #else
     AP_BoardLED boardled;
     ToshibaLED_I2C toshibaled;
-    NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_COUNT] = {&boardled, &toshibaled};
+    NotifyDevice *AP_Notify::_devices[] = {&boardled, &toshibaled};
 #endif
+
+#define CONFIG_NOTIFY_DEVICES_COUNT (ARRAY_SIZE(AP_Notify::_devices))
 
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
@@ -72,7 +74,7 @@ void AP_Notify::init(bool enable_external_leds)
 
     AP_Notify::flags.external_leds = enable_external_leds;
 
-    for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->init();
     }
 }
@@ -80,7 +82,7 @@ void AP_Notify::init(bool enable_external_leds)
 // main update function, called at 50Hz
 void AP_Notify::update(void)
 {
-    for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->update();
     }
 
@@ -91,7 +93,7 @@ void AP_Notify::update(void)
 // handle a LED_CONTROL message
 void AP_Notify::handle_led_control(mavlink_message_t *msg)
 {
-    for (int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+    for (unsigned int i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
         _devices[i]->handle_led_control(msg);
     }
 }
