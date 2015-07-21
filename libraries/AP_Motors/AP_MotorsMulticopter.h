@@ -50,7 +50,7 @@ public:
     int16_t             get_hover_throttle_as_pwm() const;
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
-    virtual void        set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
+    void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
     // set_throttle_thr_mix - set desired throttle_thr_mix (actual throttle_thr_mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
