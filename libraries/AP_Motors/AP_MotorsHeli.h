@@ -11,6 +11,7 @@
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include "AP_Motors.h"
+#include "AP_MotorsHeli_RSC.h"
 
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
@@ -103,7 +104,9 @@ public:
         _servo_1(swash_servo_1),
         _servo_2(swash_servo_2),
         _servo_3(swash_servo_3),
-        _servo_4(yaw_servo)
+        _servo_4(yaw_servo),
+        _main_rotor(servo_rotor, AP_MOTORS_HELI_RSC, loop_rate),
+        _tail_rotor(servo_aux, AP_MOTORS_HELI_AUX, loop_rate)
     {
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -170,19 +173,19 @@ public:
     int16_t get_rsc_setpoint() const { return _rsc_setpoint; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
-    void set_desired_rotor_speed(int16_t desired_speed) { _desired_rotor_speed = desired_speed; }
+    void set_desired_rotor_speed(int16_t desired_speed);
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
-    int16_t get_desired_rotor_speed() const { return _desired_rotor_speed; }
+    int16_t get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
 
     // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
-    int16_t get_estimated_rotor_speed() { return _rotor_speed_estimate; }
+    int16_t get_estimated_rotor_speed() { return _main_rotor.get_estimated_speed(); }
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const { return _rotor_speed_estimate > _rsc_critical; }
+    bool rotor_speed_above_critical() const { return _main_rotor.get_estimated_speed() > _main_rotor.get_critical_speed(); }
 
     // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
     void recalc_scalers();
@@ -235,22 +238,6 @@ private:
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
 
-    // rsc_control - main function to update values to send to main rotor and tail rotor ESCs
-    void rsc_control();
-
-    // rotor_ramp - ramps rotor towards target. result put rotor_out and sent to ESC
-    void rotor_ramp(int16_t rotor_target);
-
-    // tail_ramp - ramps tail motor towards target.  Only used for direct drive variable pitch tails
-    // results put into _tail_direct_drive_out and sent to ESC
-    void tail_ramp(int16_t tail_target);
-
-    // return true if the tail rotor is up to speed
-    bool tail_rotor_runup_complete();
-
-    // write_rsc - outputs pwm onto output rsc channel (ch8).  servo_out parameter is of the range 0 ~ 1000
-    void write_rsc(int16_t servo_out);
-
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);
 
@@ -261,6 +248,9 @@ private:
     RC_Channel&     _servo_2;                   // swash plate servo #2
     RC_Channel&     _servo_3;                   // swash plate servo #3
     RC_Channel&     _servo_4;                   // tail servo
+
+    AP_MotorsHeli_RSC   _main_rotor;            // main rotor
+    AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
 
     // flags bitmask
     struct heliflags_type {
@@ -303,12 +293,6 @@ private:
     float           _collective_scalar_manual = 1;   // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
-    int16_t         _desired_rotor_speed = 0;        // latest desired rotor speed from pilot
-    float           _rotor_out = 0;                  // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
-    float           _rsc_ramp_increment = 0.0f;      // the amount we can increase the rotor output during each 100hz iteration
-    float           _rsc_runup_increment = 0.0f;     // the amount we can increase the rotor's estimated speed during each 100hz iteration
-    float           _rotor_speed_estimate = 0.0f;    // estimated speed of the main rotor (0~1000)
-    int16_t         _tail_direct_drive_out = 0;      // current ramped speed of output on ch7 when using direct drive variable pitch tail type
     int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough = 0;     // roll control PWM direct from radio, used for manual control
     int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
