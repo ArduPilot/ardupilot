@@ -62,6 +62,8 @@ public:
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
     AP_Float aspd_noise;  // in m/s
+    AP_Int8 aspd_fail;    // pitot tube failure
+
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
