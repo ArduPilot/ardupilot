@@ -102,8 +102,7 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _last_accum_time(0),
     _bus(bus)
 {
-    _mag_x_accum =_mag_y_accum = _mag_z_accum = 0;
-    _accum_count = 0;
+    _reset_filter();
 }
 
 AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
@@ -213,20 +212,37 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    /* Update */
-    Vector3f field(_mag_x_accum * _magnetometer_ASA[0],
-                   _mag_y_accum * _magnetometer_ASA[1],
-                   _mag_z_accum * _magnetometer_ASA[2]);
+    auto field = _get_filtered_field();
+    _make_factory_sensitivity_adjustment(field);
 
-    field /= _accum_count;
-    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-    _accum_count = 0;
+    _reset_filter();
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     field.rotate(ROTATION_YAW_90);
 #endif
 
     publish_field(field, _compass_instance);
+}
+
+Vector3f AP_Compass_AK8963::_get_filtered_field() const
+{
+    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
+    field /= _accum_count;
+
+    return field;
+}
+
+void AP_Compass_AK8963::_reset_filter()
+{
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
+}
+
+void AP_Compass_AK8963::_make_factory_sensitivity_adjustment(Vector3f& field) const
+{
+    field.x *= _magnetometer_ASA[0];
+    field.y *= _magnetometer_ASA[1];
+    field.z *= _magnetometer_ASA[2];
 }
 
 void AP_Compass_AK8963::_update()
