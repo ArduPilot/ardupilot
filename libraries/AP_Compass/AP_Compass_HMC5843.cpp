@@ -222,8 +222,6 @@ bool AP_Compass_HMC5843::_detect_version()
 bool
 AP_Compass_HMC5843::init()
 {
-    int numAttempts = 0, good_count = 0;
-    bool success = false;
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
@@ -253,9 +251,45 @@ AP_Compass_HMC5843::init()
         gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
     }
 
-    calibration[0] = 0;
-    calibration[1] = 0;
-    calibration[2] = 0;
+    if (!_calibrate(calibration_gain, expected_x, expected_yz, gain_multiple)) {
+        goto errout;
+    }
+
+    // leave test mode
+    if (!re_initialise()) {
+        goto errout;
+    }
+
+    read();
+
+#if 0
+    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"),
+                          calibration[0], calibration[1], calibration[2]);
+#endif
+
+    _compass_instance = register_compass();
+    set_dev_id(_compass_instance, _product_id);
+
+    _initialised = true;
+
+    _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
+
+    return true;
+errout:
+
+    _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
+    return false;
+}
+
+bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
+        uint16_t expected_x,
+        uint16_t expected_yz,
+        float gain_multiple)
+{
+    int numAttempts = 0, good_count = 0;
+    bool success = false;
 
     while ( success == 0 && numAttempts < 25 && good_count < 5)
     {
@@ -333,38 +367,7 @@ AP_Compass_HMC5843::init()
         calibration[2] = 1.0;
     }
 
-    // leave test mode
-    if (!re_initialise()) {
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
-    }
-
-    _i2c_sem->give();
-    hal.scheduler->resume_timer_procs();
-    _initialised = true;
-
-	// perform an initial read
-	read();
-
-#if 0
-    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), 
-                          calibration[0], calibration[1], calibration[2]);
-#endif
-
-    if (success) {
-        // register the compass instance in the frontend
-        _compass_instance = register_compass();
-        set_dev_id(_compass_instance, _product_id);
-    }
-
     return success;
-
-errout:
-
-    _i2c_sem->give();
-    hal.scheduler->resume_timer_procs();
-    return false;
 }
 
 // Read Sensor data
