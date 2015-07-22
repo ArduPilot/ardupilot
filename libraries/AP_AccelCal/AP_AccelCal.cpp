@@ -115,6 +115,7 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
 
     AccelCalibrator *cal;
     for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+        cal->clear();
         cal->start(ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID, 6, 0.5f);
         _num_calibrators++;
     }
