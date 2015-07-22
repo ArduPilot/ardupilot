@@ -46,27 +46,16 @@ public:
     void        accumulate(void);
 
 private:
-    typedef enum
-    {
-        STATE_UNKNOWN,
-        STATE_CONVERSION,
-        STATE_SAMPLE,
-        STATE_ERROR
-    } state_t;
-
     bool _reset();
     bool _setup_mode();
     bool _check_id();
     bool _calibrate();
 
     void _update();
-    bool _collect_samples();
     void _dump_registers();
     bool _sem_take_blocking();
     bool _sem_take_nonblocking();
     bool _sem_give();
-
-    state_t             _state;
 
     float               _magnetometer_ASA[3] {0, 0, 0};
     uint8_t             _compass_instance;
