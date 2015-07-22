@@ -107,19 +107,23 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
 
-    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
-    _ang_vel_mag_filt += (_measurement.delta_angles.length()/_measurement.delta_time-_ang_vel_mag_filt)*alpha;
-    if (_ang_vel_mag_filt < radians(10)) {
+    if (_calibrator.get_status() == ACCEL_CAL_COLLECTING_SAMPLE && _ang_vel_mag_filt < radians(10)) {
         _calibrator.new_sample(_measurement.delta_velocity,_measurement.delta_time);
     }
 
-    //apply joint angle compensation
+    _measurement.delta_angles -= _gimbalParams.get_gyro_bias() * _measurement.delta_time;
     _measurement.joint_angles -= _gimbalParams.get_joint_bias();
     _measurement.delta_velocity -= _gimbalParams.get_accel_bias() * _measurement.delta_time;
     _measurement.delta_velocity.x *= _gimbalParams.get_accel_gain().x;
     _measurement.delta_velocity.y *= _gimbalParams.get_accel_gain().y;
     _measurement.delta_velocity.z *= _gimbalParams.get_accel_gain().z;
-    _measurement.delta_angles -= _gimbalParams.get_gyro_bias() * _measurement.delta_time;
+
+    Vector3f ang_vel = _measurement.delta_angles / _measurement.delta_time;
+    Vector3f ekf_gyro_bias;
+    _ekf.getGyroBias(ekf_gyro_bias);
+    ang_vel -= ekf_gyro_bias;
+    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
+    _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
 
     // get complementary filter inputs
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
