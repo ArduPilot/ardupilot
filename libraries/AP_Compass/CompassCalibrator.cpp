@@ -357,7 +357,10 @@ bool CompassCalibrator::accept_sample(const Vector3f& sample)
         return false;
     }
 
-    float min_distance = fabsf(5.38709f * _params.radius / sqrtf((float)COMPASS_CAL_NUM_SAMPLES)) / 3.0f;
+    float faces = 2*COMPASS_CAL_NUM_SAMPLES-4;
+    float theta = acosf(cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)/(1.0f-cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)));
+    theta *= 0.5f;
+    float min_distance = _params.radius * 2*sinf(theta/2);
 
     for (uint16_t i = 0; i<_samples_collected; i++){
         float distance = (sample - _sample_buffer[i].get()).length();
