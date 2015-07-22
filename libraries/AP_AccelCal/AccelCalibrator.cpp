@@ -76,25 +76,33 @@ void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
     if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
         return;
     }
+
+    if (_samples_collected >= _conf_num_samples) {
+        set_status(ACCEL_CAL_FAILED);
+        return;
+    }
+
     _sample_buffer[_samples_collected].delta_velocity += delta_velocity;
     _sample_buffer[_samples_collected].delta_time += dt;
 
     _last_samp_frag_collected_ms = hal.scheduler->millis();
 
     if (_sample_buffer[_samples_collected].delta_time > _conf_sample_time) {
-        Vector3f sample;
-        get_sample(_samples_collected, sample);
-
-        if(!accept_sample(sample) && _samples_collected != 0) {
+        Vector3f sample = _sample_buffer[_samples_collected].delta_velocity/_sample_buffer[_samples_collected].delta_time;
+        if(!accept_sample(sample)) {
             set_status(ACCEL_CAL_FAILED);
             return;
         }
+
         _samples_collected++;
+
         if (_samples_collected >= _conf_num_samples) {
             run_fit(50, _fitness);
 
             if (_fitness < _conf_tolerance) {
                 set_status(ACCEL_CAL_SUCCESS);
+            } else {
+                set_status(ACCEL_CAL_FAILED);
             }
         } else {
             set_status(ACCEL_CAL_WAITING_FOR_ORIENTATION);
@@ -165,6 +173,7 @@ bool AccelCalibrator::accept_sample(const Vector3f& sample)
     for(uint8_t i=0; i < _samples_collected; i++) {
         Vector3f other_sample;
         get_sample(i, other_sample);
+
         if((other_sample - sample).length() < min_distance){
             return false;
         }
@@ -222,12 +231,6 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
         case ACCEL_CAL_FAILED:
             if (_status == ACCEL_CAL_NOT_STARTED) {
                 break;
-            }
-
-            _samples_collected = 0;
-            if (_sample_buffer != NULL) {
-                free(_sample_buffer);
-                _sample_buffer = NULL;
             }
 
             _status = ACCEL_CAL_FAILED;
