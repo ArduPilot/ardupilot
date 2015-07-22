@@ -99,8 +99,6 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
 
-    _measurement.joint_angles += Vector3f(radians(20), radians(20),0);
-
     float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
     _ang_vel_mag_filt += (_measurement.delta_angles.length()/_measurement.delta_time-_ang_vel_mag_filt)*alpha;
     if (_ang_vel_mag_filt < radians(10)) {
