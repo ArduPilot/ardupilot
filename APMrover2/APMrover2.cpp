@@ -61,7 +61,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
     { SCHED_TASK(gcs_update),             1,   1700 },
     { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
-    { SCHED_TASK(read_control_switch),   15,   1000 },
+    { SCHED_TASK(read_control_switch),    7,   1000 },
     { SCHED_TASK(read_trim_switch),       5,   1000 },
     { SCHED_TASK(read_battery),           5,   1000 },
     { SCHED_TASK(read_receiver_rssi),     5,   1000 },
