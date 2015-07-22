@@ -46,6 +46,10 @@ public:
     void        accumulate(void);
 
 private:
+    void _make_factory_sensitivity_adjustment(Vector3f& field) const;
+    Vector3f _get_filtered_field() const;
+    void _reset_filter();
+
     bool _reset();
     bool _setup_mode();
     bool _check_id();
