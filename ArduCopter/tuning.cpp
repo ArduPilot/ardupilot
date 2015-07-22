@@ -130,8 +130,8 @@ void Copter::tuning() {
         break;
 
     case TUNING_CIRCLE_RATE:
-        // set circle rate
-        circle_nav.set_rate(g.rc_6.control_in/25-20);   // allow approximately 45 degree turn rate in either direction
+        // set circle rate up to approximately 45 deg/sec in either direction
+        circle_nav.set_rate((float)g.rc_6.control_in/25.0f-20.0f);
         break;
 
     case TUNING_SONAR_GAIN:
