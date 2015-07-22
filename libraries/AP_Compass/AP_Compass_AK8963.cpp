@@ -14,14 +14,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_Compass_AK8963.cpp 
- *       Code by Georgii Staroselskii. Emlid.com
- *
- *       Sensor is connected to SPI port
- *
- */
-
 #include <AP_Math.h>
 #include <AP_HAL.h>
 
