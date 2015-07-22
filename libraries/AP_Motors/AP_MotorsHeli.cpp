@@ -472,12 +472,7 @@ void AP_MotorsHeli::output_disarmed()
 void AP_MotorsHeli::reset_swash()
 {
     // free up servo ranges
-    _servo_1.radio_min = 1000;
-    _servo_1.radio_max = 2000;
-    _servo_2.radio_min = 1000;
-    _servo_2.radio_max = 2000;
-    _servo_3.radio_min = 1000;
-    _servo_3.radio_max = 2000;
+    reset_servos();
 
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
@@ -492,15 +487,27 @@ void AP_MotorsHeli::reset_swash()
     _heliflags.swash_initialised = false;
 }
 
+// reset_servos
+void AP_MotorsHeli::reset_servos()
+{
+    reset_swash_servo (_servo_1);
+    reset_swash_servo (_servo_2);
+    reset_swash_servo (_servo_3);
+}
+
+// reset_swash_servo
+void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
+{
+    servo.radio_min = 1000;
+    servo.radio_max = 2000;
+}
+
 // init_swash - initialise the swash plate
 void AP_MotorsHeli::init_swash()
 {
 
     // swash servo initialisation
-    _servo_1.set_range(0,1000);
-    _servo_2.set_range(0,1000);
-    _servo_3.set_range(0,1000);
-    _servo_4.set_angle(4500);
+    init_servos();
 
     // range check collective min, max and mid
     if( _collective_min >= _collective_max ) {
@@ -520,16 +527,27 @@ void AP_MotorsHeli::init_swash()
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
 
-    // servo min/max values
-    _servo_1.radio_min = 1000;
-    _servo_1.radio_max = 2000;
-    _servo_2.radio_min = 1000;
-    _servo_2.radio_max = 2000;
-    _servo_3.radio_min = 1000;
-    _servo_3.radio_max = 2000;
-
     // mark swash as initialised
     _heliflags.swash_initialised = true;
+}
+
+// init_servos
+void AP_MotorsHeli::init_servos()
+{
+    init_swash_servo (_servo_1);
+    init_swash_servo (_servo_2);
+    init_swash_servo (_servo_3);
+
+    _servo_4.set_angle(4500);
+}
+
+// init_swash_servo
+void AP_MotorsHeli::init_swash_servo(RC_Channel& servo)
+{
+    servo.set_range(0, 1000);
+    
+    servo.radio_min = 1000;
+    servo.radio_max = 2000;
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
