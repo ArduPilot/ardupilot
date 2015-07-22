@@ -13,8 +13,6 @@ class AP_AK8963_SerialBus
 {
 public:
     struct PACKED raw_value {
-        uint8_t info;
-        uint8_t st1;
         int16_t val[3];
         uint8_t st2;
     };
