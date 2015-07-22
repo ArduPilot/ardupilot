@@ -232,8 +232,20 @@ private:
     // reset_swash - free up swash for maximum movements. Used for set-up
     void reset_swash();
 
+    // reset_servos - free up the swash servos for maximum movement
+    void reset_servos();
+
+    // reset_swash_servo - free up swash servo for maximum movement
+    static void reset_swash_servo(RC_Channel& servo);
+
     // init_swash - initialise the swash plate
     void init_swash();
+
+    // init_servos - initialize the servos
+    void init_servos();
+
+    // init_swash_servo - initialize a swash servo
+    static void init_swash_servo(RC_Channel& servo);
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
