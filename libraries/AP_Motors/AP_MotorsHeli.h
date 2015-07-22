@@ -220,6 +220,7 @@ protected:
     void                output_armed_not_stabilizing();
     void                output_armed_zero_throttle();
     void                output_disarmed();
+    void                output_yaw(int16_t yaw_out);
 
     // update the throttle input filter
     void                update_throttle_filter();
