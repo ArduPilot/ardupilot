@@ -378,17 +378,18 @@ AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
 
 void AP_AK8963_SerialBus_MPU9250::register_write(uint8_t address, uint8_t value)
 {
-    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR);  /* Set the I2C slave addres of AK8963 and set for register_write. */
-    _write(MPUREG_I2C_SLV0_REG, address); /* I2C slave 0 register address from where to begin data transfer */
-    _write(MPUREG_I2C_SLV0_DO, value); /* Register value to continuous measurement in 16-bit */
-    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | 0x01); /* Enable I2C and set 1 byte */
+    const uint8_t count = 1;
+    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
+    _write(MPUREG_I2C_SLV0_REG, address);
+    _write(MPUREG_I2C_SLV0_DO, value);
+    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 }
 
 void AP_AK8963_SerialBus_MPU9250::register_read(uint8_t address, uint8_t *value, uint8_t count)
 {
-    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);  /* Set the I2C slave addres of AK8963 and set for read. */
-    _write(MPUREG_I2C_SLV0_REG, address); /* I2C slave 0 register address from where to begin data transfer */
-    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count); /* Enable I2C and set @count byte */
+    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);
+    _write(MPUREG_I2C_SLV0_REG, address);
+    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 
     hal.scheduler->delay(10);
     _read(MPUREG_EXT_SENS_DATA_00, value, count);
@@ -445,9 +446,12 @@ bool AP_AK8963_SerialBus_MPU9250::start_measurements()
 {
     const uint8_t count = sizeof(struct raw_value);
 
-    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);  /* Set the I2C slave addres of AK8963 and set for read. */
-    _write(MPUREG_I2C_SLV0_REG, AK8963_INFO); /* I2C slave 0 register address from where to begin data transfer */
-    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count); /* Enable I2C and set @count byte */
+    /* Configure the registers from AK8963 that will be read by MPU9250's
+     * master: we will get the result directly from MPU9250's registers starting
+     * from MPUREG_EXT_SENS_DATA_00 when read_raw() is called */
+    _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);
+    _write(MPUREG_I2C_SLV0_REG, AK8963_INFO);
+    _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 
     return true;
 }
