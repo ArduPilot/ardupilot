@@ -41,6 +41,10 @@
 #        define I2C_MST_CLOCK_400KHZ                    0x0D
 #        define I2C_MST_CLOCK_258KHZ                    0x08
 
+#define MPUREG_I2C_SLV4_CTRL                            0x34
+#define MPUREG_I2C_MST_DELAY_CTRL                       0x67
+#        define I2C_SLV0_DLY_EN                         0x01
+
 #define AK8963_I2C_ADDR                                 0x0c
 
 #define AK8963_WIA                                      0x00
@@ -450,6 +454,11 @@ AP_HAL::Semaphore * AP_AK8963_SerialBus_MPU9250::get_semaphore()
 bool AP_AK8963_SerialBus_MPU9250::start_measurements()
 {
     const uint8_t count = sizeof(struct raw_value);
+
+    /* Don't sample AK8963 at MPU9250's sample rate. See MPU9250's datasheet
+     * about registers below and registers 73-96, External Sensor Data */
+    _write(MPUREG_I2C_SLV4_CTRL, 31);
+    _write(MPUREG_I2C_MST_DELAY_CTRL, I2C_SLV0_DLY_EN);
 
     /* Configure the registers from AK8963 that will be read by MPU9250's
      * master: we will get the result directly from MPU9250's registers starting
