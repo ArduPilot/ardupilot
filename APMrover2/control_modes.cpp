@@ -61,7 +61,7 @@ uint8_t Rover::readSwitch(void){
 
 void Rover::reset_control_switch()
 {
-	oldSwitchPosition = 0;
+	oldSwitchPosition = 254;
 	read_control_switch();
 }
 
