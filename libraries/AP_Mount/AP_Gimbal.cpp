@@ -32,14 +32,22 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
         _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
     }
 
+    update_mode();
     update_state();
-    if (_gimbalParams.get_K_rate()!=0.0f){
-        if (lockedToBody || isCopterFlipped() || !_ekf.getStatus()){
+
+    switch(_mode) {
+        case GIMBAL_MODE_IDLE:
+            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
+            break;
+        case GIMBAL_MODE_POS_HOLD:
             _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 1);
-        } else {
+            break;
+        case GIMBAL_MODE_POS_HOLD_FF:
+        case GIMBAL_MODE_STABILIZE:
             send_control(chan);
             _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
-        }
+        default:
+            break;
     }
 
     float max_torque;
@@ -117,6 +125,21 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
 }
 
+void AP_Gimbal::update_mode()
+{
+    if (_gimbalParams.get_K_rate()==0.0f) {
+        _mode = GIMBAL_MODE_IDLE;
+    } else if (_calibrator.running()) {
+        _mode = GIMBAL_MODE_POS_HOLD_FF;
+    } else if (isCopterFlipped()) {
+        _mode = GIMBAL_MODE_IDLE;
+    } else if (lockedToBody || !_ekf.getStatus()) {
+        _mode = GIMBAL_MODE_POS_HOLD;
+    } else {
+        _mode = GIMBAL_MODE_STABILIZE;
+    }
+}
+
 void AP_Gimbal::update_state()
 {
     // Run the gimbal attitude and gyro bias estimator
@@ -126,25 +149,30 @@ void AP_Gimbal::update_state()
     Quaternion quatEst;
     _ekf.getQuat(quatEst);
 
-    // Add the control rate vectors
-    if(lockedToBody || _calibrator.running()){
-        gimbalRateDemVec.zero();
-        gimbalRateDemVec += getGimbalRateBodyLock();
-    }else{
-        gimbalRateDemVec.zero();
-        gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
-        gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
-        gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
+    update_joint_angle_est();
+
+    gimbalRateDemVec.zero();
+    switch(_mode) {
+        case GIMBAL_MODE_POS_HOLD_FF:
+            gimbalRateDemVec += getGimbalRateBodyLock();
+            break;
+        case GIMBAL_MODE_STABILIZE:
+            gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
+            gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
+            gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
+            break;
+        default:
+        case GIMBAL_MODE_IDLE:
+        case GIMBAL_MODE_POS_HOLD:
+            break;
     }
+
+    gimbalRateDemVec += getGimbalRateDemVecGyroBias();
 
     float gimbalRateDemVecLen = gimbalRateDemVec.length();
     if (gimbalRateDemVecLen > radians(400)) {
         gimbalRateDemVec *= radians(400)/gimbalRateDemVecLen;
     }
-
-    gimbalRateDemVec += getGimbalRateDemVecGyroBias();
-
-    update_joint_angle_est();
 }
 
 void AP_Gimbal::update_joint_angle_est()
