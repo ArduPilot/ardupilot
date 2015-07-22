@@ -21,8 +21,9 @@
 #include <AP_Mount.h>
 #include <AP_SmallEKF.h>
 #include <AP_NavEKF.h>
+#include <AP_AccelCal.h>
 
-class AP_Gimbal
+class AP_Gimbal : AP_AccelCal_Client
 {
 public:
     //Constructor
@@ -40,6 +41,7 @@ public:
         filtered_joint_angles(),
         _max_torque(5000.0f)
     {
+        ahrs.get_ins().get_acal().register_client(this);
     }
 
     void    update_target(Vector3f newTarget);
@@ -113,6 +115,14 @@ private:
     uint32_t _last_report_msg_ms;
 
     float _max_torque;
+
+    float _ang_vel_mag_filt;
+
+    AccelCalibrator _calibrator;
+    void _acal_save_calibrations();
+    AccelCalibrator* _acal_get_calibrator(uint8_t instance);
+
+    mavlink_channel_t _chan;
 };
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

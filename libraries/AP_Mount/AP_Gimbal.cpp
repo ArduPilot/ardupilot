@@ -18,7 +18,8 @@ bool AP_Gimbal::present()
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-    _gimbalParams.update(chan);
+    _gimbalParams.set_channel(chan);
+    _gimbalParams.update();
     if(!_gimbalParams.initialized()){
         return;
     }
@@ -28,18 +29,16 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     extract_feedback(report_msg);
 
     if(report_msg.target_system != 1) {
-        _gimbalParams.set_param(chan, GMB_PARAM_GMB_SYSID, 1);
+        _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
     }
 
     update_state();
     if (_gimbalParams.get_K_rate()!=0.0f){
-        if (lockedToBody || isCopterFlipped()){
-            _gimbalParams.set_param(chan, GMB_PARAM_GMB_POS_HOLD, 1);
-        }else{
-            if (_ekf.getStatus()){
-                send_control(chan); 
-                _gimbalParams.set_param(chan, GMB_PARAM_GMB_POS_HOLD, 0);
-            }
+        if (lockedToBody || isCopterFlipped() || !_ekf.getStatus() || _calibrator.running()){
+            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 1);
+        } else {
+            send_control(chan);
+            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
         }
     }
 
@@ -50,9 +49,9 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     }
 
     if (!hal.util->get_soft_armed() || joints_near_limits()) {
-        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, _max_torque);
+        _gimbalParams.set_param(GMB_PARAM_GMB_MAX_TORQUE, _max_torque);
     } else {
-        _gimbalParams.set_param(chan, GMB_PARAM_GMB_MAX_TORQUE, 0);
+        _gimbalParams.set_param(GMB_PARAM_GMB_MAX_TORQUE, 0);
     }
 }
 
@@ -99,6 +98,14 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.joint_angles.x = report_msg.joint_roll;
     _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
+
+    _measurement.joint_angles += Vector3f(radians(20), radians(20),0);
+
+    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
+    _ang_vel_mag_filt += (_measurement.delta_angles.length()/_measurement.delta_time-_ang_vel_mag_filt)*alpha;
+    if (_ang_vel_mag_filt < radians(10)) {
+        _calibrator.new_sample(_measurement.delta_velocity,_measurement.delta_time);
+    }
 
     //apply joint angle compensation
     _measurement.joint_angles -= _gimbalParams.get_joint_bias();
@@ -321,6 +328,28 @@ bool AP_Gimbal::isCopterFlipped()
 bool AP_Gimbal::joints_near_limits()
 {
     return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < -radians(135);
+}
+
+AccelCalibrator* AP_Gimbal::_acal_get_calibrator(uint8_t instance)
+{
+    if(instance==0 && present()) {
+        return &_calibrator;
+    } else {
+        return NULL;
+    }
+}
+
+void AP_Gimbal::_acal_save_calibrations()
+{
+    if (_calibrator.get_status() != ACCEL_CAL_SUCCESS) {
+        return;
+    }
+    Vector3f bias;
+    Vector3f gain;
+    _calibrator.get_calibration(bias,gain);
+    _gimbalParams.set_accel_bias(bias);
+    _gimbalParams.set_accel_gain(gain);
+    _gimbalParams.flash();
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

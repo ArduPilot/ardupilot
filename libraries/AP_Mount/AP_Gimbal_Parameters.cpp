@@ -47,6 +47,8 @@ const char* AP_Gimbal_Parameters::get_param_name(gmb_param_t param)
             return "GMB_MAX_TORQUE";
         case GMB_PARAM_GMB_SYSID:
             return "GMB_SYSID";
+        case GMB_PARAM_GMB_FLASH:
+            return "GMB_FLASH";
         default:
             return "";
     };
@@ -89,19 +91,19 @@ void AP_Gimbal_Parameters::get_param(gmb_param_t param, float& value, float def_
     }
 }
 
-void AP_Gimbal_Parameters::set_param(mavlink_channel_t chan, gmb_param_t param, float value) {
+void AP_Gimbal_Parameters::set_param(gmb_param_t param, float value) {
     if ((_params[param].state == GMB_PARAMSTATE_CONSISTENT && _params[param].value == value) || _params[param].state == GMB_PARAMSTATE_NONEXISTANT) {
         return;
     }
     _params[param].state = GMB_PARAMSTATE_ATTEMPTING_TO_SET;
     if (_params[param].value != value) {
         _params[param].value = value;
-        mavlink_msg_param_set_send(chan, 0, MAV_COMP_ID_GIMBAL, get_param_name(param), _params[param].value, MAV_PARAM_TYPE_REAL32);
+        mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, get_param_name(param), _params[param].value, MAV_PARAM_TYPE_REAL32);
     }
     _last_request_ms = hal.scheduler->millis();
 }
 
-void AP_Gimbal_Parameters::update(mavlink_channel_t chan)
+void AP_Gimbal_Parameters::update()
 {
     uint32_t tnow_ms = hal.scheduler->millis();
 
@@ -109,7 +111,7 @@ void AP_Gimbal_Parameters::update(mavlink_channel_t chan)
     if(!received_all()){
         if (tnow_ms-_last_request_ms > _retry_period) {
             _last_request_ms = tnow_ms;
-            mavlink_msg_param_request_list_send(chan, 0, MAV_COMP_ID_GIMBAL);
+            mavlink_msg_param_request_list_send(_chan, 0, MAV_COMP_ID_GIMBAL);
 
             for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
                 if (!_params[i].seen) {
@@ -122,7 +124,7 @@ void AP_Gimbal_Parameters::update(mavlink_channel_t chan)
     // retry param_set
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
         if (_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET && tnow_ms - _last_request_ms > _retry_period) {
-            mavlink_msg_param_set_send(chan, 0, MAV_COMP_ID_GIMBAL, get_param_name((gmb_param_t)i), _params[i].value, MAV_PARAM_TYPE_REAL32);
+            mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, get_param_name((gmb_param_t)i), _params[i].value, MAV_PARAM_TYPE_REAL32);
             if (!_params[i].seen) {
                 _params[i].fetch_attempts++;
             }
@@ -158,7 +160,7 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
                     _params[i].value = packet.param_value;
                     break;
                 case GMB_PARAMSTATE_ATTEMPTING_TO_SET:
-                    if (packet.param_value == _params[i].value) {
+                    if (i == GMB_PARAM_GMB_FLASH || packet.param_value == _params[i].value) {
                         _params[i].state = GMB_PARAMSTATE_CONSISTENT;
                     }
                     break;
@@ -183,6 +185,21 @@ Vector3f AP_Gimbal_Parameters::get_accel_gain()
     get_param(GMB_PARAM_GMB_GN_ACC_Z,ret.z,1.0f);
     return ret;
 }
+
+void AP_Gimbal_Parameters::set_accel_bias(const Vector3f& bias)
+{
+    set_param(GMB_PARAM_GMB_OFF_ACC_X, bias.x);
+    set_param(GMB_PARAM_GMB_OFF_ACC_Y, bias.y);
+    set_param(GMB_PARAM_GMB_OFF_ACC_Z, bias.z);
+}
+
+void AP_Gimbal_Parameters::set_accel_gain(const Vector3f& gain)
+{
+    set_param(GMB_PARAM_GMB_GN_ACC_X, gain.x);
+    set_param(GMB_PARAM_GMB_GN_ACC_Y, gain.y);
+    set_param(GMB_PARAM_GMB_GN_ACC_Z, gain.z);
+}
+
 Vector3f AP_Gimbal_Parameters::get_gyro_bias()
 {
     Vector3f ret;
@@ -204,4 +221,9 @@ float AP_Gimbal_Parameters::get_K_rate()
     float ret;
     get_param(GMB_PARAM_GMB_K_RATE,ret);
     return ret;
+}
+
+void AP_Gimbal_Parameters::flash()
+{
+    set_param(GMB_PARAM_GMB_FLASH, 69.0f);
 }

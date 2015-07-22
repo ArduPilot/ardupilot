@@ -30,6 +30,7 @@ enum gmb_param_t {
     GMB_PARAM_GMB_POS_HOLD,
     GMB_PARAM_GMB_MAX_TORQUE,
     GMB_PARAM_GMB_SYSID,
+    GMB_PARAM_GMB_FLASH,
     MAVLINK_GIMBAL_NUM_TRACKED_PARAMS
 };
 
@@ -43,16 +44,21 @@ public:
     void fetch_params();
 
     void get_param(gmb_param_t param, float& value, float def_val = 0.0f);
-    void set_param(mavlink_channel_t chan, gmb_param_t param, float value);
+    void set_param(gmb_param_t param, float value);
 
-    void update(mavlink_channel_t chan);
+    void update();
     void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg);
 
     Vector3f get_accel_bias();
     Vector3f get_accel_gain();
+    void set_accel_bias(const Vector3f& bias);
+    void set_accel_gain(const Vector3f& gain);
     Vector3f get_gyro_bias();
     Vector3f get_joint_bias();
     float get_K_rate();
+    void flash();
+
+    void set_channel(mavlink_channel_t chan) { _chan = chan; }
 
 private:
     static const char* get_param_name(gmb_param_t param);
@@ -68,6 +74,8 @@ private:
     } _params[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
 
     uint32_t _last_request_ms;
+
+    mavlink_channel_t _chan;
 };
 
 
