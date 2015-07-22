@@ -72,7 +72,8 @@ extern const AP_HAL::HAL& hal;
 ////////////////////////////////////////////////////////////
 
 CompassCalibrator::CompassCalibrator():
-_tolerance(COMPASS_CAL_DEFAULT_TOLERANCE)
+_tolerance(COMPASS_CAL_DEFAULT_TOLERANCE),
+_sample_buffer(NULL)
 {
     clear();
 }
