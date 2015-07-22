@@ -979,8 +979,8 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: H_
-    // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli),
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
+    GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
     // @Group: SS1_

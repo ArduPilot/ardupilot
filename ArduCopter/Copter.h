@@ -299,7 +299,7 @@ private:
 #elif FRAME_CONFIG == OCTA_QUAD_FRAME
  #define MOTOR_CLASS AP_MotorsOctaQuad
 #elif FRAME_CONFIG == HELI_FRAME
- #define MOTOR_CLASS AP_MotorsHeli
+ #define MOTOR_CLASS AP_MotorsHeli_Single
 #elif FRAME_CONFIG == SINGLE_FRAME
  #define MOTOR_CLASS AP_MotorsSingle
 #elif FRAME_CONFIG == COAX_FRAME
