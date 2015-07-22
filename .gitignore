@@ -55,11 +55,14 @@
 ArduCopter/Debug/
 ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
+ArduCopter/mav.parm
 ArduCopter/test/*
+ArduCopter/logs/
 ArduPlane/test/*
 ArduPlane/terrain/*.DAT
 ArduPlane/test.ArduPlane/
 APMrover2/test.APMrover2/
+mk/PX4/ROMFS/default.parm
 autotest.lck
 build
 Build.ArduCopter/*
