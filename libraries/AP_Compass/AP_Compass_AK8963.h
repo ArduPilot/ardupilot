@@ -27,8 +27,8 @@ public:
     }
     virtual void register_write(uint8_t address, uint8_t value) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual bool start_conversion() = 0;
     virtual bool configure() = 0;
+    virtual bool start_measurements() = 0;
     virtual void read_raw(struct raw_value *rv) = 0;
     virtual uint32_t get_dev_id() = 0;
 };
@@ -55,7 +55,7 @@ private:
     } state_t;
 
     bool _reset();
-    bool _configure();
+    bool _setup_mode();
     bool _check_id();
     bool _calibrate();
 
@@ -91,8 +91,8 @@ public:
     void register_read(uint8_t address, uint8_t *value, uint8_t count);
     void register_write(uint8_t address, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
-    bool start_conversion();
     bool configure();
+    bool start_measurements();
     void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
@@ -112,8 +112,8 @@ public:
     void register_read(uint8_t address, uint8_t *value, uint8_t count);
     void register_write(uint8_t address, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
-    bool start_conversion(){return true;}
-    bool configure(){return true;}
+    bool configure(){ return true; }
+    bool start_measurements() { return true; }
     void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:

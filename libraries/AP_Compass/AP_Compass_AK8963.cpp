@@ -159,27 +159,27 @@ bool AP_Compass_AK8963::init()
     }
 
     if (!_bus->configure()) {
-        hal.console->printf_P(PSTR("AK8963: Bus not configured for AK8963\n"));
-        goto fail;
-    }
-
-    if (!_configure()) {
-        hal.console->printf_P(PSTR("AK8963: not configured\n"));
+        hal.console->printf("AK8963: Could not configure bus for AK8963\n");
         goto fail;
     }
 
     if (!_check_id()) {
-        hal.console->printf_P(PSTR("AK8963: wrong id\n"));
+        hal.console->printf("AK8963: Wrong id\n");
         goto fail;
     }
 
     if (!_calibrate()) {
-        hal.console->printf_P(PSTR("AK8963: not calibrated\n"));
+        hal.console->printf("AK8963: Could not read calibration data\n");
         goto fail;
     }
 
-    if (!_bus->start_conversion()) {
-        hal.console->printf_P(PSTR("AK8963: conversion not started\n"));
+    if (!_setup_mode()) {
+        hal.console->printf("AK8963: Could not setup mode\n");
+        goto fail;
+    }
+
+    if (!_bus->start_measurements()) {
+        hal.console->printf("AK8963: Could not start measurments\n");
         goto fail;
     }
 
@@ -251,7 +251,7 @@ void AP_Compass_AK8963::_update()
         }
         break;
     case STATE_ERROR:
-        if (_bus->start_conversion()) {
+        if (_bus->start_measurements()) {
             _state = STATE_SAMPLE;
         }
         break;
@@ -277,7 +277,7 @@ bool AP_Compass_AK8963::_check_id()
     return false;
 }
 
-bool AP_Compass_AK8963::_configure() {
+bool AP_Compass_AK8963::_setup_mode() {
     _bus->register_write(AK8963_CNTL1, AK8963_CONTINUOUS_MODE2 | AK8963_16BIT_ADC);
     return true;
 }
@@ -291,8 +291,6 @@ bool AP_Compass_AK8963::_reset()
 
 bool AP_Compass_AK8963::_calibrate()
 {
-    uint8_t cntl1 = _bus->register_read(AK8963_CNTL1);
-
     /* Enable FUSE-mode in order to be able to read calibration data */
     _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | AK8963_16BIT_ADC);
 
@@ -304,8 +302,6 @@ bool AP_Compass_AK8963::_calibrate()
         _magnetometer_ASA[i] = ((data - 128) / 256 + 1);
         error("%d: %lf\n", i, _magnetometer_ASA[i]);
     }
-
-    _bus->register_write(AK8963_CNTL1, cntl1);
 
     return true;
 }
@@ -367,9 +363,9 @@ bool AP_Compass_AK8963::_sem_take_nonblocking()
     if (!hal.scheduler->system_initializing() ) {
         _sem_failure_count++;
         if (_sem_failure_count > 100) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take _bus->sem "
-                                      "100 times in a row, in "
-                                      "AP_Compass_AK8963"));
+            hal.scheduler->panic("PANIC: failed to take _bus->sem "
+                                 "100 times in a row, in "
+                                 "AP_Compass_AK8963");
         }
     }
 
@@ -401,7 +397,7 @@ AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
 
     if (_spi == NULL) {
-        hal.console->println_P(PSTR("Cannot get SPIDevice_MPU9250"));
+        hal.console->printf("Cannot get SPIDevice_MPU9250\n");
         return;
     }
 }
@@ -471,7 +467,7 @@ AP_HAL::Semaphore * AP_AK8963_SerialBus_MPU9250::get_semaphore()
     return _spi->get_semaphore();
 }
 
-bool AP_AK8963_SerialBus_MPU9250::start_conversion()
+bool AP_AK8963_SerialBus_MPU9250::start_measurements()
 {
     const uint8_t count = sizeof(struct raw_value);
 
