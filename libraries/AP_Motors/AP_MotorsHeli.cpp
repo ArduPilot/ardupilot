@@ -695,33 +695,40 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
         _servo_2.servo_out += 500;
     }
     _servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_servo_3.radio_trim-1500);
-    _servo_4.servo_out = yaw_out + yaw_offset;
-
-    // constrain yaw and update limits
-    if (_servo_4.servo_out < -4500) {
-        _servo_4.servo_out = -4500;
-        limit.yaw = true;
-    }
-    if (_servo_4.servo_out > 4500) {
-        _servo_4.servo_out = 4500;
-        limit.yaw = true;
-    }
 
     // use servo_out to calculate pwm_out and radio_out
     _servo_1.calc_pwm();
     _servo_2.calc_pwm();
     _servo_3.calc_pwm();
-    _servo_4.calc_pwm();
 
     // actually move the servos
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
+ 
+    // update the yaw rate using the tail rotor/servo
+    output_yaw(yaw_out + yaw_offset);
+}
+
+// output_yaw
+void AP_MotorsHeli::output_yaw(int16_t yaw_out)
+{
+    _servo_4.servo_out = constrain_int16(yaw_out, -4500, 4500);
+
+    if (_servo_4.servo_out != yaw_out) {
+        limit.yaw = true;
+    }
+
+    _servo_4.calc_pwm();
+
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
 
-    // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {
+        // output gain to exernal gyro
         write_aux(_ext_gyro_gain);
+    } else if (_tail_type == AP_MOTORS_HELI_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
+        // output yaw servo to tail rsc
+        write_aux(_servo_4.servo_out);
     }
 }
 
