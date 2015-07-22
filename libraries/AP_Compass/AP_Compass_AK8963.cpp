@@ -397,25 +397,22 @@ void AP_AK8963_SerialBus_MPU9250::register_read(uint8_t address, uint8_t *value,
 
 void AP_AK8963_SerialBus_MPU9250::_read(uint8_t address, uint8_t *buf, uint32_t count)
 {
-    ASSERT(count < 150);
-    uint8_t tx[150];
-    uint8_t rx[150];
+    ASSERT(count < 32);
 
-    tx[0] = address | READ_FLAG;
-    tx[1] = 0;
+    address |= READ_FLAG;
+    uint8_t tx[32] = { address, };
+    uint8_t rx[32] = { };
+
     _spi->transaction(tx, rx, count + 1);
-
     memcpy(buf, rx + 1, count);
 }
 
 void AP_AK8963_SerialBus_MPU9250::_write(uint8_t address, const uint8_t *buf, uint32_t count)
 {
     ASSERT(count < 2);
-    uint8_t tx[2];
+    uint8_t tx[2] = { address, };
 
-    tx[0] = address;
     memcpy(tx+1, buf, count);
-
     _spi->transaction(tx, NULL, count + 1);
 }
 
