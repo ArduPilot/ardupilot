@@ -50,12 +50,6 @@
 #define AK8963_WIA                                      0x00
 #        define AK8963_Device_ID                        0x48
 
-#define AK8963_INFO                                     0x01
-
-#define AK8963_ST1                                      0x02
-#        define AK8963_DRDY                             0x01
-#        define AK8963_DOR                              0x02
-
 #define AK8963_HXL                                      0x03
 
 /* bit definitions for AK8963 CNTL1 */
@@ -464,7 +458,7 @@ bool AP_AK8963_SerialBus_MPU9250::start_measurements()
      * master: we will get the result directly from MPU9250's registers starting
      * from MPUREG_EXT_SENS_DATA_00 when read_raw() is called */
     _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);
-    _write(MPUREG_I2C_SLV0_REG, AK8963_INFO);
+    _write(MPUREG_I2C_SLV0_REG, AK8963_HXL);
     _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 
     return true;
@@ -494,7 +488,7 @@ void AP_AK8963_SerialBus_I2C::register_read(uint8_t address, uint8_t *value, uin
 
 void AP_AK8963_SerialBus_I2C::read_raw(struct raw_value *rv)
 {
-    _i2c->readRegisters(_addr, AK8963_INFO, sizeof(*rv), (uint8_t *) rv);
+    _i2c->readRegisters(_addr, AK8963_HXL, sizeof(*rv), (uint8_t *) rv);
 }
 
 AP_HAL::Semaphore * AP_AK8963_SerialBus_I2C::get_semaphore()
