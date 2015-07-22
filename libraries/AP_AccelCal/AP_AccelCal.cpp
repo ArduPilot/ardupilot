@@ -94,6 +94,8 @@ void AP_AccelCal::update()
                 }
                 _printf("Calibration successful");
                 clear();
+                hal.scheduler->delay(1000);
+                hal.scheduler->reboot(false);
                 return;
             default:
             case ACCEL_CAL_FAILED:
