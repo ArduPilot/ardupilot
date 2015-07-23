@@ -326,16 +326,20 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         // still be changing its state from the application of the
         // strap excitation. After that we accept values in a
         // reasonable range
+#define IS_CALIBRATION_VALUE_VALID(val) (val > 0.7f && val < 1.35f)
+
         if (numAttempts > 2 &&
-            cal[0] > 0.7f && cal[0] < 1.35f &&
-            cal[1] > 0.7f && cal[1] < 1.35f &&
-            cal[2] > 0.7f && cal[2] < 1.35f) {
-            // hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
+            IS_CALIBRATION_VALUE_VALID(cal[0]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[1]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[2])) {
+            // hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
             good_count++;
             calibration[0] += cal[0];
             calibration[1] += cal[1];
             calibration[2] += cal[2];
         }
+
+#undef IS_CALIBRATION_VALUE_VALID
 
 #if 0
         /* useful for debugging */
