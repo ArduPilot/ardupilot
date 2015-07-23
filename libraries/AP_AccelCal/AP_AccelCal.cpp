@@ -159,6 +159,14 @@ void AP_AccelCal::collect_sample()
     if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
         return;
     }
+
+    for(uint8_t i=0; i<_num_clients; i++) {
+        if (_clients[i]->_acal_get_calibrator(0) && !_clients[i]->_acal_ready_to_sample()) {
+            _printf("Not ready to sample");
+            return;
+        }
+    }
+
     AccelCalibrator *cal;
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->collect_sample();

@@ -45,6 +45,7 @@ class AP_AccelCal_Client {
 friend class AP_AccelCal;
 private:
     virtual void _acal_save_calibrations() = 0;
+    virtual bool _acal_ready_to_sample() { return true; }
     virtual void _acal_cancelled() {};
     virtual AccelCalibrator* _acal_get_calibrator(uint8_t instance) = 0;
 };
