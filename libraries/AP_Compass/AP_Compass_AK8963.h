@@ -45,6 +45,7 @@ public:
 
 private:
     void _make_factory_sensitivity_adjustment(Vector3f& field) const;
+    void _make_adc_sensitivity_adjustment(Vector3f& field) const;
     Vector3f _get_filtered_field() const;
     void _reset_filter();
 
