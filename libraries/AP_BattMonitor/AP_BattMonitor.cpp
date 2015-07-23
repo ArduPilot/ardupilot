@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
     // @User: Standard
     AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], BattMonitor_TYPE_NONE),
 
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
     // @User: Standard
     AP_GROUPINFO("2_MONITOR", 11, AP_BattMonitor, _monitoring[1], BattMonitor_TYPE_NONE),
 
