@@ -33,13 +33,13 @@ public:
 
       This returns true if the message should be processed locally
     */
-    bool check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg);
+    bool check_and_forward(mavlink_channel_t in_channel, mavlink_message_t* msg);
 
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
     */
-    void send_to_components(const mavlink_message_t* msg);
+    void send_to_components(mavlink_message_t* msg);
 
 private:
     // a simple linear routing table. We don't expect to have a lot of
@@ -49,6 +49,7 @@ private:
         uint8_t sysid;
         uint8_t compid;
         mavlink_channel_t channel;
+        uint8_t seq;
     } routes[MAVLINK_MAX_ROUTES];
 
     // learn new routes

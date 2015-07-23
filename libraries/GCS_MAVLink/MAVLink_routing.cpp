@@ -90,7 +90,7 @@ detect a reset of the flight controller, which implies a reset of its
 routing table.
 
 */
-bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t* msg)
+bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, mavlink_message_t* msg)
 {
     // handle the case of loopback of our own messages, due to
     // incorrect serial configuration.
@@ -138,10 +138,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                         (broadcast_component || target_component == routes[i].compid))){
                     if (comm_get_txspace(routes[i].channel) >=
                             ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                        msg->seq = routes[i].seq++;
                         _mavlink_resend_uart(routes[i].channel, msg);
                         #if ROUTING_DEBUG
-                        ::printf("fwd msg %u from chan %u on chan %u sysid=%i compid=%i\n",
+                        ::printf("fwd msg %u seq %u from chan %u on chan %u sysid=%i compid=%i\n",
                                  msg->msgid,
+                                 (unsigned)routes[i].seq,
                                  (unsigned)in_channel,
                                  (unsigned)routes[i].channel,
                                  target_system,
@@ -166,7 +168,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
 
   This is a no-op if no routes to components have been learned
 */
-void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
+void MAVLink_routing::send_to_components( mavlink_message_t* msg)
 {
     bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
@@ -175,12 +177,14 @@ void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
     for (uint8_t i=0; i<num_routes; i++) {
         if ((routes[i].sysid == mavlink_system.sysid) && !sent_to_chan[routes[i].channel]) {
             if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                msg->seq = routes[i].seq++;
 #if ROUTING_DEBUG
-                ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
+                ::printf("send msg %u on chan %u sysid=%u compid=%u seq=%u\n",
                          msg->msgid,
                          (unsigned)routes[i].channel,
                          (unsigned)routes[i].sysid,
-                         (unsigned)routes[i].compid);
+                         (unsigned)routes[i].compid,
+                         (unsigned)routes[i].seq);
 #endif
                 _mavlink_resend_uart(routes[i].channel, msg);
                 sent_to_chan[routes[i].channel] = true;
@@ -211,6 +215,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         routes[i].sysid = msg->sysid;
         routes[i].compid = msg->compid;
         routes[i].channel = in_channel;
+        routes[i].seq = 0;
         num_routes++;
 #if ROUTING_DEBUG
         ::printf("learned route %u %u via %u\n",
