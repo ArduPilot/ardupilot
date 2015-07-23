@@ -229,7 +229,6 @@ AP_Compass_HMC5843::init()
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
-    float gain_multiple = 1.0;
 
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
@@ -252,10 +251,9 @@ AP_Compass_HMC5843::init()
          */
         expected_x = 766;
         expected_yz  = 713;
-        gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
     }
 
-    if (!_calibrate(calibration_gain, expected_x, expected_yz, gain_multiple)) {
+    if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
         goto errout;
     }
 
@@ -289,8 +287,7 @@ errout:
 
 bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         uint16_t expected_x,
-        uint16_t expected_yz,
-        float gain_multiple)
+        uint16_t expected_yz)
 {
     int numAttempts = 0, good_count = 0;
     bool success = false;
@@ -365,21 +362,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
     }
 
     if (good_count >= 5) {
-        /*
-          The use of gain_multiple below is incorrect, as the gain
-          difference between 2.5Ga mode and 1Ga mode is already taken
-          into account by the expected_x and expected_yz values.  We
-          are not going to fix it however as it would mean all
-          APM1/APM2 users redoing their compass calibration. The
-          impact is that the values we report on APM1/APM2 are lower
-          than they should be (by a multiple of about 0.6). This
-          doesn't have any impact other than the learned compass
-          offsets
-         */
-
-        _scaling[0] = sum_excited[0] / good_count * gain_multiple;
-        _scaling[1] = sum_excited[1] / good_count * gain_multiple;
-        _scaling[2] = sum_excited[2] / good_count * gain_multiple;
+        _scaling[0] = sum_excited[0] / good_count;
+        _scaling[1] = sum_excited[1] / good_count;
+        _scaling[2] = sum_excited[2] / good_count;
 
         success = true;
     } else {
