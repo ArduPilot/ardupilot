@@ -126,7 +126,7 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     Vector3f ekf_gyro_bias;
     _ekf.getGyroBias(ekf_gyro_bias);
     ang_vel -= ekf_gyro_bias;
-    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
+    float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+0.5f),0.0f,1.0f);
     _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
     _ang_vel_mag_filt = min(_ang_vel_mag_filt,20.0f);
 
