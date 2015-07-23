@@ -164,19 +164,19 @@ void AP_Gimbal::update_state()
     switch(_mode) {
         case GIMBAL_MODE_POS_HOLD_FF:
             gimbalRateDemVec += getGimbalRateBodyLock();
+            gimbalRateDemVec += getGimbalRateDemVecGyroBias();
             break;
         case GIMBAL_MODE_STABILIZE:
             gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
             gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
             gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
+            gimbalRateDemVec += getGimbalRateDemVecGyroBias();
             break;
         default:
         case GIMBAL_MODE_IDLE:
         case GIMBAL_MODE_POS_HOLD:
             break;
     }
-
-    gimbalRateDemVec += getGimbalRateDemVecGyroBias();
 
     float gimbalRateDemVecLen = gimbalRateDemVec.length();
     if (gimbalRateDemVecLen > radians(400)) {
@@ -321,15 +321,15 @@ Vector3f AP_Gimbal::getGimbalRateBodyLock()
         vehicle_to_gimbal_quat_filt.inverse().rotation_matrix(Tvg);
 
         // multiply the joint angles by a gain to calculate a rate vector required to keep the joints centred
-        Vector3f gimbalRateDemVecYaw;
-        gimbalRateDemVecYaw.x = - _gimbalParams.get_K_rate() * filtered_joint_angles.x;
-        gimbalRateDemVecYaw.y = - _gimbalParams.get_K_rate() * filtered_joint_angles.y;
-        gimbalRateDemVecYaw.z = - _gimbalParams.get_K_rate() * filtered_joint_angles.z;
+        Vector3f gimbalRateDemVecBodyLock;
+        gimbalRateDemVecBodyLock = filtered_joint_angles * -_gimbalParams.get_K_rate();
+
+        joint_rates_to_gimbal_ang_vel(gimbalRateDemVecBodyLock, gimbalRateDemVecBodyLock);
 
         // Add a feedforward term from vehicle gyros
-        gimbalRateDemVecYaw += Tvg * _ahrs.get_gyro();
+        gimbalRateDemVecBodyLock += Tvg * _ahrs.get_gyro();
 
-        return gimbalRateDemVecYaw;
+        return gimbalRateDemVecBodyLock;
 }
 
 void AP_Gimbal::send_control(mavlink_channel_t chan)
