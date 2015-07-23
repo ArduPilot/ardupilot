@@ -269,7 +269,7 @@ AP_Compass_HMC5843::init()
 
 #if 0
     hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"),
-                          calibration[0], calibration[1], calibration[2]);
+                          _scaling[0], _scaling[1], _scaling[2]);
 #endif
 
     _compass_instance = register_compass();
@@ -336,9 +336,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
             IS_CALIBRATION_VALUE_VALID(cal[2])) {
             // hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
             good_count++;
-            calibration[0] += cal[0];
-            calibration[1] += cal[1];
-            calibration[2] += cal[2];
+            _scaling[0] += cal[0];
+            _scaling[1] += cal[1];
+            _scaling[2] += cal[2];
         }
 
 #undef IS_CALIBRATION_VALUE_VALID
@@ -362,15 +362,15 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
           doesn't have any impact other than the learned compass
           offsets
          */
-        calibration[0] = calibration[0] * gain_multiple / good_count;
-        calibration[1] = calibration[1] * gain_multiple / good_count;
-        calibration[2] = calibration[2] * gain_multiple / good_count;
+        _scaling[0] = _scaling[0] * gain_multiple / good_count;
+        _scaling[1] = _scaling[1] * gain_multiple / good_count;
+        _scaling[2] = _scaling[2] * gain_multiple / good_count;
         success = true;
     } else {
         /* best guess */
-        calibration[0] = 1.0;
-        calibration[1] = 1.0;
-        calibration[2] = 1.0;
+        _scaling[0] = 1.0;
+        _scaling[1] = 1.0;
+        _scaling[2] = 1.0;
     }
 
     return success;
@@ -404,9 +404,9 @@ void AP_Compass_HMC5843::read()
        }
     }
 
-    Vector3f field(_mag_x_accum * calibration[0],
-                   _mag_y_accum * calibration[1],
-                   _mag_z_accum * calibration[2]);
+    Vector3f field(_mag_x_accum * _scaling[0],
+                   _mag_y_accum * _scaling[1],
+                   _mag_z_accum * _scaling[2]);
     field /= _accum_count;
 
     _accum_count = 0;
