@@ -328,14 +328,18 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         // strap excitation. After that we accept values in a
         // reasonable range
 
+        if (numAttempts <= 2) {
+            continue;
+        }
+
 #define IS_CALIBRATION_VALUE_VALID(val) (val > 0.7f && val < 1.35f)
 
-        if (numAttempts > 2 &&
-            IS_CALIBRATION_VALUE_VALID(cal[0]) &&
+        if (IS_CALIBRATION_VALUE_VALID(cal[0]) &&
             IS_CALIBRATION_VALUE_VALID(cal[1]) &&
             IS_CALIBRATION_VALUE_VALID(cal[2])) {
             // hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
             good_count++;
+
             _scaling[0] += cal[0];
             _scaling[1] += cal[1];
             _scaling[2] += cal[2];
