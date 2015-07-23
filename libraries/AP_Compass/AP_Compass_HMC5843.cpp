@@ -150,37 +150,37 @@ void AP_Compass_HMC5843::accumulate(void)
         // have the right orientation!)
         return;
     }
-   uint32_t tnow = hal.scheduler->micros();
-   if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
-	  // the compass gets new data at 75Hz
-	  return;
-   }
+    uint32_t tnow = hal.scheduler->micros();
+    if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
+        // the compass gets new data at 75Hz
+        return;
+    }
 
-   if (!_i2c_sem->take(1)) {
-       // the bus is busy - try again later
-       return;
-   }
-   bool result = read_raw();
-   _i2c_sem->give();
+    if (!_i2c_sem->take(1)) {
+        // the bus is busy - try again later
+        return;
+    }
+    bool result = read_raw();
+    _i2c_sem->give();
 
-   if (result) {
-	  // the _mag_N values are in the range -2048 to 2047, so we can
-	  // accumulate up to 15 of them in an int16_t. Let's make it 14
-	  // for ease of calculation. We expect to do reads at 10Hz, and
-	  // we get new data at most 75Hz, so we don't expect to
-	  // accumulate more than 8 before a read
-	  _mag_x_accum += _mag_x;
-	  _mag_y_accum += _mag_y;
-	  _mag_z_accum += _mag_z;
-	  _accum_count++;
-	  if (_accum_count == 14) {
-		 _mag_x_accum /= 2;
-		 _mag_y_accum /= 2;
-		 _mag_z_accum /= 2;
-		 _accum_count = 7;
-	  }
-	  _last_accum_time = tnow;
-   }
+    if (result) {
+        // the _mag_N values are in the range -2048 to 2047, so we can
+        // accumulate up to 15 of them in an int16_t. Let's make it 14
+        // for ease of calculation. We expect to do reads at 10Hz, and
+        // we get new data at most 75Hz, so we don't expect to
+        // accumulate more than 8 before a read
+        _mag_x_accum += _mag_x;
+        _mag_y_accum += _mag_y;
+        _mag_z_accum += _mag_z;
+        _accum_count++;
+        if (_accum_count == 14) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 7;
+        }
+        _last_accum_time = tnow;
+    }
 }
 
 
@@ -291,14 +291,14 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
     int numAttempts = 0, good_count = 0;
     bool success = false;
 
-    while ( success == 0 && numAttempts < 25 && good_count < 5)
+    while (success == 0 && numAttempts < 25 && good_count < 5)
     {
-        // record number of attempts at initialisation
         numAttempts++;
 
         // force positiveBias (compass should return 715 for all channels)
         if (!write_register(ConfigRegA, PositiveBiasConfig))
-            continue;      // compass not responding on the bus
+            continue;   // compass not responding on the bus
+
         hal.scheduler->delay(50);
 
         // set gains
@@ -316,6 +316,7 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         float cal[3];
 
         // hal.console->printf_P(PSTR("mag %d %d %d\n"), _mag_x, _mag_y, _mag_z);
+
         cal[0] = fabsf(expected_x / (float)_mag_x);
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
@@ -326,6 +327,7 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         // still be changing its state from the application of the
         // strap excitation. After that we accept values in a
         // reasonable range
+
 #define IS_CALIBRATION_VALUE_VALID(val) (val > 0.7f && val < 1.35f)
 
         if (numAttempts > 2 &&
@@ -389,26 +391,26 @@ void AP_Compass_HMC5843::read()
         }
         if (!re_initialise()) {
             _retry_time = hal.scheduler->millis() + 1000;
-			hal.i2c->setHighSpeed(false);
+            hal.i2c->setHighSpeed(false);
             return;
         }
     }
 
-	if (_accum_count == 0) {
-	   accumulate();
+    if (_accum_count == 0) {
+       accumulate();
        if (_retry_time != 0) {
-		  hal.i2c->setHighSpeed(false);
-		  return;
-	   }
-	}
+          hal.i2c->setHighSpeed(false);
+          return;
+       }
+    }
 
     Vector3f field(_mag_x_accum * calibration[0],
                    _mag_y_accum * calibration[1],
                    _mag_z_accum * calibration[2]);
     field /= _accum_count;
 
-	_accum_count = 0;
-	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     // rotate to the desired orientation
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
