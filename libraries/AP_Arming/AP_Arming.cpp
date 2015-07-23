@@ -27,13 +27,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("REQUIRE",     0,      AP_Arming,  require,                 1),
 
-    // @Param: DIS_RUD
-    // @DisplayName: Disable Rudder Arming
-    // @Description: Do not allow arming via the rudder input stick.
-    // @Values: 0:Disabled (Rudder Arming Allowed),1:Enabled(No Rudder Arming)
-    // @User: Advanced
-    AP_GROUPINFO("DIS_RUD",     1,     AP_Arming,  disable_rudder_arm,       0),
-    
     // @Param: CHECK
     // @DisplayName: Arm Checks to Peform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed befor allowing arming. The default is no checks, allowing arming at any time. You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72. For most users it is recommended that you set this to 1 to enable all checks.
@@ -41,6 +34,13 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    // @Param: RUDDER
+    // @DisplayName: Rudder Arming
+    // @Description: Control arm/disarm by rudder input. When enabled arming is done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero
+    // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
+    // @User: Advanced
+    AP_GROUPINFO("RUDDER",       3,     AP_Arming,  rudder_arming_value,     ARMING_RUDDER_ARMONLY),
+    
     AP_GROUPEND
 };
 
@@ -414,10 +414,3 @@ AP_Arming::ArmingRequired AP_Arming::arming_required()
     return (AP_Arming::ArmingRequired)require.get();
 }
 
-bool AP_Arming::rudder_arming_enabled() 
-{
-    if (disable_rudder_arm == 0)
-        return true;
-
-    return false;
-}
