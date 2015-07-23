@@ -133,33 +133,37 @@ AP_BattMonitor::init()
         return;
     }
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    // force monitor for bebop
+    _monitoring[0] = BattMonitor_TYPE_BEBOP;
+#endif
+
     // create each instance
     for (uint8_t instance=0; instance<AP_BATT_MONITOR_MAX_INSTANCES; instance++) {
         uint8_t monitor_type = _monitoring[instance];
-
-        // check for analog instance
-#if CONFIG_HAL_BOARD_TYPE == CONFIG_HAL_BOARD_TYPE_LINUX && \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-        if (monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT) {
-              state[instance].instance = instance;
-              drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
-              _num_instances++;
-        } else
-#endif
-        if (monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY || monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
-            _num_instances++;
-
-        // check for SMBus
-        } else if (monitor_type == BattMonitor_TYPE_SMBUS) {
-            state[instance].instance = instance;
+        switch (monitor_type) {
+            case BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
+            case BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_SMBUS:
+                state[instance].instance = instance;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-            drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_SMBus_PX4(*this, instance, state[instance]);
 #else
-            drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance]);
+                drivers[instance] = new AP_BattMonitor_SMBus_I2C(*this, instance, state[instance]);
 #endif
-            _num_instances++;
+                _num_instances++;
+                break;
+            case BattMonitor_TYPE_BEBOP:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+                state[instance].instance = instance;
+                drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
+                _num_instances++;
+#endif
+                break;
         }
 
         // call init function for each backend
