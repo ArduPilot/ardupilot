@@ -12,7 +12,7 @@
 class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 private:
-    float               calibration[3] = {0};
+    float               _scaling[3] = {0};
     bool                _initialised;
     bool                read_raw(void);
     uint8_t             _base_config;
