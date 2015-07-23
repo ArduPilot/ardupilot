@@ -2,6 +2,7 @@
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
+#include "AP_BattMonitor_Bebop.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -137,6 +138,14 @@ AP_BattMonitor::init()
         uint8_t monitor_type = _monitoring[instance];
 
         // check for analog instance
+#if CONFIG_HAL_BOARD_TYPE == CONFIG_HAL_BOARD_TYPE_LINUX && \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+        if (monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT) {
+              state[instance].instance = instance;
+              drivers[instance] = new AP_BattMonitor_Bebop(*this, instance, state[instance]);
+              _num_instances++;
+        } else
+#endif
         if (monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY || monitor_type == BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT) {
             state[instance].instance = instance;
             drivers[instance] = new AP_BattMonitor_Analog(*this, instance, state[instance]);
