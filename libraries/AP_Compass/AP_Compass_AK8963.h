@@ -12,6 +12,11 @@
 class AP_AK8963_SerialBus
 {
 public:
+    struct PACKED raw_value {
+        int16_t val[3];
+        uint8_t st2;
+    };
+
     virtual void register_read(uint8_t address, uint8_t *value, uint8_t count) = 0;
     uint8_t register_read(uint8_t address) {
         uint8_t reg;
@@ -20,9 +25,9 @@ public:
     }
     virtual void register_write(uint8_t address, uint8_t value) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual bool start_conversion() = 0;
     virtual bool configure() = 0;
-    virtual bool read_raw(float &mag_x, float &mag_y, float &mag_z) = 0;
+    virtual bool start_measurements() = 0;
+    virtual void read_raw(struct raw_value *rv) = 0;
     virtual uint32_t get_dev_id() = 0;
 };
 
@@ -39,32 +44,22 @@ public:
     void        accumulate(void);
 
 private:
-    typedef enum
-    {
-        STATE_UNKNOWN,
-        STATE_CONVERSION,
-        STATE_SAMPLE,
-        STATE_ERROR
-    } state_t;
+    void _make_factory_sensitivity_adjustment(Vector3f& field) const;
+    Vector3f _get_filtered_field() const;
+    void _reset_filter();
 
     bool _reset();
-    bool _configure();
+    bool _setup_mode();
     bool _check_id();
     bool _calibrate();
 
     void _update();
-    bool _collect_samples();
     void _dump_registers();
     bool _sem_take_blocking();
     bool _sem_take_nonblocking();
     bool _sem_give();
 
-    state_t             _state;
-
     float               _magnetometer_ASA[3] {0, 0, 0};
-    float               _mag_x;
-    float               _mag_y;
-    float               _mag_z;
     uint8_t             _compass_instance;
 
     float               _mag_x_accum;
@@ -73,7 +68,6 @@ private:
     uint32_t            _accum_count;
 
     bool                _initialized;
-    uint8_t             _magnetometer_adc_resolution;
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
 
@@ -88,9 +82,9 @@ public:
     void register_read(uint8_t address, uint8_t *value, uint8_t count);
     void register_write(uint8_t address, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
-    bool start_conversion();
     bool configure();
-    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    bool start_measurements();
+    void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
@@ -109,9 +103,9 @@ public:
     void register_read(uint8_t address, uint8_t *value, uint8_t count);
     void register_write(uint8_t address, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
-    bool start_conversion(){return true;}
-    bool configure(){return true;}
-    bool read_raw(float &mag_x, float &mag_y, float &mag_z);
+    bool configure(){ return true; }
+    bool start_measurements() { return true; }
+    void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
     void _read(uint8_t address, uint8_t *value, uint32_t count);
@@ -120,7 +114,7 @@ private:
         _write(address, &value, 1);
     }
     AP_HAL::I2CDriver *_i2c;
-    uint8_t _addr;
     AP_HAL::Semaphore *_i2c_sem;
+    uint8_t _addr;
 };
 #endif
