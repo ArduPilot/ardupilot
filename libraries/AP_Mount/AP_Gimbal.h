@@ -131,6 +131,7 @@ private:
 
     AccelCalibrator _calibrator;
     void _acal_save_calibrations();
+    bool _acal_ready_to_sample();
     AccelCalibrator* _acal_get_calibrator(uint8_t instance);
 
     mavlink_channel_t _chan;

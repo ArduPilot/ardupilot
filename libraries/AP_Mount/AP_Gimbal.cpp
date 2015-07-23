@@ -110,7 +110,7 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.joint_angles.y = report_msg.joint_el;
     _measurement.joint_angles.z = report_msg.joint_az;
 
-    if (_calibrator.get_status() == ACCEL_CAL_COLLECTING_SAMPLE && _ang_vel_mag_filt < radians(10)) {
+    if (_calibrator.get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
         _calibrator.new_sample(_measurement.delta_velocity,_measurement.delta_time);
     }
 
@@ -121,12 +121,14 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.delta_velocity.y *= _gimbalParams.get_accel_gain().y;
     _measurement.delta_velocity.z *= _gimbalParams.get_accel_gain().z;
 
+    // update _ang_vel_mag_filt, used for accel sample readiness
     Vector3f ang_vel = _measurement.delta_angles / _measurement.delta_time;
     Vector3f ekf_gyro_bias;
     _ekf.getGyroBias(ekf_gyro_bias);
     ang_vel -= ekf_gyro_bias;
     float alpha = constrain_float(_measurement.delta_time/(_measurement.delta_time+1.0f),0.0f,1.0f);
     _ang_vel_mag_filt += (ang_vel.length()-_ang_vel_mag_filt)*alpha;
+    _ang_vel_mag_filt = min(_ang_vel_mag_filt,20.0f);
 
     // get complementary filter inputs
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
@@ -370,6 +372,11 @@ AccelCalibrator* AP_Gimbal::_acal_get_calibrator(uint8_t instance)
     } else {
         return NULL;
     }
+}
+
+bool AP_Gimbal::_acal_ready_to_sample()
+{
+    return _ang_vel_mag_filt < radians(10);
 }
 
 void AP_Gimbal::_acal_save_calibrations()
