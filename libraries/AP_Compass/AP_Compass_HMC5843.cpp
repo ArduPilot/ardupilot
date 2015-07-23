@@ -295,6 +295,8 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
     int numAttempts = 0, good_count = 0;
     bool success = false;
 
+    float sum_excited[3] = {0.0f, 0.0f, 0.0f};
+
     while (success == 0 && numAttempts < 25 && good_count < 5)
     {
         numAttempts++;
@@ -345,9 +347,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
             IS_CALIBRATION_VALUE_VALID(cal[1]) &&
             IS_CALIBRATION_VALUE_VALID(cal[2])) {
 
-            _scaling[0] += cal[0];
-            _scaling[1] += cal[1];
-            _scaling[2] += cal[2];
+            sum_excited[0] += cal[0];
+            sum_excited[1] += cal[1];
+            sum_excited[2] += cal[2];
 
             good_count++;
         /* hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]); */
@@ -374,9 +376,11 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
           doesn't have any impact other than the learned compass
           offsets
          */
-        _scaling[0] = _scaling[0] * gain_multiple / good_count;
-        _scaling[1] = _scaling[1] * gain_multiple / good_count;
-        _scaling[2] = _scaling[2] * gain_multiple / good_count;
+
+        _scaling[0] = sum_excited[0] / good_count * gain_multiple;
+        _scaling[1] = sum_excited[1] / good_count * gain_multiple;
+        _scaling[2] = sum_excited[2] / good_count * gain_multiple;
+
         success = true;
     } else {
         /* best guess */
