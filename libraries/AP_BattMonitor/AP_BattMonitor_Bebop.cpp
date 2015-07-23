@@ -25,7 +25,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define SIZEOF_ARRAY(x) (sizeof((x)[0])/sizeof((x)))
 #define BATTERY_CAPACITY (1200U) /* mAh */
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
 
@@ -105,7 +104,7 @@ float AP_BattMonitor_Bebop::_compute_compensation(const uint16_t *rpm,
     vbat = vbat_raw;
     for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
         res = 0;
-        for (j = 0; j < SIZEOF_ARRAY(bat_comp_polynomial_coeffs); j++)
+        for (j = 0; j < ARRAY_SIZE(bat_comp_polynomial_coeffs); j++)
             res = res * rpm[i] + bat_comp_polynomial_coeffs[j];
 
         vbat -= res;
@@ -151,7 +150,6 @@ void AP_BattMonitor_Bebop::read(void)
     ret = rcout->read_obs_data(data);
     if (ret < 0) {
         _state.healthy = false;
-        hal.console->printf("read_obs_data failed %d\n", ret);
         return;
     }
 
