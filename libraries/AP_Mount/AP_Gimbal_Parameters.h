@@ -38,6 +38,7 @@ class AP_Gimbal_Parameters
 {
 public:
     AP_Gimbal_Parameters();
+    void reset();
 
     bool initialized();
     bool received_all();

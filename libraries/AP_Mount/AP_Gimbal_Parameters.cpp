@@ -73,6 +73,12 @@ bool AP_Gimbal_Parameters::initialized()
     return true;
 }
 
+void AP_Gimbal_Parameters::reset()
+{
+    memset(_params,0,sizeof(_params));
+    _last_request_ms = 0;
+}
+
 bool AP_Gimbal_Parameters::received_all()
 {
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {

@@ -13,7 +13,7 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Gimbal::present()
 {
-    return hal.scheduler->millis() - _last_report_msg_ms < 10000;
+    return hal.scheduler->millis() - _last_report_msg_ms < 1000;
 }
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
@@ -24,12 +24,17 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
         return;
     }
 
+    _last_report_msg_ms = hal.scheduler->millis();
+
     mavlink_gimbal_report_t report_msg;
     mavlink_msg_gimbal_report_decode(msg, &report_msg);
     extract_feedback(report_msg);
 
     if(report_msg.target_system != 1) {
+        // gimbal must have been power cycled or reconnected
+        _gimbalParams.reset();
         _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
+        return;
     }
 
     update_mode();
@@ -94,8 +99,6 @@ void AP_Gimbal::update_fast() {
 
 void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
 {
-    _last_report_msg_ms = hal.scheduler->millis();
-
     _measurement.delta_time = report_msg.delta_time;
     _measurement.delta_angles.x = report_msg.delta_angle_x;
     _measurement.delta_angles.y = report_msg.delta_angle_y;
