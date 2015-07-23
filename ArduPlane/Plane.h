@@ -643,6 +643,8 @@ private:
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time = false;
 
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
 
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);

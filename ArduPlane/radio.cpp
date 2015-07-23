@@ -76,27 +76,25 @@ void Plane::init_rc_out()
     }
 }
 
-// check for pilot input on rudder stick for arming/disarming
+/*
+  check for pilot input on rudder stick for arming/disarming
+*/
 void Plane::rudder_arm_disarm_check()
 {
-    //TODO: ensure rudder arming disallowed during radio calibration
+    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
 
-    //TODO: waggle ailerons and rudder and beep after rudder arming
-    
-    static uint32_t rudder_arm_timer;
-
-    if (! arming.rudder_arming_enabled()) {
+    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
         //parameter disallows rudder arming/disabling
         return;
     }
 
-    //if throttle is not down, then pilot cannot rudder arm/disarm
+    // if throttle is not down, then pilot cannot rudder arm/disarm
     if (channel_throttle->control_in > 0) {
         rudder_arm_timer = 0;
         return;
     }
 
-    //if not in a 'manual' mode then disallow rudder arming/disarming
+    // if not in a manual throttle mode then disallow rudder arming/disarming
     if (auto_throttle_mode ) {
         rudder_arm_timer = 0;
         return;      
@@ -110,7 +108,9 @@ void Plane::rudder_arm_disarm_check()
 			if (rudder_arm_timer == 0 ||
 				now - rudder_arm_timer < 3000) {
 
-				if (rudder_arm_timer == 0) rudder_arm_timer = now;
+				if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
 			} else {
 				//time to arm!
 				arm_motors(AP_Arming::RUDDER);
@@ -120,15 +120,16 @@ void Plane::rudder_arm_disarm_check()
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if (!is_flying()) {
+	} else if (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM && !is_flying()) {
 		// when armed and not flying, full left rudder starts disarming counter
 		if (channel_rudder->control_in < -4000) {
 			uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||
 				now - rudder_arm_timer < 3000) {
-
-				if (rudder_arm_timer == 0) rudder_arm_timer = now;
+				if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
 			} else {
 				//time to disarm!
 				disarm_motors();
