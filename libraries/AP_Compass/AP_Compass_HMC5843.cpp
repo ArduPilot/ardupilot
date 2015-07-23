@@ -74,7 +74,6 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _product_id(0)
 {}
 
-// detect the sensor
 AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
 {
     AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass);
@@ -88,7 +87,6 @@ AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
     return sensor;
 }
 
-// read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
     if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
@@ -98,7 +96,6 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
     return true;
 }
 
-// write_register - update a register value
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
     if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
@@ -108,7 +105,6 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
     return true;
 }
 
-// Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
     uint8_t buff[6];
@@ -140,8 +136,6 @@ bool AP_Compass_HMC5843::read_raw()
     return true;
 }
 
-
-// accumulate a reading from the magnetometer
 void AP_Compass_HMC5843::accumulate(void)
 {
     if (!_initialised) {
@@ -222,9 +216,7 @@ bool AP_Compass_HMC5843::_detect_version()
 
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
-bool
-AP_Compass_HMC5843::init()
+bool AP_Compass_HMC5843::init()
 {
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
@@ -244,10 +236,9 @@ AP_Compass_HMC5843::init()
 
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         calibration_gain = 0x60;
-        /*
-          note that the HMC5883 datasheet gives the x and y expected
-          values as 766 and the z as 713. Experiments have shown the x
-          axis is around 766, and the y and z closer to 713.
+        /* Note that the HMC5883 datasheet gives the x and y expected
+           values as 766 and the z as 713. Experiments have shown the x
+           axis is around 766, and the y and z closer to 713.
          */
         expected_x = 766;
         expected_yz  = 713;
@@ -257,17 +248,12 @@ AP_Compass_HMC5843::init()
         goto errout;
     }
 
-    // leave test mode
+    /* leave test mode */
     if (!re_initialise()) {
         goto errout;
     }
 
     read();
-
-#if 0
-    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), 
-                          _scaling[0], _scaling[1], _scaling[2]);
-#endif
 
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
@@ -285,9 +271,8 @@ errout:
     return false;
 }
 
-bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
-        uint16_t expected_x,
-        uint16_t expected_yz)
+/* XXX: we can do better */
+bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain, uint16_t expected_x, uint16_t expected_yz)
 {
     int numAttempts = 0, good_count = 0;
     bool success = false;
@@ -321,13 +306,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
 
         float cal[3];
 
-        /* hal.console->printf_P(PSTR("mag %d %d %d\n"), _mag_x, _mag_y, _mag_z); */
-
         cal[0] = fabsf(expected_x / (float)_mag_x);
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
-
-        /* hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f\n"), cal[0], cal[1], cal[2]); */
 
         /* we throw away the first two samples as the compass may
          * still be changing its state from the application of the
@@ -349,16 +330,10 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
             sum_excited[2] += cal[2];
 
             good_count++;
-        /* hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]); */
         }
 
 #undef IS_CALIBRATION_VALUE_VALID
 
-#if 0
-        /* useful for debugging */
-        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
-        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
-#endif
     }
 
     if (good_count >= 5) {
