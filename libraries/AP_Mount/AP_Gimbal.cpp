@@ -367,7 +367,7 @@ bool AP_Gimbal::joints_near_limits()
 
 AccelCalibrator* AP_Gimbal::_acal_get_calibrator(uint8_t instance)
 {
-    if(instance==0 && present()) {
+    if(instance==0 && (present() || _calibrator.get_status() == ACCEL_CAL_SUCCESS)) {
         return &_calibrator;
     } else {
         return NULL;
