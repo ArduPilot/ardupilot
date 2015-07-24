@@ -13,7 +13,8 @@ class AP_AccelCal {
 public:
     AP_AccelCal():
     _num_clients(0),
-    _started(false)
+    _started(false),
+    _saving(false)
     { update_status(); }
 
     void start(GCS_MAVLINK *gcs);
@@ -34,6 +35,7 @@ private:
     bool check_for_timeout();
 
     bool _started;
+    bool _saving;
 
     uint8_t _num_calibrators;
 
@@ -45,6 +47,7 @@ class AP_AccelCal_Client {
 friend class AP_AccelCal;
 private:
     virtual void _acal_save_calibrations() = 0;
+    virtual bool _acal_saving() { return false; }
     virtual bool _acal_ready_to_sample() { return true; }
     virtual void _acal_cancelled() {};
     virtual AccelCalibrator* _acal_get_calibrator(uint8_t instance) = 0;

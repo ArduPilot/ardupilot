@@ -13,8 +13,26 @@ void AP_AccelCal::update()
         return;
     }
 
+    if (_saving) {
+        bool done = true;
+        for(uint8_t i=0; i<_num_clients; i++) {
+            if (_clients[i]->_acal_saving()) {
+                done = false;
+                break;
+            }
+        }
+        if (done) {
+            _printf("Calibration successful");
+            clear();
+            hal.scheduler->delay(1000);
+            hal.scheduler->reboot(false);
+        }
+        return;
+    }
+
     if (_started) {
         update_status();
+
         AccelCalibrator *cal;
         uint8_t num_calibrators = 0;
         for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
@@ -89,13 +107,12 @@ void AP_AccelCal::update()
                 return;
             case ACCEL_CAL_SUCCESS:
                 // save
-                for(uint8_t i=0; i<_num_clients; i++) {
-                    _clients[i]->_acal_save_calibrations();
+                if (!_saving) {
+                    _saving = true;
+                    for(uint8_t i=0; i<_num_clients; i++) {
+                        _clients[i]->_acal_save_calibrations();
+                    }
                 }
-                _printf("Calibration successful");
-                clear();
-                hal.scheduler->delay(1000);
-                hal.scheduler->reboot(false);
                 return;
             default:
             case ACCEL_CAL_FAILED:
@@ -121,6 +138,7 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     }
 
     _started = true;
+    _saving = false;
     _gcs = gcs;
     _step = 0;
 
@@ -150,6 +168,7 @@ void AP_AccelCal::clear()
 
     _step = 0;
     _started = false;
+    _saving = false;
 
     update_status();
 }
