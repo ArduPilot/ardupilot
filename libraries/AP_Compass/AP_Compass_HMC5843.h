@@ -22,6 +22,7 @@ private:
 
     bool                _calibrate(uint8_t calibration_gain, uint16_t expected_x, uint16_t expected_yz);
     bool                _detect_version();
+    void                _convert_to_ut(Vector3f& field) const;
 
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
     AP_HAL::Semaphore*  _i2c_sem;

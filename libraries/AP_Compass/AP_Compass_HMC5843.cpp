@@ -422,6 +422,16 @@ void AP_Compass_HMC5843::read()
         field.rotate(ROTATION_YAW_90);
     }
 
+    _convert_to_ut(field);
+
     publish_field(field, _compass_instance);
     _retry_time = 0;
+}
+
+void AP_Compass_HMC5843::_convert_to_ut(Vector3f& field) const
+{
+    /* Convert field from mG to uT.
+     * 1T = 10000G */
+
+    field /= 10;
 }
