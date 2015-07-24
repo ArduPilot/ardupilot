@@ -379,6 +379,11 @@ bool AP_Gimbal::_acal_ready_to_sample()
     return _ang_vel_mag_filt < radians(10);
 }
 
+bool AP_Gimbal::_acal_saving()
+{
+    return _gimbalParams.flashing();
+}
+
 void AP_Gimbal::_acal_save_calibrations()
 {
     if (_calibrator.get_status() != ACCEL_CAL_SUCCESS) {
