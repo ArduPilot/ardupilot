@@ -295,6 +295,7 @@ private:
         bool        healthy;
         AP_Int8     orientation;
         AP_Vector3f offset;
+        AP_Vector3f offset_ut;
 
 #if COMPASS_MAX_INSTANCES > 1
         // device id detected at init.  
