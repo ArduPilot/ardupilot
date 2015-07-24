@@ -165,6 +165,7 @@ void DataFlash_MAVLink::handle_ack(uint32_t block_num)
     if(block_num == 4294967295){
         Debug("\nStarting New Log!!\n");
         memset(_block_num, 0, sizeof(_block_num));
+        memset(_is_critical_block, 0, sizeof(_is_critical_block));
         _latest_block_num = 0;
         _cur_block_address = next_block_address();
         _logging_started = true;
