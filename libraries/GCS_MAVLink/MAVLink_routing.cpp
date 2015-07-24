@@ -187,6 +187,26 @@ void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
 }
 
 /*
+  search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+  returns true if a match is found
+ */
+bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel)
+{
+    // check learned routes
+    for (uint8_t i=0; i<num_routes; i++) {
+        if (routes[i].mavtype == mavtype) {
+            sysid = routes[i].sysid;
+            compid = routes[i].compid;
+            channel = routes[i].channel;
+            return true;
+        }
+    }
+
+    // if we've reached we have not found the component
+    return false;
+}
+
+/*
   see if the message is for a new route and learn it
 */
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg)
@@ -201,6 +221,9 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         if (routes[i].sysid == msg->sysid && 
             routes[i].compid == msg->compid &&
             routes[i].channel == in_channel) {
+            if (routes[i].mavtype == 0 && msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+                routes[i].mavtype = mavlink_msg_heartbeat_get_type(msg);
+            }
             break;
         }
     }
@@ -208,6 +231,9 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         routes[i].sysid = msg->sysid;
         routes[i].compid = msg->compid;
         routes[i].channel = in_channel;
+        if (msg->msgid == MAVLINK_MSG_ID_HEARTBEAT) {
+            routes[i].mavtype = mavlink_msg_heartbeat_get_type(msg);
+        }
         num_routes++;
 #if ROUTING_DEBUG
         ::printf("learned route %u %u via %u\n",
