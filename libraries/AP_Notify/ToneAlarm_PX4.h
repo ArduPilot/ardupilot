@@ -47,6 +47,7 @@ private:
 
     int _tonealarm_fd;      // file descriptor for the tone alarm
 
+    uint32_t gps_disconnected_time;
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
         uint8_t armed                 : 1;    // 0 = disarmed, 1 = armed
