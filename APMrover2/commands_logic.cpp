@@ -124,10 +124,16 @@ void Rover::exit_mission()
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
+bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
         bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached_message(cmd.index);
+        }
+
         return cmd_complete;
     }
     return false;

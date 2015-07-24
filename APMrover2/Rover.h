@@ -396,6 +396,7 @@ private:
     void send_statustext(mavlink_channel_t chan);
     bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
+    void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
