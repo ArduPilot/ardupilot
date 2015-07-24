@@ -87,6 +87,7 @@ bool ToneAlarm_PX4::init()
     flags.pre_arm_check = 1;
     flags.gps_connected = 1;
     _cont_tone_playing = -1;
+    gps_disconnected_time = 0;
     return true;
 }
 
