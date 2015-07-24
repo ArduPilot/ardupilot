@@ -6,10 +6,17 @@ extern const AP_HAL::HAL& hal;
 const uint32_t AP_Gimbal_Parameters::_retry_period = 3000;
 const uint8_t AP_Gimbal_Parameters::_max_fetch_attempts = 5;
 
-AP_Gimbal_Parameters::AP_Gimbal_Parameters():
-_last_request_ms(0)
+AP_Gimbal_Parameters::AP_Gimbal_Parameters()
+{
+    reset();
+}
+
+
+void AP_Gimbal_Parameters::reset()
 {
     memset(_params,0,sizeof(_params));
+    _last_request_ms = 0;
+    _flashing_step = GMB_PARAM_NOT_FLASHING;
 }
 
 const char* AP_Gimbal_Parameters::get_param_name(gmb_param_t param)
@@ -71,12 +78,6 @@ bool AP_Gimbal_Parameters::initialized()
         }
     }
     return true;
-}
-
-void AP_Gimbal_Parameters::reset()
-{
-    memset(_params,0,sizeof(_params));
-    _last_request_ms = 0;
 }
 
 bool AP_Gimbal_Parameters::received_all()
@@ -144,12 +145,33 @@ void AP_Gimbal_Parameters::update()
             hal.console->printf("Gimbal parameter %s timed out\n", get_param_name((gmb_param_t)i));
         }
     }
+
+    if(_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_SET) {
+        bool done = true;
+        for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
+            if (_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET) {
+                ::printf("i %u\n",i);
+                done = false;
+                break;
+            }
+        }
+
+        if (done) {
+            _flashing_step = GMB_PARAM_FLASHING_WAITING_FOR_ACK;
+            set_param(GMB_PARAM_GMB_FLASH,69.0f);
+        }
+    }
 }
 
 void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg)
 {
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
+
+    if (flashing() && packet.param_value == 1 && !strcmp(packet.param_id, "GMB_FLASH")) {
+        mavlink_msg_command_long_send(_chan, 0, MAV_COMP_ID_GIMBAL, 42501, 0, 0, 0, 0, 0, 0, 0, 0);
+        reset();
+    }
 
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
         if (!strcmp(packet.param_id, get_param_name((gmb_param_t)i))) {
@@ -231,5 +253,10 @@ float AP_Gimbal_Parameters::get_K_rate()
 
 void AP_Gimbal_Parameters::flash()
 {
-    set_param(GMB_PARAM_GMB_FLASH, 69.0f);
+    _flashing_step = GMB_PARAM_FLASHING_WAITING_FOR_SET;
+}
+
+bool AP_Gimbal_Parameters::flashing()
+{
+    return _flashing_step != GMB_PARAM_NOT_FLASHING;
 }

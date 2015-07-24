@@ -34,6 +34,12 @@ enum gmb_param_t {
     MAVLINK_GIMBAL_NUM_TRACKED_PARAMS
 };
 
+enum gmb_flashing_step_t {
+    GMB_PARAM_NOT_FLASHING=0,
+    GMB_PARAM_FLASHING_WAITING_FOR_SET,
+    GMB_PARAM_FLASHING_WAITING_FOR_ACK
+};
+
 class AP_Gimbal_Parameters
 {
 public:
@@ -56,8 +62,10 @@ public:
     void set_accel_gain(const Vector3f& gain);
     Vector3f get_gyro_bias();
     Vector3f get_joint_bias();
+
     float get_K_rate();
     void flash();
+    bool flashing();
 
     void set_channel(mavlink_channel_t chan) { _chan = chan; }
 
@@ -75,6 +83,7 @@ private:
     } _params[MAVLINK_GIMBAL_NUM_TRACKED_PARAMS];
 
     uint32_t _last_request_ms;
+    gmb_flashing_step_t _flashing_step;
 
     mavlink_channel_t _chan;
 };
