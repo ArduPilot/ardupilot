@@ -34,6 +34,8 @@ private:
     void update_status();
     bool check_for_timeout();
 
+    bool client_active(uint8_t client_num);
+
     bool _started;
     bool _saving;
 
@@ -49,6 +51,7 @@ private:
     virtual void _acal_save_calibrations() = 0;
     virtual bool _acal_saving() { return false; }
     virtual bool _acal_ready_to_sample() { return true; }
+    virtual bool _acal_failed() { return false; }
     virtual void _acal_cancelled() {};
     virtual AccelCalibrator* _acal_get_calibrator(uint8_t instance) = 0;
 };

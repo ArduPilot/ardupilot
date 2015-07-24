@@ -2,7 +2,6 @@
 #include <stdarg.h>
 #include <GCS.h>
 #include <AP_HAL.h>
-#include <stdio.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -10,23 +9,6 @@ void AP_AccelCal::update()
 {
     if (!get_calibrator(0)) {
         // no calibrators
-        return;
-    }
-
-    if (_saving) {
-        bool done = true;
-        for(uint8_t i=0; i<_num_clients; i++) {
-            if (_clients[i]->_acal_saving()) {
-                done = false;
-                break;
-            }
-        }
-        if (done) {
-            _printf("Calibration successful");
-            clear();
-            hal.scheduler->delay(1000);
-            hal.scheduler->reboot(false);
-        }
         return;
     }
 
@@ -107,11 +89,30 @@ void AP_AccelCal::update()
                 return;
             case ACCEL_CAL_SUCCESS:
                 // save
-                if (!_saving) {
-                    _saving = true;
+                if (_saving) {
+                    bool done = true;
                     for(uint8_t i=0; i<_num_clients; i++) {
-                        _clients[i]->_acal_save_calibrations();
+                        if (client_active(i) && _clients[i]->_acal_saving()) {
+                            done = false;
+                            break;
+                        }
                     }
+                    if (done) {
+                        _printf("Calibration successful");
+                        clear();
+                        hal.scheduler->delay(1000);
+                        hal.scheduler->reboot(false);
+                    }
+                    return;
+                } else {
+                    for(uint8_t i=0; i<_num_clients; i++) {
+                        if(client_active(i) && _clients[i]->_acal_failed()) {
+                            _status = ACCEL_CAL_FAILED;
+                            clear();
+                            return;
+                        }
+                    }
+                    _saving = true;
                 }
                 return;
             default:
@@ -180,7 +181,7 @@ void AP_AccelCal::collect_sample()
     }
 
     for(uint8_t i=0; i<_num_clients; i++) {
-        if (_clients[i]->_acal_get_calibrator(0) && !_clients[i]->_acal_ready_to_sample()) {
+        if (client_active(i) && !_clients[i]->_acal_ready_to_sample()) {
             _printf("Not ready to sample");
             return;
         }
@@ -263,6 +264,11 @@ void AP_AccelCal::update_status() {
 
     _status = ACCEL_CAL_SUCCESS;
     return;
+}
+
+bool AP_AccelCal::client_active(uint8_t client_num)
+{
+    return (bool)_clients[client_num]->_acal_get_calibrator(0);
 }
 
 void AP_AccelCal::_printf(const char* fmt, ...)
