@@ -28,6 +28,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @DisplayName: GPS type
     // @Description: GPS type
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN
+    // @RebootRequired: True
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], 1),
 
 #if GPS_MAX_INSTANCES > 1
@@ -36,6 +37,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
     // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:PX4-UAVCAN
+    // @RebootRequired: True
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
 
 #endif
@@ -44,6 +46,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @DisplayName: Navigation filter setting
     // @Description: Navigation filter engine setting
     // @Values: 0:Portable,2:Stationary,3:Pedestrian,4:Automotive,5:Sea,6:Airborne1G,7:Airborne2G,8:Airborne4G
+    // @RebootRequired: True
     AP_GROUPINFO("NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
 
 #if GPS_MAX_INSTANCES > 1
@@ -61,6 +64,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Description: Sets the minimum type of differential GPS corrections required before allowing to switch into DGPS mode.
     // @Values: 0:Any,50:FloatRTK,100:IntegerRTK
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MIN_DGPS", 4, AP_GPS, _min_dgps, 100),
 #endif
 
@@ -69,6 +73,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Description: This sets the SBAS (satellite based augmentation system) mode if available on this GPS. If set to 2 then the SBAS mode is not changed in the GPS. Otherwise the GPS will be reconfigured to enable/disable SBAS. Disabling SBAS may be worthwhile in some parts of the world where an SBAS signal is available but the baseline is too long to be useful.
     // @Values: 0:Disabled,1:Enabled,2:NoChange
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("SBAS_MODE", 5, AP_GPS, _sbas_mode, 2),
 
     // @Param: MIN_ELEV
@@ -77,6 +82,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Range: -100 90
     // @Units: Degrees
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("MIN_ELEV", 6, AP_GPS, _min_elevation, -100),
 
 #if GPS_MAX_INSTANCES > 1
@@ -103,6 +109,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @DisplayName: Raw data logging
     // @Description: Enable logging of RXM raw data from uBlox which includes carrier phase and pseudo range information. This allows for post processing of dataflash logs for more precise positioning. Note that this requires a raw capable uBlox such as the 6P or 6T.
     // @Values: 0:Disabled,1:log at 1MHz,5:log at 5MHz
+    // @RebootRequired: True
     AP_GROUPINFO("RAW_DATA", 9, AP_GPS, _raw_data, 0),
 #endif
 
@@ -111,6 +118,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Description: Bitmask for what GNSS system to use
     // @Values: 0: Leave as currently configured 1: GPS 2: SBAS 4: Galileo 8: Beidou 16: IMES 32: QZSS 64: GLONASS
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
 
     AP_GROUPEND
