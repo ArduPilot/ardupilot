@@ -352,6 +352,8 @@ private:
 
     AccelCalibrator _accel_calibrator[INS_MAX_INSTANCES];
     void _acal_save_calibrations();
+    bool _acal_failed();
+    bool _acal_saving() { return _new_trim; }
     AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):NULL; }
 
     float _trim_pitch;

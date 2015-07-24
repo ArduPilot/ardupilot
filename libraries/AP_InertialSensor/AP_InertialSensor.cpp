@@ -1285,6 +1285,19 @@ void AP_InertialSensor::set_gyro(uint8_t instance, const Vector3f &gyro)
     }
 }
 
+bool AP_InertialSensor::_acal_failed() {
+    Vector3f aligned_sample;
+    Vector3f misaligned_sample;
+    if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
+        // copter should have been level
+        float tilt = atan2f(pythagorous2(aligned_sample.x,aligned_sample.y), -aligned_sample.z);
+        if (tilt <= radians(15)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void AP_InertialSensor::_acal_save_calibrations()
 {
     for (uint8_t i=0; i<_accel_count; i++) {
