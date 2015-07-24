@@ -394,6 +394,7 @@ private:
     void gcs_update(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
     void gcs_retry_deferred(void);
+    void gcs_send_mission_item_reached(uint16_t seq);
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
@@ -484,6 +485,7 @@ private:
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
