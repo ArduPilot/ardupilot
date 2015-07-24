@@ -1353,10 +1353,3 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 #endif
 }
 
-/*
- * send notification that a mission command has been completed
- */
-void GCS_MAVLINK::send_mission_item_reached(uint16_t seq) const
-{
-    mavlink_msg_mission_item_reached_send(chan, seq);
-}
