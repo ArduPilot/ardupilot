@@ -122,6 +122,16 @@ void Rover::exit_mission()
     }
 }
 
+// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
+bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
+{
+    if (control_mode == AUTO) {
+        bool cmd_complete = verify_command(cmd);
+        return cmd_complete;
+    }
+    return false;
+}
 /********************************************************************************/
 // Verify command Handlers
 //      Returns true if command complete
@@ -129,12 +139,6 @@ void Rover::exit_mission()
 
 bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 {
-    // exit immediately if not in AUTO mode
-    // we return true or we will continue to be called by ap-mission
-    if (control_mode != AUTO) {
-        return true;
-    }
-
 	switch(cmd.id) {
 
 		case MAV_CMD_NAV_WAYPOINT:
@@ -145,11 +149,9 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 
         case MAV_CMD_CONDITION_DELAY:
             return verify_wait_delay();
-            break;
 
         case MAV_CMD_CONDITION_DISTANCE:
             return verify_within_distance();
-            break;
 
         default:
             if (cmd.id > MAV_CMD_CONDITION_LAST) {
@@ -158,7 +160,6 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
             }
             gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
             return true;
-            break;
 	}
     return false;
 }
