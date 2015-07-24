@@ -114,7 +114,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
+    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset_ut; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination

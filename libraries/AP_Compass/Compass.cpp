@@ -465,7 +465,7 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        _state[i].offset_ut.set(offsets);
     }
 }
 
@@ -474,7 +474,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        _state[i].offset_ut.set(offsets);
         save_offsets(i);
     }
 }
@@ -482,7 +482,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 void
 Compass::save_offsets(uint8_t i)
 {
-    _state[i].offset.save();  // save offsets
+    _state[i].offset_ut.save();  // save offsets
 #if COMPASS_MAX_INSTANCES > 1
     _state[i].dev_id.save();  // save device id corresponding to these offsets
 #endif
