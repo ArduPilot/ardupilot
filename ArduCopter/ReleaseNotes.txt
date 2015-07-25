@@ -16,6 +16,7 @@ Changes from 3.3-rc7
     d) Circle rate adjustment with ch6 takes effect immediately
     e) log home and origin
     f) pre-arm check of battery voltage and fence
+    g) RTL_CLIMB_MIN parameter forces vehicle to climb at least this many cm when RTL is engaged (default is zero)
 5) Bug fixes:
     a) fix THR_MIN being incorrectly scaled as pwm value during low-throttle check
     b) fence distance calculated from home (was incorrectly calculated from ekf-origin)
@@ -26,7 +27,7 @@ Changes from 3.3-rc7
     g) fix initialisation of mount's mode
     h) start-up logging so parameters only logged once, mission always written
 6) Linux:
-    a) bebop support 
+    a) bebop support
 ------------------------------------------------------------------
 Copter 3.3-rc7 28-Jun-2015
 Changes from 3.3-rc6
