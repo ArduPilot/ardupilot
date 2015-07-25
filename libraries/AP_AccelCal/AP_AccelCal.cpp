@@ -112,6 +112,11 @@ void AP_AccelCal::update()
                             return;
                         }
                     }
+                    for(uint8_t i=0; i<_num_clients; i++) {
+                        if(client_active(i)) {
+                            _clients[i]->_acal_save_calibrations();
+                        }
+                    }
                     _saving = true;
                 }
                 return;
