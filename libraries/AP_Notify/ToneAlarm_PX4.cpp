@@ -156,7 +156,7 @@ void ToneAlarm_PX4::update()
     if(AP_Notify::flags.initialising || hal.scheduler->millis() < 10000) {
         gps_disconnected_time = hal.scheduler->millis();
     }
-    if(!AP_Notify::flags.initialising && (hal.scheduler->millis() - gps_disconnected_time) > 2000){
+    if(!AP_Notify::flags.initialising && (hal.scheduler->millis() - gps_disconnected_time) > 10000){
         if (AP_Notify::flags.gps_connected != flags.gps_connected) {
             if(!AP_Notify::flags.gps_connected) {
                 play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
