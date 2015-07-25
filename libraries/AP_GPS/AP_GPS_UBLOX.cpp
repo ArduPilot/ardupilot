@@ -483,7 +483,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                     _buffer.gnss.configBlock[i].maxTrkCh = _buffer.gnss.numTrkChHw;
                 } else {
                     _buffer.gnss.configBlock[i].resTrkCh = 1;
-                    _buffer.gnss.configBlock[i].resTrkCh = 3;
+                    _buffer.gnss.configBlock[i].maxTrkCh = 3;
                 }
                 _buffer.gnss.configBlock[i].flags = _buffer.gnss.configBlock[i].flags | 0x00000001;
             } else {
