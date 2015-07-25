@@ -30,18 +30,18 @@
 
 class AP_MPU6000_BusDriver
 {
-    public:
-        virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
-        virtual void read8(uint8_t reg, uint8_t *val) = 0;
-        virtual void write8(uint8_t reg, uint8_t val) = 0;
-        enum bus_speed {
-                SPEED_LOW, SPEED_HIGH
-        };
-        virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
-        virtual void read_burst(uint8_t* samples,
-                                AP_HAL::DigitalSource *_drdy_pin,
-                                uint8_t &n_samples) = 0;
-        virtual AP_HAL::Semaphore* get_semaphore() = 0;
+public:
+    virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
+    virtual void read8(uint8_t reg, uint8_t *val) = 0;
+    virtual void write8(uint8_t reg, uint8_t val) = 0;
+    enum bus_speed {
+        SPEED_LOW, SPEED_HIGH
+    };
+    virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
+    virtual void read_burst(uint8_t* samples,
+                            AP_HAL::DigitalSource *_drdy_pin,
+                            uint8_t &n_samples) = 0;
+    virtual AP_HAL::Semaphore* get_semaphore() = 0;
 };
 
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
@@ -67,21 +67,21 @@ private:
     uint8_t _accel_instance;
 
     AP_HAL::DigitalSource *_drdy_pin;
-    bool                 _init_sensor(void);
-    bool                 _sample_available();
-    void                 _read_data_transaction();
-    bool                 _data_ready();
-    void                 _poll_data(void);
-    uint8_t              _register_read( uint8_t reg);
-    void                 _register_write( uint8_t reg, uint8_t val );
-    void                 _register_write_check(uint8_t reg, uint8_t val);
-    bool                 _hardware_init(void);
-    void                 _accumulate(uint8_t *samples, uint8_t n_samples);
+    bool    _init_sensor(void);
+    bool    _sample_available();
+    void    _read_data_transaction();
+    bool    _data_ready();
+    void    _poll_data(void);
+    uint8_t _register_read( uint8_t reg);
+    void    _register_write( uint8_t reg, uint8_t val );
+    void    _register_write_check(uint8_t reg, uint8_t val);
+    bool    _hardware_init(void);
+    void    _accumulate(uint8_t *samples, uint8_t n_samples);
 
     AP_MPU6000_BusDriver *_bus;
     AP_HAL::Semaphore    *_bus_sem;
 
-    static const float          _gyro_scale;
+    static const float   _gyro_scale;
 
     // support for updating filter at runtime
     int8_t _last_accel_filter_hz;
@@ -96,7 +96,7 @@ private:
     Vector3f _accel_filtered;
     Vector3f _gyro_filtered;
 
-    // Low Pass filters for gyro and accel 
+    // Low Pass filters for gyro and accel
     LowPassFilter2pVector3f _accel_filter;
     LowPassFilter2pVector3f _gyro_filter;
 #else
@@ -112,42 +112,42 @@ private:
 
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
-    public:
-        AP_MPU6000_BusDriver_SPI(void);
-        void init(bool &fifo_mode, uint8_t &max_samples);
-        void read8(uint8_t reg, uint8_t *val);
-        void write8(uint8_t reg, uint8_t val);
-        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-        void read_burst(uint8_t* samples,
-                        AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t &n_samples);
-        AP_HAL::Semaphore* get_semaphore();
+public:
+    AP_MPU6000_BusDriver_SPI(void);
+    void init(bool &fifo_mode, uint8_t &max_samples);
+    void read8(uint8_t reg, uint8_t *val);
+    void write8(uint8_t reg, uint8_t val);
+    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+    void read_burst(uint8_t* samples,
+                    AP_HAL::DigitalSource *_drdy_pin,
+                    uint8_t &n_samples);
+    AP_HAL::Semaphore* get_semaphore();
 
-    private:
-        AP_HAL::SPIDeviceDriver *_spi;
-        AP_HAL::Semaphore *_spi_sem;
-        // count of bus errors
-        uint16_t _error_count;
+private:
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
+    // count of bus errors
+    uint16_t _error_count;
 };
 
 class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
-    public:
-        AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-        void init(bool &fifo_mode, uint8_t &max_samples);
-        void read8(uint8_t reg, uint8_t *val);
-        void write8(uint8_t reg, uint8_t val);
-        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-        void read_burst(uint8_t* samples,
-                        AP_HAL::DigitalSource *_drdy_pin,
-                        uint8_t &n_samples);
-        AP_HAL::Semaphore* get_semaphore();
+public:
+    AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+    void init(bool &fifo_mode, uint8_t &max_samples);
+    void read8(uint8_t reg, uint8_t *val);
+    void write8(uint8_t reg, uint8_t val);
+    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+    void read_burst(uint8_t* samples,
+                    AP_HAL::DigitalSource *_drdy_pin,
+                    uint8_t &n_samples);
+    AP_HAL::Semaphore* get_semaphore();
 
-    private:
-        uint8_t _addr;
-        AP_HAL::I2CDriver *_i2c;
-        AP_HAL::Semaphore *_i2c_sem;
-        uint8_t _rx[MAX_DATA_READ];
+private:
+    uint8_t _addr;
+    AP_HAL::I2CDriver *_i2c;
+    AP_HAL::Semaphore *_i2c_sem;
+    uint8_t _rx[MAX_DATA_READ];
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__
