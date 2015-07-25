@@ -250,7 +250,8 @@ void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
     for (i=0; i<14; i++) {
         if (rx.d[i] != 0) break;
     }
-    if ((rx.int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
+    if ((_drdy_pin != NULL && (rx.int_status&~0x6) != BIT_RAW_RDY_INT)
+        || i == 14) {
         // likely a bad bus transaction
         if (++_error_count > 4) {
             set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
