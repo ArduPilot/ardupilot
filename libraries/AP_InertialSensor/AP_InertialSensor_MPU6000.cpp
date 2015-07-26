@@ -272,8 +272,8 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
 
 /* I2C bus driver implementation */
 AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
-    _i2c(i2c),
-    _addr(addr)
+    _addr(addr),
+    _i2c(i2c)
 {}
 
 void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
