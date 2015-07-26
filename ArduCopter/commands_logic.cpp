@@ -168,7 +168,7 @@ bool Copter::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 
         // send message to GCS
         if (cmd_complete) {
-            gcs_send_message(MSG_MISSION_ITEM_REACHED);
+            gcs_send_mission_item_reached_message(MSG_MISSION_ITEM_REACHED, cmd.index);
         }
 
         return cmd_complete;
