@@ -585,7 +585,9 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_MISSION_ITEM_REACHED:
-        return check_send_mission_item_reached(rover.mission.get_current_nav_cmd().index);
+        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
+        mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
+        break;
 
     case MSG_RETRY_DEFERRED:
     case MSG_TERRAIN:
@@ -1313,6 +1315,19 @@ void Rover::gcs_send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
+            gcs[i].send_message(id);
+        }
+    }
+}
+
+/*
+ *  send a mission item reached message and load the index before the send attempt in case it may get delayed
+ */
+void Rover::gcs_send_mission_item_reached_message(enum ap_message id, uint16_t mission_index)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].mission_item_reached_index = mission_index;
             gcs[i].send_message(id);
         }
     }
