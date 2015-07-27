@@ -277,6 +277,11 @@ void Rover::set_mode(enum mode mode)
 		// don't switch modes if we are already in the correct mode.
 		return;
 	}
+
+    // If we are changing out of AUTO mode reset the loiter timer
+    if (control_mode == AUTO)
+        loiter_time = 0;
+
 	control_mode = mode;
     throttle_last = 0;
     throttle = 500;
