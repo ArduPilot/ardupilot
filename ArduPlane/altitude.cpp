@@ -398,8 +398,8 @@ bool Plane::above_location_current(const Location &loc)
 #endif
 
     float loc_alt_cm = loc.alt;
-    if (!loc.flags.relative_alt) {
-        loc_alt_cm -= home.alt;
+    if (loc.flags.relative_alt) {
+        loc_alt_cm += home.alt;
     }
     return current_loc.alt > loc_alt_cm;
 }
