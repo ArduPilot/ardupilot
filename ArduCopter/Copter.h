@@ -826,7 +826,6 @@ private:
     void heli_radio_passthrough();
     bool heli_acro_init(bool ignore_checks);
     void heli_acro_run();
-    void get_pilot_desired_yaw_rate(int16_t yaw_in, float &yaw_out);
     bool heli_stabilize_init(bool ignore_checks);
     void heli_stabilize_run();
     void read_inertia();
