@@ -77,6 +77,8 @@
 >>   - ***Subsystem***: Linux
 >> - [Peter Barker](https://github.com/peterbarker)
 >>   - ***Subsystem***: DataFlash
+>> - [Michael du Breuil](https://github.com/WickedShell)
+>>   - ***Subsystem***: uBlox GPS
 >> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
 >>   - ***Board***: PXF
 >> - [Mirko Denecke](https://github.com/mirkix)
