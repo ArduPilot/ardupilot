@@ -24,6 +24,12 @@
 #include <AP_Scheduler.h>
 #include <AP_Param.h>
 
+#if defined(__AVR__)
+#define TASK_NAME(id) PSTR("unknown")
+#else
+#define TASK_NAME(id) _tasks[id].name
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 int8_t AP_Scheduler::current_task = -1;
@@ -142,8 +148,9 @@ update_spare_ticks:
 
         if (log->flag & SCHEDULER_TASK_SLIPPED) {
             uint16_t interval_ticks = pgm_read_word(&_tasks[log->task_id].interval_ticks);
-            hal.console->printf_P(PSTR("Scheduler slip task[%u] (%u/%u/%u)\n"),
+            hal.console->printf_P(PSTR("Scheduler slip task[%u-%s] (%u/%u/%u)\n"),
                                   (unsigned) log->task_id,
+                                  TASK_NAME(log->task_id),
                                   (unsigned) log->ticks_since_last_run,
                                   (unsigned) interval_ticks,
                                   (unsigned) time_allowed);
@@ -151,13 +158,15 @@ update_spare_ticks:
 
         if (log->flag & SCHEDULER_TASK_EXECUTED) {
             if ((log->flag & SCHEDULER_TASK_OVERRUN) && _debug == 3) {
-                hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"),
+                hal.console->printf_P(PSTR("Scheduler overrun task[%u-%s] (%u/%u)\n"),
                                       (unsigned) log->task_id,
+                                      TASK_NAME(log->task_id),
                                       (unsigned) log->time_taken,
                                       (unsigned) time_allowed);
             } else {
-                hal.console->printf_P(PSTR("Scheduler task[%u] (%u/%u)\n"),
+                hal.console->printf_P(PSTR("Scheduler task[%u-%s] (%u/%u)\n"),
                                       (unsigned) log->task_id,
+                                      TASK_NAME(log->task_id),
                                       (unsigned) log->time_taken,
                                       (unsigned) time_allowed);
             }
