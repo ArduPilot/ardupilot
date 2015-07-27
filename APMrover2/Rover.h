@@ -358,6 +358,12 @@ private:
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
 
+    // Loiter control
+    uint16_t loiter_time_max; // How long we should loiter at the nav_waypoint (time in seconds)
+    uint32_t loiter_time;     // How long have we been loitering - The start time in millis
+
+    float distance_past_wp; // record the distance we have gone past the wp
+
 private:
     // private member functions
     void ahrs_update();

@@ -176,6 +176,14 @@ void Rover::do_RTL(void)
 
 void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    // this will be used to remember the time in millis after we reach or pass the WP.
+    loiter_time = 0;
+    // this is the delay, stored in seconds
+    loiter_time_max = abs(cmd.p1);
+
+    // this is the distance we travel past the waypoint - not there yet so 0 initially
+    distance_past_wp = 0;
+
 	set_next_WP(cmd.content.location);
 }
 
@@ -185,17 +193,45 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     if ((wp_distance > 0) && (wp_distance <= g.waypoint_radius)) {
-        gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
-                          (unsigned)cmd.index,
-                          (unsigned)get_distance(current_loc, next_WP));
+        // Check if we need to loiter at this waypoint
+        if (loiter_time_max > 0) {
+            if (loiter_time == 0) {  // check if we are just starting loiter
+                gcs_send_text_fmt(PSTR("Reached Waypoint #%i - Loiter for %i seconds"),
+                                  (unsigned)cmd.index,
+                                  (unsigned)loiter_time_max);
+                // record the current time i.e. start timer
+                loiter_time = millis();
+            }
+            // Check if we have loiter long enough
+            if (((millis() - loiter_time) / 1000) < loiter_time_max) {
+                return false;
+            }
+        } else {
+            gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+                              (unsigned)cmd.index,
+                              (unsigned)get_distance(current_loc, next_WP));
+        }
         return true;
     }
 
     // have we gone past the waypoint?
+    // We should always go through the waypoint i.e. the above code
+    // first before we go past it.
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
-                          (unsigned)cmd.index,
-                          (unsigned)get_distance(current_loc, next_WP));
+        // check if we have gone futher past the wp then last time and output new message if we have
+        if ((uint32_t)distance_past_wp != (uint32_t)get_distance(current_loc, next_WP)) {
+            distance_past_wp = get_distance(current_loc, next_WP);
+            gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+                              (unsigned)cmd.index,
+                              (unsigned)distance_past_wp);
+        }
+        // Check if we need to loiter at this waypoint
+        if (loiter_time_max > 0) {
+            if (((millis() - loiter_time) / 1000) < loiter_time_max) {
+                return false;
+            }
+        }
+        distance_past_wp = 0;
         return true;
     }
 
