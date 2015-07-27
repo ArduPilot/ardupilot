@@ -428,10 +428,16 @@ RC_Channel::norm_output()
 {
     int16_t mid = (radio_max + radio_min) / 2;
     float ret;
-    if(radio_out < mid)
+    if (mid <= radio_min) {
+        return 0;
+    }
+    if (radio_out < mid) {
         ret = (float)(radio_out - mid) / (float)(mid - radio_min);
-    else
+    } else if (radio_out > mid) {
         ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
+    } else {
+        ret = 0;
+    }
     if (_reverse == -1) {
 	    ret = -ret;
     }
