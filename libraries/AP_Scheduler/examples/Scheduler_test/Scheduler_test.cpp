@@ -62,7 +62,10 @@ private:
 
 static SchedTest schedtest;
 
-#define SCHED_TASK(func) FUNCTOR_BIND(&schedtest, &SchedTest::func, void)
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
+    .function = FUNCTOR_BIND(&schedtest, &SchedTest::func, void),\
+    .interval_ticks = _interval_ticks,\
+    .max_time_micros = _max_time_micros}
 
 /*
   scheduler table - all regular tasks are listed here, along with how
@@ -70,9 +73,9 @@ static SchedTest schedtest;
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
-    { SCHED_TASK(ins_update),             1,   1000 },
-    { SCHED_TASK(one_hz_print),          50,   1000 },
-    { SCHED_TASK(five_second_call),     250,   1800 },
+    SCHED_TASK(ins_update,              1,   1000),
+    SCHED_TASK(one_hz_print,           50,   1000),
+    SCHED_TASK(five_second_call,      250,   1800),
 };
 
 
