@@ -37,7 +37,10 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 Rover rover;
 
-#define SCHED_TASK(func) FUNCTOR_BIND(&rover, &Rover::func, void)
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
+    .function = FUNCTOR_BIND(&rover, &Rover::func, void),\
+    .interval_ticks = _interval_ticks,\
+    .max_time_micros = _max_time_micros}
 
 /*
   scheduler table - all regular tasks should be listed here, along
@@ -45,35 +48,35 @@ Rover rover;
   time they are expected to take (in microseconds)
 */
 const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
-    { SCHED_TASK(read_radio),             1,   1000 },
-    { SCHED_TASK(ahrs_update),            1,   6400 },
-    { SCHED_TASK(read_sonars),            1,   2000 },
-    { SCHED_TASK(update_current_mode),    1,   1500 },
-    { SCHED_TASK(set_servos),             1,   1500 },
-    { SCHED_TASK(update_GPS_50Hz),        1,   2500 },
-    { SCHED_TASK(update_GPS_10Hz),        5,   2500 },
-    { SCHED_TASK(update_alt),             5,   3400 },
-    { SCHED_TASK(navigate),               5,   1600 },
-    { SCHED_TASK(update_compass),         5,   2000 },
-    { SCHED_TASK(update_commands),        5,   1000 },
-    { SCHED_TASK(update_logging1),        5,   1000 },
-    { SCHED_TASK(update_logging2),        5,   1000 },
-    { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
-    { SCHED_TASK(gcs_update),             1,   1700 },
-    { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
-    { SCHED_TASK(read_control_switch),    7,   1000 },
-    { SCHED_TASK(read_trim_switch),       5,   1000 },
-    { SCHED_TASK(read_battery),           5,   1000 },
-    { SCHED_TASK(read_receiver_rssi),     5,   1000 },
-    { SCHED_TASK(update_events),          1,   1000 },
-    { SCHED_TASK(check_usb_mux),         15,   1000 },
-    { SCHED_TASK(mount_update),           1,    600 },
-    { SCHED_TASK(gcs_failsafe_check),     5,    600 },
-    { SCHED_TASK(compass_accumulate),     1,    900 },
-    { SCHED_TASK(update_notify),          1,    300 },
-    { SCHED_TASK(one_second_loop),       50,   3000 },
+    SCHED_TASK(read_radio,              1,   1000),
+    SCHED_TASK(ahrs_update,             1,   6400),
+    SCHED_TASK(read_sonars,             1,   2000),
+    SCHED_TASK(update_current_mode,     1,   1500),
+    SCHED_TASK(set_servos,              1,   1500),
+    SCHED_TASK(update_GPS_50Hz,         1,   2500),
+    SCHED_TASK(update_GPS_10Hz,         5,   2500),
+    SCHED_TASK(update_alt,              5,   3400),
+    SCHED_TASK(navigate,                5,   1600),
+    SCHED_TASK(update_compass,          5,   2000),
+    SCHED_TASK(update_commands,         5,   1000),
+    SCHED_TASK(update_logging1,         5,   1000),
+    SCHED_TASK(update_logging2,         5,   1000),
+    SCHED_TASK(gcs_retry_deferred,      1,   1000),
+    SCHED_TASK(gcs_update,              1,   1700),
+    SCHED_TASK(gcs_data_stream_send,    1,   3000),
+    SCHED_TASK(read_control_switch,     7,   1000),
+    SCHED_TASK(read_trim_switch,        5,   1000),
+    SCHED_TASK(read_battery,            5,   1000),
+    SCHED_TASK(read_receiver_rssi,      5,   1000),
+    SCHED_TASK(update_events,           1,   1000),
+    SCHED_TASK(check_usb_mux,          15,   1000),
+    SCHED_TASK(mount_update,            1,    600),
+    SCHED_TASK(gcs_failsafe_check,      5,    600),
+    SCHED_TASK(compass_accumulate,      1,    900),
+    SCHED_TASK(update_notify,           1,    300),
+    SCHED_TASK(one_second_loop,        50,   3000),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { SCHED_TASK(frsky_telemetry_send),  10,    100 }
+    SCHED_TASK(frsky_telemetry_send,   10,    100),
 #endif
 };
 
