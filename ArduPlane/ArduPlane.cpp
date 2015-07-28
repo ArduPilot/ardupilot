@@ -37,7 +37,7 @@
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
-    SCHED_TASK(read_radio,              1,    700), // 0
+    SCHED_TASK(read_radio,              1,    700),
     SCHED_TASK(check_short_failsafe,    1,   1000),
     SCHED_TASK(ahrs_update,             1,   6400),
     SCHED_TASK(update_speed_height,     1,   1600),
@@ -47,7 +47,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(read_control_switch,     7,   1000),
     SCHED_TASK(gcs_retry_deferred,      1,   1000),
     SCHED_TASK(update_GPS_50Hz,         1,   2500),
-    SCHED_TASK(update_GPS_10Hz,         5,   2500), // 10
+    SCHED_TASK(update_GPS_10Hz,         5,   2500),
     SCHED_TASK(navigate,                5,   3000),
     SCHED_TASK(update_compass,          5,   1200),
     SCHED_TASK(read_airspeed,           5,   1200),
@@ -56,7 +56,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(obc_fs_check,            5,   1000),
     SCHED_TASK(gcs_update,              1,   1700),
     SCHED_TASK(gcs_data_stream_send,    1,   3000),
-    SCHED_TASK(update_events,           1,   1500), // 20
+    SCHED_TASK(update_events,           1,   1500),
     SCHED_TASK(check_usb_mux,           5,    300),
     SCHED_TASK(read_battery,            5,   1000),
     SCHED_TASK(compass_accumulate,      1,   1500),
@@ -69,7 +69,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(one_second_loop,        50,   1000),
     SCHED_TASK(check_long_failsafe,    15,   1000),
     SCHED_TASK(read_receiver_rssi,      5,   1000),
-    SCHED_TASK(airspeed_ratio_update,  50,   1000), // 30
+    SCHED_TASK(airspeed_ratio_update,  50,   1000),
     SCHED_TASK(update_mount,            1,   1500),
     SCHED_TASK(log_perf_info,         500,   1000),
     SCHED_TASK(compass_save,         3000,   2500),
