@@ -236,7 +236,7 @@ public:
 private:
 
     // load backend drivers
-    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
+    void _add_backend(AP_InertialSensor_Backend *backend);
     void _detect_backends(void);
 
     // gyro initialisation
