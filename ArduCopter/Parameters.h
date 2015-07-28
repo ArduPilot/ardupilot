@@ -161,6 +161,7 @@ public:
         k_param_heli_yaw_ff,        // remove
         k_param_heli_stab_col_min,
         k_param_heli_stab_col_max,  // 88
+        k_param_heli_servo_rsc,     // 89 = full!
 
         //
         // 90: misc2
@@ -437,6 +438,7 @@ public:
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
+    RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
     AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
     AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
 #endif
@@ -515,6 +517,7 @@ public:
         heli_servo_2        (CH_2),
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
+        heli_servo_rsc      (CH_8),
 #endif
 #if FRAME_CONFIG ==     SINGLE_FRAME
         single_servo_1        (CH_1),
