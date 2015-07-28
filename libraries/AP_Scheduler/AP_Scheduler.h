@@ -25,6 +25,8 @@
 
 #include <AP_Param/AP_Param.h>
 
+#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+
 /*
   A task scheduler for APM main loops
 
