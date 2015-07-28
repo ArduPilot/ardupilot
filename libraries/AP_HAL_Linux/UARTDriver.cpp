@@ -28,7 +28,6 @@
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
-#include "TCPBlockingServerDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -274,15 +273,8 @@ void LinuxUARTDriver::_udp_start_connection(void)
 
 void LinuxUARTDriver::_tcp_start_connection(void)
 {
-    if (_flag != NULL) {
-        if (!strcmp(_flag, "wait")) {    
-            _device = new TCPBlockingServerDevice(_ip, _base_port);
-        } else {
-            _device = new TCPServerDevice(_ip, _base_port);
-        }
-    } else {
-        _device = new TCPServerDevice(_ip, _base_port);
-    }
+    bool wait = (_flag && strcmp(_flag, "wait") == 0);
+    _device = new TCPServerDevice(_ip, _base_port, wait);
 
     if (_device->open()) {
         _connected = true;
