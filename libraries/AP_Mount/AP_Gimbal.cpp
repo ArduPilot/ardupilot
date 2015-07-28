@@ -136,14 +136,12 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
 
 void AP_Gimbal::update_mode()
 {
-    if (_gimbalParams.get_K_rate()==0.0f) {
+    if (_gimbalParams.get_K_rate()==0.0f || (isCopterFlipped() && !(lockedToBody || _calibrator.running()))) {
         _mode = GIMBAL_MODE_IDLE;
-    } else if (_calibrator.running()) {
-        _mode = GIMBAL_MODE_POS_HOLD_FF;
-    } else if (isCopterFlipped()) {
-        _mode = GIMBAL_MODE_IDLE;
-    } else if (lockedToBody || !_ekf.getStatus()) {
+    } else if (!_ekf.getStatus()) {
         _mode = GIMBAL_MODE_POS_HOLD;
+    } else if (_calibrator.running() || lockedToBody) {
+        _mode = GIMBAL_MODE_POS_HOLD_FF;
     } else {
         _mode = GIMBAL_MODE_STABILIZE;
     }
