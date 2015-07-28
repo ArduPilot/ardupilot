@@ -35,8 +35,9 @@ datagram(_datagram)
 
 SocketAPM::~SocketAPM()
 {
-    if (::close(fd) < 0) {
-        perror("close");
+    if (fd != -1) {
+        ::close(fd);
+        fd = -1;
     }
 }
 

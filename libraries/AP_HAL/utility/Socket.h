@@ -47,7 +47,7 @@ public:
 
 private:
     bool datagram;
-    int fd;
+    int fd = -1;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };
