@@ -201,20 +201,22 @@ void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg, const uint32_t seqno)
         _sending_to_client = false;
         return;
     }
-    if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_START && !_sending_to_client) {
-        Debug("\nStarting New Log!!\n");
-        free_all_blocks();
-        // _current_block = next_block();
-        // if (_current_block == NULL) {
-        //     Debug("No free blocks?!!!\n");
-        //     return;
-        // }
-        stats_init();
-        _sending_to_client = true;
-        _target_system_id = msg->sysid;
-        _target_component_id = msg->compid;
-        _next_seq_num = 0;
-        _front.StartNewLog();
+    if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_START) {
+        if (!_sending_to_client) {
+            Debug("\nStarting New Log!!\n");
+            free_all_blocks();
+            // _current_block = next_block();
+            // if (_current_block == NULL) {
+            //     Debug("No free blocks?!!!\n");
+            //     return;
+            // }
+            stats_init();
+            _sending_to_client = true;
+            _target_system_id = msg->sysid;
+            _target_component_id = msg->compid;
+            _next_seq_num = 0;
+            _front.StartNewLog();
+        }
         return;
     }
     for(uint8_t block = 0; block < _blockcount; block++){
