@@ -379,20 +379,14 @@ AP_InertialSensor::init( Start_style style,
     _have_sample = false;
 }
 
-/*
-  try to load a backend
- */
-void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &))
+void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 {
-    if (_backend_count == INS_MAX_BACKENDS) {
+    if (!backend)
+        return;
+    if (_backend_count == INS_MAX_BACKENDS)
         hal.scheduler->panic(PSTR("Too many INS backends"));
-    }
-    _backends[_backend_count] = detect(*this);
-    if (_backends[_backend_count] != NULL) {
-        _backend_count++;
-    }
+    _backends[_backend_count++] = backend;
 }
-
 
 /*
   detect available backends for this board
@@ -401,27 +395,27 @@ void
 AP_InertialSensor::_detect_backends(void)
 {
     if (_hil_mode) {
-        _add_backend(AP_InertialSensor_HIL::detect);
+        _add_backend(AP_InertialSensor_HIL::detect(*this));
         return;
     }
 #if HAL_INS_DEFAULT == HAL_INS_HIL
-    _add_backend(AP_InertialSensor_HIL::detect);
+    _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
-    _add_backend(AP_InertialSensor_MPU6000::detect_spi);
+    _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_I2C && HAL_INS_MPU60XX_I2C_BUS == 2
-    _add_backend(AP_InertialSensor_MPU6000::detect_i2c2);
+    _add_backend(AP_InertialSensor_MPU6000::detect_i2c2(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_PX4 || HAL_INS_DEFAULT == HAL_INS_VRBRAIN
-    _add_backend(AP_InertialSensor_PX4::detect);
+    _add_backend(AP_InertialSensor_PX4::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_OILPAN
-    _add_backend(AP_InertialSensor_Oilpan::detect);
+    _add_backend(AP_InertialSensor_Oilpan::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250
-    _add_backend(AP_InertialSensor_MPU9250::detect);
+    _add_backend(AP_InertialSensor_MPU9250::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_FLYMAPLE
-    _add_backend(AP_InertialSensor_Flymaple::detect);
+    _add_backend(AP_InertialSensor_Flymaple::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_LSM9DS0
-    _add_backend(AP_InertialSensor_LSM9DS0::detect);
+    _add_backend(AP_InertialSensor_LSM9DS0::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_L3G4200D
-    _add_backend(AP_InertialSensor_L3G4200D::detect);
+    _add_backend(AP_InertialSensor_L3G4200D::detect(*this));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
