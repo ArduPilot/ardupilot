@@ -394,35 +394,45 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 
 }
 
-/*
-  detect the sensor
- */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_spi(AP_InertialSensor &_imu)
+AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
-    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu, new AP_MPU6000_BusDriver_SPI());
-    if (sensor == NULL) {
-        return NULL;
-    }
-    if (!sensor->_init_sensor()) {
-        delete sensor;
-        return NULL;
-    }
-
-    return sensor;
+    delete _bus;
 }
 
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c(AP_InertialSensor &_imu,
+/* Detect the sensor on SPI bus. It must have a corresponding device on
+ * SPIDriver table */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_spi(AP_InertialSensor &imu)
+{
+    AP_MPU6000_BusDriver *bus = new AP_MPU6000_BusDriver_SPI();
+    if (!bus)
+        return nullptr;
+    return _detect(imu, bus);
+}
+
+/* Detect the sensor on the specified I2C bus and address */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c(AP_InertialSensor &imu,
                                                                  AP_HAL::I2CDriver *i2c,
                                                                  uint8_t addr)
 {
-    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu,
-                                        new AP_MPU6000_BusDriver_I2C(i2c, addr));
+    AP_MPU6000_BusDriver *bus = new AP_MPU6000_BusDriver_I2C(i2c, addr);
+    if (!bus)
+        return nullptr;
+    return _detect(imu, bus);
+}
+
+/* Common detection method - it takes ownership of the bus, freeing it if it's
+ * not possible to return an AP_InertialSensor_Backend */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::_detect(AP_InertialSensor &_imu,
+                                                              AP_MPU6000_BusDriver *bus)
+{
+    AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu, bus);
     if (sensor == NULL) {
-        return NULL;
+        delete bus;
+        return nullptr;
     }
     if (!sensor->_init_sensor()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
 
     return sensor;
