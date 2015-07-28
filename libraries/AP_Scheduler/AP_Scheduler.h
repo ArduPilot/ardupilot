@@ -49,6 +49,9 @@ public:
 
     struct Task {
         task_fn_t function;
+#ifndef __AVR__
+        const char *name;
+#endif
         uint16_t interval_ticks;
         uint16_t max_time_micros;
     };
