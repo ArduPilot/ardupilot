@@ -126,6 +126,19 @@ ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uin
  */
 ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
+    if (!pollin(timeout_ms)) {
+        return -1;
+    }
+    
+    return ::recvfrom(fd, buf, size, MSG_DONTWAIT, NULL, NULL);
+}
+
+
+/*
+  return true if there is pending data for input
+ */
+bool SocketAPM::pollin(uint32_t timeout_ms)
+{
     fd_set fds;
     struct timeval tv;
 
@@ -136,10 +149,9 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
     if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
-        return -1;
+        return false;
     }
-    
-    return ::recv(fd, buf, size, 0);
+    return true;
 }
 
 #endif // HAL_OS_SOCKETS
