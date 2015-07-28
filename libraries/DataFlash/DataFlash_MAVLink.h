@@ -71,7 +71,7 @@ public:
     };
     void push_log_blocks();
     virtual bool send_log_block(struct dm_block &block);
-    virtual void handle_ack(uint32_t block_num);
+    virtual void handle_ack(mavlink_message_t* msg, uint32_t seqno);
     virtual void handle_retry(uint32_t block_num);
     virtual void set_channel(mavlink_channel_t chan);
     virtual void remote_log_block_status_msg(mavlink_message_t* msg);
@@ -95,6 +95,9 @@ protected:
 
 private:
     mavlink_channel_t _chan;
+    uint8_t _target_system_id;
+    uint8_t _target_component_id;
+
     bool _initialised;
 
     const uint16_t _block_max_size;

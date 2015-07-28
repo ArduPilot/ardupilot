@@ -142,7 +142,8 @@ struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::next_block()
     return NULL;
 }
 
-void DataFlash_MAVLink::handle_ack(uint32_t seqno)
+void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg,
+                                   uint32_t seqno)
 {
     if (!_initialised) {
         return;
@@ -166,6 +167,8 @@ void DataFlash_MAVLink::handle_ack(uint32_t seqno)
         }
         stats_init();
         _logging_started = true;
+        _target_system_id = msg->sysid;
+        _target_component_id = msg->compid;
         _front.StartNewLog();
         return;
     }
@@ -181,10 +184,10 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_message_t* msg)
 {
     mavlink_remote_log_block_status_t packet;
     mavlink_msg_remote_log_block_status_decode(msg, &packet);
-    if(packet.block_status == 0){
-        handle_retry(packet.block_cnt);
+    if(packet.status == 0){
+        handle_retry(packet.seqno);
     } else{
-        handle_ack(packet.block_cnt);
+        handle_ack(msg, packet.seqno);
     }
 }
 
@@ -367,13 +370,12 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
     uint8_t saved_seq = chan_status->current_tx_seq;
     chan_status->current_tx_seq = mavlink.seq++;
-    Debug("Data Sent!!\n");
-    uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink.system_id, 
-                                                          mavlink.component_id,
+    Debug("Sending block (%d)", block.seqno);
+    uint16_t len = mavlink_msg_remote_log_data_block_pack(mavlink_system.sysid,
+                                                          MAV_COMP_ID_LOG,
                                                           &msg,
-                                                          255,                      //GCS SYS ID
-                                                          0,
-                                                          _block_max_size,
+                                                          _target_system_id,
+                                                          _target_component_id,
                                                           block.seqno,
                                                           block.buf);
     if(comm_get_txspace(chan) < len){
