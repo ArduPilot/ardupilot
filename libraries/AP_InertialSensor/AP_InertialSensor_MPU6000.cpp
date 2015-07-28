@@ -168,11 +168,6 @@ extern const AP_HAL::HAL& hal;
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
-#if !defined(HAL_INS_MPU60XX_I2C_ADDR)
-#define HAL_INS_MPU60XX_I2C_ADDR 0x68
-#endif
-
-
 /* SPI bus driver implementation */
 
 AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void) :
@@ -416,10 +411,12 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_spi(AP_InertialSens
     return sensor;
 }
 
-AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c2(AP_InertialSensor &_imu)
+AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c(AP_InertialSensor &_imu,
+                                                                 AP_HAL::I2CDriver *i2c,
+                                                                 uint8_t addr)
 {
     AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu,
-                                        new AP_MPU6000_BusDriver_I2C(hal.i2c2, HAL_INS_MPU60XX_I2C_ADDR));
+                                        new AP_MPU6000_BusDriver_I2C(i2c, addr));
     if (sensor == NULL) {
         return NULL;
     }
