@@ -62,6 +62,7 @@ public:
     // returns warning throttle
     float               get_throttle_warn() const { return rel_pwm_to_thr_range(_spin_when_armed); }
 
+    int16_t             throttle_max() const { return _max_throttle; }
     int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
 
     // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
