@@ -23,6 +23,7 @@ private:
     uint16_t _port;
     bool _wait;
     bool _blocking = false;
+    uint32_t _last_bind_warning = 0;
 };
 
 #endif

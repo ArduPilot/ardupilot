@@ -251,7 +251,7 @@ errout:
 bool LinuxUARTDriver::_serial_start_connection()
 {
     _device = new UARTDevice(device_path);
-    _device->open();
+    _connected = _device->open();
     _device->set_blocking(false);
     _flow_control = FLOW_CONTROL_DISABLE;
 
@@ -264,7 +264,7 @@ bool LinuxUARTDriver::_serial_start_connection()
 void LinuxUARTDriver::_udp_start_connection(void)
 {
     _device = new UDPDevice(_ip, _base_port);
-    _device->open();
+    _connected = _device->open();
     _device->set_blocking(false);
 
     /* try to write on MAVLink packet boundaries if possible */
@@ -276,9 +276,7 @@ void LinuxUARTDriver::_tcp_start_connection(void)
     bool wait = (_flag && strcmp(_flag, "wait") == 0);
     _device = new TCPServerDevice(_ip, _base_port, wait);
 
-    if (_device->open()) {
-        _connected = true;
-    }
+    _connected = _device->open();
 }
 
 /*
@@ -445,6 +443,17 @@ size_t LinuxUARTDriver::write(const uint8_t *buffer, size_t size)
 int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
     int ret = 0;
+
+    /*
+      allow for delayed connection. This allows ArduPilot to start
+      before a network interface is available.
+     */
+    if (!_connected) {
+        _connected = _device->open();
+    }
+    if (!_connected) {
+        return 0;
+    }
     
     ret = _device->write(buf, n);
 
