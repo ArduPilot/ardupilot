@@ -21,7 +21,10 @@
 
 #include "Tracker.h"
 
-#define SCHED_TASK(func) FUNCTOR_BIND(&tracker, &Tracker::func, void)
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
+    .function = FUNCTOR_BIND(&tracker, &Tracker::func, void),\
+    .interval_ticks = _interval_ticks,\
+    .max_time_micros = _max_time_micros}
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
@@ -30,20 +33,20 @@
   microseconds)
  */
 const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
-    { SCHED_TASK(update_ahrs),            1,   1000 },
-    { SCHED_TASK(read_radio),             1,    200 },
-    { SCHED_TASK(update_tracking),        1,   1000 },
-    { SCHED_TASK(update_GPS),             5,   4000 },
-    { SCHED_TASK(update_compass),         5,   1500 },
-    { SCHED_TASK(update_barometer),       5,   1500 },
-    { SCHED_TASK(gcs_update),             1,   1700 },
-    { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
-    { SCHED_TASK(compass_accumulate),     1,   1500 },
-    { SCHED_TASK(barometer_accumulate),   1,    900 },
-    { SCHED_TASK(update_notify),          1,    100 },
-    { SCHED_TASK(check_usb_mux),          5,    300 },
-    { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
-    { SCHED_TASK(one_second_loop),       50,   3900 }
+    SCHED_TASK(update_ahrs,             1,   1000),
+    SCHED_TASK(read_radio,              1,    200),
+    SCHED_TASK(update_tracking,         1,   1000),
+    SCHED_TASK(update_GPS,              5,   4000),
+    SCHED_TASK(update_compass,          5,   1500),
+    SCHED_TASK(update_barometer,        5,   1500),
+    SCHED_TASK(gcs_update,              1,   1700),
+    SCHED_TASK(gcs_data_stream_send,    1,   3000),
+    SCHED_TASK(compass_accumulate,      1,   1500),
+    SCHED_TASK(barometer_accumulate,    1,    900),
+    SCHED_TASK(update_notify,           1,    100),
+    SCHED_TASK(check_usb_mux,           5,    300),
+    SCHED_TASK(gcs_retry_deferred,      1,   1000),
+    SCHED_TASK(one_second_loop,        50,   3900),
 };
 
 /**
