@@ -17,7 +17,6 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
     _num_types = num_types;
     _structures = structure;
     _writes_enabled = true;
-    is_critical_block = false;
 
     // DataFlash
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
@@ -590,7 +589,7 @@ uint16_t DataFlash_Class::StartNewLog(void)
     for (uint8_t i=0; i<_num_types; i++) {
         Log_Write_Format(&_structures[i]);
         // avoid corrupting the APM1/APM2 dataflash by writing too fast
-        hal.scheduler->delay(10);
+        // hal.scheduler->delay(10);
     }
 
     // and all current parameters

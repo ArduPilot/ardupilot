@@ -16,6 +16,7 @@
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
 #include <DataFlash_Backend.h>
+#include <DataFlash_MAVLink.h>
 
 #include <GCS_MAVLink.h> // for mavlink_msg_t
 
@@ -85,11 +86,13 @@ public:
 	void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
+    void Log_Write_DF_MAV(DataFlash_MAVLink &df);
 
     bool logging_started(void);
 
     // for DataFlash_MAVLink:
     void remote_log_block_status_msg(mavlink_message_t* msg);
+    void periodic_tasks(); // may want to split this into GCS/non-GCS duties
     // end for DataFlash_MAVLink:
 
 protected:
@@ -114,7 +117,6 @@ protected:
       read a block
     */
     void ReadBlock(void *pkt, uint16_t size);
-    bool is_critical_block;
 
 private:
     DataFlash_Backend *backend;
@@ -564,6 +566,22 @@ struct PACKED log_GYRO {
     float GyrX, GyrY, GyrZ;
 };
 
+struct PACKED log_DF_MAV_Stats {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint32_t dropped;
+    uint8_t internal_errors; // uint8_t - wishful thinking?
+    uint8_t state_free_avg;
+    uint8_t state_free_min;
+    uint8_t state_free_max;
+    uint8_t state_pending_avg;
+    uint8_t state_pending_min;
+    uint8_t state_pending_max;
+    uint8_t state_sent_avg;
+    uint8_t state_sent_min;
+    uint8_t state_sent_max;
+};
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -621,7 +639,9 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "IhhhhhhhhhB",    "TimeMS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }
+      "MODE", "IMB",         "TimeMS,Mode,ModeNum" }, \
+    { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
+      "DMS", "IIBBBBBBBBBB",         "TimeMS,Drp,IErr,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -763,6 +783,7 @@ Format characters in the format string for binary log messages
 #define LOG_UACK_MSG      181
 #define LOG_UNAK_MSG      182
 #define LOG_USTG_MSG      183
+#define LOG_DF_MAV_STATS  184
 
 // message types 200 to 210 reversed for GPS driver use
 // message types 211 to 220 reversed for autotune use

@@ -73,6 +73,7 @@ public:
 
     // for Dataflash_MAVlink
     virtual void remote_log_block_status_msg(mavlink_message_t* msg) { }
+    virtual void periodic_tasks() { }
     // end for Dataflash_MAVlink
 
 protected:

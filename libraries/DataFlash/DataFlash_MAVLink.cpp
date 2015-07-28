@@ -29,8 +29,6 @@
  # define Debug(fmt, args ...)
 #endif
 
-#define UNUSED_BLOCK 4294967295
-
 extern const AP_HAL::HAL& hal;
 #ifndef MAV_SYS_ID_LOG
 #define MAV_SYS_ID_LOG  1
@@ -45,138 +43,136 @@ DataFlash_MAVLink::DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t c
     DataFlash_Backend(front),
     _chan(chan),
     _initialised(false),
-    _total_blocks(NUM_BUFFER_BLOCKS),
     _block_max_size(BUFFER_BLOCK_SIZE),
-    _latest_block_num(0),
-    _cur_block_address(0),
-    _latest_block_len(0)
+    _next_seq_num(0),
+    _latest_block_len(0),
+    _next_block_number_to_resend(0),
+    _stats_last_collected_time(0),
+    _stats_last_logged_time(0)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
     _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
 #endif
 {
     memset(&mavlink, 0, sizeof(mavlink));
-    memset(_is_critical_block, 0, sizeof(_is_critical_block));
 }
 
 
 // initialisation
 void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    memset(_block_num, 0, sizeof(_block_num));  
     DataFlash_Backend::Init(structure, num_types);
 
     mavlink.system_id = MAV_SYS_ID_LOG;
     mavlink.component_id = MAV_COMP_ID_LOG;
+
+    _blockcount = _blockcount_max;
+    _blocks = NULL;
+    while (_blocks == NULL && _blockcount > 16) { // 16 is a *magic* number
+        _blocks = (struct dm_block *) malloc(_blockcount * sizeof(_blocks[0]));
+    }
+
+    if (_blocks == NULL) {
+        return;
+    }
+
     _initialised = true;
 }
 
-
 /* Write a block of data at current offset */
+uint16_t DataFlash_MAVLink::bufferspace_available() {
+    return (_blockcount_free * 200);
+}
+
 void DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 {
     if (!_initialised || !_logging_started) {
         return;
     }
 
-    //transfer nothing else when in the middle of doing critical blocks (Parameters and Formats) transaction
-    if(is_critical_block) {
-        _only_critical_blocks = true;
-    }
-    if(!is_critical_block && ((hal.scheduler->millis() - _last_response_time) > 2000 || _buffer_empty())) {
-        for(uint8_t block = 0; block < NUM_BUFFER_BLOCKS; block++) {
-            _is_critical_block[block] = false;
-        }
-        _only_critical_blocks = false;
-    }
-    if(!is_critical_block && _only_critical_blocks) {
+    if (bufferspace_available() < size) {
+        stats.dropped++;
         return;
+    }
+    if (_current_block == NULL) {
+        _current_block = next_block();
+        if (_current_block == NULL) {
+            stats.internal_errors++;
+            return;
+        }
     }
 
     uint16_t copied = 0;
 
     while (copied < size) {
-        if(is_critical_block) {
-            _is_critical_block[_cur_block_address] = true;
-        }
         uint16_t remaining_to_copy = size - copied;
         uint16_t _curr_remaining = _block_max_size - _latest_block_len;
         uint16_t to_copy = (remaining_to_copy > _curr_remaining) ? _curr_remaining : remaining_to_copy;
-        memcpy(&_buf[_cur_block_address][_latest_block_len], &((const uint8_t *)pBuffer)[copied], to_copy);
+        memcpy(&(_current_block->buf[_latest_block_len]), &((const uint8_t *)pBuffer)[copied], to_copy);
         copied += to_copy;
         _latest_block_len += to_copy;
         if (_latest_block_len == _block_max_size) {
-            send_log_block(_cur_block_address);  //block full send it
-            _cur_block_address = next_block_address();
-        }
-    }
-}
-
-bool DataFlash_MAVLink::_buffer_empty()
-{
-    for(uint8_t block = 0; block < NUM_BUFFER_BLOCKS; block++) {
-        if(_is_critical_block[block]){
-            return false;
-        }
-    }
-    
-    return true;
-}
-//Get address of empty block to ovewrite
-int8_t DataFlash_MAVLink::next_block_address()
-{
-    //if everything is filled with faormat and param data, edit the last block which mostly is going to be 
-    //a parameter and wouldn't corrupt the file
-    uint8_t oldest_block_address = NUM_BUFFER_BLOCKS - 1;
-
-    for(uint8_t block = 0; block < _total_blocks; block++){
-        if (_block_num[block] == UNUSED_BLOCK) {
-            oldest_block_address = block;
-            break;
-        }
-        if(_block_num[oldest_block_address] > _block_num[block]){
-            if(_is_critical_block[block]) {
-                continue;
+            //block full, mark it to be sent:
+            _current_block->state = BLOCK_STATE_SEND_PENDING;
+            _current_block = next_block();
+            if (_current_block == NULL) {
+                // should not happen - there's a sanity check above
+                stats.internal_errors++;
+                break;
             }
-        
-            oldest_block_address = block;
         }
     }
-    
-    if (_block_num[oldest_block_address] != UNUSED_BLOCK) {
-        perf_count(_perf_overruns);
-    }
-    Debug("%d \n", oldest_block_address);
-    _block_num[oldest_block_address] = _latest_block_num++;
-    _latest_block_len = 0;
-    return oldest_block_address;
+
+    push_log_blocks();
 }
 
-void DataFlash_MAVLink::handle_ack(uint32_t block_num)
+//Get address of empty block to ovewrite
+struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::next_block()
+{
+    for(uint8_t i = 0; i < _blockcount; i++){
+        if (_blocks[i].state == BLOCK_STATE_FREE) {
+            _blocks[i].state = BLOCK_STATE_FILLING;
+            _blocks[i].seqno = _next_seq_num++;
+            _blocks[i].last_sent = 0;
+            _latest_block_len = 0;
+            _blockcount_free--;
+            return &_blocks[i];
+        }
+    }
+    return NULL;
+}
+
+void DataFlash_MAVLink::handle_ack(uint32_t seqno)
 {
     if (!_initialised) {
         return;
     }
     _last_response_time = hal.scheduler->millis();
-    if(block_num == MAV_REMOTE_LOG_DATA_BLOCK_STOP) {
+    if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_STOP) {
         Debug("Received stop-logging packet\n");
         _logging_started = false;
         return;
     }
-    if(block_num == MAV_REMOTE_LOG_DATA_BLOCK_START){
+    if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_START){
         Debug("\nStarting New Log!!\n");
-        memset(_block_num, 0, sizeof(_block_num));
-        memset(_is_critical_block, 0, sizeof(_is_critical_block));
-        _latest_block_num = 0;
-        _cur_block_address = next_block_address();
+        for(uint8_t i=0; i < _blockcount; i++) {
+            _blocks[i].state = BLOCK_STATE_FREE;
+        }
+        _blockcount_free = _blockcount;
+        _current_block = next_block();
+        if (_current_block == NULL) {
+            Debug("No free blocks?!!!\n");
+            return;
+        }
+        stats_init();
         _logging_started = true;
         _front.StartNewLog();
         return;
     }
-    for(uint8_t block = 0; block < _total_blocks; block++){
-        if(_block_num[block] == block_num) {
-            _block_num[block] = UNUSED_BLOCK;                  //forget the block if ack is received
-            _is_critical_block[block] = false;        //the block is ack'd forget that it was critical block if it was
+    for(uint8_t block = 0; block < _blockcount; block++){
+        if(_blocks[block].seqno == seqno) {
+            _blocks[block].state = BLOCK_STATE_FREE;
+            _blockcount_free++;
             return;
         }
     }
@@ -192,15 +188,15 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_message_t* msg)
     }
 }
 
-void DataFlash_MAVLink::handle_retry(uint32_t block_num)
+void DataFlash_MAVLink::handle_retry(uint32_t seqno)
 {
     if (!_initialised) {
         return;
     }
     _last_response_time = hal.scheduler->millis();
-    for(uint8_t block = 0; block < _total_blocks; block++){
-        if(_block_num[block] == block_num) {
-            send_log_block(block);
+    for(uint8_t block = 0; block < _blockcount; block++){
+        if(_blocks[block].seqno == seqno) {
+            _blocks[block].state = BLOCK_STATE_SEND_PENDING;
             return;
         }
     }
@@ -211,12 +207,161 @@ void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
     _chan = chan;
 }
 
+void DataFlash_MAVLink::stats_init() {
+    stats.dropped = 0;
+    stats.internal_errors = 0;
+    stats_reset();
+}
+void DataFlash_MAVLink::stats_reset() {
+    stats.state_free = 0;
+    stats.state_free_min = -1;
+    stats.state_free_max = 0;
+    stats.state_pending = 0;
+    stats.state_pending_min = -1;
+    stats.state_pending_max = 0;
+    stats.state_sent = 0;
+    stats.state_sent_min = -1;
+    stats.state_sent_max = 0;
+    stats.collection_count = 0;
+}
+
+void DataFlash_MAVLink::stats_log()
+{
+    _front.Log_Write_DF_MAV(*this);
+#if REMOTE_LOG_DEBUGGING
+    printf("D:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d\n",
+           stats.dropped,
+           stats.internal_errors,
+           stats.state_free_min,
+           stats.state_free_max,
+           stats.state_free/stats.collection_count,
+           stats.state_pending_min,
+           stats.state_pending_max,
+           stats.state_pending/stats.collection_count,
+           stats.state_sent_min,
+           stats.state_sent_max,
+           stats.state_sent/stats.collection_count
+        );
+#endif
+    stats_reset();
+}
+
+void DataFlash_MAVLink::stats_collect()
+{
+    uint8_t pending = 0;
+    uint8_t sent = 0;
+    uint8_t sfree = 0;
+    for(uint8_t block = 0; block < _blockcount; block++){
+        switch(_blocks[block].state) {
+        case BLOCK_STATE_SEND_PENDING:
+            pending++;
+            break;
+        case BLOCK_STATE_SENT:
+            sent++;
+            break;
+        case BLOCK_STATE_FREE:
+            sfree++;
+            break;
+        case BLOCK_STATE_FILLING:
+            break;
+        };
+    }
+    stats.state_pending += pending;
+    stats.state_sent += sent;
+    stats.state_free += sfree;
+
+    if (pending < stats.state_pending_min) {
+        stats.state_pending_min = pending;
+    }
+    if (pending > stats.state_pending_max) {
+        stats.state_pending_max = pending;
+    }
+    if (sent < stats.state_sent_min) {
+        stats.state_sent_min = sent;
+    }
+    if (sent > stats.state_sent_max) {
+        stats.state_sent_max = sent;
+    }
+    if (sfree < stats.state_free_min) {
+        stats.state_free_min = sfree;
+    }
+    if (sfree > stats.state_free_max) {
+        stats.state_free_max = sfree;
+    }
+    
+    stats.collection_count++;
+}
+
+void DataFlash_MAVLink::stats_handle()
+{
+    uint32_t now = hal.scheduler->millis();
+    if (now - _stats_last_collected_time > 100) {
+        // 10 Hz collection time on stats
+        stats_collect();
+        _stats_last_collected_time = now;
+    }
+    if (now - _stats_last_logged_time > 1000) {
+        // each second.... FIXME put the number elsewhere
+        stats_log();
+        _stats_last_logged_time = now;
+    }
+}
+
+void DataFlash_MAVLink::push_log_blocks()
+{
+    if (!_initialised || !_logging_started) {
+        return;
+    }
+
+    // here's an argument for keeping linked lists for each state!
+    // firstly, send out any pending blocks, in any order:
+    for(uint8_t block = 0; block < _blockcount; block++){
+        if (_blocks[block].state == BLOCK_STATE_SEND_PENDING) {
+            if (! send_log_block(_blocks[block])) {
+                return;
+            }
+        }
+    }
+
+    // next, send out any blocks already sent if they haven't been
+    // sent for a while (trying to catch the situation where both the
+    // original block and any nacks for it have been lost)
+
+    // count ensures we go through the list of blocks at most once
+    // _next_block_number_to_resend remembers where we were up to for next time
+    uint8_t count = 0;
+    uint32_t now = hal.scheduler->millis();
+    uint32_t oldest = now - 100; // 100 milliseconds before resend.  Hmm.
+    while (count++ < _blockcount) {
+        if (_blocks[_next_block_number_to_resend].state != BLOCK_STATE_SENT) {
+            continue;
+        }
+        if (_blocks[_next_block_number_to_resend].last_sent > oldest) {
+            continue;
+        }
+        if (! send_log_block(_blocks[_next_block_number_to_resend])) {
+            return;
+        }
+        _next_block_number_to_resend++;
+        if (_next_block_number_to_resend >= _blockcount) {
+            _next_block_number_to_resend = 0;
+        }
+    }
+}
+
+void DataFlash_MAVLink::periodic_tasks()
+{
+    stats_handle();
+    push_log_blocks();
+}
+
+
 //TODO: handle full txspace properly
-void DataFlash_MAVLink::send_log_block(uint32_t block_address)
+bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
 {
     mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
     if (!_initialised || comm_get_txspace(chan) < 255){
-       return; 
+       return false;
     }
     mavlink_message_t msg;
     mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
@@ -229,12 +374,16 @@ void DataFlash_MAVLink::send_log_block(uint32_t block_address)
                                                           255,                      //GCS SYS ID
                                                           0,
                                                           _block_max_size,
-                                                          _block_num[block_address],
-                                                          _buf[block_address]);
+                                                          block.seqno,
+                                                          block.buf);
     if(comm_get_txspace(chan) < len){
-        return;
+        return false;
     }
+    block.state = BLOCK_STATE_SENT;
+    block.last_sent = hal.scheduler->millis();
     chan_status->current_tx_seq = saved_seq;
     _mavlink_resend_uart(chan, &msg);
+
+    return true;
 }
 #endif

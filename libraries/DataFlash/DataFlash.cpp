@@ -1,5 +1,7 @@
 #include <DataFlash.h>
 
+extern const AP_HAL::HAL& hal;
+
 // start functions pass straight through to backend:
 void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
     backend->WriteBlock(pBuffer, size);
@@ -73,6 +75,32 @@ void DataFlash_Class::EnableWrites(bool enable) {
 void DataFlash_Class::remote_log_block_status_msg(mavlink_message_t* msg) {
     backend->remote_log_block_status_msg(msg);
 }
+void DataFlash_Class::periodic_tasks() {
+    backend->periodic_tasks();
+}
 // end for DataFlash_MAVLink
+
+/*
+ * write statistics about a DF MAV object to DataFlash
+ */
+void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
+{
+    struct log_DF_MAV_Stats pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
+        timestamp         : hal.scheduler->millis(),
+        dropped           : df.stats.dropped,
+        internal_errors   : df.stats.internal_errors,
+        state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
+        state_free_min    : df.stats.state_free_min,
+        state_free_max    : df.stats.state_free_max,
+        state_pending_avg : (uint8_t)(df.stats.state_pending/df.stats.collection_count),
+        state_pending_min : df.stats.state_pending_min,
+        state_pending_max : df.stats.state_pending_max,
+        state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
+        state_sent_min    : df.stats.state_sent_min,
+        state_sent_max    : df.stats.state_sent_max
+    };
+    WriteBlock(&pkt,sizeof(pkt));
+}
 
 // end functions pass straight through to backend
