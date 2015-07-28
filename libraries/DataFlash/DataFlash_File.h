@@ -18,7 +18,6 @@
 #define perf_count(x)
 #endif
 
-
 #include "DataFlash_Backend.h"
 
 class DataFlash_File : public DataFlash_Backend
@@ -36,8 +35,9 @@ public:
     void EraseAll();
 
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
-
+    bool WriteBlock(const void *pBuffer, uint16_t size);
+    uint16_t bufferspace_available();
+    
     // high level interface
     uint16_t find_last_log(void);
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
@@ -55,6 +55,8 @@ public:
 
     // possibly time-consuming preparations handling
     void Prep_MinSpace();
+
+    void periodic_tasks();
 
 private:
     int _write_fd;

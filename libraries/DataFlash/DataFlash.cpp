@@ -1,10 +1,11 @@
 #include <DataFlash.h>
+#include "DataFlash_Backend.h"
 
 extern const AP_HAL::HAL& hal;
 
 // start functions pass straight through to backend:
-void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
-    backend->WriteBlock(pBuffer, size);
+bool DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+    return backend->WriteBlock(pBuffer, size);
 }
 uint16_t DataFlash_Class::start_new_log() {
     return backend->start_new_log();
@@ -80,11 +81,15 @@ void DataFlash_Class::periodic_tasks() {
 }
 // end for DataFlash_MAVLink
 
+#include "DataFlash_MAVLink.h"
 /*
  * write statistics about a DF MAV object to DataFlash
  */
 void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
 {
+    if (df.stats.collection_count == 0) {
+        return;
+    }
     struct log_DF_MAV_Stats pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
         timestamp         : hal.scheduler->millis(),
@@ -98,7 +103,10 @@ void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
         state_pending_max : df.stats.state_pending_max,
         state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
         state_sent_min    : df.stats.state_sent_min,
-        state_sent_max    : df.stats.state_sent_max
+        state_sent_max    : df.stats.state_sent_max,
+        state_retry_avg   : (uint8_t)(df.stats.state_retry/df.stats.collection_count),
+        state_retry_min    : df.stats.state_retry_min,
+        state_retry_max    : df.stats.state_retry_max
     };
     WriteBlock(&pkt,sizeof(pkt));
 }

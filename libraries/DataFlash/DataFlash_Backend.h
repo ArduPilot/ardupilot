@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <GCS_MAVLink.h> // for mavlink_msg_t
 
+#include "DataFlash.h"
+
 class DataFlash_Backend
 {
 public:
@@ -25,9 +27,12 @@ public:
     DataFlash_Backend(DataFlash_Class &front) :
         _front(front),
         _logging_started(false),
-        _writes_enabled(false)
+        _writes_enabled(false),
+        _last_periodic_1Hz(0),
+        _last_periodic_10Hz(0)
         { }
 
+    void internal_error();
     virtual bool CardInserted(void) = 0;
 
     // erase handling
@@ -36,7 +41,7 @@ public:
     virtual void Prep_MinSpace(void) { }
 
     /* Write a block of data at current offset */
-    virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
+    virtual bool WriteBlock(const void *pBuffer, uint16_t size) = 0;
 
     // high level interface
     virtual uint16_t find_last_log(void) = 0;
@@ -66,6 +71,9 @@ public:
         _structures = structure;
     }
 
+    void write_more_preface_messages();
+    virtual uint16_t bufferspace_available() = 0;
+    
     virtual uint16_t start_new_log(void) = 0;
     bool _logging_started;
 
@@ -73,11 +81,16 @@ public:
 
     // for Dataflash_MAVlink
     virtual void remote_log_block_status_msg(mavlink_message_t* msg) { }
-    virtual void periodic_tasks() { }
     // end for Dataflash_MAVlink
+
+    virtual void periodic_tasks();
 
 protected:
     DataFlash_Class &_front;
+
+    virtual void periodic_10Hz(const uint32_t now);
+    virtual void periodic_1Hz(const uint32_t now);
+    virtual void periodic_fullrate(const uint32_t now);
 
     /*
     read and print a log entry using the format strings from the given structure
@@ -95,6 +108,9 @@ protected:
     */
     virtual void ReadBlock(void *pkt, uint16_t size) = 0;
 
+private:
+    uint32_t _last_periodic_1Hz;
+    uint32_t _last_periodic_10Hz;
 };
 
 #endif

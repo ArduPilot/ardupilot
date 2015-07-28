@@ -18,8 +18,7 @@
 #define perf_count(x)
 #endif
 
-#define BUFFER_BLOCK_SIZE 200
-
+#include "DataFlash_Backend.h"
 
 class DataFlash_MAVLink : public DataFlash_Backend
 {
@@ -34,7 +33,7 @@ public:
     bool logging_started() { return _logging_started; }
 
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
+    bool WriteBlock(const void *pBuffer, uint16_t size);
 
     // initialisation
     bool CardInserted(void) { return true; }
@@ -62,11 +61,12 @@ public:
         BLOCK_STATE_FREE = 17,
         BLOCK_STATE_FILLING,
         BLOCK_STATE_SEND_PENDING,
+        BLOCK_STATE_SEND_RETRY,
         BLOCK_STATE_SENT
     };
     struct dm_block {
         uint32_t seqno;
-        uint8_t buf[BUFFER_BLOCK_SIZE];
+        uint8_t buf[MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN];
         dm_block_state state;
         uint32_t last_sent;
     };
@@ -76,6 +76,7 @@ public:
     virtual void handle_retry(uint32_t block_num);
     virtual void set_channel(mavlink_channel_t chan);
     virtual void remote_log_block_status_msg(mavlink_message_t* msg);
+    void free_all_blocks();
 
 protected:
     struct _stats {
@@ -89,19 +90,22 @@ protected:
         uint16_t state_pending; // cumulative across collection period
         uint8_t state_pending_min;
         uint8_t state_pending_max;
+        uint16_t state_retry; // cumulative across collection period
+        uint8_t state_retry_min;
+        uint8_t state_retry_max;
         uint16_t state_sent; // cumulative across collection period
         uint8_t state_sent_min;
         uint8_t state_sent_max;
     } stats;
 
 private:
+    bool _pushing_blocks;
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
     uint8_t _target_component_id;
 
     bool _initialised;
 
-    const uint16_t _block_max_size;
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     bool _logging_started;
@@ -109,25 +113,27 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    uint16_t bufferspace_available();
+    void internal_error();
+    uint16_t bufferspace_available(); // in bytes
+    uint8_t remaining_space_in_current_block();
     // write buffer
-    const static uint8_t _blockcount_max = 128;
     uint8_t _blockcount_free;
     uint8_t _blockcount;
     struct dm_block *_blocks;
     struct dm_block *_current_block;
     struct dm_block *next_block();
 
+    void periodic_10Hz(uint32_t now);
+    void periodic_1Hz(uint32_t now);
+    void periodic_fullrate(uint32_t now);
+    
     void stats_init();
     void stats_reset();
     void stats_collect();
     void stats_log();
-    void stats_handle();
     uint32_t _stats_last_collected_time;
     uint32_t _stats_last_logged_time;
 
-    void periodic_tasks();
- 
     struct {
         // socket to telem2 on aircraft
         bool connected;

@@ -26,7 +26,7 @@ public:
     void EraseAll();
 
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
+    bool WriteBlock(const void *pBuffer, uint16_t size);
 
     // high level interface
     uint16_t find_last_log(void);

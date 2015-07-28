@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <assert.h>
-#include "DataFlash.h"
+#include "DataFlash_SITL.h"
 
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 16384

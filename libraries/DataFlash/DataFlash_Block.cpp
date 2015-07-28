@@ -4,7 +4,7 @@
  */
 
 #include <AP_HAL.h>
-#include "DataFlash.h"
+#include "DataFlash_Block.h"
 
 extern AP_HAL::HAL& hal;
 
@@ -35,10 +35,10 @@ void DataFlash_Block::FinishWrite(void)
     df_BufferIdx = 0;
 }
 
-void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
+bool DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
 {
     if (!CardInserted() || !_logging_started || !_writes_enabled) {
-        return;
+        return false;
     }
     while (size > 0) {
         uint16_t n = df_PageSize - df_BufferIdx;
@@ -68,6 +68,8 @@ void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
             df_FilePage++;
         }
     }
+
+    return true;
 }
 
 
