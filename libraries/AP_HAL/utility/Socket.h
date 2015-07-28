@@ -34,6 +34,7 @@
 class SocketAPM {
 public:
     SocketAPM(bool _datagram);
+    SocketAPM(bool _datagram, int _fd);
     ~SocketAPM();
 
     bool connect(const char *address, uint16_t port);
@@ -47,6 +48,13 @@ public:
 
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);
+
+    // start listening for new tcp connections
+    bool listen(uint16_t backlog);
+
+    // accept a new connection. Only valid for TCP connections after
+    // listen has been used. A new socket is returned
+    SocketAPM *accept(uint32_t timeout_ms);
 
 private:
     bool datagram;

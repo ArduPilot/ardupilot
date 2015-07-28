@@ -25,12 +25,19 @@
   constructor
  */
 SocketAPM::SocketAPM(bool _datagram) :
-datagram(_datagram)
+    SocketAPM(_datagram, 
+              socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
+{}
+
+SocketAPM::SocketAPM(bool _datagram, int _fd) :
+    datagram(_datagram),
+    fd(_fd)
 {
-    fd = socket(AF_INET, datagram?SOCK_DGRAM:SOCK_STREAM, 0);
     fcntl(fd, F_SETFD, FD_CLOEXEC);
-    int one = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    if (!datagram) {
+        int one = 1;
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    }
 }
 
 SocketAPM::~SocketAPM()
@@ -152,6 +159,31 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
         return false;
     }
     return true;
+}
+
+/* 
+   start listening for new tcp connections
+ */
+bool SocketAPM::listen(uint16_t backlog)
+{
+    return ::listen(fd, (int)backlog) == 0;
+}
+
+/*
+  accept a new connection. Only valid for TCP connections after
+  listen has been used. A new socket is returned
+*/
+SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
+{
+    if (!pollin(timeout_ms)) {
+        return NULL;
+    }
+
+    int newfd = ::accept(fd, NULL, NULL);
+    if (newfd == -1) {
+        return NULL;
+    }
+    return new SocketAPM(false, newfd);
 }
 
 #endif // HAL_OS_SOCKETS
