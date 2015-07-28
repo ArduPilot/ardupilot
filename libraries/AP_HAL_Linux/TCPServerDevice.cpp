@@ -9,6 +9,8 @@
 
 #include "TCPServerDevice.h"
 
+extern const AP_HAL::HAL& hal;
+
 TCPServerDevice::TCPServerDevice(const char *ip, uint16_t port, bool wait):
     _ip(ip),
     _port(port),
@@ -62,19 +64,25 @@ bool TCPServerDevice::open()
     listener.reuseaddress();
 
     if (!listener.bind(_ip, _port)) {
-        ::printf("bind failed on %s port %u - %s\n",
-                 _ip,
-                 _port,
-                 strerror(errno));
-        ::exit(1);
+        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+            ::printf("bind failed on %s port %u - %s\n",
+                     _ip,
+                     _port,
+                     strerror(errno));
+            _last_bind_warning = hal.scheduler->millis();
+        }
+        return false;
     }
 
     if (!listener.listen(1)) {
-        ::printf("listen failed on %s port %u - %s\n",
-                 _ip,
-                 _port,
-                 strerror(errno));
-        ::exit(1);
+        if (hal.scheduler->millis() - _last_bind_warning > 5000) {
+            ::printf("listen failed on %s port %u - %s\n",
+                     _ip,
+                     _port,
+                     strerror(errno));
+            _last_bind_warning = hal.scheduler->millis();
+        }
+        return false;
     }
 
     listener.set_blocking(false);

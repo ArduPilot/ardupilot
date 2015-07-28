@@ -19,7 +19,7 @@ UDPDevice::~UDPDevice()
 
 ssize_t UDPDevice::write(const uint8_t *buf, uint16_t n)
 {
-    return socket.sendto(buf, n, _ip, _port);
+    return socket.send(buf, n);
 }
 
 ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
@@ -29,7 +29,7 @@ ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
 
 bool UDPDevice::open()
 {
-    return true;
+    return socket.connect(_ip, _port);
 }
 
 bool UDPDevice::close()
