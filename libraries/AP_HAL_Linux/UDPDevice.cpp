@@ -24,7 +24,7 @@ ssize_t UDPDevice::write(const uint8_t *buf, uint16_t n)
 
 ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
 {
-    return socket.recvfrom(buf, n, 0);
+    return socket.recv(buf, n, 0);
 }
 
 bool UDPDevice::open()
