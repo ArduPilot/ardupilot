@@ -354,7 +354,7 @@ void AP_MPU6000_BusDriver_I2C::read_burst(uint8_t *samples,
         return;
     }
 
-    memcpy(samples, _rx, MPU6000_SAMPLE_SIZE * MPU6000_MAX_FIFO_SAMPLES);
+    memcpy(samples, _rx, n_samples * MPU6000_SAMPLE_SIZE);
 
     return;
 }
