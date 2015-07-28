@@ -29,6 +29,12 @@
 #define SCHEDULER_TASK_EXECUTED 0x2
 #define SCHEDULER_TASK_OVERRUN 0x4
 
+#ifndef __AVR__
+#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_name)
+#endif
+
 /*
   A task scheduler for APM main loops
 
