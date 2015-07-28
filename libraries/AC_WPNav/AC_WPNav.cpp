@@ -760,8 +760,8 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     // calculate spline velocity at origin
     if (stopped_at_start || !prev_segment_exists) {
-    	// if vehicle is stopped at the origin, set origin velocity to 0.1 * distance vector from origin to destination
-    	_spline_origin_vel = (destination - origin) * 0.1f;
+    	// if vehicle is stopped at the origin, set origin velocity to 0.02 * distance vector from origin to destination
+    	_spline_origin_vel = (destination - origin) * 0.02f;
     	_spline_time = 0.0f;
     	_spline_vel_scaler = 0.0f;
     }else{
@@ -791,8 +791,8 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     switch (seg_end_type) {
 
     case SEGMENT_END_STOP:
-        // if vehicle stops at the destination set destination velocity to 0.1 * distance vector from origin to destination
-        _spline_destination_vel = (destination - origin) * 0.1f;
+        // if vehicle stops at the destination set destination velocity to 0.02 * distance vector from origin to destination
+        _spline_destination_vel = (destination - origin) * 0.02f;
         _flags.fast_waypoint = false;
         break;
 
@@ -894,22 +894,50 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         // update target position and velocity from spline calculator
         calc_spline_pos_vel(_spline_time, target_pos, target_vel);
 
+        _pos_delta_unit = target_vel/target_vel.length();
+        calculate_wp_leash_length();
+
+        // get current location
+        Vector3f curr_pos = _inav.get_position();
+        Vector3f track_error = curr_pos - target_pos;
+
+        // calculate the horizontal error
+        float track_error_xy = pythagorous2(track_error.x, track_error.y);
+
+        // calculate the vertical error
+        float track_error_z = fabsf(track_error.z);
+
+        // get position control leash lengths
+        float leash_xy = _pos_control.get_leash_xy();
+        float leash_z;
+        if (track_error.z >= 0) {
+            leash_z = _pos_control.get_leash_up_z();
+        }else{
+            leash_z = _pos_control.get_leash_down_z();
+        }
+
+        // calculate how far along the track we could move the intermediate target before reaching the end of the leash
+        float track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+        if (track_leash_slack < 0.0f) {
+            track_leash_slack = 0.0f;
+        }
+
         // update velocity
         float spline_dist_to_wp = (_destination - target_pos).length();
 
         // if within the stopping distance from destination, set target velocity to sqrt of distance * 2 * acceleration
         if (!_flags.fast_waypoint && spline_dist_to_wp < _slow_down_dist) {
             _spline_vel_scaler = safe_sqrt(spline_dist_to_wp * 2.0f * _wp_accel_cms);
-        }else if(_spline_vel_scaler < _wp_speed_cms) {
+        }else if(_spline_vel_scaler < min(_wp_speed_cms, track_leash_slack/0.02f)) {
             // increase velocity using acceleration
-        	// To-Do: replace 0.1f below with update frequency passed in from main program
-            _spline_vel_scaler += _wp_accel_cms* 0.1f;
+        	// To-Do: replace 0.02f below with update frequency passed in from main program
+            _spline_vel_scaler += _wp_accel_cms* 0.02f;
         }
 
         // constrain target velocity
-        if (_spline_vel_scaler > _wp_speed_cms) {
-            _spline_vel_scaler = _wp_speed_cms;
-        }
+
+        // To-Do: replace 0.02f below with update frequency passed in from main program
+        _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, min(_wp_speed_cms, track_leash_slack/0.02f));
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
         float target_vel_length = target_vel.length();
