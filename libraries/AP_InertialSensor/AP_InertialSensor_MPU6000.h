@@ -31,6 +31,7 @@
 class AP_MPU6000_BusDriver
 {
 public:
+    virtual ~AP_MPU6000_BusDriver() { };
     virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
     virtual void read8(uint8_t reg, uint8_t *val) = 0;
     virtual void write8(uint8_t reg, uint8_t val) = 0;
@@ -45,6 +46,7 @@ class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
+    ~AP_InertialSensor_MPU6000();
     static AP_InertialSensor_Backend *detect_i2c(AP_InertialSensor &_imu,
                                                  AP_HAL::I2CDriver *i2c,
                                                  uint8_t addr);
@@ -57,6 +59,9 @@ public:
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
 
 private:
+    static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
+                                              AP_MPU6000_BusDriver *bus);
+
 #if MPU6000_DEBUG
     void _dump_registers(void);
 #endif
