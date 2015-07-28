@@ -45,6 +45,9 @@ public:
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
+    // return true if there is pending data for input
+    bool pollin(uint32_t timeout_ms);
+
 private:
     bool datagram;
     int fd = -1;
