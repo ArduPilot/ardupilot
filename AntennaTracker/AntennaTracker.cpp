@@ -23,8 +23,10 @@
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
     .function = FUNCTOR_BIND(&tracker, &Tracker::func, void),\
+    AP_SCHEDULER_NAME_INITIALIZER(func)\
     .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros}
+    .max_time_micros = _max_time_micros,\
+}
 
 /*
   scheduler table - all regular tasks apart from the fast_loop()
