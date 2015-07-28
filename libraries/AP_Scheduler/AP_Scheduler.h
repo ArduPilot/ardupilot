@@ -45,6 +45,7 @@ public:
 
     struct Task {
         task_fn_t function;
+        const char *name;
         uint16_t interval_ticks;
         uint16_t max_time_micros;
     };
