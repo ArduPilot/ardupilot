@@ -20,7 +20,7 @@
 #ifndef __AP_HAL_UTILITY_PRINT_H__
 #define __AP_HAL_UTILITY_PRINT_H__
 
-#include "../AP_HAL_Namespace.h"
+#include <AP_HAL/AP_HAL_Namespace.h>
 
 #include <inttypes.h>
 #include <string.h>

@@ -31,7 +31,7 @@
 #ifndef	_FTOA_ENGINE_H
 #define	_FTOA_ENGINE_H
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdint.h>
 
 int16_t ftoa_engine(float val, char *buf,
