@@ -8,11 +8,17 @@
 void Plane::send_heartbeat(mavlink_channel_t chan)
 {
     uint8_t base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    uint8_t system_status = is_flying() ? MAV_STATE_ACTIVE : MAV_STATE_STANDBY;
+    uint8_t system_status;
     uint32_t custom_mode = control_mode;
     
     if (failsafe.state != FAILSAFE_NONE) {
         system_status = MAV_STATE_CRITICAL;
+    } else if (plane.auto_state.is_crashed) {
+        system_status = MAV_STATE_EMERGENCY;
+    } else if (is_flying()) {
+        system_status = MAV_STATE_ACTIVE;
+    } else {
+        system_status = MAV_STATE_STANDBY;
     }
 
     // work out the base_mode. This value is not very useful
