@@ -17,7 +17,7 @@
 //	Initial Code by Jon Challinger
 //  Modified by Paul Riseborough
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_PitchController.h"
 
 extern const AP_HAL::HAL& hal;
