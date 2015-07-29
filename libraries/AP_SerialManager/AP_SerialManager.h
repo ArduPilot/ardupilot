@@ -24,10 +24,10 @@
 #ifndef _AP_SERIALMANAGER_
 #define _AP_SERIALMANAGER_
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define SERIALMANAGER_NUM_PORTS 5
 
