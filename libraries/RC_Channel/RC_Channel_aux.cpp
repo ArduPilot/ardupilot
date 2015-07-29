@@ -2,8 +2,8 @@
 
 #include "RC_Channel_aux.h"
 
-#include <AP_Math.h>
-#include <AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo RC_Channel_aux::var_info[] PROGMEM = {
