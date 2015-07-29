@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_ADC_ADS1115.h"
 
