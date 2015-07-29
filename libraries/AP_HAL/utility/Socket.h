@@ -49,6 +49,9 @@ public:
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);
 
+    // return true if there is room for output data
+    bool pollout(uint32_t timeout_ms);
+
     // start listening for new tcp connections
     bool listen(uint16_t backlog);
 
