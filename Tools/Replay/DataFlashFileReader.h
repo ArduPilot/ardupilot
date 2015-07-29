@@ -1,7 +1,7 @@
 #ifndef REPLAY_DATAFLASHREADER_H
 #define REPLAY_DATAFLASHREADER_H
 
-#include <DataFlash.h>
+#include <DataFlash/DataFlash.h>
 
 class DataFlashFileReader
 {
