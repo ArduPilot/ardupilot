@@ -6,11 +6,11 @@
 #ifndef __AC_PID_H__
 #define __AC_PID_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <math.h>
-#include <DataFlash.h>
+#include <DataFlash/DataFlash.h>
 
 #define AC_PID_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PID_FILT_HZ_MIN      0.01f   // minimum input filter frequency

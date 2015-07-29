@@ -6,11 +6,11 @@
 #ifndef __AC_HELI_PID_H__
 #define __AC_HELI_PID_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <math.h>
-#include <AC_PID.h>
+#include "AC_PID.h"
 
 /// @class	AC_HELI_PID
 /// @brief	Heli PID control class
