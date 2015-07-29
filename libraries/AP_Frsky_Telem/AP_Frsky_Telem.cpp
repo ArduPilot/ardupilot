@@ -20,7 +20,7 @@
 /* 
    FRSKY Telemetry library
 */
-#include <AP_Frsky_Telem.h>
+#include "AP_Frsky_Telem.h"
 extern const AP_HAL::HAL& hal;
 
 //constructor
