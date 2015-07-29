@@ -682,6 +682,22 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     start_logging();
 #endif
 
+    // check accels and gyro are healthy
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        if(!ins.get_accel_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Accelerometers not healthy"));
+            }
+            return false;
+        }
+        if(!ins.get_gyro_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyros not healthy"));
+            }
+            return false;
+        }
+    }
+
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
         if (display_failure) {
