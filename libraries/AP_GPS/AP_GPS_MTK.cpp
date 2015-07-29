@@ -21,7 +21,7 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 #include "AP_GPS_MTK.h"
 
 // initialisation blobs to send to the GPS to try to get it into the

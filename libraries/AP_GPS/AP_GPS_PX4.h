@@ -21,8 +21,8 @@
 #ifndef __AP_GPS_PX4_H__
 #define __AP_GPS_PX4_H__
 
-#include <AP_HAL.h>
-#include <AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_GPS.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <modules/uORB/topics/vehicle_gps_position.h>
 
