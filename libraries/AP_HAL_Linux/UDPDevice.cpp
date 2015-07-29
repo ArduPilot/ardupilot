@@ -3,6 +3,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
 #include "UDPDevice.h"
 
@@ -19,6 +21,9 @@ UDPDevice::~UDPDevice()
 
 ssize_t UDPDevice::write(const uint8_t *buf, uint16_t n)
 {
+    if (!socket.pollout(0)) {
+        return -1;
+    }
     return socket.send(buf, n);
 }
 

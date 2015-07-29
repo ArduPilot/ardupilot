@@ -29,6 +29,7 @@ public:
 
     void set_device_path(const char *path);
 
+    bool _write_pending_bytes(void);
     virtual void _timer_tick(void);
 
     enum flow_control get_flow_control(void) { return _flow_control; }
