@@ -17,10 +17,10 @@
 #ifndef AP_Rally_h
 #define AP_Rally_h
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_AHRS.h>
-#include <../StorageManager/StorageManager.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <StorageManager/StorageManager.h>
 
 #define AP_RALLY_WP_SIZE        15  // eeprom size of rally points
 
