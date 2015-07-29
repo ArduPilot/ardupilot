@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_CLASS_H__
 #define __AP_HAL_FLYMAPLE_CLASS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_FLYMAPLE_Namespace.h"
 

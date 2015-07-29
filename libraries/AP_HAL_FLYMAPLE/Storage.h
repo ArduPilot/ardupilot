@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_STORAGE_H__
 #define __AP_HAL_FLYMAPLE_STORAGE_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEStorage : public AP_HAL::Storage {
 public:
