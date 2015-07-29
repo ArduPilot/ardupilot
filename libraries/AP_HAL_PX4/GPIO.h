@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_PX4_GPIO_H__
 #define __AP_HAL_PX4_GPIO_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 
 #define PX4_GPIO_PIEZO_PIN              110
 #define PX4_GPIO_EXT_FMU_RELAY1_PIN     111
