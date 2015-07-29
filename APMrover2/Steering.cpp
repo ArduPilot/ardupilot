@@ -85,8 +85,10 @@ bool Rover::use_pivot_steering(void)
   calculate the throtte for auto-throttle modes
  */
 void Rover::calc_throttle(float target_speed)
-{  
-    if (!auto_check_trigger()) {
+{
+    // If not autostarting OR we are loitering at a waypoint
+    // then set the throttle to minimum
+    if (!auto_check_trigger() || ((loiter_time > 0) && (control_mode == AUTO))) {
         channel_throttle->servo_out = g.throttle_min.get();
         return;
     }
@@ -196,6 +198,12 @@ void Rover::calc_lateral_acceleration()
  */
 void Rover::calc_nav_steer()
 {
+    // check to see if the rover is loitering
+    if ((loiter_time > 0) && (control_mode == AUTO)) {
+        channel_steer->servo_out = 0;
+        return;
+    }
+
     // add in obstacle avoidance
     lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
 
