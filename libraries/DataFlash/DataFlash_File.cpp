@@ -38,6 +38,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
     DataFlash_Backend(front),
     _write_fd(-1),
     _read_fd(-1),
+    _read_fd_log_num(0),
     _read_offset(0),
     _write_offset(0),
     _initialised(false),
