@@ -22,8 +22,8 @@
 #ifndef __AP_MOUNT_BACKEND_H__
 #define __AP_MOUNT_BACKEND_H__
 
-#include <AP_Common.h>
-#include <AP_Mount.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_Mount.h"
 
 class AP_Mount_Backend
 {
