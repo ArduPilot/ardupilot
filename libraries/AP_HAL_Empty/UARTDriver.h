@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_EMPTY_UARTDRIVER_H__
 #define __AP_HAL_EMPTY_UARTDRIVER_H__
 
-#include <AP_HAL_Empty.h>
+#include "AP_HAL_Empty.h"
 
 class Empty::EmptyUARTDriver : public AP_HAL::UARTDriver {
 public:
