@@ -6,17 +6,17 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 
-#include <AP_Math.h>
-#include "../AP_Compass/AP_Compass.h"
-#include "../AP_Declination/AP_Declination.h"
-#include "../SITL/SITL.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 

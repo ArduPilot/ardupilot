@@ -2,9 +2,9 @@
 #ifndef __AP_HAL_SITL_RCOUTPUT_H__
 #define __AP_HAL_SITL_RCOUTPUT_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 
 class HALSITL::SITLRCOutput : public AP_HAL::RCOutput {
 public:

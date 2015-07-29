@@ -6,8 +6,8 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 

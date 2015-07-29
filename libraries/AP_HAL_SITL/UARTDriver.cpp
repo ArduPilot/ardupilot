@@ -17,7 +17,7 @@
 //
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <limits.h>
@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdarg.h>
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 
 #include <errno.h>
 #include <sys/ioctl.h>

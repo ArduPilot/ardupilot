@@ -1,27 +1,27 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
-#include <utility/getopt_cpp.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 
-#include <SIM_Multicopter.h>
-#include <SIM_Helicopter.h>
-#include <SIM_Rover.h>
-#include <SIM_CRRCSim.h>
-#include <SIM_Gazebo.h>
-#include <SIM_last_letter.h>
-#include <SIM_JSBSim.h>
-#include <SIM_Tracker.h>
-#include <SIM_Balloon.h>
+#include <SITL/SIM_Multicopter.h>
+#include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_Rover.h>
+#include <SITL/SIM_CRRCSim.h>
+#include <SITL/SIM_Gazebo.h>
+#include <SITL/SIM_last_letter.h>
+#include <SITL/SIM_JSBSim.h>
+#include <SITL/SIM_Tracker.h>
+#include <SITL/SIM_Balloon.h>
 
 extern const AP_HAL::HAL& hal;
 

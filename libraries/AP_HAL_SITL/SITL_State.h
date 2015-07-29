@@ -2,11 +2,11 @@
 #ifndef __AP_HAL_SITL_STATE_H__
 #define __AP_HAL_SITL_STATE_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 
@@ -16,13 +16,13 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 
-#include "../AP_Baro/AP_Baro.h"
-#include "../AP_InertialSensor/AP_InertialSensor.h"
-#include "../AP_Compass/Compass.h"
-#include "../AP_OpticalFlow/AP_OpticalFlow.h"
-#include "../AP_Terrain/AP_Terrain.h"
-#include "../SITL/SITL.h"
-#include "../SITL/SIM_Gimbal.h"
+#include <AP_Baro/AP_Baro.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Compass/Compass.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <SITL/SITL.h>
+#include <SITL/SIM_Gimbal.h>
 
 class HAL_SITL;
 
