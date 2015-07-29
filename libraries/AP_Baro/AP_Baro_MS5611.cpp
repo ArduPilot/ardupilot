@@ -161,7 +161,9 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _updated(false),
     _state(0),
     _last_timer(0),
-    _use_timer(use_timer)
+    _use_timer(use_timer),
+    _D1(0.0f),
+    _D2(0.0f)
 {
     _instance = _frontend.register_sensor();
     _serial->init();
