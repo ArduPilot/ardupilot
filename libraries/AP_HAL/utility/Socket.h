@@ -41,10 +41,14 @@ public:
     bool bind(const char *address, uint16_t port);
     void reuseaddress();
     void set_blocking(bool blocking);
+    void set_broadcast(void);
 
     ssize_t send(const void *pkt, size_t size);
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
+
+    // return the IP address and port of the last received packet
+    void last_recv_address(const char *&ip_addr, uint16_t &port);
 
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);
@@ -61,6 +65,8 @@ public:
 
 private:
     bool datagram;
+    struct sockaddr_in in_addr {};
+
     int fd = -1;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
