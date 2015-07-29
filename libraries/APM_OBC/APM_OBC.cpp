@@ -20,11 +20,11 @@
     Outback Challenge Failsafe module
 
 */
-#include <AP_HAL.h>
-#include <APM_OBC.h>
-#include <RC_Channel.h>
-#include <RC_Channel_aux.h>
-#include <GCS.h>
+#include <AP_HAL/AP_HAL.h>
+#include "APM_OBC.h"
+#include <RC_Channel/RC_Channel.h>
+#include <RC_Channel/RC_Channel_aux.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
