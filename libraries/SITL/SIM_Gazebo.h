@@ -21,7 +21,7 @@
 #define _SIM_GAZEBO_H
 
 #include "SIM_Aircraft.h"
-#include <utility/Socket.h>
+#include <AP_HAL/utility/Socket.h>
 
 /*
   Gazebo simulator
