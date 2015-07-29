@@ -76,6 +76,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         case DEVICE_TCP:
         {
             _tcp_start_connection();
+            _flow_control = FLOW_CONTROL_ENABLE;
             break;
         }
 
@@ -125,8 +126,8 @@ void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
     if (rxS < 8192) {
         rxS = 8192;
     }
-    if (txS < 8192) {
-        txS = 8192;
+    if (txS < 32000) {
+        txS = 32000;
     }
 
     /*
@@ -483,21 +484,17 @@ int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 
 
 /*
-  push any pending bytes to/from the serial port. This is called at
-  1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously. 
+  try to push out one lump of pending bytes
+  return true if progress is made
  */
-void LinuxUARTDriver::_timer_tick(void)
+bool LinuxUARTDriver::_write_pending_bytes(void)
 {
     uint16_t n;
 
-    if (!_initialised) return;
-
-    _in_timer = true;
-
     // write any pending bytes
     uint16_t _tail;
-    n = BUF_AVAILABLE(_writebuf);
+    uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
+    n = available_bytes;
     if (_packetise && n > 0 && _writebuf[_writebuf_head] == 254) {
         // this looks like a MAVLink packet - try to write on
         // packet boundaries when possible
@@ -542,6 +539,27 @@ void LinuxUARTDriver::_timer_tick(void)
                 }
             }
         }
+    }
+
+    return BUF_AVAILABLE(_writebuf) != available_bytes;
+}
+
+/*
+  push any pending bytes to/from the serial port. This is called at
+  1kHz in the timer thread. Doing it this way reduces the system call
+  overhead in the main task enormously. 
+ */
+void LinuxUARTDriver::_timer_tick(void)
+{
+    uint16_t n;
+
+    if (!_initialised) return;
+
+    _in_timer = true;
+
+    uint8_t num_send = 10;
+    while (num_send != 0 && _write_pending_bytes()) {
+        num_send--;
     }
 
     // try to fill the read buffer
