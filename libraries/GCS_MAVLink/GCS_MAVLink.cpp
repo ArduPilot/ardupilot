@@ -21,11 +21,11 @@ This provides some support code and variables for MAVLink enabled sketches
 
 */
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
-#include <GCS.h>
-#include <AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "GCS_MAVLink.h"
+#include "GCS.h"
+#include <AP_GPS/AP_GPS.h>
 
 #ifdef MAVLINK_SEPARATE_HELPERS
 #include "include/mavlink/v1.0/mavlink_helpers.h"

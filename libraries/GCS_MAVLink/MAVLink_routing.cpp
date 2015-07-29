@@ -19,10 +19,10 @@
 /// @brief	handle routing of MAVLink packets by sysid/componentid
 
 #include <stdio.h>
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <GCS.h>
-#include <MAVLink_routing.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "GCS.h"
+#include "MAVLink_routing.h"
 
 extern const AP_HAL::HAL& hal;
 

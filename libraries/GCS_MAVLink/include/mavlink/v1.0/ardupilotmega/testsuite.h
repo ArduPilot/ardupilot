@@ -21,7 +21,7 @@ static void mavlink_test_all(uint8_t system_id, uint8_t component_id, mavlink_me
 }
 #endif
 
-#include "../common/testsuite.h"
+#include <GCS_MAVLink/include/mavlink/v1.0/common/testsuite.h>
 
 
 static void mavlink_test_sensor_offsets(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
