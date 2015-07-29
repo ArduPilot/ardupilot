@@ -2,9 +2,9 @@
 #ifndef AP_BATTMONITOR_SMBUS_H
 #define AP_BATTMONITOR_SMBUS_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor_Backend.h"
 
 #define AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS 5000000    // sensor becomes unhealthy if no successful readings for 5 seconds
