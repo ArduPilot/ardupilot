@@ -21,17 +21,17 @@
 #ifndef AP_SmallEKF
 #define AP_SmallEKF
 
-#include <AP_Math.h>
-#include <AP_InertialSensor.h>
-#include <AP_Baro.h>
-#include <AP_Airspeed.h>
-#include <AP_Compass.h>
-#include <AP_Param.h>
-#include <AP_Nav_Common.h>
-#include <AP_AHRS.h>
-#include <AP_NavEKF.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Param/AP_Param.h>
+#include "AP_Nav_Common.h"
+#include <AP_AHRS/AP_AHRS.h>
+#include "AP_NavEKF.h"
 
-#include <vectorN.h>
+#include <AP_Math/vectorN.h>
 
 class SmallEKF
 {

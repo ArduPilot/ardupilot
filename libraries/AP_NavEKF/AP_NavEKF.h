@@ -21,19 +21,19 @@
 #ifndef AP_NavEKF
 #define AP_NavEKF
 
-#include <AP_Math.h>
-#include <AP_InertialSensor.h>
-#include <AP_Baro.h>
-#include <AP_Airspeed.h>
-#include <AP_Compass.h>
-#include <AP_Param.h>
-#include <AP_Nav_Common.h>
-#include <GCS_MAVLink.h>
-#include <AP_RangeFinder.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Param/AP_Param.h>
+#include "AP_Nav_Common.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 // #define MATH_CHECK_INDEXES 1
 
-#include <vectorN.h>
+#include <AP_Math/vectorN.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <systemlib/perf_counter.h>
