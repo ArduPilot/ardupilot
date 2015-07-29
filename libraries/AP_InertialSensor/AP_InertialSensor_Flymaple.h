@@ -3,12 +3,12 @@
 #ifndef __AP_INERTIAL_SENSOR_FLYMAPLE_H__
 #define __AP_INERTIAL_SENSOR_FLYMAPLE_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "AP_InertialSensor.h"
-#include <Filter.h>
-#include <LowPassFilter2p.h>
+#include <Filter/Filter.h>
+#include <Filter/LowPassFilter2p.h>
 
 class AP_InertialSensor_Flymaple : public AP_InertialSensor_Backend
 {

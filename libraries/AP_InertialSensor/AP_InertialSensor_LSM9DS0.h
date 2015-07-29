@@ -4,7 +4,7 @@
 
 #define LSM9DS0_DEBUG 0
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 
 class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend

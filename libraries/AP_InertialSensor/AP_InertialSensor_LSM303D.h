@@ -4,9 +4,9 @@
 #define __AP_INERTIAL_SENSOR_LSM303D_H__
 
 #include <stdint.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
 // enable debug to see a register dump on startup
