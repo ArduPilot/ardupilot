@@ -20,7 +20,7 @@
 /// Author: Leonard Hall <LeonardTHall@gmail.com>
 
 #include <inttypes.h>
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "LowPassFilter2p.h"
 
 float DigitalBiquadFilter::apply(float sample, const struct biquad_params &params)

@@ -19,9 +19,9 @@
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
 //
 #include <inttypes.h>
-#include <AP_Math.h>
-#include <Filter.h>
-#include <DerivativeFilter.h>
+#include <AP_Math/AP_Math.h>
+#include "Filter.h"
+#include "DerivativeFilter.h"
 
 
 template <class T,  uint8_t FILTER_SIZE>

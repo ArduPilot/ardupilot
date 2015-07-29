@@ -2,7 +2,7 @@
 #ifndef __FILTER_BUTTER_H__
 #define __FILTER_BUTTER_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 template <typename Coefficients>
 class Butter2
