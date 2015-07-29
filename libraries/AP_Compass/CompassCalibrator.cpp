@@ -58,8 +58,12 @@
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
  *
  * The sample acceptance distance is determined as follows:
- * < EXPLANATION OF SAMPLE ACCEPTANCE TO BE FILLED IN BY SID >
- *
+ * for any regular polyhedron with Triangular faces
+ * angle subtended by two closest point = arccos(cos(A)/(1-cos(A)))
+ *                                      : where A = (4pi/F + pi)/3
+ *                                      : and F is the number of faces
+ *          for polyhedron in consideration F = 2V-4 (where V is vertices or points in our case)
+ * above equation was proved after solving for spherical triangular excess and related equations
  */
 
 #include "CompassCalibrator.h"
@@ -448,7 +452,7 @@ void CompassCalibrator::run_sphere_fit()
     memset(&JTJ,0,sizeof(JTJ));
     memset(&JTJ2,0,sizeof(JTJ2));
     memset(&JTFI,0,sizeof(JTFI));
-
+    // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
 
@@ -468,7 +472,7 @@ void CompassCalibrator::run_sphere_fit()
     }
 
 
-    //------------------------Levenberg-part-starts-here---------------------------------//
+    //------------------------Levenberg-Marquardt-part-starts-here---------------------------------//
     //refer: http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm#Choice_of_damping_parameter
     for(uint8_t i = 0; i < COMPASS_CAL_NUM_SPHERE_PARAMS; i++) {
         JTJ[i*COMPASS_CAL_NUM_SPHERE_PARAMS+i] += _sphere_lambda;
@@ -502,7 +506,7 @@ void CompassCalibrator::run_sphere_fit()
     } else if(fit1 < _fitness){
         fitness = fit1;
     }
-    //--------------------Levenberg-part-ends-here--------------------------------//
+    //--------------------Levenberg-Marquardt-part-ends-here--------------------------------//
 
     if(!isnan(fitness) && fitness < _fitness) {
         _fitness = fitness;
@@ -563,7 +567,7 @@ void CompassCalibrator::run_ellipsoid_fit()
     memset(&JTJ,0,sizeof(JTJ));
     memset(&JTJ2,0,sizeof(JTJ2));
     memset(&JTFI,0,sizeof(JTFI));
-
+    // Gauss Newton Part common for all kind of extensions including LM
     for(uint16_t k = 0; k<_samples_collected; k++) {
         Vector3f sample = _sample_buffer[k].get();
 
@@ -584,7 +588,7 @@ void CompassCalibrator::run_ellipsoid_fit()
 
 
 
-    //------------------------Levenberg-part-starts-here---------------------------------//
+    //------------------------Levenberg-Marquardt-part-starts-here---------------------------------//
     //refer: http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm#Choice_of_damping_parameter
     for(uint8_t i = 0; i < COMPASS_CAL_NUM_ELLIPSOID_PARAMS; i++) {
         JTJ[i*COMPASS_CAL_NUM_ELLIPSOID_PARAMS+i] += _ellipsoid_lambda;
