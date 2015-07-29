@@ -64,7 +64,6 @@ private:
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
 
-    bool heli_servos;
     double last_timestamp;
     SocketAPM sock;
 };
