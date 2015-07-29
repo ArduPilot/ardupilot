@@ -161,6 +161,27 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
     return true;
 }
 
+
+/*
+  return true if there is room for output data
+ */
+bool SocketAPM::pollout(uint32_t timeout_ms)
+{
+    fd_set fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000UL;
+
+    if (select(fd+1, NULL, &fds, NULL, &tv) != 1) {
+        return false;
+    }
+    return true;
+}
+
 /* 
    start listening for new tcp connections
  */
@@ -183,6 +204,9 @@ SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return NULL;
     }
+    // turn off nagle for lower latency
+    int one = 1;
+    setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     return new SocketAPM(false, newfd);
 }
 
