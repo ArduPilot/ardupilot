@@ -176,7 +176,8 @@ extern const AP_HAL::HAL& hal;
 
 /* SPI bus driver implementation */
 
-AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void)
+AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void) :
+    _error_count(0)
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
 }
@@ -273,7 +274,8 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
 /* I2C bus driver implementation */
 AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
     _addr(addr),
-    _i2c(i2c)
+    _i2c(i2c),
+    _i2c_sem(NULL)
 {}
 
 void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
@@ -392,7 +394,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _accel_sum(),
     _gyro_sum(),
 #endif
-    _sum_count(0)
+    _sum_count(0),
+    _samples(NULL)
 {
 
 }
