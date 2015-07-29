@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "ToneAlarm_Linux.h"
@@ -27,7 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "../AP_HAL_Linux/Util.h"
+#include <AP_HAL_Linux/Util.h>
 #include <stdio.h>
 #include <errno.h>
 
