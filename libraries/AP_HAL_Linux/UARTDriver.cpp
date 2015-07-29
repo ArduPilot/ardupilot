@@ -264,7 +264,8 @@ bool LinuxUARTDriver::_serial_start_connection()
  */
 void LinuxUARTDriver::_udp_start_connection(void)
 {
-    _device = new UDPDevice(_ip, _base_port);
+    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+    _device = new UDPDevice(_ip, _base_port, bcast);
     _connected = _device->open();
     _device->set_blocking(false);
 
