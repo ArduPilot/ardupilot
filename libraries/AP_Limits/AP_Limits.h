@@ -15,7 +15,7 @@
 #endif
 
 #include <stdint.h>
-#include <AP_Param.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_Limit_Module.h"
 #include "AP_Limit_Altitude.h"
 #include "AP_Limit_Geofence.h"
