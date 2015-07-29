@@ -45,8 +45,12 @@
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
+#define UBLOX_GNSS_SETTINGS 1
+#define UBLOX_HW_LOGGING 1
 #else
 #define UBLOX_RXM_RAW_LOGGING 0
+#define UBLOX_GNSS_SETTINGS 0
+#define UBLOX_HW_LOGGING 0
 #endif
 
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
@@ -72,6 +76,7 @@ private:
         uint8_t msg_id;
         uint16_t length;
     };
+#if UBLOX_GNSS_SETTINGS
     struct PACKED ubx_cfg_gnss {
         uint8_t msgVer;
         uint8_t numTrkChHw;
@@ -85,6 +90,7 @@ private:
             uint32_t flags;
         } configBlock[UBLOX_MAX_GNSS_CONFIG_BLOCKS];
     };
+#endif
     struct PACKED ubx_cfg_nav_rate {
         uint16_t measure_rate_ms;
         uint16_t nav_rate;
@@ -113,6 +119,7 @@ private:
         uint32_t res3;
         uint32_t res4;
     };
+#if UBLOX_GNSS_SETTINGS
     struct PACKED ubx_cfg_sbas {
         uint8_t mode;
         uint8_t usage;
@@ -120,7 +127,7 @@ private:
         uint8_t scanmode2;
         uint32_t scanmode1;
     };
-
+#endif
     struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
         int32_t longitude;
@@ -179,6 +186,8 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
+
+#if UBLOX_HW_LOGGING
     // Lea6 uses a 60 byte message
     struct PACKED ubx_mon_hw_60 {
         uint32_t pinSel;
@@ -231,6 +240,7 @@ private:
         uint32_t postStatus;
         uint32_t reserved2;
     };
+#endif
     struct PACKED ubx_nav_svinfo_header {
         uint32_t itow;
         uint8_t numCh;
@@ -286,11 +296,15 @@ private:
         ubx_nav_solution solution;
         ubx_nav_velned velned;
         ubx_cfg_nav_settings nav_settings;
+#if UBLOX_HW_LOGGING
         ubx_mon_hw_60 mon_hw_60;
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
+#endif
+#if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
         ubx_cfg_sbas sbas;
+#endif
         ubx_nav_svinfo_header svinfo_header;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
