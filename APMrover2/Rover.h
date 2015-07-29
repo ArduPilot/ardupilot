@@ -26,63 +26,63 @@
 #include <stdarg.h>
 
 // Libraries
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_HAL.h>
-#include <AP_Menu.h>
-#include <AP_Param.h>
-#include <StorageManager.h>
-#include <AP_GPS.h>         // ArduPilot GPS library
-#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource.h>
-#include <AP_Baro.h>
-#include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
-#include <AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <AP_NavEKF.h>
-#include <AP_Mission.h>     // Mission command library
-#include <AP_Rally.h>
-#include <AP_Terrain.h>
-#include <PID.h>            // PID library
-#include <RC_Channel.h>     // RC Channel Library
-#include <AP_RangeFinder.h>	// Range finder library
-#include <Filter.h>			// Filter library
-#include <Butter.h>			// Filter library - butterworth filter
-#include <AP_Buffer.h>      // FIFO buffer library
-#include <ModeFilter.h>		// Mode Filter from Filter library
-#include <AverageFilter.h>	// Mode Filter from Filter library
-#include <AP_Relay.h>       // APM relay
-#include <AP_ServoRelayEvents.h>
-#include <AP_Mount.h>		// Camera/Antenna mount
-#include <AP_Camera.h>		// Camera triggering
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
-#include <AP_SerialManager.h>   // Serial manager library
-#include <AP_Airspeed.h>    // needed for AHRS build
-#include <AP_Vehicle.h>     // needed for AHRS build
-#include <DataFlash.h>
-#include <AP_RCMapper.h>        // RC input mapping library
-#include <SITL.h>
-#include <AP_Scheduler.h>       // main loop scheduler
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Menu/AP_Menu.h>
+#include <AP_Param/AP_Param.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_GPS/AP_GPS.h>         // ArduPilot GPS library
+#include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
+#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_Mission/AP_Mission.h>     // Mission command library
+#include <AP_Rally/AP_Rally.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <PID/PID.h>            // PID library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <AP_RangeFinder/AP_RangeFinder.h>	// Range finder library
+#include <Filter/Filter.h>			// Filter library
+#include <Filter/Butter.h>			// Filter library - butterworth filter
+#include <AP_Buffer/AP_Buffer.h>      // FIFO buffer library
+#include <Filter/ModeFilter.h>		// Mode Filter from Filter library
+#include <Filter/AverageFilter.h>	// Mode Filter from Filter library
+#include <AP_Relay/AP_Relay.h>       // APM relay
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Mount/AP_Mount.h>		// Camera/Antenna mount
+#include <AP_Camera/AP_Camera.h>		// Camera triggering
+#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
+#include <AP_Airspeed/AP_Airspeed.h>    // needed for AHRS build
+#include <AP_Vehicle/AP_Vehicle.h>     // needed for AHRS build
+#include <DataFlash/DataFlash.h>
+#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
+#include <SITL/SITL.h>
+#include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <stdarg.h>
-#include <AP_Navigation.h>
-#include <APM_Control.h>
-#include <AP_L1_Control.h>
-#include <AP_BoardConfig.h>
-#include <AP_Frsky_Telem.h>
+#include <AP_Navigation/AP_Navigation.h>
+#include <APM_Control/APM_Control.h>
+#include <AP_L1_Control/AP_L1_Control.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_SITL.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux.h>
-#include <AP_HAL_Empty.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
+#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include "compat.h"
 
-#include <AP_Notify.h>      // Notify library
-#include <AP_BattMonitor.h> // Battery monitor library
-#include <AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_Notify/AP_Notify.h>      // Notify library
+#include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
+#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
 // Configuration
 #include "config.h"
@@ -90,9 +90,9 @@
 // Local modules
 #include "defines.h"
 #include "Parameters.h"
-#include "GCS.h"
+#include <GCS_MAVLink/GCS.h>
 
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
 class Rover {
 public:
