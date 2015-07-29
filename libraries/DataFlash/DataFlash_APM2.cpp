@@ -36,7 +36,7 @@
  *
  */
 
-#include <AP_HAL.h>               // for removing conflict with optical flow sensor on SPI3 bus
+#include <AP_HAL/AP_HAL.h>               // for removing conflict with optical flow sensor on SPI3 bus
 #include "DataFlash_APM2.h"
 
 extern const AP_HAL::HAL& hal;

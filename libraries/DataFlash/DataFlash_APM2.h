@@ -6,7 +6,7 @@
 #ifndef __DATAFLASH_APM2_H__
 #define __DATAFLASH_APM2_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "DataFlash_Block.h"
 
 class DataFlash_APM2 : public DataFlash_Block
