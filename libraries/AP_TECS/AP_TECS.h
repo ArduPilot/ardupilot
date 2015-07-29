@@ -22,12 +22,12 @@
 #ifndef AP_TECS_H
 #define AP_TECS_H
 
-#include <AP_Math.h>
-#include <AP_AHRS.h>
-#include <AP_Param.h>
-#include <AP_Vehicle.h>
-#include <AP_SpdHgtControl.h>
-#include <DataFlash.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
