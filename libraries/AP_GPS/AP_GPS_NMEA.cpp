@@ -130,7 +130,7 @@ bool AP_GPS_NMEA::read(void)
         if (logf == NULL) {
             logf = fopen(NMEA_LOG_PATH, "wb");
         }
-        if (c >= 0 && logf != NULL) {
+        if (logf != NULL) {
             ::fwrite(&c, 1, 1, logf);
         }
 #endif
