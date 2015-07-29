@@ -17,7 +17,7 @@
 //
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <limits.h>
@@ -26,8 +26,8 @@
 
 #include <avr/pgmspace.h>
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "UARTDriver.h"
 
 using namespace AP_HAL_AVR;

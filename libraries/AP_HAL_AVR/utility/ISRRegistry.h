@@ -3,8 +3,8 @@
 #ifndef __AP_HAL_AVR_ISR_REGISTRY_H__
 #define __AP_HAL_AVR_ISR_REGISTRY_H__
 
-#include <AP_HAL.h>
-#include "AP_HAL_AVR_Namespace.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_AVR/AP_HAL_AVR_Namespace.h>
 
 #define ISR_REGISTRY_TIMER2_OVF  0
 #define ISR_REGISTRY_TIMER4_CAPT 1
