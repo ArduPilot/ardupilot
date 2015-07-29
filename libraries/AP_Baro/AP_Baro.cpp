@@ -347,7 +347,9 @@ void AP_Baro::update(void)
     }
 
     // ensure the climb rate filter is updated
-    _climb_rate_filter.update(get_altitude(), get_last_update());
+    if (healthy()) {
+        _climb_rate_filter.update(get_altitude(), get_last_update());
+    }
 }
 
 /*
