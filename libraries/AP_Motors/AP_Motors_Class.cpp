@@ -21,7 +21,7 @@
  */
 
 #include "AP_Motors_Class.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
 
 // initialise motor map
