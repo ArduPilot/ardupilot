@@ -40,6 +40,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+// optionally log all NMEA data for debug purposes
+// #define NMEA_LOG_PATH "nmea.log"
+
+#ifdef NMEA_LOG_PATH
+#include <stdio.h>
+#endif
+
 // SiRF init messages //////////////////////////////////////////////////////////
 //
 // Note that we will only see a SiRF in NMEA mode if we are explicitly configured
@@ -117,7 +124,17 @@ bool AP_GPS_NMEA::read(void)
 
     numc = port->available();
     while (numc--) {
-        if (_decode(port->read())) {
+        char c = port->read();
+#ifdef NMEA_LOG_PATH
+        static FILE *logf = NULL;
+        if (logf == NULL) {
+            logf = fopen(NMEA_LOG_PATH, "wb");
+        }
+        if (c >= 0 && logf != NULL) {
+            ::fwrite(&c, 1, 1, logf);
+        }
+#endif
+        if (_decode(c)) {
             parsed = true;
         }
     }
