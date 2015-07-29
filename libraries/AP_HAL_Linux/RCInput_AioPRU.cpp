@@ -10,7 +10,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 

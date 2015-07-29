@@ -2,10 +2,10 @@
 #ifndef __AP_HAL_LINUX_SEMAPHORE_H__
 #define __AP_HAL_LINUX_SEMAPHORE_H__
 
-#include <AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #include <pthread.h>
 
 class Linux::LinuxSemaphore : public AP_HAL::Semaphore {

@@ -1,11 +1,11 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include <stdlib.h>
 #include <cstdio>
 #include "SPIUARTDriver.h"
-#include "../AP_HAL/utility/RingBuffer.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 extern const AP_HAL::HAL& hal;
 
