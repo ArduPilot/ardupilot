@@ -13,9 +13,9 @@
 #ifndef AP_SPDHGTCONTROL_H
 #define AP_SPDHGTCONTROL_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <DataFlash.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_SpdHgtControl {
 public:
