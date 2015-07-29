@@ -3,10 +3,10 @@
 #define AC_FENCE_H
 
 #include <inttypes.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_InertialNav.h>     // Inertial Navigation library
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_NONE                          0       // fence disabled
