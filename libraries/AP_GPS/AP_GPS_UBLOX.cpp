@@ -41,18 +41,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-/*
-  only do detailed hardware logging on boards likely to have more log
-  storage space
- */
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-#define UBLOX_HW_LOGGING 1
-#define UBLOX_RXM_RAW_LOGGING 1
-#else
-#define UBLOX_HW_LOGGING 0
-#define UBLOX_RXM_RAW_LOGGING 0
-#endif
-
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
     _step(0),
@@ -452,6 +440,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 
+#if UBLOX_GNSS_SETTINGS
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_GNSS && gps._gnss_mode != 0) {
         uint8_t gnssCount = 0;
         Debug("Got GNSS Settings %u %u %u %u:\n",
@@ -495,6 +484,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
         return false;
     }
+#endif
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
 		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 

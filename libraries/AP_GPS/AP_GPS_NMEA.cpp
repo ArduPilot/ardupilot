@@ -130,7 +130,7 @@ bool AP_GPS_NMEA::read(void)
         if (logf == NULL) {
             logf = fopen(NMEA_LOG_PATH, "wb");
         }
-        if (c >= 0 && logf != NULL) {
+        if (logf != NULL) {
             ::fwrite(&c, 1, 1, logf);
         }
 #endif
@@ -148,6 +148,7 @@ bool AP_GPS_NMEA::_decode(char c)
     switch (c) {
     case ',': // term terminators
         _parity ^= c;
+        /* no break */
     case '\r':
     case '\n':
     case '*':

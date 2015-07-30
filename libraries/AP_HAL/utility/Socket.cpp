@@ -136,10 +136,24 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     if (!pollin(timeout_ms)) {
         return -1;
     }
-    
-    return ::recvfrom(fd, buf, size, MSG_DONTWAIT, NULL, NULL);
+    socklen_t len = sizeof(in_addr);
+    return ::recvfrom(fd, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
 }
 
+/*
+  return the IP address and port of the last received packet
+ */
+void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port)
+{
+    ip_addr = inet_ntoa(in_addr.sin_addr);
+    port = ntohs(in_addr.sin_port);
+}
+
+void SocketAPM::set_broadcast(void)
+{
+    int one = 1;
+    setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+}
 
 /*
   return true if there is pending data for input

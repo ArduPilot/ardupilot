@@ -94,7 +94,8 @@ void Plane::geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (hal.util->available_memory() < 512 + sizeof(struct GeofenceState)) {
+        uint16_t boundary_size = sizeof(Vector2l) * max_fencepoints();
+        if (hal.util->available_memory() < 100 + boundary_size + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
@@ -104,7 +105,7 @@ void Plane::geofence_load(void)
             goto failed;
         }
 
-        geofence_state->boundary = (Vector2l *)calloc(sizeof(Vector2l), max_fencepoints());
+        geofence_state->boundary = (Vector2l *)calloc(1, boundary_size);
         if (geofence_state->boundary == NULL) {
             free(geofence_state);
             geofence_state = NULL;
