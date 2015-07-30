@@ -9,7 +9,7 @@
 class AP_HAL::Util {
 public:
     // soft_armed starts out true
-    Util() : soft_armed(true) {}
+    Util() : soft_armed(true), capabilities(0) {}
 
     int snprintf(char* str, size_t size,
                  const char *format, ...);
@@ -25,6 +25,10 @@ public:
 
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
+
+    void set_capabilities(uint64_t cap) { capabilities |= cap; }
+    void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
+    uint64_t get_capabilities() const { return capabilities; }
 
     virtual const char* get_custom_log_directory() { return NULL; } 
     virtual const char* get_custom_terrain_directory() const { return NULL;  }
@@ -82,6 +86,7 @@ public:
 
 protected:
     bool soft_armed;
+    uint64_t capabilities;
 };
 
 #endif // __AP_HAL_UTIL_H__
