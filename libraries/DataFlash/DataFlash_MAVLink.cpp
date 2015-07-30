@@ -48,6 +48,7 @@ DataFlash_MAVLink::DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t c
     _latest_block_len(0),
     _next_block_number_to_resend(0),
     _last_response_time(0),
+    _last_send_time(0),
     _blockcount(32), // this may get reduced in Init if allocation fails
     _blockcount_free(0),
     _logging_started(false),
@@ -195,15 +196,17 @@ void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg, const uint32_t seqno)
     if (!_initialised) {
         return;
     }
-    _last_response_time = hal.scheduler->millis();
     if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_STOP) {
-        Debug("Received stop-logging packet\n");
-        _sending_to_client = false;
+        Debug("Received stop-logging packet");
+        if (_sending_to_client) {
+            _sending_to_client = false;
+            _last_response_time = hal.scheduler->millis();
+        }
         return;
     }
     if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_START) {
         if (!_sending_to_client) {
-            Debug("\nStarting New Log!!\n");
+            Debug("Starting New Log");
             free_all_blocks();
             // _current_block = next_block();
             // if (_current_block == NULL) {
@@ -216,6 +219,8 @@ void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg, const uint32_t seqno)
             _target_component_id = msg->compid;
             _next_seq_num = 0;
             _front.StartNewLog();
+            _last_response_time = hal.scheduler->millis();
+            Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
         }
         return;
     }
@@ -225,6 +230,7 @@ void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg, const uint32_t seqno)
                 _blocks[block].state = BLOCK_STATE_FREE;
                 _blockcount_free++;
             }
+            _last_response_time = hal.scheduler->millis();
             return;
         }
     }
@@ -246,7 +252,6 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
     if (!_initialised || !_sending_to_client) {
         return;
     }
-    _last_response_time = hal.scheduler->millis();
     for(uint8_t block = 0; block < _blockcount; block++){
         if(_blocks[block].seqno == seqno) {
             // we do not reset the block's sequence number when
@@ -255,6 +260,7 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
             // again...
             if (_blocks[block].state != BLOCK_STATE_FREE) {
                 _blocks[block].state = BLOCK_STATE_SEND_RETRY;
+                _last_response_time = hal.scheduler->millis();
             }
             return;
         }
@@ -405,32 +411,6 @@ void DataFlash_MAVLink::push_log_blocks()
         }
     }
 
-    // next, send out any blocks already sent if they haven't been
-    // sent for a while (trying to catch the situation where both the
-    // original block and any nacks for it have been lost)
-
-    // count ensures we go through the list of blocks at most once
-    // _next_block_number_to_resend remembers where we were up to for next time
-    uint8_t count = 0;
-    uint32_t now = hal.scheduler->millis();
-    uint32_t oldest = now - 10; // 100 milliseconds before resend.  Hmm.
-    while (count++ < _blockcount) {
-        if (_blocks[_next_block_number_to_resend].state != BLOCK_STATE_SENT) {
-            continue;
-        }
-        if (_blocks[_next_block_number_to_resend].last_sent > oldest) {
-            continue;
-        }
-        if (! send_log_block(_blocks[_next_block_number_to_resend])) {
-            _pushing_blocks = false;
-            return;
-        }
-        _next_block_number_to_resend++;
-        if (_next_block_number_to_resend >= _blockcount) {
-            _next_block_number_to_resend = 0;
-        }
-    }
-
     // here's an argument for keeping linked lists for each state!
     // firstly, send out any pending blocks, in any order:
     for(uint8_t block = 0; block < _blockcount; block++){
@@ -445,15 +425,45 @@ void DataFlash_MAVLink::push_log_blocks()
     _pushing_blocks = false;
 }
 
+void DataFlash_MAVLink::do_resends(uint32_t now)
+{
+    if (!_initialised || !_logging_started ||!_sending_to_client) {
+        return;
+    }
+
+    uint8_t count_to_send = 5;
+    if (_blockcount < count_to_send) {
+        count_to_send = _blockcount;
+    }
+    uint32_t oldest = now - 1000; // 100 milliseconds before resend.  Hmm.
+    while (count_to_send-- > 0) {
+        if (_blocks[_next_block_number_to_resend].state != BLOCK_STATE_SENT) {
+            // other states e.g. retry are handled elsewhere
+        } else if (_blocks[_next_block_number_to_resend].last_sent > oldest) {
+            // only want to send blocks every now-and-then...
+        } else if (! send_log_block(_blocks[_next_block_number_to_resend])) {
+            // failed to send the block; try again later....
+            _pushing_blocks = false;
+            break;
+        }
+        _next_block_number_to_resend++;
+        if (_next_block_number_to_resend >= _blockcount) {
+            _next_block_number_to_resend = 0;
+        }
+    }
+}
+
 void DataFlash_MAVLink::periodic_10Hz(const uint32_t now)
 {
+    do_resends(now);
     stats_collect();
 }
 void DataFlash_MAVLink::periodic_1Hz(const uint32_t now)
 {
     if (_sending_to_client &&
-        _last_response_time + 10000 < now) {
+        _last_response_time + 10000 < _last_send_time) {
         // other end appears to have timed out!
+        Debug("Client timed out");
         _sending_to_client = false;
         return;
     }
@@ -499,6 +509,11 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     block.state = BLOCK_STATE_SENT;
     block.last_sent = hal.scheduler->millis();
     chan_status->current_tx_seq = saved_seq;
+
+    // _last_send_time is set even if we fail to send the packet; if
+    // the txspace is repeatedly chockas we should not add to the
+    // problem and stop attempting to log
+    _last_send_time = hal.scheduler->millis();
 
     _mavlink_resend_uart(chan, &msg);
 

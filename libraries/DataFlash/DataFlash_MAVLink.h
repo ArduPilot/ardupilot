@@ -74,6 +74,7 @@ public:
     virtual bool send_log_block(struct dm_block &block);
     virtual void handle_ack(mavlink_message_t* msg, uint32_t seqno);
     virtual void handle_retry(uint32_t block_num);
+    void do_resends(uint32_t now);
     virtual void set_channel(mavlink_channel_t chan);
     virtual void remote_log_block_status_msg(mavlink_message_t* msg);
     void free_all_blocks();
@@ -110,6 +111,7 @@ private:
     uint16_t _latest_block_len;
     bool _logging_started;
     uint32_t _last_response_time;
+    uint32_t _last_send_time;
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
