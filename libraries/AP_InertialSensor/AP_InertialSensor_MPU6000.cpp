@@ -244,14 +244,14 @@ void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
 
     /*
       detect a bad SPI bus transaction by looking for all 14 bytes
-      zero, or the wrong INT_STATUS register value. This is used to
-      detect a too high SPI bus speed.
+      zero. This can happen with some boards with hw that end up
+      needing a lower bus speed
     */
     uint8_t i;
     for (i=0; i<14; i++) {
         if (rx.d[i] != 0) break;
     }
-    if ((rx.int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
+    if (i == 14) {
         // likely a bad bus transaction
         if (++_error_count > 4) {
             set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
