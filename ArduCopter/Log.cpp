@@ -748,7 +748,7 @@ void Copter::start_logging()
             ap.logging_started = true;
             in_mavlink_delay = true;
             DataFlash.StartNewLog();
-            DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
+            DataFlash.Log_Write_SysInfo();
             in_mavlink_delay = false;
 
             DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));

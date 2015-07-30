@@ -20,9 +20,15 @@
 #include <stdint.h>
 #include <DataFlash_Backend.h>
 
+#include <GCS_MAVLink.h> // for mavlink_msg_t
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>
 #endif
+
+#define BACKEND_TYPE_LOCAL 0
+#define BACKEND_TYPE_MAVLINK 1
+#define BACKEND_TYPE_DEFAULT_VALUE BACKEND_TYPE_LOCAL
 
 
 class DataFlash_Backend;
@@ -32,8 +38,15 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
 
+    // constructor
+    DataFlash_Class(const prog_char_t *firmware_string) :
+        _firmware_string(firmware_string) {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
+
     bool CardInserted(void);
 
     // erase handling
@@ -42,6 +55,7 @@ public:
 
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
+    void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
     // high level interface
     uint16_t find_last_log(void);
@@ -63,7 +77,7 @@ public:
     uint16_t StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable);
-    void Log_Write_SysInfo(const prog_char_t *firmware_string);
+    void Log_Write_SysInfo();
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
@@ -116,6 +130,18 @@ public:
     void flush(void);
 #endif
 
+    // for DataFlash_MAVLink:
+    void handle_ack(mavlink_channel_t chan, uint32_t block_num);
+    void handle_retry(uint32_t block_num);
+    void remote_log_block_status_msg(mavlink_channel_t chan,
+                                     mavlink_message_t* msg);
+    // end for DataFlash_MAVLink:
+
+    static const struct AP_Param::GroupInfo        var_info[];
+    struct {
+        AP_Int8 type; // backend type to use
+    } params;
+
 protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
@@ -126,7 +152,11 @@ protected:
     uint8_t _num_types;
 
 private:
+    DataFlash_Backend *new_backend_local(void);
+    DataFlash_Backend *new_backend_mavlink(void);
+    void init_backend(const struct LogStructure *structure, uint8_t num_types);
     DataFlash_Backend *backend;
+    const prog_char_t *_firmware_string;
 };
 
 /*
@@ -855,5 +885,6 @@ enum LogOriginType {
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
+#include "DataFlash_MAVLink.h"
 
 #endif

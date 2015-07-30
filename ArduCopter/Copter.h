@@ -153,7 +153,7 @@ private:
     RC_Channel *channel_yaw;
 
     // Dataflash
-    DataFlash_Class DataFlash;
+    DataFlash_Class DataFlash{PSTR(THISFIRMWARE)};
 
     // the rate we run the main loop at
     const AP_InertialSensor::Sample_rate ins_sample_rate;

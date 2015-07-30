@@ -704,7 +704,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         copter.ahrs.get_NavEKF().send_status_report(chan);
         break;
-
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -1722,6 +1721,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         AP_Notify::handle_led_control(msg);
         break;
 
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        copter.DataFlash.remote_log_block_status_msg(chan, msg);
+        break;
     }     // end switch
 } // end handle mavlink
 

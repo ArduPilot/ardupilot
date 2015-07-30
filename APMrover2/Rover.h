@@ -133,7 +133,8 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
-    DataFlash_Class DataFlash;
+    // Dataflash
+    DataFlash_Class DataFlash{PSTR(FIRMWARE_STRING)};
 
     bool in_log_download;
 

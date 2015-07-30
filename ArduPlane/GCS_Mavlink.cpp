@@ -1744,6 +1744,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
         break;
         
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        plane.DataFlash.remote_log_block_status_msg(chan, msg);
+        break;
+
     } // end switch
 } // end handle mavlink
 

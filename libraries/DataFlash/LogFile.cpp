@@ -12,26 +12,49 @@
 
 extern const AP_HAL::HAL& hal;
 
+DataFlash_Backend *DataFlash_Class::new_backend_local(void)
+{
+    DataFlash_Backend *ret;
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    ret = new DataFlash_APM1(*this);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    ret = new DataFlash_APM2(*this);
+#elif defined(HAL_BOARD_LOG_DIRECTORY)
+    ret = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
+#else
+    // no dataflash driver
+    ret = new DataFlash_Empty(*this);
+#endif
+    return ret;
+}
+
+DataFlash_Backend *DataFlash_Class::new_backend_mavlink(void) {
+    return new DataFlash_MAVLink(*this);
+}
+
+void DataFlash_Class::init_backend(const struct LogStructure *structure, uint8_t num_types)
+{
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_150
+    if (params.type == BACKEND_TYPE_MAVLINK) {
+        backend = new_backend_mavlink();
+    } else {
+        backend = new_backend_local();
+    }
+#else
+    backend = new_backend_local();
+#endif
+    if (backend == NULL) {
+        hal.scheduler->panic(PSTR("Unable to open backend"));
+    }
+    backend->Init(structure, num_types);
+}
+
 void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_types)
 {
     _num_types = num_types;
     _structures = structure;
 
-    // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    backend = new DataFlash_APM1(*this);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    backend = new DataFlash_APM2(*this);
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
-    backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
-#else
-    // no dataflash driver
-    backend = new DataFlash_Empty(*this);
-#endif
-    if (backend == NULL) {
-        hal.scheduler->panic(PSTR("Unable to open dataflash"));
-    }
-    backend->Init(structure, num_types);
+    init_backend(structure, num_types);
 }
 
 // This function determines the number of whole or partial log files in the DataFlash
@@ -653,7 +676,7 @@ void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Log_Fill_Format(s, pkt);
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -668,7 +691,7 @@ void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
         value : value
     };
     strncpy(pkt.name, name, sizeof(pkt.name));
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*
@@ -987,9 +1010,9 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
 #endif
 }
 
-void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+void DataFlash_Class::Log_Write_SysInfo()
 {
-    Log_Write_Message_P(firmware_string);
+    Log_Write_Message_P(_firmware_string);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
     Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));

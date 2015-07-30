@@ -513,7 +513,7 @@ void Plane::start_logging()
 {
     DataFlash.StartNewLog();
 
-    DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
+    DataFlash.Log_Write_SysInfo();
 
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 }

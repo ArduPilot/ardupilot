@@ -1,8 +1,21 @@
 #include <DataFlash.h>
 
+
+const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
+    // @Param: _TYPE
+    // @DisplayName: Log storage type
+    // @Description: 8 byte value indicating backend to use (where applicable)
+    // @Values: 0:Default,1:MAVLink
+    // @User: Standard
+    AP_GROUPINFO("_TYPE", 0, DataFlash_Class, params.type, BACKEND_TYPE_DEFAULT_VALUE),
+};
+
 // start functions pass straight through to backend:
 void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
     backend->WriteBlock(pBuffer, size);
+}
+void DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+    backend->WriteCriticalBlock(pBuffer, size);
 }
 uint16_t DataFlash_Class::start_new_log() {
     return backend->start_new_log();
@@ -59,7 +72,7 @@ void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
 #endif // DATAFLASH_NO_CLI
 
 bool DataFlash_Class::logging_started(void) {
-    return backend->log_write_started;
+    return backend->logging_started();
 }
 
 void DataFlash_Class::EnableWrites(bool enable) {
@@ -72,5 +85,19 @@ void DataFlash_Class::flush(void) {
     backend->flush();
 }
 #endif
+
+// for DataFlash_MAVLink
+void DataFlash_Class::handle_ack(mavlink_channel_t chan, uint32_t block_num) {
+    backend->handle_ack(chan, block_num);
+}
+void DataFlash_Class::handle_retry(uint32_t block_num) {
+    backend->handle_retry(block_num);
+}
+void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                  mavlink_message_t* msg) {
+    backend->remote_log_block_status_msg(chan, msg);
+}
+// end for DataFlash_MAVLink
+
 
 // end functions pass straight through to backend

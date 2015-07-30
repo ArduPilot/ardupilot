@@ -16,6 +16,7 @@
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
+#include <GCS_MAVLink.h> // for mavlink_msg_t
 
 class DataFlash_Backend
 {
@@ -35,6 +36,9 @@ public:
 
     /* Write a block of data at current offset */
     virtual void WriteBlock(const void *pBuffer, uint16_t size) = 0;
+    virtual void WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+        WriteBlock(pBuffer, size);
+    };
 
     // high level interface
     virtual uint16_t find_last_log(void) = 0;
@@ -53,7 +57,7 @@ public:
 #endif // DATAFLASH_NO_CLI
 
     void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) { return log_write_started; }
 
     // initialisation this really shouldn't take structure and
     // num_types, however the CLI LogReadProcess function requires it.
@@ -73,6 +77,14 @@ public:
     // currently only DataFlash_File support this:
     virtual void flush(void) { }
 #endif
+
+    // for Dataflash_MAVlink
+    virtual void handle_ack(mavlink_channel_t chan,
+                            uint32_t block_num) { };
+    virtual void handle_retry(uint32_t block_num) { };
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg) { }
+    // end for Dataflash_MAVlink
 
 protected:
     DataFlash_Class &_front;
