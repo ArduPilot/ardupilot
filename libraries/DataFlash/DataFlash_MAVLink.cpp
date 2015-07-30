@@ -30,46 +30,12 @@
 #endif
 
 extern const AP_HAL::HAL& hal;
-#ifndef MAV_SYS_ID_LOG
-#define MAV_SYS_ID_LOG  1
-#endif
-#ifndef MAV_COMP_ID_LOG
-#define MAV_COMP_ID_LOG 50
-#endif
-/*
-  constructor
- */
-DataFlash_MAVLink::DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
-    DataFlash_Backend(front),
-    _chan(chan),
-    _initialised(false),
-    _next_seq_num(0),
-    _current_block(NULL),
-    _latest_block_len(0),
-    _next_block_number_to_resend(0),
-    _last_response_time(0),
-    _last_send_time(0),
-    _blockcount(32), // this may get reduced in Init if allocation fails
-    _blockcount_free(0),
-    _logging_started(false),
-    _sending_to_client(false),
-    _pushing_blocks(false)
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
-    _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
-#endif
-{
-    memset(&mavlink, 0, sizeof(mavlink));
-}
 
 
 // initialisation
 void DataFlash_MAVLink::Init(const struct LogStructure *structure, uint8_t num_types)
 {
     DataFlash_Backend::Init(structure, num_types);
-
-    mavlink.system_id = MAV_SYS_ID_LOG;
-    mavlink.component_id = MAV_COMP_ID_LOG;
 
     _blocks = NULL;
     while (_blockcount >= 8) { // 8 is a *magic* number
@@ -497,7 +463,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     mavlink_message_t msg;
     mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
     uint8_t saved_seq = chan_status->current_tx_seq;
-    chan_status->current_tx_seq = mavlink.seq++;
+    chan_status->current_tx_seq = mavlink_seq++;
     Debug("Sending block (%d)", block.seqno);
     mavlink_msg_remote_log_data_block_pack(mavlink_system.sysid,
                                            MAV_COMP_ID_LOG,

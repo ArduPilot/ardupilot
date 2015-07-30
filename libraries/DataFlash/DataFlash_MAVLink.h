@@ -25,7 +25,27 @@ class DataFlash_MAVLink : public DataFlash_Backend
     friend class DataFlash_Class; // for access to stats on Log_Df_Mav_Stats
 public:
     // constructor
-    DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan);
+    DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
+        DataFlash_Backend(front),
+        _chan(chan),
+        _initialised(false),
+        _next_seq_num(0),
+        _current_block(NULL),
+        _latest_block_len(0),
+        _next_block_number_to_resend(0),
+        _last_response_time(0),
+        _last_send_time(0),
+        _blockcount(32), // this may get reduced in Init if allocation fails
+        _blockcount_free(0),
+        _logging_started(false),
+        _sending_to_client(false),
+        _pushing_blocks(false),
+        mavlink_seq(0)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+        ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
+        _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
+#endif
+        { }
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
@@ -135,16 +155,7 @@ private:
     void stats_log();
     uint32_t _stats_last_collected_time;
     uint32_t _stats_last_logged_time;
-
-    struct {
-        // socket to telem2 on aircraft
-        bool connected;
-        uint8_t system_id;
-        uint8_t component_id;
-        mavlink_message_t rxmsg;
-        mavlink_status_t status;
-        uint8_t seq;
-    } mavlink;
+    uint8_t mavlink_seq;
 
     uint16_t start_new_log(void) { return 0; }
     void ReadBlock(void *pkt, uint16_t size) {}
