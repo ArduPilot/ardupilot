@@ -161,7 +161,7 @@ void AP_Mount_MAVLink::handle_gimbal_report(mavlink_channel_t chan, mavlink_mess
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
     Log_Write_Gimbal(_gimbal);
-    if(!_params_saved) {
+    if(!_params_saved && _frontend._dataflash->logging_started()) {
         _frontend._externalParameters.fetch_params();       //last parameter save might not be stored in dataflash so retry
         _params_saved = true;
     }

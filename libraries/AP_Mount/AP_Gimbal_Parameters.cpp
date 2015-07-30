@@ -150,7 +150,6 @@ void AP_Gimbal_Parameters::update()
         bool done = true;
         for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
             if (_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET) {
-                ::printf("i %u\n",i);
                 done = false;
                 break;
             }
@@ -171,7 +170,10 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
     if (flashing() && packet.param_value == 1 && !strcmp(packet.param_id, "GMB_FLASH")) {
         mavlink_msg_command_long_send(_chan, 0, MAV_COMP_ID_GIMBAL, 42501, 0, 0, 0, 0, 0, 0, 0, 0);
         reset();
+        return;
     }
+
+    dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
 
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
         if (!strcmp(packet.param_id, get_param_name((gmb_param_t)i))) {
@@ -180,7 +182,6 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
                 case GMB_PARAMSTATE_NONEXISTANT:
                 case GMB_PARAMSTATE_NOT_YET_READ:
                 case GMB_PARAMSTATE_FETCH_AGAIN:
-                    dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
                     _params[i].value = packet.param_value;
                     _params[i].state = GMB_PARAMSTATE_CONSISTENT;
                     break;
@@ -193,6 +194,7 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
                     }
                     break;
             }
+            break;
         }
     }
 }

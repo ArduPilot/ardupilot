@@ -18,17 +18,10 @@ bool AP_Gimbal::present()
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
-    _gimbalParams.set_channel(chan);
-    _gimbalParams.update();
-    if(!_gimbalParams.initialized()){
-        return;
-    }
-
-    _last_report_msg_ms = hal.scheduler->millis();
-
     mavlink_gimbal_report_t report_msg;
     mavlink_msg_gimbal_report_decode(msg, &report_msg);
-    extract_feedback(report_msg);
+
+    _gimbalParams.set_channel(chan);
 
     if(report_msg.target_system != 1) {
         // gimbal must have been power cycled or reconnected
@@ -36,6 +29,15 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
         _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
         return;
     }
+
+    _gimbalParams.update();
+    if(!_gimbalParams.initialized()){
+        return;
+    }
+
+    _last_report_msg_ms = hal.scheduler->millis();
+
+    extract_feedback(report_msg);
 
     update_mode();
     update_state();
