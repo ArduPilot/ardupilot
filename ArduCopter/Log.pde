@@ -677,6 +677,8 @@ static void Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
 }
 #endif // CLI_ENABLED
 
+#include "LogStartup.h"
+
 // start a new log
 static void start_logging() 
 {
@@ -684,14 +686,11 @@ static void start_logging()
         if (!ap.logging_started) {
             ap.logging_started = true;
             in_mavlink_delay = true;
+            DFMessageWriter_LogStartup *logstartup =
+                new DFMessageWriter_LogStartup(DataFlash, FIRMWARE_STRING);
+            DataFlash.setStartupMessageWriter(logstartup);
             DataFlash.StartNewLog();
-            DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
             in_mavlink_delay = false;
-
-            DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
-
-            // log the flight mode
-            DataFlash.Log_Write_Mode(control_mode);
         }
         // enable writes
         DataFlash.EnableWrites(true);
