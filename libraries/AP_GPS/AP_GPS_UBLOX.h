@@ -119,7 +119,6 @@ private:
         uint32_t res3;
         uint32_t res4;
     };
-#if UBLOX_GNSS_SETTINGS
     struct PACKED ubx_cfg_sbas {
         uint8_t mode;
         uint8_t usage;
@@ -127,7 +126,6 @@ private:
         uint8_t scanmode2;
         uint32_t scanmode1;
     };
-#endif
     struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
         int32_t longitude;
@@ -303,8 +301,8 @@ private:
 #endif
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
-        ubx_cfg_sbas sbas;
 #endif
+        ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;

@@ -484,6 +484,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         _send_message(CLASS_CFG, MSG_CFG_GNSS, &_buffer.gnss, 4 + (8 * _buffer.gnss.numConfigBlocks));
         return false;
     }
+#endif
 
     if (_class == CLASS_CFG && _msg_id == MSG_CFG_SBAS && gps._sbas_mode != 2) {
 		Debug("Got SBAS settings %u %u %u 0x%x 0x%x\n", 
@@ -499,7 +500,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                           sizeof(_buffer.sbas));
         }
     }
-#endif
 
 #if UBLOX_HW_LOGGING
     if (_class == CLASS_MON) {
