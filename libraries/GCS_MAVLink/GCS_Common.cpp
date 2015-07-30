@@ -1245,7 +1245,7 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
 /*
   send AUTOPILOT_VERSION packet
  */
-void GCS_MAVLINK::send_autopilot_version(uint64_t capabilities) const
+void GCS_MAVLINK::send_autopilot_version() const
 {
     uint32_t flight_sw_version = 0;
     uint32_t middleware_sw_version = 0;
@@ -1278,7 +1278,7 @@ void GCS_MAVLINK::send_autopilot_version(uint64_t capabilities) const
     
     mavlink_msg_autopilot_version_send(
         chan,
-        capabilities,
+        hal.util->get_capabilities(),
         flight_sw_version,
         middleware_sw_version,
         os_sw_version,
