@@ -1416,7 +1416,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(copter.get_capabilities());
+                copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1714,7 +1714,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif // AC_RALLY == ENABLED
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(copter.get_capabilities());
+        copter.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
         break;
 
     case MAVLINK_MSG_ID_LED_CONTROL:
