@@ -18,6 +18,7 @@
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
 #define INS_VIBRATION_CHECK 1
+#define INS_VIBRATION_CHECK_INSTANCES 2
 #else
 #define INS_MAX_INSTANCES 1
 #define INS_MAX_BACKENDS  1
@@ -214,7 +215,8 @@ public:
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
     // retrieve latest calculated vibration levels
-    Vector3f get_vibration_levels() const;
+    Vector3f get_vibration_levels() const { return get_vibration_levels(_primary_accel); }
+    Vector3f get_vibration_levels(uint8_t instance) const;
 
     // retrieve and clear accelerometer clipping count
     uint32_t get_accel_clip_count(uint8_t instance) const;
@@ -346,8 +348,8 @@ private:
 #if INS_VIBRATION_CHECK
     // vibration and clipping
     uint32_t _accel_clip_count[INS_MAX_INSTANCES];
-    LowPassFilterVector3f _accel_vibe_floor_filter;
-    LowPassFilterVector3f _accel_vibe_filter;
+    LowPassFilterVector3f _accel_vibe_floor_filter[INS_VIBRATION_CHECK_INSTANCES];
+    LowPassFilterVector3f _accel_vibe_filter[INS_VIBRATION_CHECK_INSTANCES];
 #endif
 
     /*
