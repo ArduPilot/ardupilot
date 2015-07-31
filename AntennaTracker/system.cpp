@@ -102,6 +102,8 @@ void Tracker::init_tracker()
         get_home_eeprom(current_loc);
     }
 
+    init_capabilities();
+
     gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 

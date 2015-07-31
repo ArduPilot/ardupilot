@@ -244,6 +244,7 @@ private:
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+    void init_capabilities(void);
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
