@@ -539,10 +539,42 @@ void Plane::log_init(void)
 
 #else // LOGGING_ENABLED
 
-int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) 
-{
-    return 0;
-}
+ #if CLI_ENABLED == ENABLED
+bool Plane::print_log_menu(void) { return true; }
+int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Plane::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Plane::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+ #endif // CLI_ENABLED == ENABLED
 
+void Plane::do_erase_logs(void) {}
+void Plane::Log_Write_Attitude(void) {}
+void Plane::Log_Write_Performance() {}
+void Plane::Log_Write_Startup(uint8_t type) {}
+void Plane::Log_Write_Control_Tuning() {}
+void Plane::Log_Write_TECS_Tuning(void) {}
+void Plane::Log_Write_Nav_Tuning() {}
+void Plane::Log_Write_Status() {}
+void Plane::Log_Write_Sonar() {}
+
+ #if OPTFLOW == ENABLED
+void Plane::Log_Write_Optflow() {}
+ #endif
+
+void Plane::Log_Write_Current() {}
+void Plane::Log_Arm_Disarm() {}
+void Plane::Log_Write_GPS(uint8_t instance) {}
+void Plane::Log_Write_IMU() {}
+void Plane::Log_Write_RC(void) {}
+void Plane::Log_Write_Baro(void) {}
+void Plane::Log_Write_Airspeed(void) {}
+void Plane::Log_Write_Home_And_Origin() {}
+
+ #if CLI_ENABLED == ENABLED
+void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page) {}
+ #endif // CLI_ENABLED
+
+void Plane::start_logging() {}
+void Plane::log_init(void) {}
 
 #endif // LOGGING_ENABLED
