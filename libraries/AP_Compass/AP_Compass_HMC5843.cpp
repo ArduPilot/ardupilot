@@ -178,37 +178,53 @@ void AP_Compass_HMC5843::accumulate(void)
         // have the right orientation!)
         return;
     }
-    uint32_t tnow = hal.scheduler->micros();
-    if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
-        // the compass gets new data at 75Hz
-        return;
-    }
 
-    if (!_bus_sem->take(1)) {
-        // the bus is busy - try again later
-        return;
-    }
-    bool result = read_raw();
-    _bus_sem->give();
+   uint32_t tnow = hal.scheduler->micros();
+   if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
+	  // the compass gets new data at 75Hz
+	  return;
+   }
 
-    if (result) {
-        // the _mag_N values are in the range -2048 to 2047, so we can
-        // accumulate up to 15 of them in an int16_t. Let's make it 14
-        // for ease of calculation. We expect to do reads at 10Hz, and
-        // we get new data at most 75Hz, so we don't expect to
-        // accumulate more than 8 before a read
-        _mag_x_accum += _mag_x;
-        _mag_y_accum += _mag_y;
-        _mag_z_accum += _mag_z;
-        _accum_count++;
-        if (_accum_count == 14) {
-            _mag_x_accum /= 2;
-            _mag_y_accum /= 2;
-            _mag_z_accum /= 2;
-            _accum_count = 7;
-        }
-        _last_accum_time = tnow;
-    }
+   if (!_bus_sem->take(1)) {
+       // the bus is busy - try again later
+       return;
+   }
+   bool result = read_raw();
+   _bus_sem->give();
+
+   if (result) {
+	  // the _mag_N values are in the range -2048 to 2047, so we can
+	  // accumulate up to 15 of them in an int16_t. Let's make it 14
+	  // for ease of calculation. We expect to do reads at 10Hz, and
+	  // we get new data at most 75Hz, so we don't expect to
+	  // accumulate more than 8 before a read
+       // get raw_field - sensor frame, uncorrected
+       Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
+
+       // rotate raw_field from sensor frame to body frame
+       rotate_field(raw_field, _compass_instance);
+
+       // publish raw_field (uncorrected point sample) for calibration use
+       publish_raw_field(raw_field, tnow, _compass_instance);
+
+       // correct raw_field for known errors
+       correct_field(raw_field, _compass_instance);
+
+       // publish raw_field (corrected point sample) for EKF use
+       publish_unfiltered_field(raw_field, tnow, _compass_instance);
+
+	  _mag_x_accum += _mag_x;
+	  _mag_y_accum += _mag_y;
+	  _mag_z_accum += _mag_z;
+	  _accum_count++;
+	  if (_accum_count == 14) {
+		 _mag_x_accum /= 2;
+		 _mag_y_accum /= 2;
+		 _mag_z_accum /= 2;
+		 _accum_count = 7;
+	  }
+	  _last_accum_time = tnow;
+   }
 }
 
 
