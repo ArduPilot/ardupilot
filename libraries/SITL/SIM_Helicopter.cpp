@@ -48,6 +48,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
     } else {
         frame_type = HELI_FRAME_CONVENTIONAL;
     }
+    gas_heli = (strstr(frame_str, "-gas") != NULL);
 }
 
 /*
@@ -60,6 +61,8 @@ void Helicopter::update(const struct sitl_input &input)
 
     float rsc = (input.servos[7]-1000) / 1000.0f;
     float rsc_scale = rsc/rsc_setpoint;
+    // ignition only for gas helis
+    bool ignition_enabled = gas_heli?(input.servos[6] > 1500):true;
 
     float thrust = 0;
     float roll_rate = 0;
@@ -72,6 +75,10 @@ void Helicopter::update(const struct sitl_input &input)
     float swash1 = (input.servos[0]-1000) / 1000.0f;
     float swash2 = (input.servos[1]-1000) / 1000.0f;
     float swash3 = (input.servos[2]-1000) / 1000.0f;
+
+    if (!ignition_enabled) {
+        rsc = 0;
+    }
 
     switch (frame_type) {
     case HELI_FRAME_CONVENTIONAL: {
