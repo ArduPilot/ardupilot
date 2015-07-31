@@ -29,3 +29,11 @@ else
         $(git -C $ROOT log -n 1 --format=%H $SCRIPT_DIR)
     echo "Install finished"
 fi
+
+if ! command -v git-commit-subsystems &> /dev/null; then
+    echo
+    cat <<EOF
+Tip: You could add $SCRIPT_DIR/extensions to PATH to easily issue git command
+extensions (git commit-subsystems, for example).
+EOF
+fi
