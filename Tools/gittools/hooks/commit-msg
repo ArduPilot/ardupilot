@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# commit-mgs hook replaces occurrences of $subsystem with the subsystem being
+# committed (when applicable)
+#
+# See: http://dev.ardupilot.com/wiki/submitting-patches-back-to-master/
+
+export GIT_DIR=$(realpath $GIT_DIR)
+
+LIST=$GIT_DIR/COMMIT_MSG_SUBSYSTEMS
+
+diff_cmd="git diff --name-only --staged"
+$diff_cmd | Tools/gittools/path-nonlibraries.sh > $LIST
+$diff_cmd | Tools/gittools/path-libraries.sh >> $LIST
+
+num_subsystems=$(cat $LIST | wc -l)
+((num_subsystems != 1)) && exit 0
+
+subsystem=$(cat $LIST)
+
+sed -i \
+    -e "s/\(^\|[^\\]\)\$subsystem/\1$subsystem/" \
+    -e 's/\\$subsystem/\$subsystem/' \
+    $1
