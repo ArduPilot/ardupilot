@@ -1,0 +1,5 @@
+# Occurrences of $subsystem will be replaced by the name of the subsystem being
+# committed (when applicable).
+#
+# See: http://dev.ardupilot.com/wiki/submitting-patches-back-to-master/
+#

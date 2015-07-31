@@ -1,0 +1,11 @@
+#!/bin/bash
+export GIT_DIR=$(realpath $GIT_DIR)
+
+first_comment_line=$(cat $1 | grep -m 1 -n "^#" | grep -o "[0-9]\+")
+((first_comment_line--))
+
+if ((first_comment_line > 0)); then
+    sed -i "${first_comment_line}r$GIT_DIR/SUBSYSTEM_COMMIT_MSG_COMMENTS" $1
+fi
+
+sed -i '1s/^$/$subsystem: BRIEF_DESCRIPTION/' $1

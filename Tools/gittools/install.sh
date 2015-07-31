@@ -5,13 +5,19 @@ ROOT=$(dirname $(git -C $SCRIPT_DIR rev-parse --git-dir))
 
 errors=0
 
-# link hooks
 echo "Linking git hooks..."
 for f in $SCRIPT_DIR/hooks/*; do
     ( cd $ROOT/.git/hooks && ln -fs $f ) && continue
     echo "Error on linking git hook $f" >&2
     ((errors++))
 done
+
+echo "Linking SUBSYSTEM_COMMIT_MSG_COMMENTS..."
+if ! ln -fs $SCRIPT_DIR/SUBSYSTEM_COMMIT_MSG_COMMENTS \
+            $ROOT/.git/SUBSYSTEM_COMMIT_MSG_COMMENTS; then
+    echo "Error on linking SUBSYSTEM_COMMIT_MSG_COMMENTS" >&2
+    ((errors++))
+fi
 
 if ((errors > 0)); then
     echo "gittools install script has finished with $errors error(s)"
