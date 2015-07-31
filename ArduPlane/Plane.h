@@ -874,6 +874,7 @@ private:
     void update_alt(void);
     void obc_fs_check(void);
     void compass_accumulate(void);
+    void compass_cal_update();
     void barometer_accumulate(void);
     void update_optical_flow(void);
     void one_second_loop(void);
