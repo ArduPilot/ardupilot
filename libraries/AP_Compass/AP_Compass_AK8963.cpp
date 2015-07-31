@@ -202,10 +202,11 @@ void AP_Compass_AK8963::read()
         return;
     }
 
+    hal.scheduler->suspend_timer_procs();
     auto field = _get_filtered_field();
-    _make_factory_sensitivity_adjustment(field);
-
     _reset_filter();
+    hal.scheduler->resume_timer_procs();
+    _make_factory_sensitivity_adjustment(field);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     field.rotate(ROTATION_YAW_90);
