@@ -28,6 +28,13 @@ void Rover::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
+//Calibrate compass
+void Rover::compass_cal_update() {
+    if (!hal.util->get_soft_armed()) {
+        compass.compass_cal_update();
+    }
+}
+
 // read the sonars
 void Rover::read_sonars(void)
 {
