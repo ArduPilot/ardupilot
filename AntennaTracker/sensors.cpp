@@ -56,6 +56,14 @@ void Tracker::barometer_accumulate(void)
     barometer.accumulate();
 }
 
+/*
+ calibrate compass
+*/
+void Tracker::compass_cal_update() {
+    if (!hal.util->get_soft_armed()) {
+        compass.compass_cal_update();
+    }
+}
 
 /*
   read the GPS

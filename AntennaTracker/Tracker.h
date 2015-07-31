@@ -247,6 +247,7 @@ private:
     void update_armed_disarmed();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
     void init_capabilities(void);
+    void compass_cal_update();
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
