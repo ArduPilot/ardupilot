@@ -210,6 +210,8 @@ void Rover::init_ardupilot()
     }
 #endif
 
+	init_capabilities();
+
 	startup_ground();
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 

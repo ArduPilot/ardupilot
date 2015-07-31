@@ -498,6 +498,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+    void init_capabilities(void);
 
 public:
     bool print_log_menu(void);
