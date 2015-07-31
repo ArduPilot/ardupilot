@@ -8,7 +8,8 @@ num_subsystems=$(
 
 if ((num_subsystems > 1)) && [[ "$ARDUPILOT_SPLIT_CHECK" != "bypass" ]]; then
     cat >&2 <<EOF
-pre-commit: multiples subsystems in commit, please commit them separately...
+pre-commit: multiples subsystems in commit, please either commit them
+separately or use git commit-subsystems...
 
 See: http://dev.ardupilot.com/wiki/submitting-patches-back-to-master/
 
