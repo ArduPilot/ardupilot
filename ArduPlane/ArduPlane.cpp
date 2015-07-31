@@ -63,6 +63,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(barometer_accumulate,    1,    900),
     SCHED_TASK(update_notify,           1,    300),
     SCHED_TASK(read_rangefinder,        1,    500),
+    SCHED_TASK(compass_cal_update,      1,    100),
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,     1,    500),
 #endif
