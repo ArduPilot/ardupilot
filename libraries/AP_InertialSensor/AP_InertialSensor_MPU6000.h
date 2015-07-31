@@ -24,19 +24,38 @@
 #include <LowPassFilter2p.h>
 #endif
 
+#define MPU6000_SAMPLE_SIZE 12
+#define MPU6000_MAX_FIFO_SAMPLES 3
+#define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
+
+class AP_MPU6000_BusDriver
+{
+    public:
+        virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
+        virtual void read8(uint8_t reg, uint8_t *val) = 0;
+        virtual void write8(uint8_t reg, uint8_t val) = 0;
+        enum bus_speed {
+                SPEED_LOW, SPEED_HIGH
+        };
+        virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
+        virtual void read_burst(uint8_t* samples,
+                                AP_HAL::DigitalSource *_drdy_pin,
+                                uint8_t &n_samples) = 0;
+        virtual AP_HAL::Semaphore* get_semaphore() = 0;
+};
+
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
 public:
-    AP_InertialSensor_MPU6000(AP_InertialSensor &imu);
+    AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
+    static AP_InertialSensor_Backend *detect_i2c2(AP_InertialSensor &_imu);
+    static AP_InertialSensor_Backend *detect_spi(AP_InertialSensor &_imu);
 
     /* update accel and gyro state */
     bool update();
 
     bool gyro_sample_available(void) { return _sum_count >= _sample_count; }
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
-
-    // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
 #if MPU6000_DEBUG
@@ -48,19 +67,19 @@ private:
     uint8_t _accel_instance;
 
     AP_HAL::DigitalSource *_drdy_pin;
-
     bool                 _init_sensor(void);
     bool                 _sample_available();
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
-    uint8_t              _register_read( uint8_t reg );
+    uint8_t              _register_read( uint8_t reg);
     void                 _register_write( uint8_t reg, uint8_t val );
     void                 _register_write_check(uint8_t reg, uint8_t val);
     bool                 _hardware_init(void);
+    void                 _accumulate(uint8_t *samples, uint8_t n_samples);
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_MPU6000_BusDriver *_bus;
+    AP_HAL::Semaphore    *_bus_sem;
 
     static const float          _gyro_scale;
 
@@ -69,9 +88,6 @@ private:
     int8_t _last_gyro_filter_hz;
 
     void _set_filter_register(uint16_t filter_hz);
-
-    // count of bus errors
-    uint16_t _error_count;
 
     // how many hardware samples before we report a sample to the caller
     uint8_t _sample_count;
@@ -90,6 +106,48 @@ private:
     Vector3l _gyro_sum;
 #endif
     volatile uint16_t _sum_count;
+    bool _fifo_mode;
+    uint8_t *_samples;
+};
+
+class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
+{
+    public:
+        AP_MPU6000_BusDriver_SPI(void);
+        void init(bool &fifo_mode, uint8_t &max_samples);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
+        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+        void read_burst(uint8_t* samples,
+                        AP_HAL::DigitalSource *_drdy_pin,
+                        uint8_t &n_samples);
+        AP_HAL::Semaphore* get_semaphore();
+
+    private:
+        AP_HAL::SPIDeviceDriver *_spi;
+        AP_HAL::Semaphore *_spi_sem;
+        // count of bus errors
+        uint16_t _error_count;
+};
+
+class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
+{
+    public:
+        AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+        void init(bool &fifo_mode, uint8_t &max_samples);
+        void read8(uint8_t reg, uint8_t *val);
+        void write8(uint8_t reg, uint8_t val);
+        void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+        void read_burst(uint8_t* samples,
+                        AP_HAL::DigitalSource *_drdy_pin,
+                        uint8_t &n_samples);
+        AP_HAL::Semaphore* get_semaphore();
+
+    private:
+        uint8_t _addr;
+        AP_HAL::I2CDriver *_i2c;
+        AP_HAL::Semaphore *_i2c_sem;
+        uint8_t _rx[MAX_DATA_READ];
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__

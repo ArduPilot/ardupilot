@@ -9,6 +9,10 @@
 // setup_compassmot - sets compass's motor interference parameters
 uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    // compassmot not implemented for tradheli
+    return 1;
+#else
     int8_t   comp_type;                 // throttle or current based compensation
     Vector3f compass_base[COMPASS_MAX_INSTANCES];           // compass vector when throttle is zero
     Vector3f motor_impact[COMPASS_MAX_INSTANCES];           // impact of motors on compass vector
@@ -265,5 +269,6 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     ap.compass_mot = false;
 
     return 0;
+#endif  // FRAME_CONFIG != HELI_FRAME
 }
 

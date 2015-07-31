@@ -36,9 +36,9 @@ void Copter::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float 
     pitch_out = pitch_in;
 }
 
-// get_pilot_desired_heading - transform pilot's yaw input into a desired heading
-// returns desired angle in centi-degrees
-// To-Do: return heading as a float?
+// get_pilot_desired_heading - transform pilot's yaw input into a
+// desired yaw rate
+// returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
     // convert pilot input to the desired yaw rate
@@ -219,7 +219,13 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
     float in_min = g.throttle_min;
     float in_max = get_takeoff_trigger_throttle();
 
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters swash will move from bottom to 1/2 of mid throttle
+    float out_min = 0;
+#else
+    // multicopters will output between spin-when-armed and 1/2 of mid throttle
     float out_min = motors.get_throttle_warn();
+#endif
     float out_max = get_non_takeoff_throttle();
 
     if ((g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0) {

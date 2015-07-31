@@ -263,7 +263,7 @@ protected:
     //
 
     // calculate total body frame throttle required to produce the given earth frame throttle
-    virtual float get_boosted_throttle(float throttle_in);
+    virtual float get_boosted_throttle(float throttle_in) = 0;
 
     // references to external libraries
     const AP_AHRS&      _ahrs;

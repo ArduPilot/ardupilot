@@ -5,7 +5,7 @@
 class LogReader : public DataFlashFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash);
+    LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *structure, uint8_t num_types, const char **&nottypes);
     bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
@@ -22,10 +22,16 @@ public:
     void set_accel_mask(uint8_t mask) { accel_mask = mask; }
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }
     void set_use_imt(bool _use_imt) { use_imt = _use_imt; }
+    void set_save_chek_messages(bool _save_chek_messages) { save_chek_messages = _save_chek_messages; }
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     virtual bool handle_log_format_msg(const struct log_Format &f);
     virtual bool handle_msg(const struct log_Format &f, uint8_t *msg);
+
+    static bool in_list(const char *type, const char *list[]);
+
+protected:
+    virtual void end_format_msgs(void) override;
 
 private:
     AP_AHRS &ahrs;
@@ -42,7 +48,7 @@ private:
 
     uint32_t ground_alt_cm;
 
-    class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS];
+    class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS] {};
 
     Vector3f attitude;
     Vector3f ahr2_attitude;
@@ -51,10 +57,25 @@ private:
     float rel_altitude;
     uint64_t last_timestamp_usec;
 
+    // mapping from original msgid to output msgid
+    uint8_t mapped_msgid[256] {};
+
+    // next available msgid for mapping
+    uint8_t next_msgid = 1;
+
+    const struct LogStructure *structure;
+    uint8_t num_types;
+
     LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
+    const char **&nottypes;
+
+    bool save_chek_messages;
+
     void maybe_install_vehicle_specific_parsers();
 
-    bool in_list(const char *type, const char *list[]);
+    uint8_t map_fmt_type(const char *name, uint8_t intype);
+
+    bool save_message_type(const char *name);
 };

@@ -83,7 +83,7 @@ void SchedTest::setup(void)
 			 AP_InertialSensor::RATE_50HZ);
 
     // initialise the scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 void SchedTest::loop(void)
@@ -112,7 +112,7 @@ void SchedTest::ins_update(void)
  */
 void SchedTest::one_hz_print(void)
 {
-    hal.console->printf("one_hz: t=%lu\n", hal.scheduler->millis());
+    hal.console->printf("one_hz: t=%lu\n", (unsigned long)hal.scheduler->millis());
 }
 
 /*
@@ -120,7 +120,7 @@ void SchedTest::one_hz_print(void)
  */
 void SchedTest::five_second_call(void)
 {
-    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", hal.scheduler->millis(), ins_counter);
+    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)hal.scheduler->millis(), ins_counter);
 }
 
 /*

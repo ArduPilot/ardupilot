@@ -27,7 +27,7 @@ Copter::Copter(void) :
     sonar_enabled(true),
     mission(ahrs, 
             FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::verify_command, bool, const AP_Mission::Mission_Command &),
+            FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
@@ -125,6 +125,10 @@ Copter::Copter(void) :
     param_loader(var_info)
 {
     memset(&current_loc, 0, sizeof(current_loc));
+
+    // init sensor error logging flags
+    sensor_health.baro = true;
+    sensor_health.compass = true;
 }
 
 Copter copter;

@@ -95,6 +95,7 @@ public:
     void Log_Write_EntireMission(const AP_Mission &mission);
     void Log_Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
+    void Log_Write_Origin(uint8_t origin_type, const Location &loc);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -607,6 +608,15 @@ struct PACKED log_GYRO {
     float GyrX, GyrY, GyrZ;
 };
 
+struct PACKED log_ORGN {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t origin_type;
+    int32_t latitude;
+    int32_t longitude;
+    int32_t altitude;
+};
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -756,7 +766,9 @@ Format characters in the format string for binary log messages
     { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
       "IMT2","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
     { LOG_IMUDT3_MSG, sizeof(log_IMUDT), \
-      "IMT3","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }
+      "IMT3","Qffffffff","TimeUS,DelT,DelvT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ" }, \
+    { LOG_ORGN_MSG, sizeof(log_ORGN), \
+      "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt" }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -829,7 +841,13 @@ enum LogMessages {
     LOG_VIBE_MSG,
     LOG_IMUDT_MSG,
     LOG_IMUDT2_MSG,
-    LOG_IMUDT3_MSG
+    LOG_IMUDT3_MSG,
+    LOG_ORGN_MSG
+};
+
+enum LogOriginType {
+    ekf_origin = 0,
+    ahrs_home = 1
 };
 
 // message types 200 to 210 reversed for GPS driver use

@@ -116,7 +116,11 @@ public:
         _rsc_runup_increment(0.0f),
         _rotor_speed_estimate(0.0f),
         _tail_direct_drive_out(0),
-        _delta_phase_angle(0)
+        _delta_phase_angle(0),
+        _roll_radio_passthrough(0),
+        _pitch_radio_passthrough(0),
+        _throttle_radio_passthrough(0),
+        _yaw_radio_passthrough(0)
     {
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -144,12 +148,18 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test(uint8_t motor_seq, int16_t pwm);
 
+    // slow_start - ignored by helicopters
+    void                slow_start(bool true_false) {};
+
     //
     // heli specific methods
     //
 
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
+
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check() const;
 
     // _tail_type - returns the tail type (servo, servo with ext gyro, direct drive var pitch, direct drive fixed pitch)
     int16_t tail_type() const { return _tail_type; }
@@ -187,6 +197,9 @@ public:
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const;
+
+    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
+    bool rotor_speed_above_critical() const { return _rotor_speed_estimate > _rsc_critical; }
 
     // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
     void recalc_scalers();
@@ -313,7 +326,6 @@ private:
     float           _rsc_runup_increment;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     float           _rotor_speed_estimate;      // estimated speed of the main rotor (0~1000)
     int16_t         _tail_direct_drive_out;     // current ramped speed of output on ch7 when using direct drive variable pitch tail type
-    float           _dt;                        // main loop time
     int16_t         _delta_phase_angle;         // phase angle dynamic compensation
     int16_t         _roll_radio_passthrough;    // roll control PWM direct from radio, used for manual control
     int16_t         _pitch_radio_passthrough;   // pitch control PWM direct from radio, used for manual control

@@ -156,6 +156,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.get_NavEKF().resetHeightDatum();
+        Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location();
@@ -199,9 +200,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
-
-    // set hover throttle
-    motors.set_hover_throttle(g.throttle_mid);
 
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
@@ -535,6 +533,15 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 #endif
+#if FRAME_CONFIG == HELI_FRAME
+        // check helicopter parameters
+        if (!motors.parameter_check()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Check Heli Parameters"));
+            }
+            return false;
+        }
+#endif // HELI_FRAME
     }
 
     // check throttle is above failsafe throttle
@@ -675,6 +682,22 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     start_logging();
 #endif
 
+    // check accels and gyro are healthy
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
+        if(!ins.get_accel_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Accelerometers not healthy"));
+            }
+            return false;
+        }
+        if(!ins.get_gyro_health_all()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Gyros not healthy"));
+            }
+            return false;
+        }
+    }
+
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
         if (display_failure) {
@@ -692,28 +715,36 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check if rotor is spinning on heli
-    #if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
     // heli specific arming check
-    if (!motors.allow_arming()){
+    if ((rsc_control_deglitched > 0) || !motors.allow_arming()){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor Control Engaged"));
         }
         return false;
     }
-    #endif  // HELI_FRAME
+#endif  // HELI_FRAME
 
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
         return true;
     }
 
-    // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
-    // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
-    // that may differ from the baro height due to baro drift.
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-    bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
-    if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) && using_baro_ref) {
-        if (fabsf(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+    // baro checks
+    if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
+        // baro health check
+        if (!barometer.all_healthy()) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Barometer not healthy"));
+            }
+            return false;
+        }
+        // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
+        // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
+        // that may differ from the baro height due to baro drift.
+        nav_filter_status filt_status = inertial_nav.get_filter_status();
+        bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
+        if (using_baro_ref && (fabsf(inertial_nav.get_altitude() - baro_alt) > PREARM_MAX_ALT_DISPARITY_CM)) {
             if (display_failure) {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Altitude disparity"));
             }
@@ -725,6 +756,16 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     if (!pre_arm_gps_checks(display_failure)) {
         return false;
     }
+
+#if AC_FENCE == ENABLED
+    // check vehicle is within fence
+    if(!fence.pre_arm_check()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: check fence"));
+        }
+        return false;
+    }
+#endif
 
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
@@ -811,9 +852,6 @@ void Copter::init_disarm_motors()
     gcs_send_text_P(SEVERITY_HIGH, PSTR("DISARMING MOTORS"));
 #endif
 
-    // send disarm command to motors
-    motors.armed(false);
-
     // save compass offsets learned by the EKF
     Vector3f magOffsets;
     if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
@@ -829,11 +867,14 @@ void Copter::init_disarm_motors()
     set_land_complete(true);
     set_land_complete_maybe(true);
 
-    // reset the mission
-    mission.reset();
-
     // log disarm to the dataflash
     Log_Write_Event(DATA_DISARMED);
+
+    // send disarm command to motors
+    motors.armed(false);
+
+    // reset the mission
+    mission.reset();
 
     // suspend logging
     if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {

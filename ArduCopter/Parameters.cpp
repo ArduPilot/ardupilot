@@ -196,6 +196,15 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
+    // @Units: Centimeters
+    // @Range: 0 3000
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
+
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is RSSI_RANGE for max rssi, 0V for minimum
@@ -353,12 +362,12 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: ESC
+    // @Param: ESC_CALIBRATION
     // @DisplayName: ESC Calibration
     // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
     // @User: Advanced
-    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle
-    GSCALAR(esc_calibrate, "ESC",                   0),
+    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 9:Disabled
+    GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
     // @Param: TUNE
     // @DisplayName: Channel 6 Tuning
@@ -1004,7 +1013,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 #else
     // @Group: MOT_
     // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
-    GOBJECT(motors, "MOT_",         AP_Motors),
+    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
 #endif
 
     // @Group: RCMAP_
@@ -1106,7 +1115,7 @@ void Copter::load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
+        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

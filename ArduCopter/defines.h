@@ -325,6 +325,7 @@ enum FlipState {
 #define DATA_MOTORS_INTERLOCK_ENABLED       57
 #define DATA_ROTOR_RUNUP_COMPLETE           58  // Heli only
 #define DATA_ROTOR_SPEED_BELOW_CRITICAL     59  // Heli only
+#define DATA_EKF_ALT_RESET                  60
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -352,6 +353,7 @@ enum FlipState {
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1
+#define ERROR_CODE_UNHEALTHY                4
 // subsystem specific error codes -- radio
 #define ERROR_CODE_RADIO_LATE_FRAME         2
 // subsystem specific error codes -- failsafe_thr, batt, gps

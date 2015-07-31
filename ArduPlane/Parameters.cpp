@@ -934,12 +934,14 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
+#if HIL_SUPPORT
     // @Param: HIL_MODE
     // @DisplayName: HIL mode enable
     // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(hil_mode,               "HIL_MODE",      0),
+#endif
 
     // @Param: HIL_SERVOS
     // @DisplayName: HIL Servos enable
@@ -1257,7 +1259,7 @@ void Plane::load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
+        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

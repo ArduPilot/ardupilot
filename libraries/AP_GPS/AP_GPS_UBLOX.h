@@ -39,14 +39,21 @@
  * would mean we would never detect it.
  */
 #define UBLOX_SET_BINARY "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,38400,0*26\r\n"
+#define UBLOX_SET_BINARY_RAW_BAUD "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0003,0001,115200,0*1E\r\n"
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
+#define UBLOX_GNSS_SETTINGS 1
+#define UBLOX_HW_LOGGING 1
 #else
 #define UBLOX_RXM_RAW_LOGGING 0
+#define UBLOX_GNSS_SETTINGS 0
+#define UBLOX_HW_LOGGING 0
 #endif
+
+#define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
@@ -55,6 +62,8 @@ public:
 
     // Methods
     bool read();
+
+    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_DGPS; }
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
@@ -67,6 +76,21 @@ private:
         uint8_t msg_id;
         uint16_t length;
     };
+#if UBLOX_GNSS_SETTINGS
+    struct PACKED ubx_cfg_gnss {
+        uint8_t msgVer;
+        uint8_t numTrkChHw;
+        uint8_t numTrkChUse;
+        uint8_t numConfigBlocks;
+        PACKED struct configBlock {
+            uint8_t gnssId;
+            uint8_t resTrkCh;
+            uint8_t maxTrkCh;
+            uint8_t reserved1;
+            uint32_t flags;
+        } configBlock[UBLOX_MAX_GNSS_CONFIG_BLOCKS];
+    };
+#endif
     struct PACKED ubx_cfg_nav_rate {
         uint16_t measure_rate_ms;
         uint16_t nav_rate;
@@ -102,7 +126,6 @@ private:
         uint8_t scanmode2;
         uint32_t scanmode1;
     };
-
     struct PACKED ubx_nav_posllh {
         uint32_t time;                                  // GPS msToW
         int32_t longitude;
@@ -120,6 +143,16 @@ private:
         uint8_t res;
         uint32_t time_to_first_fix;
         uint32_t uptime;                                // milliseconds
+    };
+    struct PACKED ubx_nav_dop {
+        uint32_t time;                                  // GPS msToW
+        uint16_t gDOP;
+        uint16_t pDOP;
+        uint16_t tDOP;
+        uint16_t vDOP;
+        uint16_t hDOP;
+        uint16_t nDOP;
+        uint16_t eDOP;
     };
     struct PACKED ubx_nav_solution {
         uint32_t time;
@@ -151,6 +184,8 @@ private:
         uint32_t speed_accuracy;
         uint32_t heading_accuracy;
     };
+
+#if UBLOX_HW_LOGGING
     // Lea6 uses a 60 byte message
     struct PACKED ubx_mon_hw_60 {
         uint32_t pinSel;
@@ -203,6 +238,7 @@ private:
         uint32_t postStatus;
         uint32_t reserved2;
     };
+#endif
     struct PACKED ubx_nav_svinfo_header {
         uint32_t itow;
         uint8_t numCh;
@@ -232,12 +268,13 @@ private:
         uint8_t numMeas;
         uint8_t recStat;
         uint8_t reserved1[3];
-        struct ubx_rxm_rawx_sv {
+        PACKED struct ubx_rxm_rawx_sv {
             double prMes;
             double cpMes;
             float doMes;
             uint8_t gnssId;
             uint8_t svId;
+            uint8_t reserved2;
             uint8_t freqId;
             uint16_t locktime;
             uint8_t cno;
@@ -245,6 +282,7 @@ private:
             uint8_t cpStdev;
             uint8_t doStdev;
             uint8_t trkStat;
+            uint8_t reserved3;
         } svinfo[UBLOX_MAX_RXM_RAWX_SATS];
     };
 #endif
@@ -252,12 +290,18 @@ private:
     union PACKED {
         ubx_nav_posllh posllh;
         ubx_nav_status status;
+        ubx_nav_dop dop;
         ubx_nav_solution solution;
         ubx_nav_velned velned;
         ubx_cfg_nav_settings nav_settings;
+#if UBLOX_HW_LOGGING
         ubx_mon_hw_60 mon_hw_60;
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
+#endif
+#if UBLOX_GNSS_SETTINGS
+        ubx_cfg_gnss gnss;
+#endif
         ubx_cfg_sbas sbas;
         ubx_nav_svinfo_header svinfo_header;
 #if UBLOX_RXM_RAW_LOGGING
@@ -279,6 +323,7 @@ private:
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
         MSG_STATUS = 0x3,
+        MSG_DOP = 0x4,
         MSG_SOL = 0x6,
         MSG_VELNED = 0x12,
         MSG_CFG_PRT = 0x00,
@@ -286,11 +331,21 @@ private:
         MSG_CFG_SET_RATE = 0x01,
         MSG_CFG_NAV_SETTINGS = 0x24,
         MSG_CFG_SBAS = 0x16,
+        MSG_CFG_GNSS = 0x3E,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
         MSG_RXM_RAWX = 0x15
+    };
+    enum ubx_gnss_identifier {
+        GNSS_GPS     = 0x00,
+        GNSS_SBAS    = 0x01,
+        GNSS_GALILEO = 0x02,
+        GNSS_BEIDOU  = 0x03,
+        GNSS_IMES    = 0x04,
+        GNSS_QZSS    = 0x05,
+        GNSS_GLONASS = 0x06
     };
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -346,7 +401,6 @@ private:
 
     uint8_t rate_update_step;
     uint32_t _last_5hz_time;
-    uint32_t _last_hw_status;
 
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);

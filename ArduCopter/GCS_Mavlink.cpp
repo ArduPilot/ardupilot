@@ -1091,11 +1091,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[5] = packet.chan6_raw;
         v[6] = packet.chan7_raw;
         v[7] = packet.chan8_raw;
-        hal.rcin->set_overrides(v, 8);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = true;
-        // a RC override message is consiered to be a 'heartbeat' from the ground station for failsafe purposes
+        copter.failsafe.rc_override_active = hal.rcin->set_overrides(v, 8);
+
+        // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = hal.scheduler->millis();
         break;
     }
@@ -1828,6 +1828,18 @@ void Copter::gcs_send_text_fmt(const prog_char_t *fmt, ...)
         if (gcs[i].initialised) {
             gcs[i].pending_status = gcs[0].pending_status;
             gcs[i].send_message(MSG_STATUSTEXT);
+        }
+    }
+}
+
+/*
+ *  send mission_item_reached message to all GCSs
+ */
+void Copter::gcs_send_mission_item_reached(uint16_t seq)
+{
+    for (uint8_t i=0; i<num_gcs; i++) {
+        if (gcs[i].initialised) {
+            gcs[i].send_mission_item_reached(seq);
         }
     }
 }

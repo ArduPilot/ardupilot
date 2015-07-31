@@ -448,7 +448,9 @@ public:
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
     AP_Int8  hil_servos;
+#if HIL_SUPPORT
     AP_Int8  hil_mode;
+#endif
 
     AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;

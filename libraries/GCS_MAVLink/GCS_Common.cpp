@@ -218,8 +218,8 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
-    struct Location loc;
-    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
+    struct Location loc {};
+    if (ahrs.get_secondary_attitude(euler)) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
                                euler.y,
@@ -1245,9 +1245,8 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
 /*
   send AUTOPILOT_VERSION packet
  */
-void GCS_MAVLINK::send_autopilot_version(void) const
+void GCS_MAVLINK::send_autopilot_version() const
 {
-    uint16_t capabilities = 0;
     uint32_t flight_sw_version = 0;
     uint32_t middleware_sw_version = 0;
     uint32_t os_sw_version = 0;
@@ -1279,7 +1278,7 @@ void GCS_MAVLINK::send_autopilot_version(void) const
     
     mavlink_msg_autopilot_version_send(
         chan,
-        capabilities,
+        hal.util->get_capabilities(),
         flight_sw_version,
         middleware_sw_version,
         os_sw_version,
@@ -1335,4 +1334,12 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
 #endif
+}
+
+/*
+ * send notification that a mission command has been completed
+ */
+void GCS_MAVLINK::send_mission_item_reached(uint16_t seq) const
+{
+    mavlink_msg_mission_item_reached_send(chan, seq);
 }

@@ -1,5 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Compass.h"
+#include <math.h>
 
 // don't allow any axis of the offset to go above 2000
 #define COMPASS_OFS_LIMIT 2000
@@ -47,7 +48,9 @@ Compass::learn_offsets(void)
             for (uint8_t i=0; i<_mag_history_size; i++) {
                 // fill the history buffer with the current mag vector,
                 // with the offset removed
-                _state[k].mag_history[i] = Vector3i((field.x+0.5f) - ofs.x, (field.y+0.5f) - ofs.y, (field.z+0.5f) - ofs.z);
+                _state[k].mag_history[i] = Vector3i(roundf(field.x) - ofs.x, 
+                                                    roundf(field.y) - ofs.y, 
+                                                    roundf(field.z) - ofs.z);
             }
             _state[k].mag_history_index = 0;
         }
@@ -92,9 +95,9 @@ Compass::learn_offsets(void)
         }
 
         // put the vector in the history
-        _state[k].mag_history[_state[k].mag_history_index] = Vector3i((field.x+0.5f) - ofs.x, 
-                                                                      (field.y+0.5f) - ofs.y, 
-                                                                      (field.z+0.5f) - ofs.z);
+        _state[k].mag_history[_state[k].mag_history_index] = Vector3i(roundf(field.x) - ofs.x, 
+                                                                      roundf(field.y) - ofs.y, 
+                                                                      roundf(field.z) - ofs.z);
         _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
 
         // equation 6 of Bills paper

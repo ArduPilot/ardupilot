@@ -38,6 +38,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
     DataFlash_Backend(front),
     _write_fd(-1),
     _read_fd(-1),
+    _read_fd_log_num(0),
     _read_offset(0),
     _write_offset(0),
     _initialised(false),
@@ -652,8 +653,8 @@ void DataFlash_File::_io_timer(void)
     uint32_t tnow = hal.scheduler->micros();
     if (nbytes < _writebuf_chunk && 
         tnow - _last_write_time < 2000000UL) {
-        // write in 512 byte chunks, but always write at least once
-        // per 2 seconds if data is available
+        // write in _writebuf_chunk-sized chunks, but always write at
+        // least once per 2 seconds if data is available
         return;
     }
 

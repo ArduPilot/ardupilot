@@ -80,6 +80,7 @@ void AC_AttitudeControl::relax_bf_rate_controller()
     // ensure zero error in body frame rate controllers
     const Vector3f& gyro = _ahrs.get_gyro();
     _rate_bf_target = gyro * AC_ATTITUDE_CONTROL_DEGX100;
+    frame_conversion_bf_to_ef(_rate_bf_target, _rate_ef_desired);
 
     _pid_rate_roll.reset_I();
     _pid_rate_pitch.reset_I();
@@ -723,23 +724,6 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
     _motors.set_stabilizing(false);
     _motors.set_throttle(throttle_in);
     _angle_boost = 0;
-}
-
-// returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
-float AC_AttitudeControl::get_boosted_throttle(float throttle_in)
-{
-    // inverted_factor is 1 for tilt angles below 60 degrees
-    // reduces as a function of angle beyond 60 degrees
-    // becomes zero at 90 degrees
-    float min_throttle = _motors.throttle_min();
-    float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
-    float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
-
-    float throttle_out = (throttle_in-min_throttle)*inverted_factor*boost_factor + min_throttle;
-    _angle_boost = constrain_float(throttle_out - throttle_in,-32000,32000);
-    return throttle_out;
 }
 
 // sqrt_controller - response based on the sqrt of the error instead of the more common linear response

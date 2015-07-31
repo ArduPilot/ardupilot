@@ -92,7 +92,7 @@ void Plane::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 void Plane::loop()
@@ -137,10 +137,12 @@ void Plane::ahrs_update()
     hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // update hil before AHRS update
         gcs_update();
     }
+#endif
 
     ahrs.update();
 
@@ -148,8 +150,12 @@ void Plane::ahrs_update()
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        DataFlash.Log_Write_IMUDT(ins);
+#endif
+    }
 
     // calculate a scaled roll limit based on current pitch
     roll_limit_cd = g.roll_limit_cd * cosf(ahrs.pitch);
@@ -251,8 +257,10 @@ void Plane::update_logging2(void)
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_IMU))
         DataFlash.Log_Write_Vibration(ins);
+#endif
 }
 
 
@@ -313,7 +321,9 @@ void Plane::one_second_loop()
         Log_Write_Status();
     }
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+#endif
 }
 
 void Plane::log_perf_info()
@@ -323,8 +333,10 @@ void Plane::log_perf_info()
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
+#endif
     G_Dt_max = 0;
     G_Dt_min = 0;
     resetPerfData();

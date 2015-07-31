@@ -106,15 +106,20 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     // unless another is unhealthy as 3rd gyro on PH2 has a lot more
     // noise
     uint8_t healthy_count = 0;    
+    Vector3f delta_angle;
     for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
         if (_ins.get_gyro_health(i) && healthy_count < 2) {
-            _omega += _ins.get_gyro(i);
-            healthy_count++;
+            Vector3f dangle;
+            if (_ins.get_delta_angle(i, dangle)) {
+                healthy_count++;
+                delta_angle += dangle;
+            }
         }
     }
     if (healthy_count > 1) {
-        _omega /= healthy_count;
+        delta_angle /= healthy_count;
     }
+    _omega = delta_angle / _G_Dt;
     _omega += _omega_I;
     _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
 }
@@ -545,7 +550,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
     // rotate accelerometer values into the earth frame
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
         if (_ins.get_accel_health(i)) {
-            _accel_ef[i] = _dcm_matrix * _ins.get_accel(i);
+            /*
+              by using get_delta_velocity() instead of get_accel() the
+              accel value is sampled over the right time delta for
+              each sensor, which prevents an aliasing effect
+             */
+            Vector3f delta_velocity;
+            float delta_velocity_dt;
+            _ins.get_delta_velocity(i, delta_velocity);
+            delta_velocity_dt = _ins.get_delta_velocity_dt(i);
+            _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
             // integrate the accel vector in the earth frame between GPS readings
             _ra_sum[i] += _accel_ef[i] * deltat;
         }

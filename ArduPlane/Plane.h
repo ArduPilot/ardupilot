@@ -259,8 +259,10 @@ private:
     AP_Camera camera {&relay};
 #endif
 
+#if OPTFLOW == ENABLED
     // Optical flow sensor
     OpticalFlow optflow;
+#endif
 
     // Rally Ponints
     AP_Rally rally {ahrs};
@@ -641,6 +643,8 @@ private:
     // true if we are out of time in our event timeslice
     bool gcs_out_of_time = false;
 
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
 
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
@@ -685,6 +689,7 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Baro(void);
     void Log_Write_Airspeed(void);
+    void Log_Write_Home_And_Origin();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
     void start_logging();
     void load_parameters(void);
@@ -712,7 +717,6 @@ private:
     float lookahead_adjustment(void);
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
-    void add_altitude_data(unsigned long xl, long y);
     void set_next_WP(const struct Location &loc);
     void set_guided_WP(void);
     void init_home();
@@ -783,7 +787,7 @@ private:
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out();
-    void rudder_arm_check();
+    void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
     void trim_control_surfaces();

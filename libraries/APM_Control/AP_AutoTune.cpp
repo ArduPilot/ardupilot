@@ -125,8 +125,8 @@ void AP_AutoTune::start(void)
     restore = current;
 
     uint8_t level = aparm.autotune_level;
-    if (level > sizeof(tuning_table)/sizeof(tuning_table[0])) {
-        level = sizeof(tuning_table)/sizeof(tuning_table[0]);
+    if (level > ARRAY_SIZE(tuning_table)) {
+        level = ARRAY_SIZE(tuning_table);
     }
     if (level < 1) {
         level = 1;

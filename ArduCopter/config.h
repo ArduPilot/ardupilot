@@ -227,7 +227,7 @@
 
 // prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
- # define GPS_HDOP_GOOD_DEFAULT         230     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+ # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
 
 // GCS failsafe
@@ -492,6 +492,10 @@
 
 #ifndef RTL_ALT_MIN
  # define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
+#endif
+
+#ifndef RTL_CLIMB_MIN_DEFAULT
+ # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
 #ifndef RTL_LOITER_TIME

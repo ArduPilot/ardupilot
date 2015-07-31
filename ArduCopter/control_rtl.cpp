@@ -135,8 +135,14 @@ void Copter::rtl_climb_return_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
         // To-Do: re-initialise wpnav targets
         return;
     }
@@ -191,8 +197,14 @@ void Copter::rtl_loiterathome_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
         // To-Do: re-initialise wpnav targets
         return;
     }
@@ -261,7 +273,13 @@ void Copter::rtl_descent_run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
         // set target to current position
         wp_nav.init_loiter_target();
         return;
@@ -323,7 +341,13 @@ void Copter::rtl_land_run()
     float target_yaw_rate = 0;
     // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
         // set target to current position
         wp_nav.init_loiter_target();
 
@@ -389,8 +413,8 @@ void Copter::rtl_land_run()
 //      altitude is in cm above home
 float Copter::get_RTL_alt()
 {
-    // maximum of current altitude and rtl altitude
-    float rtl_alt = max(current_loc.alt, g.rtl_altitude);
+    // maximum of current altitude + climb_min and rtl altitude
+    float rtl_alt = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
     rtl_alt = max(rtl_alt, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED

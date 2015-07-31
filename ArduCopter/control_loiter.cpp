@@ -81,7 +81,7 @@ void Copter::loiter_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(0,false,g.throttle_filt);
-#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif  // HELI_FRAME
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
@@ -119,7 +119,7 @@ void Copter::loiter_run()
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
         attitude_control.set_throttle_out(get_throttle_pre_takeoff(channel_throttle->control_in),false,g.throttle_filt);
-#else   // Multirotors do not stabilize roll/pitch/yaw when disarmed
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
         // move throttle to between minimum and non-takeoff-throttle to keep us on the ground
         attitude_control.set_throttle_out_unstabilized(get_throttle_pre_takeoff(channel_throttle->control_in),true,g.throttle_filt);
 #endif

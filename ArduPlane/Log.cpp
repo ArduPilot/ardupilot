@@ -450,6 +450,23 @@ void Plane::Log_Write_Airspeed(void)
     DataFlash.Log_Write_Airspeed(airspeed);
 }
 
+// log ahrs home and EKF origin to dataflash
+void Plane::Log_Write_Home_And_Origin()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // log ekf origin if set
+    Location ekf_orig;
+    if (ahrs.get_NavEKF_const().getOriginLLH(ekf_orig)) {
+        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+    }
+#endif
+
+    // log ahrs home if set
+    if (home_is_set != HOME_UNSET) {
+        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
+    }
+}
+
 static const struct LogStructure log_structure[] PROGMEM = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
@@ -463,7 +480,7 @@ static const struct LogStructure log_structure[] PROGMEM = {
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffffBBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
-      "ARM", "QHB", "TimeUS,ArmState,ArmChecks" },
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
       "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P" },
     { LOG_STATUS_MSG, sizeof(log_Status),
@@ -506,7 +523,7 @@ void Plane::start_logging()
  */
 void Plane::log_init(void)
 {
-    DataFlash.Init(log_structure, sizeof(log_structure)/sizeof(log_structure[0]));
+    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);

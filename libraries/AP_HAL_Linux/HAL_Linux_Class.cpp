@@ -24,8 +24,20 @@ static LinuxUARTDriver uartBDriver(false);
 static LinuxUARTDriver uartCDriver(false);
 static LinuxUARTDriver uartEDriver(false);
 
-static LinuxSemaphore  i2cSemaphore;
-static LinuxI2CDriver  i2cDriver(&i2cSemaphore, "/dev/i2c-1");
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-0");
+static LinuxSemaphore  i2cSemaphore1;
+static LinuxI2CDriver  i2cDriver1(&i2cSemaphore1, "/dev/i2c-1");
+static LinuxSemaphore  i2cSemaphore2;
+static LinuxI2CDriver  i2cDriver2(&i2cSemaphore2, "/dev/i2c-2");
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-2");
+#else
+static LinuxSemaphore  i2cSemaphore0;
+static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-1");
+#endif
 static LinuxSPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static NavioAnalogIn analogIn;
@@ -85,6 +97,8 @@ static LinuxRCOutput_AioPRU rcoutDriver;
 static LinuxRCOutput_Navio rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static LinuxRCOutput_ZYNQ rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxRCOutput_Bebop rcoutDriver;
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
@@ -99,7 +113,15 @@ HAL_Linux::HAL_Linux() :
         &uartCDriver,
         NULL,            /* no uartD */
         &uartEDriver,
-        &i2cDriver,
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+        &i2cDriver0,
+        &i2cDriver1,
+        &i2cDriver2,
+#else
+        &i2cDriver0,
+        NULL,
+        NULL,
+#endif
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -179,7 +201,13 @@ void HAL_Linux::init(int argc,char* const argv[]) const
 
     scheduler->init(NULL);
     gpio->init();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c->begin();
+    i2c1->begin();
+    i2c2->begin();
+#else
+    i2c->begin();
+#endif
     rcout->init(NULL);
     rcin->init(NULL);
     uartA->begin(115200);    

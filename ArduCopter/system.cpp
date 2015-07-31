@@ -255,10 +255,6 @@ void Copter::init_ardupilot()
 
     startup_ground(true);
 
-#if LOGGING_ENABLED == ENABLED
-    Log_Write_Startup();
-#endif
-
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
@@ -269,6 +265,9 @@ void Copter::init_ardupilot()
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
+
+    // init vehicle capabilties
+    init_capabilities();
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
 

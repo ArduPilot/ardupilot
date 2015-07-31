@@ -50,6 +50,8 @@ HAL_SITL::HAL_SITL() :
         &sitlUart3Driver,  /* uartD */
         &sitlUart4Driver,  /* uartE */
         &emptyI2C, /* i2c */
+        &emptyI2C, /* i2c */
+        &emptyI2C, /* i2c */
         &emptySPI, /* spi */
         &sitlAnalogIn, /* analogin */
         &sitlEEPROMStorage, /* storage */

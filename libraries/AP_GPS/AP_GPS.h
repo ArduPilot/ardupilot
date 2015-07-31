@@ -338,6 +338,7 @@ public:
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
+    AP_Int8 _gnss_mode;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
@@ -407,10 +408,13 @@ private:
 
     static const uint32_t  _baudrates[];
     static const prog_char _initialisation_blob[];
+    static const prog_char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
 };
+
+#define GPS_BAUD_TIME_MS 1200
 
 #include <GPS_Backend.h>
 #include <AP_GPS_UBLOX.h>

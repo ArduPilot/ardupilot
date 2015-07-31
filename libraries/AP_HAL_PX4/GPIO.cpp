@@ -242,7 +242,13 @@ bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mo
  */
 bool PX4GPIO::usb_connected(void)
 {
-    return stm32_gpioread(GPIO_OTGFS_VBUS);
+    struct stat st;
+    /*
+      we use a combination of voltage on the USB connector and the
+      existance of the /dev/ttyACM0 character device. This copes with
+      systems where the VBUS may go high even with no USB connected
+     */
+    return stm32_gpioread(GPIO_OTGFS_VBUS) && stat("/dev/ttyACM0", &st) == 0;
 }
 
 

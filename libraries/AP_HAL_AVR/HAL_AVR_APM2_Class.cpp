@@ -42,6 +42,8 @@ HAL_AVR_APM2::HAL_AVR_APM2() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &avrI2CDriver,
+        NULL, /* only one i2c */
+        NULL, /* only one i2c */
         &apm2SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,

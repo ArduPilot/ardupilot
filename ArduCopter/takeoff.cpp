@@ -28,6 +28,14 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
 bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
     if (motors.armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
+
+#if FRAME_CONFIG == HELI_FRAME
+        // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
+        if (!motors.rotor_runup_complete()) {
+            return false;
+        }
+#endif
+
         switch(control_mode) {
             case GUIDED:
                 set_auto_armed(true);

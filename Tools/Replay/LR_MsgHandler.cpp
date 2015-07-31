@@ -24,7 +24,7 @@ void LR_MsgHandler::wait_timestamp(uint32_t timestamp)
 void LR_MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
 {
     uint64_t time_us;
-    uint64_t time_ms;
+    uint32_t time_ms;
 
     if (field_value(msg, "TimeUS", time_us)) {
         // 64-bit timestamp present - great!
@@ -338,7 +338,7 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
                                    "COMPASS_ORIENT3"};
-    for (uint8_t i=0; i<sizeof(ignore_parms)/sizeof(ignore_parms[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
             return true;
@@ -366,8 +366,8 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
         // we don't support mavlink set on this parameter
         return false;
     }
-    if (fabsf(old_value - value) > 1.0e-4) {
-        ::printf("Changed %s to %.6f from %.6f\n", name, value, old_value);
+    if (fabsf(old_value - value) > 1.0e-12) {
+        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
     }
     return true;
 }

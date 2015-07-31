@@ -98,9 +98,8 @@ void MsgHandler::parse_format_fields()
     }
 
     if (label_offset != strlen(f.format)) {
-	    free(labels);
-	    printf("too few labels for format (format=%s) (labels=%s)\n",
-		   f.format, f.labels);
+        printf("too few labels for format (format=%s) (labels=%s)\n",
+               f.format, f.labels);
     }
 
     free(labels);
