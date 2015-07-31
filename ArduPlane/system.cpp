@@ -235,6 +235,8 @@ void Plane::init_ardupilot()
     }
 #endif // CLI_ENABLED
 
+    init_capabilities();
+
     startup_ground();
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
