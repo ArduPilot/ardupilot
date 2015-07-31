@@ -52,6 +52,8 @@ void DataFlash_Backend::write_more_preface_messages()
     // 300 bytes should fit any message.  Possibly we need a tristate
     // instead of a boolean; 0 == all done, -1 ==call me again,
     // insufficient space, 1== call me again, more messages
+
+    _writing_preface_messages = true;
     while (bufferspace_available() > 300) {
         if (i++ >= limit) {
             internal_error();
@@ -64,5 +66,6 @@ void DataFlash_Backend::write_more_preface_messages()
             break;
         }
     }
+    _writing_preface_messages = false;
 }
 

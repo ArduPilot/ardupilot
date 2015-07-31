@@ -39,7 +39,6 @@ public:
         _blockcount_free(0),
         _logging_started(false),
         _sending_to_client(false),
-        _pushing_blocks(false),
         mavlink_seq(0)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
@@ -120,7 +119,6 @@ protected:
     } stats;
 
 private:
-    bool _pushing_blocks;
     mavlink_channel_t _chan;
     uint8_t _target_system_id;
     uint8_t _target_component_id;

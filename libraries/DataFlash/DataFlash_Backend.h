@@ -28,6 +28,7 @@ public:
         _front(front),
         _logging_started(false),
         _writes_enabled(false),
+        _writing_preface_messages(false),
         _last_periodic_1Hz(0),
         _last_periodic_10Hz(0)
         { }
@@ -102,6 +103,7 @@ protected:
     const struct LogStructure *_structures;
     uint8_t _num_types;
     bool _writes_enabled;
+    bool _writing_preface_messages;
 
     /*
       read a block
