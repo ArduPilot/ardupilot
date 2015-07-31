@@ -248,9 +248,9 @@ case $FRAME in
 	BUILD_TARGET="sitl-octa"
         MODEL="$FRAME"
 	;;
-    heli)
+    heli*)
 	BUILD_TARGET="sitl-heli"
-        MODEL="heli"
+        MODEL="$FRAME"
 	;;
     heli-dual)
   BUILD_TARGET="sitl-heli-dual"
