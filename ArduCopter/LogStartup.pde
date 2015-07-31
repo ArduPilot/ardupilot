@@ -14,11 +14,6 @@ void DFMessageWriter_LogStartup::reset()
     _writesysinfo->reset();
 }
 
-bool DFMessageWriter_LogStartup::finished()
-{
-    return _finished;
-}
-
 void DFMessageWriter_LogStartup::process()
 {
     switch(stage) {
