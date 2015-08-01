@@ -265,6 +265,30 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_FILTER", 19, AP_InertialSensor, _accel_filter_cutoff,  DEFAULT_ACCEL_FILTER),
 
+    // @Param: USE
+    // @DisplayName: Use first IMU for attitude, velocity and position estimates
+    // @Description: Use first IMU for attitude, velocity and position estimates
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE", 20, AP_InertialSensor, _use[0],  1),
+
+#if INS_MAX_INSTANCES > 2
+    // @Param: USE2
+    // @DisplayName: Use second IMU for attitude, velocity and position estimates
+    // @Description: Use second IMU for attitude, velocity and position estimates
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
+#endif
+#if INS_MAX_INSTANCES > 3
+    // @Param: USE3
+    // @DisplayName: Use third IMU for attitude, velocity and position estimates
+    // @Description: Use third IMU for attitude, velocity and position estimates
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE3", 21, AP_InertialSensor, _use[2],  0),
+#endif
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -680,6 +704,16 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
     return (get_gyro_count() > 0);
 }
 
+// return true if gyro instance should be used (must be healthy and have it's use parameter set to 1)
+bool AP_InertialSensor::use_gyro(uint8_t instance) const
+{
+    if (instance >= INS_MAX_INSTANCES) {
+        return false;
+    }
+
+    return (get_gyro_health(instance) && _use[instance]);
+}
+
 // get_accel_health_all - return true if all accels are healthy
 bool AP_InertialSensor::get_accel_health_all(void) const
 {
@@ -782,6 +816,16 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
 
     // if we got this far the accelerometers must have been calibrated
     return true;
+}
+
+// return true if accel instance should be used (must be healthy and have it's use parameter set to 1)
+bool AP_InertialSensor::use_accel(uint8_t instance) const
+{
+    if (instance >= INS_MAX_INSTANCES) {
+        return false;
+    }
+
+    return (get_accel_health(instance) && _use[instance]);
 }
 
 void
@@ -1181,13 +1225,13 @@ void AP_InertialSensor::update(void)
 
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i]) {
+            if (_gyro_healthy[i] && _use[i]) {
                 _primary_gyro = i;
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i]) {
+            if (_accel_healthy[i] && _use[i]) {
                 _primary_accel = i;
                 break;
             }
