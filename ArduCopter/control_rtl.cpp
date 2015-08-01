@@ -88,11 +88,17 @@ void Copter::rtl_climb_start()
     wp_nav.get_wp_stopping_point_xy(destination);
 
 #if AC_RALLY == ENABLED
-    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    destination.z = pv_alt_above_origin(rally_point.alt);
+    // RTL based on FS Status: If no FS, rtl home, if FS, go to rally
+    if ( failsafe.battery || failsafe.radio ) {
+        // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
+        Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+        rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+        rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+        destination.z = pv_alt_above_origin(rally_point.alt);
+    }
+    else {
+        destination.z = pv_alt_above_origin(get_RTL_alt());
+    }
 #else
     destination.z = pv_alt_above_origin(get_RTL_alt());
 #endif
@@ -113,17 +119,26 @@ void Copter::rtl_return_start()
 
     // set target to above home/rally point
 #if AC_RALLY == ENABLED
-    // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    Vector3f destination = pv_location_to_vector(rally_point);
+    // RTL based on FS Status: If no FS, rtl home, if FS, go to rally
+    if ( failsafe.battery || failsafe.radio ) {
+        // rally_point will be the nearest rally point or home.  uses absolute altitudes
+        Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+        rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+        rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+        Vector3f destination = pv_location_to_vector(rally_point);
+        wp_nav.set_wp_destination(destination);
+    }
+    else {
+        Vector3f destination = pv_location_to_vector(ahrs.get_home());
+        destination.z = pv_alt_above_origin(get_RTL_alt());
+        wp_nav.set_wp_destination(destination);
+    }
 #else
     Vector3f destination = pv_location_to_vector(ahrs.get_home());
     destination.z = pv_alt_above_origin(get_RTL_alt());
+    wp_nav.set_wp_destination(destination);
 #endif
 
-    wp_nav.set_wp_destination(destination);
 
     // initialise yaw to point home (maybe)
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
