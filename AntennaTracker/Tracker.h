@@ -165,7 +165,7 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // Servo state
     struct {
