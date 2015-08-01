@@ -25,6 +25,10 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #define RALLY_LIMIT_KM_DEFAULT 1.0f
 #endif
 
+#ifndef RALLY_HOME_INC_DEFAULT
+#define RALLY_HOME_INC_DEFAULT 0
+#endif
+
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Param: TOTAL
     // @DisplayName: Rally Total
@@ -39,6 +43,15 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Units: kilometers
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
+
+    // @Param: HOME_INC
+    // @DisplayName: Rally Home Included
+    // @Description: Controls if Home has to be included as a Rally point (as a safe place) to RTL while a FS situation trigger a RTL. By default should be 0 as we don't know if Home is safe (e.g. boat launch...)
+    // @User: Standard
+    // @Units: na
+    // @Increment: na
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("HOME_INC", 2, AP_Rally, _rally_home_inc, RALLY_HOME_INC_DEFAULT),
 
     AP_GROUPEND
 };
@@ -123,6 +136,11 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
             return_loc = next_rally;
         }
     }
+
+    // Check if we should take Home in the Rally points
+    if ( _rally_home_inc && (get_distance(current_loc, home_loc)<min_dis) ) {
+        return false; // use home position
+        }
 
     if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
         return false; // use home position
