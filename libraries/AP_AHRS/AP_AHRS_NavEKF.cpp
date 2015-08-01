@@ -133,7 +133,7 @@ void AP_AHRS_NavEKF::update(void)
                 }
             }
 
-            if(_ins.get_accel_health(0) && _ins.get_accel_health(1)) {
+            if(_ins.use_accel(0) && _ins.use_accel(1)) {
                 float IMU1_weighting;
                 EKF.getIMU1Weighting(IMU1_weighting);
                 _accel_ef_ekf_blended = _accel_ef_ekf[0] * IMU1_weighting + _accel_ef_ekf[1] * (1.0f-IMU1_weighting);
