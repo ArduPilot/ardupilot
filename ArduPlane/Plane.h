@@ -914,6 +914,7 @@ private:
     void log_init();
     uint32_t millis() const;
     uint32_t micros() const;
+    void init_capabilities(void);
 
 public:
     void mavlink_delay_cb();
