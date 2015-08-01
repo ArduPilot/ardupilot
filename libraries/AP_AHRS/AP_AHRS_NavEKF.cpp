@@ -138,7 +138,7 @@ void AP_AHRS_NavEKF::update(void)
                 EKF.getIMU1Weighting(IMU1_weighting);
                 _accel_ef_ekf_blended = _accel_ef_ekf[0] * IMU1_weighting + _accel_ef_ekf[1] * (1.0f-IMU1_weighting);
             } else {
-                _accel_ef_ekf_blended = _accel_ef_ekf[0];
+                _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
             }
         }
     }
