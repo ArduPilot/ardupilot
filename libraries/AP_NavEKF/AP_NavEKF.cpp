@@ -4130,7 +4130,7 @@ void NavEKF::readIMUData()
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    if (ins.get_accel_health(0) && ins.get_accel_health(1)) {
+    if (ins.use_accel(0) && ins.use_accel(1)) {
         // dual accel mode
         // read IMU1 delta velocity data
         readDeltaVelocity(0, dVelIMU1, dtDelVel1);
@@ -4157,7 +4157,7 @@ void NavEKF::readIMUData()
         dVelIMU2 = dVelIMU1;
     }
 
-    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
+    if (ins.use_gyro(0) && ins.use_gyro(1)) {
         // dual gyro mode - average first two gyros
         Vector3f dAng;
         dAngIMU.zero();
