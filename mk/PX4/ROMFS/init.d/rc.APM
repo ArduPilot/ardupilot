@@ -264,8 +264,14 @@ else
        echo "Found MPU6000 external"
        set HAVE_FMUV3 true
     else
-       echo "No MPU6000 external"
-       set HAVE_FMUV3 false
+       if mpu9250 -X -R 4 start
+       then
+           echo "Found MPU9250 external"
+           set HAVE_FMUV3 true
+       else
+           echo "No MPU6000 or MPU9250 external"
+           set HAVE_FMUV3 false
+       fi
     fi
     if [ $HAVE_FMUV3 == true ]
     then
@@ -290,9 +296,14 @@ else
         then
                echo "Found MPU6000 internal"
         else
-               echo "No MPU6000"
-               echo "No MPU6000" >> $logfile
+           if mpu9250 -R 14 start
+           then
+               echo "Found MPU9250 internal"
+           else
+               echo "No MPU6000 or MPU9250"
+               echo "No MPU6000 or MPU9250" >> $logfile
                sh /etc/init.d/rc.error
+           fi
         fi
         if hmc5883 -C -T -S -R 8 start
         then
@@ -303,8 +314,13 @@ else
         then
                echo "Found MPU6000"
         else
-               echo "No MPU6000"
-               echo "No MPU6000" >> $logfile
+               if mpu9250 start
+               then
+                   echo "Found MPU9250"
+               else
+                   echo "No MPU6000 or MPU9250"
+                   echo "No MPU9250" >> $logfile
+               fi
         fi
         if l3gd20 start
         then
