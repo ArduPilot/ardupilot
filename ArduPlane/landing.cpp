@@ -131,6 +131,12 @@ void Plane::setup_landing_glide_slope(void)
         int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
         float total_distance = get_distance(prev_WP_loc, next_WP_loc);
 
+        // If someone mistakenly puts all 0's in their LAND command then total_distance
+        // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
+        if (total_distance < 1) {
+            total_distance = 1;
+        }
+
         // height we need to sink for this WP
         float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
 
