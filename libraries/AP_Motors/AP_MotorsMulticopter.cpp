@@ -115,6 +115,10 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     // disable all motors by default
     memset(motor_enabled, false, sizeof(motor_enabled));
 
+    // init flags
+    _multicopter_flags.slow_start = false;
+    _multicopter_flags.slow_start_low_end = true;
+
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     _batt_voltage_filt.reset(1.0f);
@@ -179,14 +183,14 @@ void AP_MotorsMulticopter::update_max_throttle()
 
     // implement slow start
     if (_multicopter_flags.slow_start) {
-    // increase slow start throttle
-    _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
+        // increase slow start throttle
+        _max_throttle += AP_MOTOR_SLOW_START_INCREMENT;
 
-    // turn off slow start if we've reached max throttle
-    if (_max_throttle >= _throttle_control_input) {
-        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
-        _multicopter_flags.slow_start = false;
-    }
+        // turn off slow start if we've reached max throttle
+        if (_max_throttle >= _throttle_control_input) {
+            _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
+            _multicopter_flags.slow_start = false;
+        }
         return;
     }
 

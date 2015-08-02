@@ -4,7 +4,7 @@
 
 void Rover::read_control_switch()
 {
-	
+    static bool switch_debouncer;
 	uint8_t switchPosition = readSwitch();
 	
 	// If switchPosition = 255 this indicates that the mode control channel input was out of range
@@ -26,6 +26,15 @@ void Rover::read_control_switch()
         (g.reset_switch_chan != 0 && 
          hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
+        if (switch_debouncer == false) {
+            // this ensures that mode switches only happen if the
+            // switch changes for 2 reads. This prevents momentary
+            // spikes in the mode control channel from causing a mode
+            // switch
+            switch_debouncer = true;
+            return;
+        }
+
 		set_mode((enum mode)modes[switchPosition].get());
 
 		oldSwitchPosition = switchPosition;
@@ -34,6 +43,8 @@ void Rover::read_control_switch()
 		// reset speed integrator
         g.pidSpeedThrottle.reset_I();
 	}
+
+    switch_debouncer = false;
 
 }
 
@@ -50,7 +61,7 @@ uint8_t Rover::readSwitch(void){
 
 void Rover::reset_control_switch()
 {
-	oldSwitchPosition = 0;
+	oldSwitchPosition = 254;
 	read_control_switch();
 }
 

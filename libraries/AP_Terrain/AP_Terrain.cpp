@@ -312,6 +312,13 @@ void AP_Terrain::update(void)
 
     // check for pending rally data
     update_rally_data();
+
+    // update capabilities
+    if (enable) {
+        hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+    } else {
+        hal.util->clear_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+    }
 }
 
 /*

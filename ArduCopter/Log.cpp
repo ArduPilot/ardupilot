@@ -781,4 +781,51 @@ void Copter::log_init(void)
     }
 }
 
-#endif // LOGGING_DISABLED
+#else // LOGGING_ENABLED
+
+#if CLI_ENABLED == ENABLED
+bool Copter::print_log_menu(void) { return true; }
+int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Copter::erase_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+int8_t Copter::process_logs(uint8_t argc, const Menu::arg *argv) { return 0; }
+void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page) {}
+#endif // CLI_ENABLED == ENABLED
+
+void Copter::do_erase_logs(void) {}
+void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, \
+                                float meas_min, float meas_max, float new_gain_rp, \
+                                float new_gain_rd, float new_gain_sp, float new_ddt) {}
+void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds) {}
+void Copter::Log_Write_Current() {}
+void Copter::Log_Write_Nav_Tuning() {}
+void Copter::Log_Write_Control_Tuning() {}
+void Copter::Log_Write_Performance() {}
+void Copter::Log_Write_Attitude(void) {}
+void Copter::Log_Write_Rate() {}
+void Copter::Log_Write_MotBatt() {}
+void Copter::Log_Write_Startup() {}
+void Copter::Log_Write_Event(uint8_t id) {}
+void Copter::Log_Write_Data(uint8_t id, int32_t value) {}
+void Copter::Log_Write_Data(uint8_t id, uint32_t value) {}
+void Copter::Log_Write_Data(uint8_t id, int16_t value) {}
+void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
+void Copter::Log_Write_Data(uint8_t id, float value) {}
+void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
+void Copter::Log_Write_Baro(void) {}
+void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
+void Copter::Log_Write_Home_And_Origin() {}
+void Copter::Log_Sensor_Health() {}
+
+#if FRAME_CONFIG == HELI_FRAME
+void Copter::Log_Write_Heli() {}
+#endif
+
+#if OPTFLOW == ENABLED
+void Copter::Log_Write_Optflow() {}
+#endif
+
+void Copter::start_logging() {}
+void Copter::log_init(void) {}
+
+#endif // LOGGING_ENABLED

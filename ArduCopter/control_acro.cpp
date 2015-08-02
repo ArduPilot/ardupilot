@@ -23,6 +23,10 @@ void Copter::acro_run()
     // if motors not running reset angle targets
     if(!motors.armed() || ap.throttle_zero) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        // slow start if landed
+        if (ap.land_complete) {
+            motors.slow_start(true);
+        }
         return;
     }
 

@@ -61,7 +61,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
     { SCHED_TASK(gcs_update),             1,   1700 },
     { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
-    { SCHED_TASK(read_control_switch),   15,   1000 },
+    { SCHED_TASK(read_control_switch),    7,   1000 },
     { SCHED_TASK(read_trim_switch),       5,   1000 },
     { SCHED_TASK(read_battery),           5,   1000 },
     { SCHED_TASK(read_receiver_rssi),     5,   1000 },
@@ -376,17 +376,15 @@ void Rover::update_current_mode(void)
 
     case GUIDED:
         set_reverse(false);
-        if (!rtl_complete) {
-            if (verify_RTL()) {
-                // we have reached destination so stop where we are
-                channel_throttle->servo_out = g.throttle_min.get();
-                channel_steer->servo_out = 0;
-                lateral_acceleration = 0;
-            } else {
-                calc_lateral_acceleration();
-                calc_nav_steer();
-                calc_throttle(g.speed_cruise);
-            }
+        if (rtl_complete || verify_RTL()) {
+            // we have reached destination so stop where we are
+            channel_throttle->servo_out = g.throttle_min.get();
+            channel_steer->servo_out = 0;
+            lateral_acceleration = 0;
+        } else {
+            calc_lateral_acceleration();
+            calc_nav_steer();
+            calc_throttle(g.speed_cruise);
         }
         break;
 
@@ -475,13 +473,11 @@ void Rover::update_navigation()
         // no loitering around the wp with the rover, goes direct to the wp position
         calc_lateral_acceleration();
         calc_nav_steer();
-        if (!rtl_complete) {
-            if (verify_RTL()) {
-                // we have reached destination so stop where we are
-                channel_throttle->servo_out = g.throttle_min.get();
-                channel_steer->servo_out = 0;
-                lateral_acceleration = 0;
-            }
+        if (rtl_complete || verify_RTL()) {
+            // we have reached destination so stop where we are
+            channel_throttle->servo_out = g.throttle_min.get();
+            channel_steer->servo_out = 0;
+            lateral_acceleration = 0;
         }
         break;
     }

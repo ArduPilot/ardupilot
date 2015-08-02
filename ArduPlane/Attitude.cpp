@@ -909,13 +909,11 @@ void Plane::set_servos(void)
         } else {
             flapSpeedSource = aparm.throttle_cruise;
         }
-        if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
-            auto_flap_percent = 0;
-        } else if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
+        if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
             auto_flap_percent = g.flap_2_percent;
-        } else {
+        } else if ( g.flap_1_speed != 0 && flapSpeedSource <= g.flap_1_speed) {
             auto_flap_percent = g.flap_1_percent;
-        }
+        } //else flaps stay at default zero deflection
 
         /*
           special flap levels for takeoff and landing. This works
@@ -997,6 +995,7 @@ void Plane::set_servos(void)
     obc.check_crash_plane();
 #endif
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // get the servos to the GCS immediately for HIL
         if (comm_get_txspace(MAVLINK_COMM_0) >= 
@@ -1007,6 +1006,7 @@ void Plane::set_servos(void)
             return;
         }
     }
+#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------

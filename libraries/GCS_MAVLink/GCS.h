@@ -138,7 +138,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
-    void send_autopilot_version(void) const;
+    void send_autopilot_version() const;
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_mission_item_reached(uint16_t seq) const;
@@ -159,6 +159,12 @@ public:
       This is a no-op if no routes to components have been learned
     */
     static void send_to_components(const mavlink_message_t* msg) { routing.send_to_components(msg); }
+
+    /*
+      search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+      returns if a matching component is found
+     */
+    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
 private:
     void        handleMessage(mavlink_message_t * msg);

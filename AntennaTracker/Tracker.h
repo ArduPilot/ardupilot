@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "AntennaTracker V0.7.1"
+#define THISFIRMWARE "AntennaTracker V0.7.2"
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
  
@@ -165,7 +165,7 @@ private:
         bool need_altitude_calibration  : 1;// true if tracker altitude has not been determined (true after startup)
         bool scan_reverse_pitch         : 1;// controls direction of pitch movement in SCAN mode
         bool scan_reverse_yaw           : 1;// controls direction of yaw movement in SCAN mode
-    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
+    } nav_status = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, false, false, true, false, false};
 
     // Servo state
     struct {
@@ -244,6 +244,7 @@ private:
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
     void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+    void init_capabilities(void);
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);

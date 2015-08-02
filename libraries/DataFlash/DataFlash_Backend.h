@@ -23,7 +23,8 @@ public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
 
     DataFlash_Backend(DataFlash_Class &front) :
-        _front(front)
+        _front(front),
+        _structures(NULL)
         { }
 
     virtual bool CardInserted(void) = 0;

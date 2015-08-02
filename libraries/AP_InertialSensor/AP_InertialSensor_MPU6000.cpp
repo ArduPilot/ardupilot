@@ -176,7 +176,8 @@ extern const AP_HAL::HAL& hal;
 
 /* SPI bus driver implementation */
 
-AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void)
+AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void) :
+    _error_count(0)
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
 }
@@ -243,14 +244,14 @@ void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
 
     /*
       detect a bad SPI bus transaction by looking for all 14 bytes
-      zero, or the wrong INT_STATUS register value. This is used to
-      detect a too high SPI bus speed.
+      zero. This can happen with some boards with hw that end up
+      needing a lower bus speed
     */
     uint8_t i;
     for (i=0; i<14; i++) {
         if (rx.d[i] != 0) break;
     }
-    if ((rx.int_status&~0x6) != (_drdy_pin==NULL?0:BIT_RAW_RDY_INT) || i == 14) {
+    if (i == 14) {
         // likely a bad bus transaction
         if (++_error_count > 4) {
             set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
@@ -272,8 +273,9 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
 
 /* I2C bus driver implementation */
 AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
+    _addr(addr),
     _i2c(i2c),
-    _addr(addr)
+    _i2c_sem(NULL)
 {}
 
 void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
@@ -392,7 +394,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _accel_sum(),
     _gyro_sum(),
 #endif
-    _sum_count(0)
+    _sum_count(0),
+    _samples(NULL)
 {
 
 }
