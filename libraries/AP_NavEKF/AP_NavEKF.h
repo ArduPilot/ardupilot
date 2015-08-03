@@ -770,9 +770,10 @@ private:
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
     // monitoring IMU quality
-    float imuNoiseFiltState1;   // peak hold noise estimate for IMU 1
-    float imuNoiseFiltState2;   // peak hold noise estimate for IMU 2
-    float accelDiffLengthFilt;  // filtered length difference between IMU 1 and 2
+    float imuNoiseFiltState1;       // peak hold noise estimate for IMU 1
+    float imuNoiseFiltState2;       // peak hold noise estimate for IMU 2
+    Vector3f accelDiffFilt;         // filtered difference between IMU 1 and 2
+    uint8_t lastImuSwitchState;     // last switch state, 0=normal, 1 = use IMU1, 2 = use IMU2
 
     // states held by optical flow fusion across time steps
     // optical flow X,Y motion compensated rate measurements are fused across two time steps
