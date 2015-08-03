@@ -9,6 +9,7 @@
 #include "Util.h"
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
+#include <algorithm>
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -195,6 +196,69 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
+bool Scheduler::register_timer_process(AP_HAL::MemberProc proc,
+                                       uint8_t freq_div)
+{
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    if (freq_div > 1) {
+        return _register_timesliced_proc(proc, freq_div);
+    }
+    /* fallback to normal timer process */
+#endif
+    register_timer_process(proc);
+    return false;
+}
+
+bool Scheduler::_register_timesliced_proc(AP_HAL::MemberProc proc,
+                                          uint8_t freq_div)
+{
+    unsigned int i, j;
+    uint8_t distance, min_distance, best_distance;
+    uint8_t best_timeslot;
+
+    if (_num_timesliced_procs > LINUX_SCHEDULER_MAX_TIMESLICED_PROCS) {
+        hal.console->printf("Out of timesliced processes\n");
+        return false;
+    }
+
+    /* if max_freq_div increases, update the timeslots accordingly */
+    if (freq_div > _max_freq_div) {
+        for (i = 0; i < _num_timesliced_procs; i++) {
+            _timesliced_proc[i].timeslot =  _timesliced_proc[i].timeslot
+                                            / _max_freq_div * freq_div;
+        }
+        _max_freq_div = freq_div;
+    }
+
+    best_distance = 0;
+    best_timeslot = 0;
+
+    /* Look for the timeslot that maximizes the min distance with other timeslots */
+    for (i = 0; i < _max_freq_div; i++) {
+        min_distance = _max_freq_div;
+        for (j = 0; j < _num_timesliced_procs; j++) {
+            distance = std::min(i - _timesliced_proc[j].timeslot,
+                            _max_freq_div + _timesliced_proc[j].timeslot - i);
+            if (distance < min_distance) {
+                min_distance = distance;
+                if (min_distance == 0) {
+                    break;
+                }
+            }
+        }
+        if (min_distance > best_distance) {
+            best_distance = min_distance;
+            best_timeslot = i;
+        }
+    }
+
+    _timesliced_proc[_num_timesliced_procs].proc = proc;
+    _timesliced_proc[_num_timesliced_procs].timeslot = best_timeslot;
+    _timesliced_proc[_num_timesliced_procs].freq_div = freq_div;
+    _num_timesliced_procs++;
+    return true;
+}
+
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
@@ -230,6 +294,8 @@ void Scheduler::resume_timer_procs()
 
 void Scheduler::_run_timers(bool called_from_timer_thread)
 {
+    int i;
+
     if (_in_timer_proc) {
         return;
     }
@@ -239,7 +305,7 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
         printf("Failed to take timer semaphore in _run_timers\n");
     }
     // now call the timer based drivers
-    for (int i = 0; i < _num_timer_procs; i++) {
+    for (i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i]) {
             _timer_proc[i]();
         }
@@ -252,6 +318,20 @@ void Scheduler::_run_timers(bool called_from_timer_thread)
         ((RPIOUARTDriver *)hal.uartC)->_timer_tick();
     }
 #endif
+
+    for (i = 0; i < _num_timesliced_procs; i++) {
+        if ((_timeslices_count + _timesliced_proc[i].timeslot)
+            % _timesliced_proc[i].freq_div == 0) {
+            _timesliced_proc[i].proc();
+        }
+    }
+
+    if (_max_freq_div != 0) {
+        _timeslices_count++;
+        if (_timeslices_count == _max_freq_div) {
+            _timeslices_count = 0;
+        }
+    }
 
     _timer_semaphore.give();
 
