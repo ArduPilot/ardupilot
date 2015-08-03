@@ -76,6 +76,12 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
     _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
+void AP_InertialSensor_Backend::_set_accel_sample_rate(uint8_t instance,
+                                                       uint32_t rate)
+{
+    _imu._accel_sample_rates[instance] = rate;
+}
+
 // set accelerometer error_count
 void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_t error_count)
 {
