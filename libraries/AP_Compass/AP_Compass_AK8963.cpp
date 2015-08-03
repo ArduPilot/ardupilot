@@ -176,7 +176,8 @@ bool AP_Compass_AK8963::init()
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _bus->get_dev_id());
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
+    /* timer needs to be called every 10ms so set the freq_div to 10 */
+    _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void), 10);
 
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
@@ -240,8 +241,9 @@ void AP_Compass_AK8963::_update()
     struct AP_AK8963_SerialBus::raw_value rv;
     float mag_x, mag_y, mag_z;
 
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
-        goto end;
+    if (!_timesliced &&
+        hal.scheduler->micros() - _last_update_timestamp < 10000) {
+        return;
     }
 
     if (!_sem_take_nonblocking()) {
