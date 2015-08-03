@@ -159,6 +159,9 @@ extern const AP_HAL::HAL& hal;
 #define BITS_DLPF_CFG_2100HZ_NOLPF              0x07
 #define BITS_DLPF_CFG_MASK                              0x07
 
+#define DEFAULT_SMPLRT_DIV MPUREG_SMPLRT_1000HZ
+#define DEFAULT_SAMPLE_RATE (1000 / (DEFAULT_SMPLRT_DIV + 1))
+
 /*
  *  PS-MPU-9250A-00.pdf, page 8, lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -178,8 +181,8 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
     _last_accel_filter_hz(-1),
     _last_gyro_filter_hz(-1),
     _shared_data_idx(0),
-    _accel_filter(1000, 15),
-    _gyro_filter(1000, 15),
+    _accel_filter(DEFAULT_SAMPLE_RATE, 15),
+    _gyro_filter(DEFAULT_SAMPLE_RATE, 15),
     _have_sample_available(false),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _default_rotation(ROTATION_ROLL_180_YAW_270)
@@ -456,7 +459,7 @@ inline void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
  */
 void AP_InertialSensor_MPU9250::_set_accel_filter(uint8_t filter_hz)
 {
-    _accel_filter.set_cutoff_frequency(1000, filter_hz);
+    _accel_filter.set_cutoff_frequency(DEFAULT_SAMPLE_RATE, filter_hz);
 }
 
 /*
@@ -464,7 +467,7 @@ void AP_InertialSensor_MPU9250::_set_accel_filter(uint8_t filter_hz)
  */
 void AP_InertialSensor_MPU9250::_set_gyro_filter(uint8_t filter_hz)
 {
-    _gyro_filter.set_cutoff_frequency(1000, filter_hz);
+    _gyro_filter.set_cutoff_frequency(DEFAULT_SAMPLE_RATE, filter_hz);
 }
 
 
@@ -493,7 +496,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 
     // set sample rate to 1kHz, and use the 2 pole filter to give the
     // desired rate
-    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_1000HZ);
+    _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV);
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
 
     // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g
