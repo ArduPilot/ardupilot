@@ -28,7 +28,9 @@ public:
     DataFlash_MAVLink(DataFlash_Class &front, mavlink_channel_t chan) :
         DataFlash_Backend(front),
         _chan(chan),
+        _blocks_free(NULL),
         _initialised(false),
+        _max_blocks_per_send_blocks(1),
         _next_seq_num(0),
         _current_block(NULL),
         _latest_block_len(0),
@@ -44,7 +46,15 @@ public:
         ,_perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
         _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
 #endif
-        { }
+        {
+            /* change to C++11 initialiser lists: */
+            _blocks_pending.youngest = NULL;
+            _blocks_pending.oldest = NULL;
+            _blocks_retry.youngest  =NULL;
+            _blocks_retry.oldest = NULL;
+            _blocks_sent.youngest = NULL;
+            _blocks_sent.oldest = NULL;
+        }
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
@@ -76,18 +86,18 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port) {}
     void ListAvailableLogs(AP_HAL::BetterStream *port) {}
 
-    enum dm_block_state {
-        BLOCK_STATE_FREE = 17,
-        BLOCK_STATE_FILLING,
-        BLOCK_STATE_SEND_PENDING,
-        BLOCK_STATE_SEND_RETRY,
-        BLOCK_STATE_SENT
-    };
+    // enum dm_block_state {
+    //     BLOCK_STATE_FREE = 17,
+    //     BLOCK_STATE_FILLING,
+    //     BLOCK_STATE_SEND_PENDING,
+    //     BLOCK_STATE_SEND_RETRY,
+    //     BLOCK_STATE_SENT
+    // };
     struct dm_block {
         uint32_t seqno;
         uint8_t buf[MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN];
-        dm_block_state state;
         uint32_t last_sent;
+        struct dm_block *next;
     };
     void push_log_blocks();
     virtual bool send_log_block(struct dm_block &block);
@@ -98,9 +108,30 @@ public:
     virtual void remote_log_block_status_msg(mavlink_message_t* msg);
     void free_all_blocks();
 
+    // a stack for free blocks, queues for pending, sent, retries and sent
+    struct dm_block_queue {
+        uint32_t sent_count;
+        struct dm_block *oldest;
+        struct dm_block *youngest;
+    };
+    typedef struct dm_block_queue dm_block_queue_t ;
+    void enqueue_block(dm_block_queue_t &queue, struct dm_block *block);
+    bool queue_has_block(dm_block_queue_t &queue, struct dm_block *block);
+    struct dm_block *dequeue_seqno(dm_block_queue_t &queue, uint32_t seqno);
+    bool free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &queue);
+    bool send_log_blocks_from_queue(dm_block_queue_t &queue);
+    uint8_t stack_size(struct dm_block *stack);
+    uint8_t queue_size(dm_block_queue_t queue);
+    
+    struct dm_block *_blocks_free;
+    dm_block_queue_t _blocks_sent;
+    dm_block_queue_t _blocks_pending;
+    dm_block_queue_t _blocks_retry;
+
 protected:
     struct _stats {
         // the following are reset any time we log stats (see "reset_stats")
+        uint32_t resends;
         uint8_t collection_count;
         uint16_t state_free; // cumulative across collection period
         uint8_t state_free_min;
@@ -123,6 +154,8 @@ private:
 
     bool _initialised;
 
+    const uint8_t _max_blocks_per_send_blocks;
+    
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     bool _logging_started;

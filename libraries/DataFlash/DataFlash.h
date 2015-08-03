@@ -583,7 +583,10 @@ struct PACKED log_GYRO {
 struct PACKED log_DF_MAV_Stats {
     LOG_PACKET_HEADER;
     uint32_t timestamp;
+    uint32_t seqno;
     uint32_t dropped;
+    uint32_t retries;
+    uint32_t resends;
     uint8_t internal_errors; // uint8_t - wishful thinking?
     uint8_t state_free_avg;
     uint8_t state_free_min;
@@ -594,9 +597,9 @@ struct PACKED log_DF_MAV_Stats {
     uint8_t state_sent_avg;
     uint8_t state_sent_min;
     uint8_t state_sent_max;
-    uint8_t state_retry_avg;
-    uint8_t state_retry_min;
-    uint8_t state_retry_max;
+    // uint8_t state_retry_avg;
+    // uint8_t state_retry_min;
+    // uint8_t state_retry_max;
 };
 
 /*
@@ -658,7 +661,7 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "IMB",         "TimeMS,Mode,ModeNum" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
-      "DMS", "IIBBBBBBBBBBBBB",         "TimeMS,Drp,IErr,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx,Ra,Rmn,Rmx" }
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \

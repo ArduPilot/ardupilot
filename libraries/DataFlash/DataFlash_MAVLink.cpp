@@ -8,22 +8,11 @@
 
 #ifdef HAL_BOARD_REMOTE_LOG_PORT
 #include "DataFlash_MAVLink.h"
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <assert.h>
-#include <AP_Math.h>
-#include <stdio.h>
-#include <time.h>
-#include "../AP_HAL/utility/RingBuffer.h"
 
 #define REMOTE_LOG_DEBUGGING 0
 
 #if REMOTE_LOG_DEBUGGING
+#include <stdio.h>
  # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)
@@ -68,6 +57,55 @@ uint8_t DataFlash_MAVLink::remaining_space_in_current_block() {
     // note that _current_block *could* be NULL ATM.
     return (MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN - _latest_block_len);
 }
+
+void DataFlash_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *block)
+{
+    if (queue.youngest != NULL) {
+        queue.youngest->next = block;
+    } else {
+        queue.oldest = block;
+    }
+    queue.youngest = block;
+}
+
+struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::dequeue_seqno(DataFlash_MAVLink::dm_block_queue_t &queue, uint32_t seqno)
+{
+    struct dm_block *prev = NULL;
+    for (struct dm_block *block=queue.oldest; block != NULL; block=block->next) {
+        if (block->seqno == seqno) {
+            if (prev == NULL) {
+                if (queue.youngest == queue.oldest) {
+                    queue.oldest = NULL;
+                    queue.youngest = NULL;
+                } else {
+                    queue.oldest = block->next;
+                }
+            } else {
+                if (queue.youngest == block) {
+                    queue.youngest = prev;
+                }
+                prev->next = block->next;
+            }
+            block->next = NULL;
+            return block;
+        }
+        prev = block;
+    }
+    return NULL;
+}
+
+bool DataFlash_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &queue)
+{
+    struct dm_block *block = dequeue_seqno(queue, seqno);
+    if (block != NULL) {
+        block->next = _blocks_free;
+        _blocks_free = block;
+        _blockcount_free++; // comment me out to expose a bug!
+        return true;
+    }
+    return false;
+}
+    
 /* Write a block of data at current offset */
 bool DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 {   
@@ -106,13 +144,13 @@ bool DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
         _latest_block_len += to_copy;
         if (_latest_block_len == MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN) {
             //block full, mark it to be sent:
-            _current_block->state = BLOCK_STATE_SEND_PENDING;
+            enqueue_block(_blocks_pending, _current_block);
             _current_block = next_block();
         }
     }
 
     if (!_writing_preface_messages) {
-        push_log_blocks();
+        // push_log_blocks();
     }
     return true;
 }
@@ -120,23 +158,34 @@ bool DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
 //Get a free block
 struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::next_block()
 {
-    for(uint8_t i = 0; i < _blockcount; i++){
-        if (_blocks[i].state == BLOCK_STATE_FREE) {
-            _blocks[i].state = BLOCK_STATE_FILLING;
-            _blockcount_free--;
-            _blocks[i].seqno = _next_seq_num++;
-            _blocks[i].last_sent = 0;
-            _latest_block_len = 0;
-            return &_blocks[i];
-        }
+    DataFlash_MAVLink::dm_block *ret = _blocks_free;
+    if (ret != NULL) {
+        _blocks_free = ret->next;
+        _blockcount_free--;
+        ret->seqno = _next_seq_num++;
+        ret->last_sent = 0;
+        ret->next = NULL;
+        _latest_block_len = 0;
     }
-    return NULL;
+    return ret;
 }
 
 void DataFlash_MAVLink::free_all_blocks()
 {
+    _blocks_free = NULL;
+    _current_block = NULL;
+
+    _blocks_pending.sent_count = 0;
+    _blocks_pending.oldest = _blocks_pending.youngest = NULL;
+    _blocks_retry.sent_count = 0;
+    _blocks_retry.oldest = _blocks_retry.youngest = NULL;
+    _blocks_sent.sent_count = 0;
+    _blocks_sent.oldest = _blocks_sent.youngest = NULL;
+
+    // add blocks to the free stack:
     for(uint8_t i=0; i < _blockcount; i++) {
-        _blocks[i].state = BLOCK_STATE_FREE;
+        _blocks[i].next = _blocks_free;
+        _blocks_free = &_blocks[i];
         // this value doesn't really matter, but it stops valgrind
         // complaining when acking blocks (we check seqno before
         // state).  Also, when we receive ACKs we check seqno, and we
@@ -144,7 +193,7 @@ void DataFlash_MAVLink::free_all_blocks()
         _blocks[i].seqno = 9876543;
     }
     _blockcount_free = _blockcount;
-    _current_block = NULL;
+
     _latest_block_len = 0;
 }
 
@@ -181,15 +230,16 @@ void DataFlash_MAVLink::handle_ack(mavlink_message_t* msg, const uint32_t seqno)
         }
         return;
     }
-    for(uint8_t block = 0; block < _blockcount; block++){
-        if(_blocks[block].seqno == seqno) {
-            if (_blocks[block].state != BLOCK_STATE_FREE) {
-                _blocks[block].state = BLOCK_STATE_FREE;
-                _blockcount_free++;
-            }
-            _last_response_time = hal.scheduler->millis();
-            return;
-        }
+
+    // check SENT blocks (VERY likely to be first on the list):
+    if (free_seqno_from_queue(seqno, _blocks_sent)) {
+        // celebrate
+        _last_response_time = hal.scheduler->millis();
+    } else if(free_seqno_from_queue(seqno, _blocks_retry)) {
+        // party
+        _last_response_time = hal.scheduler->millis();
+    } else {
+        // probably acked already and put on the free list.
     }
 }
 
@@ -209,18 +259,11 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
     if (!_initialised || !_sending_to_client) {
         return;
     }
-    for(uint8_t block = 0; block < _blockcount; block++){
-        if(_blocks[block].seqno == seqno) {
-            // we do not reset the block's sequence number when
-            // freeing it; what would we set it to?  If we get a retry
-            // for a block already freed, we do not want to free it
-            // again...
-            if (_blocks[block].state != BLOCK_STATE_FREE) {
-                _blocks[block].state = BLOCK_STATE_SEND_RETRY;
-                _last_response_time = hal.scheduler->millis();
-            }
-            return;
-        }
+
+    struct dm_block *victim = dequeue_seqno(_blocks_sent, seqno);
+    if (victim != NULL) {
+        _last_response_time = hal.scheduler->millis();
+        enqueue_block(_blocks_retry, victim);
     }
 }
 
@@ -236,6 +279,7 @@ void DataFlash_MAVLink::internal_error() {
 void DataFlash_MAVLink::stats_init() {
     dropped = 0;
     internal_errors = 0;
+    stats.resends = 0;
     stats_reset();
 }
 void DataFlash_MAVLink::stats_reset() {
@@ -264,9 +308,11 @@ void DataFlash_MAVLink::stats_log()
     }
     _front.Log_Write_DF_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
-    printf("D:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           stats.dropped,
-           stats.internal_errors,
+    printf("D:%d Retry:%d Resent:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
+           dropped,
+           _blocks_retry.sent_count,
+           stats.resends,
+           internal_errors,
            stats.state_free_min,
            stats.state_free_max,
            stats.state_free/stats.collection_count,
@@ -284,33 +330,29 @@ void DataFlash_MAVLink::stats_log()
     stats_reset();
 }
 
+uint8_t DataFlash_MAVLink::stack_size(struct dm_block *stack)
+{
+    uint8_t ret = 0;
+    for (struct dm_block *block=stack; block != NULL; block=block->next) {
+        ret++;
+    }
+    return ret;
+}
+uint8_t DataFlash_MAVLink::queue_size(dm_block_queue_t queue)
+{
+    return stack_size(queue.oldest);
+}
+
 void DataFlash_MAVLink::stats_collect()
 {
     if (!_initialised || !_logging_started) {
         return;
     }
-    uint8_t pending = 0;
-    uint8_t sent = 0;
-    uint8_t retry = 0;
-    uint8_t sfree = 0;
-    for(uint8_t block = 0; block < _blockcount; block++){
-        switch(_blocks[block].state) {
-        case BLOCK_STATE_SEND_RETRY:
-            retry++;
-            break;
-        case BLOCK_STATE_SEND_PENDING:
-            pending++;
-            break;
-        case BLOCK_STATE_SENT:
-            sent++;
-            break;
-        case BLOCK_STATE_FREE:
-            sfree++;
-            break;
-        case BLOCK_STATE_FILLING:
-            break;
-        };
-    }
+    uint8_t pending = queue_size(_blocks_pending);
+    uint8_t sent = queue_size(_blocks_sent);
+    uint8_t retry = queue_size(_blocks_retry);
+    uint8_t sfree = stack_size(_blocks_free);
+
     if (sfree != _blockcount_free) {
         internal_error();
     }
@@ -347,6 +389,30 @@ void DataFlash_MAVLink::stats_collect()
     stats.collection_count++;
 }
 
+/* while we "successfully" send log blocks from a queue, move them to
+ * the sent list. DO NOT call this for blocks already sent!
+*/
+bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
+{
+    uint8_t sent_count = 0;
+    while (queue.oldest != NULL) {
+        if (sent_count++ > _max_blocks_per_send_blocks) {
+            return false;
+        }
+        if (! send_log_block(*queue.oldest)) {
+            return false;
+        }
+        queue.sent_count++;
+        struct DataFlash_MAVLink::dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
+        if (tmp != NULL) { // should never be NULL
+            enqueue_block(_blocks_sent, tmp);
+        } else {
+            internal_error();
+        }
+    }
+    return true;
+}
+
 void DataFlash_MAVLink::push_log_blocks()
 {
     if (!_initialised || !_logging_started ||!_sending_to_client) {
@@ -355,24 +421,12 @@ void DataFlash_MAVLink::push_log_blocks()
 
     DataFlash_Backend::WriteMorePrefaceMessages();
 
-    // here's an argument for keeping linked lists for each state!
-    // firstly, send out any blocks that have been requested:
-    for(uint8_t block = 0; block < _blockcount; block++){
-        if (_blocks[block].state == BLOCK_STATE_SEND_RETRY) {
-            if (! send_log_block(_blocks[block])) {
-                return;
-            }
-        }
+    if (! send_log_blocks_from_queue(_blocks_retry)) {
+        return;
     }
 
-    // here's an argument for keeping linked lists for each state!
-    // firstly, send out any pending blocks, in any order:
-    for(uint8_t block = 0; block < _blockcount; block++){
-        if (_blocks[block].state == BLOCK_STATE_SEND_PENDING) {
-            if (! send_log_block(_blocks[block])) {
-                return;
-            }
-        }
+    if (! send_log_blocks_from_queue(_blocks_pending)) {
+        return;
     }
 }
 
@@ -386,19 +440,17 @@ void DataFlash_MAVLink::do_resends(uint32_t now)
     if (_blockcount < count_to_send) {
         count_to_send = _blockcount;
     }
-    uint32_t oldest = now - 1000; // 100 milliseconds before resend.  Hmm.
+    uint32_t oldest = now - 100; // 100 milliseconds before resend.  Hmm.
     while (count_to_send-- > 0) {
-        if (_blocks[_next_block_number_to_resend].state != BLOCK_STATE_SENT) {
-            // other states e.g. retry are handled elsewhere
-        } else if (_blocks[_next_block_number_to_resend].last_sent > oldest) {
-            // only want to send blocks every now-and-then...
-        } else if (! send_log_block(_blocks[_next_block_number_to_resend])) {
-            // failed to send the block; try again later....
-            break;
-        }
-        _next_block_number_to_resend++;
-        if (_next_block_number_to_resend >= _blockcount) {
-            _next_block_number_to_resend = 0;
+        for (struct dm_block *block=_blocks_sent.oldest; block != NULL; block=block->next) {
+            // only want to send blocks every now-and-then:
+            if (block->last_sent < oldest) {
+                if (! send_log_block(*block)) {
+                    // failed to send the block; try again later....
+                    return;
+                }
+                stats.resends++;
+            }
         }
     }
 }
@@ -439,7 +491,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
         return false;
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-    if (rand() < 0.9) {
+    if (rand() < 0.1) {
         return false;
     }
 #endif
@@ -448,7 +500,7 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
     mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
     uint8_t saved_seq = chan_status->current_tx_seq;
     chan_status->current_tx_seq = mavlink_seq++;
-    Debug("Sending block (%d)", block.seqno);
+    // Debug("Sending block (%d)", block.seqno);
     mavlink_msg_remote_log_data_block_pack(mavlink_system.sysid,
                                            MAV_COMP_ID_LOG,
                                            &msg,
@@ -456,7 +508,6 @@ bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
                                            _target_component_id,
                                            block.seqno,
                                            block.buf);
-    block.state = BLOCK_STATE_SENT;
     block.last_sent = hal.scheduler->millis();
     chan_status->current_tx_seq = saved_seq;
 

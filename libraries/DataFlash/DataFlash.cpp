@@ -93,7 +93,10 @@ void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
     struct log_DF_MAV_Stats pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
         timestamp         : hal.scheduler->millis(),
+        seqno             : df._next_seq_num-1,
         dropped           : df.dropped,
+        retries           : df._blocks_retry.sent_count,
+        resends           : df.stats.resends,
         internal_errors   : df.internal_errors,
         state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
         state_free_min    : df.stats.state_free_min,
@@ -104,9 +107,9 @@ void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
         state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
         state_sent_min    : df.stats.state_sent_min,
         state_sent_max    : df.stats.state_sent_max,
-        state_retry_avg   : (uint8_t)(df.stats.state_retry/df.stats.collection_count),
-        state_retry_min    : df.stats.state_retry_min,
-        state_retry_max    : df.stats.state_retry_max
+        // state_retry_avg   : (uint8_t)(df.stats.state_retry/df.stats.collection_count),
+        // state_retry_min    : df.stats.state_retry_min,
+        // state_retry_max    : df.stats.state_retry_max
     };
     WriteBlock(&pkt,sizeof(pkt));
 }
