@@ -303,6 +303,7 @@ AP_InertialSensor::AP_InertialSensor() :
 #endif
 
         _accel_max_abs_offsets[i] = 3.5f;
+        _accel_sample_rates[i] = 0;
     }
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
