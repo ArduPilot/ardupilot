@@ -163,6 +163,17 @@ void Copter::heli_update_rotor_speed_targets()
                     motors.set_desired_rotor_speed(0);
                 }
                 break;
+            case AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE:
+                // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
+                // other than being used to create a crude estimate of rotor speed
+                if (rsc_control_deglitched > 0) {
+                    motors.set_interlock(true);
+                    motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+                }else{
+                    motors.set_interlock(false);
+                    motors.set_desired_rotor_speed(0);
+                }
+                break;
         }
     } else {
         // if disarmed, force desired_rotor_speed to Zero
