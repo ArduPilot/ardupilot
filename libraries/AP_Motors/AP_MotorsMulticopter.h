@@ -131,9 +131,9 @@ protected:
     // RPY channels typically +/-45 degrees servo travel between +/-400 PWM
     // Throttle channel typically 0-1000 range converts to 1100-1900 PWM for final output signal to motors
     // ToDo: this should all be handled as floats +/- 1.0 instead of PWM and fake angle ranges
-    int16_t             calc_roll_pwm() { return (_roll_control_input / 11.25f);}
-    int16_t             calc_pitch_pwm() { return (_pitch_control_input / 11.25f);}
-    int16_t             calc_yaw_pwm() { return (_yaw_control_input / 11.25f);}
+    float               calc_roll_pwm() { return (_roll_control_input * _rpy_pwm_scalar); }
+    float               calc_pitch_pwm() { return (_pitch_control_input * _rpy_pwm_scalar); }
+    float               calc_yaw_pwm() { return (_yaw_control_input * _rpy_pwm_scalar); }
     int16_t             calc_throttle_radio_output() { return (_throttle_control_input * _throttle_pwm_scalar) + _throttle_radio_min;}
 
     // flag bitmask
