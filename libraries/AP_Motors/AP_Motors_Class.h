@@ -153,6 +153,7 @@ protected:
     float               _throttle_control_input;    // desired throttle (thrust) control from attitude controller, 0-1000
     float               _yaw_control_input;         // desired yaw control from attitude controller, +/- 4500
     float               _throttle_pwm_scalar;       // scalar used to convert throttle channel pwm range into 0-1000 range, ~0.8 - 1.0
+    float               _rpy_pwm_scalar;            // scaler used to convert roll, pitch, yaw inputs to pwm range
     uint16_t            _loop_rate;                 // rate at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     int16_t             _throttle_radio_min;        // minimum radio channel pwm
