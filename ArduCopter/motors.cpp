@@ -86,9 +86,14 @@ void Copter::auto_disarm_check()
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
     if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
         auto_disarming_counter++;
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters do not use short disarm delay as they could be in auto-rotation.
+        disarm_delay = AUTO_DISARMING_DELAY_LONG;
+#else
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
         disarm_delay = AUTO_DISARMING_DELAY_SHORT;
+#endif
     } else {
         bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
         bool thr_low;
@@ -185,8 +190,13 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         did_ground_start = true;
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters are always using motor interlock
+    set_using_interlock(true);
+#else
     // check if we are using motor interlock control on an aux switch
     set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+#endif
 
     // if we are using motor interlock switch and it's enabled, fail to arm
     if (ap.using_interlock && motors.get_interlock()){
@@ -257,18 +267,6 @@ bool Copter::pre_arm_checks(bool display_failure)
     if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Interlock/E-Stop Conflict"));
-        }
-        return false;
-    }
-
-    // check if motor interlock aux switch is in use
-    // if it is, switch needs to be in disabled position to arm
-    // otherwise exit immediately.  This check to be repeated, 
-    // as state can change at any time.
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
-    if (ap.using_interlock && motors.get_interlock()){
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Interlock Enabled"));
         }
         return false;
     }
@@ -733,12 +731,12 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // always check if rotor is spinning on heli
-#if FRAME_CONFIG == HELI_FRAME
     // heli specific arming check
-    if ((rsc_control_deglitched > 0) || !motors.allow_arming()){
+#if FRAME_CONFIG == HELI_FRAME
+    // check if rotor is spinning on heli because this could disrupt gyro calibration
+    if (!motors.allow_arming()){
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor Control Engaged"));
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Rotor is Spinning"));
         }
         return false;
     }
