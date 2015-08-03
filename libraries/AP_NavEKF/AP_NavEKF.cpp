@@ -2087,10 +2087,10 @@ void NavEKF::FuseVelPosNED()
             } else {
                 IMU1_weighting = 0.5f;
             }
-            // If either of the IMU's has experienced clipping within the last two filter time constants (approx 0.4 seconds) we apply a hard switch away from that sensor
-            // to the IMU with the lower
-            if (clipRateFilt1 > 0.1f || clipRateFilt2 > 0.1f) {
-                if (clipRateFilt1 > clipRateFilt2) {
+            // If the difference between IMU readings is greater than 1.7 m/s/s in length, then hard switch to the IMU with the lowest noise
+            // The maximum tilt error that can occur due to a 1.7 m/s/s error is 10 degrees
+            if (accelDiffLengthFilt > 1.7f) {
+                if (imuNoiseFiltState1 > imuNoiseFiltState2) {
                     IMU1_weighting = 0.0f;
                 } else {
                     IMU1_weighting = 1.0f;
@@ -2241,20 +2241,16 @@ void NavEKF::FuseVelPosNED()
                     Kfusion[i+23] = Kfusion[i+4]; // IMU1 velNED
                     Kfusion[i+27] = Kfusion[i+4]; // IMU2 velNED
                 }
-                // Don't update Z accel bias values if we have clipping
-                // we achieve this by setting the corresponding Kalman gains to zero
-                if (clipRateFilt1 < 0.1f && clipRateFilt2 < 0.1f) {
-                    // no clipping
+                // Don't update Z accel bias values for an acceleraometer we have hard switched away from
+                if ((IMU1_weighting >= 0.1f) && (IMU1_weighting <= 0.9f)) {
+                    // both IMU's OK
                     Kfusion[22] = Kfusion[13];
-                } else if (clipRateFilt1 >0.1f && clipRateFilt2 > 0.1f) {
-                    // both clipping;
-                    Kfusion[22] = Kfusion[13] = 0.0f;
-                } else if (clipRateFilt1 > clipRateFilt2) {
-                    // IMU1 clipping
+                } else if (IMU1_weighting < 0.1f) {
+                    // IMU1 bad
                     Kfusion[22] = Kfusion[13];
                     Kfusion[13] = 0.0f;
                 } else {
-                    // IMU2 clipping
+                    // IMU2 bad
                     Kfusion[22] = 0.0f;
                 }
 
@@ -4132,27 +4128,33 @@ void NavEKF::readIMUData()
 
     if (ins.use_accel(0) && ins.use_accel(1)) {
         // dual accel mode
+
         // read IMU1 delta velocity data
         readDeltaVelocity(0, dVelIMU1, dtDelVel1);
-        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU1
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU1
         float alpha = 1.0f - 5.0f*dtDelVel1;
-        clipRateFilt1 = max(float(ins.get_accel_clip_count(0) - lastClipCount1), alpha*clipRateFilt1);
-        lastClipCount1 = ins.get_accel_clip_count(0);
+        imuNoiseFiltState1 = max(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState1);
+
         // read IMU2 delta velocity data
         readDeltaVelocity(1, dVelIMU2, dtDelVel2);
-        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU2
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU2
         alpha = 1.0f - 5.0f*dtDelVel2;
-        clipRateFilt2 = max(float(ins.get_accel_clip_count(1) - lastClipCount2), alpha*clipRateFilt2);
-        lastClipCount2 = ins.get_accel_clip_count(1);
+        imuNoiseFiltState2 = max(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState2);
+
+        // Check the length of the vector difference between the two IMU's
+        float accelDiffLength = (ins.get_accel(0) - ins.get_accel(1)).length();
+
+        // apply a LPF filter to the length with a 1.0 second time constant
+        // the filtered output is used by the inertial strapdown calculation to determine if there is an accelerometer error
+        alpha = constrain_float(0.5f*(dtDelVel1 + dtDelVel2),0.0f,1.0f);
+        accelDiffLengthFilt = alpha * accelDiffLength + (1.0f - alpha) * accelDiffLengthFilt;
+
     } else {
         // single accel mode - one of the first two accelerometers are unhealthy
         // read primary accelerometer into dVelIMU1 and copy to dVelIMU2
         readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
-        // apply a peak hold decaying envelope filter to the rate of increase if clip events on IMU1
-        float alpha = 1.0f - 5.0f*dtDelVel1;
-        clipRateFilt1 = max(float(ins.get_accel_clip_count(0) - lastClipCount1), alpha*clipRateFilt1);
-        lastClipCount1 = ins.get_accel_clip_count(0);
-        clipRateFilt2 = clipRateFilt1;
         dtDelVel2 = dtDelVel1;
         dVelIMU2 = dVelIMU1;
     }
@@ -4728,9 +4730,8 @@ void NavEKF::InitialiseVariables()
     yawRateFilt = 0.0f;
     yawResetAngle = 0.0f;
     yawResetAngleWaiting = false;
-    const AP_InertialSensor &ins = _ahrs->get_ins();
-    lastClipCount1 = ins.get_accel_clip_count(0);
-    lastClipCount2 = ins.get_accel_clip_count(1);
+    imuNoiseFiltState1 = 0.0f;
+    imuNoiseFiltState2 = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
