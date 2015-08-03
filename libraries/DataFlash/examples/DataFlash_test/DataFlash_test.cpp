@@ -8,6 +8,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_PX4/AP_HAL_PX4.h>
 
@@ -107,8 +108,8 @@ void DataFlashTest::setup(void)
             v2    : (uint16_t)(2001 + i),
             v3    : (uint16_t)(2002 + i),
             v4    : (uint16_t)(2003 + i),
-            l1    : (long)i * 5000,
-            l2    : (long)i * 16268
+            l1    : (int32_t)(i * 5000),
+            l2    : (int32_t)(i * 16268)
         };
         dataflash.WriteBlock(&pkt, sizeof(pkt));
         total_micros += hal.scheduler->micros() - start;
@@ -116,7 +117,11 @@ void DataFlashTest::setup(void)
     }
 
     hal.console->printf("Average write time %.1f usec/byte\n", 
-                       (double)total_micros/((float)i*sizeof(struct log_Test)));
+                       (double)total_micros/((double)i*sizeof(struct log_Test)));
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    dataflash.flush();
+#endif
 
     hal.scheduler->delay(100);
 }
