@@ -315,6 +315,8 @@ bool AP_InertialSensor_MPU9250::_init_sensor(void)
     // start the timer process to read samples
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
 
+    _set_accel_sample_rate(_accel_instance, DEFAULT_SAMPLE_RATE);
+
 #if MPU9250_DEBUG
     _dump_registers(_spi);
 #endif
