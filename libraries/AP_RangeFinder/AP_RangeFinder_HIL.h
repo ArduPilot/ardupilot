@@ -13,7 +13,7 @@
 class AP_RangeFinder_HIL : public AP_RangeFinder_Backend
 {
 public:
-    AP_RangeFinder_HIL(RangeFinder &range, uint8_t instance, RangeFinder::RangeFinder_State &state);
+    AP_RangeFinder_HIL(RangeFinder &range, uint8_t instance, RangeFinder::RangeFinder_State &_state);
     void update() {}
     static bool detect(RangeFinder &_ranger, uint8_t instance);
 

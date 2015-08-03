@@ -4471,6 +4471,13 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     }
 }
 
+void  NavEKF::writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &rawVisionOrientation, uint64_t &msecVisionPositionMeas)
+{
+	visionPosition = rawVisionPosition;
+	newDataVisionPosition = true;
+	hal.console->printf("New vision position: x=%.2f y=%.2f z=%.2f", visionPosition.x, visionPosition.y, visionPosition.z);
+}
+
 // calculate the NED earth spin vector in rad/sec
 void NavEKF::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
 {

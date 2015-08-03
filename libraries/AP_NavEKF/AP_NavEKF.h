@@ -208,6 +208,8 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     void  writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
 
+    void  writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &rawVisionOrientation, uint64_t &msecVisionPositionMeas);
+
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
@@ -699,6 +701,11 @@ private:
     uint8_t magUpdateCount;         // count of the number of minor state corrections using Magnetometer data
     uint8_t magUpdateCountMax;      // limit on the number of minor state corrections using Magnetometer data
     float magUpdateCountMaxInv;     // floating point inverse of magFilterCountMax
+
+    //variables added for vision position fusion
+    bool newDataVisionPosition;     // true when new vision position data has arrived
+    bool fuseVisionPositionData;    // this boolean causes the last vision position measurement to be fused
+    Vector3f visionPosition; 		// vision position in NED frame (m)
 
     // variables added for optical flow fusion
     bool newDataFlow;               // true when new optical flow data has arrived

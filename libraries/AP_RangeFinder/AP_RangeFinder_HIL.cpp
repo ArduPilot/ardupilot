@@ -7,8 +7,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_RangeFinder_HIL::AP_RangeFinder_HIL(RangeFinder &range, uint8_t instance, RangeFinder::RangeFinder_State &state) :
-    AP_RangeFinder_Backend(range, _instance, state)
+AP_RangeFinder_HIL::AP_RangeFinder_HIL(RangeFinder &range, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(range, _instance, _state)
 {
 
 }
