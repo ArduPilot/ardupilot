@@ -252,6 +252,7 @@ void AP_Compass_AK8963::_update()
     /* Check for overflow. See AK8963's datasheet, section
      * 6.4.3.6 - Magnetic Sensor Overflow. */
     if ((rv.st2 & 0x08)) {
+        _sem_give();
         return;
     }
 
@@ -260,6 +261,7 @@ void AP_Compass_AK8963::_update()
     float mag_z = (float) rv.val[2];
 
     if (is_zero(mag_x) && is_zero(mag_y) && is_zero(mag_z)) {
+        _sem_give();
         return;
     }
 
