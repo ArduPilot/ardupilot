@@ -16,7 +16,8 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 void Copter::heli_init()
 {
-    // Nothing in here for now.  To-Do: Eliminate this function completely?
+    // helicopters are always using motor interlock
+    set_using_interlock(true);
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
@@ -142,24 +143,30 @@ void Copter::heli_update_rotor_speed_targets()
 
     if (motors.armed()) {
         switch (rsc_control_mode) {
-            case AP_MOTORS_HELI_RSC_MODE_NONE:
-                // even though pilot passes rotors speed directly to rotor ESC via receiver, motor lib needs to know if
-                // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
             case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
-                // pass through pilot desired rotor speed
-                motors.set_desired_rotor_speed(rsc_control_deglitched);
+                // pass through pilot desired rotor speed if control input is higher than 10, creating a deadband at the bottom
+                if (rsc_control_deglitched > 10) {
+                    motors.set_interlock(true);
+                    motors.set_desired_rotor_speed(rsc_control_deglitched);
+                } else {
+                    motors.set_interlock(false);
+                    motors.set_desired_rotor_speed(0);
+                }
                 break;
             case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
                 // pass setpoint through as desired rotor speed
                 if (rsc_control_deglitched > 0) {
+                    motors.set_interlock(true);
                     motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
                 }else{
+                    motors.set_interlock(false);
                     motors.set_desired_rotor_speed(0);
                 }
                 break;
         }
     } else {
         // if disarmed, force desired_rotor_speed to Zero
+        motors.set_interlock(false);
         motors.set_desired_rotor_speed(0);
     }
 
