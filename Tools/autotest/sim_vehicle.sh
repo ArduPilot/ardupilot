@@ -453,13 +453,17 @@ if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     options="$options --load-module=gimbal"
 fi
 
-sleep 200000
+case $FRAME in
+    arducopter_sitl_ros)
+	sleep 999999
+esac
 
 if [ -f /usr/bin/cygstart ]; then
     cygstart -w "/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe" $options --cmd="$extra_cmd" $*
 else
     mavproxy.py $options --cmd="$extra_cmd" $*
 fi
+
 if [ $START_HIL == 0 ]; then
 kill_tasks
 fi
