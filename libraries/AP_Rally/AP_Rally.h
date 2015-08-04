@@ -71,6 +71,7 @@ private:
     // parameters
     AP_Int8  _rally_point_total_count;
     AP_Float _rally_limit_km;
+    AP_Int8  _rally_home_inc;
 
     uint32_t _last_change_time_ms;
 };
