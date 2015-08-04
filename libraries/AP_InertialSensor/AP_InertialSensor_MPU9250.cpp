@@ -257,7 +257,7 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state() {
         _register_write(spi, MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
 
         // Wake up device and select GyroZ clock. Note that the
-        // MPU6000 starts up in sleep mode, and it can take some time
+        // MPU9250 starts up in sleep mode, and it can take some time
         // for it to come out of sleep
         _register_write(spi, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
         hal.scheduler->delay(5);
@@ -378,7 +378,7 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
  */
 void AP_InertialSensor_MPU9250::_read_data_transaction() 
 {
-    /* one resister address followed by seven 2-byte registers */
+    /* one register address followed by seven 2-byte registers */
     struct PACKED {
         uint8_t cmd;
         uint8_t int_status;
