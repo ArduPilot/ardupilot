@@ -746,6 +746,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 {
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
     bool prev_segment_exists = (_flags.reached_destination && ((hal.scheduler->millis() - _wp_last_update) < 1000));
+    float dt = _pos_control.get_dt_xy();
 
     // check _wp_accel_cms is reasonable to avoid divide by zero
     if (_wp_accel_cms <= 0) {
@@ -761,7 +762,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // calculate spline velocity at origin
     if (stopped_at_start || !prev_segment_exists) {
     	// if vehicle is stopped at the origin, set origin velocity to 0.02 * distance vector from origin to destination
-    	_spline_origin_vel = (destination - origin) * 0.02f;
+    	_spline_origin_vel = (destination - origin) * dt;
     	_spline_time = 0.0f;
     	_spline_vel_scaler = 0.0f;
     }else{
@@ -792,7 +793,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
 
     case SEGMENT_END_STOP:
         // if vehicle stops at the destination set destination velocity to 0.02 * distance vector from origin to destination
-        _spline_destination_vel = (destination - origin) * 0.02f;
+        _spline_destination_vel = (destination - origin) * dt;
         _flags.fast_waypoint = false;
         break;
 
@@ -924,20 +925,21 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
 
         // update velocity
         float spline_dist_to_wp = (_destination - target_pos).length();
+        float vel_limit = _wp_speed_cms;
+        if (!is_zero(dt)) {
+            vel_limit = min(vel_limit, track_leash_slack/dt);
+        }
 
         // if within the stopping distance from destination, set target velocity to sqrt of distance * 2 * acceleration
         if (!_flags.fast_waypoint && spline_dist_to_wp < _slow_down_dist) {
             _spline_vel_scaler = safe_sqrt(spline_dist_to_wp * 2.0f * _wp_accel_cms);
-        }else if(_spline_vel_scaler < min(_wp_speed_cms, track_leash_slack/0.02f)) {
+        }else if(_spline_vel_scaler < vel_limit) {
             // increase velocity using acceleration
-        	// To-Do: replace 0.02f below with update frequency passed in from main program
-            _spline_vel_scaler += _wp_accel_cms* 0.02f;
+            _spline_vel_scaler += _wp_accel_cms * dt;
         }
 
         // constrain target velocity
-
-        // To-Do: replace 0.02f below with update frequency passed in from main program
-        _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, min(_wp_speed_cms, track_leash_slack/0.02f));
+        _spline_vel_scaler = constrain_float(_spline_vel_scaler, 0.0f, vel_limit);
 
         // scale the spline_time by the velocity we've calculated vs the velocity that came out of the spline calculator
         float target_vel_length = target_vel.length();
