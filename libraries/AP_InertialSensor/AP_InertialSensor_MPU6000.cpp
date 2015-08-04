@@ -227,7 +227,7 @@ void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
                                          AP_HAL::DigitalSource *_drdy_pin,
                                          uint8_t &n_samples)
 {
-    /* one resister address followed by seven 2-byte registers */
+    /* one register address followed by seven 2-byte registers */
     struct PACKED {
         uint8_t cmd;
         uint8_t int_status;
