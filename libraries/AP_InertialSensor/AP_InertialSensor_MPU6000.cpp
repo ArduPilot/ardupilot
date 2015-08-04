@@ -397,6 +397,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
     delete _bus;
+    delete _samples;
 }
 
 /* Detect the sensor on SPI bus. It must have a corresponding device on
