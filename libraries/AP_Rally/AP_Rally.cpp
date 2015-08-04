@@ -14,10 +14,13 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #ifdef APM_BUILD_DIRECTORY
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     #define RALLY_LIMIT_KM_DEFAULT 0.3f
+    #define RALLY_INCLUDE_HOME_DEFAULT 1
   #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define RALLY_LIMIT_KM_DEFAULT 5.0f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
     #define RALLY_LIMIT_KM_DEFAULT 0.5f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #endif
 #endif  // APM_BUILD_DIRECTORY
 
@@ -25,8 +28,8 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #define RALLY_LIMIT_KM_DEFAULT 1.0f
 #endif
 
-#ifndef RALLY_HOME_INC_DEFAULT
-#define RALLY_HOME_INC_DEFAULT 0
+#ifndef RALLY_INCLUDE_HOME_DEFAULT
+#define RALLY_INCLUDE_HOME_DEFAULT 0
 #endif
 
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
@@ -44,14 +47,12 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
 
-    // @Param: HOME_INC
-    // @DisplayName: Rally Home Included
-    // @Description: Controls if Home has to be included as a Rally point (as a safe place) to RTL while a FS situation trigger a RTL. By default should be 0 as we don't know if Home is safe (e.g. boat launch...)
+    // @Param: INCL_HOME
+    // @DisplayName: Rally Include Home
+    // @Description: Controls if Home is included as a Rally point (i.e. as a safe landing place) for RTL
     // @User: Standard
-    // @Units: na
-    // @Increment: na
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("HOME_INC", 2, AP_Rally, _rally_home_inc, RALLY_HOME_INC_DEFAULT),
+    // @Values: 0:DoNotIncludeHome,1:IncludeHome
+    AP_GROUPINFO("INCL_HOME", 2, AP_Rally, _rally_incl_home, RALLY_INCLUDE_HOME_DEFAULT),
 
     AP_GROUPEND
 };
@@ -137,15 +138,17 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         }
     }
 
-    // Check if we should take Home in the Rally points
-    if ( _rally_home_inc && (get_distance(current_loc, home_loc)<min_dis) ) {
-        return false; // use home position
-        }
+    // if home is included, return false (meaning use home) if it is closer than all rally points
+    if (_rally_incl_home && (get_distance(current_loc, home_loc) < min_dis)) {
+        return false;
+    }
 
+    // if a limit is defined and all rally points are beyond that limit, use home if it is closer
     if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
         return false; // use home position
     }
 
+    // use home if no rally points found
     return min_dis >= 0;
 }
 
