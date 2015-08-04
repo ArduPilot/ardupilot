@@ -212,6 +212,7 @@ AP_GPS::detect_instance(uint8_t instance)
 
     state[instance].instance = instance;
     state[instance].status = NO_GPS;
+    state[instance].hdop = 9999;
 
     // record the time when we started detection. This is used to try
     // to avoid initialising a uBlox as a NMEA GPS
@@ -336,6 +337,7 @@ AP_GPS::update_instance(uint8_t instance)
     if (_type[instance] == GPS_TYPE_NONE) {
         // not enabled
         state[instance].status = NO_GPS;
+        state[instance].hdop = 9999;
         return;
     }
     if (locked_ports & (1U<<instance)) {
@@ -368,6 +370,7 @@ AP_GPS::update_instance(uint8_t instance)
             memset(&state[instance], 0, sizeof(state[instance]));
             state[instance].instance = instance;
             state[instance].status = NO_GPS;
+            state[instance].hdop = 9999;
             timing[instance].last_message_time_ms = tnow;
         }
     } else {
