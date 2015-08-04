@@ -111,7 +111,7 @@ private:
 #endif
     volatile uint16_t _sum_count;
     bool _fifo_mode;
-    uint8_t *_samples;
+    uint8_t *_samples = nullptr;
 };
 
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
