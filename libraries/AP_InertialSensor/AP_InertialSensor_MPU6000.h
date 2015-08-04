@@ -36,7 +36,7 @@ public:
     virtual void read8(uint8_t reg, uint8_t *val) = 0;
     virtual void write8(uint8_t reg, uint8_t val) = 0;
     virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
-    virtual void read_burst(uint8_t* samples,
+    virtual void read_data_transaction(uint8_t* samples,
                             AP_HAL::DigitalSource *_drdy_pin,
                             uint8_t &n_samples) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
@@ -122,9 +122,9 @@ public:
     void read8(uint8_t reg, uint8_t *val);
     void write8(uint8_t reg, uint8_t val);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-    void read_burst(uint8_t* samples,
-                    AP_HAL::DigitalSource *_drdy_pin,
-                    uint8_t &n_samples);
+    void read_data_transaction(uint8_t* samples,
+                               AP_HAL::DigitalSource *_drdy_pin,
+                               uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
 
 private:
@@ -142,9 +142,9 @@ public:
     void read8(uint8_t reg, uint8_t *val);
     void write8(uint8_t reg, uint8_t val);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
-    void read_burst(uint8_t* samples,
-                    AP_HAL::DigitalSource *_drdy_pin,
-                    uint8_t &n_samples);
+    void read_data_transaction(uint8_t* samples,
+                               AP_HAL::DigitalSource *_drdy_pin,
+                               uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
 
 private:

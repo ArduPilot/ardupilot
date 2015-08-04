@@ -223,9 +223,9 @@ void AP_MPU6000_BusDriver_SPI::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed 
     _spi->set_bus_speed(speed);
 }
 
-void AP_MPU6000_BusDriver_SPI::read_burst(uint8_t *samples,
-                                         AP_HAL::DigitalSource *_drdy_pin,
-                                         uint8_t &n_samples)
+void AP_MPU6000_BusDriver_SPI::read_data_transaction(uint8_t *samples,
+                                                     AP_HAL::DigitalSource *_drdy_pin,
+                                                     uint8_t &n_samples)
 {
     /* one register address followed by seven 2-byte registers */
     struct PACKED {
@@ -305,9 +305,9 @@ void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
 void AP_MPU6000_BusDriver_I2C::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
 {}
 
-void AP_MPU6000_BusDriver_I2C::read_burst(uint8_t *samples,
-                                          AP_HAL::DigitalSource *_drdy_pin,
-                                          uint8_t &n_samples)
+void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
+                                                     AP_HAL::DigitalSource *_drdy_pin,
+                                                     uint8_t &n_samples)
 {
 	uint16_t bytes_read;
     uint8_t ret = 0;
@@ -579,9 +579,9 @@ void AP_InertialSensor_MPU6000::_poll_data(void)
 {
     if (!_bus_sem->take_nonblocking()) {
         return;
-    }   
+    }
     if (_fifo_mode || _data_ready()) {
-        _read_data_transaction(); 
+        _read_data_transaction();
     }
     _bus_sem->give();
 }
@@ -622,7 +622,7 @@ void AP_InertialSensor_MPU6000::_read_data_transaction()
 {
     uint8_t n_samples;
 
-    _bus->read_burst(_samples, _drdy_pin, n_samples);
+    _bus->read_data_transaction(_samples, _drdy_pin, n_samples);
     _accumulate(_samples, n_samples);
 }
 
