@@ -184,24 +184,7 @@ struct PACKED log_GPS {
     uint32_t ground_speed;
     int32_t  ground_course;
     float    vel_z;
-};
-
-struct PACKED log_GPS2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  status;
-    uint32_t gps_week_ms;
-    uint16_t gps_week;
-    uint8_t  num_sats;
-    uint16_t hdop;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  altitude;
-    uint32_t ground_speed;
-    int32_t  ground_course;
-    float    vel_z;
-    uint8_t  dgps_numch;
-    uint32_t dgps_age;
+    uint8_t  used;
 };
 
 struct PACKED log_Message {
@@ -647,7 +630,7 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBcLLeeEef", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ" }, \
+      "GPS",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -679,8 +662,8 @@ Format characters in the format string for binary log messages
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
-    { LOG_GPS2_MSG, sizeof(log_GPS2), \
-      "GPS2",  "QBIHBcLLeEefBI", "TimeUS,Status,GMS,GWk,NSats,HDp,Lat,Lng,Alt,Spd,GCrs,VZ,DSc,DAg" }, \
+    { LOG_GPS2_MSG, sizeof(log_GPS), \
+      "GPS2",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
@@ -783,6 +766,7 @@ enum LogMessages {
     LOG_FORMAT_MSG = 128,
     LOG_PARAMETER_MSG,
     LOG_GPS_MSG,
+    LOG_GPS2_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
@@ -796,7 +780,6 @@ enum LogMessages {
     LOG_EKF2_MSG,
     LOG_EKF3_MSG,
     LOG_EKF4_MSG,
-    LOG_GPS2_MSG,
     LOG_CMD_MSG,
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
