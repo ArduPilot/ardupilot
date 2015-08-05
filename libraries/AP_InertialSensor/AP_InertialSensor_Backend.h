@@ -24,6 +24,8 @@
 #ifndef __AP_INERTIALSENSOR_BACKEND_H__
 #define __AP_INERTIALSENSOR_BACKEND_H__
 
+class AuxiliaryBus;
+
 class AP_InertialSensor_Backend
 {
 public:
@@ -57,6 +59,11 @@ public:
      * subclasses to already start the sensors when it's detected
      */
     virtual void start() { }
+
+    /*
+     * Return an AuxiliaryBus if backend has another bus it is able to export
+     */
+    virtual AuxiliaryBus *get_auxiliar_bus() { return nullptr; }
 
     /*
       return the product ID
