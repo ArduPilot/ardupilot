@@ -119,9 +119,11 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     if (healthy_count > 1) {
         delta_angle /= healthy_count;
     }
-    _omega = delta_angle / _G_Dt;
-    _omega += _omega_I;
-    _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
+    if (_G_Dt > 0) {
+        _omega = delta_angle / _G_Dt;
+        _omega += _omega_I;
+        _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
+    }
 }
 
 
@@ -559,9 +561,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
             float delta_velocity_dt;
             _ins.get_delta_velocity(i, delta_velocity);
             delta_velocity_dt = _ins.get_delta_velocity_dt(i);
-            _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
-            // integrate the accel vector in the earth frame between GPS readings
-            _ra_sum[i] += _accel_ef[i] * deltat;
+            if (delta_velocity_dt > 0) {
+                _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
+                // integrate the accel vector in the earth frame between GPS readings
+                _ra_sum[i] += _accel_ef[i] * deltat;
+            }
         }
     }
 
