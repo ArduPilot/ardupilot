@@ -25,145 +25,146 @@
 #include <AP_HAL.h>
 #include "OpticalFlow.h"
 
-#define DEBUG 1
-#define RAW_READ 0
+#define PX4FLOW_DEBUG 1
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
+#define PX4FLOW_I2C_ADDRESS     0x42    // 7-bit address. 8-bit address is 0x84, range 0x42 - 0x49
+#define PX4FLOW_REG             0x16    // Measure Register 22
+#define I2C_FRAME_SIZE          (sizeof(i2c_frame))
+#define I2C_INTEGRAL_FRAME_SIZE (sizeof(i2c_integral_frame))
+
 extern const AP_HAL::HAL& hal;
 
 AP_OpticalFlow_Linux::AP_OpticalFlow_Linux(OpticalFlow &_frontend) : 
-  OpticalFlow_backend(_frontend)
+    OpticalFlow_backend(_frontend)
 {}
-
 
 void AP_OpticalFlow_Linux::init(void)
 {
-  uint8_t buff[22];
+    // only initialise once
+    if (initialised) {
+        return;
+    }
 
-  // get pointer to i2c bus semaphore
-  AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    if (i2c_sem == NULL) {
+        return;
+    }
 
-  // take i2c bus sempahore
-  if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-      hal.scheduler->panic(PSTR("PX4FLOW: unable to get semaphore"));
-  }
+    // take i2c bus sempahore
+    if (!i2c_sem->take(200)) {
+        return;
+    }
 
-  // to be sure this is not a ll40ls Lidar (which can also be on
-  // 0x42) we check if a I2C_FRAME_SIZE byte transfer works from address
-  // 0. The ll40ls gives an error for that, whereas the flow
-  // happily returns some data
-  uint8_t val[I2C_FRAME_SIZE];
-  if (hal.i2c->readRegisters(I2C_FLOW_ADDRESS, 0, I2C_FRAME_SIZE, val))
-    hal.scheduler->panic(PSTR("ll40ls Lidar"));
+    // read from flow sensor to ensure it is not a ll40ls Lidar (which can be on 0x42)
+    // read I2C_FRAME_SIZE bytes, the ll40ls will error whereas the flow happily returns data
+    uint8_t val[I2C_FRAME_SIZE];
+    if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE, val) != 0) {
+        i2c_sem->give();
+        return;
+    }
 
-  i2c_sem->give();
-
+    // success
+    initialised = true;
+    i2c_sem->give();
 }
 
-int AP_OpticalFlow_Linux::read(optical_flow_s* report)
+bool AP_OpticalFlow_Linux::request_measurement()
 {
-  // get pointer to i2c bus semaphore
-  AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    // send measure request to sensor
+    uint8_t cmd = PX4FLOW_REG;
+    if (hal.i2c->writeRegisters(PX4FLOW_I2C_ADDRESS, cmd, 0, nullptr) != 0) {
+        return false;
+    }
+    return true;
+}
 
-  // take i2c bus sempahore
-  if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-      hal.scheduler->panic(PSTR("PX4FLOW: unable to get semaphore"));
-  }
+bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
+{
+    // get pointer to i2c bus semaphore
+    AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
+    if (i2c_sem == NULL) {
+        num_errors++;
+        return false;
+    }
 
+    // take i2c bus sempahore (non blocking)
+    if (!i2c_sem->take_nonblocking()) {
+        num_errors++;
+        return false;
+    }
 
-  uint8_t val[I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE] = { 0 };
+    // request measurement
+    request_measurement();
 
-#if RAW_READ
-  hal.console->printf_P(PSTR("PX4FLOW: RAW_READ"));
-  // Send the command to begin a measurement
-  uint8_t cmd = PX4FLOW_REG;
-  if (hal.i2c->write(I2C_FLOW_ADDRESS, 1, &cmd)){    
-    hal.console->printf_P(PSTR("PX4FLOW: Error while beginning a measurement"));
+    uint8_t val[I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE] = {};
+    i2c_integral_frame f_integral;
+
+    // Perform the writing and reading in a single command
+    if (PX4FLOW_REG == 0x00) {
+        if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
+            num_errors++;
+            i2c_sem->give();
+            return false;
+        }
+        memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
+    }
+
+    if (PX4FLOW_REG == 0x16) {
+        if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
+            num_errors++;
+            i2c_sem->give();
+            return false;
+        }
+        memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
+    }
+
+    report->pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;    //convert to radians
+    report->pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;    //convert to radians
+    report->frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
+    report->ground_distance_m = static_cast<float>(f_integral.ground_distance) / 1000.0f;               // convert to meters
+    report->quality = f_integral.qual;                                                                  // 0:bad, 255 max quality
+    report->gyro_x_rate_integral = static_cast<float>(f_integral.gyro_x_rate_integral) / 10000.0f;      // convert to radians
+    report->gyro_y_rate_integral = static_cast<float>(f_integral.gyro_y_rate_integral) / 10000.0f;      // convert to radians
+    report->gyro_z_rate_integral = static_cast<float>(f_integral.gyro_z_rate_integral) / 10000.0f;      // convert to radians
+    report->integration_timespan = f_integral.integration_timespan;     // microseconds
+    report->time_since_last_sonar_update = f_integral.sonar_timestamp;  // microseconds
+    report->gyro_temperature = f_integral.gyro_temperature;             // Temperature * 100 in centi-degrees Celsius
+    report->sensor_id = 0;
+
     i2c_sem->give();
-    return 0;
-  }
 
-  // Perform the reading
-  if (PX4FLOW_REG == 0x00) {
-    if (hal.i2c->read(I2C_FLOW_ADDRESS, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val)){
-      hal.console->printf_P(PSTR("PX4FLOW: Error while reading"));
-      i2c_sem->give();
-      return 0;
+    // reduce error count
+    if (num_errors > 0) {
+        num_errors--;
     }
-  }
 
-  if (PX4FLOW_REG == 0x16) {
-    if (hal.i2c->read(I2C_FLOW_ADDRESS, I2C_INTEGRAL_FRAME_SIZE, val)){
-      hal.console->printf_P(PSTR("PX4FLOW: Error while reading"));
-      i2c_sem->give();
-      return 0;
-    }
-  }
-
-#else
-  // Perform the writing and reading in a single command
-  if (PX4FLOW_REG == 0x00) {
-    if (hal.i2c->readRegisters(I2C_FLOW_ADDRESS, PX4FLOW_REG, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val)){
-      hal.console->printf_P(PSTR("PX4FLOW: Error while reading"));
-      i2c_sem->give();
-      return 0;
-    }
-  }
-
-  if (PX4FLOW_REG == 0x16) {
-    if (hal.i2c->readRegisters(I2C_FLOW_ADDRESS, PX4FLOW_REG, I2C_INTEGRAL_FRAME_SIZE, val)){
-      hal.console->printf_P(PSTR("PX4FLOW: Error while reading"));
-      i2c_sem->give();
-      return 0;
-    }
-  }
-#endif
-
-
-  if (PX4FLOW_REG == 0) {
-    memcpy(&f, val, I2C_FRAME_SIZE);
-    memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
-  }
-
-  if (PX4FLOW_REG == 0x16) {
-    memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
-  }
-
-  // report->timestamp = hrt_absolute_time();
-  report->pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;//convert to radians
-  report->pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;//convert to radians
-  report->frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
-  report->ground_distance_m = static_cast<float>(f_integral.ground_distance) / 1000.0f;//convert to meters
-  report->quality = f_integral.qual; //0:bad ; 255 max quality
-  report->gyro_x_rate_integral = static_cast<float>(f_integral.gyro_x_rate_integral) / 10000.0f; //convert to radians
-  report->gyro_y_rate_integral = static_cast<float>(f_integral.gyro_y_rate_integral) / 10000.0f; //convert to radians
-  report->gyro_z_rate_integral = static_cast<float>(f_integral.gyro_z_rate_integral) / 10000.0f; //convert to radians
-  report->integration_timespan = f_integral.integration_timespan; //microseconds
-  report->time_since_last_sonar_update = f_integral.sonar_timestamp;//microseconds
-  report->gyro_temperature = f_integral.gyro_temperature;//Temperature * 100 in centi-degrees Celsius
-
-  report->sensor_id = 0;
-
-  hal.console->printf_P(PSTR("PX4FLOW measurement: ground_distance_m: %f\n"), report->ground_distance_m);
-
-/*
-  // rotate measurements according to parameter
-  float zeroval = 0.0f;
-  rotate_3f(_sensor_rotation, report.pixel_flow_x_integral, report.pixel_flow_y_integral, zeroval); 
-*/
-
-  i2c_sem->give();
-  return 1;
-
+    return true;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
 void AP_OpticalFlow_Linux::update(void)
 {
-    struct optical_flow_s report;
-    
+    optical_flow_s report;
+
+    // return immediately if not initialised or more than half of last 40 reads have failed
+    if (!initialised || num_errors >= 20) {
+        return;
+    }
+
+    // throttle reads to no more than 10hz
+    uint32_t now = hal.scheduler->millis();
+    if (now - last_read_ms < 100) {
+        return;
+    }
+    last_read_ms = now;
+
     // read the report from the sensor
-    read(&report);
+    if (!read(&report)) {
+        return;
+    }
 
     // process
     struct OpticalFlow::OpticalFlow_state state;
@@ -183,17 +184,18 @@ void AP_OpticalFlow_Linux::update(void)
         state.bodyRate.zero();
     }
 
-#if DEBUG
-    hal.console->printf_P(PSTR("PX4FLOW print: sensor_id: %d\n"), state.device_id);
-    hal.console->printf_P(PSTR("PX4FLOW print: surface_quality: %d\n"), state.surface_quality);
-    hal.console->printf_P(PSTR("PX4FLOW print: flowRate.x: %d\n"), state.flowRate.x);
-    hal.console->printf_P(PSTR("PX4FLOW print: flowRate.y: %d\n"), state.flowRate.y);
-    hal.console->printf_P(PSTR("PX4FLOW print: bodyRate.x: %d\n"), state.bodyRate.x);
-    hal.console->printf_P(PSTR("PX4FLOW print: bodyRate.y: %d\n"), state.bodyRate.y);
-#endif
+    // copy results to front end
     _update_frontend(state);
+
+#if PX4FLOW_DEBUG
+    hal.console->printf_P(PSTR("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n"),
+            (unsigned)state.device_id,
+            (unsigned)state.surface_quality,
+            (double)state.flowRate.x,
+            (double)state.flowRate.y,
+            (double)state.bodyRate.x,
+            (double)state.bodyRate.y);
+#endif
 }
-
-
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
