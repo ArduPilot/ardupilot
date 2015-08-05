@@ -32,7 +32,8 @@ class AP_MPU6000_BusDriver
 {
 public:
     virtual ~AP_MPU6000_BusDriver() { };
-    virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
+    virtual void init() = 0;
+    virtual void start(bool &fifo_mode, uint8_t &max_samples) = 0;
     virtual void read8(uint8_t reg, uint8_t *val) = 0;
 
     /// Copy data from the device to @p buf starting at @p reg with @size
@@ -62,9 +63,12 @@ public:
     bool gyro_sample_available(void) { return _sum_count >= _sample_count; }
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
 
+    void start() override;
+
 private:
     static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
-                                              AP_MPU6000_BusDriver *bus);
+                                              AP_MPU6000_BusDriver *bus,
+                                              int16_t id = -1);
 
 #if MPU6000_DEBUG
     void _dump_registers(void);
@@ -123,7 +127,8 @@ class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
 {
 public:
     AP_MPU6000_BusDriver_SPI(void);
-    void init(bool &fifo_mode, uint8_t &max_samples);
+    void init();
+    void start(bool &fifo_mode, uint8_t &max_samples);
     void read8(uint8_t reg, uint8_t *val);
     void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
     void write8(uint8_t reg, uint8_t val);
@@ -144,7 +149,8 @@ class AP_MPU6000_BusDriver_I2C : public AP_MPU6000_BusDriver
 {
 public:
     AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-    void init(bool &fifo_mode, uint8_t &max_samples);
+    void init();
+    void start(bool &fifo_mode, uint8_t &max_samples);
     void read8(uint8_t reg, uint8_t *val);
     void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
     void write8(uint8_t reg, uint8_t val);
