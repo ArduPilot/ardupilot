@@ -706,49 +706,25 @@ void DataFlash_Class::Log_Write_Parameters(void)
 // Write an GPS packet
 void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relative_alt)
 {
-    if (i == 0) {
-        const struct Location &loc = gps.location(i);
-        struct log_GPS pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
-            time_us       : hal.scheduler->micros64(),
-            status        : (uint8_t)gps.status(i),
-            gps_week_ms   : gps.time_week_ms(i),
-            gps_week      : gps.time_week(i),
-            num_sats      : gps.num_sats(i),
-            hdop          : gps.get_hdop(i),
-            latitude      : loc.lat,
-            longitude     : loc.lng,
-            rel_altitude  : relative_alt,
-            altitude      : loc.alt,
-            ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
-            ground_course : gps.ground_course_cd(i),
-            vel_z         : gps.velocity(i).z,
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-    if (i > 0) {
-        const struct Location &loc2 = gps.location(i);
-        struct log_GPS2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_GPS2_MSG),
-            time_us       : hal.scheduler->micros64(),
-            status        : (uint8_t)gps.status(i),
-            gps_week_ms   : gps.time_week_ms(i),
-            gps_week      : gps.time_week(i),
-            num_sats      : gps.num_sats(i),
-            hdop          : gps.get_hdop(i),
-            latitude      : loc2.lat,
-            longitude     : loc2.lng,
-            altitude      : loc2.alt,
-            ground_speed  : (uint32_t)(gps.ground_speed(i)*100),
-            ground_course : gps.ground_course_cd(i),
-            vel_z         : gps.velocity(i).z,
-            dgps_numch    : 0,
-            dgps_age      : 0
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
-    }
-#endif
+    const struct Location &loc = gps.location(i);
+    struct log_GPS pkt = {
+        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
+        time_us       : hal.scheduler->micros64(),
+        status        : (uint8_t)gps.status(i),
+        gps_week_ms   : gps.time_week_ms(i),
+        gps_week      : gps.time_week(i),
+        num_sats      : gps.num_sats(i),
+        hdop          : gps.get_hdop(i),
+        latitude      : loc.lat,
+        longitude     : loc.lng,
+        rel_altitude  : relative_alt,
+        altitude      : loc.alt,
+        ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
+        ground_course : gps.ground_course_cd(i),
+        vel_z         : gps.velocity(i).z,
+        used          : (uint8_t)(gps.primary_sensor() == i)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write an RCIN packet
