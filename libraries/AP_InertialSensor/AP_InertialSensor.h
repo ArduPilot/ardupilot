@@ -33,6 +33,7 @@
 #include <Filter/LowPassFilter.h>
 
 class AP_InertialSensor_Backend;
+class AuxiliaryBus;
 
 /*
   forward declare DataFlash class. We can't include DataFlash.h
@@ -237,6 +238,8 @@ public:
     void set_delta_time(float delta_time);
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
+
+    AuxiliaryBus *get_auxiliar_bus(int16_t backend_id);
 
 private:
 

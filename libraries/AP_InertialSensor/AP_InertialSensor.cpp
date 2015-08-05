@@ -1517,6 +1517,20 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
     }
 }
 
+/*
+ * Get an AuxiliaryBus on the backend identified by @backend_id
+ */
+AuxiliaryBus *AP_InertialSensor::get_auxiliar_bus(int16_t backend_id)
+{
+    _detect_backends();
+
+    AP_InertialSensor_Backend *backend = _find_backend(backend_id);
+    if (backend == NULL)
+        return NULL;
+
+    return backend->get_auxiliar_bus();
+}
+
 #if INS_VIBRATION_CHECK
 // calculate vibration levels and check for accelerometer clipping (called by a backends)
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
