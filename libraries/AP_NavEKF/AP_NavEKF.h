@@ -316,6 +316,9 @@ private:
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
 
+    // fuse vision position measurements
+    void FuseVisionPosNED();
+
     // fuse magnetometer measurements
     void FuseMagnetometer();
 
@@ -486,6 +489,8 @@ private:
     AP_Float _accNoise;             // accelerometer process noise : m/s^2
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
+    AP_Float _visionHorizPosNoise;  // vision horizontal position measurement noise m
+    AP_Float _visionVerticalPosNoise;// visiom vertical position measurement noise m
     AP_Int16 _msecVelDelay;         // effective average delay of GPS velocity measurements rel to IMU (msec)
     AP_Int16 _msecPosDelay;         // effective average delay of GPS position measurements rel to (msec)
     AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
@@ -548,6 +553,7 @@ private:
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
     bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
+    bool visionPosHealth;           // boolean true if vision position measurements have passed innovation consistency check
     bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
     bool tasHealth;                 // boolean true if true airspeed has passed innovation consistency check
@@ -706,6 +712,9 @@ private:
     bool newDataVisionPosition;     // true when new vision position data has arrived
     bool fuseVisionPositionData;    // this boolean causes the last vision position measurement to be fused
     Vector3f visionPosition; 		// vision position in NED frame (m)
+    state_elements statesAtVisionPosTime; // States at the effective time of vision posNE measurements
+    Vector3 innovVisionPos;            // innovation output for a group of measurements
+    Vector3 varInnovVisionPos;         // innovation variance output for a group of measurements
 
     // variables added for optical flow fusion
     bool newDataFlow;               // true when new optical flow data has arrived
@@ -845,6 +854,7 @@ private:
     perf_counter_t  _perf_UpdateFilter;
     perf_counter_t  _perf_CovariancePrediction;
     perf_counter_t  _perf_FuseVelPosNED;
+    perf_counter_t  _perf_FuseVisionPosNED;
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
     perf_counter_t  _perf_FuseSideslip;

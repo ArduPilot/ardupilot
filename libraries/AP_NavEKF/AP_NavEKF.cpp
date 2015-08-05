@@ -2335,6 +2335,92 @@ void NavEKF::FuseVelPosNED()
     perf_end(_perf_FuseVelPosNED);
 }
 
+// fuse vision position measurements
+void NavEKF::FuseVisionPosNED()
+{
+    // start performance timer
+    perf_begin(_perf_FuseVisionPosNED);
+
+    uint8_t stateIndex;
+    uint8_t obsIndex;
+
+    // declare variables used by state and covariance update calculations
+    float posErr;
+    Vector3 R_OBS; // Measurement variances used for fusion
+    Vector3 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
+    Vector3 observation;
+    float SK;
+
+    if (fuseVisionPositionData) {
+
+        // if constant position or constant velocity mode use the current states to calculate the predicted
+        // measurement rather than use states from a previous time. We need to do this
+        // because there may be no stored states due to lack of real measurements.
+        if (constPosMode) {
+        	statesAtVisionPosTime = state;
+        }
+
+        observation[0] = visionPosition.x;
+        observation[1] = visionPosition.y;
+        observation[2] = visionPosition.z;
+
+        R_OBS[0] = sq(constrain_float(_visionHorizPosNoise, 0.05f, 5.0f));
+        R_OBS[1] = R_OBS[0];
+        R_OBS[2] = sq(constrain_float(_visionVerticalPosNoise,  0.05f, 5.0f));
+
+        for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+
+        // fuse measurements sequentially
+        for (obsIndex=0; obsIndex<=2; obsIndex++) {
+
+        	stateIndex = 7 + obsIndex;
+        	// calculate the measurement innovation, using states from a different time coordinate
+        	innovVisionPos[obsIndex] = statesAtVisionPosTime.position[obsIndex] - observation[obsIndex];
+
+        	// calculate the Kalman gain and calculate innovation variances
+        	varInnovVisionPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
+        	SK = 1.0f/varInnovVisionPos[obsIndex];
+
+        	for (uint8_t i= 0; i<=33; i++) {
+        		Kfusion[i] = 0.0f;
+        	}
+
+        	for (uint8_t i= 7; i<=9; i++) {
+        		Kfusion[i] = P[i][stateIndex]*SK;
+        	}
+
+        	// calculate state corrections
+        	for (uint8_t i = 7; i<=9; i++) {
+        		states[i] = states[i] - Kfusion[i] * innovVisionPos[obsIndex];
+
+        	}
+        	state.quat.normalize();
+
+        	// update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
+        	// this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
+        	for (uint8_t i= 0; i<=21; i++) {
+        		for (uint8_t j= 0; j<=21; j++)
+        		{
+        			KHP[i][j] = Kfusion[i] * P[stateIndex][j];
+        		}
+        	}
+        	for (uint8_t i= 0; i<=21; i++) {
+        		for (uint8_t j= 0; j<=21; j++) {
+        			P[i][j] = P[i][j] - KHP[i][j];
+        		}
+        	}
+        }
+    }
+
+    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
+    ForceSymmetry();
+    ConstrainVariances();
+
+    // stop performance timer
+    perf_end(_perf_FuseVelPosNED);
+}
+
+
 // fuse magnetometer measurements and apply innovation consistency checks
 // fuse each axis on consecutive time steps to spread computional load
 void NavEKF::FuseMagnetometer()
