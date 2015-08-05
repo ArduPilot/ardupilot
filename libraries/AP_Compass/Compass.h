@@ -252,7 +252,7 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    void _add_backend(AP_Compass_Backend *(detect)(Compass &));
+    void _add_backend(AP_Compass_Backend *backend);
     void _detect_backends(void);
 
     // backend objects

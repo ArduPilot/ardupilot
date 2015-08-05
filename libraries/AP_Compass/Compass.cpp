@@ -321,43 +321,36 @@ uint8_t Compass::register_compass(void)
     return _compass_count++;
 }
 
-/*
-  try to load a backend
- */
-void 
-Compass::_add_backend(AP_Compass_Backend *(detect)(Compass &))
+void Compass::_add_backend(AP_Compass_Backend *backend)
 {
-    if (_backend_count == COMPASS_MAX_BACKEND) {
+    if (!backend)
+        return;
+    if (_backend_count == COMPASS_MAX_BACKEND)
         hal.scheduler->panic(PSTR("Too many compass backends"));
-    }
-    _backends[_backend_count] = detect(*this);
-    if (_backends[_backend_count] != NULL) {
-        _backend_count++;
-    }
+    _backends[_backend_count++] = backend;
 }
 
 /*
   detect available backends for this board
  */
-void 
-Compass::_detect_backends(void)
+void Compass::_detect_backends(void)
 {
     if (_hil_mode) {
-        _add_backend(AP_Compass_HIL::detect);
+        _add_backend(AP_Compass_HIL::detect(*this));
         return;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    _add_backend(AP_Compass_HMC5843::detect);
-    _add_backend(AP_Compass_AK8963::detect_mpu9250);
+    _add_backend(AP_Compass_HMC5843::detect(*this));
+    _add_backend(AP_Compass_AK8963::detect_mpu9250(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
-    _add_backend(AP_Compass_HIL::detect);
+    _add_backend(AP_Compass_HIL::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
-    _add_backend(AP_Compass_HMC5843::detect);
+    _add_backend(AP_Compass_HMC5843::detect(*this));
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
-    _add_backend(AP_Compass_AK8963::detect_i2c1);
+    _add_backend(AP_Compass_AK8963::detect_i2c1(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
-    _add_backend(AP_Compass_PX4::detect);
+    _add_backend(AP_Compass_PX4::detect(*this));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
