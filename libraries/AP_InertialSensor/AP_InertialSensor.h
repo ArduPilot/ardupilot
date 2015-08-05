@@ -243,6 +243,7 @@ private:
     // load backend drivers
     void _add_backend(AP_InertialSensor_Backend *backend);
     void _detect_backends(void);
+    void _start_backends();
 
     // gyro initialisation
     void _init_gyro();
@@ -333,6 +334,8 @@ private:
 
     // should we log raw accel/gyro data?
     bool _log_raw_data:1;
+
+    bool _backends_detected:1;
 
     // the delta time in seconds for the last sample
     float _delta_time;

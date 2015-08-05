@@ -321,6 +321,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _hil_mode(false),
     _calibrating(false),
     _log_raw_data(false),
+    _backends_detected(false),
     _dataflash(NULL)
 {
     AP_Param::setup_object_defaults(this, var_info);        
@@ -369,6 +370,24 @@ uint8_t AP_InertialSensor::register_accel(void)
     return _accel_count++;
 }
 
+/*
+ * Start all backends for gyro and accel measurements. It automatically calls
+ * _detect_backends() if it has not been called already.
+ */
+void AP_InertialSensor::_start_backends()
+
+{
+    _detect_backends();
+
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        _backends[i]->start();
+    }
+
+    if (_gyro_count == 0 || _accel_count == 0) {
+        hal.scheduler->panic(PSTR("INS needs at least 1 gyro and 1 accel"));
+    }
+}
+
 void
 AP_InertialSensor::init( Start_style style,
                          Sample_rate sample_rate)
@@ -377,8 +396,7 @@ AP_InertialSensor::init( Start_style style,
     _sample_rate = sample_rate;
 
     if (_gyro_count == 0 && _accel_count == 0) {
-        // detect available backends. Only called once
-        _detect_backends();
+        _start_backends();
     }
 
     // initialise accel scale if need be. This is needed as we can't
@@ -432,6 +450,11 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 void 
 AP_InertialSensor::_detect_backends(void)
 {
+    if (_backends_detected)
+        return;
+
+    _backends_detected = true;
+
     if (_hil_mode) {
         _add_backend(AP_InertialSensor_HIL::detect(*this));
         return;
@@ -458,9 +481,7 @@ AP_InertialSensor::_detect_backends(void)
     #error Unrecognised HAL_INS_TYPE setting
 #endif
 
-    if (_backend_count == 0 ||
-        _gyro_count == 0 ||
-        _accel_count == 0) {
+    if (_backend_count == 0) {
         hal.scheduler->panic(PSTR("No INS backends available"));
     }
 

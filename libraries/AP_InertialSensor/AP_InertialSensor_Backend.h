@@ -53,6 +53,12 @@ public:
     virtual bool gyro_sample_available() = 0;
 
     /*
+     * Configure and start all sensors. The empty implementation allows
+     * subclasses to already start the sensors when it's detected
+     */
+    virtual void start() { }
+
+    /*
       return the product ID
      */
     int16_t product_id(void) const { return _product_id; }
