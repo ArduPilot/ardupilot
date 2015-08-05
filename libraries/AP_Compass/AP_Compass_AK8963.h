@@ -37,7 +37,9 @@ public:
     AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus);
 
     static AP_Compass_Backend *detect_mpu9250(Compass &compass);
-    static AP_Compass_Backend *detect_i2c1(Compass &compass);
+    static AP_Compass_Backend *detect_i2c(Compass &compass,
+                                          AP_HAL::I2CDriver *i2c,
+                                          uint8_t addr);
 
     bool        init(void);
     void        read(void);

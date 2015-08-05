@@ -79,10 +79,6 @@
 #endif
 #endif
 
-#if !defined(HAL_COMPASS_AK8963_I2C_ADDR)
-#define HAL_COMPASS_AK8963_I2C_ADDR 0xC
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus) :
@@ -112,11 +108,13 @@ AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::detect_i2c1(Compass &compass)
+
+AP_Compass_Backend *AP_Compass_AK8963::detect_i2c(Compass &compass,
+                                                  AP_HAL::I2CDriver *i2c,
+                                                  uint8_t addr)
 {
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass,
-                                                  new AP_AK8963_SerialBus_I2C(
-                                                  hal.i2c1, HAL_COMPASS_AK8963_I2C_ADDR));
+    AP_Compass_AK8963 *sensor =
+        new AP_Compass_AK8963(compass, new AP_AK8963_SerialBus_I2C(i2c, addr));
 
     if (sensor == nullptr) {
         return nullptr;
