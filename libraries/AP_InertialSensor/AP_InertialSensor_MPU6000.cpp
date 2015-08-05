@@ -180,12 +180,17 @@ AP_MPU6000_BusDriver_SPI::AP_MPU6000_BusDriver_SPI(void) :
     _spi = hal.spi->device(AP_HAL::SPIDevice_MPU6000);
 }
 
-void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
+void AP_MPU6000_BusDriver_SPI::init()
+{
+    /* Disable I2C bus if SPI selected (Recommended in Datasheet to be done
+     * just after the device is reset) */
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+}
+
+void AP_MPU6000_BusDriver_SPI::start(bool &fifo_mode, uint8_t &max_samples)
 {
     fifo_mode = false;
     _error_count = 0;
-    // Disable I2C bus if SPI selected (Recommended in Datasheet
-    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
     /* maximum number of samples read by a burst
      * a sample is an array containing :
      * gyro_x
@@ -291,7 +296,11 @@ AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8
     _i2c_sem(NULL)
 {}
 
-void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
+void AP_MPU6000_BusDriver_I2C::init()
+{
+}
+
+void AP_MPU6000_BusDriver_I2C::start(bool &fifo_mode, uint8_t &max_samples)
 {
     // enable fifo mode
     fifo_mode = true;
@@ -431,7 +440,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_spi(AP_InertialSens
     AP_MPU6000_BusDriver *bus = new AP_MPU6000_BusDriver_SPI();
     if (!bus)
         return nullptr;
-    return _detect(imu, bus);
+    return _detect(imu, bus, HAL_INS_MPU60XX_SPI);
 }
 
 /* Detect the sensor on the specified I2C bus and address */
@@ -448,7 +457,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::detect_i2c(AP_InertialSens
 /* Common detection method - it takes ownership of the bus, freeing it if it's
  * not possible to return an AP_InertialSensor_Backend */
 AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::_detect(AP_InertialSensor &_imu,
-                                                              AP_MPU6000_BusDriver *bus)
+                                                              AP_MPU6000_BusDriver *bus,
+                                                              int16_t id)
 {
     AP_InertialSensor_MPU6000 *sensor = new AP_InertialSensor_MPU6000(_imu, bus);
     if (sensor == NULL) {
@@ -459,6 +469,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU6000::_detect(AP_InertialSensor 
         delete sensor;
         return nullptr;
     }
+
+    sensor->_id = id;
 
     return sensor;
 }
@@ -473,42 +485,126 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
 #endif
 
     hal.scheduler->suspend_timer_procs();
+    bool success = _hardware_init();
+    hal.scheduler->resume_timer_procs();
 
-    uint8_t tries = 0;
-    do {
-        bool success = _hardware_init();
-        if (success) {
-            hal.scheduler->delay(5+2);
-            if (!_bus_sem->take(100)) {
-                return false;
-            }
-            if (_data_ready()) {
-                _bus_sem->give();
-                break;
-            }
-            _bus_sem->give();
-        }
-        if (tries++ > 5) {
-            hal.console->print_P(PSTR("failed to boot MPU6000 5 times")); 
-            return false;
-        }
-    } while (1);
+#if MPU6000_DEBUG
+    _dump_registers();
+#endif
+
+    return success;
+}
+
+void AP_InertialSensor_MPU6000::start()
+{
+    uint8_t max_samples;
+
+    hal.scheduler->suspend_timer_procs();
+
+    if (!_bus_sem->take(100)) {
+        hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
+    }
+
+    // initially run the bus at low speed
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+
+    // only used for wake-up in accelerometer only low power mode
+    _register_write(MPUREG_PWR_MGMT_2, 0x00);
+    hal.scheduler->delay(1);
+
+    _bus->start(_fifo_mode, max_samples);
+
+    /* each sample is on 16 bits */
+    _samples = new uint8_t[max_samples * MPU6000_SAMPLE_SIZE];
+    hal.scheduler->delay(1);
+
+#if MPU6000_FAST_SAMPLING
+    _sample_count = 1;
+#else
+    // sample rate and filtering
+    // to minimise the effects of aliasing we choose a filter
+    // that is less than half of the sample rate
+    switch (_imu.get_sample_rate()) {
+    case AP_InertialSensor::RATE_50HZ:
+        // this is used for plane and rover, where noise resistance is
+        // more important than update rate. Tests on an aerobatic plane
+        // show that 10Hz is fine, and makes it very noise resistant
+        _sample_count = 4;
+        break;
+    case AP_InertialSensor::RATE_100HZ:
+        _sample_count = 2;
+        break;
+    case AP_InertialSensor::RATE_200HZ:
+        _sample_count = 1;
+        break;
+    default:
+        return;
+    }
+#endif
+
+#if MPU6000_FAST_SAMPLING
+    // disable sensor filtering
+    _set_filter_register(256);
+
+    // set sample rate to 1000Hz and apply a software filter
+    // In this configuration, the gyro sample rate is 8kHz
+    // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
+    // So we have to set it to 7 to have a 1kHz sampling
+    // rate on the gyro
+    _register_write(MPUREG_SMPLRT_DIV, 7);
+#else
+    _set_filter_register(_accel_filter_cutoff());
+
+    // set sample rate to 200Hz, and use _sample_divider to give
+    // the requested rate to the application
+    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
+#endif
+    hal.scheduler->delay(1);
+
+    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
+    hal.scheduler->delay(1);
+
+    // read the product ID rev c has 1/2 the sensitivity of rev d
+    _product_id = _register_read(MPUREG_PRODUCT_ID);
+    //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
+
+    if ((_product_id == MPU6000ES_REV_C4) ||
+        (_product_id == MPU6000ES_REV_C5) ||
+        (_product_id == MPU6000_REV_C4)   ||
+        (_product_id == MPU6000_REV_C5)) {
+        // Accel scale 8g (4096 LSB/g)
+        // Rev C has different scaling than rev D
+        _register_write(MPUREG_ACCEL_CONFIG,1<<3);
+    } else {
+        // Accel scale 8g (4096 LSB/g)
+        _register_write(MPUREG_ACCEL_CONFIG,2<<3);
+    }
+    hal.scheduler->delay(1);
+
+    // configure interrupt to fire when new data arrives
+    _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
+    hal.scheduler->delay(1);
+
+    // clear interrupt on any read, and hold the data ready pin high
+    // until we clear the interrupt
+    _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
+
+    // now that we have initialised, we set the SPI bus speed to high
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+
+    _bus_sem->give();
 
     // grab the used instances
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
     hal.scheduler->resume_timer_procs();
-    
+
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, void));
-
-#if MPU6000_DEBUG
-    _dump_registers();
-#endif
-
-    return true;
+    hal.scheduler->register_timer_process(
+        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU6000::_poll_data, void));
 }
+
 /*
   process any 
  */
@@ -713,8 +809,6 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
-    uint8_t max_samples;
-
     if (!_bus_sem->take(100)) {
         hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
     }
@@ -725,8 +819,12 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
+        /* reset device */
         _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
         hal.scheduler->delay(100);
+
+        /* bus-dependent initialization*/
+        _bus->init();
 
         // Wake up device and select GyroZ clock. Note that the
         // MPU6000 starts up in sleep mode, and it can take some time
@@ -738,102 +836,28 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO)
             break;
 
+        hal.scheduler->delay(10);
+        if (_data_ready())
+            break;
+
 #if MPU6000_DEBUG
         _dump_registers();
 #endif
     }
     if (tries == 5) {
         hal.console->println_P(PSTR("Failed to boot MPU6000 5 times"));
-        _bus_sem->give();
-        return false;
+        goto fail_tries;
     }
 
-    _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
-    hal.scheduler->delay(1);
-
-    _bus->init(_fifo_mode, max_samples);
-    /* each sample is on 16 bits */
-    _samples = new uint8_t[max_samples * MPU6000_SAMPLE_SIZE];
-    hal.scheduler->delay(1);
-
-#if MPU6000_FAST_SAMPLING
-    _sample_count = 1;
-#else
-    // sample rate and filtering
-    // to minimise the effects of aliasing we choose a filter
-    // that is less than half of the sample rate
-    switch (_imu.get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
-        // this is used for plane and rover, where noise resistance is
-        // more important than update rate. Tests on an aerobatic plane
-        // show that 10Hz is fine, and makes it very noise resistant
-        _sample_count = 4;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _sample_count = 2;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _sample_count = 1;
-        break;
-    default:
-        return false;
-    }
-#endif
-
-#if MPU6000_FAST_SAMPLING
-    // disable sensor filtering 
-    _set_filter_register(256);
-
-    // set sample rate to 1000Hz and apply a software filter
-    // In this configuration, the gyro sample rate is 8kHz
-    // Therefore the sample rate value is 8kHz/(SMPLRT_DIV + 1)
-    // So we have to set it to 7 to have a 1kHz sampling
-    // rate on the gyro
-    _register_write(MPUREG_SMPLRT_DIV, 7);
-#else
-    _set_filter_register(_accel_filter_cutoff());
-
-    // set sample rate to 200Hz, and use _sample_divider to give
-    // the requested rate to the application
-    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
-#endif
-    hal.scheduler->delay(1);
-
-    _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
-    hal.scheduler->delay(1);
-
-    // read the product ID rev c has 1/2 the sensitivity of rev d
-    _product_id = _register_read(MPUREG_PRODUCT_ID);
-    //Serial.printf("Product_ID= 0x%x\n", (unsigned) _mpu6000_product_id);
-
-    if ((_product_id == MPU6000ES_REV_C4) || 
-        (_product_id == MPU6000ES_REV_C5) ||
-        (_product_id == MPU6000_REV_C4)   || 
-        (_product_id == MPU6000_REV_C5)) {
-        // Accel scale 8g (4096 LSB/g)
-        // Rev C has different scaling than rev D
-        _register_write(MPUREG_ACCEL_CONFIG,1<<3);
-    } else {
-        // Accel scale 8g (4096 LSB/g)
-        _register_write(MPUREG_ACCEL_CONFIG,2<<3);
-    }
-    hal.scheduler->delay(1);
-
-    // configure interrupt to fire when new data arrives
-    _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
-    hal.scheduler->delay(1);
-
-    // clear interrupt on any read, and hold the data ready pin high
-    // until we clear the interrupt
-    _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
-
-    // now that we have initialised, we set the SPI bus speed to high
-    // (8MHz on APM2)
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-
     _bus_sem->give();
 
     return true;
+
+fail_tries:
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+    _bus_sem->give();
+    return false;
 }
 
 #if MPU6000_DEBUG
