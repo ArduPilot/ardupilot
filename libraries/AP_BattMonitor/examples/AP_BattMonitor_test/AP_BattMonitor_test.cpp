@@ -10,28 +10,16 @@
 #include <AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_HAL.h>
+#include <AP_HAL_Linux.h>
 #include <AP_HAL_AVR.h>
 #include <AP_HAL_PX4.h>
 #include <AP_HAL_Linux.h>
 #include <AP_HAL_Empty.h>
 #include <AP_BattMonitor.h>
-#include <GCS_MAVLink.h>
-#include <DataFlash.h>
-#include <AP_GPS.h>
-#include <AP_InertialSensor.h>
-#include <AP_Baro.h>
 #include <Filter.h>
-#include <AP_AHRS.h>
-#include <AP_Compass.h>
 #include <AP_Declination.h>
-#include <AP_Airspeed.h>
 #include <AP_Vehicle.h>
-#include <AP_NavEKF.h>
-#include <AP_Notify.h>
-#include <AP_Mission.h>
 #include <StorageManager.h>
-#include <AP_Terrain.h>
-#include <AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
