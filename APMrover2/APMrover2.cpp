@@ -124,7 +124,17 @@ void Rover::loop()
 
     // tell the scheduler one tick has passed
     scheduler.tick();
-    scheduler.run(19500U);
+
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    uint32_t remaining = (timer + 20000) - micros();
+    if (remaining > 19500) {
+        remaining = 19500;
+    }
+    scheduler.run(remaining);
 }
 
 // update AHRS system
