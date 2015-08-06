@@ -2,9 +2,9 @@
 #ifndef AP_Compass_HMC5843_H
 #define AP_Compass_HMC5843_H
 
-#include <AP_HAL.h>
-#include "../AP_Common/AP_Common.h"
-#include "../AP_Math/AP_Math.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 
 #include "Compass.h"
 #include "AP_Compass_Backend.h"

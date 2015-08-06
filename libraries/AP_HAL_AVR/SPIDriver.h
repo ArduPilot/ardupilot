@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_SPI_DRIVER_H__
 #define __AP_HAL_AVR_SPI_DRIVER_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 #include "GPIO.h"
 #include "SPIDevices.h"

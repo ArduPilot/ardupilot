@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_I2C_DRIVER_H__
 #define __AP_HAL_AVR_I2C_DRIVER_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
 #define AVRI2CDRIVER_MAX_BUFFER_SIZE 32

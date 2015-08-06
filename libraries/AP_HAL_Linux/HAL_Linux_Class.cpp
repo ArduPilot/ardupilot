@@ -1,16 +1,16 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
 
-#include <utility/getopt_cpp.h>
+#include <AP_HAL/utility/getopt_cpp.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <AP_HAL_Empty.h>
-#include <AP_HAL_Empty_Private.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 using namespace Linux;
 

@@ -37,7 +37,7 @@
  *
  ****************************************************************************/
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_LSM303D.h"
 
 extern const AP_HAL::HAL& hal;
@@ -46,7 +46,7 @@ extern const AP_HAL::HAL& hal;
 	#define LSM303D_DRDY_PIN 70
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 	#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-		#include "../AP_HAL_Linux/GPIO.h"
+		#include <AP_HAL_Linux/GPIO.h>
 		#define LSM303D_DRDY_X_PIN BBB_P8_8  // ACCEL DRDY
         #define LSM303D_DRDY_M_PIN BBB_P8_10  // MAGNETOMETER DRDY
 	#endif

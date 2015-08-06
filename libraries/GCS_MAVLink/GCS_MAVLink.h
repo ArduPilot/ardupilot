@@ -6,9 +6,9 @@
 #ifndef GCS_MAVLink_h
 #define GCS_MAVLink_h
 
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build

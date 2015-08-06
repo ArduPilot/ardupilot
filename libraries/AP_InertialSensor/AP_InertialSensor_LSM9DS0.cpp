@@ -15,12 +15,12 @@
  *  -- Adapted from Victor Mayoral Vilches's legacy driver under folder LSM9DS0
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
  #include "AP_InertialSensor_LSM9DS0.h"
- #include "../AP_HAL_Linux/GPIO.h"
+ #include <AP_HAL_Linux/GPIO.h>
 
 extern const AP_HAL::HAL& hal;
 

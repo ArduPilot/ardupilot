@@ -3,7 +3,7 @@
 /// @file	AC_P.cpp
 /// @brief	Generic P algorithm
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "AC_P.h"
 
 const AP_Param::GroupInfo AC_P::var_info[] PROGMEM = {

@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Mount_MAVLink.h>
+#include "AP_Mount_MAVLink.h"
 #if AP_AHRS_NAVEKF_AVAILABLE
-#include <GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdio.h>
-#include <AP_Gimbal.h>
+#include "AP_Gimbal.h"
 
 #if MOUNT_DEBUG
 #include <stdio.h>

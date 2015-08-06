@@ -20,7 +20,7 @@
 #ifndef __EDC_H_
 #define __EDC_H_
 
-#include <AP_Progmem.h>
+#include <AP_Progmem/AP_Progmem.h>
 
 #include <stdint.h>
 

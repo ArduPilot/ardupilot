@@ -3,15 +3,15 @@
 #ifndef __AP_AIRSPEED_H__
 #define __AP_AIRSPEED_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <GCS_MAVLink.h>
-#include <AP_Vehicle.h>
-#include <AP_Airspeed_Backend.h>
-#include <AP_Airspeed_analog.h>
-#include <AP_Airspeed_PX4.h>
-#include <AP_Airspeed_I2C.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include "AP_Airspeed_Backend.h"
+#include "AP_Airspeed_analog.h"
+#include "AP_Airspeed_PX4.h"
+#include "AP_Airspeed_I2C.h"
 
 class Airspeed_Calibration {
 public:

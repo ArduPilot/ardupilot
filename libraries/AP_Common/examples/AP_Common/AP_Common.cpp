@@ -3,17 +3,17 @@
 // Unit tests for the AP_Common code
 //
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_SITL.h>
-#include <AP_HAL_Empty.h>
-#include <AP_HAL_PX4.h>
-#include <AP_Math.h>
-#include <StorageManager.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_Math/AP_Math.h>
+#include <StorageManager/StorageManager.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

@@ -20,8 +20,8 @@
   of storage offsets to available storage
  */
 
-#include <AP_HAL.h>
-#include <StorageManager.h>
+#include <AP_HAL/AP_HAL.h>
+#include "StorageManager.h"
 
 extern const AP_HAL::HAL& hal;
 

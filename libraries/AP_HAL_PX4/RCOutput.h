@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_PX4_RCOUTPUT_H__
 #define __AP_HAL_PX4_RCOUTPUT_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/actuator_armed.h>

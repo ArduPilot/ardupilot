@@ -26,10 +26,10 @@
 
 
 #include <stdint.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
-#include <LowPassFilter.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_InertialSensor_Backend;
 

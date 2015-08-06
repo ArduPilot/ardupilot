@@ -28,80 +28,80 @@
 #include <stdarg.h>
 
 // Common dependencies
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Menu.h>
-#include <AP_Param.h>
-#include <StorageManager.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Menu/AP_Menu.h>
+#include <AP_Param/AP_Param.h>
+#include <StorageManager/StorageManager.h>
 // AP_HAL
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_SITL.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux.h>
-#include <AP_HAL_Empty.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
+#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
 
 // Application dependencies
-#include <GCS.h>
-#include <GCS_MAVLink.h>        // MAVLink GCS definitions
-#include <AP_SerialManager.h>   // Serial manager library
-#include <AP_GPS.h>             // ArduPilot GPS library
-#include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
-#include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource.h>
-#include <AP_Baro.h>
-#include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
-#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
-#include <AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
-#include <AP_AHRS.h>
-#include <AP_NavEKF.h>
-#include <AP_Mission.h>         // Mission command library
-#include <AP_Rally.h>           // Rally point library
-#include <AC_PID.h>             // PID library
-#include <AC_PI_2D.h>           // PID library (2-axis)
-#include <AC_HELI_PID.h>        // Heli specific Rate PID library
-#include <AC_P.h>               // P library
-#include <AC_AttitudeControl_Multi.h> // Attitude control library
-#include <AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
-#include <AC_PosControl.h>      // Position control library
-#include <RC_Channel.h>         // RC Channel Library
-#include <AP_Motors.h>          // AP Motors library
-#include <AP_RangeFinder.h>     // Range finder library
-#include <AP_OpticalFlow.h>     // Optical Flow library
-#include <Filter.h>             // Filter library
-#include <AP_Buffer.h>          // APM FIFO Buffer
-#include <AP_Relay.h>           // APM relay
-#include <AP_ServoRelayEvents.h>
-#include <AP_Camera.h>          // Photo or video camera
-#include <AP_Mount.h>           // Camera/Antenna mount
-#include <AP_Airspeed.h>        // needed for AHRS build
-#include <AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
-#include <AC_WPNav.h>           // ArduCopter waypoint navigation library
-#include <AC_Circle.h>          // circle navigation library
-#include <AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AC_Fence.h>           // Arducopter Fence library
-#include <SITL.h>               // software in the loop support
-#include <AP_Scheduler.h>       // main loop scheduler
-#include <AP_RCMapper.h>        // RC input mapping library
-#include <AP_Notify.h>          // Notify library
-#include <AP_BattMonitor.h>     // Battery monitor library
-#include <AP_BoardConfig.h>     // board configuration library
-#include <AP_Frsky_Telem.h>
+#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>        // MAVLink GCS definitions
+#include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
+#include <AP_GPS/AP_GPS.h>             // ArduPilot GPS library
+#include <DataFlash/DataFlash.h>          // ArduPilot Mega Flash Memory Library
+#include <AP_ADC/AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>         // ArduPilot Mega Magnetometer Library
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Curve/AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
+#include <AP_InertialSensor/AP_InertialSensor.h>  // ArduPilot Mega Inertial Sensor (accel & gyro) Library
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_Mission/AP_Mission.h>         // Mission command library
+#include <AP_Rally/AP_Rally.h>           // Rally point library
+#include <AC_PID/AC_PID.h>             // PID library
+#include <AC_PID/AC_PI_2D.h>           // PID library (2-axis)
+#include <AC_PID/AC_HELI_PID.h>        // Heli specific Rate PID library
+#include <AC_PID/AC_P.h>               // P library
+#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
+#include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
+#include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
+#include <RC_Channel/RC_Channel.h>         // RC Channel Library
+#include <AP_Motors/AP_Motors.h>          // AP Motors library
+#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#include <Filter/Filter.h>             // Filter library
+#include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
+#include <AP_Relay/AP_Relay.h>           // APM relay
+#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <AP_Camera/AP_Camera.h>          // Photo or video camera
+#include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
+#include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
+#include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
+#include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
+#include <AC_WPNav/AC_WPNav.h>           // ArduCopter waypoint navigation library
+#include <AC_WPNav/AC_Circle.h>          // circle navigation library
+#include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
+#include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
+#include <SITL/SITL.h>               // software in the loop support
+#include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
+#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
+#include <AP_Notify/AP_Notify.h>          // Notify library
+#include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
+#include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #if SPRAYER == ENABLED
-#include <AC_Sprayer.h>         // crop sprayer library
+#include <AC_Sprayer/AC_Sprayer.h>         // crop sprayer library
 #endif
 #if EPM_ENABLED == ENABLED
-#include <AP_EPM.h>             // EPM cargo gripper stuff
+#include <AP_EPM/AP_EPM.h>             // EPM cargo gripper stuff
 #endif
 #if PARACHUTE == ENABLED
-#include <AP_Parachute.h>       // Parachute release library
+#include <AP_Parachute/AP_Parachute.h>       // Parachute release library
 #endif
-#include <AP_LandingGear.h>     // Landing Gear library
-#include <AP_Terrain.h>
+#include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
+#include <AP_Terrain/AP_Terrain.h>
 
 // AP_HAL to Arduino compatibility layer
 // Configuration

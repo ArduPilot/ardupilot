@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_UARTDRIVER_H__
 #define __AP_HAL_FLYMAPLE_UARTDRIVER_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class HardwareSerial; // A libmaple classs
 

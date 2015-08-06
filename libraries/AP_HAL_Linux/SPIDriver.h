@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_EMPTY_SPIDRIVER_H__
 #define __AP_HAL_EMPTY_SPIDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 
 // Most platforms won't need to declare the spidev bus offset

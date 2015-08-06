@@ -23,7 +23,7 @@
 #ifndef _STORAGEMANAGER_H_
 #define _STORAGEMANAGER_H_
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 /*
   use just one area per storage type for boards with 4k of

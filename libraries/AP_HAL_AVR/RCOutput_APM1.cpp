@@ -1,10 +1,10 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
 #include <avr/interrupt.h>
 
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_HAL_AVR.h"
 #include "RCOutput.h"
 using namespace AP_HAL_AVR;
 

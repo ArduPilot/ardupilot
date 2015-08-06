@@ -6,8 +6,8 @@
 #ifndef AC_AttitudeControl_Multi_H
 #define AC_AttitudeControl_Multi_H
 
-#include <AC_AttitudeControl.h>
-#include <AP_MotorsMulticopter.h>
+#include "AC_AttitudeControl.h"
+#include <AP_Motors/AP_MotorsMulticopter.h>
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:

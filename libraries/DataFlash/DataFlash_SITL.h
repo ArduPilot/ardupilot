@@ -6,7 +6,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "DataFlash_Block.h"
 
 class DataFlash_SITL : public DataFlash_Block

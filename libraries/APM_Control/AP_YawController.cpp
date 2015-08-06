@@ -18,7 +18,7 @@
 //  Modified by Paul Riseborough to implement a three loop autopilot
 //  topology
 //
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_YawController.h"
 
 extern const AP_HAL::HAL& hal;

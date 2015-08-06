@@ -16,11 +16,11 @@
     -- Coded by Victor Mayoral Vilches --
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "AP_InertialSensor_MPU9250.h"
-#include "../AP_HAL_Linux/GPIO.h"
+#include <AP_HAL_Linux/GPIO.h>
 
 extern const AP_HAL::HAL& hal;
 

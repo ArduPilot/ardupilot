@@ -9,7 +9,7 @@
 // Please see the notes in FlymaplePortingNotes.txt in this directory for 
 // information about disabling interrupts on Flymaple
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 

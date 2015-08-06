@@ -12,8 +12,8 @@
 #define PERFMON_MAX_FUNCTIONS 12
 #define PERFMON_FUNCTION_NAME_LENGTH 10
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_PerfMon
 {

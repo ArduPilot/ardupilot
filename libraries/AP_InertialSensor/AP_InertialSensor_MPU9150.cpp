@@ -25,10 +25,10 @@
      unmaintained 
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_InertialSensor_MPU9150.h"
 #include <stdio.h>
 #include <unistd.h>

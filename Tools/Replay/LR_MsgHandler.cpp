@@ -296,7 +296,7 @@ void LR_MsgHandler_MAG::process_message(uint8_t *msg)
     update_from_msg_compass(0, msg);
 }
 
-#include <AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "VehicleType.h"
 
 void LR_MsgHandler_MSG::process_message(uint8_t *msg)

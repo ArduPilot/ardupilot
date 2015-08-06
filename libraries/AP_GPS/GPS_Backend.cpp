@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 
 extern const AP_HAL::HAL& hal;
 

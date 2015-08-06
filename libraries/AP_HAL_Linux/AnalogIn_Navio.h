@@ -1,8 +1,8 @@
 #ifndef __NavioAnalogIn_H__
 #define __NavioAnalogIn_H__
 
-#include <AP_HAL_Linux.h>
-#include <AP_ADC.h>
+#include "AP_HAL_Linux.h"
+#include <AP_ADC/AP_ADC.h>
 
 #define NAVIO_ADC_MAX_CHANNELS 6
 

@@ -19,7 +19,7 @@
   parameters needed by multiple libraries
  */
 
-#include <AP_Param.h>
+#include <AP_Param/AP_Param.h>
 
 class AP_Vehicle {
 

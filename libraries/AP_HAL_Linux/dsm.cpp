@@ -39,7 +39,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 #include "dsm.h"
 

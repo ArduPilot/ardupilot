@@ -2,7 +2,7 @@
 #ifndef __SIMPLE_GCS_H__
 #define __SIMPLE_GCS_H__
 
-#include <GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 void send_heartbeat(mavlink_channel_t chan);
 bool try_send_message(mavlink_channel_t chan, int msgid);

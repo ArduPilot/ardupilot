@@ -1,7 +1,7 @@
 #ifndef AP_MSGHANDLER_H
 #define AP_MSGHANDLER_H
 
-#include <DataFlash.h>
+#include <DataFlash/DataFlash.h>
 #include "VehicleType.h"
 
 #include <stdio.h>

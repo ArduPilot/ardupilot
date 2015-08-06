@@ -1,7 +1,7 @@
 #ifndef __AP_HAL_LINUX_RCOUTPUT_BEBOP_H__
 #define __AP_HAL_LINUX_RCOUTPUT_BEBOP_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 enum bebop_bldc_motor {
     BEBOP_BLDC_RIGHT_FRONT = 0,

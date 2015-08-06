@@ -21,9 +21,9 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 #include "AP_GPS_SBP.h"
-#include <DataFlash.h>
+#include <DataFlash/DataFlash.h>
 
 #if GPS_RTK_AVAILABLE
 

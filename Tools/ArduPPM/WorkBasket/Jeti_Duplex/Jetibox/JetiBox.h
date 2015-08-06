@@ -24,7 +24,7 @@
 #define JetiBox_h
 
 #include <inttypes.h>
-#include "Print.h"
+#include <AP_HAL/utility/Print.h>
 
 #define jbox_key_up 0b0010
 #define jbox_key_right 0b0001

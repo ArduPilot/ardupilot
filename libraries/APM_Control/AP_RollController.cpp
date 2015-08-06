@@ -18,7 +18,7 @@
 //  Modified by Paul Riseborough
 //
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_RollController.h"
 
 extern const AP_HAL::HAL& hal;

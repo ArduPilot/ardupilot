@@ -2,11 +2,11 @@
 #ifndef __AP_HAL_PX4_CLASS_H__
 #define __AP_HAL_PX4_CLASS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/visibility.h>
 #include <systemlib/perf_counter.h>
