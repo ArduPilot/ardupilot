@@ -55,8 +55,13 @@ void Rover::read_radio()
 
 	channel_throttle->servo_out = channel_throttle->control_in;
 
-	if (abs(channel_throttle->servo_out) > 50) {
-        throttle_nudge = (g.throttle_max - g.throttle_cruise) * ((fabsf(channel_throttle->norm_input())-0.5f) / 0.5f);
+    // Check if the throttle value is above 50% and we need to nudge
+    // Make sure its above 50% in the direction we are travelling
+	if ((abs(channel_throttle->servo_out) > 50) &&
+        (((channel_throttle->servo_out < 0) && in_reverse) ||
+         ((channel_throttle->servo_out > 0) && !in_reverse))) {
+            throttle_nudge = (g.throttle_max - g.throttle_cruise) *
+                ((fabsf(channel_throttle->norm_input())-0.5f) / 0.5f);
 	} else {
 		throttle_nudge = 0;
 	}
