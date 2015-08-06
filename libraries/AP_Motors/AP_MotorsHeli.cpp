@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Param: RSC_CRITICAL
     // @DisplayName: Critical Rotor Speed
     // @Description: Rotor speed below which flight is not possible
-    // @Range: 0 0-1000
+    // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_CRITICAL", 13, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
