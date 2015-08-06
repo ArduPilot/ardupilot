@@ -384,6 +384,31 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ALT_SOURCE",    32, NavEKF, _altSource, 1),
 
+    // @Param: USE_VIS_POS
+    // @DisplayName: Use a vision position
+    // @Description: This parameter controls using of vision position from mavling message to correct filter state
+    // @Values: 0:Don't use, 1:Use
+    // @User: Advanced
+    AP_GROUPINFO("USE_VIS_POS",    33, NavEKF, _useVisionPosition, 1),
+
+    // @Param: VPOSNE_NOISE
+    // @DisplayName: Vision horizontal position measurement noise (m)
+    // @Description: This is the RMS value of noise in the vision horizontal position measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("VPOSNE_NOISE",   34, NavEKF, _visionHorizPosNoise, 0.1f),
+
+    // @Param: VPOSD_NOISE
+    // @DisplayName: Vision vertical position measurement noise (m)
+    // @Description: This is the RMS value of noise in the vision vertical position measurements. Increasing it reduces the weighting on these measurements.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("VPOSD_NOISE",    35, NavEKF, _visionVerticalPosNoise, 0.1f),
+
     AP_GROUPEND
 };
 
@@ -765,6 +790,7 @@ void NavEKF::UpdateFilter()
     SelectVelPosFusion();
     SelectMagFusion();
     SelectFlowFusion();
+    SelectVisionPositionFusion();
     SelectTasFusion();
     SelectBetaFusion();
 
@@ -983,6 +1009,43 @@ void NavEKF::SelectMagFusion()
 
     // stop performance timer
     perf_end(_perf_FuseMagnetometer);
+}
+
+// select fusion of vision position data
+void NavEKF::SelectVisionPositionFusion()
+{
+    // start performance timer
+    perf_begin(_perf_FuseVisionPosNED);
+
+    // Check if the visual position data is still valid
+    visionPositionDataValid = ((imuSampleTime_ms - visionPosValidMeaTime_ms) < 1000);
+
+    // determine if conditions are right to start a new fusion cycle
+    bool dataReady = statesInitialised && newDataVisionPosition && useVisionPosition();
+    if (dataReady) {
+        // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
+//        memset(&visionPosIncrStateDelta[0], 0, sizeof(visionPosIncrStateDelta));
+//        visionPosUpdateCount = 0;
+        // ensure that the covariance prediction is up to date before fusing data
+        if (!covPredStep) CovariancePrediction();
+        // fuse the three magnetometer componenents sequentially
+        FuseVisionPosNED();
+        // reset flag to indicate that no new vision position data is available for fusion
+        newDataVisionPosition = false;
+        // indicate that flow fusion has been performed. This is used for load spreading.
+        visionPosFusePerformed = true;
+    }
+
+    // Fuse corrections to quaternion, position and velocity states across several time steps to reduce 10Hz pulsing in the output
+//    if (visionPosUpdateCount < visionPosUpdateCountMax) {
+//    	visionPosUpdateCount ++;
+//        for (uint8_t i = 0; i <= 9; i++) {
+//            states[i] += visionPosIncrStateDelta[i];
+//        }
+//    }
+
+    // stop performance timer
+    perf_end(_perf_FuseVisionPosNED);
 }
 
 // select fusion of optical flow measurements
@@ -3994,6 +4057,17 @@ void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, f
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
+// return data for debugging vision position fusion
+void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &vpInnovX, float &vpInnovY, float &vpInnovZ)
+{
+    posX = visionPosition.x;
+    posY = visionPosition.y;
+    posZ = visionPosition.z;
+    vpInnovX = innovVisionPos[0];
+    vpInnovY = innovVisionPos[1];
+    vpInnovZ = innovVisionPos[2];
+}
+
 // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
 void NavEKF::SetFlightAndFusionModes()
 {
@@ -4561,6 +4635,7 @@ void  NavEKF::writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &raw
 {
 	visionPosition = rawVisionPosition;
 	newDataVisionPosition = true;
+	visionPosValidMeaTime_ms = imuSampleTime_ms;
 	hal.console->printf("New vision position: x=%.2f y=%.2f z=%.2f", visionPosition.x, visionPosition.y, visionPosition.z);
 }
 
@@ -4830,6 +4905,7 @@ void NavEKF::InitialiseVariables()
     flowDataValid = false;
     newDataRng  = false;
     flowFusePerformed = false;
+    visionPosFusePerformed = false;
     fuseOptFlowData = false;
     Popt = 0.0f;
     terrainState = 0.0f;
@@ -4911,6 +4987,12 @@ bool NavEKF::getVehicleArmStatus(void) const
 bool NavEKF::use_compass(void) const
 {
     return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw();
+}
+
+// return true if we should use the vision position
+bool NavEKF::useVisionPosition(void) const
+{
+	return (bool)_useVisionPosition;
 }
 
 // decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes

@@ -200,6 +200,9 @@ public:
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
 
+    // return true if we should use the vision position
+    bool useVisionPosition(void) const;
+
     // write the raw optical flow measurements
     // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
     // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
@@ -212,6 +215,9 @@ public:
 
     // return data for debugging optical flow fusion
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
+
+    // return data for debugging vision position fusion
+    void getVisionPosDebug(float &posX, float &posY, float &posZ, float &vpInnovX, float &vpInnovY, float &vpInnovZ);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -386,6 +392,9 @@ private:
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
 
+    // determine when to perform fusion of vision position measurements
+    void SelectVisionPositionFusion();
+
     // force alignment of the yaw angle using GPS velocity data
     void alignYawGPS();
 
@@ -489,8 +498,6 @@ private:
     AP_Float _accNoise;             // accelerometer process noise : m/s^2
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
-    AP_Float _visionHorizPosNoise;  // vision horizontal position measurement noise m
-    AP_Float _visionVerticalPosNoise;// visiom vertical position measurement noise m
     AP_Int16 _msecVelDelay;         // effective average delay of GPS velocity measurements rel to IMU (msec)
     AP_Int16 _msecPosDelay;         // effective average delay of GPS position measurements rel to (msec)
     AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
@@ -510,6 +517,9 @@ private:
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _fallback;              // EKF-to-DCM fallback strictness. 0 = trust EKF more, 1 = fallback more conservatively.
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
+    AP_Int8 _useVisionPosition;     // 0 - don't use vision position to coorect state 1 - use
+    AP_Float _visionHorizPosNoise;  // vision horizontal position measurement noise m
+    AP_Float _visionVerticalPosNoise;//vision vertical position measurement noise m
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -715,6 +725,12 @@ private:
     state_elements statesAtVisionPosTime; // States at the effective time of vision posNE measurements
     Vector3 innovVisionPos;            // innovation output for a group of measurements
     Vector3 varInnovVisionPos;         // innovation variance output for a group of measurements
+    uint32_t visionPosValidMeaTime_ms;   // time stamp from latest valid vision measurement (msec)
+    bool visionPositionDataValid;             // true while optical flow data is still fresh
+    uint8_t visionPosUpdateCount;        // count of the number of minor state corrections using vision position data
+    uint8_t visionPosUpdateCountMax;     // limit on the number of minor state corrections using vision position data
+    Vector3 visionPosIncrStateDelta;   // vector of corrections to position to be applied over the period between the current and next vision position measurement
+    bool visionPosFusePerformed; 	// true when vision position fusion has been performed in that time step
 
     // variables added for optical flow fusion
     bool newDataFlow;               // true when new optical flow data has arrived
