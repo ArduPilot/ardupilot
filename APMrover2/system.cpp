@@ -213,7 +213,6 @@ void Rover::init_ardupilot()
 	init_capabilities();
 
 	startup_ground();
-    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
     set_mode((enum mode)g.initial_mode.get());
 
@@ -511,11 +510,7 @@ bool Rover::should_log(uint32_t mask)
     }
     bool ret = hal.util->get_soft_armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
-        // we have to set in_mavlink_delay to prevent logging while
-        // writing headers
-        in_mavlink_delay = true;
         start_logging();
-        in_mavlink_delay = false;
     }
     return ret;
 }
