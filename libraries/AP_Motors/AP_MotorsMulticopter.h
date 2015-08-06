@@ -23,7 +23,7 @@
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 #define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
 #define AP_MOTORS_THR_MIX_MID_DEFAULT   0.5f    // manual throttle mix
-#define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.9f    // maximum throttle mix
+#define AP_MOTORS_THR_MIX_MAX_DEFAULT   0.5f    // maximum throttle mix default
 
 // To-Do: replace this hard coded counter with a timer
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -54,7 +54,7 @@ public:
     //  has no effect when throttle is above hover throttle
     void                set_throttle_mix_min() { _throttle_thr_mix_desired = _thr_mix_min; }
     void                set_throttle_mix_mid() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MID_DEFAULT; }
-    void                set_throttle_mix_max() { _throttle_thr_mix_desired = AP_MOTORS_THR_MIX_MAX_DEFAULT; }
+    void                set_throttle_mix_max() { _throttle_thr_mix_desired = _thr_mix_max; }
 
     // get_throttle_thr_mix - get low throttle compensation value
     bool                is_throttle_mix_min() const { return (_throttle_thr_mix < 1.25f*_thr_mix_min); }
@@ -151,7 +151,8 @@ protected:
     AP_Float            _batt_voltage_max;      // maximum voltage used to scale lift
     AP_Float            _batt_voltage_min;      // minimum voltage used to scale lift
     AP_Float            _batt_current_max;      // current over which maximum throttle is limited
-    AP_Float            _thr_mix_min;           // current over which maximum throttle is limited
+    AP_Float            _thr_mix_min;           // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
+    AP_Float            _thr_mix_max;           // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
 
     // internal variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
