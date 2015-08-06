@@ -129,7 +129,6 @@ protected:
     // output - sends commands to the motors
     void output_armed_stabilizing();
     void output_disarmed();
-    void output_yaw(int16_t yaw_out);
 
     // reset_servos - free up the swash servos for maximum movement
     void reset_servos();
@@ -142,6 +141,9 @@ protected:
 
     // heli_move_swash - moves swash plate to attitude of parameters passed in
     void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
+
+    // move_yaw - moves the yaw servo
+    void move_yaw(int16_t yaw_out);
 
     // write_aux - outputs pwm onto output aux channel (ch7). servo_out parameter is of the range 0 ~ 1000
     void write_aux(int16_t servo_out);
