@@ -463,11 +463,11 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
     hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
  
     // update the yaw rate using the tail rotor/servo
-    output_yaw(yaw_out + yaw_offset);
+    move_yaw(yaw_out + yaw_offset);
 }
 
-// output_yaw
-void AP_MotorsHeli_Single::output_yaw(int16_t yaw_out)
+// move_yaw
+void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 {
     _servo_4.servo_out = constrain_int16(yaw_out, -4500, 4500);
 
