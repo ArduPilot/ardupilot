@@ -242,7 +242,6 @@ void Plane::init_ardupilot()
     init_capabilities();
 
     startup_ground();
-    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 
     // choose the nav controller
     set_nav_controller();
@@ -718,6 +717,7 @@ void Plane::servo_write(uint8_t ch, uint16_t pwm)
  */
 bool Plane::should_log(uint32_t mask)
 {
+#if LOGGING_ENABLED == ENABLED
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
@@ -725,13 +725,12 @@ bool Plane::should_log(uint32_t mask)
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         // we have to set in_mavlink_delay to prevent logging while
         // writing headers
-        in_mavlink_delay = true;
-        #if LOGGING_ENABLED == ENABLED
         start_logging();
-        #endif
-        in_mavlink_delay = false;
     }
     return ret;
+#else
+    return false;
+#endif
 }
 
 /*

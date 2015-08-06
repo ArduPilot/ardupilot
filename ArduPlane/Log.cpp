@@ -228,7 +228,8 @@ struct PACKED log_Startup {
     uint16_t command_total;
 };
 
-void Plane::Log_Write_Startup(uint8_t type)
+// do not add any extra log writes to this function; see LogStartup.cpp
+bool Plane::Log_Write_Startup(uint8_t type)
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
@@ -236,12 +237,7 @@ void Plane::Log_Write_Startup(uint8_t type)
         startup_type    : type,
         command_total   : mission.num_commands()
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-
-    // write all commands to the dataflash as well
-    if (should_log(MASK_LOG_CMD)) {
-        DataFlash.Log_Write_EntireMission(mission);
-    }
+    return DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Control_Tuning {
@@ -517,14 +513,21 @@ void Plane::Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page)
 }
 #endif // CLI_ENABLED
 
+void Plane::Log_Write_Vehicle_Startup_Messages()
+{
+    // only 200(?) bytes are guaranteed by DataFlash
+    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
+}
+
 // start a new log
 void Plane::start_logging() 
 {
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(
+        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
+        );
+
     DataFlash.StartNewLog();
-
-    DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
-
-    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 }
 
 /*
