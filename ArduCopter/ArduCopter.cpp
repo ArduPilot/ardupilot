@@ -134,6 +134,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(ten_hz_logging_loop,   40,    350),
     SCHED_TASK(fifty_hz_logging_loop,  8,    110),
     SCHED_TASK(full_rate_logging_loop, 1,    100),
+    SCHED_TASK(dataflash_periodic,     1,    300),
     SCHED_TASK(perf_update,         4000,     75),
     SCHED_TASK(read_receiver_rssi,    40,     75),
     SCHED_TASK(rpm_update,            40,    200),
@@ -425,6 +426,11 @@ void Copter::full_rate_logging_loop()
     if (should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         DataFlash.Log_Write_IMUDT(ins);
     }
+}
+
+void Copter::dataflash_periodic(void)
+{
+    DataFlash.periodic_tasks();
 }
 
 // three_hz_loop - 3.3hz loop
