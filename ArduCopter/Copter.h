@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef _COPTER_H_
-#define _COPTER_H_
+
+#ifndef _COPTER_H
+#define _COPTER_H
 
 #define THISFIRMWARE "APM:Copter V3.4-dev"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_DEV
@@ -132,7 +133,6 @@ class Copter {
     void loop();
 
 private:
-
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::MultiCopter aparm;
 
@@ -163,7 +163,7 @@ private:
     RC_Channel *channel_yaw;
 
     // Dataflash
-    DataFlash_Class DataFlash;
+    DataFlash_Class DataFlash{FIRMWARE_STRING};
 
     // the rate we run the main loop at
     const AP_InertialSensor::Sample_rate ins_sample_rate;
@@ -634,6 +634,7 @@ private:
     void Log_Write_Heli(void);
 #endif
     void Log_Write_Precland();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void start_logging() ;
     void load_parameters(void);
@@ -972,6 +973,7 @@ private:
     void log_init(void);
     void run_cli(AP_HAL::UARTDriver *port);
     void init_capabilities(void);
+    void dataflash_periodic(void);
 
 public:
     void mavlink_delay_cb();
