@@ -93,13 +93,30 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
 
 AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
 {
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass,
-                                                  new AP_AK8963_SerialBus_MPU9250());
+    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_MPU9250();
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
 
+AP_Compass_Backend *AP_Compass_AK8963::detect_i2c(Compass &compass,
+                                                  AP_HAL::I2CDriver *i2c,
+                                                  uint8_t addr)
+{
+    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_I2C(i2c, addr);
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
+
+AP_Compass_Backend *AP_Compass_AK8963::_detect(Compass &compass,
+                                               AP_AK8963_SerialBus *bus)
+{
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus);
     if (sensor == nullptr) {
+        delete bus;
         return nullptr;
     }
-
     if (!sensor->init()) {
         delete sensor;
         return nullptr;
@@ -108,24 +125,9 @@ AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
     return sensor;
 }
 
-
-AP_Compass_Backend *AP_Compass_AK8963::detect_i2c(Compass &compass,
-                                                  AP_HAL::I2CDriver *i2c,
-                                                  uint8_t addr)
+AP_Compass_AK8963::~AP_Compass_AK8963()
 {
-    AP_Compass_AK8963 *sensor =
-        new AP_Compass_AK8963(compass, new AP_AK8963_SerialBus_I2C(i2c, addr));
-
-    if (sensor == nullptr) {
-        return nullptr;
-    }
-
-    if (!sensor->init()) {
-        delete sensor;
-        return nullptr;
-    }
-
-    return sensor;
+    delete _bus;
 }
 
 /* stub to satisfy Compass API*/
