@@ -10,6 +10,14 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 
+#include "DataFlash_SITL.h"
+#include "DataFlash_File.h"
+#include "DataFlash_Empty.h"
+#include "DataFlash_APM1.h"
+#include "DataFlash_APM2.h"
+
+#include "DFMessageWriter.h"
+
 extern const AP_HAL::HAL& hal;
 
 void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_types)
@@ -605,17 +613,14 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
 uint16_t DataFlash_Class::StartNewLog(void)
 {
     uint16_t ret;
+
     ret = start_new_log();
     if (ret == 0xFFFF) {
         // don't write out formats if we fail to open the log
         return ret;
     }
-    // write log formats so the log is self-describing
-    for (uint8_t i=0; i<_num_types; i++) {
-        Log_Write_Format(&_structures[i]);
-        // avoid corrupting the APM1/APM2 dataflash by writing too fast
-        hal.scheduler->delay(10);
-    }
+
+    _startup_messagewriter.reset();
 
     return ret;
 }
@@ -649,17 +654,17 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
 /*
   write a structure format to the log
  */
-void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
+bool DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Log_Fill_Format(s, pkt);
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*
   write a parameter to the log
  */
-void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+bool DataFlash_Class::Log_Write_Parameter(const char *name, float value)
 {
     struct log_Parameter pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
@@ -668,19 +673,19 @@ void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
         value : value
     };
     strncpy(pkt.name, name, sizeof(pkt.name));
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 /*
   write a parameter to the log
  */
-void DataFlash_Class::Log_Write_Parameter(const AP_Param *ap,
+bool DataFlash_Class::Log_Write_Parameter(const AP_Param *ap,
                                           const AP_Param::ParamToken &token,
                                           enum ap_var_type type)
 {
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
-    Log_Write_Parameter(name, ap->cast_to_float(type));
+    return Log_Write_Parameter(name, ap->cast_to_float(type));
 }
 
 /*
@@ -982,28 +987,23 @@ void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
 }
 
 // Write a mission command. Total length : 36 bytes
-void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
+bool DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
                                             const AP_Mission::Mission_Command &cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
-    Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+    return Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
 void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
 {
-    Log_Write_Message_P(PSTR("New mission"));
-
-    AP_Mission::Mission_Command cmd;
-    for (uint16_t i = 0; i < mission.num_commands(); i++) {
-        if (mission.read_cmd_from_storage(i,cmd)) {
-            Log_Write_Mission_Cmd(mission, cmd);
-        }
-    }
+    DFMessageWriter_WriteEntireMission writer(*this);
+    writer.set_mission(&mission);
+    writer.process();
 }
 
 // Write a text message to the log
-void DataFlash_Class::Log_Write_Message(const char *message)
+bool DataFlash_Class::Log_Write_Message(const char *message)
 {
     struct log_Message pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
@@ -1011,11 +1011,11 @@ void DataFlash_Class::Log_Write_Message(const char *message)
         msg  : {}
     };
     strncpy(pkt.msg, message, sizeof(pkt.msg));
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write a text message to the log
-void DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
+bool DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
 {
     struct log_Message pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
@@ -1023,7 +1023,7 @@ void DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
         msg  : {}
     };
     strncpy_P(pkt.msg, message, sizeof(pkt.msg));
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write a POWR packet
@@ -1226,7 +1226,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 #endif
 
 // Write a command processing packet
-void DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
+bool DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
@@ -1242,7 +1242,7 @@ void DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission
         longitude       : (float)mav_cmd.y,
         altitude        : (float)mav_cmd.z
     };
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteBlock(&pkt, sizeof(pkt));
 }
 
 void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet) 
@@ -1393,7 +1393,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 }
 
 // Write a mode packet.
-void DataFlash_Class::Log_Write_Mode(uint8_t mode)
+bool DataFlash_Class::Log_Write_Mode(uint8_t mode)
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
@@ -1401,7 +1401,7 @@ void DataFlash_Class::Log_Write_Mode(uint8_t mode)
         mode     : mode,
         mode_num : mode
     };
-    WriteBlock(&pkt, sizeof(pkt));
+    return WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write ESC status messages

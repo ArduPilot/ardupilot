@@ -3,6 +3,8 @@
   hacked up DataFlash library for Desktop support
 */
 
+#include "DataFlash_SITL.h"
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -14,7 +16,6 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <assert.h>
-#include "DataFlash.h"
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -160,5 +161,3 @@ void DataFlash_SITL::ChipErase()
 
 
 #endif
-
-

@@ -26,7 +26,7 @@ public:
     void EraseAll();
 
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface
     uint16_t find_last_log(void);
@@ -45,6 +45,8 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 #endif
+
+    uint16_t bufferspace_available();
 
 private:
     struct PageHeader {

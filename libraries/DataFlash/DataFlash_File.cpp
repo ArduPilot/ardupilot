@@ -10,7 +10,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_OS_POSIX_IO
-#include "DataFlash.h"
+#include "DataFlash_File.h"
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -136,6 +137,17 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer, void));
 }
 
+void DataFlash_File::periodic_fullrate(const uint32_t now)
+{
+    DataFlash_Backend::push_log_blocks();
+}
+
+uint16_t DataFlash_File::bufferspace_available()
+{
+    uint16_t _head;
+    return (BUF_SPACE(_writebuf)) - critical_message_reserved_space();
+}
+
 // return true for CardInserted() if we successfully initialised
 bool DataFlash_File::CardInserted(void)
 {
@@ -198,17 +210,31 @@ void DataFlash_File::EraseAll()
 }
 
 /* Write a block of data at current offset */
-void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
+bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
-        return;
+        return false;
     }
+
+    if (! WriteBlockCheckStartupMessages()) {
+        _dropped++;
+        return false;
+    }
+
     uint16_t _head;
     uint16_t space = BUF_SPACE(_writebuf);
+
+    // we reserve some amount of space for critical messages:
+    if (!is_critical && space < critical_message_reserved_space()) {
+        _dropped++;
+        return false;
+    }
+
+    // if no room for entire message - drop it:
     if (space < size) {
-        // discard the whole write, to keep the log consistent
         perf_count(_perf_overruns);
-        return;
+        _dropped++;
+        return false;
     }
 
     if (_writebuf_tail < _head) {
@@ -231,6 +257,7 @@ void DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
             BUF_ADVANCETAIL(_writebuf, n);
         }
     }
+    return true;
 }
 
 /*
