@@ -149,7 +149,7 @@ void AP_OpticalFlow_Linux::update(void)
 {
     optical_flow_s report;
 
-    // return immediately if not initialised or more than 20 consecutive errors
+    // return immediately if not initialised or more than half of last 40 reads have failed
     if (!initialised || num_errors >= 20) {
         return;
     }
