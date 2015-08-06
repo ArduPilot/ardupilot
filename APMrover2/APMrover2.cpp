@@ -73,8 +73,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(update_notify),          1,    300 },
     { SCHED_TASK(one_second_loop),       50,   3000 },
 #if FRSKY_TELEM_ENABLED == ENABLED
-    { SCHED_TASK(frsky_telemetry_send),  10,    100 }
+    { SCHED_TASK(frsky_telemetry_send),  10,    100 },
 #endif
+    { SCHED_TASK(dataflash_periodic),     1,   2000 }
 };
 
 /*
@@ -312,6 +313,11 @@ void Rover::one_second_loop(void)
     }
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+}
+
+void Rover::dataflash_periodic(void)
+{
+    DataFlash.periodic_tasks();
 }
 
 void Rover::update_GPS_50Hz(void)
