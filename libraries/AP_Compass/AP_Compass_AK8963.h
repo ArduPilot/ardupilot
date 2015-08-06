@@ -17,6 +17,7 @@ public:
         uint8_t st2;
     };
 
+    virtual ~AP_AK8963_SerialBus() { }
     virtual void register_read(uint8_t address, uint8_t *value, uint8_t count) = 0;
     uint8_t register_read(uint8_t address) {
         uint8_t reg;
@@ -34,18 +35,21 @@ public:
 class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
-    AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus);
-
     static AP_Compass_Backend *detect_mpu9250(Compass &compass);
     static AP_Compass_Backend *detect_i2c(Compass &compass,
                                           AP_HAL::I2CDriver *i2c,
                                           uint8_t addr);
+
+    AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus);
+    ~AP_Compass_AK8963();
 
     bool        init(void);
     void        read(void);
     void        accumulate(void);
 
 private:
+    static AP_Compass_Backend *_detect(Compass &compass, AP_AK8963_SerialBus *bus);
+
     void _make_factory_sensitivity_adjustment(Vector3f& field) const;
     Vector3f _get_filtered_field() const;
     void _reset_filter();
@@ -73,7 +77,7 @@ private:
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
 
-    AP_AK8963_SerialBus *_bus;
+    AP_AK8963_SerialBus *_bus = nullptr;
     AP_HAL::Semaphore *_bus_sem;
 };
 
