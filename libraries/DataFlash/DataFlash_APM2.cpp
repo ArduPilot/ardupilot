@@ -407,3 +407,18 @@ void DataFlash_APM2::ChipErase()
     // release SPI bus for use by other sensors
     _spi_sem->give();
 }
+
+// Writing too quickly to DF on APM1/APM2 corrupts the flash.  This
+// could be done at a lower level to more generally restrict bandwidth
+void DataFlash_APM2::WroteStartupFormat()
+{
+    if (! hal.util->get_soft_armed()) {
+        hal.scheduler->delay(10);
+    }
+}
+void DataFlash_APM2::WroteStartupParam()
+{
+    if (! hal.util->get_soft_armed()) {
+        hal.scheduler->delay(2);
+    }
+}

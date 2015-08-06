@@ -1,9 +1,29 @@
 #include "DataFlash.h"
 
-// start functions pass straight through to backend:
-void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
-    backend->WriteBlock(pBuffer, size);
+#include "DataFlash_Backend.h"
+
+void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
+{
+    _vehicle_messages = writer;
 }
+
+void DataFlash_Class::set_mission(const AP_Mission *mission) {
+    _startup_messagewriter.set_mission(mission);
+}
+
+// start functions pass straight through to backend:
+bool DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+    return backend->WriteBlock(pBuffer, size);
+}
+
+bool DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+    return backend->WriteCriticalBlock(pBuffer, size);
+}
+
+bool DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+    return backend->WritePrioritisedBlock(pBuffer, size, is_critical);
+}
+
 uint16_t DataFlash_Class::start_new_log() {
     return backend->start_new_log();
 }
@@ -19,6 +39,10 @@ bool DataFlash_Class::CardInserted(void) {
 // remove me in favour of calling "DoTimeConsumingPreparations" all the time?
 bool DataFlash_Class::NeedErase(void) {
     return backend->NeedErase();
+}
+
+uint16_t DataFlash_Class::bufferspace_available(void) {
+    return backend->bufferspace_available();
 }
 
 uint16_t DataFlash_Class::find_last_log(void) {
@@ -64,6 +88,18 @@ bool DataFlash_Class::logging_started(void) {
 
 void DataFlash_Class::EnableWrites(bool enable) {
     backend->EnableWrites(enable);
+}
+
+void DataFlash_Class::periodic_tasks() {
+    backend->periodic_tasks();
+}
+
+void DataFlash_Class::WroteStartupFormat() {
+    backend->WroteStartupFormat();
+}
+
+void DataFlash_Class::WroteStartupParam() {
+    backend->WroteStartupParam();
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX

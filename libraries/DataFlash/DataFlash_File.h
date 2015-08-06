@@ -36,7 +36,8 @@ public:
     void EraseAll();
 
     /* Write a block of data at current offset */
-    void WriteBlock(const void *pBuffer, uint16_t size);
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
+    uint16_t bufferspace_available();
 
     // high level interface
     uint16_t find_last_log(void);
@@ -57,7 +58,8 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void);
 #endif
-
+    void periodic_fullrate(const uint32_t now);
+    
 private:
     int _write_fd;
     int _read_fd;
@@ -90,6 +92,11 @@ private:
     void stop_logging(void);
 
     void _io_timer(void);
+
+    uint16_t critical_message_reserved_space() const {
+        // possibly make this a proportional to buffer size?
+        return 1024;
+    };
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
