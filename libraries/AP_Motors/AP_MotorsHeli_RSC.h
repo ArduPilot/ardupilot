@@ -37,19 +37,19 @@ public:
     bool        is_runup_complete() const { return _runup_complete; }
 
     // set_ramp_time
-    void        set_ramp_time (int8_t ramp_time) { _ramp_time = ramp_time; }
+    void        set_ramp_time(int8_t ramp_time) { _ramp_time = ramp_time; }
 
     // set_runup_time
-    void        set_runup_time (int8_t runup_time) { _runup_time = runup_time; }
+    void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
 
     // recalc_scalers
     void        recalc_scalers();
 
     // output_armed
-    void        output_armed ();
+    void        output_armed();
 
     // output_disarmed
-    void        output_disarmed ();
+    void        output_disarmed();
 
 private:
 
