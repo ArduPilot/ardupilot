@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Description: Pass radio inputs directly to servos for set-up. Do not set this manually!
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("SV_MAN",  7, AP_MotorsHeli, _servo_manual, 0),
+    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_manual, 0),
 
     // @Param: GOV_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
@@ -86,14 +86,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RSC_SETPOINT", 8, AP_MotorsHeli, _rsc_setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
+    AP_GROUPINFO("RSC_SETPOINT", 7, AP_MotorsHeli, _rsc_setpoint, AP_MOTORS_HELI_RSC_SETPOINT),
 
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
     // @Description: Controls the source of the desired rotor speed, either ch8 or RSC_SETPOINT
     // @Values: 0:None, 1:Ch8 Input, 2:SetPoint
     // @User: Standard
-    AP_GROUPINFO("RSC_MODE", 9, AP_MotorsHeli, _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
+    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Units: pwm
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("LAND_COL_MIN", 10, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
+    AP_GROUPINFO("LAND_COL_MIN", 9, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
 
     // @Param: RSC_RAMP_TIME
     // @DisplayName: RSC Ramp Time
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 60
     // @Units: Seconds
     // @User: Standard
-    AP_GROUPINFO("RSC_RAMP_TIME", 11, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
+    AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
     // @Param: RSC_RUNUP_TIME
     // @DisplayName: RSC Runup Time
@@ -118,7 +118,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 60
     // @Units: Seconds
     // @User: Standard
-    AP_GROUPINFO("RSC_RUNUP_TIME", 12, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
+    AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
     // @Param: RSC_CRITICAL
     // @DisplayName: Critical Rotor Speed
@@ -126,11 +126,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RSC_CRITICAL", 13, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
-
-    // parameters 1 ~ 29 reserved for tradheli
-    // parameters 30 ~ 39 reserved for tricopter
-    // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
+    AP_GROUPINFO("RSC_CRITICAL", 12, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
 
     AP_GROUPEND
 };
