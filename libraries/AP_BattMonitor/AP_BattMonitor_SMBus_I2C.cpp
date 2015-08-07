@@ -67,7 +67,6 @@ bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 
     // take i2c bus semaphore
     if (!i2c_sem->take_nonblocking()) {
-        i2c_sem->give();
         return false;
     }
 
@@ -106,7 +105,6 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
 
     // take i2c bus semaphore
     if (!i2c_sem->take_nonblocking()) {
-        i2c_sem->give();
         return 0;
     }
 
@@ -130,7 +128,6 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
     // check PEC
     uint8_t pec = get_PEC(BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
     if (pec != buff[bufflen+1]) {
-        i2c_sem->give();
         return 0;
     }
 
