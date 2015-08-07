@@ -9,9 +9,17 @@
 #include "Compass.h"
 #include "AP_Compass_Backend.h"
 
+class AP_HMC5843_SerialBus;
+
 class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 private:
+    static AP_Compass_Backend *_detect(Compass &compass,
+                                       AP_HMC5843_SerialBus *bus);
+
+    AP_HMC5843_SerialBus *_bus;
+    AP_HAL::Semaphore *_bus_sem = nullptr;
+
     float               _scaling[3] = {0};
     bool                _initialised;
     bool                read_raw(void);
@@ -24,7 +32,6 @@ private:
     bool                _detect_version();
 
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
-    AP_HAL::Semaphore*  _i2c_sem;
 
     int16_t			    _mag_x;
     int16_t			    _mag_y;
@@ -39,13 +46,45 @@ private:
     uint8_t             _product_id;
 
 public:
-    AP_Compass_HMC5843(Compass &compass);
+    // detect the sensor
+    static AP_Compass_Backend *detect_i2c(Compass &compass,
+                                          AP_HAL::I2CDriver *i2c);
+
+    AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus);
+    ~AP_Compass_HMC5843();
+
     bool        init(void);
     void        read(void);
     void        accumulate(void);
-
-    // detect the sensor
-    static AP_Compass_Backend *detect(Compass &compass);
-
 };
+
+class AP_HMC5843_SerialBus
+{
+public:
+    virtual ~AP_HMC5843_SerialBus() { };
+    virtual void set_high_speed(bool val) = 0;
+    virtual uint8_t register_read(uint8_t reg, uint8_t *buf, uint8_t size) = 0;
+    uint8_t register_read(uint8_t reg, uint8_t *val)
+    {
+        return register_read(reg, val, 1);
+    }
+
+    virtual uint8_t register_write(uint8_t reg, uint8_t val) = 0;
+    virtual AP_HAL::Semaphore* get_semaphore() = 0;
+};
+
+class AP_HMC5843_SerialBus_I2C : public AP_HMC5843_SerialBus
+{
+public:
+    AP_HMC5843_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+    void set_high_speed(bool val) override;
+    uint8_t register_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
+    uint8_t register_write(uint8_t reg, uint8_t val) override;
+    AP_HAL::Semaphore* get_semaphore() override;
+
+private:
+    AP_HAL::I2CDriver *_i2c;
+    uint8_t _addr;
+};
+
 #endif

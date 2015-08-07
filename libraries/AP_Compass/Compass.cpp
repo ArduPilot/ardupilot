@@ -341,12 +341,12 @@ void Compass::_detect_backends(void)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    _add_backend(AP_Compass_HMC5843::detect(*this));
+    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
     _add_backend(AP_Compass_AK8963::detect_mpu9250(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HIL
     _add_backend(AP_Compass_HIL::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_HMC5843
-    _add_backend(AP_Compass_HMC5843::detect(*this));
+    _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
     _add_backend(AP_Compass_AK8963::detect_i2c(*this, hal.i2c1,
                                                HAL_COMPASS_AK8963_I2C_ADDR));
