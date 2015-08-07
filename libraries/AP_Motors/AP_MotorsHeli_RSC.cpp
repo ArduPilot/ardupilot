@@ -43,54 +43,64 @@ void AP_MotorsHeli_RSC::recalc_scalers()
     _runup_increment = 1000.0f / (_runup_time * _loop_rate);
 }
 
-void AP_MotorsHeli_RSC::output_armed()
+void AP_MotorsHeli_RSC::output(uint8_t state)
 {
-    // ramp rotor esc output towards target
-    if (_speed_out < _desired_speed) {
-        // allow rotor out to jump to rotor's current speed
-        if (_speed_out < _estimated_speed) {
-            _speed_out = _estimated_speed;
-        }
+    switch (state){
 
-        // ramp up slowly to target 
-        _speed_out += _ramp_increment;
-        if (_speed_out > _desired_speed) {
+    case ROTOR_CONTROL_STOP:
+
+        _estimated_speed = 0;
+        _speed_out = 0;
+        write_rsc(0);
+        break;
+
+    case ROTOR_CONTROL_IDLE:
+    case ROTOR_CONTROL_ACTIVE:
+    
+        // ramp rotor esc output towards target
+        if (_speed_out < _desired_speed) {
+            // allow rotor out to jump to rotor's current speed
+            if (_speed_out < _estimated_speed) {
+                _speed_out = _estimated_speed;
+            }
+
+            // ramp up slowly to target 
+            _speed_out += _ramp_increment;
+            if (_speed_out > _desired_speed) {
+                _speed_out = _desired_speed;
+            }
+        } else {
+            // ramping down happens instantly
             _speed_out = _desired_speed;
         }
-    } else {
-        // ramping down happens instantly
-        _speed_out = _desired_speed;
-    }
 
-    // ramp rotor speed estimate towards speed out
-    if (_estimated_speed < _speed_out) {
-        _estimated_speed += _runup_increment;
-        if (_estimated_speed > _speed_out) {
-            _estimated_speed = _speed_out;
-        }
-    } else {
-        _estimated_speed -= _runup_increment;
+        // ramp rotor speed estimate towards speed out
         if (_estimated_speed < _speed_out) {
-            _estimated_speed = _speed_out;
+            _estimated_speed += _runup_increment;
+            if (_estimated_speed > _speed_out) {
+                _estimated_speed = _speed_out;
+            }
+        } else {
+            _estimated_speed -= _runup_increment;
+            if (_estimated_speed < _speed_out) {
+                _estimated_speed = _speed_out;
+            }
         }
+
+        // set runup complete flag
+        if (!_runup_complete && _desired_speed > 0 && _estimated_speed >= _desired_speed) {
+            _runup_complete = true;
+        }
+
+        if (_runup_complete && _estimated_speed <= _critical_speed) {
+            _runup_complete = false;
+        }
+
+        // output to rsc servo
+        write_rsc(_speed_out);
+
+        break;
     }
-
-    // set runup complete flag
-    if (!_runup_complete && _desired_speed > 0 && _estimated_speed >= _desired_speed) {
-        _runup_complete = true;
-    }
-
-    if (_runup_complete && _estimated_speed <= _critical_speed) {
-        _runup_complete = false;
-    }
-
-    // output to rsc servo
-    write_rsc(_speed_out);
-}
-
-void AP_MotorsHeli_RSC::output_disarmed()
-{
-    write_rsc(0);
 }
 
 // write_rsc - outputs pwm onto output rsc channel
