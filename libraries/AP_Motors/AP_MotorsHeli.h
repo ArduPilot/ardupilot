@@ -47,6 +47,9 @@
 // default main rotor critical speed
 #define AP_MOTORS_HELI_RSC_CRITICAL             500
 
+// default main rotor idle speed
+#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
+
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
@@ -219,6 +222,7 @@ protected:
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
+    AP_Int16        _rsc_idle;                  // Rotor speed output while at idle
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
