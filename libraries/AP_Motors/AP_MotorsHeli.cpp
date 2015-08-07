@@ -201,21 +201,6 @@ bool AP_MotorsHeli::rotor_runup_complete() const
     return _heliflags.rotor_runup_complete;
 }
 
-void AP_MotorsHeli::output_armed_not_stabilizing()
-{
-    // stabilizing servos always operate for helicopters
-    output_armed_stabilizing();
-}
-
-// output_armed_zero_throttle - sends commands to the motors
-void AP_MotorsHeli::output_armed_zero_throttle()
-{
-    // stabilizing servos always operate for helicopters
-    // ToDo: Bring RSC Master On/Off into this function
-    output_armed_stabilizing();
-}
-
-
 // reset_swash - free up swash for maximum movements. Used for set-up
 void AP_MotorsHeli::reset_swash()
 {

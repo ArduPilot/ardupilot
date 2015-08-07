@@ -168,8 +168,8 @@ protected:
 
     // output - sends commands to the motors
     virtual void        output_armed_stabilizing() = 0;
-    void                output_armed_not_stabilizing();
-    void                output_armed_zero_throttle();
+    virtual void        output_armed_not_stabilizing() = 0;
+    virtual void        output_armed_zero_throttle() = 0;
     virtual void        output_disarmed() = 0;
 
     // update the throttle input filter
