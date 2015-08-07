@@ -56,10 +56,10 @@ public:
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _servo_aux(servo_aux),
-        _servo_1(servo_1),
-        _servo_2(servo_2),
-        _servo_3(servo_3),
-        _servo_4(servo_4),
+        _swash_servo_1(servo_1),
+        _swash_servo_2(servo_2),
+        _swash_servo_3(servo_3),
+        _yaw_servo(servo_4),
         _main_rotor(servo_rsc, AP_MOTORS_HELI_SINGLE_RSC, loop_rate),
         _tail_rotor(servo_aux, AP_MOTORS_HELI_SINGLE_AUX, loop_rate)
     {
@@ -148,10 +148,10 @@ protected:
 
     // external objects we depend upon
     RC_Channel&     _servo_aux;                 // output to ext gyro gain and tail direct drive esc (ch7)
-    RC_Channel&     _servo_1;                   // swash plate servo #1
-    RC_Channel&     _servo_2;                   // swash plate servo #2
-    RC_Channel&     _servo_3;                   // swash plate servo #3
-    RC_Channel&     _servo_4;                   // tail servo
+    RC_Channel&     _swash_servo_1;             // swash plate servo #1
+    RC_Channel&     _swash_servo_2;             // swash plate servo #2
+    RC_Channel&     _swash_servo_3;             // swash plate servo #3
+    RC_Channel&     _yaw_servo;                 // tail servo
 
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
