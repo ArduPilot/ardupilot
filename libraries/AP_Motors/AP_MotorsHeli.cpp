@@ -128,6 +128,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("RSC_CRITICAL", 12, AP_MotorsHeli, _rsc_critical, AP_MOTORS_HELI_RSC_CRITICAL),
 
+    // @Param: RSC_IDLE
+    // @DisplayName: Rotor Speed Output at Idle
+    // @Description: Rotor speed output while armed but rotor control speed is not engaged
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+
     AP_GROUPEND
 };
 
