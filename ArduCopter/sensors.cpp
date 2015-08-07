@@ -75,6 +75,11 @@ int16_t Copter::read_sonar(void)
 void Copter::rpm_update(void)
 {
     rpm_sensor.update();
+    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+        if (should_log(MASK_LOG_RCIN)) {
+            DataFlash.Log_Write_RPM(rpm_sensor);
+        }
+    }
 }
 
 // initialise compass
