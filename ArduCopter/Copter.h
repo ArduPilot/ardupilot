@@ -510,7 +510,7 @@ private:
     } heli_flags;
 #endif
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task::Settings scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 

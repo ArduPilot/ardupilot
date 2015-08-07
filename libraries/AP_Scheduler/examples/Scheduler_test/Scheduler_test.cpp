@@ -39,6 +39,8 @@
 #include <AP_HAL_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
+
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -53,7 +55,7 @@ private:
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task::Settings scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
@@ -74,7 +76,7 @@ static SchedTest schedtest;
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
+const AP_Task::Settings SchedTest::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(ins_update,              1,   1000),
     SCHED_TASK(one_hz_print,           50,   1000),
     SCHED_TASK(five_second_call,      250,   1800),

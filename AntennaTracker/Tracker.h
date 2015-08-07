@@ -183,7 +183,7 @@ private:
     int8_t slew_dir = 0;
     uint32_t slew_start_ms = 0;
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task::Settings scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
     void one_second_loop();
