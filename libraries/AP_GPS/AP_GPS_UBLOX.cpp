@@ -49,6 +49,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _payload_counter(0),
     _fix_count(0),
     _class(0),
+    noRecievedHdop(true),
     _new_position(0),
     _new_speed(0),
     need_rate_update(false),
@@ -579,6 +580,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
     case MSG_DOP:
         Debug("MSG_DOP");
+        noRecievedHdop = false;
         state.hdop        = _buffer.dop.hDOP;
 #if UBLOX_FAKE_3DLOCK
         state.hdop = 130;
@@ -603,6 +605,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         }else{
             next_fix = AP_GPS::NO_FIX;
             state.status = AP_GPS::NO_FIX;
+        }
+        if(noRecievedHdop) {
+            state.hdop = _buffer.solution.position_DOP;
         }
         state.num_sats    = _buffer.solution.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_2D) {
