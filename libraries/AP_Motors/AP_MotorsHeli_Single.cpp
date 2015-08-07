@@ -266,7 +266,7 @@ void AP_MotorsHeli_Single::output_armed_stabilizing()
     move_swash(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output_armed();
+        _tail_rotor.output(ROTOR_CONTROL_ACTIVE);
 
         if (!_tail_rotor.is_runup_complete())
         {
@@ -275,7 +275,7 @@ void AP_MotorsHeli_Single::output_armed_stabilizing()
         }
     }
 
-    _main_rotor.output_armed();
+    _main_rotor.output(ROTOR_CONTROL_ACTIVE);
 
     _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
 }
@@ -291,7 +291,7 @@ void AP_MotorsHeli_Single::output_armed_not_stabilizing()
     move_swash(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output_armed();
+        _tail_rotor.output(ROTOR_CONTROL_ACTIVE);
 
         if (!_tail_rotor.is_runup_complete())
         {
@@ -300,7 +300,7 @@ void AP_MotorsHeli_Single::output_armed_not_stabilizing()
         }
     }
 
-    _main_rotor.output_armed();
+    _main_rotor.output(ROTOR_CONTROL_ACTIVE);
 
     _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
 }
@@ -317,7 +317,7 @@ void AP_MotorsHeli_Single::output_armed_zero_throttle()
     move_swash(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output_armed();
+        _tail_rotor.output(ROTOR_CONTROL_IDLE);
 
         if (!_tail_rotor.is_runup_complete())
         {
@@ -326,7 +326,7 @@ void AP_MotorsHeli_Single::output_armed_zero_throttle()
         }
     }
 
-    _main_rotor.output_armed();
+    _main_rotor.output(ROTOR_CONTROL_IDLE);
 
     _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
 }
@@ -346,10 +346,10 @@ void AP_MotorsHeli_Single::output_disarmed()
     move_swash(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output_disarmed();
+        _tail_rotor.output(ROTOR_CONTROL_STOP);
     }
 
-    _main_rotor.output_disarmed();
+    _main_rotor.output(ROTOR_CONTROL_STOP);
 
     _heliflags.rotor_runup_complete = false;
 }
