@@ -31,7 +31,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define COMPASS_ADDRESS      0x1E
+#define HMC5843_I2C_ADDR     0x1E
 #define ConfigRegA           0x00
 #define ConfigRegB           0x01
 #define magGain              0x20
@@ -58,10 +58,10 @@ extern const AP_HAL::HAL& hal;
 #define DataOutputRate_75HZ   0x06
 
 // constructor
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
+AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus) :
     AP_Compass_Backend(compass),
+    _bus(bus),
     _retry_time(0),
-    _i2c_sem(NULL),
     _mag_x(0),
     _mag_y(0),
     _mag_z(0),
@@ -74,24 +74,41 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _product_id(0)
 {}
 
-// detect the sensor
-AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
+AP_Compass_HMC5843::~AP_Compass_HMC5843()
 {
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass);
-    if (sensor == NULL) {
-        return NULL;
+    delete _bus;
+}
+
+// detect the sensor
+AP_Compass_Backend *AP_Compass_HMC5843::detect_i2c(Compass &compass,
+                                                   AP_HAL::I2CDriver *i2c)
+{
+    AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_I2C(i2c, HMC5843_I2C_ADDR);
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
+
+AP_Compass_Backend *AP_Compass_HMC5843::_detect(Compass &compass,
+                                                AP_HMC5843_SerialBus *bus)
+{
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    if (!sensor) {
+        delete bus;
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
+
     return sensor;
 }
 
 // read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
-    if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (_bus->register_read(address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -101,7 +118,7 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 // write_register - update a register value
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
-    if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (_bus->register_write(address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -113,8 +130,8 @@ bool AP_Compass_HMC5843::read_raw()
 {
     uint8_t buff[6];
 
-    if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
-        hal.i2c->setHighSpeed(false);
+    if (_bus->register_read(0x03, buff, 6) != 0) {
+        _bus->set_high_speed(false);
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -156,12 +173,12 @@ void AP_Compass_HMC5843::accumulate(void)
         return;
     }
 
-    if (!_i2c_sem->take(1)) {
+    if (!_bus_sem->take(1)) {
         // the bus is busy - try again later
         return;
     }
     bool result = read_raw();
-    _i2c_sem->give();
+    _bus_sem->give();
 
     if (result) {
         // the _mag_N values are in the range -2048 to 2047, so we can
@@ -230,8 +247,8 @@ AP_Compass_HMC5843::init()
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
 
-    _i2c_sem = hal.i2c->get_semaphore();
-    if (!_i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    _bus_sem = _bus->get_semaphore();
+    if (!_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
     }
 
@@ -261,7 +278,7 @@ AP_Compass_HMC5843::init()
     }
 
     _initialised = true;
-    _i2c_sem->give();
+    _bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
     // perform an initial read
@@ -278,7 +295,7 @@ AP_Compass_HMC5843::init()
     return true;
 
 errout:
-    _i2c_sem->give();
+    _bus_sem->give();
     hal.scheduler->resume_timer_procs();
     return false;
 }
@@ -395,7 +412,7 @@ void AP_Compass_HMC5843::read()
         }
         if (!re_initialise()) {
             _retry_time = hal.scheduler->millis() + 1000;
-            hal.i2c->setHighSpeed(false);
+            _bus->set_high_speed(false);
             return;
         }
     }
@@ -403,7 +420,7 @@ void AP_Compass_HMC5843::read()
     if (_accum_count == 0) {
        accumulate();
        if (_retry_time != 0) {
-          hal.i2c->setHighSpeed(false);
+          _bus->set_high_speed(false);
           return;
        }
     }
@@ -423,4 +440,30 @@ void AP_Compass_HMC5843::read()
 
     publish_field(field, _compass_instance);
     _retry_time = 0;
+}
+
+AP_HMC5843_SerialBus_I2C::AP_HMC5843_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr)
+    : _i2c(i2c)
+    , _addr(addr)
+{
+}
+
+void AP_HMC5843_SerialBus_I2C::set_high_speed(bool val)
+{
+    _i2c->setHighSpeed(val);
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::register_read(uint8_t reg, uint8_t *buf, uint8_t size)
+{
+    return _i2c->readRegisters(_addr, reg, size, buf);
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::register_write(uint8_t reg, uint8_t val)
+{
+    return _i2c->writeRegister(_addr, reg, val);
+}
+
+AP_HAL::Semaphore* AP_HMC5843_SerialBus_I2C::get_semaphore()
+{
+    return _i2c->get_semaphore();
 }
