@@ -69,6 +69,14 @@ int16_t Copter::read_sonar(void)
 #endif
 }
 
+/*
+  update RPM sensors
+ */
+void Copter::rpm_update(void)
+{
+    rpm_sensor.update();
+}
+
 // initialise compass
 void Copter::init_compass()
 {
