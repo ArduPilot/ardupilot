@@ -7,6 +7,11 @@
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>      // RC Channel Library
 
+// rotor controller states
+#define ROTOR_CONTROL_STOP                      0
+#define ROTOR_CONTROL_IDLE                      1
+#define ROTOR_CONTROL_ACTIVE                    2
+
 class AP_MotorsHeli_RSC {
 public:
         AP_MotorsHeli_RSC(RC_Channel&   servo_output,
@@ -45,10 +50,7 @@ public:
     void        recalc_scalers();
 
     // output_armed
-    void        output_armed();
-
-    // output_disarmed
-    void        output_disarmed();
+    void        output(uint8_t state);
 
 private:
 
