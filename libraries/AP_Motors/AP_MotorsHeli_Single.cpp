@@ -291,19 +291,19 @@ void AP_MotorsHeli_Single::output_disarmed()
 // reset_servos
 void AP_MotorsHeli_Single::reset_servos()
 {
-    reset_swash_servo (_servo_1);
-    reset_swash_servo (_servo_2);
-    reset_swash_servo (_servo_3);
+    reset_swash_servo (_swash_servo_1);
+    reset_swash_servo (_swash_servo_2);
+    reset_swash_servo (_swash_servo_3);
 }
 
 // init_servos
 void AP_MotorsHeli_Single::init_servos()
 {
-    init_swash_servo (_servo_1);
-    init_swash_servo (_servo_2);
-    init_swash_servo (_servo_3);
+    init_swash_servo (_swash_servo_1);
+    init_swash_servo (_swash_servo_2);
+    init_swash_servo (_swash_servo_3);
 
-    _servo_4.set_angle(4500);
+    _yaw_servo.set_angle(4500);
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
@@ -444,23 +444,23 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
     }
 
     // swashplate servos
-    _servo_1.servo_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out)/10 + _collectiveFactor[CH_1] * coll_out_scaled + (_servo_1.radio_trim-1500);
-    _servo_2.servo_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out)/10 + _collectiveFactor[CH_2] * coll_out_scaled + (_servo_2.radio_trim-1500);
+    _swash_servo_1.servo_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out)/10 + _collectiveFactor[CH_1] * coll_out_scaled + (_swash_servo_1.radio_trim-1500);
+    _swash_servo_2.servo_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out)/10 + _collectiveFactor[CH_2] * coll_out_scaled + (_swash_servo_2.radio_trim-1500);
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H1) {
-        _servo_1.servo_out += 500;
-        _servo_2.servo_out += 500;
+        _swash_servo_1.servo_out += 500;
+        _swash_servo_2.servo_out += 500;
     }
-    _servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_servo_3.radio_trim-1500);
+    _swash_servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_swash_servo_3.radio_trim-1500);
 
     // use servo_out to calculate pwm_out and radio_out
-    _servo_1.calc_pwm();
-    _servo_2.calc_pwm();
-    _servo_3.calc_pwm();
+    _swash_servo_1.calc_pwm();
+    _swash_servo_2.calc_pwm();
+    _swash_servo_3.calc_pwm();
 
     // actually move the servos
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo_1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo_2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _servo_3.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _swash_servo_1.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _swash_servo_2.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _swash_servo_3.radio_out);
  
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -469,22 +469,22 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
 // move_yaw
 void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 {
-    _servo_4.servo_out = constrain_int16(yaw_out, -4500, 4500);
+    _yaw_servo.servo_out = constrain_int16(yaw_out, -4500, 4500);
 
-    if (_servo_4.servo_out != yaw_out) {
+    if (_yaw_servo.servo_out != yaw_out) {
         limit.yaw = true;
     }
 
-    _servo_4.calc_pwm();
+    _yaw_servo.calc_pwm();
 
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _servo_4.radio_out);
+    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _yaw_servo.radio_out);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
         write_aux(_ext_gyro_gain);
     } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
         // output yaw servo to tail rsc
-        write_aux(_servo_4.servo_out);
+        write_aux(_yaw_servo.servo_out);
     }
 }
 
