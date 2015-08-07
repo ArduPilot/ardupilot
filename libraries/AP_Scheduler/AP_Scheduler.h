@@ -16,14 +16,25 @@
 
 /*
  *  main loop scheduler for APM
- *  Author: Andrew Tridgell, January 2013
- *
+ *  Authors: 
+ *  - Andrew Tridgell, January 2013
+ *  - Daniel Frenzel, August 2015
  */
 
 #ifndef AP_SCHEDULER_H
 #define AP_SCHEDULER_H
 
 #include <AP_Param.h>
+
+#define SCHEDULER_TASK_SLIPPED 0x1
+#define SCHEDULER_TASK_EXECUTED 0x2
+#define SCHEDULER_TASK_OVERRUN 0x4
+
+#ifndef __AVR__
+#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_name)
+#endif
 
 /*
   A task scheduler for APM main loops
@@ -38,19 +49,50 @@
 #include <AP_HAL.h>
 #include <AP_Vehicle.h>
 
-class AP_Scheduler
-{
-public:
-    FUNCTOR_TYPEDEF(task_fn_t, void);
 
-    struct Task {
+//////////////////////////////////////////////////////////////////////////
+// TASK
+//////////////////////////////////////////////////////////////////////////
+class AP_Task {
+public /*functions*/:
+    AP_Task();
+
+    bool    is_running(uint16_t, uint16_t);
+    uint8_t missed_runs() const;
+    bool    time_exceeded() const;
+    void    index(uint8_t);
+    uint8_t index() const;
+    uint8_t last_time_taken() const;
+    
+// For backward compatibility of the AP_Param table madness
+public /*AP_Param accessor*/:
+    FUNCTOR_TYPEDEF(task_fn_t, void);
+    struct Settings {
         task_fn_t function;
+        #ifndef __AVR__
+        const char *name;
+        #endif
         uint16_t interval_ticks;
         uint16_t max_time_micros;
-    };
+    } _settings;
+    
+private:
+    // debugging
+    uint32_t _last_time_taken;
+    uint8_t  _index;
+    uint8_t  _missed_runs;
+    bool     _exceeded;
+};
 
+
+//////////////////////////////////////////////////////////////////////////
+// SCHEDULER
+//////////////////////////////////////////////////////////////////////////
+class AP_Scheduler
+{    
+public /*functions*/:
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
+    void init(const AP_Task::Settings *tasks, uint8_t num_tasks);
 
     // call when one tick has passed
     void tick(void);
@@ -76,15 +118,29 @@ public:
     // current running task, or -1 if none. Used to debug stuck tasks
     static int8_t current_task;
 
+private /*functions*/:
+    void update_ticks();
+    void logs_outp(uint8_t &);
+    void logs_buffer(AP_Task &, uint16_t, uint8_t &);
+    
 private:
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
     // progmem list of tasks to run
-    const struct Task *_tasks;
+    AP_Task *_tasks;
 
     // number of tasks in _tasks list
     uint8_t _num_tasks;
+
+    struct TaskExecutionLog {
+        uint32_t time_taken;
+        uint16_t ticks_since_last_run;
+        uint8_t task_id;
+        uint8_t flag;
+    };
+
+    TaskExecutionLog *_task_execution_log_buffer;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
