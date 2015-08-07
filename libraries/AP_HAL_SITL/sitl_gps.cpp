@@ -211,8 +211,19 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
         uint8_t satellites;
         uint32_t res2;
     } sol;
+    struct PACKED ubx_nav_dop {
+        uint32_t time;                                  // GPS msToW
+        uint16_t gDOP;
+        uint16_t pDOP;
+        uint16_t tDOP;
+        uint16_t vDOP;
+        uint16_t hDOP;
+        uint16_t nDOP;
+        uint16_t eDOP;
+    } dop;
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
+    const uint8_t MSG_DOP = 0x4;
     const uint8_t MSG_VELNED = 0x12;
     const uint8_t MSG_SOL = 0x6;
     uint16_t time_week;
@@ -256,10 +267,20 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     sol.time = time_week_ms;
     sol.week = time_week;
 
+    dop.time = time_week_ms;
+    dop.gDOP = 65535;
+    dop.pDOP = 65535;
+    dop.tDOP = 65535;
+    dop.vDOP = 200;
+    dop.hDOP = 121;
+    dop.nDOP = 65535;
+    dop.eDOP = 65535;
+
     _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
     _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
     _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+    _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
 }
 
 static void swap_uint32(uint32_t *v, uint8_t n)
