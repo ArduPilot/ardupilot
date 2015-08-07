@@ -414,6 +414,19 @@ void NOINLINE Copter::send_rangefinder(mavlink_channel_t chan)
 }
 #endif
 
+/*
+  send RPM packet
+ */
+void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
+{
+    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+        mavlink_msg_rpm_send(
+            chan,
+            rpm_sensor.get_rpm(0),
+            rpm_sensor.get_rpm(1));
+    }
+}
+
 
 /*
   send PID tuning message
@@ -627,6 +640,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         copter.send_rangefinder(chan);
 #endif
+        break;
+
+    case MSG_RPM:
+        CHECK_PAYLOAD_SIZE(RPM);
+        copter.send_rpm(chan);
         break;
 
     case MSG_TERRAIN:
@@ -945,6 +963,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_GIMBAL_REPORT);
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
+        send_message(MSG_RPM);
     }
 }
 
