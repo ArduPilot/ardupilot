@@ -199,6 +199,22 @@ void DataFlash_Block::EraseAll()
     hal.scheduler->delay(100);
 }
 
+bool DataFlash_Block::NeedPrep(void)
+{
+    return NeedErase();
+}
+
+void DataFlash_Block::Prep()
+{
+    if (hal.util->get_soft_armed()) {
+        // do not want to do any filesystem operations while we are e.g. flying
+        return;
+    }
+    if (NeedErase()) {
+        EraseAll();
+    }
+}
+
 /*
  *  we need to erase if the logging format has changed
  */

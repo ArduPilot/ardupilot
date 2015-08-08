@@ -36,9 +36,13 @@ void DataFlash_Class::EraseAll() {
 bool DataFlash_Class::CardInserted(void) {
     return backend->CardInserted();
 }
-// remove me in favour of calling "DoTimeConsumingPreparations" all the time?
-bool DataFlash_Class::NeedErase(void) {
-    return backend->NeedErase();
+
+bool DataFlash_Class::NeedPrep() {
+    return backend->NeedPrep();
+}
+
+void DataFlash_Class::Prep() {
+    backend->Prep();
 }
 
 uint16_t DataFlash_Class::bufferspace_available(void) {
