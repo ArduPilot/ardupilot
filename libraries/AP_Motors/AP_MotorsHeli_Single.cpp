@@ -224,10 +224,12 @@ void AP_MotorsHeli_Single::recalc_scalers()
         _main_rotor.set_ramp_time(0);
         _main_rotor.set_runup_time(0);
         _main_rotor.set_critical_speed(0);
+        _main_rotor.set_idle_speed(0);
     } else {
         _main_rotor.set_ramp_time(_rsc_ramp_time);
         _main_rotor.set_runup_time(_rsc_runup_time);
         _main_rotor.set_critical_speed(_rsc_critical);
+        _main_rotor.set_idle_speed(_rsc_idle);
     }
 
     _main_rotor.recalc_scalers();
@@ -236,10 +238,12 @@ void AP_MotorsHeli_Single::recalc_scalers()
         _tail_rotor.set_ramp_time(0);
         _tail_rotor.set_runup_time(0);
         _tail_rotor.set_critical_speed(0);
+        _tail_rotor.set_idle_speed(0);
     } else {
         _tail_rotor.set_ramp_time(_rsc_ramp_time);
         _tail_rotor.set_runup_time(_rsc_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical);
+        _tail_rotor.set_idle_speed(_rsc_idle);
     }
 
     _tail_rotor.recalc_scalers();
@@ -494,7 +498,7 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is shut down and not creating torque
         // also not required if we are using external gyro
-        if ((_main_rotor.get_desired_speed() > 0) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
+        if ((_main_rotor.get_control_speed() > 0) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);

@@ -28,11 +28,17 @@ public:
     // get_critical_speed
     int16_t     get_critical_speed() const { return _critical_speed; }
 
+    // set_idle_speed
+    void        set_idle_speed(int16_t idle_speed) { _idle_speed = idle_speed; }
+
     // get_desired_speed
     int16_t     get_desired_speed() const { return _desired_speed; }
 
     // set_desired_speed
     void        set_desired_speed(int16_t desired_speed) { _desired_speed = desired_speed; }
+
+    // get_control_speed
+    int16_t     get_control_speed() const { return _control_speed; }
 
     // get_estimated_speed
     int16_t     get_estimated_speed() const { return _estimated_speed; }
@@ -49,7 +55,7 @@ public:
     // recalc_scalers
     void        recalc_scalers();
 
-    // output_armed
+    // output - update value to send to ESC/Servo
     void        output(uint8_t state);
 
 private:
@@ -61,14 +67,19 @@ private:
 
     // internal variables
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
+    int16_t         _idle_speed = 0;            // motor output idle speed
     int16_t         _desired_speed = 0;         // latest desired rotor speed from pilot
-    float           _speed_out = 0;             // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
+    int16_t         _control_speed = 0;         // latest logic controlled rotor speed
+    float           _control_out = 0;           // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
     float           _estimated_speed = 0;       // estimated speed of the main rotor (0~1000)
     float           _ramp_increment = 0;        // the amount we can increase the rotor output during each 100hz iteration
     int8_t          _ramp_time = 0;             // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time = 0;            // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     float           _runup_increment = 0;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
     bool            _runup_complete = false;    // flag for determining if runup is complete
+
+    // speed_ramp - ramps speed towards target, result put in _control_out
+    void            speed_ramp(int16_t rotor_target);
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1000
     void            write_rsc(int16_t servo_out);
