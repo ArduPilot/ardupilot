@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #include "UDPDevice.h"
 
@@ -34,10 +35,12 @@ ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
 {
     ssize_t ret = socket.recv(buf, n, 0);
     if (!_connected && ret > 0) {
-        const char *ip;
+        char hostname[HOST_NAME_MAX] = {0};
         uint16_t port;
-        socket.last_recv_address(ip, port);
-        _connected = socket.connect(ip, port);
+
+        if (socket.last_recv_address(hostname, &port)) {
+            _connected = socket.connect(hostname, port);
+        }
     }
     return ret;
 }
