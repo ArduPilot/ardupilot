@@ -43,63 +43,76 @@ void AP_MotorsHeli_RSC::recalc_scalers()
     _runup_increment = 1000.0f / (_runup_time * _loop_rate);
 }
 
+// output - update value to send to ESC/Servo
 void AP_MotorsHeli_RSC::output(uint8_t state)
 {
     switch (state){
+        case ROTOR_CONTROL_STOP:
+            _control_speed = 0;                             // ramp input to zero
+            _control_out = 0;                               // force ramp output to zero
+            _estimated_speed = 0;                           // force speed estimate to zero
+            break;
 
-    case ROTOR_CONTROL_STOP:
-
-        _estimated_speed = 0;
-        _speed_out = 0;
-        write_rsc(0);
-        break;
-
-    case ROTOR_CONTROL_IDLE:
-    case ROTOR_CONTROL_ACTIVE:
-    
-        // ramp rotor esc output towards target
-        if (_speed_out < _desired_speed) {
-            // allow rotor out to jump to rotor's current speed
-            if (_speed_out < _estimated_speed) {
-                _speed_out = _estimated_speed;
+        case ROTOR_CONTROL_IDLE:
+            _control_speed = _idle_speed;                   // set control speed to idle speed
+            if (_control_out < _idle_speed){
+                _control_out = _idle_speed;                 // if control output is less than idle speed, force ramp function to jump to idle speed
             }
+            break;
 
-            // ramp up slowly to target 
-            _speed_out += _ramp_increment;
-            if (_speed_out > _desired_speed) {
-                _speed_out = _desired_speed;
-            }
-        } else {
-            // ramping down happens instantly
-            _speed_out = _desired_speed;
+        case ROTOR_CONTROL_ACTIVE:
+            _control_speed = _desired_speed;                // set control speed to desired speed
+            break;
+    }
+
+    // run speed ramp function to slew output smoothly, also updates estimated speed
+    speed_ramp(_control_speed);
+
+    // output to rsc servo
+    write_rsc(_control_out);
+}
+
+// speed_ramp - ramps speed towards target, result put in _control_out 
+void AP_MotorsHeli_RSC::speed_ramp(int16_t speed_target)
+{
+    // range check speed_target
+    speed_target = constrain_int16(speed_target,0,1000);
+
+    // ramp output upwards towards target
+    if (_control_out < speed_target) {
+        // allow control output to jump to estimated speed
+        if (_control_out < _estimated_speed) {
+            _control_out = _estimated_speed;
         }
-
-        // ramp rotor speed estimate towards speed out
-        if (_estimated_speed < _speed_out) {
-            _estimated_speed += _runup_increment;
-            if (_estimated_speed > _speed_out) {
-                _estimated_speed = _speed_out;
-            }
-        } else {
-            _estimated_speed -= _runup_increment;
-            if (_estimated_speed < _speed_out) {
-                _estimated_speed = _speed_out;
-            }
+        // ramp up slowly to target
+        _control_out += _ramp_increment;
+        if (_control_out > speed_target) {
+            _control_out = speed_target;
         }
+    }else{
+        // ramping down happens instantly
+        _control_out = speed_target;
+    }
 
-        // set runup complete flag
-        if (!_runup_complete && _desired_speed > 0 && _estimated_speed >= _desired_speed) {
-            _runup_complete = true;
+    // ramp speed estimate towards control out
+    if (_estimated_speed < _control_out) {
+        _estimated_speed += _runup_increment;
+        if (_estimated_speed > _control_out) {
+            _estimated_speed = _control_out;
         }
-
-        if (_runup_complete && _estimated_speed <= _critical_speed) {
-            _runup_complete = false;
+    }else{
+        _estimated_speed -= _runup_increment;
+        if (_estimated_speed < _control_out) {
+            _estimated_speed = _control_out;
         }
+    }
 
-        // output to rsc servo
-        write_rsc(_speed_out);
-
-        break;
+    // set runup complete flag
+    if (!_runup_complete && speed_target > 0 && _estimated_speed >= speed_target) {
+        _runup_complete = true;
+    }
+    if (_runup_complete && _estimated_speed <= _critical_speed) {
+        _runup_complete = false;
     }
 }
 
