@@ -811,10 +811,13 @@ void Copter::log_init(void)
     if (!DataFlash.CardInserted()) {
         gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
-    } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("ERASING LOGS"));
-        do_erase_logs();
-        gcs[0].reset_cli_timeout();
+    } else if (DataFlash.NeedPrep()) {
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Preparing log system"));
+        DataFlash.Prep();
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Prepared log system"));
+        for (uint8_t i=0; i<num_gcs; i++) {
+            gcs[i].reset_cli_timeout();
+        }
     }
 }
 
