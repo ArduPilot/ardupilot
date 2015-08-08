@@ -79,6 +79,7 @@ void Copter::rtl_climb_start()
 {
     rtl_state = RTL_InitialClimb;
     rtl_state_complete = false;
+    rtl_alt = get_RTL_alt();
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
@@ -89,12 +90,12 @@ void Copter::rtl_climb_start()
 
 #if AC_RALLY == ENABLED
     // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
     rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
     rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
     destination.z = pv_alt_above_origin(rally_point.alt);
 #else
-    destination.z = pv_alt_above_origin(get_RTL_alt());
+    destination.z = pv_alt_above_origin(rtl_alt);
 #endif
 
     // set the destination
@@ -114,13 +115,13 @@ void Copter::rtl_return_start()
     // set target to above home/rally point
 #if AC_RALLY == ENABLED
     // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, get_RTL_alt()+ahrs.get_home().alt);
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_alt+ahrs.get_home().alt);
     rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
     rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
     Vector3f destination = pv_location_to_vector(rally_point);
 #else
     Vector3f destination = pv_location_to_vector(ahrs.get_home());
-    destination.z = pv_alt_above_origin(get_RTL_alt());
+    destination.z = pv_alt_above_origin(rtl_alt));
 #endif
 
     wp_nav.set_wp_destination(destination);
@@ -414,16 +415,16 @@ void Copter::rtl_land_run()
 float Copter::get_RTL_alt()
 {
     // maximum of current altitude + climb_min and rtl altitude
-    float rtl_alt = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
-    rtl_alt = max(rtl_alt, RTL_ALT_MIN);
+    float ret = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
+    ret = max(ret, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        rtl_alt = min(rtl_alt, fence.get_safe_alt()*100.0f);
+        ret = min(ret, fence.get_safe_alt()*100.0f);
     }
 #endif
 
-    return rtl_alt;
+    return ret;
 }
 
