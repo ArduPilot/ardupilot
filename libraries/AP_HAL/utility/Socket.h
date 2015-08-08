@@ -30,6 +30,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
+#include <netdb.h>
 
 class SocketAPM {
 public:
@@ -37,18 +38,18 @@ public:
     SocketAPM(bool _datagram, int _fd);
     ~SocketAPM();
 
-    bool connect(const char *address, uint16_t port);
-    bool bind(const char *address, uint16_t port);
+    bool connect(const char *hostname, uint16_t port);
+    bool bind(const char *hostname, uint16_t port);
     void reuseaddress();
     void set_blocking(bool blocking);
     void set_broadcast(void);
 
     ssize_t send(const void *pkt, size_t size);
-    ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
+    ssize_t sendto(const void *buf, size_t size, const char *hostname, uint16_t port);
     ssize_t recv(void *pkt, size_t size, uint32_t timeout_ms);
 
     // return the IP address and port of the last received packet
-    void last_recv_address(const char *&ip_addr, uint16_t &port);
+    bool last_recv_address(char *hostname, uint16_t *port);
 
     // return true if there is pending data for input
     bool pollin(uint32_t timeout_ms);
@@ -65,11 +66,12 @@ public:
 
 private:
     bool datagram;
-    struct sockaddr_in in_addr {};
+    struct sockaddr_storage in_addr {};
 
     int fd = -1;
 
-    void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
+    struct addrinfo *get_address_info(const char *hostname, uint16_t port);
+    struct addrinfo *select_address(struct addrinfo *address_list);
 };
 
 #endif // HAL_OS_SOCKETS

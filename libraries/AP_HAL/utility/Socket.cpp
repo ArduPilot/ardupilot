@@ -21,6 +21,10 @@
 
 #include "Socket.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <limits.h>
+
 /*
   constructor
  */
@@ -48,44 +52,103 @@ SocketAPM::~SocketAPM()
     }
 }
 
-void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
+struct addrinfo *SocketAPM::get_address_info(const char *address, uint16_t port)
 {
-    memset(&sockaddr, 0, sizeof(sockaddr));
+    char service[20] = {0};
+    int service_length = sizeof(service);
 
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(port);
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(address);
+    int ret;
+
+    ret = snprintf(service, service_length, "%d", port);
+    
+    if (ret < 0 || ret == service_length) {
+        return NULL;
+    }
+
+    struct addrinfo hints;
+    struct addrinfo *address_info;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = datagram? SOCK_DGRAM: SOCK_STREAM;
+
+    ret = getaddrinfo(address, service, &hints, &address_info);
+    if (ret < 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+        return NULL;
+    }
+
+    return address_info;
+}
+
+struct addrinfo *SocketAPM::select_address(struct addrinfo *address_list)
+{
+    for (struct addrinfo *address = address_list; address != NULL; address = address->ai_next) {
+        if (address->ai_family == AF_INET) {
+            /* connect to first IPv4 address */
+            return address; 
+        } 
+    }
+
+    return NULL;
 }
 
 /*
   connect the socket
  */
-bool SocketAPM::connect(const char *address, uint16_t port)
+bool SocketAPM::connect(const char *hostname, uint16_t port)
 {
-    struct sockaddr_in sockaddr;
-    make_sockaddr(address, port, sockaddr);
+    struct addrinfo *address_list = get_address_info(hostname, port);
 
-    if (::connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+    if (address_list == NULL) {
         return false;
     }
+
+    struct addrinfo *address = select_address(address_list);
+
+    if (address == NULL) {
+        goto errout;
+    }
+
+    if (::connect(fd, address->ai_addr, address->ai_addrlen) != 0) {
+        goto errout;
+    }
+
+    freeaddrinfo(address_list);
     return true;
+
+errout:
+    freeaddrinfo(address_list);
+    return false;
 }
 
 /*
   bind the socket
  */
-bool SocketAPM::bind(const char *address, uint16_t port)
+bool SocketAPM::bind(const char *hostname, uint16_t port)
 {
-    struct sockaddr_in sockaddr;
-    make_sockaddr(address, port, sockaddr);
+    struct addrinfo *address_list = get_address_info(hostname, port);
 
-    if (::bind(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
+    if (address_list == NULL) {
         return false;
     }
+
+    struct addrinfo *address = select_address(address_list);
+
+    if (address == NULL) {
+        goto errout;
+    }
+
+    if (::bind(fd, address->ai_addr, address->ai_addrlen) != 0) {
+        goto errout;
+    }
+
+    freeaddrinfo(address_list);
     return true;
+
+errout:
+    freeaddrinfo(address_list);
+    return false;
 }
 
 
@@ -121,11 +184,35 @@ ssize_t SocketAPM::send(const void *buf, size_t size)
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *hostname, uint16_t port)
 {
-    struct sockaddr_in sockaddr;
-    make_sockaddr(address, port, sockaddr);
-    return ::sendto(fd, buf, size, 0, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    int ret = -1;
+
+    struct addrinfo *address_list;
+    struct addrinfo *address;
+
+    address_list = get_address_info(hostname, port);
+
+    if (address_list == NULL) {
+        goto errout_without_list;
+    }
+
+    address = select_address(address_list);
+
+    if (address == NULL) {
+        goto errout;
+    }
+
+    ret = ::sendto(fd, buf, size, 0, address->ai_addr, address->ai_addrlen);
+    if (ret < 0) {
+        goto errout;
+    }
+
+errout:
+    freeaddrinfo(address_list);
+
+errout_without_list:
+    return ret;
 }
 
 /*
@@ -143,10 +230,27 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 /*
   return the IP address and port of the last received packet
  */
-void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port)
+bool SocketAPM::last_recv_address(char *hostname, uint16_t *port)
 {
-    ip_addr = inet_ntoa(in_addr.sin_addr);
-    port = ntohs(in_addr.sin_port);
+    const size_t SERVICE_NAME_MAX = 20;
+
+    char service[SERVICE_NAME_MAX] = {0};
+
+    if (int ret = getnameinfo((struct sockaddr *)&in_addr, sizeof(in_addr), hostname, HOST_NAME_MAX, 
+                service, SERVICE_NAME_MAX, 0)) {
+        fprintf(stderr, "getnameinfo: %s\n", gai_strerror(ret));
+        return false;
+    }
+
+    char *endptr;
+
+    *port = strtol(service, &endptr, 0);
+
+    if (*endptr != '\0' || service == endptr) {
+        return false;
+    }
+
+    return true;
 }
 
 void SocketAPM::set_broadcast(void)
