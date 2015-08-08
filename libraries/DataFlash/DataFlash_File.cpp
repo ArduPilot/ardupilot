@@ -26,6 +26,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <sys/statfs.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -110,7 +111,7 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
         ret = mkdir(_log_directory, 0777);
     }
     if (ret == -1) {
-        hal.console->printf("Failed to create log directory %s", _log_directory);
+        hal.console->printf("Failed to create log directory %s\n", _log_directory);
         return;
     }
     if (_writebuf != NULL) {
@@ -154,11 +155,135 @@ bool DataFlash_File::CardInserted(void)
     return _initialised && !_open_error;
 }
 
-
-// erase handling
-bool DataFlash_File::NeedErase(void)
+uint64_t DataFlash_File::disk_space_avail()
 {
-    // we could add a format marker at the start of a file?
+    struct statfs stats;
+    if (statfs(_log_directory, &stats) < 0) {
+        return -1;
+    }
+    return (((uint64_t)stats.f_bavail) * stats.f_bsize);
+}
+
+uint64_t DataFlash_File::disk_space()
+{
+    struct statfs stats;
+    if (statfs(_log_directory, &stats) < 0) {
+        return -1;
+    }
+    return (((uint64_t)stats.f_blocks) * stats.f_bsize);
+}
+
+float DataFlash_File::avail_space_percent()
+{
+    uint64_t avail = disk_space_avail();
+    uint64_t space = disk_space();
+
+    return (avail/(float)space) * 100;
+}
+
+// find_first_log - find lowest-numbered log in _log_directory
+// returns 0 if no log was found
+uint16_t DataFlash_File::find_first_log(void)
+{
+    // iterate through directory entries to find lowest log number.
+    // We could count up to find_last_log(), but if people start
+    // relying on the min_avail_space_percent feature we could end up
+    // doing a *lot* of asprintf()s and stat()s
+    DIR *d = opendir(_log_directory);
+    if (d == NULL) {
+        // internal_error();
+        return 0;
+    }
+
+    // we only remove files which look like xxx.BIN
+    uint32_t lowest_number = (uint32_t)-1; // unsigned integer wrap
+    for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        uint8_t length = strlen(de->d_name);
+        if (length < 5) {
+            // not long enough for \d+[.]BIN
+            continue;
+        }
+        if (strncmp(&de->d_name[length-4], ".BIN", 4)) {
+            // doesn't end in .BIN
+            continue;
+        }
+
+        uint16_t thisnum = strtoul(de->d_name, NULL, 10);
+        if (thisnum < lowest_number) {
+            lowest_number = thisnum;
+        }
+    }
+    closedir(d);
+
+    if (lowest_number == (uint32_t)-1) {
+        return 0;
+    }
+    return lowest_number;
+}
+
+void DataFlash_File::Prep_MinSpace()
+{
+    uint16_t log_to_remove = find_first_log();
+    if (log_to_remove == 0) {
+        // no files to remove
+        return;
+    }
+    uint16_t count = 0;
+    while (avail_space_percent() < min_avail_space_percent) {
+        if (count++ > 500) {
+            // *way* too many deletions going on here.  Possible internal error.
+            // deletion rate seems to be ~50 files/second.
+            // internal_error();
+            break;
+        }
+        char *filename_to_remove = _log_file_name(log_to_remove);
+        if (filename_to_remove == NULL) {
+            // internal_error();
+            break;
+        }
+        hal.console->printf("Removing (%s) for minimum-space requirements\n",
+                              filename_to_remove);
+        if (unlink(filename_to_remove) == -1) {
+            hal.console->printf("Failed to remove %s: (%d/%d) %s\n", filename_to_remove, errno, ENOENT, strerror(errno));
+            free(filename_to_remove);
+            if (errno == ENOENT) {
+                log_to_remove = find_first_log();
+                if (log_to_remove == 0) {
+                    // out of files to remove...
+                    break;
+                }
+                // corruption - should always have a continuous
+                // sequence of files...  however, we now have a file
+                // we can delete, so keep going.
+            } else {
+                break;
+            }
+        } else {
+            free(filename_to_remove);
+            log_to_remove++;
+        }
+    }
+}
+
+void DataFlash_File::Prep() {
+    if (hal.util->get_soft_armed()) {
+        // do not want to do any filesystem operations while we are e.g. flying
+        return;
+    }
+    Prep_MinSpace();
+}
+
+bool DataFlash_File::NeedPrep()
+{
+    if (!CardInserted()) {
+        // should not have been called?!
+        return false;
+    }
+
+    if (avail_space_percent() < min_avail_space_percent) {
+        return true;
+    }
+
     return false;
 }
 

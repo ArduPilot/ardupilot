@@ -26,8 +26,10 @@ public:
     virtual bool CardInserted(void) = 0;
 
     // erase handling
-    virtual bool NeedErase(void) = 0;
     virtual void EraseAll() = 0;
+
+    virtual bool NeedPrep() = 0;
+    virtual void Prep() = 0;
 
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size) {

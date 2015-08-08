@@ -22,8 +22,10 @@ public:
     virtual bool CardInserted(void) = 0;
 
     // erase handling
-    bool NeedErase(void);
     void EraseAll();
+
+    bool NeedPrep(void);
+    void Prep();
 
     /* Write a block of data at current offset */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
@@ -88,6 +90,9 @@ private:
     // the data fits within the page, otherwise it will wrap to the
     // start of the page
     virtual bool BlockRead(uint8_t BufferNum, uint16_t IntPageAdr, void *pBuffer, uint16_t size) = 0;
+
+    // erase handling
+    bool NeedErase(void);
 
     // internal high level functions
     void StartRead(uint16_t PageAdr);

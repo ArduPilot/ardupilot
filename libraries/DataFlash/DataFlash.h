@@ -51,6 +51,10 @@ public:
     bool NeedErase(void);
     void EraseAll();
 
+    // possibly expensive calls to start log system:
+    bool NeedPrep();
+    void Prep();
+
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */

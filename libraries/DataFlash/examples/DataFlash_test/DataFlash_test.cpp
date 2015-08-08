@@ -82,9 +82,9 @@ void DataFlashTest::setup(void)
     hal.scheduler->delay(20);
     dataflash.ShowDeviceInfo(hal.console);
 
-    if (dataflash.NeedErase()) {
-        hal.console->println("Erasing...");
-        dataflash.EraseAll();
+    if (dataflash.NeedPrep()) {
+        hal.console->println("Preparing dataflash...");
+        dataflash.Prep();
     }
 
     // We start to write some info (sequentialy) starting from page 1
