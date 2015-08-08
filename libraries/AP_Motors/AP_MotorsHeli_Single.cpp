@@ -220,10 +220,10 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
 void AP_MotorsHeli_Single::recalc_scalers()
 {
-    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_SETPOINT) {
-        _tail_rotor.set_ramp_time(0);
-        _tail_rotor.set_runup_time(0);
-        _tail_rotor.set_critical_speed(0);
+    if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
+        _main_rotor.set_ramp_time(0);
+        _main_rotor.set_runup_time(0);
+        _main_rotor.set_critical_speed(0);
     } else {
         _main_rotor.set_ramp_time(_rsc_ramp_time);
         _main_rotor.set_runup_time(_rsc_runup_time);
