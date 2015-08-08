@@ -34,6 +34,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+/*
+  don't accept periods below 100us as it is probably ringing of the
+  signal. It would represent 600k RPM
+ */
+#define RPM_MIN_PERIOD_US 100
+
 /* 
    open the sensor in constructor
 */
@@ -79,7 +85,7 @@ void AP_RPM_PX4_PWM::update(void)
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
         // the px4 pwm_input driver reports the period in microseconds
-        if (pwm.period > 0) {
+        if (pwm.period > RPM_MIN_PERIOD_US) {
             sum += (1.0e6f * 60) / pwm.period;
             count++;
         }
