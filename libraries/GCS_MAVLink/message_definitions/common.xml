@@ -1068,6 +1068,7 @@
                <entry value="400" name="MAV_CMD_COMPONENT_ARM_DISARM">
                     <description>Arms / Disarms a component</description>
                     <param index="1">1 to arm, 0 to disarm</param>
+                    <param index="2">0 to disarm if landed, 21196 to force disarm any time</param>
                </entry>
                <entry value="500" name="MAV_CMD_START_RX_PAIR">
                     <description>Starts receiver pairing</description>
