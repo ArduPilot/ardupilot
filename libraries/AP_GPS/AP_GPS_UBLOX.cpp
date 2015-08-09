@@ -119,7 +119,7 @@ AP_GPS_UBLOX::send_next_rate_update(void)
 #endif
         break;
     case 9:
-#if UBLOX_RXM_RAW_LOGGING
+#if UBLOX_RXM_RAWX_LOGGING
         _configure_message_rate(CLASS_RXM, MSG_RXM_RAWX, gps._raw_data);
 #endif
         break;
