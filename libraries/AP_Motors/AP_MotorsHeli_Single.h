@@ -106,8 +106,8 @@ public:
     int16_t tail_type() const { return _tail_type; }
 
     // ext_gyro_gain - gets and sets external gyro gain as a pwm (1000~2000)
-    int16_t ext_gyro_gain() const { return _ext_gyro_gain; }
-    void ext_gyro_gain(int16_t pwm) { _ext_gyro_gain = pwm; }
+    int16_t ext_gyro_gain() const { return _ext_gyro_gain_std; }
+    void ext_gyro_gain(int16_t pwm) { _ext_gyro_gain_std = pwm; }
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const { return _flybar_mode; }
@@ -121,6 +121,8 @@ public:
     // set_delta_phase_angle for setting variable phase angle compensation and force
     // recalculation of collective factors
     void set_delta_phase_angle(int16_t angle);
+
+    void set_acro_tail(bool set) { _acro_tail = set; }
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -161,12 +163,14 @@ protected:
     AP_Int16        _servo3_pos;                // Angular location of swash servo #3    
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    AP_Int16        _ext_gyro_gain;             // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    AP_Int16        _ext_gyro_gain_acro;        // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro in ACRO
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
 
+    bool            _acro_tail = false;
 };
 
 #endif  // __AP_MOTORS_HELI_SINGLE_H__

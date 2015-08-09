@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("GYR_GAIN", 6, AP_MotorsHeli_Single, _ext_gyro_gain, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
+    AP_GROUPINFO("GYR_GAIN", 6, AP_MotorsHeli_Single, _ext_gyro_gain_std, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
 
     // @Param: PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT),
 
+    // @Param: GYR_GAIN_ACRO
+    // @DisplayName: External Gyro Gain for ACRO
+    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro. A value of zero means to use H_GYR_GAIN
+    // @Range: 0 1000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
+    
     AP_GROUPEND
 };
 
@@ -181,7 +190,11 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
         case 4:
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-                write_aux(_ext_gyro_gain);
+                if (_acro_tail && _ext_gyro_gain_acro > 0) {
+                    write_aux(_ext_gyro_gain_acro);
+                } else {
+                    write_aux(_ext_gyro_gain_std);
+                }
             }
             hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
             break;
@@ -456,7 +469,11 @@ void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
-        write_aux(_ext_gyro_gain);
+        if (_acro_tail && _ext_gyro_gain_acro > 0) {
+            write_aux(_ext_gyro_gain_acro);
+        } else {
+            write_aux(_ext_gyro_gain_std);
+        }
     } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
         // output yaw servo to tail rsc
         write_aux(_yaw_servo.servo_out);
