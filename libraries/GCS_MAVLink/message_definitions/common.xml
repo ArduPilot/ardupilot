@@ -1447,6 +1447,12 @@
               <entry value="1024" name="MAV_PROTOCOL_CAPABILITY_SET_ACTUATOR_TARGET">
                   <description>Autopilot supports direct actuator control.</description>
               </entry>
+              <entry value="2048" name="MAV_PROTOCOL_CAPABILITY_FORCE_DISARM">
+                  <description>Autopilot supports forced disarming.</description>
+              </entry>
+              <entry value="4096" name="MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION">
+                  <description>Autopilot supports onboard compass calibration.</description>
+              </entry>
           </enum>
           <enum name="MAV_ESTIMATOR_TYPE">
               <description>Enumeration of estimator types</description>
