@@ -16,8 +16,9 @@
 
 /*
  *  main loop scheduler for APM
- *  Author: Andrew Tridgell, January 2013
- *
+ *  Authors: 
+ *  - Andrew Tridgell, January 2013
+ *  - Daniel Frenzel, August 2015
  */
 
 #ifndef AP_SCHEDULER_H
@@ -48,22 +49,69 @@
 #include <AP_HAL.h>
 #include <AP_Vehicle.h>
 
-class AP_Scheduler
-{
-public:
-    FUNCTOR_TYPEDEF(task_fn_t, void);
 
-    struct Task {
+class AP_Task;
+class AP_Scheduler;
+
+//////////////////////////////////////////////////////////////////////////
+// TASK
+//////////////////////////////////////////////////////////////////////////
+FUNCTOR_TYPEDEF(task_fn_t, void);
+class AP_Task {
+public /*functions*/:
+    AP_Task       (AP_Scheduler *parent_sched = NULL);
+    
+    AP_Scheduler* parent() const;
+    void          parent(AP_Scheduler *);
+
+    // executes the task if time is available and returns whether the task was executed 
+    bool          run(uint16_t, uint16_t);
+    // Return whether task is currently running
+    bool          is_running() const;
+    // returns how many times the task failed to be executed
+    uint8_t       missed_runs() const;
+    // the (optional) index of the task in the scheduler (for identification)
+    void          index(uint8_t);
+    uint8_t       index() const;
+    // last runtime in µs for the execution of the task
+    uint32_t      runtime() const;
+    // if the task was in need for more time than available based on the runtime estimation
+    bool          delayed() const;
+    // ticks since last run
+    uint16_t      ticks() const;
+    
+// For backward compatibility of the AP_Param table madness
+public /*AP_Param accessor*/:
+    struct Settings {
         task_fn_t function;
-#ifndef __AVR__
+        #ifndef __AVR__
         const char *name;
-#endif
+        #endif
         uint16_t interval_ticks;
         uint16_t max_time_micros;
-    };
+    } _settings;
+    
+private:
+    // debugging
+    uint32_t      _last_runtime;
+    uint8_t       _index;
+    uint8_t       _missed_runs;
+    bool          _delayed;
+    uint16_t      _dt;
+    AP_Scheduler* _parent_sched;
+    bool          _is_running;
+};
 
+
+//////////////////////////////////////////////////////////////////////////
+// SCHEDULER
+//////////////////////////////////////////////////////////////////////////
+class AP_Scheduler {
+friend class AP_Task;
+
+public /*functions*/:
     // initialise scheduler
-    void init(const Task *tasks, uint8_t num_tasks);
+    void init(const AP_Task::Settings *tasks, uint8_t num_tasks);
 
     // call when one tick has passed
     void tick(void);
@@ -86,15 +134,23 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // current running task, or -1 if none. Used to debug stuck tasks
-    static int8_t current_task;
+    // returns whether a task is currently running
+    int8_t task_active(int index) const;
+    
+    // returns the number of tasks in the scheduler
+    int8_t tasks() const;
 
+protected /*functions*/:
+    void update_ticks();
+    void logs_outp();
+    void logs_buffer(AP_Task &);
+    
 private:
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
     // progmem list of tasks to run
-    const struct Task *_tasks;
+    AP_Task *_tasks;
 
     // number of tasks in _tasks list
     uint8_t _num_tasks;
@@ -126,6 +182,12 @@ private:
 
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
+    
+    // number of entries in the debug log
+    uint8_t _log_count;
+    
+    // parallelism enabled
+    AP_Int8 _parallelism;
 };
 
 #endif // AP_SCHEDULER_H

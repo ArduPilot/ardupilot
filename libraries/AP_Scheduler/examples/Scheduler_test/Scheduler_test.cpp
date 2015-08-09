@@ -39,6 +39,8 @@
 #include <AP_HAL_SITL.h>
 #include <AP_HAL_Empty.h>
 #include <AP_HAL_PX4.h>
+#include <AP_HAL_Linux.h>
+
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -53,11 +55,12 @@ private:
     AP_Scheduler scheduler;
 
     uint32_t ins_counter;
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task::Settings scheduler_tasks[];
 
     void ins_update(void);
     void one_hz_print(void);
     void five_second_call(void);
+    void fail_call(void);
 };
 
 static SchedTest schedtest;
@@ -74,10 +77,12 @@ static SchedTest schedtest;
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
+const AP_Task::Settings SchedTest::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(ins_update,              1,   1000),
     SCHED_TASK(one_hz_print,           50,   1000),
     SCHED_TASK(five_second_call,      250,   1800),
+    SCHED_TASK(fail_call,             100,   200),    // should throw a debug message
+    SCHED_TASK(one_hz_print,           50,   30000),  // should throw a debug message
 };
 
 
@@ -118,6 +123,24 @@ void SchedTest::ins_update(void)
 void SchedTest::one_hz_print(void)
 {
     hal.console->printf("one_hz: t=%lu\n", (unsigned long)hal.scheduler->millis());
+}
+
+/*
+ * This function should cause a debug error
+ */
+void SchedTest::fail_call(void)
+{
+    hal.console->printf("fail: t=%lu", (unsigned long)hal.scheduler->millis() );
+    
+    int start = hal.scheduler->millis();
+    while(true) {
+        int stop = hal.scheduler->millis();
+        
+        if(stop - start > 1000) {
+            hal.console->printf(" .. done\n");
+            return;
+        }
+    }
 }
 
 /*
