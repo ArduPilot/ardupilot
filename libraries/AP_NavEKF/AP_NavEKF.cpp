@@ -5288,18 +5288,7 @@ void NavEKF::readRangeFinder(void)
 void NavEKF::detectOptFlowTakeoff(void)
 {
     if (vehicleArmed && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
-        const AP_InertialSensor &ins = _ahrs->get_ins();
-        Vector3f angRateVec;
-        Vector3f gyroBias;
-        getGyroBias(gyroBias);
-        bool dual_ins = ins.get_gyro_health(0) && ins.get_gyro_health(1);
-        if (dual_ins) {
-                angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
-        } else {
-                angRateVec = ins.get_gyro() - gyroBias;
-        }
-
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rangeAtArming + 0.1f)));
+        takeOffDetected = (takeOffDetected || (rngMea > (rangeAtArming + 0.1f)));
     }
 }
 
