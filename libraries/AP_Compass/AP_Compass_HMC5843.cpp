@@ -28,6 +28,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass_HMC5843.h"
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_InertialSensor/AuxiliaryBus.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -89,6 +91,15 @@ AP_Compass_Backend *AP_Compass_HMC5843::detect_i2c(Compass &compass,
     return _detect(compass, bus);
 }
 
+AP_Compass_Backend *AP_Compass_HMC5843::detect_mpu6000(Compass &compass)
+{
+    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_MPU6000(ins, HMC5843_I2C_ADDR);
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
+
 AP_Compass_Backend *AP_Compass_HMC5843::_detect(Compass &compass,
                                                 AP_HMC5843_SerialBus *bus)
 {
@@ -130,7 +141,7 @@ bool AP_Compass_HMC5843::read_raw()
 {
     struct AP_HMC5843_SerialBus::raw_value rv;
 
-    if (_bus->register_read(0x03, (uint8_t*)&rv, sizeof(rv)) != 0) {
+    if (_bus->read_raw(&rv) != 0) {
         _bus->set_high_speed(false);
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
@@ -247,11 +258,18 @@ AP_Compass_HMC5843::init()
     _bus_sem = _bus->get_semaphore();
     hal.scheduler->suspend_timer_procs();
 
-    if (!_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
+    if (!_bus_sem || !_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        hal.console->printf_P(PSTR("HMC5843: Unable to get bus semaphore\n"));
+        goto fail_sem;
+    }
+
+    if (!_bus->configure()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not configure the bus\n"));
+        goto errout;
     }
 
     if (!_detect_version()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not detect version\n"));
         goto errout;
     }
 
@@ -268,6 +286,7 @@ AP_Compass_HMC5843::init()
     }
 
     if (!_calibrate(calibration_gain, expected_x, expected_yz, gain_multiple)) {
+        hal.console->printf_P(PSTR("HMC5843: Could not calibrate sensor\n"));
         goto errout;
     }
 
@@ -276,7 +295,12 @@ AP_Compass_HMC5843::init()
         goto errout;
     }
 
+    if (!_bus->start_measurements()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not start measurements on bus\n"));
+        goto errout;
+    }
     _initialised = true;
+
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
@@ -295,6 +319,7 @@ AP_Compass_HMC5843::init()
 
 errout:
     _bus_sem->give();
+fail_sem:
     hal.scheduler->resume_timer_procs();
     return false;
 }
@@ -441,6 +466,7 @@ void AP_Compass_HMC5843::read()
     _retry_time = 0;
 }
 
+/* I2C implementation of the HMC5843 */
 AP_HMC5843_SerialBus_I2C::AP_HMC5843_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr)
     : _i2c(i2c)
     , _addr(addr)
@@ -465,4 +491,73 @@ uint8_t AP_HMC5843_SerialBus_I2C::register_write(uint8_t reg, uint8_t val)
 AP_HAL::Semaphore* AP_HMC5843_SerialBus_I2C::get_semaphore()
 {
     return _i2c->get_semaphore();
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::read_raw(struct raw_value *rv)
+{
+    return register_read(0x03, (uint8_t*)rv, sizeof(*rv));
+}
+
+
+/* MPU6000 implementation of the HMC5843 */
+AP_HMC5843_SerialBus_MPU6000::AP_HMC5843_SerialBus_MPU6000(AP_InertialSensor &ins,
+                                                           uint8_t addr)
+{
+    // Only initialize members. Fails are handled by configure or while
+    // getting the semaphore
+    _bus = ins.get_auxiliar_bus(HAL_INS_MPU60XX_SPI);
+    if (!_bus)
+        return;
+    _slave = _bus->request_next_slave(addr);
+}
+
+AP_HMC5843_SerialBus_MPU6000::~AP_HMC5843_SerialBus_MPU6000()
+{
+    /* After started it's owned by AuxiliaryBus */
+    if (!_started)
+        delete _slave;
+}
+
+bool AP_HMC5843_SerialBus_MPU6000::configure()
+{
+    if (!_bus || !_slave)
+        return false;
+    return true;
+}
+
+void AP_HMC5843_SerialBus_MPU6000::set_high_speed(bool val)
+{
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::register_read(uint8_t reg, uint8_t *buf, uint8_t size)
+{
+    return _slave->passthrough_read(reg, buf, size) == size ? 0 : 1;
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::register_write(uint8_t reg, uint8_t val)
+{
+    return _slave->passthrough_write(reg, val) >= 0 ? 0 : 1;
+}
+
+AP_HAL::Semaphore* AP_HMC5843_SerialBus_MPU6000::get_semaphore()
+{
+    return _bus ? _bus->get_semaphore() : nullptr;
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::read_raw(struct raw_value *rv)
+{
+    if (_started)
+        return _slave->read((uint8_t*)rv) >= 0 ? 0 : 1;
+
+    return _slave->passthrough_read(0x03, (uint8_t*)rv, sizeof(*rv)) >= 0 ? 0 : 1;
+}
+
+bool AP_HMC5843_SerialBus_MPU6000::start_measurements()
+{
+    if (_bus->register_periodic_read(_slave, 0x03, sizeof(struct raw_value)) < 0)
+        return false;
+
+    _started = true;
+
+    return true;
 }
