@@ -145,21 +145,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @DisplayName: Accelerometer offsets of X axis
     // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACCOFFS_Y
     // @DisplayName: Accelerometer offsets of Y axis
     // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACCOFFS_Z
     // @DisplayName: Accelerometer offsets of Z axis
     // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset[0], 0),
 
@@ -187,21 +187,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @DisplayName: Accelerometer2 offsets of X axis
     // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC2OFFS_Y
     // @DisplayName: Accelerometer2 offsets of Y axis
     // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC2OFFS_Z
     // @DisplayName: Accelerometer2 offsets of Z axis
     // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
 #endif
@@ -230,21 +230,21 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @DisplayName: Accelerometer3 offsets of X axis
     // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC3OFFS_Y
     // @DisplayName: Accelerometer3 offsets of Y axis
     // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
 
     // @Param: ACC3OFFS_Z
     // @DisplayName: Accelerometer3 offsets of Z axis
     // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
-    // @Range: -300 300
+    // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
 #endif
