@@ -34,7 +34,7 @@ ASOPTS          =   -x assembler-with-cpp
 
 CPUFLAGS     = -D_GNU_SOURCE
 CPULDFLAGS   = -g
-OPTFLAGS     ?= -O3 -g
+OPTFLAGS     ?= -O3 -g -fopenmp
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) $(OPTFLAGS)
 CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)

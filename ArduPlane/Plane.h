@@ -632,7 +632,7 @@ private:
 
     AP_Param param_loader {var_info};
 
-    static const AP_Scheduler::Task scheduler_tasks[];
+    static const AP_Task::Settings scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
     bool demoing_servos = false;

@@ -298,8 +298,11 @@ void *PX4Scheduler::_timer_thread(void)
 
         if (px4_ran_overtime && millis() - last_ran_overtime > 2000) {
             last_ran_overtime = millis();
+/*
+            // deprecated stuff
             printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
             hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+*/
         }
     }
     return NULL;
