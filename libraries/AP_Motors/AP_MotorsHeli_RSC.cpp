@@ -65,8 +65,11 @@ void AP_MotorsHeli_RSC::output(uint8_t state)
             break;
     }
 
-    // run speed ramp function to slew output smoothly, also updates estimated speed
+    // run speed ramp function to slew output smoothly
     speed_ramp(_control_speed);
+
+    // update rotor speed estimate
+    update_speed_estimate();
 
     // output to rsc servo
     write_rsc(_control_out);
@@ -94,6 +97,12 @@ void AP_MotorsHeli_RSC::speed_ramp(int16_t speed_target)
         _control_out = speed_target;
     }
 
+
+}
+
+// update_speed_estimate - function to estimate speed
+void AP_MotorsHeli_RSC::update_speed_estimate()
+{
     // ramp speed estimate towards control out
     if (_estimated_speed < _control_out) {
         _estimated_speed += _runup_increment;
@@ -107,8 +116,8 @@ void AP_MotorsHeli_RSC::speed_ramp(int16_t speed_target)
         }
     }
 
-    // set runup complete flag
-    if (!_runup_complete && speed_target > 0 && _estimated_speed >= speed_target) {
+    // update run-up complete flag
+    if (!_runup_complete && _control_out > _idle_speed && _estimated_speed >= _control_out) {
         _runup_complete = true;
     }
     if (_runup_complete && _estimated_speed <= _critical_speed) {
