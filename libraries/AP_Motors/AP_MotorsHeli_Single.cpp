@@ -496,9 +496,9 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
         coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
     
         // rudder feed forward based on collective
-        // the feed-forward is not required when the motor is shut down and not creating torque
+        // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro
-        if ((_main_rotor.get_control_speed() > 0) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
+        if ((_main_rotor.get_control_speed() > _rsc_idle) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
