@@ -61,6 +61,10 @@ public:
 class AP_HMC5843_SerialBus
 {
 public:
+    struct PACKED raw_value {
+        uint8_t val[6];
+    };
+
     virtual ~AP_HMC5843_SerialBus() { };
     virtual void set_high_speed(bool val) = 0;
     virtual uint8_t register_read(uint8_t reg, uint8_t *buf, uint8_t size) = 0;

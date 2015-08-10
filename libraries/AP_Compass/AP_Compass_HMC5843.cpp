@@ -128,22 +128,22 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 // Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
-    uint8_t buff[6];
+    struct AP_HMC5843_SerialBus::raw_value rv;
 
-    if (_bus->register_read(0x03, buff, 6) != 0) {
+    if (_bus->register_read(0x03, (uint8_t*)&rv, sizeof(rv)) != 0) {
         _bus->set_high_speed(false);
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
 
     int16_t rx, ry, rz;
-    rx = (((int16_t)buff[0]) << 8) | buff[1];
+    rx = (((int16_t)rv.val[0]) << 8) | rv.val[1];
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rz = (((int16_t)buff[2]) << 8) | buff[3];
-        ry = (((int16_t)buff[4]) << 8) | buff[5];
+        rz = (((int16_t)rv.val[2]) << 8) | rv.val[3];
+        ry = (((int16_t)rv.val[4]) << 8) | rv.val[5];
     } else {
-        ry = (((int16_t)buff[2]) << 8) | buff[3];
-        rz = (((int16_t)buff[4]) << 8) | buff[5];
+        ry = (((int16_t)rv.val[2]) << 8) | rv.val[3];
+        rz = (((int16_t)rv.val[4]) << 8) | rv.val[5];
     }
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
