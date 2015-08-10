@@ -260,6 +260,11 @@ AP_Compass_HMC5843::init()
         goto errout;
     }
 
+    _initialised = true;
+    _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
+
+    // perform an initial read
     read();
 
 #if 0
@@ -270,14 +275,9 @@ AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
-    _initialised = true;
-
-    _i2c_sem->give();
-    hal.scheduler->resume_timer_procs();
-
     return true;
-errout:
 
+errout:
     _i2c_sem->give();
     hal.scheduler->resume_timer_procs();
     return false;
