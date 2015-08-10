@@ -81,6 +81,9 @@ private:
     // speed_ramp - ramps speed towards target, result put in _control_out
     void            speed_ramp(int16_t rotor_target);
 
+    // update_speed_estimate - function to estimate speed
+    void            update_speed_estimate();
+
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1000
     void            write_rsc(int16_t servo_out);
 };
