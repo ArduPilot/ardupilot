@@ -52,17 +52,17 @@ public:
     bool last_recv_address(char *hostname, uint16_t *port);
 
     // return true if there is pending data for input
-    bool pollin(uint32_t timeout_ms);
+    bool pollin(uint32_t timeout_ms) const;
 
     // return true if there is room for output data
-    bool pollout(uint32_t timeout_ms);
+    bool pollout(uint32_t timeout_ms) const;
 
     // start listening for new tcp connections
-    bool listen(uint16_t backlog);
+    bool listen(uint16_t backlog) const;
 
     // accept a new connection. Only valid for TCP connections after
     // listen has been used. A new socket is returned
-    SocketAPM *accept(uint32_t timeout_ms);
+    SocketAPM *accept(uint32_t timeout_ms) const;
 
 private:
     bool datagram;
@@ -70,8 +70,8 @@ private:
 
     int fd = -1;
 
-    struct addrinfo *get_address_info(const char *hostname, uint16_t port);
-    struct addrinfo *select_address(struct addrinfo *address_list);
+    struct addrinfo *get_address_info(const char *hostname, uint16_t port) const;
+    struct addrinfo *select_address(struct addrinfo *address_list) const;
 };
 
 #endif // HAL_OS_SOCKETS

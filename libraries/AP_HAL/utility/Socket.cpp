@@ -52,7 +52,7 @@ SocketAPM::~SocketAPM()
     }
 }
 
-struct addrinfo *SocketAPM::get_address_info(const char *address, uint16_t port)
+struct addrinfo *SocketAPM::get_address_info(const char *hostname, uint16_t port) const
 {
     char service[20] = {0};
     int service_length = sizeof(service);
@@ -72,7 +72,7 @@ struct addrinfo *SocketAPM::get_address_info(const char *address, uint16_t port)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = datagram? SOCK_DGRAM: SOCK_STREAM;
 
-    ret = getaddrinfo(address, service, &hints, &address_info);
+    ret = getaddrinfo(hostname, service, &hints, &address_info);
     if (ret < 0) {
         return NULL;
     }
@@ -80,7 +80,7 @@ struct addrinfo *SocketAPM::get_address_info(const char *address, uint16_t port)
     return address_info;
 }
 
-struct addrinfo *SocketAPM::select_address(struct addrinfo *address_list)
+struct addrinfo *SocketAPM::select_address(struct addrinfo *address_list) const
 {
     for (struct addrinfo *address = address_list; address != NULL; address = address->ai_next) {
         if (address->ai_family == AF_INET) {
@@ -261,7 +261,7 @@ void SocketAPM::set_broadcast(void)
 /*
   return true if there is pending data for input
  */
-bool SocketAPM::pollin(uint32_t timeout_ms)
+bool SocketAPM::pollin(uint32_t timeout_ms) const
 {
     fd_set fds;
     struct timeval tv;
@@ -282,7 +282,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
 /*
   return true if there is room for output data
  */
-bool SocketAPM::pollout(uint32_t timeout_ms)
+bool SocketAPM::pollout(uint32_t timeout_ms) const
 {
     fd_set fds;
     struct timeval tv;
@@ -302,7 +302,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
 /* 
    start listening for new tcp connections
  */
-bool SocketAPM::listen(uint16_t backlog)
+bool SocketAPM::listen(uint16_t backlog) const
 {
     return ::listen(fd, (int)backlog) == 0;
 }
@@ -311,7 +311,7 @@ bool SocketAPM::listen(uint16_t backlog)
   accept a new connection. Only valid for TCP connections after
   listen has been used. A new socket is returned
 */
-SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
+SocketAPM *SocketAPM::accept(uint32_t timeout_ms) const
 {
     if (!pollin(timeout_ms)) {
         return NULL;
