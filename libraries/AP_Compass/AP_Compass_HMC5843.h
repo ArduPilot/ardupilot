@@ -9,6 +9,9 @@
 #include "Compass.h"
 #include "AP_Compass_Backend.h"
 
+class AuxiliaryBus;
+class AuxiliaryBusSlave;
+class AP_InertialSensor;
 class AP_HMC5843_SerialBus;
 
 class AP_Compass_HMC5843 : public AP_Compass_Backend
@@ -49,6 +52,7 @@ public:
     // detect the sensor
     static AP_Compass_Backend *detect_i2c(Compass &compass,
                                           AP_HAL::I2CDriver *i2c);
+    static AP_Compass_Backend *detect_mpu6000(Compass &compass);
 
     AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus);
     ~AP_Compass_HMC5843();
@@ -75,6 +79,9 @@ public:
 
     virtual uint8_t register_write(uint8_t reg, uint8_t val) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
+    virtual uint8_t read_raw(struct raw_value *rv) = 0;
+    virtual bool configure() { return true; }
+    virtual bool start_measurements() { return true; }
 };
 
 class AP_HMC5843_SerialBus_I2C : public AP_HMC5843_SerialBus
@@ -85,10 +92,30 @@ public:
     uint8_t register_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
     uint8_t register_write(uint8_t reg, uint8_t val) override;
     AP_HAL::Semaphore* get_semaphore() override;
+    uint8_t read_raw(struct raw_value *rv) override;
 
 private:
     AP_HAL::I2CDriver *_i2c;
     uint8_t _addr;
+};
+
+class AP_HMC5843_SerialBus_MPU6000 : public AP_HMC5843_SerialBus
+{
+public:
+    AP_HMC5843_SerialBus_MPU6000(AP_InertialSensor &ins, uint8_t addr);
+    ~AP_HMC5843_SerialBus_MPU6000();
+    void set_high_speed(bool val) override;
+    uint8_t register_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
+    uint8_t register_write(uint8_t reg, uint8_t val) override;
+    AP_HAL::Semaphore* get_semaphore() override;
+    uint8_t read_raw(struct raw_value *rv) override;
+    bool configure() override;
+    bool start_measurements() override;
+
+private:
+    AuxiliaryBus *_bus = nullptr;
+    AuxiliaryBusSlave *_slave = nullptr;
+    bool _started = false;
 };
 
 #endif
