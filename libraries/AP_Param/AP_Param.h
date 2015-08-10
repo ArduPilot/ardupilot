@@ -198,13 +198,10 @@ public:
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
-
     /*
-      set a parameter by name
-
-      The parameter pointer is returned on success
+      set a parameter to a float
     */
-    static AP_Param *set_param_by_name(const char *pname, float value, enum ap_var_type *ptype);
+    void set_float(float value, enum ap_var_type var_type);
 
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);
