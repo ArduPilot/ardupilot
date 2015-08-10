@@ -244,10 +244,9 @@ AP_Compass_HMC5843::init()
     uint16_t expected_yz = 715;
     float gain_multiple = 1.0;
 
-    hal.scheduler->suspend_timer_procs();
-    hal.scheduler->delay(10);
-
     _bus_sem = _bus->get_semaphore();
+    hal.scheduler->suspend_timer_procs();
+
     if (!_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
     }
