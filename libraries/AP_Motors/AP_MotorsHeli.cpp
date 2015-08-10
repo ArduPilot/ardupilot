@@ -199,6 +199,21 @@ bool AP_MotorsHeli::parameter_check() const
         return false;
     }
 
+    // returns false if RSC Mode is not set to a valid control mode
+    if (_rsc_mode <= AP_MOTORS_HELI_RSC_MODE_NONE || _rsc_mode > AP_MOTORS_HELI_RSC_MODE_SETPOINT) {
+        return false;
+    }
+
+    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
+    if (_rsc_runup_time <= _rsc_ramp_time){
+        return false;
+    }
+
+    // returns false if Critical Rotor speed is not higher than Idle speed
+    if (_rsc_critical <= _rsc_idle){
+        return false;
+    }
+
     // all other cases parameters are OK
     return true;
 }
