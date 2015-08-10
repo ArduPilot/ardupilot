@@ -74,7 +74,6 @@ struct addrinfo *SocketAPM::get_address_info(const char *address, uint16_t port)
 
     ret = getaddrinfo(address, service, &hints, &address_info);
     if (ret < 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
         return NULL;
     }
 
