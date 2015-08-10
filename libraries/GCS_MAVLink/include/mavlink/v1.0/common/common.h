@@ -524,7 +524,9 @@ typedef enum MAV_PROTOCOL_CAPABILITY
 	MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT=256, /* Autopilot supports commanding position and velocity targets in global scaled integers. | */
 	MAV_PROTOCOL_CAPABILITY_TERRAIN=512, /* Autopilot supports terrain protocol / data handling. | */
 	MAV_PROTOCOL_CAPABILITY_SET_ACTUATOR_TARGET=1024, /* Autopilot supports direct actuator control. | */
-	MAV_PROTOCOL_CAPABILITY_ENUM_END=1025, /*  | */
+    MAV_PROTOCOL_CAPABILITY_FORCE_DISARM=2048, /* Autopilot supports forced disarming. | */
+    MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION=4096, /* Autopilot supports onboard compass calibration. | */
+	MAV_PROTOCOL_CAPABILITY_ENUM_END=4097, /*  | */
 } MAV_PROTOCOL_CAPABILITY;
 #endif
 
