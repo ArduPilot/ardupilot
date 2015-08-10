@@ -584,6 +584,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_TERRAIN:
     case MSG_OPTICAL_FLOW:
     case MSG_GIMBAL_REPORT:
+    case MSG_RPM:
         break; // just here to prevent a warning
 	}
 
