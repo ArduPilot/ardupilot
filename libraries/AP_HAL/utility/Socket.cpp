@@ -16,7 +16,7 @@
   simple socket handling class for systems with BSD socket API
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if HAL_OS_SOCKETS
 
 #include "Socket.h"

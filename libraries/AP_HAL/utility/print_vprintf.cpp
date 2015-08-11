@@ -38,8 +38,8 @@
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
 
-#include <AP_HAL.h>
-#include <AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
