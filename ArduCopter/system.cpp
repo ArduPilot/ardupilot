@@ -223,7 +223,7 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
     }
 
@@ -284,7 +284,7 @@ void Copter::init_ardupilot()
 //******************************************************************************
 void Copter::startup_ground(bool force_gyro_cal)
 {
-    gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("GROUND START"));
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
