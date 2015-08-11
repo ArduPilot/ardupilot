@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_ANALOGIN_H__
 #define __AP_HAL_LINUX_ANALOGIN_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 class Linux::LinuxAnalogSource : public AP_HAL::AnalogSource {
 public:

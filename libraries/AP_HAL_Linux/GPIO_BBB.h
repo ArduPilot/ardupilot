@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_GPIO_BBB_H__
 #define __AP_HAL_LINUX_GPIO_BBB_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #define SYSFS_GPIO_DIR "/sys/class/gpio"
 
