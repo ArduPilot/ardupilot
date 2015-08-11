@@ -398,7 +398,7 @@ private:
     void gcs_send_message(enum ap_message id);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
+    void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str);
     void gcs_retry_deferred(void);
     void do_erase_logs(void);
     void Log_Write_Performance();
