@@ -18,9 +18,9 @@
 #ifndef __EXTERNALLED_H__
 #define __EXTERNALLED_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
 #include "NotifyDevice.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2

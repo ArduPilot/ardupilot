@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_Notify.h>
+#include "AP_Notify.h"
 
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;

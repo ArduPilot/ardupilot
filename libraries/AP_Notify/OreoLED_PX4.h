@@ -19,7 +19,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
 #include <drivers/drv_oreoled.h>
 

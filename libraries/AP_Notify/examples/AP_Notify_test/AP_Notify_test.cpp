@@ -3,20 +3,20 @@
  *       DIYDrones.com
  */
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Param.h>
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_Linux.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_Empty.h>
-#include <AP_Notify.h>          // Notify library
-#include <AP_BoardLED.h>        // Board LED library
-#include <GCS_MAVLink.h>
-#include <StorageManager.h>
-#include <AP_RangeFinder.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Param/AP_Param.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_Notify/AP_Notify.h>          // Notify library
+#include <AP_Notify/AP_BoardLED.h>        // Board LED library
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
