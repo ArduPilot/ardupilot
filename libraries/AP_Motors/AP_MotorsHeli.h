@@ -37,7 +37,7 @@
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
 
 // main rotor speed control types (ch8 out)
-#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // main rotor ESC is directly connected to receiver, pilot controls ESC speed through transmitter directly
+#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // not a valid RSC Mode
 #define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out), pilot desired rotor speed provided by CH8 input
 #define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor ESC is connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
 
@@ -136,7 +136,7 @@ public:
     virtual int16_t get_estimated_rotor_speed() const = 0;
 
     // return true if the main rotor is up to speed
-    bool rotor_runup_complete() const;
+    bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     virtual bool rotor_speed_above_critical() const = 0;
