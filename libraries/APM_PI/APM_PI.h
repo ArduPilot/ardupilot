@@ -7,7 +7,7 @@
 #define __APM_PI_H__
 
 #include <stdlib.h>
-#include <AP_Param.h>
+#include <AP_Param/AP_Param.h>
 
 /// @class	APM_PI
 /// @brief	Object managing one PI control
