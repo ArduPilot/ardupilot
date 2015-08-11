@@ -1,8 +1,8 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
 #include <avr/io.h>
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "SPIDriver.h"
 #include "SPIDevices.h"
 #include "GPIO.h"

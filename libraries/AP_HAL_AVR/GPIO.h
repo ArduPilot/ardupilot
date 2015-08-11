@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_GPIO_H__
 #define __AP_HAL_AVR_GPIO_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1

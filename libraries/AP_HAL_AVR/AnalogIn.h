@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_ANALOG_IN_H__
 #define __AP_HAL_AVR_ANALOG_IN_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
 #define AVR_INPUT_MAX_CHANNELS 12
