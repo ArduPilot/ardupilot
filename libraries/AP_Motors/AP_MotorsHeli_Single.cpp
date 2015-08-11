@@ -195,7 +195,7 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
 bool AP_MotorsHeli_Single::allow_arming() const
 {
     // returns false if main rotor speed is not zero
-    if (_main_rotor.get_estimated_speed() > 0) {
+    if (_main_rotor.get_rotor_speed() > 0) {
         return false;
     }
 
@@ -209,39 +209,38 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 {
     _main_rotor.set_desired_speed(desired_speed);
 
-    if (desired_speed > 0 && _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
     } else {
         _tail_rotor.set_desired_speed(0);
     }
 }
 
-
-// recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
+// recalc_scalers - recalculates various scalers used.
 void AP_MotorsHeli_Single::recalc_scalers()
 {
-    
+    _main_rotor.set_control_mode(_rsc_mode);    
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
     _main_rotor.set_critical_speed(_rsc_critical);
     _main_rotor.set_idle_speed(_rsc_idle);
     _main_rotor.recalc_scalers();
 
-    if (_rsc_mode != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.set_ramp_time(0);
-        _tail_rotor.set_runup_time(0);
-        _tail_rotor.set_critical_speed(0);
-        _tail_rotor.set_idle_speed(0);
-    } else {
+    if (_rsc_mode == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
+        _tail_rotor.set_control_mode(AP_MOTORS_HELI_RSC_MODE_SETPOINT);
         _tail_rotor.set_ramp_time(_rsc_ramp_time);
         _tail_rotor.set_runup_time(_rsc_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical);
         _tail_rotor.set_idle_speed(_rsc_idle);
+    } else {
+        _tail_rotor.set_control_mode(AP_MOTORS_HELI_RSC_MODE_DISABLED);
+        _tail_rotor.set_ramp_time(0);
+        _tail_rotor.set_runup_time(0);
+        _tail_rotor.set_critical_speed(0);
+        _tail_rotor.set_idle_speed(0);
     }
-
     _tail_rotor.recalc_scalers();
 }
-
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
