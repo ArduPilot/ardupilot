@@ -60,6 +60,7 @@ enum ap_message {
     MSG_LOCAL_POSITION,
     MSG_PID_TUNING,
     MSG_VIBRATION,
+    MSG_RPM,
     MSG_RETRY_DEFERRED // this must be last
 };
 

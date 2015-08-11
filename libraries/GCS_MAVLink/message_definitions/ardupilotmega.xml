@@ -940,5 +940,11 @@
 
     <!-- 219 to 225 RESERVED for more GOPRO-->
 
+    <message name="RPM" id="226">
+      <description>RPM sensor output</description>
+      <field name="rpm1" type="float">RPM Sensor1</field>
+      <field name="rpm2" type="float">RPM Sensor2</field>
+    </message>
+
      </messages>
 </mavlink>

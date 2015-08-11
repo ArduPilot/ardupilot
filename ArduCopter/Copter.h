@@ -102,6 +102,7 @@
 #endif
 #include <AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain.h>
+#include <AP_RPM.h>
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -171,6 +172,8 @@ private:
     RangeFinder sonar;
     bool sonar_enabled; // enable user switch for sonar
 #endif
+
+    AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
     NavEKF EKF{&ahrs, barometer, sonar};
@@ -578,6 +581,8 @@ private:
     void send_vfr_hud(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
+    void send_rpm(mavlink_channel_t chan);
+    void rpm_update();
     void send_pid_tuning(mavlink_channel_t chan);
     void send_statustext(mavlink_channel_t chan);
     bool telemetry_delayed(mavlink_channel_t chan);

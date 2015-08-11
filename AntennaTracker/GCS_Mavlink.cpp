@@ -276,6 +276,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_EKF_STATUS_REPORT:
     case MSG_PID_TUNING:
     case MSG_VIBRATION:
+    case MSG_RPM:
         break; // just here to prevent a warning
     }
     return true;
