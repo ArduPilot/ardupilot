@@ -14,12 +14,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <GCS_MAVLink.h>
-#include <GCS.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
+#include <DataFlash/DataFlash.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
