@@ -12,6 +12,11 @@
 #define ROTOR_CONTROL_IDLE                      1
 #define ROTOR_CONTROL_ACTIVE                    2
 
+// rotor control modes
+#define ROTOR_CONTROL_MODE_DISABLED             0
+#define ROTOR_CONTROL_MODE_PASSTHROUGH          1
+#define ROTOR_CONTROL_MODE_SETPOINT             2
+
 class AP_MotorsHeli_RSC {
 public:
         AP_MotorsHeli_RSC(RC_Channel&   servo_output,
@@ -24,6 +29,9 @@ public:
 
     // init_servo - servo initialization on start-up
     void        init_servo();
+
+    // set_control_mode - sets control mode
+    void        set_control_mode(int8_t mode) { _control_mode = mode; }
 
     // set_critical_speed
     void        set_critical_speed(int16_t critical_speed) { _critical_speed = critical_speed; }
@@ -43,8 +51,8 @@ public:
     // get_control_speed
     int16_t     get_control_speed() const { return _control_speed; }
 
-    // get_estimated_speed
-    int16_t     get_estimated_speed() const { return _estimated_speed; }
+    // get_rotor_speed - return estimated or measured rotor speed
+    int16_t     get_rotor_speed() const;
 
     // is_runup_complete
     bool        is_runup_complete() const { return _runup_complete; }
@@ -69,23 +77,25 @@ private:
     float           _loop_rate;                 // main loop rate
 
     // internal variables
+    int8_t          _control_mode = 0;          // motor control mode, Passthrough or Setpoint
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
     int16_t         _idle_speed = 0;            // motor output idle speed
+    int16_t         _max_speed = 1000;          // rotor maximum speed. Placeholder value until we have measured speed input (ToDo)
     int16_t         _desired_speed = 0;         // latest desired rotor speed from pilot
     int16_t         _control_speed = 0;         // latest logic controlled rotor speed
-    float           _control_out = 0;           // latest output sent to the main rotor or an estimate of the rotors actual speed (whichever is higher) (0 ~ 1000)
-    float           _estimated_speed = 0;       // estimated speed of the main rotor (0~1000)
-    float           _ramp_increment = 0;        // the amount we can increase the rotor output during each 100hz iteration
+    float           _rotor_ramp_output = 0;     // scalar used to ramp rotor speed between _rsc_idle and full speed (0.0-1.0f)
+    float           _rotor_runup_output = 0;    // scalar used to store status of rotor run-up time (0.0-1.0f)
+    float           _ramp_increment = 0;        // the amount to increase/decrease the rotor ramp scalar during each iteration
     int8_t          _ramp_time = 0;             // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time = 0;            // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
-    float           _runup_increment = 0;       // the amount we can increase the rotor's estimated speed during each 100hz iteration
+    float           _runup_increment = 0;       // the amount to increase/decrease the rotor run-up scalar during each iteration
     bool            _runup_complete = false;    // flag for determining if runup is complete
 
-    // speed_ramp - ramps speed towards target, result put in _control_out
-    void            speed_ramp(int16_t rotor_target);
+    // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
+    void            update_rotor_ramp(float rotor_ramp_input);
 
-    // update_speed_estimate - function to estimate speed
-    void            update_speed_estimate();
+    // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
+    void            update_rotor_runup();
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1000
     void            write_rsc(int16_t servo_out);

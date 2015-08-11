@@ -87,16 +87,16 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(int16_t desired_speed);
 
-    // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
-    int16_t get_estimated_rotor_speed() const { return _main_rotor.get_estimated_speed(); }
+    // get_main_rotor_speed - gets estimated or measured main rotor speed
+    int16_t get_main_rotor_speed() const { return _main_rotor.get_rotor_speed(); }
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
     int16_t get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const { return _main_rotor.get_estimated_speed() > _main_rotor.get_critical_speed(); }
+    bool rotor_speed_above_critical() const { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
 
-    // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
+    // recalc_scalers - recalculates various scalers used.
     void recalc_scalers();
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)

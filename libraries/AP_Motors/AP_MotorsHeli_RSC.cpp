@@ -36,7 +36,7 @@ void AP_MotorsHeli_RSC::recalc_scalers()
         _ramp_time = 1;
     }
 
-    _ramp_increment = 1000.0f / (_ramp_time * _loop_rate);
+    _ramp_increment = 1.0f / (_ramp_time * _loop_rate);
 
     // recalculate rotor runup increment
     if (_runup_time <= 0 ) {
@@ -47,7 +47,7 @@ void AP_MotorsHeli_RSC::recalc_scalers()
         _runup_time = _ramp_time;
     }
 
-    _runup_increment = 1000.0f / (_runup_time * _loop_rate);
+    _runup_increment = 1.0f / (_runup_time * _loop_rate);
 }
 
 // output - update value to send to ESC/Servo
@@ -55,89 +55,113 @@ void AP_MotorsHeli_RSC::output(uint8_t state)
 {
     switch (state){
         case ROTOR_CONTROL_STOP:
-            _control_speed = 0;                             // ramp input to zero
-            _control_out = 0;                               // force ramp output to zero
-            _estimated_speed = 0;                           // force speed estimate to zero
+            // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
+            update_rotor_ramp(0.0f);
+
+            // control output forced to zero
+            _control_speed = 0;
             break;
 
         case ROTOR_CONTROL_IDLE:
-            _control_speed = _idle_speed;                   // set control speed to idle speed
-            if (_control_out < _idle_speed){
-                _control_out = _idle_speed;                 // if control output is less than idle speed, force ramp function to jump to idle speed
-            }
+            // set rotor ramp to decrease speed to zero
+            update_rotor_ramp(0.0f);
+
+            // set rotor control speed to idle speed parameter, this happens instantly and ignore ramping
+            _control_speed = _idle_speed;
             break;
 
         case ROTOR_CONTROL_ACTIVE:
-            _control_speed = _desired_speed;                // set control speed to desired speed
+            // set main rotor ramp to increase to full speed
+            update_rotor_ramp(1.0f);
+
+            if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
+                // set control rotor speed to ramp slewed value between idle and desired speed
+                _control_speed = _idle_speed + (_rotor_ramp_output * (_desired_speed - _idle_speed));
+            }
             break;
     }
 
-    // run speed ramp function to slew output smoothly
-    speed_ramp(_control_speed);
-
-    // update rotor speed estimate
-    update_speed_estimate();
+    // update rotor speed run-up estimate
+    update_rotor_runup();
 
     // output to rsc servo
-    write_rsc(_control_out);
+    write_rsc(_control_speed);
 }
 
-// speed_ramp - ramps speed towards target, result put in _control_out 
-void AP_MotorsHeli_RSC::speed_ramp(int16_t speed_target)
+// update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
+void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input)
 {
-    // range check speed_target
-    speed_target = constrain_int16(speed_target,0,1000);
-
     // ramp output upwards towards target
-    if (_control_out < speed_target) {
+    if (_rotor_ramp_output < rotor_ramp_input) {
         // allow control output to jump to estimated speed
-        if (_control_out < _estimated_speed) {
-            _control_out = _estimated_speed;
+        if (_rotor_ramp_output < _rotor_runup_output) {
+            _rotor_ramp_output = _rotor_runup_output;
         }
         // ramp up slowly to target
-        _control_out += _ramp_increment;
-        if (_control_out > speed_target) {
-            _control_out = speed_target;
+        _rotor_ramp_output += _ramp_increment;
+        if (_rotor_ramp_output > rotor_ramp_input) {
+            _rotor_ramp_output = rotor_ramp_input;
         }
     }else{
         // ramping down happens instantly
-        _control_out = speed_target;
+        _rotor_ramp_output = rotor_ramp_input;
     }
-
-
 }
 
-// update_speed_estimate - function to estimate speed
-void AP_MotorsHeli_RSC::update_speed_estimate()
+// update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
+void AP_MotorsHeli_RSC::update_rotor_runup()
 {
     // ramp speed estimate towards control out
-    if (_estimated_speed < _control_out) {
-        _estimated_speed += _runup_increment;
-        if (_estimated_speed > _control_out) {
-            _estimated_speed = _control_out;
+    if (_rotor_runup_output < _rotor_ramp_output) {
+        _rotor_runup_output += _runup_increment;
+        if (_rotor_runup_output > _rotor_ramp_output) {
+            _rotor_runup_output = _rotor_ramp_output;
         }
     }else{
-        _estimated_speed -= _runup_increment;
-        if (_estimated_speed < _control_out) {
-            _estimated_speed = _control_out;
+        _rotor_runup_output -= _runup_increment;
+        if (_rotor_runup_output < _rotor_ramp_output) {
+            _rotor_runup_output = _rotor_ramp_output;
         }
     }
 
     // update run-up complete flag
-    if (!_runup_complete && _control_out > _idle_speed && _estimated_speed >= _control_out) {
+
+    // if control mode is disabled, then run-up complete always returns true
+    if ( _control_mode == ROTOR_CONTROL_MODE_DISABLED ){
+        _runup_complete = true;
+        return;
+    }
+
+    // if rotor ramp and runup are both at full speed, then run-up has been completed
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f)) {
         _runup_complete = true;
     }
-    if (_runup_complete && _estimated_speed <= _critical_speed) {
+    // if rotor speed is less than critical speed, then run-up is not complete
+    // this will prevent the case where the target rotor speed is less than critical speed
+    if (_runup_complete && (get_rotor_speed() <= _critical_speed)) {
         _runup_complete = false;
     }
+}
+
+// get_rotor_speed - gets rotor speed either as an estimate, or (ToDO) a measured value
+int16_t AP_MotorsHeli_RSC::get_rotor_speed() const
+{
+    // if no actual measured rotor speed is available, estimate speed based on rotor runup scalar.
+    return (_rotor_runup_output * _max_speed);
 }
 
 // write_rsc - outputs pwm onto output rsc channel
 // servo_out parameter is of the range 0 ~ 1000
 void AP_MotorsHeli_RSC::write_rsc(int16_t servo_out)
 {
-    _servo_output.servo_out = servo_out;
-    _servo_output.calc_pwm();
+    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED){
+        // do not do servo output to avoid conflicting with other output on the channel
+        // ToDo: We should probably use RC_Channel_Aux to avoid this problem
+        return;
+    } else {
+        _servo_output.servo_out = servo_out;
+        _servo_output.calc_pwm();
 
-    hal.rcout->write(_servo_output_channel, _servo_output.radio_out);
+        hal.rcout->write(_servo_output_channel, _servo_output.radio_out);
+    }
 }
