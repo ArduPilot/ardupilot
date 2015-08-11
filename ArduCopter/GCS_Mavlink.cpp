@@ -1450,6 +1450,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        // check for supported coordinate frames
+        if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
+            packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
+            packet.coordinate_frame != MAV_FRAME_BODY_NED &&
+            packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+            break;
+        }
+
         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
@@ -1461,16 +1469,45 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
          * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
          */
 
+        // prepare position
+        Vector3f pos_vector;
+        if (!pos_ignore) {
+            // convert to cm
+            pos_vector = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
+            // rotate to body-frame if necessary
+            if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
+                packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                copter.rotate_body_frame_to_NE(pos_vector.x, pos_vector.y);
+            }
+            // add body offset if necessary
+            if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
+                packet.coordinate_frame == MAV_FRAME_BODY_NED ||
+                packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                pos_vector += copter.inertial_nav.get_position();
+            } else {
+                // convert from alt-above-home to alt-above-ekf-origin
+                pos_vector.z = copter.pv_alt_above_origin(pos_vector.z);
+            }
+        }
+
+        // prepare velocity
+        Vector3f vel_vector;
+        if (!vel_ignore) {
+            // convert to cm
+            vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
+            // rotate to body-frame if necessary
+            if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+                copter.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
+            }
+        }
+
+        // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            Vector3f pos_ned = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
-            pos_ned.z = copter.pv_alt_above_origin(pos_ned.z);
-            copter.guided_set_destination_posvel(pos_ned, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            copter.guided_set_destination_posvel(pos_vector, vel_vector);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            copter.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            copter.guided_set_velocity(vel_vector);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            Vector3f pos_ned = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
-            pos_ned.z = copter.pv_alt_above_origin(pos_ned.z);
-            copter.guided_set_destination(pos_ned);
+            copter.guided_set_destination(pos_vector);
         } else {
             result = MAV_RESULT_FAILED;
         }
