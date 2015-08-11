@@ -6,10 +6,10 @@
 #ifndef AC_ATTITUDECONTROL_HELI_H
 #define AC_ATTITUDECONTROL_HELI_H
 
-#include <AC_AttitudeControl.h>
-#include <AP_MotorsHeli.h>
-#include <AC_HELI_PID.h>
-#include <Filter.h>
+#include "AC_AttitudeControl.h"
+#include <AP_Motors/AP_MotorsHeli.h>
+#include <AC_PID/AC_HELI_PID.h>
+#include <Filter/Filter.h>
 
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
