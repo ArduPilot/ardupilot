@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_SITL_STORAGE_H__
 #define __AP_HAL_SITL_STORAGE_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
 
 class HALSITL::SITLEEPROMStorage : public AP_HAL::Storage {

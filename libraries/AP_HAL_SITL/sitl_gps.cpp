@@ -7,14 +7,14 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "../SITL/SITL.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
