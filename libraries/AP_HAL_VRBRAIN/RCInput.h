@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_VRBRAIN_RCINPUT_H__
 #define __AP_HAL_VRBRAIN_RCINPUT_H__
 
-#include <AP_HAL_VRBRAIN.h>
+#include "AP_HAL_VRBRAIN.h"
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>

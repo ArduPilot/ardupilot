@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_VRBRAIN_UARTDRIVER_H__
 #define __AP_HAL_VRBRAIN_UARTDRIVER_H__
 
-#include <AP_HAL_VRBRAIN.h>
+#include "AP_HAL_VRBRAIN.h"
 #include <systemlib/perf_counter.h>
 
 class VRBRAIN::VRBRAINUARTDriver : public AP_HAL::UARTDriver {
