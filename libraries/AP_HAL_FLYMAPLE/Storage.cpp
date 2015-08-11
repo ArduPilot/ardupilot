@@ -19,7 +19,7 @@
   This storage is retained after power down, and survives reloading of firmware
   All multi-byte accesses are reduced to single byte access so that can span EEPROM block boundaries
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 

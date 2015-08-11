@@ -17,12 +17,12 @@
   Flymaple port by Mike McCauley
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "FlymapleWirish.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AnalogIn.h"
 using namespace AP_HAL_FLYMAPLE_NS;
 
