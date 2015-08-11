@@ -16,10 +16,10 @@
 #ifndef AP_L1_CONTROL_H
 #define AP_L1_CONTROL_H
 
-#include <AP_Math.h>
-#include <AP_AHRS.h>
-#include <AP_Param.h>
-#include <AP_Navigation.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Navigation/AP_Navigation.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
