@@ -18,8 +18,8 @@
 //  Based upon the roll controller by Paul Riseborough and Jon Challinger
 //
 
-#include <AP_Math.h>
-#include <AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_SteerController.h"
 
 extern const AP_HAL::HAL& hal;

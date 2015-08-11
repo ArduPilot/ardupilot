@@ -3,9 +3,9 @@
 #ifndef __AP_AUTOTUNE_H__
 #define __AP_AUTOTUNE_H__
 
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_AutoTune {
 public:
