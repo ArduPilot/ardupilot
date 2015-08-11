@@ -5,7 +5,7 @@
 
 #include <inttypes.h>
 #include "AP_ADC.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 
 struct adc_report_s 
