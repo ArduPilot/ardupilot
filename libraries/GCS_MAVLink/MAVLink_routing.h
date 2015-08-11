@@ -6,9 +6,9 @@
 #ifndef __MAVLINK_ROUTING_H
 #define __MAVLINK_ROUTING_H
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "GCS_MAVLink.h"
 
 // 20 routes should be enough for now. This may need to increase as
 // we make more extensive use of MAVLink forwarding

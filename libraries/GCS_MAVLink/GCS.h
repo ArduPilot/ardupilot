@@ -7,14 +7,14 @@
 #ifndef __GCS_H
 #define __GCS_H
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
-#include <DataFlash.h>
-#include <AP_Mission.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "GCS_MAVLink.h"
+#include <DataFlash/DataFlash.h>
+#include <AP_Mission/AP_Mission.h>
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
-#include <MAVLink_routing.h>
+#include "MAVLink_routing.h"
 #include "../AP_SerialManager/AP_SerialManager.h"
 #include "../AP_Mount/AP_Mount.h"
 
