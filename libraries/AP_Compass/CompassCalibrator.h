@@ -1,4 +1,4 @@
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 
 #define COMPASS_CAL_NUM_SPHERE_PARAMS 4
 #define COMPASS_CAL_NUM_ELLIPSOID_PARAMS 9
