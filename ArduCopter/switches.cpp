@@ -597,7 +597,7 @@ void Copter::save_trim()
     float pitch_trim = ToRad((float)channel_pitch->control_in/100.0f);
     ahrs.add_trim(roll_trim, pitch_trim);
     Log_Write_Event(DATA_SAVE_TRIM);
-    gcs_send_text_P(SEVERITY_HIGH, PSTR("Trim saved"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Trim saved"));
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
