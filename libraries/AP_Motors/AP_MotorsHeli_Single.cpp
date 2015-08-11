@@ -195,7 +195,7 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
 bool AP_MotorsHeli_Single::allow_arming() const
 {
     // returns false if main rotor speed is not zero
-    if (_rsc_mode != AP_MOTORS_HELI_RSC_MODE_NONE && _main_rotor.get_estimated_speed() > 0) {
+    if (_main_rotor.get_estimated_speed() > 0) {
         return false;
     }
 
@@ -220,18 +220,11 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
 void AP_MotorsHeli_Single::recalc_scalers()
 {
-    if (_rsc_mode == AP_MOTORS_HELI_RSC_MODE_NONE) {
-        _main_rotor.set_ramp_time(0);
-        _main_rotor.set_runup_time(0);
-        _main_rotor.set_critical_speed(0);
-        _main_rotor.set_idle_speed(0);
-    } else {
-        _main_rotor.set_ramp_time(_rsc_ramp_time);
-        _main_rotor.set_runup_time(_rsc_runup_time);
-        _main_rotor.set_critical_speed(_rsc_critical);
-        _main_rotor.set_idle_speed(_rsc_idle);
-    }
-
+    
+    _main_rotor.set_ramp_time(_rsc_ramp_time);
+    _main_rotor.set_runup_time(_rsc_runup_time);
+    _main_rotor.set_critical_speed(_rsc_critical);
+    _main_rotor.set_idle_speed(_rsc_idle);
     _main_rotor.recalc_scalers();
 
     if (_rsc_mode != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
