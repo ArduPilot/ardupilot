@@ -21,6 +21,13 @@
 
 extern const AP_HAL::HAL& hal;
 
+// init_servo - servo initialization on start-up
+void AP_MotorsHeli_RSC::init_servo()
+{
+    // set servo range
+    _servo_output.set_range(0,1000);
+}
+
 // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
 void AP_MotorsHeli_RSC::recalc_scalers()
 {
