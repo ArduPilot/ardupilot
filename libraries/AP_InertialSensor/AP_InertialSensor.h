@@ -87,13 +87,11 @@ public:
     uint8_t register_gyro(void);
     uint8_t register_accel(void);
 
-#if !defined( __AVR_ATmega1280__ )
     // perform accelerometer calibration including providing user instructions
     // and feedback
     bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
                          float& trim_roll,
                          float& trim_pitch);
-#endif
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
@@ -242,7 +240,6 @@ private:
     // gyro initialisation
     void _init_gyro();
 
-#if !defined( __AVR_ATmega1280__ )
     // Calibration routines borrowed from Rolfe Schmidt
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
@@ -259,7 +256,6 @@ private:
     void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
-#endif
 
     // save parameters to eeprom
     void  _save_parameters();
