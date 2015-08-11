@@ -104,7 +104,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking
