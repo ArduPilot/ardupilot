@@ -24,11 +24,11 @@
  *
  */
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Math.h>
-#include <AP_Declination.h>
-#include <AP_Progmem.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Math/AP_Math.h>
+#include "AP_Declination.h"
+#include <AP_Progmem/AP_Progmem.h>
 #include <math.h>
 
 // 1 byte - 4 bits for value + 1 bit for sign + 3 bits for repeats => 8 bits
