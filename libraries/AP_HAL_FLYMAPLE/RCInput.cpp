@@ -17,7 +17,7 @@
   Monitor a PPM-SUM input pin, and decode the channels based on pulse widths
   Uses a timer to capture the time between negative transitions of the PPM-SUM pin
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
