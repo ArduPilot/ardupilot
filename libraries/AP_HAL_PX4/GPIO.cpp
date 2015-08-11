@@ -245,10 +245,11 @@ bool PX4GPIO::usb_connected(void)
     struct stat st;
     /*
       we use a combination of voltage on the USB connector and the
-      existance of the /dev/ttyACM0 character device. This copes with
+      open of the /dev/ttyACM0 character device. This copes with
       systems where the VBUS may go high even with no USB connected
+      (such as AUAV-X2)
      */
-    return stm32_gpioread(GPIO_OTGFS_VBUS) && stat("/dev/ttyACM0", &st) == 0;
+    return stm32_gpioread(GPIO_OTGFS_VBUS) && _usb_connected;
 }
 
 

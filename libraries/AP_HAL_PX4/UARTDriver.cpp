@@ -17,6 +17,7 @@
 #include <drivers/drv_hrt.h>
 #include <assert.h>
 #include "../AP_HAL/utility/RingBuffer.h"
+#include "GPIO.h"
 
 using namespace PX4;
 
@@ -146,6 +147,9 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
         if (!_initialised) {
+            if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+                ((PX4GPIO *)hal.gpio)->set_usb_connected();
+            }
             ::printf("initialised %s OK %u %u\n", _devpath, 
                      (unsigned)_writebuf_size, (unsigned)_readbuf_size);
         }
