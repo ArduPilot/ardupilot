@@ -17,14 +17,14 @@
 #ifndef __AP_FRSKY_TELEM_H__
 #define __AP_FRSKY_TELEM_H__
 
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_GPS.h>
-#include <AP_AHRS.h>
-#include <AP_Baro.h>
-#include <AP_BattMonitor.h>
-#include <AP_SerialManager.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 /* FrSky sensor hub data IDs */
 #define FRSKY_ID_GPS_ALT_BP     0x01
