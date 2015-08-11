@@ -8,7 +8,7 @@
  *  of false positives with uninitialised stack variables
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include <stdint.h>
 
