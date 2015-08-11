@@ -47,7 +47,7 @@
 #ifndef __AP_GPS_NMEA_H__
 #define __AP_GPS_NMEA_H__
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 
 /// NMEA parser
 ///
