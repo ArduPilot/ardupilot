@@ -15,13 +15,13 @@
  */
 
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_TYPE == CONFIG_HAL_BOARD_TYPE_LINUX && \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #include "AP_BattMonitor_Bebop.h"
-#include "RCOutput_Bebop.h"
+#include <AP_HAL_Linux/RCOutput_Bebop.h>
 
 extern const AP_HAL::HAL& hal;
 
