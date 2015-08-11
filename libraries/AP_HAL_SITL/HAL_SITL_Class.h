@@ -2,11 +2,11 @@
 #ifndef __AP_HAL_SITL_CLASS_H__
 #define __AP_HAL_SITL_CLASS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "SITL_State.h"
 
