@@ -19,7 +19,7 @@
 #ifndef HAL_SOCKET_H
 #define HAL_SOCKET_H
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if HAL_OS_SOCKETS
 
 #include <fcntl.h>
