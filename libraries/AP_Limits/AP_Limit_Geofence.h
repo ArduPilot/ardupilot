@@ -11,10 +11,10 @@
 
 #include "AP_Limits.h"
 #include "AP_Limit_Module.h"
-#include <AP_Math.h>
-#include <AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Param/AP_Param.h>
 #include <GPS.h>
-#include <../StorageManager/StorageManager.h>
+#include <StorageManager/StorageManager.h>
 
 #define MAX_FENCEPOINTS 6
 
