@@ -178,19 +178,6 @@ void AP_MotorsHeli::output()
     }
 };
 
-// output_min - sets servos to neutral point
-void AP_MotorsHeli::output_min()
-{
-    // move swash to mid
-    move_swash(0,0,500,0);
-
-    // override limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = true;
-    limit.throttle_upper = false;
-}
-
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli::parameter_check() const
 {
