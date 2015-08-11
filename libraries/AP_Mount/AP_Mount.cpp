@@ -1,15 +1,15 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_Mount.h>
-#include <AP_Mount_Backend.h>
-#include <AP_Mount_Servo.h>
-#include <AP_Mount_MAVLink.h>
-#include <AP_Mount_Alexmos.h>
-#include <AP_Mount_SToRM32.h>
-#include <AP_Mount_SToRM32_serial.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Param/AP_Param.h>
+#include "AP_Mount.h"
+#include "AP_Mount_Backend.h"
+#include "AP_Mount_Servo.h"
+#include "AP_Mount_MAVLink.h"
+#include "AP_Mount_Alexmos.h"
+#include "AP_Mount_SToRM32.h"
+#include "AP_Mount_SToRM32_serial.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _DEFLT_MODE
