@@ -18,19 +18,19 @@
 #ifndef __AP_NOTIFY_H__
 #define __AP_NOTIFY_H__
 
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
-#include <AP_BoardLED.h>
-#include <ToshibaLED.h>
-#include <ToshibaLED_I2C.h>
-#include <ToshibaLED_PX4.h>
-#include <ToneAlarm_PX4.h>
-#include <ToneAlarm_Linux.h>
-#include <NavioLED_I2C.h>
-#include <ExternalLED.h>
-#include <Buzzer.h>
-#include <VRBoard_LED.h>
-#include <OreoLED_PX4.h>
+#include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_BoardLED.h"
+#include "ToshibaLED.h"
+#include "ToshibaLED_I2C.h"
+#include "ToshibaLED_PX4.h"
+#include "ToneAlarm_PX4.h"
+#include "ToneAlarm_Linux.h"
+#include "NavioLED_I2C.h"
+#include "ExternalLED.h"
+#include "Buzzer.h"
+#include "VRBoard_LED.h"
+#include "OreoLED_PX4.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs

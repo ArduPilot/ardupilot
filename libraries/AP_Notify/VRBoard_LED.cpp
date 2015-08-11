@@ -18,7 +18,7 @@
  */
 
 #include "VRBoard_LED.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #define VRBRAIN_LED_BRIGHT  1    // full brightness
 #define VRBRAIN_LED_MEDIUM  1    // medium brightness
