@@ -6,7 +6,7 @@
 // Note: use new/delete with caution.  The heap is small and
 // easily fragmented.
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 
 /*
