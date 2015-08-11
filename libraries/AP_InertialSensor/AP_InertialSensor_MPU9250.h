@@ -4,11 +4,11 @@
 #define __AP_INERTIAL_SENSOR_MPU9250_H__
 
 #include <stdint.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Progmem.h>
-#include <Filter.h>
-#include <LowPassFilter2p.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <Filter/Filter.h>
+#include <Filter/LowPassFilter2p.h>
 #include "AP_InertialSensor.h"
 
 // enable debug to see a register dump on startup

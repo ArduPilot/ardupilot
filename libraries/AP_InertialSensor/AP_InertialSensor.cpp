@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Progmem.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Notify.h>
-#include <AP_Vehicle.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Notify/AP_Notify.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Math/AP_Math.h>
 
 /*
   enable TIMING_DEBUG to track down scheduling issues with the main

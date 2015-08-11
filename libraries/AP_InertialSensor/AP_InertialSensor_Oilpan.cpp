@@ -1,10 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 #include "AP_InertialSensor_Oilpan.h"
-#include <AP_ADC.h>
+#include <AP_ADC/AP_ADC.h>
 
 const extern AP_HAL::HAL& hal;
 

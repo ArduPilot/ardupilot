@@ -21,7 +21,7 @@
 // ITG3205 Gyroscope  http://www.sparkfun.com/datasheets/Sensors/Gyro/PS-ITG-3200-00-01.4.pdf
 // ADXL345 Accelerometer http://www.analog.com/static/imported-files/data_sheets/ADXL345.pdf
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "AP_InertialSensor_Flymaple.h"

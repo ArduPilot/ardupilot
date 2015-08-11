@@ -3,7 +3,7 @@
 #ifndef __AP_INERTIAL_SENSOR_OILPAN_H__
 #define __AP_INERTIAL_SENSOR_OILPAN_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 
 class AP_InertialSensor_Oilpan : public AP_InertialSensor_Backend

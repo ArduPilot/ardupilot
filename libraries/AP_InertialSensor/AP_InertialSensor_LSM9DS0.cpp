@@ -15,7 +15,7 @@
  *  -- Adapted from Victor Mayoral Vilches's legacy driver under folder LSM9DS0
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
