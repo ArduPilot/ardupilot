@@ -23,7 +23,7 @@
 #ifndef AP_SCHEDULER_H
 #define AP_SCHEDULER_H
 
-#include <AP_Param.h>
+#include <AP_Param/AP_Param.h>
 
 /*
   A task scheduler for APM main loops
@@ -35,8 +35,8 @@
   the scheduler is allowed to use before it must return
  */
 
-#include <AP_HAL.h>
-#include <AP_Vehicle.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_Scheduler
 {
