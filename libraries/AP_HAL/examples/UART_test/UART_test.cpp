@@ -32,7 +32,7 @@
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <UARTDriver.h>
+#include <AP_HAL/UARTDriver.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
