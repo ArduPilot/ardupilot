@@ -367,6 +367,10 @@ void AP_MotorsHeli_Single::init_servos()
     init_swash_servo (_swash_servo_3);
 
     _yaw_servo.set_angle(4500);
+
+    // set main rotor servo range
+    // tail rotor servo use range as set in vehicle code for rc7
+    _main_rotor.init_servo();
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
