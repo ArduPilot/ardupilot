@@ -6,19 +6,19 @@
 #ifndef DataFlash_h
 #define DataFlash_h
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_GPS.h>
-#include <AP_InertialSensor.h>
-#include <AP_Baro.h>
-#include <AP_AHRS.h>
-#include <AP_Vehicle.h>
-#include <AP_Mission.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Mission/AP_Mission.h>
 #include "../AP_Airspeed/AP_Airspeed.h"
 #include "../AP_BattMonitor/AP_BattMonitor.h"
 #include <stdint.h>
-#include <DataFlash_Backend.h>
+#include "DataFlash_Backend.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <uORB/topics/esc_status.h>

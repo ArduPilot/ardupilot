@@ -35,7 +35,7 @@
  *       Properties:
  *
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "DataFlash_APM2.h"
 
 extern const AP_HAL::HAL& hal;
