@@ -664,7 +664,7 @@ struct PACKED log_Heli {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     int16_t   desired_rotor_speed;
-    int16_t   estimated_rotor_speed;
+    int16_t   main_rotor_speed;
 };
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -675,7 +675,7 @@ void Copter::Log_Write_Heli()
         LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
         time_us                 : hal.scheduler->micros64(),
         desired_rotor_speed     : motors.get_desired_rotor_speed(),
-        estimated_rotor_speed   : motors.get_estimated_rotor_speed(),
+        main_rotor_speed        : motors.get_main_rotor_speed(),
     };
     DataFlash.WriteBlock(&pkt_heli, sizeof(pkt_heli));
 }
