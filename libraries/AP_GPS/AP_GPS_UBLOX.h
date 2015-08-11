@@ -23,8 +23,8 @@
 #ifndef __AP_GPS_UBLOX_H__
 #define __AP_GPS_UBLOX_H__
 
-#include <AP_HAL.h>
-#include <AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_GPS.h"
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 

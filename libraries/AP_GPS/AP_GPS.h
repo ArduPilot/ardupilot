@@ -17,14 +17,14 @@
 #ifndef __AP_GPS_H__
 #define __AP_GPS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
-#include <AP_Progmem.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <GCS_MAVLink.h>
-#include <AP_Vehicle.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include "../AP_SerialManager/AP_SerialManager.h"
 
@@ -416,13 +416,13 @@ private:
 
 #define GPS_BAUD_TIME_MS 1200
 
-#include <GPS_Backend.h>
-#include <AP_GPS_UBLOX.h>
-#include <AP_GPS_MTK.h>
-#include <AP_GPS_MTK19.h>
-#include <AP_GPS_NMEA.h>
-#include <AP_GPS_SIRF.h>
-#include <AP_GPS_SBP.h>
-#include <AP_GPS_PX4.h>
+#include "GPS_Backend.h"
+#include "AP_GPS_UBLOX.h"
+#include "AP_GPS_MTK.h"
+#include "AP_GPS_MTK19.h"
+#include "AP_GPS_NMEA.h"
+#include "AP_GPS_SIRF.h"
+#include "AP_GPS_SBP.h"
+#include "AP_GPS_PX4.h"
 
 #endif // __AP_GPS_H__

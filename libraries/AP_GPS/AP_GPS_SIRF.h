@@ -21,9 +21,9 @@
 #ifndef __AP_GPS_SIRF_H__
 #define __AP_GPS_SIRF_H__
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_GPS.h"
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C\r\n"
 

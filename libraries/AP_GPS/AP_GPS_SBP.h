@@ -24,7 +24,7 @@
 #ifndef __AP_GPS_SBP_H__
 #define __AP_GPS_SBP_H__
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 
 class AP_GPS_SBP : public AP_GPS_Backend
 {
