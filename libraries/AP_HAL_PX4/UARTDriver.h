@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_PX4_UARTDRIVER_H__
 #define __AP_HAL_PX4_UARTDRIVER_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
 
 class PX4::PX4UARTDriver : public AP_HAL::UARTDriver {
