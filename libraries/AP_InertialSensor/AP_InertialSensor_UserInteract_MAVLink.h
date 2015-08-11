@@ -2,8 +2,8 @@
 #ifndef __AP_INERTIAL_SENSOR_USER_INTERACT_MAVLINK_H__
 #define __AP_INERTIAL_SENSOR_USER_INTERACT_MAVLINK_H__
 
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_InertialSensor_UserInteract.h"
 
 class GCS_MAVLINK;

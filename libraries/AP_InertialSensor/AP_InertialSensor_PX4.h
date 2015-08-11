@@ -3,18 +3,18 @@
 #ifndef __AP_INERTIAL_SENSOR_PX4_H__
 #define __AP_INERTIAL_SENSOR_PX4_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
-#include <AP_Progmem.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include "AP_InertialSensor.h"
 #include <drivers/drv_accel.h>
 #include <drivers/drv_gyro.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 
-#include <Filter.h>
-#include <LowPassFilter2p.h>
+#include <Filter/Filter.h>
+#include <Filter/LowPassFilter2p.h>
 
 class AP_InertialSensor_PX4 : public AP_InertialSensor_Backend
 {

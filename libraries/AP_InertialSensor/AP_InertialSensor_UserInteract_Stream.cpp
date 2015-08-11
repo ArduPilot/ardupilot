@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_UserInteract_Stream.h"
 
 extern const AP_HAL::HAL& hal;
