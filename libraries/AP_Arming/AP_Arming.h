@@ -3,10 +3,10 @@
 #ifndef __AP_ARMING_H__
 #define __AP_ARMING_H__ 
 
-#include <AP_AHRS.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Arming {
 public:
