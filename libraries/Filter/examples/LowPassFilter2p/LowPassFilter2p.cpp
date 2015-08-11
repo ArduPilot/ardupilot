@@ -3,17 +3,17 @@
  *       Code by Randy Mackay and Andrew Tridgell
  */
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_FLYMAPLE.h>
-#include <AP_Param.h>
-#include <StorageManager.h>
-#include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <Filter.h>                     // Filter library
-#include <LowPassFilter2p.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
+#include <AP_Param/AP_Param.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <Filter/Filter.h>                     // Filter library
+#include <Filter/LowPassFilter2p.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
