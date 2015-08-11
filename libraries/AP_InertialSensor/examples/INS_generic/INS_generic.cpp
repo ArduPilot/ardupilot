@@ -121,12 +121,8 @@ static void run_calibration()
     }
 
 
-#if !defined( __AVR_ATmega1280__ )
     AP_InertialSensor_UserInteractStream interact(hal.console);
     ins.calibrate_accel(&interact, roll_trim, pitch_trim);
-#else
-	hal.console->println_P(PSTR("calibrate_accel not available on 1280"));
-#endif
 }
 
 static void display_offsets_and_scaling()
