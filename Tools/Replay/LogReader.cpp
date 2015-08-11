@@ -1,13 +1,13 @@
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AP_Airspeed.h>
-#include <AP_Compass.h>
-#include <AP_GPS.h>
-#include <AP_Compass.h>
-#include <AP_Baro.h>
-#include <AP_InertialSensor.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <DataFlash/DataFlash.h>
 
 #include "LogReader.h"
 #include <stdio.h>
