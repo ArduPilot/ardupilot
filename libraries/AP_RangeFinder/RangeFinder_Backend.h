@@ -17,8 +17,8 @@
 #ifndef __AP_RANGEFINDER_BACKEND_H__
 #define __AP_RANGEFINDER_BACKEND_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 #include "RangeFinder.h"
 
 class AP_RangeFinder_Backend
