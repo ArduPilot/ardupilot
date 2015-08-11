@@ -15,9 +15,9 @@
 #ifndef __AP_EPM_h__
 #define __AP_EPM_h__
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <RC_Channel.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <RC_Channel/RC_Channel.h>
 
 // EPM PWM definitions
 #define EPM_GRAB_PWM_DEFAULT        1900
