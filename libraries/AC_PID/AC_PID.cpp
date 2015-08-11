@@ -3,7 +3,7 @@
 /// @file	AC_PID.cpp
 /// @brief	Generic PID algorithm
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include "AC_PID.h"
 
 const AP_Param::GroupInfo AC_PID::var_info[] PROGMEM = {
