@@ -6,9 +6,9 @@
 #ifndef __AP_MOTORS_OCTA_QUAD_H__
 #define __AP_MOTORS_OCTA_QUAD_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel.h>     // RC Channel Library
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include "AP_MotorsMatrix.h"   // Parent Motors Matrix library
 
 /// @class      AP_MotorsOcta
