@@ -396,10 +396,10 @@ void Rover::log_init(void)
 {
 	DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("No dataflash card inserted"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("No dataflash card inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("ERASING LOGS"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ERASING LOGS"));
 		do_erase_logs();
     }
 	if (g.log_bitmask != 0) {

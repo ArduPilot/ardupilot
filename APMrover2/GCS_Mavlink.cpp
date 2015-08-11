@@ -865,7 +865,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
-            send_text_P(SEVERITY_LOW,PSTR("command received: "));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("command received: "));
 
             switch(packet.command) {
 
@@ -950,7 +950,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 }
                 else {
-                    send_text_P(SEVERITY_LOW, PSTR("Unsupported preflight calibration"));
+                    send_text_P(MAV_SEVERITY_WARNING, PSTR("Unsupported preflight calibration"));
                 }
                 break;
 
@@ -1076,10 +1076,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
-            send_text_P(SEVERITY_LOW, PSTR(FIRMWARE_STRING));
+            send_text_P(MAV_SEVERITY_WARNING, PSTR(FIRMWARE_STRING));
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text_P(SEVERITY_LOW, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+            send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
 #endif
             handle_param_request_list(msg);
             break;
@@ -1301,7 +1301,7 @@ void Rover::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Initialising APM..."));
     }
     check_usb_mux();
 
@@ -1361,7 +1361,7 @@ void Rover::gcs_update(void)
     }
 }
 
-void Rover::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+void Rover::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -1381,7 +1381,7 @@ void Rover::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void Rover::gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
     va_start(arg_list, fmt);
     hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);

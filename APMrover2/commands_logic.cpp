@@ -164,7 +164,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
                 // this is a command that doesn't require verify
                 return true;
             }
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Unsupported command"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Unsupported command"));
             return true;
 	}
     return false;
@@ -248,7 +248,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs_send_text_P(SEVERITY_LOW,PSTR("Reached Destination"));
+		gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached Destination"));
                 rtl_complete = true;
 		return true;
 	}
