@@ -22,7 +22,7 @@
 
 #include "SIM_Aircraft.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <utility/Socket.h>
+#include <AP_HAL/utility/Socket.h>
 
 class Gimbal
 {

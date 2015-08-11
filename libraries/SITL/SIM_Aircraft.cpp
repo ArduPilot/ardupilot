@@ -17,9 +17,9 @@
   parent class for aircraft simulators
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 #include "SIM_Aircraft.h"
 #include <unistd.h>
 #include <sys/time.h>

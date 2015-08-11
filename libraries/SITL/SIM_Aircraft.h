@@ -21,8 +21,8 @@
 #define _SIM_AIRCRAFT_H
 
 #include "SITL.h"
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 
 /*
   parent class for all simulator types
