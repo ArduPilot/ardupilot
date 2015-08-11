@@ -1,7 +1,7 @@
 #ifndef __AP_HAL_LINUX_RCINPUT_NAVIO_H__
 #define __AP_HAL_LINUX_RCINPUT_NAVIO_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #include "RCInput.h"
 #include <signal.h>
 #include <pthread.h>

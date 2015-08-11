@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_RCINPUT_H__
 #define __AP_HAL_LINUX_RCINPUT_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #define LINUX_RC_INPUT_NUM_CHANNELS 16
 

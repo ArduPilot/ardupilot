@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_RCOUTPUT_ZYNQ_H__
 #define __AP_HAL_LINUX_RCOUTPUT_ZYNQ_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #define RCOUT_ZYNQ_PWM_BASE	 0x43c00000	//FIXME hardcoding is the devil's work
 #define MAX_ZYNQ_PWMS            8	/* number of pwm channels */
 #define PWM_CMD_CONFIG	         0	/* full configuration in one go */

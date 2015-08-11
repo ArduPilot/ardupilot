@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_RCOUTPUT_NAVIO_H__
 #define __AP_HAL_LINUX_RCOUTPUT_NAVIO_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     public:

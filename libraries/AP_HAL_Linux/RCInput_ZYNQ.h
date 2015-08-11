@@ -7,7 +7,7 @@
   logic doing the edge detection of the PPM sum input
  */
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 // FIXME A puppie dies when you hard code an address
 #define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000

@@ -18,7 +18,7 @@
   doing the edge detection of the PPM sum input
  */
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #define RCIN_PRUSS_RAM_BASE   0x4a303000
 // we use 300 ring buffer entries to guarantee that a full 25 byte

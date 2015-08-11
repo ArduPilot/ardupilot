@@ -7,7 +7,7 @@
 #define LINUX_STORAGE_USE_FRAM 0
 #endif
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
 
 #define LINUX_STORAGE_SIZE HAL_STORAGE_SIZE
