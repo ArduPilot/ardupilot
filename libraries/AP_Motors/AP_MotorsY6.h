@@ -6,10 +6,10 @@
 #ifndef __AP_MOTORS_Y6_H__
 #define __AP_MOTORS_Y6_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel.h>     // RC Channel Library
-#include <AP_MotorsMatrix.h>    // Parent Motors Matrix library
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include "AP_MotorsMatrix.h"    // Parent Motors Matrix library
 
 #define AP_MOTORS_Y6_YAW_DIRECTION 1    // this really should be a user selectable parameter
 

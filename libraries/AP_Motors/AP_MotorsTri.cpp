@@ -19,8 +19,8 @@
  *       Code by RandyMackay. DIYDrones.com
  *
  */
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_MotorsTri.h"
 
 extern const AP_HAL::HAL& hal;

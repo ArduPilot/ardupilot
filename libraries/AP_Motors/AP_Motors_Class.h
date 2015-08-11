@@ -3,12 +3,12 @@
 #ifndef __AP_MOTORS_CLASS_H__
 #define __AP_MOTORS_CLASS_H__
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Notify.h>      // Notify library
-#include <RC_Channel.h>     // RC Channel Library
-#include <Filter.h>         // filter library
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_Notify/AP_Notify.h>      // Notify library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <Filter/Filter.h>         // filter library
 
 // offsets for motors in motor_out, _motor_filtered and _motor_to_channel_map arrays
 #define AP_MOTORS_MOT_1 0
