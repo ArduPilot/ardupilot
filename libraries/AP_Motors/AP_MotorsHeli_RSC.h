@@ -22,6 +22,9 @@ public:
         _loop_rate(loop_rate)
     {};
 
+    // init_servo - servo initialization on start-up
+    void        init_servo();
+
     // set_critical_speed
     void        set_critical_speed(int16_t critical_speed) { _critical_speed = critical_speed; }
     
