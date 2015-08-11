@@ -21,8 +21,8 @@
   find which serial port they should use
  */
 
-#include <AP_HAL.h>
-#include <AP_SerialManager.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_SerialManager.h"
 
 extern const AP_HAL::HAL& hal;
 
