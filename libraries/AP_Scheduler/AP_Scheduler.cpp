@@ -20,9 +20,9 @@
  *
  */
 
-#include <AP_HAL.h>
-#include <AP_Scheduler.h>
-#include <AP_Param.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_Scheduler.h"
+#include <AP_Param/AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
