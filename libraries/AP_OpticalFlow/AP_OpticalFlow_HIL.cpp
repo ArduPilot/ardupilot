@@ -19,7 +19,7 @@
  * This is a dummy class, with the work done in setHIL()
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;

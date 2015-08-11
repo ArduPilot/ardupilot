@@ -9,7 +9,7 @@
 #define AP_OpticalFlow_Linux_H
 
 #include "OpticalFlow.h"
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_OpticalFlow_Linux : public OpticalFlow_backend
 {
