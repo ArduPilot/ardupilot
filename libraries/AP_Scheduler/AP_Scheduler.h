@@ -25,6 +25,16 @@
 
 #include <AP_Param/AP_Param.h>
 
+#define SCHEDULER_TASK_SLIPPED 0x1
+#define SCHEDULER_TASK_EXECUTED 0x2
+#define SCHEDULER_TASK_OVERRUN 0x4
+
+#ifndef __AVR__
+#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_name)
+#endif
+
 /*
   A task scheduler for APM main loops
 
@@ -45,6 +55,9 @@ public:
 
     struct Task {
         task_fn_t function;
+#ifndef __AVR__
+        const char *name;
+#endif
         uint16_t interval_ticks;
         uint16_t max_time_micros;
     };
@@ -85,6 +98,15 @@ private:
 
     // number of tasks in _tasks list
     uint8_t _num_tasks;
+
+    struct TaskExecutionLog {
+        uint32_t time_taken;
+        uint16_t ticks_since_last_run;
+        uint8_t task_id;
+        uint8_t flag;
+    };
+
+    TaskExecutionLog *_task_execution_log_buffer;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
