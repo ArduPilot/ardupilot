@@ -18,10 +18,10 @@
     SITL.cpp - software in the loop state
 */
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
-#include <SITL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "SITL.h"
 
 extern const AP_HAL::HAL& hal;
 

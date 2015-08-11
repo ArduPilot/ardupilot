@@ -21,7 +21,7 @@
 #define _SIM_JSBSIM_H
 
 #include "SIM_Aircraft.h"
-#include <utility/Socket.h>
+#include <AP_HAL/utility/Socket.h>
 
 /*
   a Jsbsim simulator
