@@ -6,14 +6,14 @@
 #ifndef AC_AttitudeControl_H
 #define AC_AttitudeControl_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_InertialSensor.h>
-#include <AP_AHRS.h>
-#include <AP_Motors.h>
-#include <AC_PID.h>
-#include <AC_P.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Motors/AP_Motors.h>
+#include <AC_PID/AC_PID.h>
+#include <AC_PID/AC_P.h>
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                   // constant to convert from radians to centi-degrees
