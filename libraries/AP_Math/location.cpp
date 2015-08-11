@@ -20,7 +20,7 @@
 /*
  *  this module deals with calculations involving struct Location
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
 
