@@ -6,9 +6,9 @@
 #ifndef AP_PARACHUTE_H
 #define AP_PARACHUTE_H
 
-#include <AP_Param.h>
-#include <AP_Common.h>
-#include <AP_Relay.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Relay/AP_Relay.h>
 
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_0       0
 #define AP_PARACHUTE_TRIGGER_TYPE_RELAY_1       1
