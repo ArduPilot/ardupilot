@@ -10,7 +10,7 @@
 #ifndef __AP_INERTIALNAV_NAVEKF_H__
 #define __AP_INERTIALNAV_NAVEKF_H__
 
-#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+#include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 class AP_InertialNav_NavEKF : public AP_InertialNav
 {

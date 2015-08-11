@@ -3,10 +3,10 @@
 #ifndef __AP_INERTIALNAV_H__
 #define __AP_INERTIALNAV_H__
 
-#include <AP_AHRS.h>
-#include <AP_InertialSensor.h>          // ArduPilot Mega IMU Library
-#include <AP_Baro.h>                    // ArduPilot Mega Barometer Library
-#include <AP_Buffer.h>                  // FIFO buffer library
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>          // ArduPilot Mega IMU Library
+#include <AP_Baro/AP_Baro.h>                    // ArduPilot Mega Barometer Library
+#include <AP_Buffer/AP_Buffer.h>                  // FIFO buffer library
 #include "../AP_NavEKF/AP_Nav_Common.h" // definitions shared by inertial and ekf nav filters
 
 /*
