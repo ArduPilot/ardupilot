@@ -22,7 +22,7 @@
  *
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 
 #define PX4FLOW_DEBUG 1
