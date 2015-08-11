@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_PX4_ANALOGIN_H__
 #define __AP_HAL_PX4_ANALOGIN_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 #include <pthread.h>
 #include <uORB/uORB.h>
 
