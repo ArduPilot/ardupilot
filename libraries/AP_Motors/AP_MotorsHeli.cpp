@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
     // @Description: Controls the source of the desired rotor speed, either ch8 or RSC_SETPOINT
-    // @Values: 0:None, 1:Ch8 Input, 2:SetPoint
+    // @Values: 1:Ch8 Input, 2:SetPoint
     // @User: Standard
     AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
 
@@ -216,12 +216,6 @@ bool AP_MotorsHeli::parameter_check() const
 
     // all other cases parameters are OK
     return true;
-}
-
-// return true if the main rotor is up to speed
-bool AP_MotorsHeli::rotor_runup_complete() const
-{
-    return _heliflags.rotor_runup_complete;
 }
 
 // reset_swash - free up swash for maximum movements. Used for set-up
