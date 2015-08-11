@@ -15,6 +15,7 @@
 static Vector3f posvel_pos_target_cm;
 static Vector3f posvel_vel_target_cms;
 static uint32_t posvel_update_time_ms;
+static uint32_t vel_update_time_ms;
 
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
@@ -137,6 +138,8 @@ void Copter::guided_set_velocity(const Vector3f& velocity)
     if (guided_mode != Guided_Velocity) {
         guided_vel_control_start();
     }
+
+    vel_update_time_ms = millis();
 
     // set position controller velocity target
     pos_control.set_desired_velocity(velocity);
@@ -274,6 +277,12 @@ void Copter::guided_vel_control_run()
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
+    }
+
+    // set velocity to zero if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - vel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !pos_control.get_desired_velocity().is_zero()) {
+        pos_control.set_desired_velocity(Vector3f(0,0,0));
     }
 
     // calculate dt
