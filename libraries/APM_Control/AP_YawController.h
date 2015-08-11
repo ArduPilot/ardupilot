@@ -3,10 +3,10 @@
 #ifndef __AP_YAW_CONTROLLER_H__
 #define __AP_YAW_CONTROLLER_H__
 
-#include <AP_AHRS.h>
-#include <AP_Common.h>
-#include <AP_Vehicle.h>
-#include <DataFlash.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <DataFlash/DataFlash.h>
 #include <math.h>
 
 class AP_YawController {
