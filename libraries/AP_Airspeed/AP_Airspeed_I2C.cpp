@@ -19,10 +19,10 @@
   backend driver for airspeed from a I2C MS4525D0 sensor
  */
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Airspeed_I2C.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include "AP_Airspeed_I2C.h"
 
 extern const AP_HAL::HAL& hal;
 
