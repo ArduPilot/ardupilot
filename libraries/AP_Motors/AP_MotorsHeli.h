@@ -88,7 +88,7 @@ public:
     virtual void enable() = 0;
 
     // output_min - sets servos to neutral point
-    void output_min();
+    virtual void output_min() = 0;
 
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame

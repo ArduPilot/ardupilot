@@ -250,6 +250,22 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
     return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
 }
 
+// output_min - sets servos to neutral point
+void AP_MotorsHeli_Single::output_min()
+{
+    // move swash to mid
+    move_swash(0,0,500,0);
+
+    _main_rotor.output(ROTOR_CONTROL_STOP);
+    _tail_rotor.output(ROTOR_CONTROL_STOP);
+
+    // override limits flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = false;
+}
+
 // sends commands to the motors
 void AP_MotorsHeli_Single::output_armed_stabilizing()
 {
