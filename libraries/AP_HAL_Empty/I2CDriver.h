@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_EMPTY_I2CDRIVER_H__
 #define __AP_HAL_EMPTY_I2CDRIVER_H__
 
-#include <AP_HAL_Empty.h>
+#include "AP_HAL_Empty.h"
 
 class Empty::EmptyI2CDriver : public AP_HAL::I2CDriver {
 public:
