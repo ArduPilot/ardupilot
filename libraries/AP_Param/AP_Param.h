@@ -21,15 +21,15 @@
 
 #ifndef AP_PARAM_H
 #define AP_PARAM_H
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 #include "float.h"
 
-#include <AP_Progmem.h>
-#include <../StorageManager/StorageManager.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <StorageManager/StorageManager.h>
 
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
