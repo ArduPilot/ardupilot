@@ -37,7 +37,7 @@
 #define AP_MOTORS_HELI_LAND_COLLECTIVE_MIN      0
 
 // main rotor speed control types (ch8 out)
-#define AP_MOTORS_HELI_RSC_MODE_NONE            0       // not a valid RSC Mode
+#define AP_MOTORS_HELI_RSC_MODE_DISABLED        0       // not a valid RSC Mode
 #define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out), pilot desired rotor speed provided by CH8 input
 #define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor ESC is connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
 
@@ -120,7 +120,7 @@ public:
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
-    // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_NONE, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
+    // get_rsc_mode - gets the rotor speed control method (AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH or AP_MOTORS_HELI_RSC_MODE_SETPOINT)
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1000)
@@ -132,8 +132,8 @@ public:
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1000
     virtual int16_t get_desired_rotor_speed() const = 0;
 
-    // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
-    virtual int16_t get_estimated_rotor_speed() const = 0;
+    // get_main_rotor_speed - gets estimated or measured main rotor speed
+    virtual int16_t get_main_rotor_speed() const = 0;
 
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }

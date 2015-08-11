@@ -200,7 +200,7 @@ bool AP_MotorsHeli::parameter_check() const
     }
 
     // returns false if RSC Mode is not set to a valid control mode
-    if (_rsc_mode <= AP_MOTORS_HELI_RSC_MODE_NONE || _rsc_mode > AP_MOTORS_HELI_RSC_MODE_SETPOINT) {
+    if (_rsc_mode <= AP_MOTORS_HELI_RSC_MODE_DISABLED || _rsc_mode > AP_MOTORS_HELI_RSC_MODE_SETPOINT) {
         return false;
     }
 
