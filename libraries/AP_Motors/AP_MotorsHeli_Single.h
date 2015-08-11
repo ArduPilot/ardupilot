@@ -81,6 +81,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void output_test(uint8_t motor_seq, int16_t pwm);
 
+    // output_min - sets servos to neutral point
+    void output_min();
+
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
 
