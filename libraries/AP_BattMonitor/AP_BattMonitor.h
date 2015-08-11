@@ -2,9 +2,9 @@
 #ifndef AP_BATTMONITOR_H
 #define AP_BATTMONITOR_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 
 // maximum number of battery monitors
 #define AP_BATT_MONITOR_MAX_INSTANCES       2

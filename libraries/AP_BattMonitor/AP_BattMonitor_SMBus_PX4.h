@@ -18,9 +18,9 @@
 #ifndef AP_BATTMONITOR_SMBUS_PX4_H
 #define AP_BATTMONITOR_SMBUS_PX4_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor_SMBus.h"
 
 class AP_BattMonitor_SMBus_PX4 : public AP_BattMonitor_SMBus
