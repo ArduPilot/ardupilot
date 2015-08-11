@@ -18,9 +18,9 @@
  *  ArduPilot
  *
  */
-#include <AP_HAL.h>
-#include <AP_AHRS.h>
-#include <AP_Vehicle.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_AHRS.h"
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
