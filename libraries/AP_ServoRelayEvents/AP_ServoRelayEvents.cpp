@@ -18,10 +18,10 @@
  */
 
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_ServoRelayEvents.h>
-#include <RC_Channel.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_ServoRelayEvents.h"
+#include <RC_Channel/RC_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 

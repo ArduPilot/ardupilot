@@ -10,8 +10,8 @@
 #ifndef __AP_SERVORELAYEVENTS_H__
 #define __AP_SERVORELAYEVENTS_H__
 
-#include <AP_Param.h>
-#include <AP_Relay.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Relay/AP_Relay.h>
 
 class AP_ServoRelayEvents {
 public:
