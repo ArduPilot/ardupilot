@@ -17,8 +17,8 @@
 #ifndef __AP_RPM_BACKEND_H__
 #define __AP_RPM_BACKEND_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_RPM.h"
 
 class AP_RPM_Backend
