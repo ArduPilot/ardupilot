@@ -378,9 +378,8 @@ void AP_MotorsHeli_Single::reset_servos()
 // init_servos
 void AP_MotorsHeli_Single::init_servos()
 {
-    init_swash_servo (_swash_servo_1);
-    init_swash_servo (_swash_servo_2);
-    init_swash_servo (_swash_servo_3);
+    // reset swash servo range and endpoints
+    reset_servos();
 
     _yaw_servo.set_angle(4500);
 
