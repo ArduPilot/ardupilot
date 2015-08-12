@@ -259,6 +259,9 @@ public:
     // check var table for consistency
     static bool             check_var_info(void);
 
+    // returns default value used for this parameter
+    float get_default_value() const;
+
 private:
     /// EEPROM header
     ///
@@ -311,7 +314,7 @@ private:
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
-                                    uint8_t *                 idx);
+                                    uint8_t *                 idx) const;
     const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo **  group_ret,

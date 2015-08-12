@@ -369,7 +369,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 // find the info structure for a variable
 const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 group_element,
                                                      const struct GroupInfo **  group_ret,
-                                                     uint8_t *                  idx)
+                                                     uint8_t *                  idx) const
 {
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
@@ -1359,3 +1359,20 @@ float AP_Param::get_default_value(const float *def_value_ptr)
     return PGM_FLOAT(def_value_ptr);
 }
 
+/*
+ * returns default value for this parameter
+ */
+float AP_Param::get_default_value() const
+{
+    uint32_t group_element;
+    const struct GroupInfo *ginfo;
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    float ret;
+    if (ginfo != NULL) {
+        ret = get_default_value(&ginfo->def_value);
+    } else {
+        ret = get_default_value(&info->def_value);
+    }
+    return ret;
+}
