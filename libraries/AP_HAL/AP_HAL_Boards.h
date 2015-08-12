@@ -84,6 +84,7 @@
 #define HAL_COMPASS_VRBRAIN   4
 #define HAL_COMPASS_AK8963_MPU9250 5
 #define HAL_COMPASS_AK8963_I2C  6
+#define HAL_COMPASS_HMC5843_MPU6000 7
 
 /**
    CPU classes, used to select if CPU intensive algorithms should be used
