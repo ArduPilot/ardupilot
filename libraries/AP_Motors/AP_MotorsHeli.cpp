@@ -90,8 +90,8 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
-    // @Description: Controls the source of the desired rotor speed, either ch8 or RSC_SETPOINT
-    // @Values: 1:Ch8 Input, 2:SetPoint
+    // @Description: Determines the method of rotor speed control
+    // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve
     // @User: Standard
     AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
 
@@ -134,7 +134,23 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Range: 0 500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+    AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
+
+    // @Param: RSC_POWER_LOW
+    // @DisplayName: Throttle Servo Low Power Position
+    // @Description: Throttle output at zero collective pitch.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
+    
+    // @Param: RSC_POWER_HIGH
+    // @DisplayName: Throttle Servo High Power Position
+    // @Description: Throttle output at max collective pitch.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
 
     AP_GROUPEND
 };
@@ -196,8 +212,8 @@ bool AP_MotorsHeli::parameter_check() const
         return false;
     }
 
-    // returns false if Critical Rotor speed is not higher than Idle speed
-    if (_rsc_critical <= _rsc_idle){
+    // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
+    if ( _rsc_idle_output >=  _rsc_critical){
         return false;
     }
 
@@ -247,6 +263,9 @@ void AP_MotorsHeli::init_swash()
 
     // calculate collective mid point as a number from 0 to 1000
     _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
+
+    // calculate maximum collective pitch range from full positive pitch to zero pitch
+    _collective_range = 1000 - _collective_mid_pwm;
 
     // determine roll, pitch and collective input scaling
     _roll_scaler = (float)_roll_max/4500.0f;

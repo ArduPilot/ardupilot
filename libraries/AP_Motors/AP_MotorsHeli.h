@@ -40,6 +40,7 @@
 #define AP_MOTORS_HELI_RSC_MODE_DISABLED        0       // not a valid RSC Mode
 #define AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH 1       // main rotor ESC is connected to RC8 (out), pilot desired rotor speed provided by CH8 input
 #define AP_MOTORS_HELI_RSC_MODE_SETPOINT        2       // main rotor ESC is connected to RC8 (out), desired speed is held in RSC_SETPOINT parameter
+#define AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE  3       // main rotor speed is controlled open-loop by a throttle servo or ESC connected to RC8(out)
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 1000
 #define AP_MOTORS_HELI_RSC_SETPOINT             700
@@ -47,8 +48,10 @@
 // default main rotor critical speed
 #define AP_MOTORS_HELI_RSC_CRITICAL             500
 
-// default main rotor idle speed
+// RSC output defaults
 #define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
+#define AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT    200
+#define AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT   700
 
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
@@ -222,7 +225,9 @@ protected:
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _land_collective_min;       // Minimum collective when landed or landing
     AP_Int16        _rsc_critical;              // Rotor speed below which flight is not possible
-    AP_Int16        _rsc_idle;                  // Rotor speed output while at idle
+    AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
+    AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
+    AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -239,6 +244,8 @@ protected:
     int16_t         _pitch_radio_passthrough = 0;    // pitch control PWM direct from radio, used for manual control
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
     int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
+    int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
+    int16_t         _main_rotor_power = 0;           // estimated main rotor power load, range 0-1.0f, used for RSC feedforward
 };
 
 #endif  // AP_MOTORSHELI
