@@ -17,6 +17,8 @@ static Vector3f posvel_vel_target_cms;
 static uint32_t posvel_update_time_ms;
 static uint32_t vel_update_time_ms;
 
+static uint32_t vel_update_time_ms;
+
 struct Guided_Limit {
     uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
     float alt_min_cm;   // lower altitude limit in cm above home (0 = no limit)
