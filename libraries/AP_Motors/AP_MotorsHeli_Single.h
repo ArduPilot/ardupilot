@@ -66,14 +66,11 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     };
 
-    // init
-    void Init();
-
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
     void set_update_rate(uint16_t speed_hz);
 
-    // enable - starts allowing signals to be sent to motors
+    // enable - starts allowing signals to be sent to motors and servos
     void enable();
 
     // output_test - spin a motor at the pwm value specified
@@ -99,8 +96,8 @@ public:
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     bool rotor_speed_above_critical() const { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
 
-    // recalc_scalers - recalculates various scalers used.
-    void recalc_scalers();
+    // calculate_scalars - recalculates various scalars used
+    void calculate_scalars();
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -137,17 +134,14 @@ protected:
     void output_armed_zero_throttle();
     void output_disarmed();
 
-    // reset_servos - free up the swash servos for maximum movement
-    void reset_servos();
-
-    // init_servos - initialize the servos
-    void init_servos();
+    // init_outputs - initialise Servo/PWM ranges and endpoints
+    void init_outputs();
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
 
-    // heli_move_swash - moves swash plate to attitude of parameters passed in
-    void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
+    // heli_move_actuators - moves swash plate and tail rotor
+    void move_actuators(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out);
 
     // move_yaw - moves the yaw servo
     void move_yaw(int16_t yaw_out);
