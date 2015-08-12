@@ -243,6 +243,7 @@ void AP_MotorsHeli::reset_swash()
 // reset_swash_servo
 void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
 {
+    servo.set_range(0, 1000);
     servo.radio_min = 1000;
     servo.radio_max = 2000;
 }
@@ -277,15 +278,6 @@ void AP_MotorsHeli::init_swash()
 
     // mark swash as initialised
     _heliflags.swash_initialised = true;
-}
-
-// init_swash_servo
-void AP_MotorsHeli::init_swash_servo(RC_Channel& servo)
-{
-    servo.set_range(0, 1000);
-    
-    servo.radio_min = 1000;
-    servo.radio_max = 2000;
 }
 
 // update the throttle input filter
