@@ -39,6 +39,12 @@ sudo pip2 -q install $PYTHON2_PKGS
 sudo pip3 -q install $PYTHON3_PKGS
 yaourt -S --noconfirm $ARCH_AUR_PKGS
 
+(
+ cd /usr/lib/ccache
+ sudo ln -s /usr/bin/ccache arm-none-eabi-g++
+ sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
+)
+
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
