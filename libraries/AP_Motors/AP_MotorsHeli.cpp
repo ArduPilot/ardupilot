@@ -168,11 +168,26 @@ void AP_MotorsHeli::Init()
     // ensure inputs are not passed through to servos on start-up
     _servo_manual = 0;
 
-    // initialise swash plate
+    // initialise Servo/PWM ranges and endpoints
     init_outputs();
 
     // calculate all scalars
     calculate_scalars();
+}
+
+// output_min - sets servos to neutral point with motors stopped
+void AP_MotorsHeli::output_min()
+{
+    // move swash to mid
+    move_actuators(0,0,500,0);
+
+    update_motor_control(ROTOR_CONTROL_STOP);
+
+    // override limits flags
+    limit.roll_pitch = true;
+    limit.yaw = true;
+    limit.throttle_lower = true;
+    limit.throttle_upper = false;
 }
 
 // output - sends commands to the servos
@@ -193,6 +208,68 @@ void AP_MotorsHeli::output()
         output_disarmed();
     }
 };
+
+// sends commands to the motors
+void AP_MotorsHeli::output_armed_stabilizing()
+{
+    // if manual override active after arming, deactivate it and reinitialize servos
+    if (_servo_manual == 1) {
+        reset_flight_controls();
+    }
+
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+
+    update_motor_control(ROTOR_CONTROL_ACTIVE);
+}
+
+void AP_MotorsHeli::output_armed_not_stabilizing()
+{
+    // if manual override active after arming, deactivate it and reinitialize servos
+    if (_servo_manual == 1) {
+        reset_flight_controls();
+    }
+
+    // helicopters always run stabilizing flight controls
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+
+    update_motor_control(ROTOR_CONTROL_ACTIVE);
+}
+
+// output_armed_zero_throttle - sends commands to the motors
+void AP_MotorsHeli::output_armed_zero_throttle()
+{
+    // if manual override active after arming, deactivate it and reinitialize servos
+    if (_servo_manual == 1) {
+        reset_flight_controls();
+    }
+
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+
+    update_motor_control(ROTOR_CONTROL_IDLE);
+}
+
+// output_disarmed - sends commands to the motors
+void AP_MotorsHeli::output_disarmed()
+{
+    // if manual override (i.e. when setting up swash), pass pilot commands straight through to swash
+    if (_servo_manual == 1) {
+        _roll_control_input = _roll_radio_passthrough;
+        _pitch_control_input = _pitch_radio_passthrough;
+        _throttle_control_input = _throttle_radio_passthrough;
+        _yaw_control_input = _yaw_radio_passthrough;
+    }
+
+    // ensure swash servo endpoints haven't been moved
+    init_outputs();
+
+    // continuously recalculate scalars to allow setup
+    calculate_scalars();
+
+    // helicopters always run stabilizing flight controls
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+
+    update_motor_control(ROTOR_CONTROL_STOP);
+}
 
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli::parameter_check() const
@@ -256,4 +333,13 @@ void AP_MotorsHeli::reset_radio_passthrough()
     _pitch_radio_passthrough = 0;
     _throttle_radio_passthrough = 500;
     _yaw_radio_passthrough = 0;
+}
+
+// reset_flight_controls - resets all controls and scalars to flight status
+void AP_MotorsHeli::reset_flight_controls()
+{
+    reset_radio_passthrough();
+    _servo_manual = 0;
+    init_outputs();
+    calculate_scalars();
 }
