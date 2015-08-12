@@ -78,9 +78,6 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void output_test(uint8_t motor_seq, int16_t pwm);
 
-    // output_min - sets servos to neutral point
-    void output_min();
-
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
 
@@ -128,14 +125,11 @@ public:
 
 protected:
 
-    // output - sends commands to the motors
-    void output_armed_stabilizing();
-    void output_armed_not_stabilizing();
-    void output_armed_zero_throttle();
-    void output_disarmed();
-
     // init_outputs - initialise Servo/PWM ranges and endpoints
     void init_outputs();
+
+    // update_motor_controls - sends commands to motor controllers
+    void update_motor_control(uint8_t state);
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();
