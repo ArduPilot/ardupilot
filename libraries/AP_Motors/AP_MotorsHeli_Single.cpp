@@ -428,6 +428,15 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
     }
 }
 
+// set_delta_phase_angle for setting variable phase angle compensation and force
+// recalculation of collective factors
+void AP_MotorsHeli_Single::set_delta_phase_angle(int16_t angle)
+{
+    angle = constrain_int16(angle, -90, 90);
+    _delta_phase_angle = angle;
+    calculate_roll_pitch_collective_factors();
+}
+
 //
 // heli_move_swash - moves swash plate to attitude of parameters passed in
 //                 - expected ranges:

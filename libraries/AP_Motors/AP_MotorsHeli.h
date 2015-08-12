@@ -150,9 +150,9 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    // set_delta_phase_angle for setting variable phase angle compensation and force
-    // recalculation of collective factors
-    void set_delta_phase_angle(int16_t angle);
+    // set_delta_phase_angle for setting variable phase angle compensation and force recalculation of collective factors
+    // ignored unless overloaded by child classes
+    virtual void set_delta_phase_angle(int16_t angle){};
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
