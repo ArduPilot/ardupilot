@@ -239,9 +239,10 @@ void AP_Gimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vecto
 
 Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
-        // Define rotation from vehicle to gimbal using a 312 rotation sequence
-        Matrix3f Tvg;
-        vehicle_to_gimbal_quat_filt.inverse().rotation_matrix(Tvg);
+        // define the rotation from vehicle to earth
+        Matrix3f Tve = _ahrs.get_dcm_matrix();
+        Matrix3f Teg;
+        quatEst.inverse().rotation_matrix(Teg);
 
         // multiply the yaw joint angle by a gain to calculate a demanded vehicle frame relative rate vector required to keep the yaw joint centred
         Vector3f gimbalRateDemVecYaw;
@@ -264,7 +265,10 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
         }
 
         // rotate into gimbal frame to calculate the gimbal rate vector required to keep the yaw gimbal centred
-        gimbalRateDemVecYaw = Tvg * gimbalRateDemVecYaw;
+        gimbalRateDemVecYaw = Tve * gimbalRateDemVecYaw;
+        gimbalRateDemVecYaw.x = 0;
+        gimbalRateDemVecYaw.y = 0;
+        gimbalRateDemVecYaw = Teg * gimbalRateDemVecYaw;
         return gimbalRateDemVecYaw;
 }
 
