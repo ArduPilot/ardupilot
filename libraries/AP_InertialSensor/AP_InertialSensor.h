@@ -54,6 +54,7 @@ class AP_InertialSensor
 
 public:
     AP_InertialSensor();
+    static AP_InertialSensor *get_instance();
 
     enum Start_style {
         COLD_START = 0,
@@ -378,6 +379,8 @@ private:
     } _hil {};
 
     DataFlash_Class *_dataflash;
+
+    static AP_InertialSensor *_s_instance;
 };
 
 #include "AP_InertialSensor_Backend.h"
