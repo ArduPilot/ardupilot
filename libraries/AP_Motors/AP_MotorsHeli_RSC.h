@@ -13,9 +13,11 @@
 #define ROTOR_CONTROL_ACTIVE                    2
 
 // rotor control modes
-#define ROTOR_CONTROL_MODE_DISABLED             0
-#define ROTOR_CONTROL_MODE_PASSTHROUGH          1
-#define ROTOR_CONTROL_MODE_SETPOINT             2
+#define ROTOR_CONTROL_MODE_DISABLED                 0
+#define ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH        1
+#define ROTOR_CONTROL_MODE_SPEED_SETPOINT           2
+#define ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT   3
+#define ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT 4
 
 class AP_MotorsHeli_RSC {
 public:
@@ -39,8 +41,8 @@ public:
     // get_critical_speed
     int16_t     get_critical_speed() const { return _critical_speed; }
 
-    // set_idle_speed
-    void        set_idle_speed(int16_t idle_speed) { _idle_speed = idle_speed; }
+    // set_idle_output
+    void        set_idle_output(int16_t idle_output) { _idle_output = idle_output; }
 
     // get_desired_speed
     int16_t     get_desired_speed() const { return _desired_speed; }
@@ -49,7 +51,7 @@ public:
     void        set_desired_speed(int16_t desired_speed) { _desired_speed = desired_speed; }
 
     // get_control_speed
-    int16_t     get_control_speed() const { return _control_speed; }
+    int16_t     get_control_output() const { return _control_output; }
 
     // get_rotor_speed - return estimated or measured rotor speed
     int16_t     get_rotor_speed() const;
@@ -62,6 +64,12 @@ public:
 
     // set_runup_time
     void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
+
+    // set_power_output_range
+    void        set_power_output_range(uint16_t power_low, uint16_t power_high);
+
+    // set_motor_load
+    void        set_motor_load(float load) { _load_feedforward = load; }
 
     // recalc_scalers
     void        recalc_scalers();
@@ -79,17 +87,21 @@ private:
     // internal variables
     int8_t          _control_mode = 0;          // motor control mode, Passthrough or Setpoint
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
-    int16_t         _idle_speed = 0;            // motor output idle speed
+    int16_t         _idle_output = 0;           // motor output idle speed
     int16_t         _max_speed = 1000;          // rotor maximum speed. Placeholder value until we have measured speed input (ToDo)
     int16_t         _desired_speed = 0;         // latest desired rotor speed from pilot
-    int16_t         _control_speed = 0;         // latest logic controlled rotor speed
-    float           _rotor_ramp_output = 0;     // scalar used to ramp rotor speed between _rsc_idle and full speed (0.0-1.0f)
+    int16_t         _control_output = 0;        // latest logic controlled output
+    float           _rotor_ramp_output = 0;     // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
     float           _rotor_runup_output = 0;    // scalar used to store status of rotor run-up time (0.0-1.0f)
     float           _ramp_increment = 0;        // the amount to increase/decrease the rotor ramp scalar during each iteration
     int8_t          _ramp_time = 0;             // time in seconds for the output to the main rotor's ESC to reach full speed
     int8_t          _runup_time = 0;            // time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     float           _runup_increment = 0;       // the amount to increase/decrease the rotor run-up scalar during each iteration
     bool            _runup_complete = false;    // flag for determining if runup is complete
+    uint16_t        _power_output_low = 0;      // setpoint for power output at minimum rotor power
+    uint16_t        _power_output_high = 0;     // setpoint for power output at maximum rotor power
+    uint16_t        _power_output_range = 0;    // maximum range of output power
+    float           _load_feedforward = 0;      // estimate of motor load, range 0-1.0f
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input);
