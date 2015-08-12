@@ -363,6 +363,9 @@ void Plane::set_mode(enum FlightMode mode)
     // disable taildrag takeoff on mode change
     auto_state.fbwa_tdrag_takeoff_mode = false;
 
+    // start with previous WP at current location
+    prev_WP_loc = current_loc;
+
     switch(control_mode)
     {
     case INITIALISING:

@@ -44,7 +44,6 @@ void Plane::read_control_switch()
         set_mode((enum FlightMode)(flight_modes[switchPosition].get()));
 
         oldSwitchPosition = switchPosition;
-        prev_WP_loc = current_loc;
     }
 
     if (g.reset_mission_chan != 0 &&
