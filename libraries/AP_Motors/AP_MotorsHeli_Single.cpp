@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] PROGMEM = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTOR_HELI_SINGLE_DDTAIL_DEFAULT),
+    AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT),
 
     AP_GROUPEND
 };
@@ -256,8 +256,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to tail rotor controller and trigger recalculation of scalars
     if (_rsc_mode == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(AP_MOTORS_HELI_RSC_MODE_SETPOINT);
-        _tail_rotor.set_ramp_time(_rsc_ramp_time);
-        _tail_rotor.set_runup_time(_rsc_runup_time);
+        _tail_rotor.set_ramp_time(AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME);
+        _tail_rotor.set_runup_time(AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME);
         _tail_rotor.set_critical_speed(_rsc_critical);
         _tail_rotor.set_idle_output(_rsc_idle_output);
     } else {
