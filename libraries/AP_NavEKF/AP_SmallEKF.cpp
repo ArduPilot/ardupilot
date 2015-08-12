@@ -941,7 +941,7 @@ void SmallEKF::getQuat(Quaternion &quat) const
 bool SmallEKF::getStatus() const
 {
     float run_time = hal.scheduler->millis() - StartTime_ms;
-    return  YawAligned && (run_time > 3000);
+    return  YawAligned && (run_time > 30000);
 }
 
 #endif // HAL_CPU_CLASS
