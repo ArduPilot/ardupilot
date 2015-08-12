@@ -595,7 +595,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
         -1);     // XXX we don't actually know what its index is...
 
     if (DataFlash != NULL) {
-        DataFlash->Log_Write_Parameter(key, vp->cast_to_float(var_type));
+        DataFlash->Log_Write_Parameter(key);
     }
 }
 
