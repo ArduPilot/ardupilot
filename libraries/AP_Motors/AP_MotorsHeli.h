@@ -89,8 +89,8 @@ public:
     // enable - starts allowing signals to be sent to motors
     virtual void enable() = 0;
 
-    // output_min - sets servos to neutral point
-    virtual void output_min() = 0;
+    // output_min - sets servos to neutral point with motors stopped
+    void output_min();
 
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
@@ -172,10 +172,16 @@ public:
 protected:
 
     // output - sends commands to the motors
-    virtual void        output_armed_stabilizing() = 0;
-    virtual void        output_armed_not_stabilizing() = 0;
-    virtual void        output_armed_zero_throttle() = 0;
-    virtual void        output_disarmed() = 0;
+    void        output_armed_stabilizing();
+    void        output_armed_not_stabilizing();
+    void        output_armed_zero_throttle();
+    void        output_disarmed();
+
+    // update_motor_controls - sends commands to motor controllers
+    virtual void update_motor_control(uint8_t state) = 0;
+
+    // reset_flight_controls - resets all controls and scalars to flight status
+    void reset_flight_controls();
 
     // update the throttle input filter
     void                update_throttle_filter();

@@ -317,131 +317,15 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
     return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
 }
 
-// output_min - sets servos to neutral point
-void AP_MotorsHeli_Single::output_min()
+// update_motor_controls - sends commands to motor controllers
+void AP_MotorsHeli_Single::update_motor_control(uint8_t state)
 {
-    // move swash to mid
-    move_actuators(0,0,500,0);
+    // Send state update to motors
+    _tail_rotor.output(state);
+    _main_rotor.output(state);
 
-    _main_rotor.output(ROTOR_CONTROL_STOP);
-    _tail_rotor.output(ROTOR_CONTROL_STOP);
-
-    // override limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = true;
-    limit.throttle_upper = false;
-}
-
-// sends commands to the motors
-void AP_MotorsHeli_Single::output_armed_stabilizing()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
-        reset_radio_passthrough();
-        _servo_manual = 0;
-        init_outputs();
-        calculate_scalars();
-    }
-
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output(ROTOR_CONTROL_ACTIVE);
-
-        if (!_tail_rotor.is_runup_complete())
-        {
-            _heliflags.rotor_runup_complete = false;
-            return;
-        }
-    }
-
-    _main_rotor.output(ROTOR_CONTROL_ACTIVE);
-
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
-}
-
-void AP_MotorsHeli_Single::output_armed_not_stabilizing()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
-        reset_radio_passthrough();
-        _servo_manual = 0;
-        init_outputs();
-        calculate_scalars();
-    }
-
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output(ROTOR_CONTROL_ACTIVE);
-
-        if (!_tail_rotor.is_runup_complete())
-        {
-            _heliflags.rotor_runup_complete = false;
-            return;
-        }
-    }
-
-    _main_rotor.output(ROTOR_CONTROL_ACTIVE);
-
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
-}
-
-// output_armed_zero_throttle - sends commands to the motors
-void AP_MotorsHeli_Single::output_armed_zero_throttle()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
-        reset_radio_passthrough();
-        _servo_manual = 0;
-        init_outputs();
-        calculate_scalars();
-    }
-
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output(ROTOR_CONTROL_IDLE);
-
-        if (!_tail_rotor.is_runup_complete())
-        {
-            _heliflags.rotor_runup_complete = false;
-            return;
-        }
-    }
-
-    _main_rotor.output(ROTOR_CONTROL_IDLE);
-
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
-}
-
-// output_disarmed - sends commands to the motors
-void AP_MotorsHeli_Single::output_disarmed()
-{
-    // if manual override (i.e. when setting up swash), pass pilot commands straight through to swash
-    if (_servo_manual == 1) {
-        _roll_control_input = _roll_radio_passthrough;
-        _pitch_control_input = _pitch_radio_passthrough;
-        _throttle_control_input = _throttle_radio_passthrough;
-        _yaw_control_input = _yaw_radio_passthrough;
-    }
-
-    // ensure swash servo endpoints haven't been moved
-    init_outputs();
-
-    // continuously recalculate scalars to allow setup
-    calculate_scalars();
-
-    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.output(ROTOR_CONTROL_STOP);
-    }
-
-    _main_rotor.output(ROTOR_CONTROL_STOP);
-
-    _heliflags.rotor_runup_complete = false;
+    // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
+    _heliflags.rotor_runup_complete = ( _main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete() );
 }
 
 // set_delta_phase_angle for setting variable phase angle compensation and force
