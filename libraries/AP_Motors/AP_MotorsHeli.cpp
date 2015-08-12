@@ -288,15 +288,6 @@ void AP_MotorsHeli::init_swash_servo(RC_Channel& servo)
     servo.radio_max = 2000;
 }
 
-// set_delta_phase_angle for setting variable phase angle compensation and force
-// recalculation of collective factors
-void AP_MotorsHeli::set_delta_phase_angle(int16_t angle)
-{
-    angle = constrain_int16(angle, -90, 90);
-    _delta_phase_angle = angle;
-    calculate_roll_pitch_collective_factors();
-}
-
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
