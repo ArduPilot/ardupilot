@@ -199,9 +199,6 @@ protected:
     // init_servos - initialize the servos
     virtual void init_servos() = 0;
 
-    // init_swash_servo - initialize a swash servo
-    static void init_swash_servo(RC_Channel& servo);
-
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     virtual void calculate_roll_pitch_collective_factors() = 0;
 
