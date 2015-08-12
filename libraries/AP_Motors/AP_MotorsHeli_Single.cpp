@@ -207,17 +207,13 @@ bool AP_MotorsHeli_Single::allow_arming() const
     return true;
 }
 
-
 // set_desired_rotor_speed
 void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 {
     _main_rotor.set_desired_speed(desired_speed);
 
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
-        _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
-    } else {
-        _tail_rotor.set_desired_speed(0);
-    }
+    // always send desired speed to tail rotor control, will do nothing if not DDVPT not enabled
+    _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -254,7 +250,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
     _main_rotor.recalc_scalers();
 
     // send setpoints to tail rotor controller and trigger recalculation of scalars
-    if (_rsc_mode == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(AP_MOTORS_HELI_RSC_MODE_SETPOINT);
         _tail_rotor.set_ramp_time(AP_MOTORS_HELI_SINGLE_DDVPT_RAMP_TIME);
         _tail_rotor.set_runup_time(AP_MOTORS_HELI_SINGLE_DDVPT_RUNUP_TIME);
