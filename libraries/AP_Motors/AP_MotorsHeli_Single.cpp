@@ -223,7 +223,8 @@ void AP_MotorsHeli_Single::recalc_scalers()
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
     _main_rotor.set_critical_speed(_rsc_critical);
-    _main_rotor.set_idle_speed(_rsc_idle);
+    _main_rotor.set_idle_output(_rsc_idle_output);
+    _main_rotor.set_power_output_range(_rsc_power_low, _rsc_power_high);
     _main_rotor.recalc_scalers();
 
     if (_rsc_mode == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
@@ -231,13 +232,13 @@ void AP_MotorsHeli_Single::recalc_scalers()
         _tail_rotor.set_ramp_time(_rsc_ramp_time);
         _tail_rotor.set_runup_time(_rsc_runup_time);
         _tail_rotor.set_critical_speed(_rsc_critical);
-        _tail_rotor.set_idle_speed(_rsc_idle);
+        _tail_rotor.set_idle_output(_rsc_idle_output);
     } else {
         _tail_rotor.set_control_mode(AP_MOTORS_HELI_RSC_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
         _tail_rotor.set_runup_time(0);
         _tail_rotor.set_critical_speed(0);
-        _tail_rotor.set_idle_speed(0);
+        _tail_rotor.set_idle_output(0);
     }
     _tail_rotor.recalc_scalers();
 }
@@ -510,12 +511,18 @@ void AP_MotorsHeli_Single::move_swash(int16_t roll_out, int16_t pitch_out, int16
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro
-        if ((_main_rotor.get_control_speed() > _rsc_idle) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
+        if ((_main_rotor.get_control_output() > _rsc_idle_output) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
             _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
             yaw_offset = _collective_yaw_effect * abs(_collective_out - _collective_mid_pwm);
         }
     }
+
+    // feed power estimate into main rotor controller
+    // ToDo: include tail rotor power?
+    // ToDo: add main rotor cyclic power?
+    _main_rotor_power = ((abs(_collective_out - _collective_mid_pwm)) / _collective_range);
+    _main_rotor.set_motor_load(_main_rotor_power);
 
     // swashplate servos
     _swash_servo_1.servo_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out)/10 + _collectiveFactor[CH_1] * coll_out_scaled + (_swash_servo_1.radio_trim-1500);

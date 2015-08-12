@@ -50,6 +50,14 @@ void AP_MotorsHeli_RSC::recalc_scalers()
     _runup_increment = 1.0f / (_runup_time * _loop_rate);
 }
 
+// set_power_output_range
+void AP_MotorsHeli_RSC::set_power_output_range(uint16_t power_low, uint16_t power_high)
+{
+    _power_output_low = power_low;
+    _power_output_high = power_high;
+    _power_output_range = _power_output_high - _power_output_low;
+}
+
 // output - update value to send to ESC/Servo
 void AP_MotorsHeli_RSC::output(uint8_t state)
 {
@@ -59,7 +67,7 @@ void AP_MotorsHeli_RSC::output(uint8_t state)
             update_rotor_ramp(0.0f);
 
             // control output forced to zero
-            _control_speed = 0;
+            _control_output = 0;
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -67,16 +75,19 @@ void AP_MotorsHeli_RSC::output(uint8_t state)
             update_rotor_ramp(0.0f);
 
             // set rotor control speed to idle speed parameter, this happens instantly and ignore ramping
-            _control_speed = _idle_speed;
+            _control_output = _idle_output;
             break;
 
         case ROTOR_CONTROL_ACTIVE:
             // set main rotor ramp to increase to full speed
             update_rotor_ramp(1.0f);
 
-            if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
+            if ((_control_mode == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SPEED_SETPOINT)) {
                 // set control rotor speed to ramp slewed value between idle and desired speed
-                _control_speed = _idle_speed + (_rotor_ramp_output * (_desired_speed - _idle_speed));
+                _control_output = _idle_output + (_rotor_ramp_output * (_desired_speed - _idle_output));
+            } else if (_control_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
+                // throttle output depending on estimated power demand. Output is ramped up from idle speed during rotor runup.
+                _control_output = _idle_output + (_rotor_ramp_output * ((_power_output_low - _idle_output) + (_power_output_range * _load_feedforward)));
             }
             break;
     }
@@ -85,7 +96,7 @@ void AP_MotorsHeli_RSC::output(uint8_t state)
     update_rotor_runup();
 
     // output to rsc servo
-    write_rsc(_control_speed);
+    write_rsc(_control_output);
 }
 
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
