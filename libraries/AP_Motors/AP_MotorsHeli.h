@@ -75,7 +75,6 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
 
         // initialise flags
-        _heliflags.swash_initialised = 0;
         _heliflags.landing_collective = 0;
         _heliflags.rotor_runup_complete = 0;
     };
@@ -144,8 +143,8 @@ public:
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     virtual bool rotor_speed_above_critical() const = 0;
 
-    // recalc_scalers - recalculates various scalers used.  Should be called at about 1hz to allow users to see effect of changing parameters
-    virtual void recalc_scalers() = 0;
+    // calculate_scalars - must be implemented by child classes
+    virtual void calculate_scalars() = 0;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -181,30 +180,20 @@ protected:
     // update the throttle input filter
     void                update_throttle_filter();
 
-    // heli_move_swash - moves swash plate to attitude of parameters passed in
-    virtual void move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
-
-    // reset_swash - free up swash for maximum movements. Used for set-up
-    void reset_swash();
-
-    // reset_servos - free up the swash servos for maximum movement
-    virtual void reset_servos() = 0;
+    // move_actuators - moves swash plate and tail rotor
+    virtual void move_actuators(int16_t roll_out, int16_t pitch_out, int16_t coll_in, int16_t yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
     static void reset_swash_servo(RC_Channel& servo);
 
-    // init_swash - initialise the swash plate
-    void init_swash();
-
-    // init_servos - initialize the servos
-    virtual void init_servos() = 0;
+    // init_outputs - initialise Servo/PWM ranges and endpoints
+    virtual void init_outputs() = 0;
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     virtual void calculate_roll_pitch_collective_factors() = 0;
 
     // flags bitmask
     struct heliflags_type {
-        uint8_t swash_initialised       : 1;    // true if swash has been initialised
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
     } _heliflags;
@@ -233,7 +222,6 @@ protected:
     float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
     float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
     float           _collective_scalar = 1;          // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
-    float           _collective_scalar_manual = 1;   // collective scalar to reduce the range of the collective movement while collective is being controlled manually (i.e. directly by the pilot)
     int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
     int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
