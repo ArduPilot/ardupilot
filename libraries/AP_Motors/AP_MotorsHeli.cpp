@@ -165,14 +165,14 @@ void AP_MotorsHeli::Init()
     // set update rate
     set_update_rate(_speed_hz);
 
-    // ensure inputs are not passed through to servos
+    // ensure inputs are not passed through to servos on start-up
     _servo_manual = 0;
 
-    // initialise some scalers
-    recalc_scalers();
-
     // initialise swash plate
-    init_swash();
+    init_outputs();
+
+    // calculate all scalars
+    calculate_scalars();
 }
 
 // output - sends commands to the servos
@@ -221,63 +221,14 @@ bool AP_MotorsHeli::parameter_check() const
     return true;
 }
 
-// reset_swash - free up swash for maximum movements. Used for set-up
-void AP_MotorsHeli::reset_swash()
-{
-    // free up servo ranges
-    reset_servos();
-
-    // calculate factors based on swash type and servo position
-    calculate_roll_pitch_collective_factors();
-
-    // set roll, pitch and throttle scaling
-    _roll_scaler = 1.0f;
-    _pitch_scaler = 1.0f;
-    _collective_scalar = ((float)(_throttle_radio_max - _throttle_radio_min))/1000.0f;
-    _collective_scalar_manual = 1.0f;
-
-    // we must be in set-up mode so mark swash as uninitialised
-    _heliflags.swash_initialised = false;
-}
-
 // reset_swash_servo
 void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
 {
     servo.set_range(0, 1000);
+
+    // swash servos always use full endpoints as restricting them would lead to scaling errors
     servo.radio_min = 1000;
     servo.radio_max = 2000;
-}
-
-// init_swash - initialise the swash plate
-void AP_MotorsHeli::init_swash()
-{
-
-    // swash servo initialisation
-    init_servos();
-
-    // range check collective min, max and mid
-    if( _collective_min >= _collective_max ) {
-        _collective_min = 1000;
-        _collective_max = 2000;
-    }
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
-
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
-
-    // calculate maximum collective pitch range from full positive pitch to zero pitch
-    _collective_range = 1000 - _collective_mid_pwm;
-
-    // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_roll_max/4500.0f;
-    _pitch_scaler = (float)_pitch_max/4500.0f;
-    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-
-    // calculate factors based on swash type and servo position
-    calculate_roll_pitch_collective_factors();
-
-    // mark swash as initialised
-    _heliflags.swash_initialised = true;
 }
 
 // update the throttle input filter
