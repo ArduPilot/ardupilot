@@ -40,6 +40,14 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
     tail_thrust_scale = sinf(radians(hover_lean)) * thrust_scale / yaw_zero;
 
     frame_height = 0.1;
+
+    if (strstr(frame_str, "-dual")) {
+        frame_type = HELI_FRAME_DUAL;
+    } else if (strstr(frame_str, "-compound")) {
+        frame_type = HELI_FRAME_COMPOUND;
+    } else {
+        frame_type = HELI_FRAME_CONVENTIONAL;
+    }
 }
 
 /*
@@ -65,7 +73,8 @@ void Helicopter::update(const struct sitl_input &input)
     float swash2 = (input.servos[1]-1000) / 1000.0f;
     float swash3 = (input.servos[2]-1000) / 1000.0f;
 
-    if (strcmp(frame, "heli") == 0) {
+    switch (frame_type) {
+    case HELI_FRAME_CONVENTIONAL: {
         // simulate a traditional helicopter
 
         float tail_rotor = (input.servos[3]-1000) / 1000.0f;
@@ -78,7 +87,10 @@ void Helicopter::update(const struct sitl_input &input)
         yaw_rate = tail_rotor - 0.5f;
   
         lateral_y_thrust = yaw_rate * rsc_scale * tail_thrust_scale;
-    } else if (strcmp(frame, "heli-dual") == 0) {
+        break;
+    }
+
+    case HELI_FRAME_DUAL: {
         // simulate a tandem helicopter
 
         float swash4 = (input.servos[3]-1000) / 1000.0f;
@@ -91,7 +103,10 @@ void Helicopter::update(const struct sitl_input &input)
         roll_rate = (swash1-swash2) + (swash4-swash5);
         pitch_rate = (swash1+swash2+swash3) - (swash4+swash5+swash6);
         yaw_rate = (swash1-swash2) + (swash5-swash4);
-    } else if (strcmp(frame, "heli-compound") == 0) {
+        break;
+    }
+
+    case HELI_FRAME_COMPOUND: {
         // simulate a compound helicopter
 
         float right_rotor = (input.servos[3]-1000) / 1000.0f;
@@ -105,6 +120,8 @@ void Helicopter::update(const struct sitl_input &input)
         yaw_rate = right_rotor - left_rotor;
 
         lateral_x_thrust = (left_rotor+right_rotor-1) * rsc_scale * tail_thrust_scale;
+        break;
+    }
     }
 
     roll_rate *= rsc_scale;
