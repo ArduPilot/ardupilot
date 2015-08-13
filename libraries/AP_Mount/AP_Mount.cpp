@@ -625,6 +625,16 @@ void AP_Mount::configure_msg(uint8_t instance, mavlink_message_t* msg)
     _backends[instance]->configure_msg(msg);
 }
 
+void AP_Mount::configure(uint8_t instance, enum MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_tilt, uint8_t stab_pan)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+        return;
+    }
+
+    // send message to backend
+    _backends[instance]->configure(mount_mode, stab_roll, stab_tilt, stab_pan);
+}
+
 /// Control the mount (depends on the previously set mount configuration)
 /// triggered by a MavLink packet.
 void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
@@ -635,6 +645,16 @@ void AP_Mount::control_msg(uint8_t instance, mavlink_message_t *msg)
 
     // send message to backend
     _backends[instance]->control_msg(msg);
+}
+
+void AP_Mount::control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == NULL) {
+        return;
+    }
+
+    // send message to backend
+    _backends[instance]->control(pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode);
 }
 
 /// Return mount status information
