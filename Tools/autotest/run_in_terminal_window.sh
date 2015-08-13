@@ -21,6 +21,6 @@ else
   echo "Window access not found, logging to $filename"
   cmd="$1"
   shift
-  ( $AUTOTEST/run_cmd.sh $cmd $* &>$filename < /dev/null ) &
+  ( $cmd $* &>$filename < /dev/null ) &
 fi
 exit 0
