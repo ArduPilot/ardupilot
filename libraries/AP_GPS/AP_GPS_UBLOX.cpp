@@ -459,7 +459,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
 #endif
 
-        for(int i = 1; i <= UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
+        for(int i = 0; i < UBLOX_MAX_GNSS_CONFIG_BLOCKS; i++) {
             if((gps._gnss_mode & (1 << i)) && i != GNSS_SBAS) {
                 gnssCount++;
             }
