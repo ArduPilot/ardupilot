@@ -114,6 +114,14 @@ public:
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
 
+    // configure - configure the mount
+    void configure(enum MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_tilt, uint8_t stab_pan) { configure(_primary, mount_mode, stab_roll, stab_tilt, stab_pan); }
+    void configure(uint8_t instance, enum MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_tilt, uint8_t stab_pan);
+
+    // control - control the mount
+    void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode) { control(_primary, pitch_or_lat, roll_or_lon, yaw_or_alt, mount_mode); }
+    void control(uint8_t instance, int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, enum MAV_MOUNT_MODE mount_mode);
+
     // configure_msg - process MOUNT_CONFIGURE messages received from GCS
     void configure_msg(mavlink_message_t* msg) { configure_msg(_primary, msg); }
     void configure_msg(uint8_t instance, mavlink_message_t* msg);
