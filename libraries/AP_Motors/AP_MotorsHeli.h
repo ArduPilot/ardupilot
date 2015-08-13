@@ -228,6 +228,7 @@ protected:
     float           _roll_scaler = 1;                // scaler to convert roll input from radio (i.e. -4500 ~ 4500) to max roll range
     float           _pitch_scaler = 1;               // scaler to convert pitch input from radio (i.e. -4500 ~ 4500) to max pitch range
     float           _collective_scalar = 1;          // collective scalar to convert pwm form (i.e. 0 ~ 1000) passed in to actual servo range (i.e 1250~1750 would be 500)
+    float           _main_rotor_power = 0;           // estimated main rotor power load, range 0-1.0f, used for RSC feedforward
     int16_t         _collective_out = 0;             // actual collective pitch value.  Required by the main code for calculating cruise throttle
     int16_t         _collective_mid_pwm = 0;         // collective mid parameter value converted to pwm form (i.e. 0 ~ 1000)
     int16_t         _delta_phase_angle = 0;          // phase angle dynamic compensation
@@ -236,7 +237,6 @@ protected:
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
     int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
     int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
-    int16_t         _main_rotor_power = 0;           // estimated main rotor power load, range 0-1.0f, used for RSC feedforward
 };
 
 #endif  // AP_MOTORSHELI
