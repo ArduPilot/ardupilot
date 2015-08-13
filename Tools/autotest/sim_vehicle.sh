@@ -188,7 +188,12 @@ SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
 FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 
 [ -z "$VEHICLE" ] && {
-    VEHICLE=$(basename $PWD)
+    CDIR="$PWD"
+    rpath=$(which realpath)
+    [ -n "rpath" ] && {
+        CDIR=$(realpath $CDIR)
+    }
+    VEHICLE=$(basename $CDIR)
 }
 
 [ -z "$FRAME" -a "$VEHICLE" = "APMrover2" ] && {
@@ -287,8 +292,12 @@ autotest="../Tools/autotest"
     # the location of the sim_vehicle.sh script to find the path
     autotest=$(dirname $(readlink -e $0))
 }
-pushd $autotest/../../$VEHICLE || {
-    echo "Failed to change to vehicle directory for $VEHICLE"
+VEHICLEDIR="$autotest/../../$VEHICLE"
+[ -d "$VEHICLEDIR" ] || {
+    VEHICLEDIR=$(dirname $(readlink -e $VEHICLEDIR))
+}
+pushd $VEHICLEDIR || {
+    echo "Failed to change to vehicle directory for $VEHICLEDIR"
     usage
     exit 1
 }
