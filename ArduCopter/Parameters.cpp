@@ -87,7 +87,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @DisplayName: Takeoff trigger deadzone
     // @Description: Offset from mid stick at which takeoff is triggered
     // @User: Standard
-    // @Range 0.0 500.0
+    // @Range: 0.0 500.0
     // @Increment: 10
     GSCALAR(takeoff_trigger_dz, "PILOT_TKOFF_DZ", THR_DZ_DEFAULT),
 
