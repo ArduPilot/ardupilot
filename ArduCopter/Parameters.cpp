@@ -451,7 +451,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
     // @Units: Centi-degrees
-    // @Range 1000 8000
+    // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
