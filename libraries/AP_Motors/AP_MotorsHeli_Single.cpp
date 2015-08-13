@@ -415,7 +415,7 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    _main_rotor_power = ((abs(_collective_out - _collective_mid_pwm)) / _collective_range);
+    _main_rotor_power = ((float)(abs(_collective_out - _collective_mid_pwm)) / _collective_range);
     _main_rotor.set_motor_load(_main_rotor_power);
 
     // swashplate servos
