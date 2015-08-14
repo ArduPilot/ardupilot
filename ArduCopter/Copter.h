@@ -34,6 +34,7 @@
 
 // Common dependencies
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
@@ -407,7 +408,7 @@ private:
 
     // 3D Location vectors
     // Current location of the copter (altitude is relative to home)
-    struct Location current_loc;
+    Location_Class current_loc;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
