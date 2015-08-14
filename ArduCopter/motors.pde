@@ -72,21 +72,30 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
-    // exit immediately if we are already disarmed or throttle is not zero
-    if (!motors.armed() || !ap.throttle_zero) {
+    if (!motors.armed()) {
         auto_disarming_counter = 0;
         return;
     }
 
-    // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete) {
+    bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
+    bool thr_low;
+    if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
+        thr_low = ap.throttle_zero;
+    } else {
+        float deadband_top = g.rc_3.get_control_mid() + g.throttle_deadzone;
+        thr_low = g.rc_3.control_in <= deadband_top;
+    }
+
+    if (thr_low && ap.land_complete) {
+        // disarm after 5 seconds
         auto_disarming_counter++;
 
         if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
             init_disarm_motors();
             auto_disarming_counter = 0;
         }
-    }else{
+    } else {
+        // reset timer
         auto_disarming_counter = 0;
     }
 }
