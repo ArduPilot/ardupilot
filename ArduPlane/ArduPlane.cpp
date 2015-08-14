@@ -552,6 +552,7 @@ void Plane::update_flight_mode(void)
     case TRAINING: {
         training_manual_roll = false;
         training_manual_pitch = false;
+        update_load_factor();
         
         // if the roll is past the set roll limit, then
         // we set target roll to the limit
