@@ -5,7 +5,7 @@
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY_LONG   15  // called at 1hz so 15 seconds
+#define AUTO_DISARMING_DELAY_LONG   10  // called at 1hz so 10 seconds
 #define AUTO_DISARMING_DELAY_SHORT   5  // called at 1hz so 5 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
