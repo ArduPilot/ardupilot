@@ -75,33 +75,42 @@ void Copter::arm_motors_check()
 // called at 1hz
 void Copter::auto_disarm_check()
 {
+    uint8_t disarm_delay = AUTO_DISARMING_DELAY_LONG;
 
-    uint8_t disarm_delay;
-
-    // exit immediately if we are already disarmed or throttle output is not zero,
-    if (!motors.armed() || !ap.throttle_zero) {
+    // exit immediately if we are already disarmed
+    if (!motors.armed()) {
         auto_disarming_counter = 0;
         return;
     }
 
-    // allow auto disarm in manual flight modes or Loiter/AltHold if we're landed
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
-    if (mode_has_manual_throttle(control_mode) || ap.land_complete || (ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
+    if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
         auto_disarming_counter++;
-
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
-        if (ap.using_interlock || ap.motor_emergency_stop){
-            disarm_delay = AUTO_DISARMING_DELAY_SHORT;
+        disarm_delay = AUTO_DISARMING_DELAY_SHORT;
+    } else {
+        bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
+        bool thr_low;
+        if (mode_has_manual_throttle(control_mode) || !sprung_throttle_stick) {
+            thr_low = ap.throttle_zero;
         } else {
-            disarm_delay = AUTO_DISARMING_DELAY_LONG;
+            float deadband_top = g.rc_3.get_control_mid() + g.throttle_deadzone;
+            thr_low = g.rc_3.control_in <= deadband_top;
         }
 
-        if(auto_disarming_counter >= disarm_delay) {
-            init_disarm_motors();
+        if (thr_low && ap.land_complete) {
+            // increment counter
+            auto_disarming_counter++;
+        } else {
+            // reset counter
             auto_disarming_counter = 0;
         }
-    }else{
+    }
+
+    // disarm once counter expires
+    if (auto_disarming_counter >= disarm_delay) {
+        init_disarm_motors();
         auto_disarming_counter = 0;
     }
 }
