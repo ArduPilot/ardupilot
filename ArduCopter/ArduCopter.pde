@@ -753,6 +753,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_batt_compass,  40,     72 },
     { read_aux_switches,    40,      5 },
     { arm_motors_check,     40,      1 },
+    { auto_disarm_check,    40,      1 },
     { auto_trim,            40,     14 },
     { update_altitude,      40,    100 },
     { run_nav_updates,       8,     80 },
@@ -1100,9 +1101,6 @@ static void one_hz_loop()
     }
 
     gcs_send_message(MSG_ARMMASK);
-
-    // auto disarm checks
-    auto_disarm_check();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config

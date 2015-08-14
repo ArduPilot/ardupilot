@@ -1,12 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY    15  // called at 1hz so 15 seconds
-#define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
+#define ARM_DELAY                 20  // called at 10hz so 2 seconds
+#define DISARM_DELAY              20  // called at 10hz so 2 seconds
+#define AUTO_TRIM_DELAY          100 // called at 10hz so 10 seconds
+#define LOST_VEHICLE_DELAY        10  // called at 10hz so 1 second
 
-static uint8_t auto_disarming_counter;
+#define AUTO_DISARMING_DELAY_SEC  15.0f
+
+static uint32_t auto_disarm_begin;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -42,7 +43,7 @@ static void arm_motors_check()
         if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
             // ensure auto-disarm doesn't trigger immediately
-            auto_disarming_counter = 0;
+            auto_disarm_begin = millis();
         }
 
     // full left
@@ -72,8 +73,9 @@ static void arm_motors_check()
 // called at 1hz
 static void auto_disarm_check()
 {
+    uint32_t tnow = millis();
     if (!motors.armed()) {
-        auto_disarming_counter = 0;
+        auto_disarm_begin = tnow;
         return;
     }
 
@@ -87,16 +89,13 @@ static void auto_disarm_check()
     }
 
     if (thr_low && ap.land_complete) {
-        // disarm after 5 seconds
-        auto_disarming_counter++;
-
-        if(auto_disarming_counter >= AUTO_DISARMING_DELAY) {
+        if((tnow-auto_disarm_begin)*1.0e-3f >= AUTO_DISARMING_DELAY_SEC) {
             init_disarm_motors();
-            auto_disarming_counter = 0;
+            auto_disarm_begin = tnow;
         }
     } else {
         // reset timer
-        auto_disarming_counter = 0;
+        auto_disarm_begin = tnow;
     }
 }
 
