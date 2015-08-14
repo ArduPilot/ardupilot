@@ -971,7 +971,7 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Description: Automatically set roll/pitch trim from Tx at ground start. This makes the assumption that the RC transmitter has not been altered since trims were last captured.
     // @Values: 0:Disable,1:Enable
     // @User: Standard
-    GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    1), 
+    GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    0), 
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
