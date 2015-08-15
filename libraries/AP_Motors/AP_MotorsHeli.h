@@ -9,9 +9,9 @@
 #include <inttypes.h>
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
-#include "AP_Motors.h"
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
 // maximum number of swashplate servos
