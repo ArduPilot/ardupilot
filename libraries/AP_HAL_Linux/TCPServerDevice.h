@@ -2,7 +2,7 @@
 #define __AP_HAL_LINUX_TCPCLIENTDEVICE_H__
 
 #include "SerialDevice.h"
-#include "../AP_HAL/utility/Socket.h"
+#include <AP_HAL/utility/Socket.h>
 
 class TCPServerDevice: public SerialDevice {
 public:
