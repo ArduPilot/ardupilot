@@ -2,7 +2,7 @@
 #define __AP_HAL_LINUX_UDPDEVICE_UDP_H__
 
 #include "SerialDevice.h"
-#include "../AP_HAL/utility/Socket.h"
+#include <AP_HAL/utility/Socket.h>
 
 class UDPDevice: public SerialDevice {
 public:
