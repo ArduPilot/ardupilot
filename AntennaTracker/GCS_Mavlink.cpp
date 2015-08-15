@@ -582,7 +582,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
         
         // do command
-        send_text_P(SEVERITY_LOW,PSTR("command received: "));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("command received: "));
         
         switch(packet.command) {
             
@@ -792,7 +792,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // check if this is the HOME wp
         if (packet.seq == 0) {
             tracker.set_home(tell_command); // New home in EEPROM
-            send_text_P(SEVERITY_LOW,PSTR("new HOME received"));
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("new HOME received"));
             waypoint_receiving = false;
         }
 
@@ -884,7 +884,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Initialising APM..."));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Initialising APM..."));
     }
     in_mavlink_delay = false;
 }
@@ -925,7 +925,7 @@ void Tracker::gcs_update(void)
     }
 }
 
-void Tracker::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
+void Tracker::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -945,7 +945,7 @@ void Tracker::gcs_send_text_P(gcs_severity severity, const prog_char_t *str)
 void Tracker::gcs_send_text_fmt(const prog_char_t *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)SEVERITY_LOW;
+    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
     va_start(arg_list, fmt);
     hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
@@ -969,4 +969,3 @@ void Tracker::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
 }
-

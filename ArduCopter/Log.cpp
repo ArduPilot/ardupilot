@@ -149,9 +149,9 @@ int8_t Copter::process_logs(uint8_t argc, const Menu::arg *argv)
 
 void Copter::do_erase_logs(void)
 {
-    gcs_send_text_P(SEVERITY_HIGH, PSTR("Erasing logs\n"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Erasing logs\n"));
     DataFlash.EraseAll();
-    gcs_send_text_P(SEVERITY_HIGH, PSTR("Log erase complete\n"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Log erase complete\n"));
 }
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -772,10 +772,10 @@ void Copter::log_init(void)
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
-        gcs_send_text_P(SEVERITY_HIGH, PSTR("No dataflash inserted"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("No dataflash inserted"));
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedErase()) {
-        gcs_send_text_P(SEVERITY_HIGH, PSTR("ERASING LOGS"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("ERASING LOGS"));
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
