@@ -165,6 +165,15 @@ void Tracker::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
+void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
+
+void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
+{
+    // do nothing
+}
 
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
