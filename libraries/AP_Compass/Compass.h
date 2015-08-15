@@ -44,6 +44,10 @@
 #define COMPASS_MAX_BACKEND   1   
 #endif
 
+#define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(50.0f)
+#define AP_COMPASS_MAX_XY_ANG_DIFF radians(30.0f)
+#define AP_COMPASS_MAX_XY_LENGTH_DIFF 100.0f
+
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -105,6 +109,10 @@ public:
     /// Return the current field as a Vector3f
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
+
+    uint8_t get_use_mask() const;
+    bool consistent(uint8_t mask) const;
+    bool consistent() const { return consistent(get_use_mask()); }
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
