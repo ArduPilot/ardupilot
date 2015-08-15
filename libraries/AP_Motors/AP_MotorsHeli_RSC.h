@@ -3,10 +3,9 @@
 #ifndef __AP_MOTORS_HELI_RSC_H__
 #define __AP_MOTORS_HELI_RSC_H__
 
-#include <inttypes.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <RC_Channel.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel/RC_Channel.h>      // RC Channel Library
 
 class AP_MotorsHeli_RSC {
 public:
