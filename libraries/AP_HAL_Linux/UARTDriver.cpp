@@ -22,7 +22,7 @@
 #include <netinet/tcp.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include "../AP_HAL/utility/RingBuffer.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 #include "UARTDevice.h"
 #include "UDPDevice.h"
