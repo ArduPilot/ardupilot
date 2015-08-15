@@ -12,11 +12,11 @@
 #include "GCS_MAVLink.h"
 #include <DataFlash/DataFlash.h>
 #include <AP_Mission/AP_Mission.h>
-#include "../AP_BattMonitor/AP_BattMonitor.h"
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
-#include "../AP_SerialManager/AP_SerialManager.h"
-#include "../AP_Mount/AP_Mount.h"
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Mount/AP_Mount.h>
 
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
