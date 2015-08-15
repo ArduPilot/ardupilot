@@ -15,11 +15,11 @@
 #include "HAL_SITL_Class.h"
 
 #include <AP_Math/AP_Math.h>
-#include "../SITL/SITL.h"
+#include <SITL/SITL.h>
 #include "Scheduler.h"
 #include "UARTDriver.h"
-#include "../AP_GPS/AP_GPS.h"
-#include "../AP_GPS/AP_GPS_UBLOX.h"
+#include <AP_GPS/AP_GPS.h>
+#include <AP_GPS/AP_GPS_UBLOX.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
