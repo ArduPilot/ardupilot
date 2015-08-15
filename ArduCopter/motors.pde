@@ -1,11 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define ARM_DELAY                 20  // called at 10hz so 2 seconds
-#define DISARM_DELAY              20  // called at 10hz so 2 seconds
+#define ARM_DELAY                 20 // called at 10hz so 2 seconds
+#define DISARM_DELAY              20 // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY          100 // called at 10hz so 10 seconds
-#define LOST_VEHICLE_DELAY        10  // called at 10hz so 1 second
+#define LOST_VEHICLE_DELAY        10 // called at 10hz so 1 second
 
-#define AUTO_DISARMING_DELAY_SEC  15.0f
+#define AUTO_DISARMING_DELAY_SEC  5.0f
 
 static uint32_t auto_disarm_begin;
 
