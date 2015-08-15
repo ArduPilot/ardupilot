@@ -765,3 +765,80 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
         }
     }
 }
+
+uint8_t Compass::get_use_mask() const
+{
+    uint8_t ret = 0;
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if (use_for_yaw(i)) {
+            ret |= 1 << i;
+        }
+    }
+    return ret;
+}
+
+bool Compass::consistent(uint8_t mask) const
+{
+    Vector3f primary_mag_field = get_field();
+    float primary_mag_field_mag = primary_mag_field.length();
+    Vector3f primary_mag_field_norm;
+
+    if (!is_zero(primary_mag_field_mag)) {
+        primary_mag_field_norm = primary_mag_field / primary_mag_field_mag;
+    } else {
+        return false;
+    }
+
+    Vector2f primary_mag_field_xy = Vector2f(primary_mag_field.x,primary_mag_field.y);
+    float primary_mag_field_xy_mag = primary_mag_field_xy.length();
+    Vector2f primary_mag_field_xy_norm;
+
+    if (!is_zero(primary_mag_field_xy_mag)) {
+        primary_mag_field_xy_norm = primary_mag_field_xy / primary_mag_field_xy_mag;
+    } else {
+        return false;
+    }
+
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        if ((1<<i) & mask) {
+            Vector3f mag_field = get_field(i);
+            float mag_field_mag = mag_field.length();
+            Vector3f mag_field_norm;
+
+            if (!is_zero(mag_field_mag)) {
+                mag_field_norm = mag_field / mag_field_mag;
+            } else {
+                return false;
+            }
+
+            Vector2f mag_field_xy = Vector2f(mag_field.x,mag_field.y);
+            float mag_field_xy_mag = mag_field_xy.length();
+            Vector2f mag_field_xy_norm;
+
+            if (!is_zero(mag_field_xy_mag)) {
+                mag_field_xy_norm = mag_field_xy / mag_field_xy_mag;
+            } else {
+                return false;
+            }
+
+            float xyz_ang_diff = acosf(constrain_float(mag_field_norm * primary_mag_field_norm,-1.0f,1.0f));
+            float xy_ang_diff  = acosf(constrain_float(mag_field_xy_norm*primary_mag_field_xy_norm,-1.0f,1.0f));
+            float xy_len_diff  = (primary_mag_field_xy-mag_field_xy).length();
+
+            // check for gross misalignment on all axes
+            bool xyz_ang_diff_large = xyz_ang_diff > AP_COMPASS_MAX_XYZ_ANG_DIFF;
+
+            // check for an unacceptable angle difference on the xy plane
+            bool xy_ang_diff_large = xy_ang_diff > AP_COMPASS_MAX_XY_ANG_DIFF;
+
+            // check for an unacceptable length difference on the xy plane
+            bool xy_length_diff_large = xy_len_diff > AP_COMPASS_MAX_XY_LENGTH_DIFF;
+
+            // check for inconsistency in the XY plane
+            if (xyz_ang_diff_large || xy_ang_diff_large || xy_length_diff_large) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
