@@ -14,9 +14,9 @@
 #include "HAL_SITL_Class.h"
 
 #include <AP_Math/AP_Math.h>
-#include "../AP_Compass/AP_Compass.h"
-#include "../AP_Declination/AP_Declination.h"
-#include "../SITL/SITL.h"
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
