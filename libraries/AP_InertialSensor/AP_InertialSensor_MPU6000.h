@@ -7,7 +7,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Progmem/AP_Progmem.h>
+
 #include "AP_InertialSensor.h"
+#include "AuxiliaryBus.h"
 
 // enable debug to see a register dump on startup
 #define MPU6000_DEBUG 0
@@ -28,6 +30,9 @@
 #define MPU6000_MAX_FIFO_SAMPLES 3
 #define MAX_DATA_READ (MPU6000_MAX_FIFO_SAMPLES * MPU6000_SAMPLE_SIZE)
 
+class AP_MPU6000_AuxiliaryBus;
+class AP_MPU6000_AuxiliaryBusSlave;
+
 class AP_MPU6000_BusDriver
 {
 public:
@@ -45,10 +50,14 @@ public:
                             AP_HAL::DigitalSource *_drdy_pin,
                             uint8_t &n_samples) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
+    virtual bool has_auxiliar_bus() = 0;
 };
 
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
 {
+    friend AP_MPU6000_AuxiliaryBus;
+    friend AP_MPU6000_AuxiliaryBusSlave;
+
 public:
     AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_MPU6000_BusDriver *bus);
     ~AP_InertialSensor_MPU6000();
@@ -62,6 +71,11 @@ public:
 
     bool gyro_sample_available(void) { return _sum_count >= _sample_count; }
     bool accel_sample_available(void) { return _sum_count >= _sample_count; }
+
+    /*
+     * Return an AuxiliaryBus if the bus driver allows it
+     */
+    AuxiliaryBus *get_auxiliar_bus() override;
 
     void start() override;
 
@@ -93,6 +107,8 @@ private:
 
     AP_MPU6000_BusDriver *_bus;
     AP_HAL::Semaphore    *_bus_sem;
+
+    AP_MPU6000_AuxiliaryBus *_auxiliar_bus = nullptr;
 
     static const float   _gyro_scale;
 
@@ -137,6 +153,7 @@ public:
                                AP_HAL::DigitalSource *_drdy_pin,
                                uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
+    bool has_auxiliar_bus() override;
 
 private:
     AP_HAL::SPIDeviceDriver *_spi;
@@ -159,12 +176,58 @@ public:
                                AP_HAL::DigitalSource *_drdy_pin,
                                uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
+    bool has_auxiliar_bus() override;
 
 private:
     uint8_t _addr;
     AP_HAL::I2CDriver *_i2c;
     AP_HAL::Semaphore *_i2c_sem;
     uint8_t _rx[MAX_DATA_READ];
+};
+
+
+class AP_MPU6000_AuxiliaryBusSlave : public AuxiliaryBusSlave
+{
+    friend class AP_MPU6000_AuxiliaryBus;
+
+public:
+    int passthrough_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
+    int passthrough_write(uint8_t reg, uint8_t val) override;
+
+    int read(uint8_t *buf) override;
+
+protected:
+    AP_MPU6000_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr, uint8_t instance);
+    int _set_passthrough(uint8_t reg, uint8_t size, uint8_t *out = nullptr);
+
+private:
+    const uint8_t _mpu6000_addr;
+    const uint8_t _mpu6000_reg;
+    const uint8_t _mpu6000_ctrl;
+    const uint8_t _mpu6000_do;
+
+    uint8_t _ext_sens_data = 0;
+};
+
+class AP_MPU6000_AuxiliaryBus : public AuxiliaryBus
+{
+    friend class AP_InertialSensor_MPU6000;
+
+public:
+    AP_HAL::Semaphore *get_semaphore() override;
+
+protected:
+    AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend);
+
+    AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance) override;
+    int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
+                                 uint8_t size) override;
+
+private:
+    void _configure_slaves();
+
+    static const uint8_t MAX_EXT_SENS_DATA = 24;
+    uint8_t _ext_sens_data = 0;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU6000_H__
