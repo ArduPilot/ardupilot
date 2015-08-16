@@ -244,6 +244,7 @@ private:
     void _add_backend(AP_InertialSensor_Backend *backend);
     void _detect_backends(void);
     void _start_backends();
+    AP_InertialSensor_Backend *_find_backend(int16_t backend_id);
 
     // gyro initialisation
     void _init_gyro();

@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <assert.h>
+
 #include <AP_Progmem/AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
@@ -386,6 +388,23 @@ void AP_InertialSensor::_start_backends()
     if (_gyro_count == 0 || _accel_count == 0) {
         hal.scheduler->panic(PSTR("INS needs at least 1 gyro and 1 accel"));
     }
+}
+
+/* Find a backend that has already been succesfully detected */
+AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
+{
+    assert(_backends_detected);
+
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        int16_t id = _backends[i]->get_id();
+
+        if (id < 0 || id != backend_id)
+            continue;
+
+        return _backends[i];
+    }
+
+    return nullptr;
 }
 
 void
