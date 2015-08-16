@@ -63,6 +63,8 @@ public:
      */
     int16_t product_id(void) const { return _product_id; }
 
+    int16_t get_id() const { return _id; }
+
 protected:
     // access to frontend
     AP_InertialSensor &_imu;
@@ -93,6 +95,9 @@ protected:
 
     // backend should fill in its product ID from AP_PRODUCT_ID_*
     int16_t _product_id;
+
+    // backend unique identifier or -1 if backend doesn't identify itself
+    int16_t _id = -1;
 
     // return the default filter frequency in Hz for the sample rate
     uint8_t _accel_filter_cutoff(void) const { return _imu._accel_filter_cutoff; }
