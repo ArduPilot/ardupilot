@@ -164,6 +164,25 @@ void Copter::auto_wp_start(const Vector3f& destination)
     }
 }
 
+// auto_wp_start - initialises waypoint controller to implement flying to a particular destination
+void Copter::auto_wp_start(const Location_Class& dest_loc)
+{
+    auto_mode = Auto_WP;
+
+    // send target to waypoint controller
+    if (!wp_nav.set_wp_destination(dest_loc)) {
+        // failure to set destination (likely because of missing terrain data)
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // To-Do: handle failure
+    }
+
+    // initialise yaw
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw_mode != AUTO_YAW_ROI) {
+        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+    }
+}
+
 // auto_wp_run - runs the auto waypoint controller
 //      called by auto_run at 100hz or more
 void Copter::auto_wp_run()
@@ -199,7 +218,11 @@ void Copter::auto_wp_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    if (!wp_nav.update_wpnav()) {
+        // failures to update probably caused by missing terrain data
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_UPDATE_TARGET);
+        // To-Do: handle failure by triggering RTL after 5 seconds with no update?
+    }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();
