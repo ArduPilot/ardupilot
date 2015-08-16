@@ -293,16 +293,14 @@ void Copter::do_takeoff(const AP_Mission::Mission_Command& cmd)
 // do_nav_wp - initiate move to next waypoint
 void Copter::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    const Vector3f &curr_pos = inertial_nav.get_position();
-    const Vector3f local_pos = pv_location_to_vector_with_default(cmd.content.location, curr_pos);
-
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = abs(cmd.p1);
 
     // Set wp navigation target
-    auto_wp_start(local_pos);
+    auto_wp_start(Location_Class(cmd.content.location));
+
     // if no delay set the waypoint as "fast"
     if (loiter_time_max == 0 ) {
         wp_nav.set_fast_waypoint(true);

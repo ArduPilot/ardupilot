@@ -717,6 +717,7 @@ private:
     void auto_takeoff_start(float final_alt_above_home);
     void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
+    void auto_wp_start(const Location_Class& dest_loc);
     void auto_wp_run();
     void auto_spline_run();
     void auto_land_start();
