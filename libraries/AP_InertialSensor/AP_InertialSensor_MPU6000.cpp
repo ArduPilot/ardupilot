@@ -1,5 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <assert.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_MPU6000.h"
 
@@ -139,6 +141,8 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_FIFO_R_W                             0x74
 #define MPUREG_WHOAMI                               0x75
 
+#define BIT_READ_FLAG                           0x80
+
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
 #define BITS_DLPF_CFG_256HZ_NOLPF2              0x00
 #define BITS_DLPF_CFG_188HZ                         0x01
@@ -193,6 +197,21 @@ void AP_MPU6000_BusDriver_SPI::init(bool &fifo_mode, uint8_t &max_samples)
      */
     max_samples = 1;
 };
+
+/*
+ * This implementation is limited to a block of at most 32 bytes
+ */
+void AP_MPU6000_BusDriver_SPI::read_block(uint8_t reg, uint8_t *buf, uint32_t size)
+{
+    assert(size < 32);
+
+    reg |= BIT_READ_FLAG;
+    uint8_t tx[32] = { reg, };
+    uint8_t rx[32] = { };
+
+    _spi->transaction(tx, rx, size + 1);
+    memcpy(buf, rx + 1, size);
+}
 
 void AP_MPU6000_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
 {
@@ -295,6 +314,11 @@ void AP_MPU6000_BusDriver_I2C::init(bool &fifo_mode, uint8_t &max_samples)
 void AP_MPU6000_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
 {
     _i2c->readRegister(_addr, reg, val);
+}
+
+void AP_MPU6000_BusDriver_I2C::read_block(uint8_t reg, uint8_t *buf, uint32_t size)
+{
+    _i2c->readRegisters(_addr, reg, size, buf);
 }
 
 void AP_MPU6000_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
@@ -624,6 +648,12 @@ void AP_InertialSensor_MPU6000::_read_data_transaction()
 
     _bus->read_data_transaction(_samples, _drdy_pin, n_samples);
     _accumulate(_samples, n_samples);
+}
+
+void AP_InertialSensor_MPU6000::_read_block(uint8_t reg, uint8_t *buf,
+                                            uint32_t size)
+{
+    _bus->read_block(reg, buf, size);
 }
 
 uint8_t AP_InertialSensor_MPU6000::_register_read( uint8_t reg )

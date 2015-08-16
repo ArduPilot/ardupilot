@@ -34,6 +34,10 @@ public:
     virtual ~AP_MPU6000_BusDriver() { };
     virtual void init(bool &fifo_mode, uint8_t &max_samples) = 0;
     virtual void read8(uint8_t reg, uint8_t *val) = 0;
+
+    /// Copy data from the device to @p buf starting at @p reg with @size
+    /// length.
+    virtual void read_block(uint8_t reg, uint8_t *buf, uint32_t size) = 0;
     virtual void write8(uint8_t reg, uint8_t val) = 0;
     virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
     virtual void read_data_transaction(uint8_t* samples,
@@ -76,6 +80,7 @@ private:
     void    _read_data_transaction();
     bool    _data_ready();
     void    _poll_data(void);
+    void    _read_block(uint8_t reg, uint8_t *buf, uint32_t size);
     uint8_t _register_read( uint8_t reg);
     void    _register_write( uint8_t reg, uint8_t val );
     void    _register_write_check(uint8_t reg, uint8_t val);
@@ -120,6 +125,7 @@ public:
     AP_MPU6000_BusDriver_SPI(void);
     void init(bool &fifo_mode, uint8_t &max_samples);
     void read8(uint8_t reg, uint8_t *val);
+    void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
     void write8(uint8_t reg, uint8_t val);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
     void read_data_transaction(uint8_t* samples,
@@ -140,6 +146,7 @@ public:
     AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
     void init(bool &fifo_mode, uint8_t &max_samples);
     void read8(uint8_t reg, uint8_t *val);
+    void read_block(uint8_t reg, uint8_t *buf, uint32_t size) override;
     void write8(uint8_t reg, uint8_t val);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
     void read_data_transaction(uint8_t* samples,
