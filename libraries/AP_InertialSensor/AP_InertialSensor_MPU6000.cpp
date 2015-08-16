@@ -71,9 +71,17 @@ extern const AP_HAL::HAL& hal;
 #       define BIT_SLV2_FIFO_EN                     0x04
 #       define BIT_SLV1_FIFO_EN                     0x02
 #       define BIT_SLV0_FIFI_EN0                    0x01
+#define MPUREG_I2C_MST_CTRL                     0x24
+#       define BIT_I2C_MST_P_NSR                    0x10
+#       define BIT_I2C_MST_CLK_400KHZ               0x0D
+#define MPUREG_I2C_SLV0_ADDR                    0x25
+#define MPUREG_I2C_SLV1_ADDR                    0x28
+#define MPUREG_I2C_SLV2_ADDR                    0x2B
+#define MPUREG_I2C_SLV3_ADDR                    0x2E
 #define MPUREG_INT_PIN_CFG                      0x37
 #       define BIT_INT_RD_CLEAR                     0x10    // clear the interrupt when any read occurs
 #       define BIT_LATCH_INT_EN                     0x20    // latch data ready pin
+#define MPUREG_I2C_SLV4_CTRL                    0x34
 #define MPUREG_INT_ENABLE                       0x38
 // bit definitions for MPUREG_INT_ENABLE
 #       define BIT_RAW_RDY_EN                       0x01
@@ -108,6 +116,13 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_GYRO_YOUT_L                      0x46
 #define MPUREG_GYRO_ZOUT_H                      0x47
 #define MPUREG_GYRO_ZOUT_L                      0x48
+#define MPUREG_EXT_SENS_DATA_00                 0x49
+#define MPUREG_I2C_SLV0_DO                      0x63
+#define MPUREG_I2C_MST_DELAY_CTRL               0x67
+#       define BIT_I2C_SLV0_DLY_EN              0x01
+#       define BIT_I2C_SLV1_DLY_EN              0x02
+#       define BIT_I2C_SLV2_DLY_EN              0x04
+#       define BIT_I2C_SLV3_DLY_EN              0x08
 #define MPUREG_USER_CTRL                        0x6A
 // bit definitions for MPUREG_USER_CTRL
 #       define BIT_USER_CTRL_SIG_COND_RESET         0x01 // resets signal paths and results registers for all sensors (gyros, accel, temp)
@@ -142,6 +157,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_WHOAMI                               0x75
 
 #define BIT_READ_FLAG                           0x80
+#define BIT_I2C_SLVX_EN                         0x80
 
 // Configuration bits MPU 3000 and MPU 6000 (not revised)?
 #define BITS_DLPF_CFG_256HZ_NOLPF2              0x00
@@ -289,6 +305,11 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
     return _spi->get_semaphore();
 }
 
+bool AP_MPU6000_BusDriver_SPI::has_auxiliar_bus()
+{
+    return true;
+}
+
 /* I2C bus driver implementation */
 AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr) :
     _addr(addr),
@@ -392,6 +413,11 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_I2C::get_semaphore()
     return _i2c->get_semaphore();
 }
 
+bool AP_MPU6000_BusDriver_I2C::has_auxiliar_bus()
+{
+    return false;
+}
+
 /*
  *  RM-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -430,6 +456,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
     delete _bus;
+    delete _auxiliar_bus;
     delete _samples;
 }
 
@@ -675,6 +702,17 @@ bool AP_InertialSensor_MPU6000::update( void )
     return true;
 }
 
+AuxiliaryBus *AP_InertialSensor_MPU6000::get_auxiliar_bus()
+{
+    if (_auxiliar_bus)
+        return _auxiliar_bus;
+
+    if (_bus->has_auxiliar_bus())
+        _auxiliar_bus = new AP_MPU6000_AuxiliaryBus(*this);
+
+    return _auxiliar_bus;
+}
+
 /*================ HARDWARE FUNCTIONS ==================== */
 
 /**
@@ -819,6 +857,16 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries<5; tries++) {
+        uint8_t user_ctrl = _register_read(MPUREG_USER_CTRL);
+
+        /* First disable the master I2C to avoid hanging the slaves on the
+         * aulixiliar I2C bus - it will be enabled again if the AuxiliaryBus
+         * is used */
+        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
+            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+            hal.scheduler->delay(10);
+        }
+
         /* reset device */
         _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
         hal.scheduler->delay(100);
@@ -878,3 +926,155 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
     }
 }
 #endif
+
+AP_MPU6000_AuxiliaryBusSlave::AP_MPU6000_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr,
+                                                         uint8_t instance)
+    : AuxiliaryBusSlave(bus, addr, instance)
+    , _mpu6000_addr(MPUREG_I2C_SLV0_ADDR + _instance * 3)
+    , _mpu6000_reg(_mpu6000_addr + 1)
+    , _mpu6000_ctrl(_mpu6000_addr + 2)
+    , _mpu6000_do(MPUREG_I2C_SLV0_DO + _instance)
+{
+}
+
+int AP_MPU6000_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t size,
+                                                  uint8_t *out)
+{
+    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    uint8_t addr;
+
+    /* Ensure the slave read/write is disabled before changing the registers */
+    backend._register_write(_mpu6000_ctrl, 0);
+
+    if (out) {
+        backend._register_write(_mpu6000_do, *out);
+        addr = _addr;
+    } else {
+        addr = _addr | BIT_READ_FLAG;
+    }
+
+    backend._register_write(_mpu6000_addr, addr);
+    backend._register_write(_mpu6000_reg, reg);
+    backend._register_write(_mpu6000_ctrl, BIT_I2C_SLVX_EN | size);
+
+    return 0;
+}
+
+int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
+                                                  uint8_t size)
+{
+    assert(buf);
+
+    if (_registered) {
+        hal.console->println_P(PSTR("Error: can't passthrough when slave is already configured"));
+        return -1;
+    }
+
+    int r = _set_passthrough(reg, size);
+    if (r < 0)
+        return r;
+
+    /* wait the value to be read from the slave and read it back */
+    hal.scheduler->delay(10);
+
+    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    backend._read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, size);
+
+    /* disable new reads */
+    backend._register_write(_mpu6000_ctrl, 0);
+
+    return size;
+}
+
+int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
+{
+    if (_registered) {
+        hal.console->println_P(PSTR("Error: can't passthrough when slave is already configured"));
+        return -1;
+    }
+
+    int r = _set_passthrough(reg, 1, &val);
+    if (r < 0)
+        return r;
+
+    /* wait the value to be written to the slave */
+    hal.scheduler->delay(10);
+
+    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+
+    /* disable new writes */
+    backend._register_write(_mpu6000_ctrl, 0);
+
+    return 0;
+}
+
+int AP_MPU6000_AuxiliaryBusSlave::read(uint8_t *buf)
+{
+    if (!_registered) {
+        hal.console->println_P(PSTR("Error: can't read before configuring slave"));
+        return -1;
+    }
+
+    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    backend._read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, _sample_size);
+
+    return 0;
+}
+
+/* MPU6000 provides up to 5 slave devices, but the 5th is way too different to
+ * configure and is seldom used */
+AP_MPU6000_AuxiliaryBus::AP_MPU6000_AuxiliaryBus(AP_InertialSensor_MPU6000 &backend)
+    : AuxiliaryBus(backend, 4)
+{
+}
+
+AP_HAL::Semaphore *AP_MPU6000_AuxiliaryBus::get_semaphore()
+{
+    return static_cast<AP_InertialSensor_MPU6000&>(_ins_backend)._bus_sem;
+}
+
+AuxiliaryBusSlave *AP_MPU6000_AuxiliaryBus::_instantiate_slave(uint8_t addr, uint8_t instance)
+{
+    /* Enable slaves on MPU6000 if this is the first time */
+    if (_ext_sens_data == 0)
+        _configure_slaves();
+
+    return new AP_MPU6000_AuxiliaryBusSlave(*this, addr, instance);
+}
+
+void AP_MPU6000_AuxiliaryBus::_configure_slaves()
+{
+    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_ins_backend);
+
+    uint8_t user_ctrl;
+    user_ctrl = backend._register_read(MPUREG_USER_CTRL);
+    backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
+
+    /* stop condition between reads; clock at 400kHz */
+    backend._register_write(MPUREG_I2C_MST_CTRL,
+                            BIT_I2C_MST_P_NSR | BIT_I2C_MST_CLK_400KHZ);
+
+    /* Hard-code divider for internal sample rate, 1 kHz, resulting in a
+     * sample rate of 100Hz */
+    backend._register_write(MPUREG_I2C_SLV4_CTRL, 9);
+
+    /* All slaves are subject to the sample rate */
+    backend._register_write(MPUREG_I2C_MST_DELAY_CTRL,
+                            BIT_I2C_SLV0_DLY_EN | BIT_I2C_SLV1_DLY_EN |
+                            BIT_I2C_SLV2_DLY_EN | BIT_I2C_SLV3_DLY_EN);
+}
+
+int AP_MPU6000_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,
+                                                     uint8_t reg, uint8_t size)
+{
+    if (_ext_sens_data + size > MAX_EXT_SENS_DATA)
+        return -1;
+
+    AP_MPU6000_AuxiliaryBusSlave *mpu_slave =
+        static_cast<AP_MPU6000_AuxiliaryBusSlave*>(slave);
+    mpu_slave->_set_passthrough(reg, size);
+    mpu_slave->_ext_sens_data = _ext_sens_data;
+    _ext_sens_data += size;
+
+    return 0;
+}
