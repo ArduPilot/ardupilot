@@ -20,7 +20,7 @@ public:
     virtual uint32_t read_24bits(uint8_t reg) = 0;
 
     /** Write to a register with no data. */
-    virtual void write(uint8_t reg) = 0;
+    virtual bool write(uint8_t reg) = 0;
 
     /** Acquire the internal semaphore for this device.
      * take_nonblocking should be used from the timer process,
@@ -41,7 +41,7 @@ public:
     uint16_t read_16bits(uint8_t reg);
     uint32_t read_24bits(uint8_t reg);
     uint32_t read_adc(uint8_t reg);
-    void write(uint8_t reg);
+    bool write(uint8_t reg);
     bool sem_take_nonblocking();
     bool sem_take_blocking();
     void sem_give();
@@ -61,7 +61,7 @@ public:
     void init();
     uint16_t read_16bits(uint8_t reg);
     uint32_t read_24bits(uint8_t reg);
-    void write(uint8_t reg);
+    bool write(uint8_t reg);
     bool sem_take_nonblocking();
     bool sem_take_blocking();
     void sem_give();
