@@ -76,10 +76,11 @@ uint32_t AP_SerialBus_SPI::read_24bits(uint8_t reg)
     return (((uint32_t)rx[1])<<16) | (((uint32_t)rx[2])<<8) | ((uint32_t)rx[3]);
 }
 
-void AP_SerialBus_SPI::write(uint8_t reg)
+bool AP_SerialBus_SPI::write(uint8_t reg)
 {
     uint8_t tx[1] = { reg };
     _spi->transaction(tx, NULL, 1);
+    return true;
 }
 
 bool AP_SerialBus_SPI::sem_take_blocking() 
@@ -132,9 +133,9 @@ uint32_t AP_SerialBus_I2C::read_24bits(uint8_t reg)
     return 0;
 }
 
-void AP_SerialBus_I2C::write(uint8_t reg)
+bool AP_SerialBus_I2C::write(uint8_t reg)
 {
-    _i2c->write(_addr, 1, &reg);
+    return _i2c->write(_addr, 1, &reg) == 0;
 }
 
 bool AP_SerialBus_I2C::sem_take_blocking() 
