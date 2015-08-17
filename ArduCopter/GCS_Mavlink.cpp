@@ -9,16 +9,6 @@
 #define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN)
 #define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 
-void Copter::gcs_send_heartbeat(void)
-{
-    gcs_send_message(MSG_HEARTBEAT);
-}
-
-void Copter::gcs_send_deferred(void)
-{
-    gcs_send_message(MSG_RETRY_DEFERRED);
-}
-
 /*
  *  !!NOTE!!
  *
@@ -103,20 +93,6 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
         base_mode,
         custom_mode,
         system_status);
-}
-
-NOINLINE void Copter::send_attitude(mavlink_channel_t chan)
-{
-    const Vector3f &gyro = ins.get_gyro();
-    mavlink_msg_attitude_send(
-        chan,
-        millis(),
-        ahrs.roll,
-        ahrs.pitch,
-        ahrs.yaw,
-        gyro.x,
-        gyro.y,
-        gyro.z);
 }
 
 #if AC_FENCE == ENABLED
@@ -269,33 +245,6 @@ NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
         0, // comm drops in pkts,
         0, 0, 0, 0);
 
-}
-
-void NOINLINE Copter::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time = gps.last_fix_time_ms();
-    } else {
-        fix_time = millis();
-    }
-    const Vector3f &vel = inertial_nav.get_velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
-        current_loc.alt * 10,           // millimeters above ground
-        vel.x,                          // X speed cm/s (+ve North)
-        vel.y,                          // Y speed cm/s (+ve East)
-        vel.z,                          // Z speed cm/s (+ve up)
-        ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
 void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
@@ -559,12 +508,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
-        copter.send_attitude(chan);
+        send_attitude(copter.ahrs, chan);
         break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        copter.send_location(chan);
+        send_location(copter.ahrs, copter.gps, copter.current_loc, chan);
         break;
 
     case MSG_LOCAL_POSITION:
@@ -743,125 +692,6 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     }
 
     return true;
-}
-
-
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
-    // @Param: RAW_SENS
-    // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_PRESSURE, and SENSOR_OFFSETS to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  0),
-
-    // @Param: EXT_STAT
-    // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, MEMINFO, MISSION_CURRENT, GPS_RAW_INT, NAV_CONTROLLER_OUTPUT, and LIMITS_STATUS to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  0),
-
-    // @Param: RC_CHAN
-    // @DisplayName: RC Channel stream rate to ground station
-    // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS_RAW to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  0),
-
-    // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate to ground station
-    // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  0),
-
-    // @Param: POSITION
-    // @DisplayName: Position stream rate to ground station
-    // @Description: Stream rate of GLOBAL_POSITION_INT to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  0),
-
-    // @Param: EXTRA1
-    // @DisplayName: Extra data type 1 stream rate to ground station
-    // @Description: Stream rate of ATTITUDE and SIMSTATE (SITL only) to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  0),
-
-    // @Param: EXTRA2
-    // @DisplayName: Extra data type 2 stream rate to ground station
-    // @Description: Stream rate of VFR_HUD to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  0),
-
-    // @Param: EXTRA3
-    // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS, HWSTATUS, and SYSTEM_TIME to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  0),
-
-    // @Param: PARAMS
-    // @DisplayName: Parameter stream rate to ground station
-    // @Description: Stream rate of PARAM_VALUE to ground station
-    // @Units: Hz
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  0),
-    AP_GROUPEND
-};
-
-
-// see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
-{
-    if (stream_num >= NUM_STREAMS) {
-        return false;
-    }
-    float rate = (uint8_t)streamRates[stream_num].get();
-
-    // send at a much lower rate while handling waypoints and
-    // parameter sends
-    if ((stream_num != STREAM_PARAMS) &&
-        (waypoint_receiving || _queued_parameter != NULL)) {
-        rate *= 0.25f;
-    }
-
-    if (rate <= 0) {
-        return false;
-    }
-
-    if (stream_ticks[stream_num] == 0) {
-        // we're triggering now, setup the next trigger point
-        if (rate > 50) {
-            rate = 50;
-        }
-        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
-        return true;
-    }
-
-    // count down at 50Hz
-    stream_ticks[stream_num]--;
-    return false;
 }
 
 void
@@ -1810,14 +1640,14 @@ void Copter::mavlink_delay_cb()
     uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
-        gcs_send_heartbeat();
+        gcs_send_message(MSG_HEARTBEAT);
         gcs_send_message(MSG_EXTENDED_STATUS1);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
         gcs_check_input();
         gcs_data_stream_send();
-        gcs_send_deferred();
+        gcs_send_message(MSG_RETRY_DEFERRED);
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1828,6 +1658,12 @@ void Copter::mavlink_delay_cb()
 
     in_mavlink_delay = false;
 }
+
+void Copter::gcs_send_deferred(void)
+{
+    gcs_send_message(MSG_RETRY_DEFERRED);
+}
+
 
 /*
  *  send a message on both GCS links
@@ -1845,7 +1681,7 @@ void Copter::gcs_send_message(enum ap_message id)
  *  send data streams in the given rate range on both links
  */
 void Copter::gcs_data_stream_send(void)
-{
+{  
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
             gcs[i].data_stream_send();

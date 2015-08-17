@@ -125,6 +125,8 @@ public:
     static uint32_t last_radio_status_remrssi_ms;
 
     // common send functions
+    void send_attitude(AP_AHRS &, mavlink_channel_t);
+    void send_location(AP_AHRS &, AP_GPS &, Location &, mavlink_channel_t);
     void send_meminfo(void);
     void send_power_status(void);
     void send_ahrs2(AP_AHRS &ahrs);

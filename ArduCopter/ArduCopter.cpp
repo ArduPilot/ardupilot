@@ -119,7 +119,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(landinggear_update),   40,     75 },
     { SCHED_TASK(lost_vehicle_check),   40,     50 },
     { SCHED_TASK(gcs_check_input),       1,    180 },
-    { SCHED_TASK(gcs_send_heartbeat),  400,    110 },
     { SCHED_TASK(gcs_send_deferred),     8,    550 },
     { SCHED_TASK(gcs_data_stream_send),  8,    550 },
     { SCHED_TASK(update_mount),          8,     75 },
@@ -443,6 +442,9 @@ void Copter::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
+    // send heartbeat
+    gcs_send_message(MSG_HEARTBEAT);
+  
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }

@@ -27,6 +27,94 @@ extern const AP_HAL::HAL& hal;
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
 
+
+/*
+  default stream rates to 1Hz
+ */
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+    // @Param: RAW_SENS
+    // @DisplayName: Raw sensor stream rate
+    // @Description: Raw sensor stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK, streamRates[0],  1),
+
+    // @Param: EXT_STAT
+    // @DisplayName: Extended status stream rate to ground station
+    // @Description: Extended status stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK, streamRates[1],  1),
+
+    // @Param: RC_CHAN
+    // @DisplayName: RC Channel stream rate to ground station
+    // @Description: RC Channel stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK, streamRates[2],  1),
+
+    // @Param: RAW_CTRL
+    // @DisplayName: Raw Control stream rate to ground station
+    // @Description: Raw Control stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK, streamRates[3],  1),
+
+    // @Param: POSITION
+    // @DisplayName: Position stream rate to ground station
+    // @Description: Position stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("POSITION", 4, GCS_MAVLINK, streamRates[4],  1),
+
+    // @Param: EXTRA1
+    // @DisplayName: Extra data type 1 stream rate to ground station
+    // @Description: Extra data type 1 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK, streamRates[5],  1),
+
+    // @Param: EXTRA2
+    // @DisplayName: Extra data type 2 stream rate to ground station
+    // @Description: Extra data type 2 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK, streamRates[6],  1),
+
+    // @Param: EXTRA3
+    // @DisplayName: Extra data type 3 stream rate to ground station
+    // @Description: Extra data type 3 stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK, streamRates[7],  1),
+
+    // @Param: PARAMS
+    // @DisplayName: Parameter stream rate to ground station
+    // @Description: Parameter stream rate to ground station
+    // @Units: Hz
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK, streamRates[8],  10),
+    AP_GROUPEND
+};
+
 GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_receive_timeout(5000)
 {
@@ -50,6 +138,77 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     reset_cli_timeout();
 }
 
+void GCS_MAVLINK::send_attitude(AP_AHRS &ahrs, mavlink_channel_t mav_chan) {
+    Vector3f omega = ahrs.get_gyro();
+    mavlink_msg_attitude_send(
+        mav_chan,
+        hal.scheduler->millis(),
+        ahrs.roll,
+        ahrs.pitch,
+        ahrs.yaw,
+        omega.x,
+        omega.y,
+        omega.z);
+}
+
+// see if we should send a stream now. Called at 50Hz
+bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
+{
+    if (stream_num >= NUM_STREAMS) {
+        return false;
+    }
+    float rate = (uint8_t)streamRates[stream_num].get();
+
+    // send at a much lower rate while handling waypoints and
+    // parameter sends
+    if ((stream_num != STREAM_PARAMS) && 
+        (waypoint_receiving || _queued_parameter != NULL)) {
+        rate *= 0.25f;
+    }
+
+    if (rate <= 0) {
+        return false;
+    }
+
+    if (stream_ticks[stream_num] == 0) {
+        // we're triggering now, setup the next trigger point
+        if (rate > 50) {
+            rate = 50;
+        }
+        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
+        return true;
+    }
+
+    // count down at 50Hz
+    stream_ticks[stream_num]--;
+    return false;
+}
+
+void GCS_MAVLINK::send_location(AP_AHRS &ahrs, AP_GPS &gps, Location &current_loc, mavlink_channel_t mav_chan) {
+    uint32_t fix_time_ms;
+    // if we have a GPS fix, take the time as the last fix time. That
+    // allows us to correctly calculate velocities and extrapolate
+    // positions.
+    // If we don't have a GPS fix then we are dead reckoning, and will
+    // use the current boot time as the fix time.    
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+        fix_time_ms = gps.last_fix_time_ms();
+    } else {
+        fix_time_ms = hal.scheduler->millis();
+    }
+    const Vector3f &vel = gps.velocity();
+    mavlink_msg_global_position_int_send(
+        mav_chan,
+        fix_time_ms,
+        current_loc.lat,                // in 1E7 degrees
+        current_loc.lng,                // in 1E7 degrees
+        gps.location().alt * 10UL,      // millimeters above sea level
+        current_loc.alt * 10,           // millimeters above ground
+        vel.x * 100,  // X speed cm/s (+ve North)
+        vel.y * 100,  // Y speed cm/s (+ve East)
+        vel.z * -100, // Z speed cm/s (+ve up)
+        ahrs.yaw_sensor);
+}
 
 /*
   setup a UART, handling begin() and init()
