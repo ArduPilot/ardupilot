@@ -32,7 +32,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
-    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usuallly used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
+    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
     // @Values: 0:MANUAL,2:LEARNING,3:STEERING,4:HOLD,10:AUTO,11:RTL,15:GUIDED
     // @User: Advanced
 	GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
@@ -310,7 +310,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle sailsafe triggers.
+    // @Description: The PWM level on channel 3 below which throttle failsafe triggers.
     // @Range: 925 1100
     // @Increment: 1
     // @User: Standard
