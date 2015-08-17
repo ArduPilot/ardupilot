@@ -69,7 +69,17 @@ void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     switch (pin) {
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
-        ioctl(_gpio_fmu_fd, output?GPIO_SET_OUTPUT:GPIO_SET_INPUT, 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0)));
+        uint32_t pinmask = 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0));
+        if (output) {
+            uint8_t old_value = read(pin);
+            if (old_value) {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
+            } else {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
+            }
+        } else {
+            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
+        }
         break;
     }
 }
