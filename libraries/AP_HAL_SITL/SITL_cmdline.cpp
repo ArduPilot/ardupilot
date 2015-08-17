@@ -22,7 +22,7 @@
 #include <SITL/SIM_JSBSim.h>
 #include <SITL/SIM_Tracker.h>
 #include <SITL/SIM_Balloon.h>
-#include <SIM_arducopter_sitl_ros.h>
+#include <SITL/SIM_arducopter_sitl_ros.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -70,7 +70,7 @@ static const struct {
     { "gazebo",             Gazebo::create },
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
-    { "balloon",            Balloon::create }
+    { "balloon",            Balloon::create },
     { "arducopter_sitl_ros", arducopter_sitl_ros::create }
 };
 

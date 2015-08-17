@@ -22,7 +22,7 @@
 #define _SIM_ARDUCOPTER_SITL_ROS_H
 
 #include "SIM_Aircraft.h"
-#include <utility/Socket.h>
+#include <AP_HAL/utility/Socket.h>
 
 /*
   a arducopter_sitl_ros simulator

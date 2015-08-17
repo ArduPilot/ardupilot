@@ -248,7 +248,7 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=arducopter_sitl_ros"
         MODEL="$FRAME"
-	;;	
+	;;
     octa*)
 	BUILD_TARGET="sitl-octa"
         MODEL="$FRAME"

@@ -17,7 +17,7 @@
   simulator connector for ardupilot version of arucopter_sitl_ros
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_arducopter_sitl_ros.h"
 #include <stdio.h>
