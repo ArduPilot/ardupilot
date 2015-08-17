@@ -1072,6 +1072,7 @@ void NavEKF::SelectFlowFusion()
         flowRadXY[1]        = 0.0f;
         omegaAcrossFlowTime.zero();
         flowDataValid = true;
+        //printf("Zero OF\n");
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
@@ -1085,6 +1086,7 @@ void NavEKF::SelectFlowFusion()
             lastKnownPositionNE.y = state.position.y;
             // reset the position
             ResetPosition();
+            printf("Reset OF\n");
     }
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
     // we don't do terrain height estimation in optical flow only mode as the ground becomes our zero height reference
@@ -1103,11 +1105,13 @@ void NavEKF::SelectFlowFusion()
             // turn off fusion permissions
             // reset the flags to indicate that no new range finder or flow data is available for fusion
             newDataFlow = false;
+            printf("GPS\n");
         }
     }
 
     // Fuse optical flow data into the main filter
     // if the filter is initialised, we have data to fuse and the vehicle is not excessively tilted, then perform optical flow fusion
+    //printf("flowDataValid=%d newDataFlow=%d tiltOK=%d constPosMode=%d", flowDataValid, newDataFlow, tiltOK, constPosMode);
     if (flowDataValid && newDataFlow && tiltOK && !constPosMode)
     {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
@@ -1118,6 +1122,7 @@ void NavEKF::SelectFlowFusion()
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         // Fuse the optical flow X and Y axis data into the main filter sequentially
+        printf("Before FuseOF\n");
         for (flow_state.obsIndex = 0; flow_state.obsIndex <= 1; flow_state.obsIndex++) FuseOptFlow();
         // reset flag to indicate that no new flow data is available for fusion
         newDataFlow = false;
@@ -2414,66 +2419,66 @@ void NavEKF::FuseVisionPosNED()
     Vector3 observation;
     float SK;
 
-    if (fuseVisionPositionData) {
 
-        // if constant position or constant velocity mode use the current states to calculate the predicted
-        // measurement rather than use states from a previous time. We need to do this
-        // because there may be no stored states due to lack of real measurements.
-        if (constPosMode) {
-        	statesAtVisionPosTime = state;
-        }
 
-        observation[0] = visionPosition.x;
-        observation[1] = visionPosition.y;
-        observation[2] = visionPosition.z;
-
-        R_OBS[0] = sq(constrain_float(_visionHorizPosNoise, 0.05f, 5.0f));
-        R_OBS[1] = R_OBS[0];
-        R_OBS[2] = sq(constrain_float(_visionVerticalPosNoise,  0.05f, 5.0f));
-
-        for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
-
-        // fuse measurements sequentially
-        for (obsIndex=0; obsIndex<=2; obsIndex++) {
-
-        	stateIndex = 7 + obsIndex;
-        	// calculate the measurement innovation, using states from a different time coordinate
-        	innovVisionPos[obsIndex] = statesAtVisionPosTime.position[obsIndex] - observation[obsIndex];
-
-        	// calculate the Kalman gain and calculate innovation variances
-        	varInnovVisionPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
-        	SK = 1.0f/varInnovVisionPos[obsIndex];
-
-        	for (uint8_t i= 0; i<=33; i++) {
-        		Kfusion[i] = 0.0f;
-        	}
-
-        	for (uint8_t i= 7; i<=9; i++) {
-        		Kfusion[i] = P[i][stateIndex]*SK;
-        	}
-
-        	// calculate state corrections
-        	for (uint8_t i = 7; i<=9; i++) {
-        		states[i] = states[i] - Kfusion[i] * innovVisionPos[obsIndex];
-
-        	}
-        	state.quat.normalize();
-
-        	// update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
-        	// this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
-        	for (uint8_t i= 0; i<=21; i++) {
-        		for (uint8_t j= 0; j<=21; j++)
-        		{
-        			KHP[i][j] = Kfusion[i] * P[stateIndex][j];
-        		}
-        	}
-        	for (uint8_t i= 0; i<=21; i++) {
-        		for (uint8_t j= 0; j<=21; j++) {
-        			P[i][j] = P[i][j] - KHP[i][j];
-        		}
-        	}
-        }
+    // if constant position or constant velocity mode use the current states to calculate the predicted
+    // measurement rather than use states from a previous time. We need to do this
+    // because there may be no stored states due to lack of real measurements.
+    if (constPosMode) {
+    	statesAtVisionPosTime = state;
     }
+
+    observation[0] = visionPosition.x;
+    observation[1] = visionPosition.y;
+    observation[2] = visionPosition.z;
+
+    R_OBS[0] = sq(constrain_float(_visionHorizPosNoise, 0.05f, 5.0f));
+    R_OBS[1] = R_OBS[0];
+    R_OBS[2] = sq(constrain_float(_visionVerticalPosNoise,  0.05f, 5.0f));
+
+    for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+
+    // fuse measurements sequentially
+    for (obsIndex=0; obsIndex<=2; obsIndex++) {
+
+    	stateIndex = 7 + obsIndex;
+    	// calculate the measurement innovation, using states from a different time coordinate
+    	innovVisionPos[obsIndex] = statesAtVisionPosTime.position[obsIndex] - observation[obsIndex];
+
+    	// calculate the Kalman gain and calculate innovation variances
+    	varInnovVisionPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
+    	SK = 1.0f/varInnovVisionPos[obsIndex];
+
+//    	for (uint8_t i= 0; i<=21; i++) {
+//    		Kfusion[i] = 0.0f;
+//    	}
+//
+//    	for (uint8_t i= 7; i<=9; i++) {
+//    		Kfusion[i] = P[i][stateIndex]*SK;
+//    	}
+//
+//    	// calculate state corrections
+//    	for (uint8_t i = 7; i<=9; i++) {
+//    		states[i] = states[i] - Kfusion[i] * innovVisionPos[obsIndex];
+//
+//    	}
+//    	state.quat.normalize();
+//
+//    	// update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
+//    	// this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
+//    	for (uint8_t i= 0; i<=21; i++) {
+//    		for (uint8_t j= 0; j<=21; j++)
+//    		{
+//    			KHP[i][j] = Kfusion[i] * P[stateIndex][j];
+//    		}
+//    	}
+//    	for (uint8_t i= 0; i<=21; i++) {
+//    		for (uint8_t j= 0; j<=21; j++) {
+//    			P[i][j] = P[i][j] - KHP[i][j];
+//    		}
+//    	}
+    }
+
 
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-condiioning.
     ForceSymmetry();
@@ -3085,7 +3090,7 @@ void NavEKF::FuseOptFlow()
     velNED_local.x = vn - gpsVelGlitchOffset.x;
     velNED_local.y = ve - gpsVelGlitchOffset.y;
     velNED_local.z = vd;
-
+    printf("FuseOF\n");
     // constrain height above ground to be above range measured on ground
     float heightAboveGndEst = max((terrainState - pd), rngOnGnd);
     // Calculate observation jacobians and Kalman gains
@@ -3191,6 +3196,7 @@ void NavEKF::FuseOptFlow()
         }
         // calculate innovation for X axis observation
         innovOptFlow[0] = losPred[0] - flowRadXYcomp[0];
+        printf("PredVX = %.3f flowX = %.3f\n IFX = %.3f\n", losPred[0], flowRadXYcomp[0], innovOptFlow[0]);
 
     } else if (obsIndex == 1) {
 
@@ -3254,7 +3260,7 @@ void NavEKF::FuseOptFlow()
         }
         // calculate innovation for Y observation
         innovOptFlow[1] = losPred[1] - flowRadXYcomp[1];
-
+        printf("PredVY = %.3f flowY = %.3f\n IFY = %.3f\n", losPred[1], flowRadXYcomp[1], innovOptFlow[1]);
     }
 
     // calculate the innovation consistency test ratio
@@ -3821,9 +3827,11 @@ bool NavEKF::getPosNED(Vector3f &pos) const
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     nav_filter_status status;
     getFilterStatus(status);
+
     if (status.flags.horiz_pos_abs || status.flags.horiz_pos_rel) {
+    	printf("Abs. pos = %d Rel.pos=%d\n X=%.3f Y=%.3f\n", status.flags.horiz_pos_abs, status.flags.horiz_pos_rel, state.position.x, state.position.y);
         // This is the normal mode of operation where we can use the EKF position states
-        pos.x = state.position.x;
+    	pos.x = state.position.x;
         pos.y = state.position.y;
         return true;
     } else {
@@ -4050,6 +4058,7 @@ void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, f
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
+    //printf("getFlowDebug IFX = %.3f\n IFY = %.3f\n", innovOptFlow[0], innovOptFlow[1]);
     auxInnov = auxFlowObsInnov;
     HAGL = terrainState - state.position.z;
     rngInnov = innovRng;
@@ -4594,7 +4603,7 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
     // A positive Y rate is produced by a positive sensor rotation about the Y axis
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
-    flowMeaTime_ms = imuSampleTime_ms;
+	flowMeaTime_ms = imuSampleTime_ms;
     flowQuality = rawFlowQuality;
     // recall angular rates averaged across flow observation period allowing for processing, transmission and intersample delays
     RecallOmega(omegaAcrossFlowTime, imuSampleTime_ms - flowTimeDeltaAvg_ms - _msecFLowDelay, imuSampleTime_ms - _msecFLowDelay);
@@ -4636,7 +4645,9 @@ void  NavEKF::writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &raw
 	visionPosition = rawVisionPosition;
 	newDataVisionPosition = true;
 	visionPosValidMeaTime_ms = imuSampleTime_ms;
-	hal.console->printf("New vision position: x=%.2f y=%.2f z=%.2f", visionPosition.x, visionPosition.y, visionPosition.z);
+    // recall vehicle states at mid sample time for flow observations allowing for delays
+    RecallStates(statesAtVisionPosTime, imuSampleTime_ms - 100);
+	//printf("New vision position: x=%.2f y=%.2f z=%.2f", visionPosition.x, visionPosition.y, visionPosition.z);
 }
 
 // calculate the NED earth spin vector in rad/sec
@@ -4970,7 +4981,8 @@ bool NavEKF::useRngFinder(void) const
 // return true if optical flow data is available
 bool NavEKF::optFlowDataPresent(void) const
 {
-    if (imuSampleTime_ms - flowMeaTime_ms < 5000) {
+    printf("Imu time=%d Flow time =%d",imuSampleTime_ms, flowMeaTime_ms);
+	if (imuSampleTime_ms - flowMeaTime_ms < 5000) {
         return true;
     } else {
         return false;
@@ -5207,12 +5219,14 @@ void NavEKF::performArmingChecks()
             state.position.z = -hgtMea;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
-                PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
+                printf("Optflow is presented");
+            	PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
                 posTimeout = true;
                 velTimeout = true;
                 constPosMode = false;
                 constVelMode = false;
             } else {
+            	printf("Optflow is not presented");
                 PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;

@@ -67,7 +67,7 @@ void SITL_State::_update_flow(void)
 
 
     state.device_id = 1;
-    state.surface_quality = 51;
+    state.surface_quality = 255;
 
     // estimate range to centre of image
     float range;

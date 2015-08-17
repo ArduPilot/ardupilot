@@ -1135,7 +1135,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)//, bool visionPosEnabled)
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled, bool visionPosEnabled)
 {
 	// Write first EKF packet
     Vector3f euler;
@@ -1276,24 +1276,24 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)//
     }
 
     // Write sixth EKF packet
-//    if (visionPosEnabled) {
-//        float posX; // x vision position  from external source
-//        float posY; // y vision position  from external source
-//        float posZ; // z vision position  from external source
-//        float vpInnovX, vpInnovY, vpInnovZ; // vision position innovations from the main nav filter
-//        ahrs.get_NavEKF().getVisionPosDebug(posX, posY, posZ, vpInnovX, vpInnovY, vpInnovZ);
-//        struct log_EKF6 pkt6 = {
-//            LOG_PACKET_HEADER_INIT(LOG_EKF6_MSG),
-//            time_us : hal.scheduler->micros64(),
-//          VPX : (float)(posX),
-//          VPY : (float)(posY),
-//          VPZ : (float)(posZ),
-//          VIX : (float)(vpInnovX),
-//          VIY : (float)(vpInnovY),
-//          VIZ : (float)(vpInnovZ),
-//         };
-//        WriteBlock(&pkt6, sizeof(pkt6));
-//    }
+    if (visionPosEnabled) {
+        float posX; // x vision position  from external source
+        float posY; // y vision position  from external source
+        float posZ; // z vision position  from external source
+        float vpInnovX, vpInnovY, vpInnovZ; // vision position innovations from the main nav filter
+        ahrs.get_NavEKF().getVisionPosDebug(posX, posY, posZ, vpInnovX, vpInnovY, vpInnovZ);
+        struct log_EKF6 pkt6 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF6_MSG),
+            time_us : hal.scheduler->micros64(),
+			VPX : (float)(posX),
+			VPY : (float)(posY),
+			VPZ : (float)(posZ),
+			VIX : (float)(vpInnovX),
+			VIY : (float)(vpInnovY),
+			VIZ : (float)(vpInnovZ),
+         };
+        WriteBlock(&pkt6, sizeof(pkt6));
+    }
 
     // do EKF2 as well if enabled
     if (ahrs.get_NavEKF2().enabled()) {

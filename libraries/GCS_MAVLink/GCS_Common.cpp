@@ -616,7 +616,7 @@ void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg, NavEKF
 {
     mavlink_vision_position_estimate_t packet;
     mavlink_msg_vision_position_estimate_decode(msg, &packet);
-    Vector3f pos = Vector3f(packet.x, packet.y, -packet.z);
+    Vector3f pos = Vector3f(packet.x, packet.y, packet.z);
     Vector3f orient = Vector3f(packet.roll, packet.pitch, packet.yaw);
     EKF.writeVisionPositionMeas(pos, orient, packet.usec);
 

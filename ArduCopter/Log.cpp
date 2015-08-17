@@ -361,7 +361,7 @@ void Copter::Log_Write_Attitude()
     DataFlash.Log_Write_Attitude(ahrs, targets);
 
  #if OPTFLOW == ENABLED
-    DataFlash.Log_Write_EKF(ahrs,optflow.enabled());//,ahrs.get_NavEKF().useVisionPosition());
+    DataFlash.Log_Write_EKF(ahrs,optflow.enabled(),ahrs.get_NavEKF().useVisionPosition());
  #else
     DataFlash.Log_Write_EKF(ahrs,false);
  #endif
