@@ -28,6 +28,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // start non-idle
         auto_state.idle_mode = false;
         
+        // once landed, post some landing statistics to the GCS
+        auto_state.post_landing_stats = false;
+
         gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),cmd.id);
     } else {
         gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
