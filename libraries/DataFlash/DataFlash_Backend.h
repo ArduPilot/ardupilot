@@ -13,8 +13,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include "../AP_Airspeed/AP_Airspeed.h"
-#include "../AP_BattMonitor/AP_BattMonitor.h"
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <stdint.h>
 
 class DataFlash_Backend

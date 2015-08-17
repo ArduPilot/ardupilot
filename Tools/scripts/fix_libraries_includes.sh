@@ -174,10 +174,18 @@ while [[ -n $1 ]]; do
         create_commits
         exit $?
         ;;
-    *)
+    --)
+        # remaining args are pathspecs
+        shift
+        break
+        ;;
+    -*)
         usage >&2
         exit 1
         ;;
+    *)
+        # this and the remaining args are pathspecs
+        break
     esac
     shift
 done
@@ -215,7 +223,7 @@ for header in "${!header_dirs[@]}"; do
     printf "\r($((++i))/$total) Fixing includes for header %-${header_max_len}s" $header >&2
 
     # for each file that includes $header
-    git grep -l $regex | while read f; do
+    git grep -l $regex -- "$@" | while read f; do
         fix_includes $f $header
     done
 done

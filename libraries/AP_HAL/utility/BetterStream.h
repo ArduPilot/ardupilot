@@ -22,7 +22,7 @@
 #define __AP_HAL_UTILITY_BETTERSTREAM_H__
 
 #include <stdarg.h>
-#include "../AP_HAL_Namespace.h"
+#include <AP_HAL/AP_HAL_Namespace.h>
 #include "Stream.h"
 
 /* prog_char_t: */

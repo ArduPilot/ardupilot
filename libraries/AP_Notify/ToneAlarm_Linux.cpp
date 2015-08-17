@@ -27,7 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "../AP_HAL_Linux/Util.h"
+#include <AP_HAL_Linux/Util.h>
 #include <stdio.h>
 #include <errno.h>
 
