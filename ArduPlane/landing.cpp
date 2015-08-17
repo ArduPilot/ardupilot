@@ -49,6 +49,7 @@ bool Plane::verify_land()
         (fabsf(auto_state.sink_rate) < 0.2f && !is_flying())) {
 
         if (!auto_state.land_complete) {
+            auto_state.post_landing_stats = true;
             if (!is_flying() && (millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), (double)gps.ground_speed());
             } else {
@@ -79,6 +80,13 @@ bool Plane::verify_land()
                     land_bearing_cd*0.01f, 
                     get_distance(prev_WP_loc, current_loc) + 200);
     nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
+
+    // once landed and stationary, post some statistics
+    // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
+    if (auto_state.post_landing_stats && !arming.is_armed()) {
+        auto_state.post_landing_stats = false;
+        gcs_send_text_fmt(PSTR("Distance from LAND point=%.2fm"), get_distance(current_loc, next_WP_loc));
+    }
 
     // check if we should auto-disarm after a confirmed landing
     disarm_if_autoland_complete();

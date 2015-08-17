@@ -466,6 +466,9 @@ private:
         
         // last time is_flying() returned true in milliseconds
         uint32_t last_flying_ms;
+
+        // once landed, post some landing statistics to the GCS
+        bool post_landing_stats;
     } auto_state;
 
     // true if we are in an auto-throttle mode, which means
