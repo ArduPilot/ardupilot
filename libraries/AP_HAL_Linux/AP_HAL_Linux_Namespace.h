@@ -10,6 +10,7 @@
 namespace Linux {
     class LinuxUARTDriver;
     class LinuxSPIUARTDriver;
+    class LinuxRPIOUARTDriver;
     class LinuxI2CDriver;
     class LinuxSPIDeviceManager;
     class LinuxSPIDeviceDriver;
@@ -25,10 +26,12 @@ namespace Linux {
     class LinuxRCInput_PRU;
     class LinuxRCInput_AioPRU;
     class LinuxRCInput_Navio;
+    class LinuxRCInput_Raspilot;
     class LinuxRCInput_ZYNQ;
     class LinuxRCOutput_PRU;
     class LinuxRCOutput_AioPRU;
     class LinuxRCOutput_Navio;
+    class LinuxRCOutput_Raspilot;
     class LinuxRCOutput_ZYNQ;
     class LinuxRCOutput_Bebop;
     class LinuxSemaphore;
