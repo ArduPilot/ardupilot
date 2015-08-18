@@ -8,6 +8,7 @@
 
 #define HAL_GPIO_INPUT  0
 #define HAL_GPIO_OUTPUT 1
+#define HAL_GPIO_ALT    2
 #define HAL_GPIO_INTERRUPT_LOW 0
 #define HAL_GPIO_INTERRUPT_HIGH 1
 #define HAL_GPIO_INTERRUPT_FALLING 2
@@ -26,9 +27,12 @@ public:
     GPIO() {}
     virtual void    init() = 0;
     virtual void    pinMode(uint8_t pin, uint8_t output) = 0;
+    virtual void    pinMode(uint8_t pin, uint8_t output, uint8_t alt) = 0;
     virtual uint8_t read(uint8_t pin) = 0;
     virtual void    write(uint8_t pin, uint8_t value) = 0;
     virtual void    toggle(uint8_t pin) = 0;
+    virtual void    setPWMPeriod(uint8_t pin, uint32_t time_us) = 0;
+    virtual void    setPWMDuty(uint8_t pin, uint8_t percent) = 0;
     virtual int8_t  analogPinToDigitalPin(uint8_t pin) = 0;
 
     /* Alternative interface: */
