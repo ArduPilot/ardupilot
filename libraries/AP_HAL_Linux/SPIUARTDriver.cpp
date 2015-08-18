@@ -100,7 +100,7 @@ void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
    _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
 
    if (_spi == NULL) {
-       hal.scheduler->panic("Cannot get SPIDevice_MPU9250");
+       hal.scheduler->panic("Cannot get SPIDevice_Ublox");
    }
 
    _spi_sem = _spi->get_semaphore();
