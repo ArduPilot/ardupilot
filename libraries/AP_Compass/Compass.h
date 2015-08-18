@@ -21,6 +21,7 @@
 #define AP_COMPASS_TYPE_VRBRAIN         0x05
 #define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
 #define AP_COMPASS_TYPE_AK8963_I2C      0x07
+#define AP_COMPASS_TYPE_LSM303D         0x08
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -29,6 +30,8 @@
 
 // setup default mag orientation for some board types
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 # define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
 #else
 # define MAG_BOARD_ORIENTATION ROTATION_NONE
@@ -410,4 +413,5 @@ private:
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_PX4.h"
+#include "AP_Compass_LSM303D.h"
 #endif
