@@ -20,7 +20,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "AP_Compass_AK8963.h"
-#include "../AP_InertialSensor/AP_InertialSensor_MPU9250.h"
+#include <AP_InertialSensor/AP_InertialSensor_MPU9250.h>
 
 #define READ_FLAG                   0x80
 #define MPUREG_I2C_SLV0_ADDR        0x25

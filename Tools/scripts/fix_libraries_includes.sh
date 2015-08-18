@@ -9,7 +9,7 @@ arg_create_commits=false
 
 usage(){
     cat <<EOF
-Usage: $(basename $BASH_SOURCE) [-h|--help]
+Usage: $(basename $BASH_SOURCE) [OPTIONS] [--] [<pathspec>...]
 
 Fix includes of libraries headers in source files to be as the following:
 
@@ -20,9 +20,14 @@ Fix includes of libraries headers in source files to be as the following:
  - If the header is outside the directory containing the source, then we use
  the notation #include <> with the path relative to libraries folder.
 
+If pathspec is given then it's an argument passed directly to git-grep. See
+git-grep(1) for more information on its format. In this case the changes will
+apply only to files that match the pathspec. Otherwise changes will be made to
+the entire repository.
+
 The output is a log of the process.
 
-Options:
+OPTIONS:
     -h,--help
         Display this help message.
 
@@ -174,10 +179,18 @@ while [[ -n $1 ]]; do
         create_commits
         exit $?
         ;;
-    *)
+    --)
+        # remaining args are pathspecs
+        shift
+        break
+        ;;
+    -*)
         usage >&2
         exit 1
         ;;
+    *)
+        # this and the remaining args are pathspecs
+        break
     esac
     shift
 done
@@ -215,7 +228,7 @@ for header in "${!header_dirs[@]}"; do
     printf "\r($((++i))/$total) Fixing includes for header %-${header_max_len}s" $header >&2
 
     # for each file that includes $header
-    git grep -l $regex | while read f; do
+    git grep -l $regex -- "$@" | while read f; do
         fix_includes $f $header
     done
 done

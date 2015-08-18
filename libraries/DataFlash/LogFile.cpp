@@ -7,7 +7,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include "../AP_BattMonitor/AP_BattMonitor.h"
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 
 extern const AP_HAL::HAL& hal;
