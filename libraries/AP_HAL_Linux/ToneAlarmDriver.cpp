@@ -13,6 +13,11 @@
 
 using namespace Linux;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#include "GPIO.h"
+#define RASPILOT_TONE_PIN RPI_GPIO_18
+#endif
+
 extern const AP_HAL::HAL& hal;
 static uint16_t notes[] = { 0,
 NOTE_C4, NOTE_CS4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4, NOTE_GS4, NOTE_A4, NOTE_AS4, NOTE_B4,
@@ -21,8 +26,8 @@ NOTE_C6, NOTE_CS6, NOTE_D6, NOTE_DS6, NOTE_E6, NOTE_F6, NOTE_FS6, NOTE_G6, NOTE_
 NOTE_C7, NOTE_CS7, NOTE_D7, NOTE_DS7, NOTE_E7, NOTE_F7, NOTE_FS7, NOTE_G7, NOTE_GS7, NOTE_A7, NOTE_AS7, NOTE_B7
 };
 
-//List of RTTTL tones 
-const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = { 
+//List of RTTTL tones
+const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = {
                                 "Startup:d=8,o=6,b=480:a,d7,c7,a,d7,c7,a,d7,16d7,16c7,16d7,16c7,16d7,16c7,16d7,16c7",
                                 "Error:d=4,o=6,b=400:8a,8a,8a,p,a,a,a,p",
                                 "notify_pos:d=4,o=6,b=400:8e,8e,a",
@@ -42,7 +47,7 @@ ToneAlarm::ToneAlarm()
     period_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/period",O_WRONLY);
     duty_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/duty",O_WRONLY);
     run_fd = open("/sys/devices/ocp.3/pwm_test_P8_36.12/run",O_WRONLY);
-    
+
     tune_num = -1;                    //initialy no tune to play
     tune_pos = 0;
 }
@@ -50,10 +55,16 @@ ToneAlarm::ToneAlarm()
 bool ToneAlarm::init()
 {
     tune_num = 0;                    //play startup tune
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    hal.gpio->pinMode(RASPILOT_TONE_PIN, HAL_GPIO_ALT, 5);
+#else
     if((period_fd == -1) || (duty_fd == -1) || (run_fd == -1)){
         hal.console->printf("ToneAlarm: Error!! please check if PWM overlays are loaded correctly");
         return false;
     }
+#endif
+
     return true;
 }
 
@@ -69,7 +80,11 @@ bool ToneAlarm::is_tune_comp()
 
 void ToneAlarm::stop()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    hal.gpio->setPWMDuty(RASPILOT_TONE_PIN, 0);
+#else
     dprintf(run_fd,"0");
+#endif
 }
 
 bool ToneAlarm::play()
@@ -80,10 +95,15 @@ bool ToneAlarm::play()
         return true;
     }
     if(cur_note != 0){
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+        hal.gpio->setPWMPeriod(RASPILOT_TONE_PIN, 1000000/cur_note);
+        hal.gpio->setPWMDuty(RASPILOT_TONE_PIN, 50);
+#else
         dprintf(run_fd,"0");
-        dprintf(period_fd,"%u",1000000000/cur_note);    
+        dprintf(period_fd,"%u",1000000000/cur_note);
         dprintf(duty_fd,"%u",500000000/cur_note);
         dprintf(run_fd,"1");
+#endif
         cur_note =0;
         prev_time = cur_time;
     }
@@ -116,7 +136,7 @@ bool ToneAlarm::set_note(){
         duration = wholenote / num;
     } else{
         duration = wholenote / 4;  // we will need to check if we are a dotted note after
-    }        
+    }
     // now get the note
     note = 0;
 
@@ -189,7 +209,6 @@ bool ToneAlarm::set_note(){
         cur_note = 0;
         return true;
     }
-    
 }
 
 bool ToneAlarm::init_tune(){
@@ -202,7 +221,7 @@ bool ToneAlarm::init_tune(){
     if(tune_num <0 || tune_num > TONE_NUMBER_OF_TUNES){
         return false;
     }
-    
+
     tune_comp = false;
     while(tune[tune_num][tune_pos] != ':'){
         if(tune[tune_num][tune_pos] == '\0'){
@@ -210,18 +229,18 @@ bool ToneAlarm::init_tune(){
         }
         tune_pos++;
     }
-    tune_pos++;                     
-    
+    tune_pos++;
+
     if(tune[tune_num][tune_pos] == 'd'){
-        tune_pos+=2;             
+        tune_pos+=2;
         num = 0;
 
         while(isdigit(tune[tune_num][tune_pos])){
             num = (num * 10) + (tune[tune_num][tune_pos++] - '0');
         }
-        if(num > 0){ 
+        if(num > 0){
             default_dur = num;
-        }        
+        }
         tune_pos++;                   // skip comma
     }
 
