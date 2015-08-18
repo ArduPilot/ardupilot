@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include "Util.h"
 #include "SPIUARTDriver.h"
+#include "RPIOUARTDriver.h"
 #include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
@@ -29,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #define APM_LINUX_UART_PERIOD           10000
-#define APM_LINUX_RCIN_PERIOD           500  
+#define APM_LINUX_RCIN_PERIOD           500
 #define APM_LINUX_TONEALARM_PERIOD      10000
 #define APM_LINUX_IO_PERIOD             20000
 #else
@@ -143,7 +144,7 @@ void LinuxScheduler::delay(uint16_t ms)
         return;
     }
     uint64_t start = millis64();
-    
+
     while ((millis64() - start) < ms) {
         // this yields the CPU to other apps
         _microsleep(1000);
@@ -155,36 +156,36 @@ void LinuxScheduler::delay(uint16_t ms)
     }
 }
 
-uint64_t LinuxScheduler::millis64() 
+uint64_t LinuxScheduler::millis64()
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec/1000;
     }
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) - 
+    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
                   (_sketch_start_time.tv_sec +
                    (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
-uint64_t LinuxScheduler::micros64() 
+uint64_t LinuxScheduler::micros64()
 {
     if (stopped_clock_usec) {
         return stopped_clock_usec;
     }
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) - 
+    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
                   (_sketch_start_time.tv_sec +
                    (_sketch_start_time.tv_nsec*1.0e-9)));
 }
 
-uint32_t LinuxScheduler::millis() 
+uint32_t LinuxScheduler::millis()
 {
     return millis64() & 0xFFFFFFFF;
 }
 
-uint32_t LinuxScheduler::micros() 
+uint32_t LinuxScheduler::micros()
 {
     return micros64() & 0xFFFFFFFF;
 }
@@ -204,7 +205,7 @@ void LinuxScheduler::register_delay_callback(AP_HAL::Proc proc,
     _min_delay_cb_ms = min_time_ms;
 }
 
-void LinuxScheduler::register_timer_process(AP_HAL::MemberProc proc) 
+void LinuxScheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
@@ -220,7 +221,7 @@ void LinuxScheduler::register_timer_process(AP_HAL::MemberProc proc)
     }
 }
 
-void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc) 
+void LinuxScheduler::register_io_process(AP_HAL::MemberProc proc)
 {
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
@@ -269,6 +270,15 @@ void LinuxScheduler::_run_timers(bool called_from_timer_thread)
             _timer_proc[i]();
         }
     }
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    //SPI UART use SPI
+    if (!((LinuxRPIOUARTDriver *)hal.uartC)->isExternal() )
+    {
+        ((LinuxRPIOUARTDriver *)hal.uartC)->_timer_tick();
+    }
+#endif
+
     _timer_semaphore.give();
 
     // and the failsafe, if one is setup
@@ -349,7 +359,15 @@ void *LinuxScheduler::_uart_thread(void* arg)
         // process any pending serial bytes
         ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
         ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+        //SPI UART not use SPI
+        if ( ((LinuxRPIOUARTDriver *)hal.uartC)->isExternal() )
+        {
+            ((LinuxRPIOUARTDriver *)hal.uartC)->_timer_tick();
+        }
+#else
         ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
+#endif
         ((LinuxUARTDriver *)hal.uartE)->_timer_tick();
     }
     return NULL;
@@ -390,7 +408,7 @@ void *LinuxScheduler::_io_thread(void* arg)
     return NULL;
 }
 
-void LinuxScheduler::panic(const prog_char_t *errormsg) 
+void LinuxScheduler::panic(const prog_char_t *errormsg)
 {
     write(1, errormsg, strlen(errormsg));
     write(1, "\n", 1);
@@ -399,7 +417,7 @@ void LinuxScheduler::panic(const prog_char_t *errormsg)
     exit(1);
 }
 
-bool LinuxScheduler::in_timerprocess() 
+bool LinuxScheduler::in_timerprocess()
 {
     return _in_timer_proc;
 }
@@ -422,7 +440,7 @@ void LinuxScheduler::system_initialized()
     _initialized = true;
 }
 
-void LinuxScheduler::reboot(bool hold_in_bootloader) 
+void LinuxScheduler::reboot(bool hold_in_bootloader)
 {
     exit(1);
 }
