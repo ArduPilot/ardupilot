@@ -3,6 +3,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_L1_Control.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+ #include <stdio.h>
+ #define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ #define Debug(fmt, args ...)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -22,11 +29,20 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 	// @Increment: 0.05
     AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
 
+    // @Param: ANGLE_THR
+    // @DisplayName: L1 control wind angle threshold
+    // @Description: L1 control wind angle threshold for preferring to turn into the wind instead of always using the usual smaller angle turn direction. Use 0 to disable, use values around 120 otherwise.
+    // @Units: degrees
+    // @Range: 90 - 179
+    // @Increment: 1
+    AP_GROUPINFO("ANGLE_THR",   2, AP_L1_Control, _wind_angle_thresh, 0),
+
     AP_GROUPEND
 };
 
 //Bank angle command based on angle between aircraft velocity vector and reference vector to path.
-//S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking," 
+//S. Park, J. Deyst, and J. P. How, "A New Nonlinear Guidance Logic for Trajectory Tracking,"
+//Official Research Document: http://acl.mit.edu/papers/gnc_park_deyst_how.pdf
 //Proceedings of the AIAA Guidance, Navigation and Control
 //Conference, Aug 2004. AIAA-2004-4900.
 //Modified to use PD control for circle tracking to enable loiter radius less than L1 length
@@ -107,6 +123,87 @@ float AP_L1_Control::crosstrack_error(void) const
 	return _crosstrack_error;
 }
 
+/*
+ *  In windy conditions it is sometimes better to turn the long way into the wind
+ *  instead of the direction with the shortest xtrack angle. For example, in high
+ *  wind from left to right performing a +170 degree turn (right) will blow you
+ *  off course and will unexpectedly extend the L1_distance. If we were to perform
+ *  a -190 degree (left) turn into the wind, we would basically turn in place and
+ *  the L1_distance will be greatly shorter. A secondary effect is maintaining a normal
+ *  airspeed where a with-wind turn results in a lower airpseed requiring throttle pumping.
+ *  This function calculates if it should override the already-computed Nu2 optimum turn
+ *  angle solution with a less-optimum angle favoring into the wind.
+ *  Logic:
+ *  If a way point is behind us, check if an opposite turn would put us into the wind.
+ *  Store that direction and force that directing through the turn so there's no indecision.
+ *
+ */
+void AP_L1_Control::prefer_turn_into_wind(float &Nu2)
+{
+    int32_t Nu2_abs_deg = fabsf(degrees(Nu2));
+
+    if (_wind_angle_thresh <= 0 || _wind_angle_thresh >= 180)
+    {
+        // always reset direction in case the threshold changed during a turn
+        _direction_sign = 0;
+    }
+    else if (_direction_sign == 0 && // not currently forcing a direction
+            Nu2_abs_deg > _wind_angle_thresh) // will the turn to the next waypoint turn beyond this angle threshold?
+    {
+        // the wind variables are embedded in if statements for optimization purposes because
+        // .wind_estimate() and .length() can be expensive.
+        Vector3f wind_raw = _ahrs.wind_estimate();
+
+        if (wind_raw.length() > 2) // is there enough wind to care about (in m/s)
+        {
+            // determine if bearing is into or with wind. If so, flip bearing's sign so we turn into wind
+            float wind_deg = degrees(atan2f(wind_raw.y, wind_raw.x));
+            float compass_deg = degrees(_ahrs.yaw);
+
+            // couple these to the same 0-360 reference
+            wind_deg = fmod(wind_deg+360,360);
+            compass_deg = fmod(compass_deg+360,360);
+
+            float wind_delta = wind_deg - compass_deg;
+            wind_delta = fmod(wind_delta+360,360);
+
+            bool prefer_left_turn = (180 > wind_delta) && (wind_delta > 0);
+
+            if (prefer_left_turn && (Nu2 > 0)) {
+                // calculated Nu2 says to turn turn right but we prefer left
+                _direction_sign = -1;
+                Debug("Switched to Left (neg)");
+            }
+            else if (!prefer_left_turn && (Nu2 < 0))
+            {
+                // calculated Nu2 says to turn turn left but we prefer right
+                _direction_sign = 1;
+                Debug("Switched to Right (pos)");
+            }
+        }
+    }
+
+    // if currently forcing a turn
+    if (_direction_sign != 0) {
+        if (_direction_sign * Nu2 < 0) {
+            // the currently calculated Nu2 is turning us the wrong direction. Force other direction.
+            Debug("Forcing turn %s", (_direction_sign < 0) ? "Left" : "Right");
+            Nu2 = -Nu2;
+        } else if (Nu2_abs_deg < 45) {
+            // depending on how strong the wind is, which can bounce the vehicle's heading around and
+            // induce a large crabbing yaw in plane, we must continue to force the turn even if the normal
+            // L1 controller is calculating the correct direction. In a 180deg turn this is handled with
+            // _prevent_indecision() but since we're already in a turn we must push through it until we're
+            // certain that we will always calculate the correct direction. In simulations with extreme wind
+            // conditions the calculated turn direction has toggled as low as 95 degs into the turn so
+            // this is set conservatively low at 45deg.
+            Debug("Normal flight");
+            _direction_sign = 0;
+        }
+    }
+
+}
+
 /**
    prevent indecision in our turning by using our previous turn
    decision if we are in a narrow angle band pointing away from the
@@ -181,7 +278,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// calculate distance to target track, for reporting
 	_crosstrack_error = AB % A_air;
 
-	//Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
+	//Determine if the aircraft is behind a +-135 degree degree arc centered on WP A
 	//and further than L1 distance from WP A. Then use WP A as the L1 reference point
 		//Otherwise do normal L1 guidance
 	float WP_A_dist = A_air.length();
@@ -201,6 +298,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		xtrackVel = _groundspeed_vector % AB; // Velocity cross track
 		ltrackVel = _groundspeed_vector * AB; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
+		prefer_turn_into_wind(Nu2);
+
 		//Calculate Nu1 angle (Angle to L1 reference point)
 		float xtrackErr = A_air % AB;
 		float sine_Nu1 = xtrackErr/max(_L1_dist, 0.1f);
@@ -209,7 +308,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		float Nu1 = asinf(sine_Nu1);
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
-	}	
+
+		Debug("Nu2 %.1f, Nu1 %.1f, Nu %.1f", degrees(Nu2), degrees(Nu1), degrees(Nu));
+	}
 
     _prevent_indecision(Nu);
     _last_Nu = Nu;
