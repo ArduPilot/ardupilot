@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 
@@ -13,7 +13,7 @@
 
 #include "RCInput_Raspilot.h"
 
-#include "protocol.h"
+#include "px4io_protocol.h"
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
