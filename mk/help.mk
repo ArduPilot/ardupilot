@@ -32,3 +32,4 @@ help:
 	@echo "  sitl - the SITL Software In The Loop simulation"
 	@echo "  bbbmini - the Beagle Bone Black mini"
 	@echo "  bebop - the Parrot Bebop"
+	@echo "  raspilot - the RaspberryPi + pilot cape combination"
