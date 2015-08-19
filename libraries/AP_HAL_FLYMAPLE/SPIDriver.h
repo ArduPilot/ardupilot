@@ -29,7 +29,7 @@ public:
     FLYMAPLESPIDeviceDriver();
     void init();
     AP_HAL::Semaphore* get_semaphore();
-    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+    bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
 
     void cs_assert();
     void cs_release();

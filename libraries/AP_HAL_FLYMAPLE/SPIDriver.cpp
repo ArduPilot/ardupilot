@@ -48,7 +48,7 @@ AP_HAL::Semaphore* FLYMAPLESPIDeviceDriver::get_semaphore()
     return &_semaphore;
 }
 
-void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
+bool FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
     cs_assert();
     if (rx == NULL) {
@@ -61,6 +61,7 @@ void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16
         }
     }
     cs_release();
+    return true;
 }
 
 
