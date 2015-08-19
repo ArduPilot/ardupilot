@@ -193,6 +193,8 @@ float pythagorous3(float a, float b, float c);
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
 
+float maxf(float a, float b);
+float minf(float a, float b);
 
 #endif // AP_MATH_H
 
