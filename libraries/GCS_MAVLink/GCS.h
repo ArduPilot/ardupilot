@@ -148,7 +148,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optflow);
 #endif
-    void send_autopilot_version() const;
+    void send_autopilot_version(uint8_t major_version = 0, uint8_t minor_version = 0, uint8_t patch_version = 0, enum FIRMWARE_VERSION_TYPE version_type = FIRMWARE_VERSION_TYPE_DEV) const;
     void send_local_position(const AP_AHRS &ahrs) const;
     void send_vibration(const AP_InertialSensor &ins) const;
 
