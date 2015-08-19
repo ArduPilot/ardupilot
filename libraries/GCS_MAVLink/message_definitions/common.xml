@@ -143,6 +143,24 @@
                     <description>Onboard gimbal</description>
                </entry>
           </enum>
+          <enum name="FIRMWARE_RELEASE_TYPE">
+              <description>These values define the type of firmware release.</description>
+              <entry value="0" name="DEV">
+                  <description>A development version of the software.  Basically, anything compiled from master branch.</description>
+              </entry>
+              <entry value="64" name="ALPHA1">
+                  <description>The first alpha release.</description>
+              </entry>
+              <entry value="128" name="BETA1">
+                  <description>The first beta release.</description>
+              </entry>
+              <entry value="192" name="RC1">
+                  <description>The first release candidate.</description>
+              </entry>
+              <entry value="255" name="RELEASE">
+                  <description>The official, stable release.</description>
+              </entry>
+        </enum>
           <!-- WARNING: MAV_ACTION Enum is no longer supported - has been removed. Please use MAV_CMD -->
           <enum name="MAV_MODE_FLAG">
                 <description>These flags encode the MAV mode.</description>
