@@ -20,6 +20,11 @@
 #include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#include <AP_HAL_Linux/GPIO.h>
+#define TOSHIBA_LED_RESET RPI_GPIO_27
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #define TOSHIBA_LED_ADDRESS 0x55    // default I2C bus address
@@ -30,6 +35,13 @@ extern const AP_HAL::HAL& hal;
 
 bool ToshibaLED_I2C::hw_init()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    // pull up reset pin
+    enable_pin = hal.gpio->channel(TOSHIBA_LED_RESET);
+    enable_pin->mode(HAL_GPIO_OUTPUT);
+    enable_pin->write(1);
+#endif
+    
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
 
