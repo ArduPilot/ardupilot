@@ -396,6 +396,7 @@ private:
     void send_statustext(mavlink_channel_t chan);
     bool telemetry_delayed(mavlink_channel_t chan);
     void gcs_send_message(enum ap_message id);
+    void gcs_send_mission_item_reached_message(enum ap_message id, uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
@@ -490,6 +491,7 @@ private:
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);

@@ -8,9 +8,6 @@
 // use this to prevent recursion during sensor init
 static bool in_mavlink_delay;
 
-// check if a message will fit in the payload space available
-#define CHECK_PAYLOAD_SIZE(id) if (txspace < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_ ## id ## _LEN) return false
-
 /*
  *  !!NOTE!!
  *
@@ -178,7 +175,6 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command&)
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK::try_send_message(enum ap_message id)
 {
-    uint16_t txspace = comm_get_txspace(chan);
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
@@ -286,6 +282,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     case MSG_PID_TUNING:
     case MSG_VIBRATION:
     case MSG_RPM:
+    case MSG_MISSION_ITEM_REACHED:
         break; // just here to prevent a warning
     }
     return true;
