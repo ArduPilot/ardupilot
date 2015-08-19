@@ -90,9 +90,9 @@ AP_HAL::Semaphore* LinuxSPIDeviceDriver::get_semaphore()
     return LinuxSPIDeviceManager::get_semaphore(_bus);
 }
 
-void LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
+bool LinuxSPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
-    LinuxSPIDeviceManager::transaction(*this, tx, rx, len);
+    return LinuxSPIDeviceManager::transaction(*this, tx, rx, len);
 }
 
 void LinuxSPIDeviceDriver::set_bus_speed(enum bus_speed speed)
@@ -210,11 +210,16 @@ void LinuxSPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
     }
 }
 
-void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len)
+bool LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
+    int r;
     // we set the mode before we assert the CS line so that the bus is
     // in the correct idle state before the chip is selected
-    ioctl(driver._fd, SPI_IOC_WR_MODE, &driver._mode);
+    r = ioctl(driver._fd, SPI_IOC_WR_MODE, &driver._mode);
+    if (r == -1) {
+        hal.console->printf("SPI: error on setting mode\n");
+        return false;
+    }
 
     cs_assert(driver._type);
     struct spi_ioc_transfer spi[1];
@@ -232,8 +237,15 @@ void LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint
         memset(rx, 0, len);
     }
 
-    ioctl(driver._fd, SPI_IOC_MESSAGE(1), &spi);
+    r = ioctl(driver._fd, SPI_IOC_MESSAGE(1), &spi);
     cs_release(driver._type);
+
+    if (r == -1) {
+        hal.console->printf("SPI: error on doing transaction\n");
+        return false;
+    }
+
+    return true;
 }
 
 /*
