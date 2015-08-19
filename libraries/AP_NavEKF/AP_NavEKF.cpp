@@ -1130,9 +1130,9 @@ void NavEKF::UpdateStrapdownEquationsNED()
 
     // use weighted average of both IMU units for delta velocities
     // Over-ride accelerometer blend weighting using a hard switch based on the IMU consistency and vibration monitoring checks
-    if (lastImuSwitchState == 1) {
+    if (lastImuSwitchState == IMUSWITCH_IMU0) {
         IMU1_weighting = 1.0f;
-    } else if (lastImuSwitchState == 2) {
+    } else if (lastImuSwitchState == IMUSWITCH_IMU1) {
         IMU1_weighting = 0.0f;
     }
     correctedDelVel12 = correctedDelVel1 * IMU1_weighting + correctedDelVel2 * (1.0f - IMU1_weighting);
@@ -4150,29 +4150,29 @@ void NavEKF::readIMUData()
 
         // Check the difference for excessive error and use the IMU with less noise
         // Apply hysteresis to prevent rapid switching
-        if (accelDiffLength > 1.8f || (accelDiffLength > 1.2f && lastImuSwitchState != 0)) {
-            if (lastImuSwitchState == 0) {
+        if (accelDiffLength > 1.8f || (accelDiffLength > 1.2f && lastImuSwitchState != IMUSWITCH_MIXED)) {
+            if (lastImuSwitchState == IMUSWITCH_MIXED) {
                 // no previous fail so switch to the IMU with least noise
                 if (imuNoiseFiltState1 < imuNoiseFiltState2) {
-                    lastImuSwitchState = 1;
+                    lastImuSwitchState = IMUSWITCH_IMU0;
                 } else {
-                    lastImuSwitchState = 2;
+                    lastImuSwitchState = IMUSWITCH_IMU1;
                 }
-            } else if (lastImuSwitchState == 1) {
+            } else if (lastImuSwitchState == IMUSWITCH_IMU0) {
                 // IMU1 previously failed so require 5 m/s/s less noise on IMU2 to switch across
                 if (imuNoiseFiltState1 - imuNoiseFiltState2 > 5.0f) {
                     // IMU2 is significantly less noisy, so switch
-                    lastImuSwitchState = 2;
+                    lastImuSwitchState = IMUSWITCH_IMU1;
                 }
             } else {
                 // IMU2 previously failed so require 5 m/s/s less noise on IMU1 to switch across
                 if (imuNoiseFiltState2 - imuNoiseFiltState1 > 5.0f) {
                     // IMU1 is significantly less noisy, so switch
-                    lastImuSwitchState = 1;
+                    lastImuSwitchState = IMUSWITCH_IMU0;
                 }
             }
         } else {
-            lastImuSwitchState = 0;
+            lastImuSwitchState = IMUSWITCH_MIXED;
         }
 
     } else {
@@ -4181,16 +4181,23 @@ void NavEKF::readIMUData()
         // set the switch state based on the IMU we are using to make the data source selection visible
         if (ins.use_accel(0)) {
             readDeltaVelocity(0, dVelIMU1, dtDelVel1);
-            lastImuSwitchState = 1;
+            lastImuSwitchState = IMUSWITCH_IMU0;
         } else if (ins.use_accel(1)) {
             readDeltaVelocity(1, dVelIMU1, dtDelVel1);
-            lastImuSwitchState = 2;
+            lastImuSwitchState = IMUSWITCH_IMU1;
         } else {
             readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
-            if (ins.get_primary_accel() < 2) {
-                lastImuSwitchState = ins.get_primary_accel() + 1;
-            } else {
-                lastImuSwitchState = 0;
+            switch (ins.get_primary_accel()) {
+                case 0:
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    break;
+                case 1:
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    break;
+                default:
+                    // we must be using IMU2 which can't be properly represented so we set to "mixed"
+                    lastImuSwitchState = IMUSWITCH_MIXED;
+                    break;
             }
         }
         dtDelVel2 = dtDelVel1;
@@ -4770,7 +4777,7 @@ void NavEKF::InitialiseVariables()
     yawResetAngleWaiting = false;
     imuNoiseFiltState1 = 0.0f;
     imuNoiseFiltState2 = 0.0f;
-    lastImuSwitchState = 0;
+    lastImuSwitchState = IMUSWITCH_MIXED;
 }
 
 // return true if we should use the airspeed sensor
