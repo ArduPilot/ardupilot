@@ -4187,7 +4187,11 @@ void NavEKF::readIMUData()
             lastImuSwitchState = 2;
         } else {
             readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
-            lastImuSwitchState = 0;
+            if (ins.get_primary_accel() < 2) {
+                lastImuSwitchState = ins.get_primary_accel() + 1;
+            } else {
+                lastImuSwitchState = 0;
+            }
         }
         dtDelVel2 = dtDelVel1;
         dVelIMU2 = dVelIMU1;
