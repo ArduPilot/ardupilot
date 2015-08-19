@@ -1,8 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
-#include <stdio.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
+#include <stdio.h>
 #include "RaspilotAnalogIn.h"
 #include "px4io_protocol.h"
 
