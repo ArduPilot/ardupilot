@@ -161,7 +161,6 @@ void LinuxRPIOUARTDriver::_timer_tick(void)
         if (_baudrate != 0) {
             
             if (!_spi_sem->take_nonblocking()) {
-                hal.scheduler->panic("SPIDevice_RASPIO cannot take semaphore!");
                 return;
             }
             

@@ -174,7 +174,6 @@ void LinuxGPIO_RPI::setPWM0Period(uint32_t time_us)
     // 320 bits for one cycle of 20 milliseconds = 62.5 us per bit = 16 kHz
     int idiv = (int) (19200000.0f / (320000000.0f / time_us));
     if (idiv < 1 || idiv > 0x1000) {
-      hal.scheduler->panic("idiv out of range.");
       return;
     }
     *(clk + PWMCLK_DIV)  = 0x5A000000 | (idiv<<12);
