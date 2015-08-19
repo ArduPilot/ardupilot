@@ -20,7 +20,7 @@ class AP_HAL::SPIDeviceDriver {
 public:
     virtual void init() = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len) = 0;
+    virtual bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len) = 0;
 
     virtual void cs_assert() = 0;
     virtual void cs_release() = 0;
