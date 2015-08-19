@@ -4290,6 +4290,9 @@ void NavEKF::readMagData()
         // read compass data and scale to improve numerical conditioning
         magData = _ahrs->get_compass()->get_field() * 0.001f;
 
+        // check for consistent data between magnetometers
+        consistentMagData = _ahrs->get_compass()->consistent();
+
         // get states stored at time closest to measurement time after allowance for measurement delay
         RecallStates(statesAtMagMeasTime, (imuSampleTime_ms - msecMagDelay));
 
@@ -4593,6 +4596,7 @@ void NavEKF::InitialiseVariables()
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
     timeAtDisarm_ms = 0;
+    magYawResetTimer_ms = imuSampleTime_ms;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -5112,6 +5116,18 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hAccFail = hAcc > 5.0f;
     } else {
         hAccFail =  false;
+    }
+
+    // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
+    // This enables us to handle large changes to the external magnetic field environment that occur before arming
+    if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f) || !consistentMagData) {
+        magYawResetTimer_ms = imuSampleTime_ms;
+    }
+    if (imuSampleTime_ms - magYawResetTimer_ms > 5000) {
+        // reset heading and field states
+        Vector3f eulerAngles;
+        getEulerAngles(eulerAngles);
+        state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
     }
 
     // fail if magnetometer innovations are outside limits indicating bad yaw
