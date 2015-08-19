@@ -97,6 +97,20 @@ typedef enum MAV_TYPE
 } MAV_TYPE;
 #endif
 
+/** @brief These values define the type of firmware release. */
+#ifndef HAVE_ENUM_FIRMWARE_RELEASE_TYPE
+#define HAVE_ENUM_FIRMWARE_RELEASE_TYPE
+typedef enum FIRMWARE_RELEASE_TYPE
+{
+	DEV=0, /* A development version of the software.  Basically, anything compiled from master branch. | */
+	ALPHA1=64, /* The first alpha release. | */
+	BETA1=128, /* The first beta release. | */
+	RC1=192, /* The first release candidate. | */
+	RELEASE=255, /* The official, stable release. | */
+	FIRMWARE_RELEASE_TYPE_ENUM_END=256, /*  | */
+} FIRMWARE_RELEASE_TYPE;
+#endif
+
 /** @brief These flags encode the MAV mode. */
 #ifndef HAVE_ENUM_MAV_MODE_FLAG
 #define HAVE_ENUM_MAV_MODE_FLAG
