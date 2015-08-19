@@ -14,8 +14,10 @@ AP_HAL::Semaphore* EmptySPIDeviceDriver::get_semaphore()
     return &_semaphore;
 }
 
-void EmptySPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
-{}
+bool EmptySPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
+{
+    return true;
+}
 
 
 void EmptySPIDeviceDriver::cs_assert()
