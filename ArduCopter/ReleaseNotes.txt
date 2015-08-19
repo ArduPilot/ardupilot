@@ -1,5 +1,25 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc9 19-Aug-2015
+Changes from 3.3-rc8
+1) EKF improvements:
+    a) IMU weighting based on vibration levels (previously used accel clipping)
+    b) fix blended acceleration (used for altitude control) in cases where first IMU fails
+    c) ensure unhealthy barometer values are never consumed
+2) TradHeli: remove acceleration feed forward
+3) Safety:
+    a) check accel, gyro and baro are healthy when arming (previously was only checked pre-arm)
+    b) Guided mode velocity controller timeout (vehicle stops) after 3 seconds with no update from GCS
+4) Minor enhancements:
+    a) fix for AUAV board's usb-connected detection
+    b) add Lidar-Lite-V2 support
+    c) MOT_THR_MIN_MAX param added to control prioritisation of throttle vs attitude during dynamic flight
+    d) RALLY_INCL_HOME param allows always including home when using rally points
+    e) DO_FLIGHT_TERMINATION message from GCS acts as kill switch
+5) Bug Fixes:
+    a) fix to ensure motors start slowly on 2nd spin-up
+    b) fix RTL_CLIMB_MIN feature (vehicle climbed too high above home)
+------------------------------------------------------------------
 Copter 3.3-rc8 25-Jul-2015
 Changes from 3.3-rc7
 1) EKF improvements:
