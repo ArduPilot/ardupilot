@@ -97,7 +97,7 @@ void AVRSPI2DeviceDriver::_transfer17(const uint8_t *tx, uint8_t *rx)
     TRANSFER1(16);
 }
 
-void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
+bool AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         uint16_t len) {
     _cs_assert();
     if (rx == NULL) {
@@ -116,6 +116,7 @@ void AVRSPI2DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         }
     }
     _cs_release();
+    return true;
 }
 
 void AVRSPI2DeviceDriver::cs_assert() {
