@@ -376,6 +376,7 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    condition_value = cmd.p1;
     reset_offset_altitude();
 }
 
@@ -643,7 +644,17 @@ bool Plane::verify_RTL()
 
 bool Plane::verify_continue_and_change_alt()
 {
-    if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+    //climbing?
+    if (condition_value == 1 && adjusted_altitude_cm() >= next_WP_loc.alt) {
+        return true;
+    }
+    //descending?
+    else if (condition_value == 2 &&
+             adjusted_altitude_cm() <= next_WP_loc.alt) {
+        return true;
+    }    
+    //don't care if we're climbing or descending
+    else if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
     }
    
