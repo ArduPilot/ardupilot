@@ -348,7 +348,7 @@ void Plane::set_mode(enum FlightMode mode)
     steer_state.locked_course_err = 0;
 
     // reset crash detection
-    auto_state.is_crashed = false;
+    crash_state.is_crashed = false;
 
     // set mode
     previous_mode = control_mode;

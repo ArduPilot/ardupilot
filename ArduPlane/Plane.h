@@ -433,9 +433,6 @@ private:
         // movement until altitude is reached
         bool idle_mode:1;
 
-        // crash detection
-        bool is_crashed:1;
-
         // used to 'wiggle' servos in idle mode to prevent them freezing
         // at high altitudes
         uint8_t idle_wiggle_stage;
@@ -479,6 +476,18 @@ private:
         uint32_t started_flying_in_auto_ms;
     } auto_state;
 
+    struct {
+        // on hard landings, only check once after directly a landing so you
+        // don't trigger a crash when picking up the aircraft
+        bool checkHardLanding:1;
+
+        // crash detection. True when we are crashed
+        bool is_crashed:1;
+
+        // debounce timer
+        uint32_t debounce_timer_ms;
+    } crash_state;
+
     // true if we are in an auto-throttle mode, which means
     // we need to run the speed/height controller
     bool auto_throttle_mode;
@@ -491,6 +500,9 @@ private:
     // probability of aircraft is currently in flight. range from 0 to
     // 1 where 1 is 100% sure we're in flight
     float isFlyingProbability;
+
+    // previous value of is_flying()
+    bool previous_is_flying;
 
     // Navigation control variables
     // The instantaneous desired bank angle.  Hundredths of a degree

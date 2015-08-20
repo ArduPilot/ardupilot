@@ -331,7 +331,7 @@ void Plane::Log_Write_Status()
         ,is_flying_probability : isFlyingProbability
         ,armed       : hal.util->get_soft_armed()
         ,safety      : hal.util->safety_switch_state()
-        ,is_crashed  : auto_state.is_crashed
+        ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
         };
 
