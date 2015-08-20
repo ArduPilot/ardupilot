@@ -22,6 +22,18 @@ error_count=0
 
 . config.mk
 
+board_branch() {
+    board="$1"
+    case $board in
+        apm1|apm2)
+            echo "-AVR"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
 # checkout the right version of the tree
 checkout() {
     vehicle="$1"
@@ -30,26 +42,29 @@ checkout() {
     git stash
     if [ "$tag" = "latest" ]; then
 	vtag="master"
-	vtag2="master"
     else
-	vtag="$vehicle-$tag-$board"
-	vtag2="$vehicle-$tag"
+	vtag="$vehicle-$tag"
     fi
 
-    echo "FORCING NON-BOARD SPECIFIC BUILD"
-    vtag=$vtag2
+    # add board type specific branch extension
+    vtag2="$vtag"$(board_branch $b)
 
-    echo "Checkout for $vehicle for $board with tag $tag"
-
-    git checkout -f "$vtag" || git checkout -f "$vtag2" || {
-        return 1
+    git checkout -f "$vtag2" && {
+        echo "Using board specific tag $vtag2"
         [ -f $BASEDIR/.gitmodules ] && git submodule update
+        git log -1
+        return 0
     }
 
-    [ -f $BASEDIR/.gitmodules ] && git submodule update
-    git log -1
+    git checkout -f "$vtag" && {
+        echo "Using generic tag $vtag"
+        [ -f $BASEDIR/.gitmodules ] && git submodule update
+        git log -1
+        return 0
+    }
 
-    return 0
+    echo "Failed to find tag for $vehicle $tag $board"
+    return 1
 }
 
 # check if we should skip this build because we have already
