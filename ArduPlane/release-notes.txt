@@ -1,7 +1,20 @@
 Release 3.4.0beta1, 20th August 2015
 ------------------------------------
 
-Changes:
+I have started the beta release cycle for the 3.4.0 release of
+plane. This will be the last release that supports the APM1/APM2 boards.
+
+This is the also the first release that enables the EKF for attitude
+and position estimation by default. This has been a long time coming,
+and significantly improves the flight performance. You can still
+disable the EKF if you want to using the AHRS_EKF_USE parameter.
+
+There has also been a lot of internal code restructuring in this
+release, with the move from .pde files to .cpp files and changes to
+the handling of include files.
+
+Other key changes include:
+
   - fixed return point on geofence breach
   - enable messages for MAVLink gimbal support
   - use 64 bit timestamps in dataflash logs
@@ -20,6 +33,27 @@ Changes:
   - disable TRIM_RC_AT_START by default
   - fixed parameter documentation spelling errors
   - send MISSION_ITEM_REACHED messages on waypoint completion
+  - fixed airspeed handling in SITL simulators
+  - enable EKF by default on plane
+  - Improve gyro bias learning rate for plane and rover
+  - Allow switching primary GPS instance with 1 sat difference
+  - added NSH over MAVLink support
+  - added support for mpu9250 on pixhawk and pixhawk2
+  - Add support for logging ublox RXM-RAWX messages
+  - lots of updates to improve support for Linux based boards
+  - added ORGN message in dataflash
+  - added support for new "blue label" Lidar
+  - switched to real hdop in uBlox driver
+  - improved auto-config of uBlox
+  - raise accel discrepancy arming threshold to 0.75
+  - improved support for tcp and udp connections on Linux
+  - switched to delta-velocity and delta-angles in DCM
+  - improved detection of which accel to use in EKF
+  - improved auto-detections of flow control on pixhawk UARTs
+
+Please test out the beta and report back on how it goes! There has
+been a lot of testing of this release already by core developers so
+I'm not expecting a long beta release cycle.
 
 
 Release 3.3.0, 20th May 2015
