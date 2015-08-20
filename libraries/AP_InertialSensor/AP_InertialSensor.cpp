@@ -272,7 +272,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("USE", 20, AP_InertialSensor, _use[0],  1),
 
-#if INS_MAX_INSTANCES > 2
+#if INS_MAX_INSTANCES > 1
     // @Param: USE2
     // @DisplayName: Use second IMU for attitude, velocity and position estimates
     // @Description: Use second IMU for attitude, velocity and position estimates
@@ -280,13 +280,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
 #endif
-#if INS_MAX_INSTANCES > 3
+#if INS_MAX_INSTANCES > 2
     // @Param: USE3
     // @DisplayName: Use third IMU for attitude, velocity and position estimates
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE3", 21, AP_InertialSensor, _use[2],  0),
+    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
 #endif
 
     /*
