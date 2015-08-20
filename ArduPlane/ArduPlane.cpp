@@ -903,7 +903,7 @@ void Plane::update_is_flying_5Hz(void)
                 // we are definitely not flying, or at least for not much longer!
                 if (throttle_suppressed) {
                     is_flying_bool = false;
-                    auto_state.is_crashed = false;
+                    crash_state.is_crashed = false;
                 }
                 break;
 
@@ -919,7 +919,6 @@ void Plane::update_is_flying_5Hz(void)
                 break;
 
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-            default:
                 break;
             } // switch
         }
@@ -985,13 +984,10 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
-    static uint32_t crash_timer_ms = 0;
-    static bool checkHardLanding = false;
-
     if (control_mode != AUTO)
     {
         // crash detection is only available in AUTO mode
-        crash_timer_ms = 0;
+        crash_state.debounce_timer_ms = 0;
         return;
     }
 
@@ -1039,7 +1035,7 @@ void Plane::crash_detection_update(void)
             // but go ahead and notify GCS and perform any additional post-crash actions.
             // Declare a crash if we are oriented more that 60deg in pitch or roll
             if (been_auto_flying &&
-                !checkHardLanding && // only check once
+                !crash_state.checkHardLanding && // only check once
                 (fabsf(ahrs.roll_sensor) > 6000 || fabsf(ahrs.pitch_sensor) > 6000)) {
                 crashed = true;
 
@@ -1050,29 +1046,26 @@ void Plane::crash_detection_update(void)
                 // trigger hard landing event right away, or never again. This inhibits a false hard landing
                 // event when, for example, a minute after a good landing you pick the plane up and
                 // this logic is still running and detects the plane is on its side as you carry it.
-                crash_timer_ms = now_ms + 2500;
+                crash_state.debounce_timer_ms = now_ms + 2500;
             }
-            checkHardLanding = true;
-            break;
-
-        default:
+            crash_state.checkHardLanding = true;
             break;
         } // switch
     } else {
-        checkHardLanding = false;
+        crash_state.checkHardLanding = false;
     }
 
     if (!crashed) {
         // reset timer
-        crash_timer_ms = 0;
-        auto_state.is_crashed = false;
+        crash_state.debounce_timer_ms = 0;
+        crash_state.is_crashed = false;
 
-    } else if (crash_timer_ms == 0) {
+    } else if (crash_state.debounce_timer_ms == 0) {
         // start timer
-        crash_timer_ms = now_ms;
+        crash_state.debounce_timer_ms = now_ms;
 
-    } else if ((now_ms - crash_timer_ms >= 2500) && !auto_state.is_crashed) {
-        auto_state.is_crashed = true;
+    } else if ((now_ms - crash_state.debounce_timer_ms >= 2500) && !crash_state.is_crashed) {
+        crash_state.is_crashed = true;
 
         if (g.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {

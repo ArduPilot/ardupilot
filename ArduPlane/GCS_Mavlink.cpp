@@ -13,7 +13,7 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     
     if (failsafe.state != FAILSAFE_NONE) {
         system_status = MAV_STATE_CRITICAL;
-    } else if (plane.auto_state.is_crashed) {
+    } else if (plane.crash_state.is_crashed) {
         system_status = MAV_STATE_EMERGENCY;
     } else if (is_flying()) {
         system_status = MAV_STATE_ACTIVE;
