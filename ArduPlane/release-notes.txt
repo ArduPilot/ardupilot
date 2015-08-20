@@ -1,3 +1,27 @@
+Release 3.4.0beta1, 20th August 2015
+------------------------------------
+
+Changes:
+  - fixed return point on geofence breach
+  - enable messages for MAVLink gimbal support
+  - use 64 bit timestamps in dataflash logs
+  - added realtime PID tuning messages and PID logging
+  - fixed a failure case for the px4 failsafe mixer
+  - added DSM binding support on Pixhawk
+  - added ALTITUDE_WAIT mission command
+  - added vibration level logging
+  - ignore low voltage failsafe while disarmed
+  - added delta velocity and delta angle logging
+  - fix LOITER_TO_ALT to verify headings towards waypoints within the loiter radius
+  - allow rudder disarm based on ARMING_RUDDER parameter
+  - fix default behaviour of flaps
+  - prevent mode switch changes changing WP tracking
+  - make TRAINING mode obey stall prevention roll limits
+  - disable TRIM_RC_AT_START by default
+  - fixed parameter documentation spelling errors
+  - send MISSION_ITEM_REACHED messages on waypoint completion
+
+
 Release 3.3.0, 20th May 2015
 ----------------------------
 
