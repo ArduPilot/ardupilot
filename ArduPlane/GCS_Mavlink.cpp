@@ -1342,7 +1342,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+                plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1743,7 +1743,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+        plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
         
     } // end switch
@@ -1895,4 +1895,3 @@ void Plane::gcs_retry_deferred(void)
 {
     gcs_send_message(MSG_RETRY_DEFERRED);
 }
-

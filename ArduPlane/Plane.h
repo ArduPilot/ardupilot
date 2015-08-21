@@ -1,6 +1,8 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define THISFIRMWARE "ArduPlane V3.4.0beta1"
+#define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_BETA
+
 /*
    Lead developer: Andrew Tridgell
  
