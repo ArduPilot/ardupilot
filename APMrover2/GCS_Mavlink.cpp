@@ -1026,7 +1026,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
             if (is_equal(packet.param1,1.0f)) {
-                rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+                rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1268,7 +1268,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #endif
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
-        rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version();
+        rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
 
     } // end switch
