@@ -64,6 +64,7 @@ AP_GPS_PX4::read(void)
 
                 state.ground_speed = _gps_pos.vel_m_s;
                 state.ground_course_cd = int32_t(double(_gps_pos.cog_rad) / M_PI * 18000. +.5);
+                state.hdop = _gps_pos.eph*100;
 
                 // convert epoch timestamp back to gps epoch - evil hack until we get the genuine
                 // raw week information (or APM switches to Posix epoch ;-) )
@@ -83,6 +84,8 @@ AP_GPS_PX4::read(void)
                 state.velocity.x = _gps_pos.vel_n_m_s;
                 state.velocity.y = _gps_pos.vel_e_m_s;
                 state.velocity.z = _gps_pos.vel_d_m_s;
+                state.speed_accuracy = _gps_pos.s_variance_m_s;
+                state.have_speed_accuracy = true;
             }
             else {
                 state.have_vertical_velocity = false;
