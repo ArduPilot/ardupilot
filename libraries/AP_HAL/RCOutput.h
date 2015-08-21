@@ -45,7 +45,6 @@ public:
 
     /* Output, either single channel or bulk array of channels */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
-    virtual void     write(uint8_t ch, uint16_t* period_us, uint8_t len) = 0;
 
     /* Read back current output state, as either single channel or
      * array of channels. */
