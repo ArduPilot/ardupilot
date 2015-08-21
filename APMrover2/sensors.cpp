@@ -1,6 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include "Rover.h"
+#include <RC_Channel/RC_Channel.h>
 
 void Rover::init_barometer(void)
 {
@@ -25,9 +26,7 @@ void Rover::read_battery(void)
 // RC_CHANNELS_SCALED message
 void Rover::read_receiver_rssi(void)
 {
-    rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->voltage_average() * 50;
-    receiver_rssi = constrain_int16(ret, 0, 255);
+    receiver_rssi = RC_Channel::read_receiver_rssi(g.rssi_pin, g.rssi_range, rssi_analog_source, g.rssi_channel, g.rssi_channel_low_pwm_value, g.rssi_channel_high_pwm_value);
 }
 
 // read the sonars
