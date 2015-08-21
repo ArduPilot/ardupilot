@@ -2114,7 +2114,10 @@ void NavEKF::FuseVelPosNED()
 
             // Calculate a filtered value to be used by pre-flight health checks
             // We need to filter because wind gusts can generate singificant baro noise and we want to be able to detect bias errors in the inertial solution
-            hgtInnovFiltState = 0.05f*innovVelPos[5] + 0.95f*hgtInnovFiltState;
+            static const float dtBaro = msecHgtAvg*1.0e-3f;
+            static const float hgtInnovFiltTC = 2.0f;
+            static const float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
+            hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
 
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
