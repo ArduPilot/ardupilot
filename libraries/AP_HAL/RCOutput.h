@@ -45,6 +45,10 @@ public:
 
     /* Output, either single channel or bulk array of channels */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
+    virtual void     write(const uint8_t *channel_map, const bool *enable_map,
+                           const int16_t *values, uint8_t len);
+    virtual void     write(const uint8_t *channel_map, const bool *enable_map,
+                           int16_t value, uint8_t len);
 
     /* Read back current output state, as either single channel or
      * array of channels. */
