@@ -182,13 +182,6 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
     }
 }
 
-void VRBRAINRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        write(i, period_us[i]);
-    }
-}
-
 uint16_t VRBRAINRCOutput::read(uint8_t ch)
 {
     if (ch >= VRBRAIN_NUM_OUTPUT_CHANNELS) {
