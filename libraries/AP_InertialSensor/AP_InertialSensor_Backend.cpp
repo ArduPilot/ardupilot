@@ -65,9 +65,6 @@ void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const 
     _imu._delta_velocity_valid[instance] = true;
 }
 
-/*
-  rotate accel vector, scale and add the accel offset
- */
 void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct)
 {
     _imu._accel[instance] = accel;
@@ -76,12 +73,25 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     if (rotate_and_correct) {
         _rotate_and_correct_accel(instance, _imu._accel[instance]);
     }
+
+#if INS_VIBRATION_CHECK
+    if (_imu._accel_sample_rates[instance] > 0) {
+        float dt = 1.0f / _imu._accel_sample_rates[instance];
+        _imu.calc_vibration_and_clipping(instance, accel, dt);
+    }
+#endif
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
                                                           float max_offset)
 {
     _imu._accel_max_abs_offsets[instance] = max_offset;
+}
+
+void AP_InertialSensor_Backend::_set_accel_sample_rate(uint8_t instance,
+                                                       uint32_t rate)
+{
+    _imu._accel_sample_rates[instance] = rate;
 }
 
 // set accelerometer error_count

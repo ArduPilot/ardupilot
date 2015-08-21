@@ -166,6 +166,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             hal.scheduler->panic("Invalid accel sample rate");
         }
+        _set_accel_sample_rate(_accel_instance[i], (uint32_t) samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -190,7 +191,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 {
     for (uint8_t i=0; i<_num_accel_instances; i++) {
-        float samplerate = 1.0f / _accel_sample_time[i];
+        float samplerate = _accel_sample_rate(_accel_instance[i]);
         _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
     }
 }
@@ -281,9 +282,6 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // publish a temperature (for logging purposed only)
     _publish_temperature(frontend_instance, accel_report.temperature);
-
-    // check noise
-    _imu.calc_vibration_and_clipping(frontend_instance, accel, dt);
 
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
     _accel_dt_max[i] = max(_accel_dt_max[i],dt);
