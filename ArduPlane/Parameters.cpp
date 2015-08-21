@@ -926,7 +926,31 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Values: 3.3:3.3V, 5.0:5V
     // @User: Standard
     GSCALAR(rssi_range,          "RSSI_RANGE",         5.0),
-
+    
+    // @Param: RSSI_CHANNEL
+    // @DisplayName: Receiver RSSI channel number
+    // @Description: The channel number where RSSI will be output by the radio receiver.
+    // @Units: 
+    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @User: Standard
+    GSCALAR(rssi_channel,          "RSSI_CHANNEL",         0),
+    
+    // @Param: RSSI_CHAN_LOW
+    // @DisplayName: Receiver RSSI PWM low value
+    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH. 
+    // @Units: Microseconds
+    // @Range: 0 2000
+    // @User: Standard
+    GSCALAR(rssi_channel_low_pwm_value, "RSSI_CHAN_LOW", 1000), 
+    
+    // @Param: RSSI_CHAN_HIGH
+    // @DisplayName: Receiver RSSI PWM high value
+    // @Description: This is the PPM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW. 
+    // @Units: Microseconds
+    // @Range: 0 2000
+    // @User: Standard
+    GSCALAR(rssi_channel_high_pwm_value, "RSSI_CHAN_HIGH", 2000),  
+  
     // @Param: INVERTEDFLT_CH
     // @DisplayName: Inverted flight channel
     // @Description: A RC input channel number to enable inverted flight. If this is non-zero then the APM will monitor the corresponding RC input channel and will enable inverted flight when the channel goes above 1750.
