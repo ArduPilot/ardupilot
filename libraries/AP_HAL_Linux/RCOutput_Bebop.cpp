@@ -329,12 +329,6 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
     }
 }
 
-void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
-}
-
 uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)
 {
     if (ch < BEBOP_BLDC_MOTORS_NUM) {

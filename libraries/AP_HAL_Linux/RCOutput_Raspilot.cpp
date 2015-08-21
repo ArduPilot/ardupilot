@@ -81,12 +81,6 @@ void LinuxRCOutput_Raspilot::write(uint8_t ch, uint16_t period_us)
     _period_us[ch] = period_us;
 }
 
-void LinuxRCOutput_Raspilot::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
-}
-
 uint16_t LinuxRCOutput_Raspilot::read(uint8_t ch)
 {
     if(ch >= PWM_CHAN_COUNT){

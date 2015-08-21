@@ -108,19 +108,6 @@ void LinuxRCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
    }
 }
 
-void LinuxRCOutput_AioPRU::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-   uint8_t i;
-
-   if(len > PWM_CHAN_COUNT) {
-      len = PWM_CHAN_COUNT;
-   }
-
-   for(i = 0; i < len; i++) {
-      write(ch + i, period_us[i]);
-   }
-}
-
 uint16_t LinuxRCOutput_AioPRU::read(uint8_t ch)
 {
    uint16_t ret = 0;

@@ -203,12 +203,6 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
-}
-
 uint16_t LinuxRCOutput_PCA9685::read(uint8_t ch)
 {
     return _pulses_buffer[ch];
