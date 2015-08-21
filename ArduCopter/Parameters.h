@@ -195,6 +195,13 @@ public:
         k_param_takeoff_trigger_dz,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
+        
+        //
+        // 130: RSSI
+        //
+        k_param_rssi_channel = 130,
+        k_param_rssi_channel_low_pwm_value,
+        k_param_rssi_channel_high_pwm_value,   // 132
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -375,7 +382,11 @@ public:
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         rssi_pin;
-    AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
+    AP_Float        rssi_range;                     // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
+    AP_Int8         rssi_channel;                   // allows rssi to be read from given channel as PWM value
+    AP_Int16        rssi_channel_low_pwm_value;     // PWM value for weakest rssi signal
+    AP_Int16        rssi_channel_high_pwm_value;    // PWM value for strongest rssi signal 
+    
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
     AP_Int8         rc_feel_rp;                 // controls vehicle response to user input with 0 being extremely soft and 100 begin extremely crisp
 
