@@ -54,7 +54,14 @@ public:
         k_param_serial0_baud,   // deprecated, can be deleted
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
-
+        
+        //
+        // 70: RSSI
+        //
+        k_param_rssi_range = 70,
+        k_param_rssi_channel,
+        k_param_rssi_channel_low_pwm_value,
+        k_param_rssi_channel_high_pwm_value, 
 
         // 110: Telemetry control
         //
@@ -72,7 +79,7 @@ public:
         k_param_serial_manager,     // serial manager library
         k_param_cli_enabled,
         k_param_gcs3,
-        k_param_gcs_pid_mask,
+        k_param_gcs_pid_mask, // 124
 
         //
         // 130: Sensor parameters
@@ -205,7 +212,13 @@ public:
 
     // IO pins
     AP_Int8     rssi_pin;
-
+    
+    // RSSI
+    AP_Float        rssi_range;                             // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
+    AP_Int8         rssi_channel;                           // allows rssi to be read from given channel as PWM value
+    AP_Int16        rssi_channel_low_pwm_value;             // PWM value for weakest rssi signal
+    AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal 
+    
     // braking
     AP_Int8     braking_percent;
     AP_Float    braking_speederr;

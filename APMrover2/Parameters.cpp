@@ -44,6 +44,38 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
 
+    // @Param: RSSI_RANGE
+    // @DisplayName: Receiver RSSI voltage range
+    // @Description: Receiver RSSI voltage range
+    // @Units: Volt
+    // @Values: 3.3:3.3V, 5:5V
+    // @User: Standard
+    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0f),
+
+    // @Param: RSSI_CHANNEL
+    // @DisplayName: Receiver RSSI channel number
+    // @Description: The channel number where RSSI will be output by the radio receiver.
+    // @Units: 
+    // @Values: 0:Disabled,1:Channel1,2:Channel2,3:Channel3,4:Channel4,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @User: Standard
+    GSCALAR(rssi_channel,          "RSSI_CHANNEL",         0),
+    
+    // @Param: RSSI_CHAN_LOW
+    // @DisplayName: Receiver RSSI PWM low value
+    // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH. 
+    // @Units: Microseconds
+    // @Range: 0 2000
+    // @User: Standard
+    GSCALAR(rssi_channel_low_pwm_value, "RSSI_CHAN_LOW", 1000), 
+    
+    // @Param: RSSI_CHAN_HIGH
+    // @DisplayName: Receiver RSSI PWM high value
+    // @Description: This is the PPM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW. 
+    // @Units: Microseconds
+    // @Range: 0 2000
+    // @User: Standard
+    GSCALAR(rssi_channel_high_pwm_value, "RSSI_CHAN_HIGH", 2000),  
+        
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID of this vehicle
     // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
