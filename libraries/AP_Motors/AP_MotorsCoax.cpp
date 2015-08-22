@@ -111,10 +111,11 @@ void AP_MotorsCoax::enable()
 void AP_MotorsCoax::output_min()
 {
     // send minimum value to each motor
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_trim);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_trim);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), _throttle_radio_min);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), _throttle_radio_min);
+    int16_t values[4] = {
+        _servo1.radio_trim,  _servo2.radio_trim, _throttle_radio_min, _throttle_radio_min
+    };
+    hal.rcout->write(&_motor_to_channel_map[AP_MOTORS_MOT_1], nullptr, values,
+                     sizeof(values));
 }
 
 void AP_MotorsCoax::output_armed_not_stabilizing()
@@ -154,10 +155,11 @@ void AP_MotorsCoax::output_armed_not_stabilizing()
         motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _throttle_radio_max);
     }
 
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), motor_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out);
+    int16_t values[4] = {
+        _servo1.radio_out, _servo2.radio_out, motor_out, motor_out
+    };
+    hal.rcout->write(&_motor_to_channel_map[AP_MOTORS_MOT_1], nullptr, values,
+                     sizeof(values));
 }
 
 // sends commands to the motors
@@ -212,10 +214,12 @@ void AP_MotorsCoax::output_armed_stabilizing()
     motor_out[AP_MOTORS_MOT_4] = max(motor_out[AP_MOTORS_MOT_4],    out_min);
 
     // send output to each motor
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_1]), _servo1.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_2]), _servo2.radio_out);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_3]), motor_out[AP_MOTORS_MOT_3]);
-    hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), motor_out[AP_MOTORS_MOT_4]);
+    int16_t values[4] = {
+        _servo1.radio_out, _servo2.radio_out,
+        motor_out[AP_MOTORS_MOT_3], motor_out[AP_MOTORS_MOT_3]
+    };
+    hal.rcout->write(&_motor_to_channel_map[AP_MOTORS_MOT_1], nullptr, values,
+                     sizeof(values));
 }
 
 // output_disarmed - sends commands to the motors
