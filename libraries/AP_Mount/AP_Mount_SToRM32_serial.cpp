@@ -151,11 +151,8 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
 {
 
     static cmd_set_angles_struct cmd_set_angles_data = {
-        0xFD,
+        0xFA,
         0x0E,
-        0x00,
-        0x52,
-        0x43,
         0x11,
         0, // pitch
         0, // roll

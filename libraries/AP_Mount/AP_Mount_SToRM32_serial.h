@@ -113,8 +113,9 @@ private:
     };
 
     struct PACKED SToRM32_reply_ack_struct {
-        uint8_t magic;
-        uint8_t something[5];
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
         uint8_t data;
         uint16_t crc;
     };
@@ -123,9 +124,6 @@ private:
         uint8_t byte1;
         uint8_t byte2;
         uint8_t byte3;
-        uint8_t byte4;
-        uint8_t byte5;
-        uint8_t byte6;
         float pitch;
         float roll;
         float yaw;
