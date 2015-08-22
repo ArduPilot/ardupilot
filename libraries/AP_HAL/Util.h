@@ -8,9 +8,6 @@
 
 class AP_HAL::Util {
 public:
-    // soft_armed starts out true
-    Util() : soft_armed(true), capabilities(0) {}
-
     int snprintf(char* str, size_t size,
                  const char *format, ...);
 
@@ -85,8 +82,10 @@ public:
     virtual AP_HAL::Stream *get_shell_stream() { return NULL; }
 
 protected:
-    bool soft_armed;
-    uint64_t capabilities;
+    // we start soft_armed false, so that actuators don't send any
+    // values until the vehicle code has fully started
+    bool soft_armed = false;
+    uint64_t capabilities = 0;
 };
 
 #endif // __AP_HAL_UTIL_H__
