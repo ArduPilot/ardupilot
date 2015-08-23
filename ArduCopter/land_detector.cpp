@@ -114,8 +114,8 @@ void Copter::set_land_complete_maybe(bool b)
 void Copter::update_throttle_thr_mix()
 {
 #if FRAME_CONFIG != HELI_FRAME
-    // if disarmed prioritise throttle
-    if(!motors.armed()) {
+    // if disarmed or landed prioritise throttle
+    if(!motors.armed() || ap.land_complete) {
         motors.set_throttle_mix_min();
         return;
     }
