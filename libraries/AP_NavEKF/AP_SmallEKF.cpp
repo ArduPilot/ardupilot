@@ -52,10 +52,40 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
 
     // initialise variables and constants
     if (!FiltInit) {
-        StartTime_ms =  imuSampleTime_ms;
+        // Note: the start time is initialised to 0 in the constructor
+        if (StartTime_ms == 0) {
+            StartTime_ms = imuSampleTime_ms;
+        }
+
+        // Set data to pre-initialsation defaults
+        FiltInit = false;
         newDataMag = false;
         YawAligned = false;
+        memset(&state, 0, sizeof(state));
         state.quat[0] = 1.0f;
+
+        // Wait for gimbal to stabilise to body fixed position for a few seconds before starting small EKF
+        // This prevents jerky gimbal motion from degrading the EKF initial state estimates
+        if (imuSampleTime_ms - StartTime_ms < 5000) {
+            return;
+        }
+
+        // normalise the acceleration vector
+        float pitch=0, roll=0;
+        if (delta_velocity.length() > 0.001f) {
+            Vector3f delta_velocity_unit = delta_velocity;
+            delta_velocity_unit.normalize();
+            // calculate initial pitch angle
+            pitch = asinf(delta_velocity_unit.x);
+            // calculate initial roll angle
+            roll = -asinf(delta_velocity_unit.y / cosf(pitch));
+        } else {
+            roll = pitch = 0.0f;
+        }
+
+        // calculate initial orientation
+        state.quat.from_euler(roll, pitch, 0.0f);
+
         const float Sigma_velNED = 0.5f; // 1 sigma uncertainty in horizontal velocity components
         const float Sigma_dAngBias  = 0.01745f*dtIMU; // 1 Sigma uncertainty in delta angle bias
         const float Sigma_angErr = 1.0f; // 1 Sigma uncertainty in angular misalignment (rad)
@@ -64,6 +94,9 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
         FiltInit = true;
         hal.console->printf("\nSmallEKF Alignment Started\n");
+
+        // Don't run the filter in this timestep becasue we have already used the delta velocity data to set an initial orientation
+        return;
     }
 
     // We are using IMU data and joint angles from the gimbal
@@ -91,7 +124,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
-    if (((((imuSampleTime_ms - StartTime_ms) > 3000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
@@ -941,7 +974,7 @@ void SmallEKF::getQuat(Quaternion &quat) const
 bool SmallEKF::getStatus() const
 {
     float run_time = hal.scheduler->millis() - StartTime_ms;
-    return  YawAligned && (run_time > 30000);
+    return  YawAligned && (run_time > 15000);
 }
 
 #endif // HAL_CPU_CLASS
