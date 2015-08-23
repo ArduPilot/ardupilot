@@ -140,7 +140,7 @@ int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
-    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
+    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {
@@ -218,7 +218,7 @@ float Copter::get_throttle_pre_takeoff(float input_thr)
     }
 
     // TODO: does this parameter sanity check really belong here?
-    g.throttle_mid = constrain_int16(g.throttle_mid,300,700);
+    g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
 
     float in_min = g.throttle_min;
     float in_max = get_takeoff_trigger_throttle();
