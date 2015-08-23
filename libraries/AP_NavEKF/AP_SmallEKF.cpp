@@ -87,8 +87,8 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
         state.quat.from_euler(roll, pitch, 0.0f);
 
         const float Sigma_velNED = 0.5f; // 1 sigma uncertainty in horizontal velocity components
-        const float Sigma_dAngBias  = 0.01745f*dtIMU; // 1 Sigma uncertainty in delta angle bias
-        const float Sigma_angErr = 1.0f; // 1 Sigma uncertainty in angular misalignment (rad)
+        const float Sigma_dAngBias  = 0.05f*dtIMU; // 1 Sigma uncertainty in delta angle bias
+        const float Sigma_angErr = 0.1f; // 1 Sigma uncertainty in angular misalignment (rad)
         for (uint8_t i=0; i <= 2; i++) Cov[i][i] = sq(Sigma_angErr);
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
