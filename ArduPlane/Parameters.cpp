@@ -973,6 +973,14 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    0), 
 
+    // @Param: CRASH_DETECT
+    // @DisplayName: Crash Detection
+    // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for saftey and to help against burning out ESC and motor. Setting the mode to manual will help save the servos from burning out by overexerting if the aircraft crashed in an odd orientation such as upsidedown.
+    // @Values: 0:Disabled,1:Disarm
+    // @Bitmask: 0:Disarm
+    // @User: Advanced
+    GSCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_

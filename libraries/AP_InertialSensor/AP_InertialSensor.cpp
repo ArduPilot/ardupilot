@@ -27,12 +27,15 @@ extern const AP_HAL::HAL& hal;
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
+#define DEFAULT_STILL_THRESH 2.5f
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define DEFAULT_GYRO_FILTER  10
 #define DEFAULT_ACCEL_FILTER 10
+#define DEFAULT_STILL_THRESH 0.1f
 #else
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
+#define DEFAULT_STILL_THRESH 0.1f
 #endif
 
 #define SAMPLE_UNIT 1
@@ -287,6 +290,15 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
+#endif
+
+#if INS_VIBRATION_CHECK
+    // @Param: STILL_THRESH
+    // @DisplayName: Stillness threshold for detecting if we are moving
+    // @Description: Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5
+    // @Range: 0.05 to 50
+    // @User: Advanced
+    AP_GROUPINFO("STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
 #endif
 
     /*
@@ -1499,3 +1511,16 @@ Vector3f AP_InertialSensor::get_vibration_levels(uint8_t instance) const
     return vibe;
 }
 #endif
+
+// check for vibration movement. Return true if all axis show nearly zero movement
+bool AP_InertialSensor::is_still()
+{
+#if INS_VIBRATION_CHECK
+    Vector3f vibe = get_vibration_levels();
+    return (vibe.x < _still_threshold) &&
+           (vibe.y < _still_threshold) &&
+           (vibe.z < _still_threshold);
+#else
+    return false;
+#endif
+}

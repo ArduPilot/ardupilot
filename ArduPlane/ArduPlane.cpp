@@ -74,6 +74,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(frsky_telemetry_send),  10,    100 },
 #endif
     { SCHED_TASK(terrain_update),         5,    500 },
+    { SCHED_TASK(update_is_flying_5Hz),  10,    100 },
 };
 
 void Plane::setup() 
@@ -303,13 +304,12 @@ void Plane::one_second_loop()
 
     update_aux();
 
-    // determine if we are flying or not
-    determine_is_flying();
-
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
+    crash_detection_update();
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
@@ -851,66 +851,6 @@ void Plane::update_flight_stage(void)
 }
 
 
-
-/*
-  Do we think we are flying?
-  Probabilistic method where a bool is low-passed and considered a probability.
-*/
-void Plane::determine_is_flying(void)
-{
-    float aspeed;
-    bool isFlyingBool;
-
-    bool airspeedMovement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= 5);
-
-    // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
-                        gps.ground_speed() >= 5);
-
-
-    if (hal.util->get_soft_armed()) {
-        // when armed, we need overwhelming evidence that we ARE NOT flying
-        isFlyingBool = airspeedMovement || gpsMovement;
-
-        /*
-          make is_flying() more accurate for landing approach
-         */
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-            fabsf(auto_state.sink_rate) > 0.2f) {
-            isFlyingBool = true;
-        }
-    } else {
-        // when disarmed, we need overwhelming evidence that we ARE flying
-        isFlyingBool = airspeedMovement && gpsMovement;
-    }
-
-    // low-pass the result.
-    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
-
-    /*
-      update last_flying_ms so we always know how long we have not
-      been flying for. This helps for crash detection and auto-disarm
-     */
-    if (is_flying()) {
-        auto_state.last_flying_ms = millis();
-    }
-}
-
-/*
-  return true if we think we are flying. This is a probabilistic
-  estimate, and needs to be used very carefully. Each use case needs
-  to be thought about individually.
- */
-bool Plane::is_flying(void)
-{
-    if (hal.util->get_soft_armed()) {
-        // when armed, assume we're flying unless we probably aren't
-        return (isFlyingProbability >= 0.1f);
-    }
-
-    // when disarmed, assume we're not flying unless we probably are
-    return (isFlyingProbability >= 0.9f);
-}
 
 
 #if OPTFLOW == ENABLED
