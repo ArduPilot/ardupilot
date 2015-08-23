@@ -336,8 +336,9 @@ public:
         k_param_autotune_aggressiveness,
         k_param_pi_vel_xy,
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min,  // 249
+        k_param_rtl_climb_min,
         k_param_rpm_sensor,
+        k_param_autotune_min_d, // 251
 
         // 254,255: reserved
     };
@@ -498,6 +499,7 @@ public:
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
+    AP_Float                autotune_min_d;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

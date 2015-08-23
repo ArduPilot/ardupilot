@@ -1065,6 +1065,13 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
 
+    // @Param: AUTOTUNE_MIN_D
+    // @DisplayName: AutoTune minimum D
+    // @Description: Defines the minimum D gain
+    // @Range: 0.001 0.006
+    // @User: Standard
+    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.004f),
+
     AP_VAREND
 };
 
