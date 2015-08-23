@@ -121,9 +121,6 @@ public:
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cms; }
 
-    /// get_wp_radius - access for waypoint radius in cm
-    float get_wp_radius() const { return _wp_radius_cm; }
-
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
     float get_wp_acceleration() const { return _wp_accel_cms.get(); }
 
