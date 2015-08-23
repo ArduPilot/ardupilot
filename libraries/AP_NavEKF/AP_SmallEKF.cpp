@@ -197,7 +197,7 @@ void SmallEKF::predictStates()
 // gyro_bias_state_noise
 void SmallEKF::predictCovariance()
 {
-    float delAngBiasVariance = sq(dtIMU*dtIMU*5E-4f);
+    float delAngBiasVariance = sq(dtIMU*5E-6f);
 
     float daxNoise = sq(dtIMU*0.0087f);
     float dayNoise = sq(dtIMU*0.0087f);
