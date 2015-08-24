@@ -118,8 +118,13 @@ class AP_Arming_Plane : public AP_Arming
 public:
     AP_Arming_Plane(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
                     const enum HomeState &home_set, gcs_send_t_p gcs_send) :
-        AP_Arming(ahrs_ref, baro, compass, home_set, gcs_send) {}
+        AP_Arming(ahrs_ref, baro, compass, home_set, gcs_send) {
+            AP_Param::setup_object_defaults(this, var_info);
+    }
     bool pre_arm_checks(bool report);
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
 };
 
 /*

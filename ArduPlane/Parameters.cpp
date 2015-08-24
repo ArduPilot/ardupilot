@@ -984,8 +984,8 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
 #endif
 
     // @Group: ARMING_
-    // @Path: ../libraries/AP_Arming/AP_Arming.cpp
-    GOBJECT(arming,                 "ARMING_", AP_Arming),
+    // @Path: arming_checks.cpp
+    GOBJECT(arming,                 "ARMING_", AP_Arming_Plane),
 
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
