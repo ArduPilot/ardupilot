@@ -67,7 +67,7 @@ void loop(void)
     for(uint8_t i = 0; i < nchannels; i++) {
         uint16_t v = hal.rcin->read(i);
         if(last_value[i] != v) {
-            hal.rcout->write(i, v);
+            hal.rcout->write(i, v, AP_HAL::RCOutput::FLAGS_ASYNC);
             changed = true;
             last_value[i] = v;
         }
@@ -75,6 +75,7 @@ void loop(void)
             max_channels = i;
         }
     }
+    hal.rcout->flush();
     if(changed) {
         for(uint8_t i = 0; i < max_channels; i++) {
             hal.console->printf("%2u:%04u ", (unsigned)i + 1, (unsigned)last_value[i]);
