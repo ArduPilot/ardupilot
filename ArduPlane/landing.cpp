@@ -249,14 +249,26 @@ bool Plane::restart_landing_sequence()
     uint16_t do_land_start_index = mission.get_landing_sequence_start();
     uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
     bool success = false;
+    uint16_t current_index = mission.get_current_nav_index();
+    AP_Mission::Mission_Command cmd;
 
-    if (do_land_start_index != 0 &&
-        mission.set_current_cmd(do_land_start_index))
+    if (mission.read_cmd_from_storage(current_index+1,cmd) &&
+            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
+            (cmd.p1 == 0 || cmd.p1 == 1) &&
+            mission.set_current_cmd(current_index+1))
+    {
+        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
+        gcs_send_text_fmt(PSTR("Restarted landing sequence climbing to %dm"), cmd.content.location.alt/100);
+        success =  true;
+    }
+    else if (do_land_start_index != 0 &&
+            mission.set_current_cmd(do_land_start_index))
     {
         // look for a DO_LAND_START and use that index
         gcs_send_text_fmt(PSTR("Restarted landing via DO_LAND_START: %d"),do_land_start_index);
         success =  true;
-    } else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
+    }
+    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
                mission.set_current_cmd(prev_cmd_with_wp_index))
     {
         // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
