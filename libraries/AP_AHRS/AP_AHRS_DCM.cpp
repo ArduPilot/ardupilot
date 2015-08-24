@@ -276,7 +276,7 @@ AP_AHRS_DCM::normalize(void)
 float
 AP_AHRS_DCM::yaw_error_compass(void)
 {
-    const Vector3f &mag = _compass->get_field();
+    const Vector3f &mag = _compass->get_field_milligauss();
     // get the mag vector in the earth frame
     Vector2f rb = _dcm_matrix.mulXY(mag);
 
