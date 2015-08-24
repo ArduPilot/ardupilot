@@ -74,8 +74,9 @@ public:
 
     AP_Int8         function;           ///< see Aux_servo_function_t enum
 
-    // output one auxillary channel
-    void            output_ch(void);
+    // output one auxillary channel - if async is set the caller must call
+    // flush() later
+    void            output_ch(bool async = false);
 
     // output all auxillary channels
     static void     output_ch_all(void);
