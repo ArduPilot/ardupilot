@@ -265,6 +265,76 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
 #endif
 
+    // @Param: OFS1UT_X
+    // @DisplayName: Compass offsets (uT) on the X axis
+    // @Description: Offset (uT) to be added to the compass #1 x-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS1UT_Y
+    // @DisplayName: Compass offsets (uT) on the Y axis
+    // @Description: Offset (uT) to be added to the compass #1 y-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS1UT_Z
+    // @DisplayName: Compass offsets (uT) on the Z axis
+    // @Description: Offset (uT) to be added to the compass #1 z-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+#if COMPASS_MAX_INSTANCES == 1
+    AP_GROUPINFO("OFS1UT", 10, Compass, _state[0].offset_ut, 0),
+#elif COMPASS_MAX_INSTANCES == 2
+    AP_GROUPINFO("OFS1UT", 21, Compass, _state[0].offset_ut, 0),
+#elif COMPASS_MAX_INSTANCES == 3
+    AP_GROUPINFO("OFS1UT", 24, Compass, _state[0].offset_ut, 0),
+#endif
+
+    // @Param: OFS2UT_X
+    // @DisplayName: Compass2 offsets (uT) on the X axis
+    // @Description: Offset (uT) to be added to the compass #2 x-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS2UT_Y
+    // @DisplayName: Compass2 offsets (uT) on the Y axis
+    // @Description: Offset (uT) to be added to the compass #2 y-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS2UT_Z
+    // @DisplayName: Compass2 offsets (uT) on the Z axis
+    // @Description: Offset (uT) to be added to the compass #2 z-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+#if COMPASS_MAX_INSTANCES == 2
+    AP_GROUPINFO("OFS2UT", 22, Compass, _state[1].offset_ut, 0),
+#elif COMPASS_MAX_INSTANCES == 3
+    AP_GROUPINFO("OFS2UT", 25, Compass, _state[1].offset_ut, 0),
+#endif
+
+#if COMPASS_MAX_INSTANCES == 3
+    // @Param: OFS3UT_X
+    // @DisplayName: Compass3 offsets (uT) on the X axis
+    // @Description: Offset (uT) to be added to the compass #3 x-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS3UT_Y
+    // @DisplayName: Compass3 offsets (uT) on the Y axis
+    // @Description: Offset (uT) to be added to the compass #3 y-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+
+    // @Param: OFS3UT_Z
+    // @DisplayName: Compass3 offsets (uT) on the Z axis
+    // @Description: Offset (uT) to be added to the compass #3 z-axis values to compensate for metal in the frame
+    // @Range: -100 100
+    // @Increment: 1
+    AP_GROUPINFO("OFS3UT", 26, Compass, _state[2].offset_ut, 0),
+#endif
+
+
     AP_GROUPEND
 };
 
@@ -284,7 +354,7 @@ Compass::Compass(void) :
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
         _state[i].last_update_usec = 0;
-    }    
+    }
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
@@ -383,7 +453,7 @@ Compass::read(void)
     for (uint8_t i=0; i< _backend_count; i++) {
         // call read on each of the backend. This call updates field[i]
         _backends[i]->read();
-    }    
+    }
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
     }
@@ -395,7 +465,7 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        _state[i].offset_ut.set(offsets);
     }
 }
 
@@ -404,7 +474,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 {
     // sanity check compass instance provided
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[i].offset.set(offsets);
+        _state[i].offset_ut.set(offsets);
         save_offsets(i);
     }
 }
@@ -412,7 +482,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
 void
 Compass::save_offsets(uint8_t i)
 {
-    _state[i].offset.save();  // save offsets
+    _state[i].offset_ut.save();  // save offsets
 #if COMPASS_MAX_INSTANCES > 1
     _state[i].dev_id.save();  // save device id corresponding to these offsets
 #endif
@@ -615,7 +685,7 @@ void Compass::_setup_earth_field(void)
 {
     // assume a earth field strength of 400
     _hil.Bearth(400, 0, 0);
-    
+
     // rotate _Bearth for inclination and declination. -66 degrees
     // is the inclination in Canberra, Australia
     Matrix3f R;

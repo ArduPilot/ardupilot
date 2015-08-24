@@ -74,7 +74,6 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _product_id(0)
 {}
 
-// detect the sensor
 AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
 {
     AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass);
@@ -88,7 +87,6 @@ AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
     return sensor;
 }
 
-// read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
     if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
@@ -98,7 +96,6 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
     return true;
 }
 
-// write_register - update a register value
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
     if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
@@ -108,7 +105,6 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
     return true;
 }
 
-// Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
     uint8_t buff[6];
@@ -140,20 +136,19 @@ bool AP_Compass_HMC5843::read_raw()
     return true;
 }
 
-
-// accumulate a reading from the magnetometer
 void AP_Compass_HMC5843::accumulate(void)
 {
     if (!_initialised) {
-        // someone has tried to enable a compass for the first time
-        // mid-flight .... we can't do that yet (especially as we won't
-        // have the right orientation!)
+        /* someone has tried to enable a compass for the first time
+         * mid-flight .... we can't do that yet (especially as we won't
+         * have the right orientation!) */
+
         return;
     }
    uint32_t tnow = hal.scheduler->micros();
    if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
-	  // the compass gets new data at 75Hz
-	  return;
+      // the compass gets new data at 75Hz
+      return;
    }
 
    if (!_i2c_sem->take(1)) {
@@ -164,22 +159,24 @@ void AP_Compass_HMC5843::accumulate(void)
    _i2c_sem->give();
 
    if (result) {
-	  // the _mag_N values are in the range -2048 to 2047, so we can
-	  // accumulate up to 15 of them in an int16_t. Let's make it 14
-	  // for ease of calculation. We expect to do reads at 10Hz, and
-	  // we get new data at most 75Hz, so we don't expect to
-	  // accumulate more than 8 before a read
-	  _mag_x_accum += _mag_x;
-	  _mag_y_accum += _mag_y;
-	  _mag_z_accum += _mag_z;
-	  _accum_count++;
-	  if (_accum_count == 14) {
-		 _mag_x_accum /= 2;
-		 _mag_y_accum /= 2;
-		 _mag_z_accum /= 2;
-		 _accum_count = 7;
-	  }
-	  _last_accum_time = tnow;
+
+      /* the _mag_N values are in the range -2048 to 2047, so we can
+       * accumulate up to 15 of them in an int16_t. Let's make it 14
+       * for ease of calculation. We expect to do reads at 10Hz, and
+       * we get new data at most 75Hz, so we don't expect to
+       * accumulate more than 8 before a read */
+
+      _mag_x_accum += _mag_x;
+      _mag_y_accum += _mag_y;
+      _mag_z_accum += _mag_z;
+      _accum_count++;
+      if (_accum_count == 14) {
+         _mag_x_accum /= 2;
+         _mag_y_accum /= 2;
+         _mag_z_accum /= 2;
+         _accum_count = 7;
+      }
+      _last_accum_time = tnow;
    }
 }
 
@@ -197,16 +194,33 @@ bool AP_Compass_HMC5843::re_initialise()
 }
 
 
-// Public Methods //////////////////////////////////////////////////////////////
-bool
-AP_Compass_HMC5843::init()
+bool AP_Compass_HMC5843::_detect_version()
 {
-    int numAttempts = 0, good_count = 0;
-    bool success = false;
+    _base_config = 0x0;
+
+    if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
+        !read_register(ConfigRegA, &_base_config)) {
+        return false;
+    }
+    if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
+        /* a 5883L supports the sample averaging config */
+        _product_id = AP_COMPASS_TYPE_HMC5883L;
+        return true;
+    } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
+        _product_id = AP_COMPASS_TYPE_HMC5843;
+        return true;
+    } else {
+        /* not behaving like either supported compass type */
+        return false;
+    }
+
+}
+
+bool AP_Compass_HMC5843::init()
+{
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
-    float gain_multiple = 1.0;
 
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->delay(10);
@@ -216,184 +230,183 @@ AP_Compass_HMC5843::init()
         hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
     }
 
-    // determine if we are using 5843 or 5883L
-    _base_config = 0;
-    if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
-        !read_register(ConfigRegA, &_base_config)) {
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
+    if (!_detect_version()) {
+        goto errout;
     }
-    if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
-        // a 5883L supports the sample averaging config
-        _product_id = AP_COMPASS_TYPE_HMC5883L;
+
+    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         calibration_gain = 0x60;
-        /*
-          note that the HMC5883 datasheet gives the x and y expected
-          values as 766 and the z as 713. Experiments have shown the x
-          axis is around 766, and the y and z closer to 713.
+        /* Note that the HMC5883 datasheet gives the x and y expected
+           values as 766 and the z as 713. Experiments have shown the x
+           axis is around 766, and the y and z closer to 713.
          */
         expected_x = 766;
         expected_yz  = 713;
-        gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
-    } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
-        _product_id = AP_COMPASS_TYPE_HMC5843;
-    } else {
-        // not behaving like either supported compass type
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
     }
 
-    calibration[0] = 0;
-    calibration[1] = 0;
-    calibration[2] = 0;
+    if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
+        goto errout;
+    }
 
-    while ( success == 0 && numAttempts < 25 && good_count < 5)
+    /* leave test mode */
+    if (!re_initialise()) {
+        goto errout;
+    }
+
+    read();
+
+    _compass_instance = register_compass();
+    set_dev_id(_compass_instance, _product_id);
+
+    _initialised = true;
+
+    _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
+
+    return true;
+errout:
+
+    _i2c_sem->give();
+    hal.scheduler->resume_timer_procs();
+    return false;
+}
+
+/* XXX: we can do better */
+bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain, uint16_t expected_x, uint16_t expected_yz)
+{
+    int numAttempts = 0, good_count = 0;
+    bool success = false;
+
+    float sum_excited[3] = {0.0f, 0.0f, 0.0f};
+
+    while (success == 0 && numAttempts < 25 && good_count < 5)
     {
-        // record number of attempts at initialisation
         numAttempts++;
 
-        // force positiveBias (compass should return 715 for all channels)
-        if (!write_register(ConfigRegA, PositiveBiasConfig))
-            continue;      // compass not responding on the bus
+        /* force positiveBias (compass should return 715 for all channels) */
+        if (!write_register(ConfigRegA, PositiveBiasConfig)) {
+            continue;   /* compass not responding on the bus */
+        }
+
         hal.scheduler->delay(50);
 
-        // set gains
+        /* set gains */
         if (!write_register(ConfigRegB, calibration_gain) ||
-            !write_register(ModeRegister, SingleConversion))
+            !write_register(ModeRegister, SingleConversion)) {
             continue;
+        }
 
-        // read values from the compass
         hal.scheduler->delay(50);
-        if (!read_raw())
-            continue;      // we didn't read valid values
+
+        if (!read_raw()) {
+            continue;
+        }
 
         hal.scheduler->delay(10);
 
         float cal[3];
 
-        // hal.console->printf_P(PSTR("mag %d %d %d\n"), _mag_x, _mag_y, _mag_z);
         cal[0] = fabsf(expected_x / (float)_mag_x);
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
 
-        // hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f\n"), cal[0], cal[1], cal[2]);
+        /* we throw away the first two samples as the compass may
+         * still be changing its state from the application of the
+         * strap excitation. After that we accept values in a
+         * reasonable range */
 
-        // we throw away the first two samples as the compass may
-        // still be changing its state from the application of the
-        // strap excitation. After that we accept values in a
-        // reasonable range
-        if (numAttempts > 2 &&
-            cal[0] > 0.7f && cal[0] < 1.35f &&
-            cal[1] > 0.7f && cal[1] < 1.35f &&
-            cal[2] > 0.7f && cal[2] < 1.35f) {
-            // hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
-            good_count++;
-            calibration[0] += cal[0];
-            calibration[1] += cal[1];
-            calibration[2] += cal[2];
+        if (numAttempts <= 2) {
+            continue;
         }
 
-#if 0
-        /* useful for debugging */
-        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
-        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
-#endif
+#define IS_CALIBRATION_VALUE_VALID(val) (val > 0.7f && val < 1.35f)
+
+        if (IS_CALIBRATION_VALUE_VALID(cal[0]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[1]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[2])) {
+
+            sum_excited[0] += cal[0];
+            sum_excited[1] += cal[1];
+            sum_excited[2] += cal[2];
+
+            good_count++;
+        }
+
+#undef IS_CALIBRATION_VALUE_VALID
+
     }
 
     if (good_count >= 5) {
-        /*
-          The use of gain_multiple below is incorrect, as the gain
-          difference between 2.5Ga mode and 1Ga mode is already taken
-          into account by the expected_x and expected_yz values.  We
-          are not going to fix it however as it would mean all
-          APM1/APM2 users redoing their compass calibration. The
-          impact is that the values we report on APM1/APM2 are lower
-          than they should be (by a multiple of about 0.6). This
-          doesn't have any impact other than the learned compass
-          offsets
-         */
-        calibration[0] = calibration[0] * gain_multiple / good_count;
-        calibration[1] = calibration[1] * gain_multiple / good_count;
-        calibration[2] = calibration[2] * gain_multiple / good_count;
+        _scaling[0] = sum_excited[0] / good_count;
+        _scaling[1] = sum_excited[1] / good_count;
+        _scaling[2] = sum_excited[2] / good_count;
+
         success = true;
     } else {
         /* best guess */
-        calibration[0] = 1.0;
-        calibration[1] = 1.0;
-        calibration[2] = 1.0;
-    }
-
-    // leave test mode
-    if (!re_initialise()) {
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
-    }
-
-    _i2c_sem->give();
-    hal.scheduler->resume_timer_procs();
-    _initialised = true;
-
-	// perform an initial read
-	read();
-
-#if 0
-    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), 
-                          calibration[0], calibration[1], calibration[2]);
-#endif
-
-    if (success) {
-        // register the compass instance in the frontend
-        _compass_instance = register_compass();
-        set_dev_id(_compass_instance, _product_id);
+        _scaling[0] = 1.0;
+        _scaling[1] = 1.0;
+        _scaling[2] = 1.0;
     }
 
     return success;
 }
 
-// Read Sensor data
 void AP_Compass_HMC5843::read()
 {
     if (!_initialised) {
-        // someone has tried to enable a compass for the first time
-        // mid-flight .... we can't do that yet (especially as we won't
-        // have the right orientation!)
+
+        /* someone has tried to enable a compass for the first time
+         * mid-flight .... we can't do that yet (especially as we won't
+         * have the right orientation!) */
+
         return;
     }
+
     if (_retry_time != 0) {
+
         if (hal.scheduler->millis() < _retry_time) {
             return;
         }
+
         if (!re_initialise()) {
             _retry_time = hal.scheduler->millis() + 1000;
-			hal.i2c->setHighSpeed(false);
+            hal.i2c->setHighSpeed(false);
             return;
         }
     }
 
-	if (_accum_count == 0) {
-	   accumulate();
+    if (_accum_count == 0) {
+       accumulate();
        if (_retry_time != 0) {
-		  hal.i2c->setHighSpeed(false);
-		  return;
-	   }
-	}
+          hal.i2c->setHighSpeed(false);
+          return;
+       }
+    }
 
-    Vector3f field(_mag_x_accum * calibration[0],
-                   _mag_y_accum * calibration[1],
-                   _mag_z_accum * calibration[2]);
+    Vector3f field(_mag_x_accum * _scaling[0],
+                   _mag_y_accum * _scaling[1],
+                   _mag_z_accum * _scaling[2]);
     field /= _accum_count;
 
-	_accum_count = 0;
-	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     // rotate to the desired orientation
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         field.rotate(ROTATION_YAW_90);
     }
 
+    _convert_to_ut(field);
+
     publish_field(field, _compass_instance);
     _retry_time = 0;
+}
+
+void AP_Compass_HMC5843::_convert_to_ut(Vector3f& field) const
+{
+    /* Convert field from mG to uT.
+     * 1T = 10000G */
+
+    field /= 10;
 }

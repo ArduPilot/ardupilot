@@ -38,10 +38,10 @@
  */
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define COMPASS_MAX_INSTANCES 3
-#define COMPASS_MAX_BACKEND   3   
+#define COMPASS_MAX_BACKEND   3
 #else
 #define COMPASS_MAX_INSTANCES 1
-#define COMPASS_MAX_BACKEND   1   
+#define COMPASS_MAX_BACKEND   1
 #endif
 
 class Compass
@@ -61,7 +61,7 @@ public:
 
     /// Read the compass and update the mag_ variables.
     ///
-    bool read();    
+    bool read();
 
     /// use spare CPU cycles to accumulate values from the compass if
     /// possible (this method should also be implemented in the backends)
@@ -114,7 +114,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
+    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset_ut; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
@@ -269,16 +269,16 @@ private:
     enum Rotation _board_orientation;
 
     // primary instance
-    AP_Int8     _primary;                           
+    AP_Int8     _primary;
 
     // declination in radians
     AP_Float    _declination;
 
     // enable automatic declination code
-    AP_Int8     _auto_declination;                  
+    AP_Int8     _auto_declination;
 
     // first-time-around flag used by offset nulling
-    bool        _null_init_done;                           
+    bool        _null_init_done;
 
     // used by offset correction
     static const uint8_t _mag_history_size = 20;
@@ -295,6 +295,7 @@ private:
         bool        healthy;
         AP_Int8     orientation;
         AP_Vector3f offset;
+        AP_Vector3f offset_ut;
 
 #if COMPASS_MAX_INSTANCES > 1
         // device id detected at init.  

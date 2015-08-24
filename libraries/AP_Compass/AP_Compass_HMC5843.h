@@ -12,13 +12,18 @@
 class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 private:
-    float               calibration[3];
+    float               _scaling[3] = {0};
     bool                _initialised;
     bool                read_raw(void);
     uint8_t             _base_config;
     bool                re_initialise(void);
     bool                read_register(uint8_t address, uint8_t *value);
     bool                write_register(uint8_t address, uint8_t value);
+
+    bool                _calibrate(uint8_t calibration_gain, uint16_t expected_x, uint16_t expected_yz);
+    bool                _detect_version();
+    void                _convert_to_ut(Vector3f& field) const;
+
     uint32_t            _retry_time; // when unhealthy the millis() value to retry at
     AP_HAL::Semaphore*  _i2c_sem;
 
