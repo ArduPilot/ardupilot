@@ -132,6 +132,7 @@ void AP_Mission::reset()
     _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
+    _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
     init_jump_tracking();
 }
 
@@ -312,6 +313,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // if index is zero then the user wants to completely restart the mission
     if (index == 0 || _flags.state == MISSION_COMPLETE) {
         _prev_nav_cmd_index = AP_MISSION_CMD_INDEX_NONE;
+        _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
         // reset the jump tracking to zero
         init_jump_tracking();
         if (index == 0) {
@@ -372,6 +374,10 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         if (is_nav_cmd(cmd)) {
             // save previous nav command index
             _prev_nav_cmd_index = _nav_cmd.index;
+            // save separate previous nav command index if it contains lat,long,alt
+            if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+                _prev_nav_cmd_wp_index = _nav_cmd.index;
+            }
             // set current navigation command and start it
             _nav_cmd = cmd;
             _flags.nav_cmd_loaded = true;
@@ -1133,6 +1139,10 @@ bool AP_Mission::advance_current_nav_cmd()
         if (is_nav_cmd(cmd)) {
             // save previous nav command index
             _prev_nav_cmd_index = _nav_cmd.index;
+            // save separate previous nav command index if it contains lat,long,alt
+            if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+                _prev_nav_cmd_wp_index = _nav_cmd.index;
+            }
             // set current navigation command and start it
             _nav_cmd = cmd;
             _flags.nav_cmd_loaded = true;
