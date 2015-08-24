@@ -1,4 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#ifndef _PLANE_H_
+#define _PLANE_H_
 
 #define THISFIRMWARE "ArduPlane V3.4.0beta1"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_BETA
@@ -977,3 +979,5 @@ public:
 
 extern const AP_HAL::HAL& hal;
 extern Plane plane;
+
+#endif // _PLANE_H_
