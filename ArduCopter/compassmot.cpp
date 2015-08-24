@@ -124,7 +124,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     // store initial x,y,z compass values
     // initialise interference percentage
     for (uint8_t i=0; i<compass.get_count(); i++) {
-        compass_base[i] = compass.get_field(i);
+        compass_base[i] = compass.get_field_milligauss(i);
         interference_pct[i] = 0.0f;
     }
 
@@ -167,7 +167,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
         // if throttle is near zero, update base x,y,z values
         if (throttle_pct <= 0.0f) {
             for (uint8_t i=0; i<compass.get_count(); i++) {
-                compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
+                compass_base[i] = compass_base[i] * 0.99f + compass.get_field_milligauss(i) * 0.01f;
             }
 
             // causing printing to happen as soon as throttle is lifted
@@ -175,7 +175,7 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
 
             // calculate diff from compass base and scale with throttle
             for (uint8_t i=0; i<compass.get_count(); i++) {
-                motor_impact[i] = compass.get_field(i) - compass_base[i];
+                motor_impact[i] = compass.get_field_milligauss(i) - compass_base[i];
             }
 
             // throttle based compensation

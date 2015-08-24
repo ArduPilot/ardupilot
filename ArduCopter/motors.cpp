@@ -356,7 +356,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check for unreasonable compass offsets
-        Vector3f offsets = compass.get_offsets();
+        Vector3f offsets = compass.get_offsets_milligauss();
         if(offsets.length() > COMPASS_OFFSETS_MAX) {
             if (display_failure) {
                 gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Compass offsets too high"));
@@ -365,7 +365,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check for unreasonable mag field length
-        float mag_field = compass.get_field().length();
+        float mag_field = compass.get_field_milligauss().length();
         if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65f || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35f) {
             if (display_failure) {
                 gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check mag field"));
@@ -376,11 +376,11 @@ bool Copter::pre_arm_checks(bool display_failure)
 #if COMPASS_MAX_INSTANCES > 1
         // check all compasses point in roughly same direction
         if (compass.get_count() > 1) {
-            Vector3f prime_mag_vec = compass.get_field();
+            Vector3f prime_mag_vec = compass.get_field_milligauss();
             prime_mag_vec.normalize();
             for(uint8_t i=0; i<compass.get_count(); i++) {
                 // get next compass
-                Vector3f mag_vec = compass.get_field(i);
+                Vector3f mag_vec = compass.get_field_milligauss(i);
                 mag_vec.normalize();
                 Vector3f vec_diff = mag_vec - prime_mag_vec;
                 if (compass.use_for_yaw(i) && vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
