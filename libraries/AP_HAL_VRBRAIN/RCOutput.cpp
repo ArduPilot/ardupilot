@@ -163,7 +163,7 @@ void VRBRAINRCOutput::force_safety_off(void)
     }
 }
 
-void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
+void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= _servo_count) {
         return;
