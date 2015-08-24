@@ -69,3 +69,8 @@ void AP_Compass_HIL::read()
         }
     }
 }
+
+float AP_Compass_HIL::get_conversion_ratio(void)
+{
+    return 1.0f;
+}

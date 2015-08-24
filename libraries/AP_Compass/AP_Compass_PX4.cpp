@@ -159,4 +159,9 @@ void AP_Compass_PX4::accumulate(void)
     }
 }
 
+float AP_Compass_PX4::get_conversion_ratio(void)
+{
+    return 1.0f;
+}
+
 #endif // CONFIG_HAL_BOARD
