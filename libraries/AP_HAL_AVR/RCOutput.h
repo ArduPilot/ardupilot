@@ -20,7 +20,7 @@ public:
     void     disable_ch(uint8_t ch);
 
     /* Output, either single channel or bulk array of channels */
-    void     write(uint8_t ch, uint16_t period_ms);
+    void     write(uint8_t ch, uint16_t period_ms, int flags = 0);
 
     /* Read back current output state, as either single channel or
      * array of channels. */
@@ -46,7 +46,7 @@ public:
     void     disable_ch(uint8_t ch);
 
     /* Output, either single channel or bulk array of channels */
-    void     write(uint8_t ch, uint16_t period_us);
+    void     write(uint8_t ch, uint16_t period_us, int flags = 0);
 
     /* Read back current output state, as either single channel or
      * array of channels starting at 0. */

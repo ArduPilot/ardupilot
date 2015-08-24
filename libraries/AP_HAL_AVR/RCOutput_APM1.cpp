@@ -154,7 +154,7 @@ static inline uint16_t constrain_period(uint16_t p) {
 }
 
 /* Output, either single channel or bulk array of channels */
-void APM1RCOutput::write(uint8_t ch, uint16_t period_us) {
+void APM1RCOutput::write(uint8_t ch, uint16_t period_us, int) {
     /* constrain, then scale from 1us resolution (input units)
      * to 0.5us (timer units) */
     uint16_t pwm = constrain_period(period_us) << 1;
