@@ -243,6 +243,7 @@ public:
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
         _prev_nav_cmd_index(AP_MISSION_CMD_INDEX_NONE),
+        _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
     {
         // load parameter defaults
@@ -332,6 +333,11 @@ public:
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
     ///     we do not return the entire command to save on RAM
     uint16_t get_prev_nav_cmd_index() const { return _prev_nav_cmd_index; }
+
+    /// get_prev_nav_cmd_with_wp_index - returns the previous "navigation" commands index that contains a waypoint (i.e. position in the mission command list)
+    ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
+    ///     we do not return the entire command to save on RAM
+    uint16_t get_prev_nav_cmd_with_wp_index() const { return _prev_nav_cmd_wp_index; }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
@@ -454,6 +460,7 @@ private:
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
+    uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
 
     // jump related variables
     struct jump_tracking_struct {
