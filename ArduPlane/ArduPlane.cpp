@@ -511,7 +511,9 @@ void Plane::handle_auto_mode(void)
     default:
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
-        steer_state.hold_course_cd = -1;
+        if (nav_cmd_id != MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT) {
+            steer_state.hold_course_cd = -1;
+        }
         auto_state.land_complete = false;
         calc_nav_roll();
         calc_nav_pitch();
