@@ -223,6 +223,13 @@ float wrap_PI(float angle_in_radians)
 }
 
 /*
+  return true if lat and lng match. Ignores altitude and options
+ */
+bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
+    return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
+}
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)

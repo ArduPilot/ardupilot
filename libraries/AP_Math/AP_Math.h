@@ -151,6 +151,11 @@ float wrap_180_cd_float(float angle);
 float wrap_PI(float angle_in_radians);
 
 /*
+ * check if lat and lng match. Ignore altitude and options
+ */
+bool locations_are_same(const struct Location &loc1, const struct Location &loc2);
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
