@@ -101,7 +101,7 @@ void LinuxRCOutput_AioPRU::disable_ch(uint8_t ch)
    }
 }
 
-void LinuxRCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
+void LinuxRCOutput_AioPRU::write(uint8_t ch, uint16_t period_us, int)
 {
    if(ch < PWM_CHAN_COUNT) {
       pwm->channel[ch].time_high = TICK_PER_US * period_us;

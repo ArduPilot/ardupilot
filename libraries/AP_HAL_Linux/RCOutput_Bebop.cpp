@@ -312,7 +312,7 @@ void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
     _stop_prop();
 }
 
-void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
+void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= BEBOP_BLDC_MOTORS_NUM)
         return;

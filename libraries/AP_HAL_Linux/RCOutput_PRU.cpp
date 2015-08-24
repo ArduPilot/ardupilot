@@ -70,7 +70,7 @@ void LinuxRCOutput_PRU::disable_ch(uint8_t ch)
     sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
 }
 
-void LinuxRCOutput_PRU::write(uint8_t ch, uint16_t period_us)
+void LinuxRCOutput_PRU::write(uint8_t ch, uint16_t period_us, int)
 {
     sharedMem_cmd->periodhi[chan_pru_map[ch]][1] = TICK_PER_US*period_us;
 }

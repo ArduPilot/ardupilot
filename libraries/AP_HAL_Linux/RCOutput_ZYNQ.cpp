@@ -66,7 +66,7 @@ void LinuxRCOutput_ZYNQ::disable_ch(uint8_t ch)
     // sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
 }
 
-void LinuxRCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
+void LinuxRCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us, int)
 {
     sharedMem_cmd->periodhi[ch].hi = TICK_PER_US*period_us;
 }
