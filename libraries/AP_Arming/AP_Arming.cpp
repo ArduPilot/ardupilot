@@ -34,13 +34,6 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
-    // @Param: RUDDER
-    // @DisplayName: Rudder Arming
-    // @Description: Control arm/disarm by rudder input. When enabled arming is done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero
-    // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
-    // @User: Advanced
-    AP_GROUPINFO("RUDDER",       3,     AP_Arming,  rudder_arming_value,     ARMING_RUDDER_ARMONLY),
-    
     AP_GROUPEND
 };
 
@@ -370,7 +363,6 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= compass_checks(report);
     ret &= gps_checks(report);
     ret &= battery_checks(report);
-    ret &= airspeed_checks(report);
     ret &= logging_checks(report);
     ret &= manual_transmitter_checks(report);
 
