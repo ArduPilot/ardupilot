@@ -252,7 +252,6 @@ bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mo
  */
 bool PX4GPIO::usb_connected(void)
 {
-    struct stat st;
     /*
       we use a combination of voltage on the USB connector and the
       open of the /dev/ttyACM0 character device. This copes with
