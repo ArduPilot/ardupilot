@@ -190,7 +190,7 @@ FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 [ -z "$VEHICLE" ] && {
     CDIR="$PWD"
     rpath=$(which realpath)
-    [ -n "rpath" ] && {
+    [ -n "$rpath" ] && {
         CDIR=$(realpath $CDIR)
     }
     VEHICLE=$(basename $CDIR)
