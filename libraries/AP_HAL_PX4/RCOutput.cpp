@@ -217,7 +217,7 @@ void PX4RCOutput::force_safety_off(void)
     }
 }
 
-void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
+void PX4RCOutput::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= _servo_count + _alt_servo_count) {
         return;
