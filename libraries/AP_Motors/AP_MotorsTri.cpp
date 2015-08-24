@@ -117,10 +117,11 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
-    hal.rcout->write(AP_MOTORS_MOT_1, _throttle_radio_min);
-    hal.rcout->write(AP_MOTORS_MOT_2, _throttle_radio_min);
-    hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min);
-    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+    hal.rcout->write(AP_MOTORS_MOT_1, _throttle_radio_min, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_2, _throttle_radio_min, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->flush();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -172,12 +173,14 @@ void AP_MotorsTri::output_armed_not_stabilizing()
     }
 
     // send output to each motor
-    hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2]);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1], AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2], AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4], AP_HAL::RCOutput::FLAGS_ASYNC);
 
     // send centering signal to yaw servo
-    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim, AP_HAL::RCOutput::FLAGS_ASYNC);
+
+    hal.rcout->flush();
 }
 
 // sends commands to the motors
@@ -285,12 +288,14 @@ void AP_MotorsTri::output_armed_stabilizing()
     }
 
     // send output to each motor
-    hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1]);
-    hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2]);
-    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1], AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2], AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4], AP_HAL::RCOutput::FLAGS_ASYNC);
 
     // send out to yaw command to tail servo
-    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, yaw_radio_output);
+    hal.rcout->write(AP_MOTORS_CH_TRI_YAW, yaw_radio_output, AP_HAL::RCOutput::FLAGS_ASYNC);
+
+    hal.rcout->flush();
 }
 
 // output_disarmed - sends commands to the motors

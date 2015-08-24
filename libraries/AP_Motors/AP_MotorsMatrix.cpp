@@ -97,9 +97,10 @@ void AP_MotorsMatrix::output_min()
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, _throttle_radio_min);
+            hal.rcout->write(i, _throttle_radio_min, AP_HAL::RCOutput::FLAGS_ASYNC);
         }
     }
+    hal.rcout->flush();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -161,9 +162,10 @@ void AP_MotorsMatrix::output_armed_not_stabilizing()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, motor_out[i]);
+            hal.rcout->write(i, motor_out[i], AP_HAL::RCOutput::FLAGS_ASYNC);
         }
     }
+    hal.rcout->flush();
 }
 
 // output_armed - sends commands to the motors
@@ -357,9 +359,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // send output to each motor
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
         if( motor_enabled[i] ) {
-            hal.rcout->write(i, motor_out[i]);
+            hal.rcout->write(i, motor_out[i], AP_HAL::RCOutput::FLAGS_ASYNC);
         }
     }
+    hal.rcout->flush();
 }
 
 // output_disarmed - sends commands to the motors
@@ -383,9 +386,10 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i] && _test_order[i] == motor_seq) {
             // turn on this motor
-            hal.rcout->write(i, pwm);
+            hal.rcout->write(i, pwm, AP_HAL::RCOutput::FLAGS_ASYNC);
         }
     }
+    hal.rcout->flush();
 }
 
 // add_motor

@@ -662,10 +662,11 @@ void AP_MotorsHeli::move_swash(int16_t roll_out, int16_t pitch_out, int16_t coll
     _servo_4.calc_pwm();
 
     // actually move the servos
-    hal.rcout->write(AP_MOTORS_MOT_1, _servo_1.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_2, _servo_2.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_3, _servo_3.radio_out);
-    hal.rcout->write(AP_MOTORS_MOT_4, _servo_4.radio_out);
+    hal.rcout->write(AP_MOTORS_MOT_1, _servo_1.radio_out, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_2, _servo_2.radio_out, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_3, _servo_3.radio_out, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->write(AP_MOTORS_MOT_4, _servo_4.radio_out, AP_HAL::RCOutput::FLAGS_ASYNC);
+    hal.rcout->flush();
 
     // output gain to exernal gyro
     if (_tail_type == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO) {

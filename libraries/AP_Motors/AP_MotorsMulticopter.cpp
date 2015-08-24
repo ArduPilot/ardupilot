@@ -380,8 +380,9 @@ void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
         // send the pilot's input directly to each enabled motor
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                hal.rcout->write(i, pwm);
+                hal.rcout->write(i, pwm, AP_HAL::RCOutput::FLAGS_ASYNC);
             }
         }
+        hal.rcout->flush();
     }
 }
