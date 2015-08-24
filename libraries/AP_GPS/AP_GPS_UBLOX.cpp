@@ -49,14 +49,14 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _payload_counter(0),
     _fix_count(0),
     _class(0),
-    noReceivedHdop(true),
     _new_position(0),
     _new_speed(0),
     need_rate_update(false),
     _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
     rate_update_step(0),
-    _last_5hz_time(0)
+    _last_5hz_time(0),
+    noReceivedHdop(true)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
