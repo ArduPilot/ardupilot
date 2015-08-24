@@ -207,7 +207,6 @@ void Plane::crash_detection_update(void)
     if (!crashed) {
         // reset timer
         crash_state.debounce_timer_ms = 0;
-        crash_state.is_crashed = false;
 
     } else if (crash_state.debounce_timer_ms == 0) {
         // start timer
