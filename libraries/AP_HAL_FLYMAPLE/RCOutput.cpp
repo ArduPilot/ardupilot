@@ -87,7 +87,7 @@ void FLYMAPLERCOutput::disable_ch(uint8_t ch)
     pinMode(pin, INPUT);
 }
 
-void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us)
+void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
 	return;
