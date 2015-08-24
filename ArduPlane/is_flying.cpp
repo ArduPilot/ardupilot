@@ -23,11 +23,7 @@ void Plane::update_is_flying_5Hz(void)
     // airspeed at least 75% of stall speed?
     bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= (aparm.airspeed_min*0.75f));
 
-    if (ins.is_still()) {
-        // if motionless, we can't possibly be flying. This is a very strict test
-        is_flying_bool = false;
-    }
-    else if(arming.is_armed()) {
+    if(arming.is_armed()) {
         // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
 
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
