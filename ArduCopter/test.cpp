@@ -117,8 +117,8 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
             counter++;
             if (counter>20) {
                 if (compass.healthy()) {
-                    const Vector3f &mag_ofs = compass.get_offsets();
-                    const Vector3f &mag = compass.get_field();
+                    const Vector3f &mag_ofs = compass.get_offsets_milligauss();
+                    const Vector3f &mag = compass.get_field_milligauss();
                     cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
                                         (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                         (double)mag.x,

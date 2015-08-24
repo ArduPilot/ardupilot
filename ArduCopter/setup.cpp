@@ -450,7 +450,7 @@ void Copter::report_compass()
     // mag offsets
     Vector3f offsets;
     for (uint8_t i=0; i<compass.get_count(); i++) {
-        offsets = compass.get_offsets(i);
+        offsets = compass.get_offsets_milligauss(i);
         // mag offsets
         cliSerial->printf_P(PSTR("Mag%d off: %4.4f, %4.4f, %4.4f\n"),
                         (int)i,
