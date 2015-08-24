@@ -44,7 +44,7 @@ void Copter::failsafe_check()
         failsafe_last_timestamp = tnow;
         if (in_failsafe) {
             in_failsafe = false;
-            Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_RESOLVED);
+            //Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_RESOLVED);
         }
         return;
     }
@@ -59,7 +59,7 @@ void Copter::failsafe_check()
             motors.output_min();
         }
         // log an error
-        Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
+        //Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
     }
 
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
