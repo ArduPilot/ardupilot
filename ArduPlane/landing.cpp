@@ -85,7 +85,7 @@ bool Plane::verify_land()
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
     if (auto_state.post_landing_stats && !arming.is_armed()) {
         auto_state.post_landing_stats = false;
-        gcs_send_text_fmt(PSTR("Distance from LAND point=%.2fm"), get_distance(current_loc, next_WP_loc));
+        gcs_send_text_fmt(PSTR("Distance from LAND point=%.2fm"), (double)get_distance(current_loc, next_WP_loc));
     }
 
     // check if we should auto-disarm after a confirmed landing
