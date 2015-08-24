@@ -517,6 +517,9 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
     if (i < COMPASS_MAX_INSTANCES) {
         _state[i].offset.set(offsets);
         save_offsets(i);
+
+        /* Ugly hack to update offsets in milligauss that are going to be used across all the codebase in the future */
+        _state[i].offset_milligauss = offsets * _backends[i]->get_conversion_ratio();
     }
 }
 
@@ -624,7 +627,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    const Vector3f &field = get_field();
+    const Vector3f &field = get_field_milligauss();
 
     float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
@@ -661,6 +664,11 @@ bool Compass::configured(uint8_t i)
 
     // exit immediately if all offsets are zero
     if (is_zero(get_offsets(i).length())) {
+        return false;
+    }
+
+    // exit immediately if all offsets (mG) are zero
+    if (is_zero(get_offsets_milligauss(i).length())) {
         return false;
     }
 
