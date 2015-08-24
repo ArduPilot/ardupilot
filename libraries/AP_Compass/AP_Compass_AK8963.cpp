@@ -214,6 +214,12 @@ void AP_Compass_AK8963::read()
     publish_filtered_field(field, _compass_instance);
 }
 
+float AP_Compass_AK8963::get_conversion_ratio(void)
+{
+    /* Convert from microTesla to milliGauss */
+    return 10.0f;
+}
+
 Vector3f AP_Compass_AK8963::_get_filtered_field() const
 {
     Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);

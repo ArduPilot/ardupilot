@@ -43,6 +43,8 @@ public:
     // backends
     virtual void accumulate(void) {};
 
+    virtual float get_conversion_ratio(void) = 0;
+
 protected:
 
     /*

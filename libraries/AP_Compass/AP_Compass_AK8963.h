@@ -46,6 +46,7 @@ public:
     bool        init(void);
     void        read(void);
     void        accumulate(void);
+    float       get_conversion_ratio(void) override;
 
 private:
     static AP_Compass_Backend *_detect(Compass &compass, AP_AK8963_SerialBus *bus);

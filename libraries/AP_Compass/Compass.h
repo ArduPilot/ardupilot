@@ -113,6 +113,8 @@ public:
     /// Return the current field as a Vector3f
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
+    const Vector3f &get_field_milligauss(uint8_t i) const { return _state[i].field_milligauss; }
+    const Vector3f &get_field_milligauss(void) const { return get_field_milligauss(get_primary()); }
 
     // raw/unfiltered measurement interface
     uint32_t raw_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
@@ -171,6 +173,8 @@ public:
     ///
     const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
+    const Vector3f &get_offsets_milligauss(uint8_t i) const { return _state[i].offset_milligauss; }
+    const Vector3f &get_offsets_milligauss(void) const { return get_offsets_milligauss(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///
@@ -360,6 +364,7 @@ private:
         AP_Vector3f offset;
         AP_Vector3f diagonals;
         AP_Vector3f offdiagonals;
+        Vector3f    offset_milligauss;
 
 #if COMPASS_MAX_INSTANCES > 1
         // device id detected at init.  
@@ -380,6 +385,7 @@ private:
 
         // corrected magnetic field strength
         Vector3f    field;
+        Vector3f    field_milligauss;
 
         // when we last got data
         uint32_t    last_update_ms;

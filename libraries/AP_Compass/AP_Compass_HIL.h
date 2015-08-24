@@ -16,6 +16,7 @@ public:
     AP_Compass_HIL(Compass &compass);
     void read(void);
     bool init(void);
+    float get_conversion_ratio(void) override;
 
     // detect the sensor
     static AP_Compass_Backend *detect(Compass &compass);

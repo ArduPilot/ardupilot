@@ -269,7 +269,7 @@ AP_Compass_HMC5843::init()
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
-    float gain_multiple = 1.0;
+    _gain_multiple = 1.0;
 
     _bus_sem = _bus->get_semaphore();
     hal.scheduler->suspend_timer_procs();
@@ -298,10 +298,10 @@ AP_Compass_HMC5843::init()
          */
         expected_x = 766;
         expected_yz  = 713;
-        gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
+        _gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
     }
 
-    if (!_calibrate(calibration_gain, expected_x, expected_yz, gain_multiple)) {
+    if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
         hal.console->printf_P(PSTR("HMC5843: Could not calibrate sensor\n"));
         goto errout;
     }
@@ -342,8 +342,7 @@ fail_sem:
 
 bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         uint16_t expected_x,
-        uint16_t expected_yz,
-        float gain_multiple)
+        uint16_t expected_yz)
 {
     int numAttempts = 0, good_count = 0;
     bool success = false;
@@ -413,7 +412,7 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
 
     if (good_count >= 5) {
         /*
-          The use of gain_multiple below is incorrect, as the gain
+          The use of _gain_multiple below is incorrect, as the gain
           difference between 2.5Ga mode and 1Ga mode is already taken
           into account by the expected_x and expected_yz values.  We
           are not going to fix it however as it would mean all
@@ -423,9 +422,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
           doesn't have any impact other than the learned compass
           offsets
          */
-        _scaling[0] = _scaling[0] * gain_multiple / good_count;
-        _scaling[1] = _scaling[1] * gain_multiple / good_count;
-        _scaling[2] = _scaling[2] * gain_multiple / good_count;
+        _scaling[0] = _scaling[0] * _gain_multiple / good_count;
+        _scaling[1] = _scaling[1] * _gain_multiple / good_count;
+        _scaling[2] = _scaling[2] * _gain_multiple / good_count;
         success = true;
     } else {
         /* best guess */
@@ -480,6 +479,14 @@ void AP_Compass_HMC5843::read()
 
     publish_filtered_field(field, _compass_instance);
     _retry_time = 0;
+}
+
+float AP_Compass_HMC5843::get_conversion_ratio(void)
+{
+    /* This value converts from hmc-units to milligauss. It looks strange for a reason.
+     * It's meant to cancel the unneccassary division in the read() method.
+     */
+    return 1.0f / _gain_multiple;
 }
 
 /* I2C implementation of the HMC5843 */
