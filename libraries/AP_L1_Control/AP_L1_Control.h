@@ -50,6 +50,7 @@ public:
 	void update_heading_hold(int32_t navigation_heading_cd);
 	void update_level_flight(void);
 	bool reached_loiter_target(void);
+	float get_wind_delta(Vector3f wind_raw);
 
     // set the default NAVL1_PERIOD
     void set_default_period(float period) {
@@ -92,6 +93,12 @@ private:
 	// L1 tracking loop damping ratio
 	AP_Float _L1_damping;
 
+    // L1 control wind angle threshold
+    AP_Int16 _wind_angle_thresh;
+
+    // direction of counter-intuitive into the wind turn. Positive is clockwise, zero means normal direction behavior
+    int32_t _direction_sign = 0;
+
     // previous value of cross-track velocity
     float _last_Nu;
 
@@ -100,6 +107,9 @@ private:
 
     // prevent indecision in waypoint tracking
     void _prevent_indecision(float &Nu);
+
+    void prefer_turn_into_wind(float &Nu2);
+
 };
 
 
