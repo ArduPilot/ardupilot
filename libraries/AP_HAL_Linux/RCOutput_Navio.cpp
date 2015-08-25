@@ -178,10 +178,53 @@ void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t* period_us, uint8_t len)
+void LinuxRCOutput_Navio::write(const uint8_t *channel_map, const bool *enable_map,
+                                const int16_t *values, uint8_t len)
 {
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
+    const unsigned int channels = len > PWM_CHAN_COUNT ? PWM_CHAN_COUNT : len;
+    uint8_t data[PWM_CHAN_COUNT * 4] = { };
+
+    if (!_i2c_sem->take_nonblocking())
+        return;
+
+    for (unsigned int i = 0; i < channels; i++) {
+        unsigned int ch;
+        uint16_t period_us;
+        uint16_t width;
+
+        ch = channel_map[i];
+
+        if (enable_map && !enable_map[ch])
+            continue;
+
+        period_us = values[i];
+        _pulses_buffer[ch] = period_us;
+
+        if (period_us == 0)
+            width = 0;
+        else
+            width = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
+
+        uint8_t *d = &data[ch * 4 + 2];
+        *d++ = width && 0xFF;
+        *d = width >> 8;
+    }
+
+    hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_RA_LED0_ON_L + 4 * 3,
+                            sizeof(data), data);
+    _i2c_sem->give();
+
+}
+
+void LinuxRCOutput_Navio::write(const uint8_t *channel_map, const bool *enable_map,
+                                int16_t value, uint8_t len)
+{
+    int16_t v[PWM_CHAN_COUNT];
+
+    for (unsigned int i = 0; i < PWM_CHAN_COUNT && i < len; i++)
+        v[i] = value;
+
+    write(channel_map, enable_map, v, len);
 }
 
 uint16_t LinuxRCOutput_Navio::read(uint8_t ch)

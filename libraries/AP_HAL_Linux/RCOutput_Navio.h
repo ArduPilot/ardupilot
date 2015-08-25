@@ -15,7 +15,11 @@ class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
-    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
+    void     write(const uint8_t *channel_map, const bool *enable_map,
+                   const int16_t *values, uint8_t len) override;
+    void     write(const uint8_t *channel_map, const bool *enable_map,
+                   int16_t value, uint8_t len) override;
+
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
 

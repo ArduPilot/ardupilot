@@ -86,8 +86,6 @@ void AP_MotorsMatrix::enable()
 // output_min - sends minimum values out to the motors
 void AP_MotorsMatrix::output_min()
 {
-    int8_t i;
-
     // set limits flags
     limit.roll_pitch = true;
     limit.yaw = true;
@@ -95,11 +93,8 @@ void AP_MotorsMatrix::output_min()
     limit.throttle_upper = false;
 
     // fill the motor_out[] array for HIL use and send minimum value to each motor
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), _throttle_radio_min);
-        }
-    }
+    hal.rcout->write(&_motor_to_channel_map[0], motor_enabled, _throttle_radio_min,
+                     AP_MOTORS_MAX_NUM_MOTORS);
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -159,11 +154,8 @@ void AP_MotorsMatrix::output_armed_not_stabilizing()
     }
 
     // send output to each motor
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
-        }
-    }
+    hal.rcout->write(&_motor_to_channel_map[0], motor_enabled, motor_out,
+                     AP_MOTORS_MAX_NUM_MOTORS);
 }
 
 // output_armed - sends commands to the motors
@@ -355,11 +347,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // send output to each motor
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[i]), motor_out[i]);
-        }
-    }
+    hal.rcout->write(&_motor_to_channel_map[0], motor_enabled, motor_out,
+                     AP_MOTORS_MAX_NUM_MOTORS);
 }
 
 // output_disarmed - sends commands to the motors
