@@ -380,7 +380,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     if ((unsigned)packet.start_index > mission.num_commands() ||
         (unsigned)packet.end_index > mission.num_commands() ||
         packet.end_index < packet.start_index) {
-        send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("flight plan update rejected"));
         return;
     }
 
@@ -501,7 +501,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(SEVERITY_LOW, sysid);
+        send_text(MAV_SEVERITY_WARNING, sysid);
     }
 #endif
 
@@ -601,7 +601,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 
 
 void
-GCS_MAVLINK::send_text(uint8_t severity, const char *str)
+GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
 {
     if (severity < MAV_SEVERITY_WARNING && 
         comm_get_txspace(chan) >= 
@@ -618,7 +618,7 @@ GCS_MAVLINK::send_text(uint8_t severity, const char *str)
 }
 
 void
-GCS_MAVLINK::send_text_P(uint8_t severity, const prog_char_t *str)
+GCS_MAVLINK::send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -754,7 +754,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             msg->compid,
             MAV_MISSION_ACCEPTED);
         
-        send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("flight plan received"));
         waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
@@ -1178,7 +1178,7 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
                 char msg2[50];
                 strncpy_P(msg2, msg, sizeof(msg2));
                 mavlink_msg_statustext_send(chan,
-                                            SEVERITY_HIGH,
+                                            MAV_SEVERITY_CRITICAL,
                                             msg2);
             }
         }
