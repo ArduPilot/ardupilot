@@ -94,7 +94,7 @@ static LinuxRCOutput_AioPRU rcoutDriver;
   use the PCA9685 based RCOutput driver on Navio
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxRCOutput_Navio rcoutDriver;
+static LinuxRCOutput_Navio rcoutDriver(RPI_GPIO_27);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static LinuxRCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
