@@ -113,7 +113,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
             if (disarm_motors()) {
-                gcs_send_text_P(SEVERITY_LOW,PSTR("Auto-Disarmed"));
+                gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Auto-Disarmed"));
             }
         }
     }
@@ -228,12 +228,12 @@ bool Plane::jump_to_landing_sequence(void)
                 mission.resume();
             }
 
-            gcs_send_text_P(SEVERITY_LOW, PSTR("Landing sequence begun."));
+            gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Landing sequence begun."));
             return true;
         }            
     }
 
-    gcs_send_text_P(SEVERITY_HIGH, PSTR("Unable to start landing sequence."));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Unable to start landing sequence."));
     return false;
 }
 

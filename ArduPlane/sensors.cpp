@@ -4,10 +4,10 @@
 
 void Plane::init_barometer(void)
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));    
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));    
     barometer.calibrate();
 
-    gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
 }
 
 void Plane::init_rangefinder(void)
@@ -65,7 +65,7 @@ void Plane::zero_airspeed(bool in_startup)
     read_airspeed();
     // update barometric calibration with new airspeed supplied temperature
     barometer.update_calibration();
-    gcs_send_text_P(SEVERITY_LOW,PSTR("zero airspeed calibrated"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("zero airspeed calibrated"));
 }
 
 // read_battery - reads battery voltage and current and invokes failsafe
