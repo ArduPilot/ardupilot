@@ -6,7 +6,8 @@
 
 class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     public:
-    LinuxRCOutput_Navio(uint8_t oe_pin_number);
+    LinuxRCOutput_Navio(uint8_t channel_offset,
+                        uint8_t oe_pin_number);
     ~LinuxRCOutput_Navio();
     void     init(void* machtnichts);
     void     reset_all_channels();
@@ -27,6 +28,8 @@ private:
     uint16_t _frequency;
 
     uint16_t *_pulses_buffer;
+
+    uint8_t _channel_offset;
     uint8_t _oe_pin_number;
 };
 
