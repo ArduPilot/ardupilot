@@ -6,7 +6,7 @@
 
 class Linux::LinuxRCOutput_Navio : public AP_HAL::RCOutput {
     public:
-    LinuxRCOutput_Navio();
+    LinuxRCOutput_Navio(uint8_t oe_pin_number);
     ~LinuxRCOutput_Navio();
     void     init(void* machtnichts);
     void     reset_all_channels();
@@ -23,10 +23,11 @@ private:
     void reset();
 
     AP_HAL::Semaphore *_i2c_sem;
-    AP_HAL::DigitalSource *enable_pin;
+    AP_HAL::DigitalSource *_enable_pin;
     uint16_t _frequency;
 
     uint16_t *_pulses_buffer;
+    uint8_t _oe_pin_number;
 };
 
 #endif // __AP_HAL_LINUX_RCOUTPUT_NAVIO_H__

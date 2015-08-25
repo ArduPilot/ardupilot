@@ -47,15 +47,15 @@
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 13
-#define PCA9685_OUTPUT_ENABLE RPI_GPIO_27
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-LinuxRCOutput_Navio::LinuxRCOutput_Navio():
+LinuxRCOutput_Navio::LinuxRCOutput_Navio(uint8_t oe_pin_number) :
     _i2c_sem(NULL),
-    enable_pin(NULL),
+    _enable_pin(NULL),
     _frequency(50),
-    _pulses_buffer(new uint16_t[PWM_CHAN_COUNT])
+    _pulses_buffer(new uint16_t[PWM_CHAN_COUNT]),
+    _oe_pin_number(oe_pin_number)
 {
 }
 
@@ -79,9 +79,9 @@ void LinuxRCOutput_Navio::init(void* machtnicht)
     set_freq(0, 50);
 
     /* Enable PCA9685 PWM */
-    enable_pin = hal.gpio->channel(PCA9685_OUTPUT_ENABLE);
-    enable_pin->mode(HAL_GPIO_OUTPUT);
-    enable_pin->write(0);
+    _enable_pin = hal.gpio->channel(_oe_pin_number);
+    _enable_pin->mode(HAL_GPIO_OUTPUT);
+    _enable_pin->write(0);
 }
 
 void LinuxRCOutput_Navio::reset_all_channels()
