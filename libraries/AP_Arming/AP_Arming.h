@@ -44,7 +44,7 @@ public:
     };
 
     // for the hacky function pointer to gcs_send_text_p
-    FUNCTOR_TYPEDEF(gcs_send_t_p, void, gcs_severity, const prog_char_t *);
+    FUNCTOR_TYPEDEF(gcs_send_t_p, void, MAV_SEVERITY, const prog_char_t *);
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const enum HomeState &home_set, gcs_send_t_p);
