@@ -150,7 +150,7 @@ private:
         AP_Float ground_pressure;
     } sensors[BARO_MAX_INSTANCES];
 
-    AP_Int8                             _alt_offset;
+    AP_Float                            _alt_offset;
     float                               _last_altitude_EAS2TAS;
     float                               _EAS2TAS;
     float                               _external_temperature;

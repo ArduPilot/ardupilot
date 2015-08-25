@@ -45,13 +45,15 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[0].ground_temperature, 0),
 
+    // index 4 reserved for old AP_Int8 version in legacy FRAM
+    //AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
+
     // @Param: ALT_OFFSET
     // @DisplayName: altitude offset
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
     // @Units: meters
-    // @Range: -128 127
-    // @Increment: 1
-    AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
+    // @Increment: 0.1
+    AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
     AP_GROUPEND
 };
@@ -331,9 +333,12 @@ void AP_Baro::update(void)
             if (is_zero(sensors[i].ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            sensors[i].altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            float altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
             // sanity check altitude
-            sensors[i].alt_ok = !(isnan(sensors[i].altitude) || isinf(sensors[i].altitude));
+            sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
+            if (sensors[i].alt_ok) {
+                sensors[i].altitude = altitude + _alt_offset;
+            }
         }
     }
 
