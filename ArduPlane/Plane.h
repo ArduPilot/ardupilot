@@ -653,7 +653,7 @@ private:
 
     // Arming/Disarming mangement class
     AP_Arming_Plane arming {ahrs, barometer, compass, home_is_set, 
-            FUNCTOR_BIND_MEMBER(&Plane::gcs_send_text_P, void, gcs_severity, const prog_char_t *)};
+            FUNCTOR_BIND_MEMBER(&Plane::gcs_send_text_P, void, MAV_SEVERITY, const prog_char_t *)};
 
     AP_Param param_loader {var_info};
 
@@ -695,7 +695,7 @@ private:
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text_P(gcs_severity severity, const prog_char_t *str);
+    void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
     void do_erase_logs(void);

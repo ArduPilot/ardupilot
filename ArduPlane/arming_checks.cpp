@@ -14,21 +14,21 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
 
     if (plane.g.roll_limit_cd < 300) {
         if (report) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: LIM_ROLL_CD too small"));        
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: LIM_ROLL_CD too small"));        
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_max_cd < 300) {
         if (report) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: LIM_PITCH_MAX too small"));        
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: LIM_PITCH_MAX too small"));        
         }
         ret = false;        
     }
 
     if (plane.aparm.pitch_limit_min_cd > -300) {
         if (report) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: LIM_PITCH_MIN too large"));        
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: LIM_PITCH_MIN too large"));        
         }
         ret = false;        
     }
@@ -38,7 +38,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         plane.g.throttle_fs_value < 
         plane.channel_throttle->radio_max) {
         if (report) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: invalid THR_FS_VALUE for rev throttle"));        
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: invalid THR_FS_VALUE for rev throttle"));        
         }
         ret = false;
     }

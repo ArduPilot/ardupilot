@@ -7,7 +7,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
     failsafe.ch3_timer_ms = millis();
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event on, "));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Short event on, "));
     switch(control_mode)
     {
     case MANUAL:
@@ -52,7 +52,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
 void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Long event on, "));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Long event on, "));
     //  If the GCS is locked up we allow control to revert to RC
     hal.rcin->clear_overrides();
     failsafe.state = fstype;
@@ -89,7 +89,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         break;
     }
     if (fstype == FAILSAFE_GCS) {
-        gcs_send_text_P(SEVERITY_HIGH, PSTR("No GCS heartbeat."));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("No GCS heartbeat."));
     }
     gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
 }
@@ -97,7 +97,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 void Plane::failsafe_short_off_event()
 {
     // We're back in radio contact
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Failsafe - Short event off"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Short event off"));
     failsafe.state = FAILSAFE_NONE;
 
     // re-read the switch so we can return to our preferred mode
