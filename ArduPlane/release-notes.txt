@@ -50,6 +50,8 @@ Other key changes include:
   - switched to delta-velocity and delta-angles in DCM
   - improved detection of which accel to use in EKF
   - improved auto-detections of flow control on pixhawk UARTs
+  - Failsafe actions are not executed if already on final approach or land.
+  - Option to trigger GCS failsafe only in AUTO mode.
 
 Please test out the beta and report back on how it goes! There has
 been a lot of testing of this release already by core developers so
