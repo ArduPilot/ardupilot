@@ -50,11 +50,13 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-LinuxRCOutput_Navio::LinuxRCOutput_Navio(uint8_t oe_pin_number) :
+LinuxRCOutput_Navio::LinuxRCOutput_Navio(uint8_t channel_offset,
+                                         uint8_t oe_pin_number) :
     _i2c_sem(NULL),
     _enable_pin(NULL),
     _frequency(50),
     _pulses_buffer(new uint16_t[PWM_CHAN_COUNT]),
+    _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
 {
 }
@@ -169,7 +171,7 @@ void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
 
     uint8_t data[2] = {length & 0xFF, length >> 8};
     uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS,
-                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + 3),
+                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + _channel_offset),
                                              2,
                                              data);
 
