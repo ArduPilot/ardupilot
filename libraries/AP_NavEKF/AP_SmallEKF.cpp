@@ -65,8 +65,9 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
         state.quat[0] = 1.0f;
 
         // Wait for gimbal to stabilise to body fixed position for a few seconds before starting small EKF
+        // Also wait for navigation EKF to be healthy beasue we are using the velocity output data
         // This prevents jerky gimbal motion from degrading the EKF initial state estimates
-        if (imuSampleTime_ms - StartTime_ms < 5000) {
+        if (imuSampleTime_ms - StartTime_ms < 5000 || !_main_ekf.healthy()) {
             return;
         }
 
