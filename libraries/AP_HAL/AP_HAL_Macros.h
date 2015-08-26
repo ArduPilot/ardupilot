@@ -19,4 +19,11 @@
 
 #define NORETURN __attribute__ ((noreturn))
 
+#define assert_not_reached()                                                \
+    do {                                                                    \
+        hal.console->printf("assert_not_reached() failed: %s:%d (%s)\n",    \
+                            __FILE__, __LINE__, __PRETTY_FUNCTION__);       \
+    } while (0)
+
+
 #endif // __AP_HAL_MACROS_H__
