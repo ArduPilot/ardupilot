@@ -1165,7 +1165,7 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
-    // @Group: BATT_
+    // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
 
