@@ -70,6 +70,8 @@ static LinuxGPIO_BBB gpioDriver;
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 static LinuxGPIO_RPI gpioDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+static LinuxGPIO_Sysfs gpioDriver;
 #else
 static Empty::EmptyGPIO gpioDriver;
 #endif
