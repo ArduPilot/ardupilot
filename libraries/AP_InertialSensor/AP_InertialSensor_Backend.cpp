@@ -73,6 +73,12 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel)
 {
+#if INS_VIBRATION_CHECK
+    if (_imu._accel_sample_rates[instance] > 0) {
+        float dt = 1.0f / _imu._accel_sample_rates[instance];
+        _imu.calc_vibration_and_clipping(instance, accel, dt);
+    }
+#endif
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
