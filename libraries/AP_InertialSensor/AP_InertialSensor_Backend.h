@@ -88,6 +88,12 @@ protected:
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel);
 
+    // this should be called every time a new accel raw sample is available -
+    // be it published or not
+    // the sample is raw in the sense that it's not filtered yet, but it must
+    // be rotated and corrected (_rotate_and_correct_accel)
+    void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel);
+
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 

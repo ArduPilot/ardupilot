@@ -741,6 +741,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
     accel_data *= _accel_scale;
     _rotate_and_correct_accel(_accel_instance, accel_data);
+    _notify_new_accel_raw_sample(_accel_instance, accel_data);
     _accel_filtered = _accel_filter.apply(accel_data);
     _accel_sample_available = true;
 }

@@ -1092,6 +1092,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
         accel = Vector3f(accel_x, accel_y, accel_z);
         accel *= MPU9150_ACCEL_SCALE_2G;
         _rotate_and_correct_accel(_accel_instance, accel);
+        _notify_new_accel_raw_sample(_accel_instance, accel);
         _accel_filtered = _accel_filter.apply(accel);
 
         gyro = Vector3f(gyro_x, gyro_y, gyro_z);

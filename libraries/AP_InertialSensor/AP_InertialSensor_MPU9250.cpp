@@ -391,6 +391,7 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     accel *= MPU9250_ACCEL_SCALE_1G;
     accel.rotate(_default_rotation);
     _rotate_and_correct_accel(_accel_instance, accel);
+    _notify_new_accel_raw_sample(_accel_instance, accel);
 
     gyro = Vector3f(int16_val(rx.v, 5),
                     int16_val(rx.v, 4),

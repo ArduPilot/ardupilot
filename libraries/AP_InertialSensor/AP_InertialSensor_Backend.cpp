@@ -70,6 +70,11 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._accel_healthy[instance] = true;
 }
 
+void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
+                                                             const Vector3f &accel)
+{
+}
+
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
                                                           float max_offset)
 {
