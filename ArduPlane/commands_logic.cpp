@@ -615,7 +615,7 @@ bool Plane::verify_loiter_to_alt()
           We use 10 degrees of slop so that we can handle 100
           degrees/second of yaw
         */
-        if (abs(heading_err_cd) <= 1000) {
+        if (labs(heading_err_cd) <= 1000) {
             //Want to head in a straight line from _here_ to the next waypoint.
             //DON'T want to head in a line from the center of the loiter to 
             //the next waypoint.
@@ -655,7 +655,7 @@ bool Plane::verify_continue_and_change_alt()
         return true;
     }    
     //don't care if we're climbing or descending
-    else if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+    else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
     }
    
