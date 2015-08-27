@@ -4,6 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/Location.h>
 #include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude control library
@@ -133,11 +134,18 @@ public:
     /// get_wp_destination waypoint using position vector (distance from home in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
 
+    /// set_wp_destination waypoint using location class
+    ///     returns false if conversion from location to vector from ekf origin cannot be calculated
+    bool set_wp_destination(const Location_Class& destination);
+
     /// set_wp_destination waypoint using position vector (distance from home in cm)
-    void set_wp_destination(const Vector3f& destination);
+    ///     terrain_alt should be true if destination.z is a desired altitude above terrain
+    bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);
 
     /// set_wp_origin_and_destination - set origin and destination waypoints using position vectors (distance from home in cm)
-    void set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination);
+    ///     terrain_alt should be true if origin.z and destination.z are desired altitudes above terrain (false if these are alt-above-ekf-origin)
+    ///     returns false on failure (likely caused by missing terrain data)
+    bool set_wp_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt = false);
 
     /// shift_wp_origin_to_current_pos - shifts the origin and destination so the origin starts at the current position
     ///     used to reset the position just before takeoff
@@ -161,7 +169,7 @@ public:
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
-    void update_wpnav();
+    bool update_wpnav();
 
     // check_wp_leash_length - check recalc_wp_leash flag and calls calculate_wp_leash_length() if necessary
     //  should be called after _pos_control.update_xy_controller which may have changed the position controller leash lengths
@@ -221,7 +229,7 @@ public:
     void set_desired_alt(float desired_alt) { _pos_control.set_alt_target(desired_alt); }
 
     /// advance_wp_target_along_track - move target location along track from origin to destination
-    void advance_wp_target_along_track(float dt);
+    bool advance_wp_target_along_track(float dt);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -272,6 +280,13 @@ protected:
     /// 	relies on update_spline_solution being called since the previous
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
+    // get terrain altitude difference (in cm) between at current position and ekf origin (+ve means current terrain higher than at origin)
+    bool get_terrain_offset(const Vector3f &pos, float& offset_cm);
+
+    // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
+    //      returns false if conversion failed (likely because terrain data was not available)
+    bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
+
     // references to inertial nav and ahrs libraries
     const AP_InertialNav&   _inav;
     const AP_AHRS&          _ahrs;
@@ -319,4 +334,8 @@ protected:
     Vector3f    _hermite_spline_solution[4]; // array describing spline path between origin and destination
     float       _spline_vel_scaler;	    //
     float       _yaw;                   // heading according to yaw
+
+    // terrain following variables
+    bool        _terrain_alt = false;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
+    bool        _ekf_origin_terrain_alt_set = false;
 };
