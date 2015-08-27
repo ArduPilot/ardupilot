@@ -1128,6 +1128,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #if MOUNT == ENABLED
         // Sets the region of interest (ROI) for the camera
         case MAV_CMD_DO_SET_ROI:
+            // sanity check location
+            if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                break;
+            }
             Location roi_loc;
             roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
@@ -1366,6 +1370,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     // don't allow the 0,0 position
                     break;
                 }
+                // sanity check location
+                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                    break;
+                }
                 Location new_home_loc {};
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
@@ -1497,6 +1505,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             send_text_P(MAV_SEVERITY_WARNING,PSTR("fencing must be disabled"));
         } else if (packet.count != plane.g.fence_total) {
             send_text_P(MAV_SEVERITY_WARNING,PSTR("bad fence point"));
+        } else if (fabsf(packet.lat) > 90.0f || fabsf(packet.lng) > 180.0f) {
+            send_text_P(MAV_SEVERITY_WARNING,PSTR("invalid fence point, lat or lng too large"));
         } else {
             Vector2l point;
             point.x = packet.lat*1.0e7f;
