@@ -1211,6 +1211,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else {
+                // sanity check location
+                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                    break;
+                }
                 Location new_home_loc;
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
@@ -1237,6 +1241,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             // param5 : x / lat
             // param6 : y / lon
             // param7 : z / alt
+            // sanity check location
+            if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                break;
+            }
             Location roi_loc;
             roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
