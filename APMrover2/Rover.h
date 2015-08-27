@@ -84,6 +84,7 @@
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 
 // Configuration
 #include "config.h"
@@ -168,6 +169,9 @@ private:
     AP_Mission mission;
 
     OpticalFlow optflow;
+    
+    // RSSI 
+    AP_RSSI rssi;          
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL sitl;
@@ -177,10 +181,6 @@ private:
     AP_SerialManager serial_manager;
     const uint8_t num_gcs;
     GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
-
-    // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
-    // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
-    AP_HAL::AnalogSource *rssi_analog_source;
 
     // relay support
     AP_Relay relay;

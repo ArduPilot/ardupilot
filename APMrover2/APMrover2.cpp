@@ -94,8 +94,8 @@ void Rover::setup()
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
-
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
+    
+    rssi.init();
 
     init_ardupilot();
 

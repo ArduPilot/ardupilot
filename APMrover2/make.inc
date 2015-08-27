@@ -51,5 +51,6 @@ LIBRARIES += AP_HAL_Empty
 LIBRARIES += AP_Notify
 LIBRARIES += AP_BattMonitor
 LIBRARIES += AP_OpticalFlow
+LIBRARIES += AP_RSSI
 LIBRARIES += AP_Declination
 
