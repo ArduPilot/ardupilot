@@ -94,8 +94,12 @@ void Tracker::init_tracker()
 
     // use given start positions - useful for indoor testing, and
     // while waiting for GPS lock
-    current_loc.lat = g.start_latitude * 1.0e7f;
-    current_loc.lng = g.start_longitude * 1.0e7f;
+    // sanity check location
+    if (fabsf(current_loc.lat) <= 90.0f && fabsf(current_loc.lng) <= 180.0f) {
+        current_loc.lat = g.start_latitude * 1.0e7f;
+        current_loc.lng = g.start_longitude * 1.0e7f;
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
+    }
 
     // see if EEPROM has a default location as well
     if (current_loc.lat == 0 && current_loc.lng == 0) {
