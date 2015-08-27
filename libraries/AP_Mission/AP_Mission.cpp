@@ -705,6 +705,14 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
     // copy location from mavlink to command
     if (copy_location || copy_alt) {
+
+        // sanity check location
+        if (copy_location) {
+            if (fabsf(packet.x) > 90.0f || fabsf(packet.y) > 180.0f) {
+                return false;
+            }
+        }
+
         switch (packet.frame) {
 
         case MAV_FRAME_MISSION:
