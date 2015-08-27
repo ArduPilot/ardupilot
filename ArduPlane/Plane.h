@@ -91,6 +91,7 @@
 #include <AP_Rally/AP_Rally.h>
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 
 // Configuration
 #include "config.h"
@@ -248,10 +249,6 @@ private:
     // selected navigation controller
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
-    // Analog Inputs
-    // a pin for reading the receiver RSSI voltage. 
-    AP_HAL::AnalogSource *rssi_analog_source;
-
     // Relay
     AP_Relay relay;
 
@@ -270,6 +267,9 @@ private:
 
     // Rally Ponints
     AP_Rally rally {ahrs};
+    
+    // RSSI 
+    AP_RSSI rssi;      
 
     // remember if USB is connected, so we can adjust baud rate
     bool usb_connected;
