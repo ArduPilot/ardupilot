@@ -205,21 +205,6 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
 
-    // @Param: RSSI_PIN
-    // @DisplayName: Receiver RSSI sensing pin
-    // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is RSSI_RANGE for max rssi, 0V for minimum
-    // @Values: -1:Disabled, 0:APM2 A0, 1:APM2 A1, 2:APM2 A2, 13:APM2 A13, 103:Pixhawk SBUS
-    // @User: Standard
-    GSCALAR(rssi_pin,            "RSSI_PIN",         -1),
-
-    // @Param: RSSI_RANGE
-    // @DisplayName: Receiver RSSI voltage range
-    // @Description: Receiver RSSI voltage range
-    // @Units: Volt
-    // @Values: 3.3:3.3V, 5:5V
-    // @User: Standard
-    GSCALAR(rssi_range,          "RSSI_RANGE",         5.0f),
-
     // @Param: WP_YAW_BEHAVIOR
     // @DisplayName: Yaw behaviour during missions
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
@@ -1033,6 +1018,10 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
+    // @Group: RSSI_
+    // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
+    GOBJECT(rssi, "RSSI_",  AP_RSSI),      
+    
 #if CONFIG_SONAR == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
