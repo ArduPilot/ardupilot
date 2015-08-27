@@ -375,7 +375,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
             // save previous nav command index
             _prev_nav_cmd_index = _nav_cmd.index;
             // save separate previous nav command index if it contains lat,long,alt
-            if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+            if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
                 _prev_nav_cmd_wp_index = _nav_cmd.index;
             }
             // set current navigation command and start it
@@ -1140,7 +1140,7 @@ bool AP_Mission::advance_current_nav_cmd()
             // save previous nav command index
             _prev_nav_cmd_index = _nav_cmd.index;
             // save separate previous nav command index if it contains lat,long,alt
-            if (cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+            if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
                 _prev_nav_cmd_wp_index = _nav_cmd.index;
             }
             // set current navigation command and start it
