@@ -345,6 +345,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                 // Adjust for chip scaling to get m/s/s
                 accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
                 _rotate_and_correct_accel(_accel_instance, accel);
+                _notify_new_accel_raw_sample(_accel_instance, accel);
                 _data[_data_idx].accel_filtered = _accel_filter.apply(accel);
                 _have_accel_sample = true;
             }

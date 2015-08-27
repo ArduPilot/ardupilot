@@ -763,6 +763,8 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
+        _notify_new_accel_raw_sample(_accel_instance, accel);
+
 #if MPU6000_FAST_SAMPLING
         _accel_filtered = _accel_filter.apply(accel);
         _gyro_filtered = _gyro_filter.apply(gyro);

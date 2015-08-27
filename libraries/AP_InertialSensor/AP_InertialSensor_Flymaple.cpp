@@ -225,6 +225,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         // Adjust for chip scaling to get m/s/s
         accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
         _rotate_and_correct_accel(_accel_instance, accel);
+        _notify_new_accel_raw_sample(_accel_instance, accel);
         _accel_filtered = _accel_filter.apply(accel);
         _have_accel_sample = true;
         _last_accel_timestamp = now;

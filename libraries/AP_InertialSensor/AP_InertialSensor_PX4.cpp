@@ -259,6 +259,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // apply corrections
     _rotate_and_correct_accel(frontend_instance, accel);
+    _notify_new_accel_raw_sample(frontend_instance, accel);
 
     // apply filter for control path
     _accel_in[i] = _accel_filter[i].apply(accel);
