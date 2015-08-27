@@ -886,6 +886,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 #if MOUNT == ENABLED
             // Sets the region of interest (ROI) for the camera
             case MAV_CMD_DO_SET_ROI:
+                // sanity check location
+                if (fabsf(packet.param5) > 90.0f || fabsf(packet.param6) > 180.0f) {
+                    break;
+                }
                 Location roi_loc;
                 roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
