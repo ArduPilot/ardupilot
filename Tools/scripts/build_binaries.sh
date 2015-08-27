@@ -39,6 +39,7 @@ checkout() {
     vehicle="$1"
     tag="$2"
     board="$3"
+    echo "Trying checkout $vehicle $tag $board"
     git stash
     if [ "$tag" = "latest" ]; then
 	vtag="master"
