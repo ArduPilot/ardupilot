@@ -3,6 +3,8 @@
 #include "Compass.h"
 #include <AP_Notify/AP_Notify.h>
 
+extern AP_HAL::HAL& hal;
+
 void
 Compass::compass_cal_update()
 {
