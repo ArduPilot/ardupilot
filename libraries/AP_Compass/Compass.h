@@ -46,6 +46,10 @@
 #define COMPASS_MAX_BACKEND   1   
 #endif
 
+//MAXIMUM COMPASS REPORTS
+#define MAX_CAL_REPORTS 10
+#define CONTINUOUS_REPORTS 0
+
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -131,9 +135,9 @@ public:
     // compass calibrator interface
     void compass_cal_update();
 
-    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f);
-    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f);
-    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f);
+    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
 
     void cancel_calibration(uint8_t i);
     void cancel_calibration_all();
@@ -143,6 +147,8 @@ public:
     bool accept_calibration_all();
     bool accept_calibration_mask(uint8_t mask);
 
+    bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
+    bool auto_reboot() { return _compass_cal_autoreboot; }
     uint8_t get_cal_mask() const;
     bool is_calibrating() const;
 
@@ -298,6 +304,14 @@ private:
     // load backend drivers
     void _add_backend(AP_Compass_Backend *backend);
     void _detect_backends(void);
+
+    //keep track of number of calibration reports sent
+    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+    
+    //autoreboot after compass calibration
+    bool _compass_cal_autoreboot;
+    bool _cal_complete_requires_reboot;
+    bool _cal_has_run;
 
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];

@@ -378,13 +378,16 @@ Compass::Compass(void) :
     _board_orientation(ROTATION_NONE),
     _null_init_done(false),
     _thr_or_curr(0.0f),
-    _hil_mode(false)
+    _hil_mode(false),
+    _cal_complete_requires_reboot(false),
+    _cal_has_run(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         _backends[i] = NULL;
         _state[i].last_update_usec = 0;
-    }    
+        _reports_sent[i] = 0;
+    }
 
 #if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids

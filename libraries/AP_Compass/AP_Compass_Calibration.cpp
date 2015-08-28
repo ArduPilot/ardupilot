@@ -24,12 +24,20 @@ Compass::compass_cal_update()
             AP_Notify::flags.compass_cal_running = 1;
         }
     }
+    if (is_calibrating()) {
+        _cal_has_run = true;
+        return;
+    } else if (_cal_has_run && auto_reboot()) {
+        hal.scheduler->delay(1000);
+        hal.scheduler->reboot(false);
+    }
 }
 
 bool
-Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay)
+Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bool autoreboot)
 {
     if (healthy(i)) {
+        memset(_reports_sent,0,sizeof(_reports_sent));
         if (!is_calibrating() && delay > 0.5f) {
             AP_Notify::events.initiated_compass_cal = 1;
         }
@@ -39,6 +47,7 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay)
             _calibrator[i].set_tolerance(16);
         }
         _calibrator[i].start(retry, autosave, delay);
+        _compass_cal_autoreboot = autoreboot;
         return true;
     } else {
         return false;
@@ -46,11 +55,11 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay)
 }
 
 bool
-Compass::start_calibration_mask(uint8_t mask, bool retry, bool autosave, float delay)
+Compass::start_calibration_mask(uint8_t mask, bool retry, bool autosave, float delay, bool autoreboot)
 {
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         if ((1<<i) & mask) {
-            if (!start_calibration(i,retry,autosave,delay)) {
+            if (!start_calibration(i,retry,autosave,delay,autoreboot)) {
                 cancel_calibration_mask(mask);
                 return false;
             }
@@ -60,11 +69,11 @@ Compass::start_calibration_mask(uint8_t mask, bool retry, bool autosave, float d
 }
 
 bool
-Compass::start_calibration_all(bool retry, bool autosave, float delay)
+Compass::start_calibration_all(bool retry, bool autosave, float delay, bool autoreboot)
 {
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         if (healthy(i) && use_for_yaw(i)) {
-            if (!start_calibration(i,retry,autosave,delay)) {
+            if (!start_calibration(i,retry,autosave,delay,autoreboot)) {
                 cancel_calibration_all();
                 return false;
             }
@@ -104,6 +113,7 @@ Compass::accept_calibration(uint8_t i)
     uint8_t cal_status = cal.get_status();
 
     if (cal_status == COMPASS_CAL_SUCCESS) {
+        _cal_complete_requires_reboot = true;
         Vector3f ofs, diag, offdiag;
         cal.get_calibration(ofs, diag, offdiag);
         cal.clear();
@@ -194,8 +204,8 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
         uint8_t& compass_id = i;
         uint8_t cal_status = cal.get_status();
 
-        if (cal_status == COMPASS_CAL_SUCCESS ||
-            cal_status == COMPASS_CAL_FAILED) {
+        if ((cal_status == COMPASS_CAL_SUCCESS ||
+            cal_status == COMPASS_CAL_FAILED) && ((_reports_sent[i] < MAX_CAL_REPORTS) || CONTINUOUS_REPORTS)) {
             float fitness = cal.get_fitness();
             Vector3f ofs, diag, offdiag;
             cal.get_calibration(ofs, diag, offdiag);
@@ -210,6 +220,7 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
                 diag.x, diag.y, diag.z,
                 offdiag.x, offdiag.y, offdiag.z
             );
+            _reports_sent[i]++;
         }
 
         if (cal_status == COMPASS_CAL_SUCCESS && cal.get_autosave()) {
