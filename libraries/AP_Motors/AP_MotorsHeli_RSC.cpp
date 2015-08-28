@@ -59,7 +59,7 @@ void AP_MotorsHeli_RSC::set_power_output_range(uint16_t power_low, uint16_t powe
 }
 
 // output - update value to send to ESC/Servo
-void AP_MotorsHeli_RSC::output(uint8_t state)
+void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     switch (state){
         case ROTOR_CONTROL_STOP:

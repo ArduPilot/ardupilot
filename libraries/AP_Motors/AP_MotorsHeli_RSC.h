@@ -8,9 +8,11 @@
 #include <RC_Channel/RC_Channel.h>      // RC Channel Library
 
 // rotor controller states
-#define ROTOR_CONTROL_STOP                      0
-#define ROTOR_CONTROL_IDLE                      1
-#define ROTOR_CONTROL_ACTIVE                    2
+enum RotorControlState {
+    ROTOR_CONTROL_STOP = 0,
+    ROTOR_CONTROL_IDLE,
+    ROTOR_CONTROL_ACTIVE
+};
 
 // rotor control modes
 #define ROTOR_CONTROL_MODE_DISABLED                 0
@@ -75,7 +77,7 @@ public:
     void        recalc_scalers();
 
     // output - update value to send to ESC/Servo
-    void        output(uint8_t state);
+    void        output(RotorControlState state);
 
 private:
 
