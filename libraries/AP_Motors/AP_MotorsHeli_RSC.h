@@ -15,11 +15,13 @@ enum RotorControlState {
 };
 
 // rotor control modes
-#define ROTOR_CONTROL_MODE_DISABLED                 0
-#define ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH        1
-#define ROTOR_CONTROL_MODE_SPEED_SETPOINT           2
-#define ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT   3
-#define ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT 4
+enum RotorControlMode {
+    ROTOR_CONTROL_MODE_DISABLED = 0,
+    ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH,
+    ROTOR_CONTROL_MODE_SPEED_SETPOINT,
+    ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT,
+    ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT
+};
 
 class AP_MotorsHeli_RSC {
 public:
@@ -35,7 +37,7 @@ public:
     void        init_servo();
 
     // set_control_mode - sets control mode
-    void        set_control_mode(int8_t mode) { _control_mode = mode; }
+    void        set_control_mode(RotorControlMode mode) { _control_mode = mode; }
 
     // set_critical_speed
     void        set_critical_speed(int16_t critical_speed) { _critical_speed = critical_speed; }
@@ -87,7 +89,7 @@ private:
     float           _loop_rate;                 // main loop rate
 
     // internal variables
-    int8_t          _control_mode = 0;          // motor control mode, Passthrough or Setpoint
+    RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
     int16_t         _idle_output = 0;           // motor output idle speed
     int16_t         _max_speed = 1000;          // rotor maximum speed. Placeholder value until we have measured speed input (ToDo)
