@@ -83,10 +83,10 @@ protected:
     void _publish_delta_angle(uint8_t instance, const Vector3f &delta_angle);
 
     // rotate gyro vector, offset and publish
-    void _publish_gyro(uint8_t instance, const Vector3f &gyro, bool rotate_and_correct = true);
+    void _publish_gyro(uint8_t instance, const Vector3f &gyro);
 
     // rotate accel vector, scale, offset and publish
-    void _publish_accel(uint8_t instance, const Vector3f &accel, bool rotate_and_correct = true);
+    void _publish_accel(uint8_t instance, const Vector3f &accel);
 
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);

@@ -765,8 +765,8 @@ bool AP_InertialSensor_LSM9DS0::update()
     _accel_sample_available = false;
     _gyro_sample_available = false;
 
-    _publish_gyro(_gyro_instance, _gyro_filtered, false);
-    _publish_accel(_accel_instance, _accel_filtered, false);
+    _publish_gyro(_gyro_instance, _gyro_filtered);
+    _publish_accel(_accel_instance, _accel_filtered);
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _set_accel_filter(_accel_filter_cutoff());
