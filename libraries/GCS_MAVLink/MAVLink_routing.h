@@ -41,6 +41,11 @@ public:
     */
     void send_to_components(const mavlink_message_t* msg);
 
+    /*
+      send a MAVLink message to all channels
+    */
+    void send_on_all_channels(const mavlink_message_t* msg);
+
 private:
     // a simple linear routing table. We don't expect to have a lot of
     // routes, so a scalable structure isn't worthwhile yet.

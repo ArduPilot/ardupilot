@@ -190,6 +190,25 @@ void MAVLink_routing::send_to_components(const mavlink_message_t* msg)
 }
 
 /*
+  send a MAVLink message on all channels
+*/
+void MAVLink_routing::send_on_all_channels(const mavlink_message_t* msg)
+{
+    bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
+    memset(sent_to_chan, 0, sizeof(sent_to_chan));
+
+    // check learned routes
+    for (uint8_t i=0; i<num_routes; i++) {
+        if (!sent_to_chan[routes[i].channel]) {
+            if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+                _mavlink_resend_uart(routes[i].channel, msg);
+                sent_to_chan[routes[i].channel] = true;
+            }
+        }
+    }
+}
+
+/*
   see if the message is for a new route and learn it
 */
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg)
