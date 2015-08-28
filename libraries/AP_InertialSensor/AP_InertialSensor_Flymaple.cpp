@@ -175,13 +175,8 @@ bool AP_InertialSensor_Flymaple::update(void)
     _have_accel_sample = false;
     hal.scheduler->resume_timer_procs();
 
-    // Adjust for chip scaling to get m/s/s
-    accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
-    _publish_accel(_accel_instance, accel);
-
-    // Adjust for chip scaling to get radians/sec
-    gyro *= FLYMAPLE_GYRO_SCALE_R_S;
-    _publish_gyro(_gyro_instance, gyro);
+    _publish_accel(_accel_instance, accel, false);
+    _publish_gyro(_gyro_instance, gyro, false);
 
     if (_last_filter_hz != _accel_filter_cutoff()) {
         _set_filter_frequency(_accel_filter_cutoff());
@@ -226,7 +221,11 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         int16_t y = -((((int16_t)buffer[1]) << 8) | buffer[0]);    // chip X axis
         int16_t x = -((((int16_t)buffer[3]) << 8) | buffer[2]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[5]) << 8) | buffer[4]);    // chip Z axis
-        _accel_filtered = _accel_filter.apply(Vector3f(x,y,z));
+        Vector3f accel = Vector3f(x,y,z);
+        // Adjust for chip scaling to get m/s/s
+        accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
+        _rotate_and_correct_accel(_accel_instance, accel);
+        _accel_filtered = _accel_filter.apply(accel);
         _have_accel_sample = true;
         _last_accel_timestamp = now;
     }
@@ -241,7 +240,11 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         int16_t y = -((((int16_t)buffer[0]) << 8) | buffer[1]);    // chip X axis
         int16_t x = -((((int16_t)buffer[2]) << 8) | buffer[3]);    // chip Y axis
         int16_t z = -((((int16_t)buffer[4]) << 8) | buffer[5]);    // chip Z axis
-        _gyro_filtered = _gyro_filter.apply(Vector3f(x,y,z));
+        Vector3f gyro = Vector3f(x,y,z);
+        // Adjust for chip scaling to get radians/sec
+        gyro *= FLYMAPLE_GYRO_SCALE_R_S;
+        _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _gyro_filtered = _gyro_filter.apply(gyro);
         _have_gyro_sample = true;
         _last_gyro_timestamp = now;
     }
