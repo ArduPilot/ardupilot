@@ -75,6 +75,7 @@
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
 #include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
@@ -451,9 +452,6 @@ private:
     AP_Camera camera;
 #endif
 
-    // a pin for reading the receiver RSSI voltage.
-    AP_HAL::AnalogSource* rssi_analog_source;
-
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
@@ -469,6 +467,9 @@ private:
 #if AC_RALLY == ENABLED
     AP_Rally rally;
 #endif
+
+    // RSSI 
+    AP_RSSI rssi;      
 
     // Crop Sprayer
 #if SPRAYER == ENABLED

@@ -122,9 +122,10 @@ void Copter::init_ardupilot()
 
     // initialise battery monitor
     battery.init();
-    
-    rssi_analog_source      = hal.analogin->channel(g.rssi_pin);
 
+    // Init RSSI
+    rssi.init();
+    
     barometer.init();
 
     // Register the mavlink service callback. This will run

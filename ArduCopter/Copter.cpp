@@ -102,7 +102,6 @@ Copter::Copter(void) :
 #if CAMERA == ENABLED
     camera(&relay),
 #endif
-    rssi_analog_source(NULL),
 #if MOUNT == ENABLED
     camera_mount(ahrs, current_loc),
 #endif
