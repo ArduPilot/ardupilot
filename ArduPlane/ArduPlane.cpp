@@ -88,7 +88,7 @@ void Plane::setup()
 
     notify.init(false);
 
-    rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
+    rssi.init();
 
     init_ardupilot();
 
