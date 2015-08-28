@@ -1,12 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include <AP_HAL.h>
-#include <AC_PrecLand_Companion.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AC_PrecLand_Companion.h"
 
 extern const AP_HAL::HAL& hal;
 
 // Constructor
 AC_PrecLand_Companion::AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
-: AC_PrecLand_Backend(frontend, state)
+: AC_PrecLand_Backend(frontend, state),
+  _chan(MAVLINK_COMM_0)
 {
 }
 

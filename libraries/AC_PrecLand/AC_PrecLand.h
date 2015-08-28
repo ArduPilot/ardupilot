@@ -2,10 +2,10 @@
 #ifndef __AC_PRECLAND_H__
 #define __AC_PRECLAND_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AC_PI_2D.h>             // PID library
-#include <AP_InertialNav.h>     // Inertial Navigation library
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AC_PID/AC_PI_2D.h>
+#include <AP_InertialNav/AP_InertialNav.h>
 
 // definitions
 #define AC_PRECLAND_SPEED_XY_DEFAULT            100.0f  // maximum horizontal speed

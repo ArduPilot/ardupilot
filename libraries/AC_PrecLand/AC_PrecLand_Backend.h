@@ -2,11 +2,11 @@
 #ifndef __AC_PRECLAND_BACKEND_H__
 #define __AC_PRECLAND_BACKEND_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AC_PID.h>             // PID library
-#include <AP_InertialNav.h>     // Inertial Navigation library
-#include <AC_PrecLand.h>        // Precision Landing frontend
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AC_PID/AC_PID.h>
+#include <AP_InertialNav/AP_InertialNav.h>
+#include "AC_PrecLand.h"
 
 class AC_PrecLand_Backend
 {

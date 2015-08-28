@@ -2,10 +2,10 @@
 #ifndef __AC_PRECLAND_IRLOCK_H__
 #define __AC_PRECLAND_IRLOCK_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AC_PrecLand_Backend.h>    // Precision Landing backend
-#include <AP_IRLock.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <AP_IRLock/AP_IRLock.h>
 
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided

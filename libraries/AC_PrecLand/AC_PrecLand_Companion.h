@@ -2,9 +2,9 @@
 #ifndef __AC_PRECLAND_COMPANION_H__
 #define __AC_PRECLAND_COMPANION_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AC_PrecLand_Backend.h>    // Precision Landing backend
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_Backend.h"
 
 /*
  * AC_PrecLand_Companion - implements precision landing using target vectors provided
