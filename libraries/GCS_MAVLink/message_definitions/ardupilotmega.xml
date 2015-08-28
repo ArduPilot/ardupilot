@@ -62,7 +62,7 @@
                 <param index="2">Automatically retry on failure (0=no retry, 1=retry).</param>
                 <param index="3">Save without user input (0=require input, 1=autosave).</param>
                 <param index="4">Delay (seconds)</param>
-                <param index="5">Empty</param>
+                <param index="5">Autoreboot (0=user reboot, 1=autoreboot)</param>
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
             </entry>
