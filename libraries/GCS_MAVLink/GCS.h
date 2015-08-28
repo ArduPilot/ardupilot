@@ -59,6 +59,7 @@ enum ap_message {
     MSG_MAG_CAL_PROGRESS,
     MSG_MAG_CAL_REPORT,
     MSG_EKF_STATUS_REPORT,
+    MSG_GPS_ACCURACY,
     MSG_LOCAL_POSITION,
     MSG_ARMMASK,
     MSG_RETRY_DEFERRED // this must be last

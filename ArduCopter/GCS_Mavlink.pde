@@ -653,6 +653,14 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         ahrs.get_NavEKF().send_status_report(chan);
 #endif
         break;
+
+    case MSG_GPS_ACCURACY:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(GPS_ACCURACY);
+        ahrs.get_NavEKF().send_gps_accuracy(chan);
+#endif
+        break;
+
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
@@ -895,6 +903,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MAG_CAL_REPORT);
         send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_EKF_STATUS_REPORT);
+        send_message(MSG_GPS_ACCURACY);
     }
 }
 
