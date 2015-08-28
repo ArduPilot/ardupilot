@@ -330,14 +330,8 @@ bool AP_InertialSensor_MPU9250::update( void )
 
     _have_sample_available = false;
 
-    accel *= MPU9250_ACCEL_SCALE_1G;
-    gyro *= GYRO_SCALE;
-
-    accel.rotate(_default_rotation);
-    gyro.rotate(_default_rotation);
-
-    _publish_gyro(_gyro_instance, gyro);
-    _publish_accel(_accel_instance, accel);
+    _publish_gyro(_gyro_instance, gyro, false);
+    _publish_accel(_accel_instance, accel, false);
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _set_accel_filter(_accel_filter_cutoff());
@@ -385,21 +379,31 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
         uint8_t v[14];
     } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
 
+    Vector3f accel, gyro;
+
     _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
-    Vector3f _accel_filtered = _accel_filter.apply(Vector3f(int16_val(rx.v, 1),
-                                                   int16_val(rx.v, 0),
-                                                   -int16_val(rx.v, 2)));
+    accel = Vector3f(int16_val(rx.v, 1),
+                     int16_val(rx.v, 0),
+                     -int16_val(rx.v, 2));
+    accel *= MPU9250_ACCEL_SCALE_1G;
+    accel.rotate(_default_rotation);
+    _rotate_and_correct_accel(_accel_instance, accel);
 
-    Vector3f _gyro_filtered = _gyro_filter.apply(Vector3f(int16_val(rx.v, 5),
-                                                 int16_val(rx.v, 4),
-                                                 -int16_val(rx.v, 6)));
+    gyro = Vector3f(int16_val(rx.v, 5),
+                    int16_val(rx.v, 4),
+                    -int16_val(rx.v, 6));
+    gyro *= GYRO_SCALE;
+    gyro.rotate(_default_rotation);
+    _rotate_and_correct_gyro(_gyro_instance, gyro);
+
+
     // update the shared buffer
     uint8_t idx = _shared_data_idx ^ 1;
-    _shared_data[idx]._accel_filtered = _accel_filtered;
-    _shared_data[idx]._gyro_filtered = _gyro_filtered;
+    _shared_data[idx]._accel_filtered = _accel_filter.apply(accel);
+    _shared_data[idx]._gyro_filtered = _gyro_filter.apply(gyro);
     _shared_data_idx = idx;
 
     _have_sample_available = true;
