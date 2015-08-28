@@ -1,5 +1,21 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc10 28-Aug-2015
+Changes from 3.3-rc9
+1) EKF improvements:
+    a) simpler optical flow takeoff check
+2) Bug Fixes/Minor enhancements:
+    a) fix INS3_USE parameter eeprom location
+    b) fix SToRM32 serial protocol driver to work with recent versions
+    c) increase motor pwm->thrust conversion (aka MOT_THST_EXPO) to 0.65 (was 0.50)
+    d) Firmware version sent to GCS in AUTOPILOT_VERSION message
+3) Safety:
+    a) pre-arm check of compass variance if arming in Loiter, PosHold, Guided
+    b) always check GPS before arming in Loiter (previously could be disabled if ARMING_CHECK=0)
+    c) sanity check locations received from GCS for follow-me, do-set-home, do-set-ROI
+    d) fix optical flow failsafe (was not always triggering LAND when optical flow failed)
+    e) failsafe RTL vs LAND decision based on hardcoded 5m from home check (previously used WPNAV_RADIUS parameter)
+------------------------------------------------------------------
 Copter 3.3-rc9 19-Aug-2015
 Changes from 3.3-rc8
 1) EKF improvements:
