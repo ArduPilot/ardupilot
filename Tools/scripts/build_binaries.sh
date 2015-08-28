@@ -48,7 +48,7 @@ checkout() {
     fi
 
     # add board type specific branch extension
-    vtag2="$vtag"$(board_branch $b)
+    vtag2="$vtag"$(board_branch $board)
 
     git checkout -f "$vtag2" && {
         echo "Using board specific tag $vtag2"
