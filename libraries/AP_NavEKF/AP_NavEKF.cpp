@@ -2105,7 +2105,7 @@ void NavEKF::FuseVelPosNED()
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || constPosMode) {
+            if (hgtHealth || hgtTimeout) {
                 hgtHealth = true;
                 lastHgtPassTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
