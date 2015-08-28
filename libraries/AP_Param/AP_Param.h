@@ -224,7 +224,7 @@ public:
     static void         erase_all(void);
 
     /// print the value of all variables
-    static void         show_all(AP_HAL::BetterStream *port);
+    static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
 
     /// print the value of one variable
     static void         show(const AP_Param *param, 
