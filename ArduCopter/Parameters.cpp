@@ -851,6 +851,28 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GGROUP(p_pos_xy,                "POS_XY_", AC_P),
 
+#if PRECISION_LANDING == ENABLED
+     // @Param: PRECLNDVEL_P
+     // @DisplayName: Precision landing velocity controller P gain
+     // @Description: Precision landing velocity controller P gain
+     // @Range: 0.100 5.000
+     // @User: Advanced
+
+     // @Param: PRECLNDVEL_I
+     // @DisplayName: Precision landing velocity controller I gain
+     // @Description: Precision landing velocity controller I gain
+     // @Range: 0.100 5.000
+     // @User: Advanced
+
+     // @Param: PRECLNDVEL_IMAX
+     // @DisplayName: Precision landing velocity controller I gain maximum
+     // @Description: Precision landing velocity controller I gain maximum
+     // @Range: 0 1000
+     // @Units: cm/s
+     // @User: Standard
+     GGROUP(pi_precland,            "PLAND_", AC_PI_2D),
+#endif
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED
