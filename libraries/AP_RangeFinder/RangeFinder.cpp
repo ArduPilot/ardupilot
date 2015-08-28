@@ -21,6 +21,7 @@
 #include "AP_RangeFinder_PX4.h"
 #include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
+#include "AP_RangeFinder_LightWareI2C.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -183,6 +184,24 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPINFO("2_GNDCLEAR", 22, RangeFinder, _ground_clearance_cm[1], RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 #endif
 
+    // @Param: _ADDR
+    // @DisplayName: Bus address of sensor
+    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, _address[0], 0),
+
+#if RANGEFINDER_MAX_INSTANCES > 1
+    // @Param: 2_ADDR
+    // @DisplayName: Bus address of 2nd rangefinder
+    // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2_ADDR", 24, RangeFinder, _address[1], 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -281,6 +300,13 @@ void RangeFinder::detect_instance(uint8_t instance)
             return;
         }
     }
+    if (type == RangeFinder_TYPE_LWI2C) {
+        if (AP_RangeFinder_LightWareI2C::detect(*this, instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_LightWareI2C(*this, instance, state[instance]);
+            return;
+        }
+    } 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     if (type == RangeFinder_TYPE_PX4) {
         if (AP_RangeFinder_PX4::detect(*this, instance)) {

@@ -45,7 +45,8 @@ public:
         RangeFinder_TYPE_PLI2C  = 3,
         RangeFinder_TYPE_PX4    = 4,
         RangeFinder_TYPE_PX4_PWM= 5,
-        RangeFinder_TYPE_BBB_PRU= 6
+        RangeFinder_TYPE_BBB_PRU= 6,
+        RangeFinder_TYPE_LWI2C  = 7
     };
 
     enum RangeFinder_Function {
@@ -87,6 +88,7 @@ public:
     AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _address[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
 
     static const struct AP_Param::GroupInfo var_info[];
