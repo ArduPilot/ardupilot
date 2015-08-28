@@ -1011,7 +1011,7 @@ bool DataFlash_Class::Log_Write_Message(const char *message)
         msg  : {}
     };
     strncpy(pkt.msg, message, sizeof(pkt.msg));
-    return WriteBlock(&pkt, sizeof(pkt));
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // Write a text message to the log
@@ -1023,7 +1023,7 @@ bool DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
         msg  : {}
     };
     strncpy_P(pkt.msg, message, sizeof(pkt.msg));
-    return WriteBlock(&pkt, sizeof(pkt));
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // Write a POWR packet
@@ -1401,7 +1401,7 @@ bool DataFlash_Class::Log_Write_Mode(uint8_t mode)
         mode     : mode,
         mode_num : mode
     };
-    return WriteBlock(&pkt, sizeof(pkt));
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // Write ESC status messages
