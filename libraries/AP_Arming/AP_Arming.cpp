@@ -242,6 +242,22 @@ bool AP_Arming::compass_checks(bool report)
             return false;
         }
 
+        //check if compass is calibrating
+        if(_compass.is_calibrating()) {
+            if (report) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Compass calibration running"));
+            }
+            return false;
+        }
+
+        //check if compass has calibrated and requires reboot
+        if(_compass.compass_cal_requires_reboot()) {
+            if (report) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Compass calibrated requires reboot"));
+            }
+            return false;
+        }
+
         // check for unreasonable compass offsets
         Vector3f offsets = _compass.get_offsets();
         if (offsets.length() > 600) {
