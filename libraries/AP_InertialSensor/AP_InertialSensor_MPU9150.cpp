@@ -1059,6 +1059,8 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
 
     // read the samples
     for (uint16_t i=0; i< fifo_count; i++) {        
+        Vector3f accel, gyro;
+
         // read the data
         // TODO check whether it's possible to read all the packages in a single call
         hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
@@ -1086,9 +1088,16 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
 
         // TODO Revisit why AP_InertialSensor_L3G4200D uses a minus sign in the y and z component. Maybe this
         //  is because the sensor is placed in the bottom side of the board?
-        _accel_filtered = _accel_filter.apply(Vector3f(accel_x, accel_y, accel_z));
 
-        _gyro_filtered = _gyro_filter.apply(Vector3f(gyro_x, gyro_y, gyro_z));
+        accel = Vector3f(accel_x, accel_y, accel_z);
+        accel *= MPU9150_ACCEL_SCALE_2G;
+        _rotate_and_correct_accel(_accel_instance, accel);
+        _accel_filtered = _accel_filter.apply(accel);
+
+        gyro = Vector3f(gyro_x, gyro_y, gyro_z);
+        gyro *= MPU9150_GYRO_SCALE_2000;
+        _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _gyro_filtered = _gyro_filter.apply(gyro);
 
         _have_sample_available = true;
     }
@@ -1107,11 +1116,8 @@ bool AP_InertialSensor_MPU9150::update(void)
     _have_sample_available = false;
     hal.scheduler->resume_timer_procs();
 
-    accel *= MPU9150_ACCEL_SCALE_2G;
-    _publish_accel(_accel_instance, accel);
-
-    gyro *= MPU9150_GYRO_SCALE_2000;
-    _publish_gyro(_gyro_instance, gyro);
+    _publish_accel(_accel_instance, accel, false);
+    _publish_gyro(_gyro_instance, gyro, false);
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _set_accel_filter_frequency(_accel_filter_cutoff());
