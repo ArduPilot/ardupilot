@@ -8,4 +8,5 @@
 // @file AP_IRLock.h
 // @brief Catch-all headerthat defines all supported irlock classes.
 
+#include "IRLock.h"
 #include "AP_IRLock_PX4.h"
