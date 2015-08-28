@@ -254,7 +254,7 @@
 #endif
 
 #ifndef FS_CLOSE_TO_HOME_CM
- # define FS_CLOSE_TO_HOME_CM               200 // if vehicle within 2m of home, vehicle will LAND instead of RTL during some failsafes
+ # define FS_CLOSE_TO_HOME_CM               500 // if vehicle within 5m of home, vehicle will LAND instead of RTL during some failsafes
 #endif
 
 // pre-arm baro vs inertial nav max alt disparity
