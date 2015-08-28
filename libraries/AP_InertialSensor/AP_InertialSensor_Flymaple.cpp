@@ -175,8 +175,8 @@ bool AP_InertialSensor_Flymaple::update(void)
     _have_accel_sample = false;
     hal.scheduler->resume_timer_procs();
 
-    _publish_accel(_accel_instance, accel, false);
-    _publish_gyro(_gyro_instance, gyro, false);
+    _publish_accel(_accel_instance, accel);
+    _publish_gyro(_gyro_instance, gyro);
 
     if (_last_filter_hz != _accel_filter_cutoff()) {
         _set_filter_frequency(_accel_filter_cutoff());

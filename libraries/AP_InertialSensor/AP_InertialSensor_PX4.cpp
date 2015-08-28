@@ -216,7 +216,7 @@ bool AP_InertialSensor_PX4::update(void)
         // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
-            _publish_accel(_accel_instance[k], accel, false);
+            _publish_accel(_accel_instance[k], accel);
             _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k], _delta_velocity_dt[k]);
             _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
         }
@@ -227,7 +227,7 @@ bool AP_InertialSensor_PX4::update(void)
         // calling _publish_accel sets the sensor healthy,
         // so we only want to do this if we have new data from it
         if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
-            _publish_gyro(_gyro_instance[k], gyro, false);
+            _publish_gyro(_gyro_instance[k], gyro);
             _publish_delta_angle(_gyro_instance[k], _delta_angle_accumulator[k]);
             _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
         }

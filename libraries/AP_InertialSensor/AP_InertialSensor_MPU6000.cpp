@@ -666,8 +666,8 @@ bool AP_InertialSensor_MPU6000::update( void )
     gyro /= num_samples;
     accel /= num_samples;
 
-    _publish_accel(_accel_instance, accel, false);
-    _publish_gyro(_gyro_instance, gyro, false);
+    _publish_accel(_accel_instance, accel);
+    _publish_gyro(_gyro_instance, gyro);
 
 #if MPU6000_FAST_SAMPLING
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {

@@ -330,8 +330,8 @@ bool AP_InertialSensor_MPU9250::update( void )
 
     _have_sample_available = false;
 
-    _publish_gyro(_gyro_instance, gyro, false);
-    _publish_accel(_accel_instance, accel, false);
+    _publish_gyro(_gyro_instance, gyro);
+    _publish_accel(_accel_instance, accel);
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _set_accel_filter(_accel_filter_cutoff());

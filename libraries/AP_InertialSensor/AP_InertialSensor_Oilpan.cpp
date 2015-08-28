@@ -105,7 +105,7 @@ bool AP_InertialSensor_Oilpan::update()
       _sensor_signs[1] * ( adc_values[1] - OILPAN_RAW_GYRO_OFFSET ) * _gyro_gain_y,
       _sensor_signs[2] * ( adc_values[2] - OILPAN_RAW_GYRO_OFFSET ) * _gyro_gain_z);
     _rotate_and_correct_gyro(_gyro_instance, v);
-    _publish_gyro(_gyro_instance, v, false);
+    _publish_gyro(_gyro_instance, v);
 
     // copy accels to frontend
     v(_sensor_signs[3] * (adc_values[3] - OILPAN_RAW_ACCEL_OFFSET),
@@ -113,7 +113,7 @@ bool AP_InertialSensor_Oilpan::update()
       _sensor_signs[5] * (adc_values[5] - OILPAN_RAW_ACCEL_OFFSET));
     v *= OILPAN_ACCEL_SCALE_1G;
     _rotate_and_correct_accel(_accel_instance, v);
-    _publish_accel(_accel_instance, v, false);
+    _publish_accel(_accel_instance, v);
 
     return true;
 }
