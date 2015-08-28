@@ -131,7 +131,7 @@ protected:
     void init_outputs();
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(uint8_t state);
+    void update_motor_control(RotorControlState state);
 
     // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
     void calculate_roll_pitch_collective_factors();

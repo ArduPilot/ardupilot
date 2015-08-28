@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @Description: Determines the method of rotor speed control
     // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve
     // @User: Standard
-    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH),
+    AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
@@ -280,7 +280,7 @@ bool AP_MotorsHeli::parameter_check() const
     }
 
     // returns false if RSC Mode is not set to a valid control mode
-    if (_rsc_mode <= AP_MOTORS_HELI_RSC_MODE_DISABLED || _rsc_mode > AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE) {
+    if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         return false;
     }
 
