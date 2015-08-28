@@ -40,7 +40,7 @@ public:
         k_param_rc_14,
 
         // IO pins
-        k_param_rssi_pin = 20,
+        k_param_rssi_pin = 20,      // unused, replaced by rssi_ library parameters
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
 
@@ -55,7 +55,9 @@ public:
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
 
-
+        // 97: RSSI
+        k_param_rssi = 97,
+                
         // 110: Telemetry control
         //
         k_param_gcs0 = 110, // stream rates for uartA
@@ -202,9 +204,6 @@ public:
     AP_Int16    num_resets;
     AP_Int8	    reset_switch_chan;
     AP_Int8     initial_mode;
-
-    // IO pins
-    AP_Int8     rssi_pin;
 
     // braking
     AP_Int8     braking_percent;
