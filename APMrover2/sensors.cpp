@@ -25,9 +25,7 @@ void Rover::read_battery(void)
 // RC_CHANNELS_SCALED message
 void Rover::read_receiver_rssi(void)
 {
-    rssi_analog_source->set_pin(g.rssi_pin);
-    float ret = rssi_analog_source->voltage_average() * 50;
-    receiver_rssi = constrain_int16(ret, 0, 255);
+    receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
 // read the sonars
