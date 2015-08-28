@@ -737,7 +737,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     if(compass.is_calibrating()) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Compass calibration running"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Compass calibration running"));
         }
         return false;
     }
