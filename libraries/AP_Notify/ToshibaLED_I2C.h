@@ -17,11 +17,19 @@
 #ifndef __TOSHIBA_LED_I2C_H__
 #define __TOSHIBA_LED_I2C_H__
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#endif
+
 class ToshibaLED_I2C : public ToshibaLED
 {
 public:
     bool hw_init(void);
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+private:
+    AP_HAL::DigitalSource *enable_pin;
+#endif
 };
 
 #endif // __TOSHIBA_LED_I2C_H__
