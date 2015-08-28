@@ -245,6 +245,8 @@ public:
 
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
+    // send a GPS_ACCURACY message to GCS
+    void send_gps_accuracy(mavlink_channel_t chan);
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -680,6 +682,7 @@ private:
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
     float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
     uint32_t lastConstPosFuseTime_ms;   // last time in msec the constant position constraint was applied
+    uint32_t lastGpsAccuracySendTime_ms;    //last sendtime of mavlink GPS_ACCURACY packet
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
