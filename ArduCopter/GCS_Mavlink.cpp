@@ -1296,6 +1296,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_MISSION_START:
             if (copter.motors.armed() && copter.set_mode(AUTO)) {
                 copter.set_auto_armed(true);
+                if (copter.mission.state() != AP_Mission::MISSION_RUNNING) {
+                    copter.mission.start_or_resume();
+                }
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
