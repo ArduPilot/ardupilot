@@ -87,8 +87,10 @@ int8_t Rover::test_passthru(uint8_t argc, const Menu::arg *argv)
             for(int i = 0; i < 8; i++){
                 cliSerial->print(hal.rcin->read(i));	// Print channel values
                 cliSerial->print(",");
-                hal.rcout->write(i, hal.rcin->read(i)); // Copy input to Servos
+                // Copy input to servos
+                hal.rcout->write(i, hal.rcin->read(i), AP_HAL::RCOutput::FLAGS_ASYNC);
             }
+            hal.rcout->flush();
             cliSerial->println();
         }
         if (cliSerial->available() > 0){

@@ -217,7 +217,7 @@ void PX4RCOutput::force_safety_off(void)
     }
 }
 
-void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
+void PX4RCOutput::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= _servo_count + _alt_servo_count) {
         return;
@@ -232,13 +232,6 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     if (period_us != _period[ch]) {
         _period[ch] = period_us;
         _need_update = true;
-    }
-}
-
-void PX4RCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        write(i, period_us[i]);
     }
 }
 

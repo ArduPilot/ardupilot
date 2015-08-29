@@ -36,9 +36,16 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
 
 
 void multiwrite(AP_HAL::RCOutput* out, uint16_t* channels) {
-    out->write(0, channels, 8);
+    for (int ch = 0; ch < 8; ch++) {
+        out->write(ch, channels[ch], AP_HAL::RCOutput::FLAGS_ASYNC);
+    }
+    out->flush();
+
     /* Upper channels duplicate lower channels*/
-    out->write(8, channels, 8);
+    for (int ch = 8; ch < 16; ch++) {
+        out->write(ch, channels[ch], AP_HAL::RCOutput::FLAGS_ASYNC);
+    }
+    out->flush();
 }
 
 void individualwrite(AP_HAL::RCOutput* out, uint16_t* channels) {

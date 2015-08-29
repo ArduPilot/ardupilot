@@ -850,7 +850,7 @@ private:
     void resetPerfData(void);
     void check_usb_mux(void);
     void print_comma(void);
-    void servo_write(uint8_t ch, uint16_t pwm);
+    void servo_write(uint8_t ch, uint16_t pwm, bool async = false);
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
     uint8_t throttle_percentage(void);

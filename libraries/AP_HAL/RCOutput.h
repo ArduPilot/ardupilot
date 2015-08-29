@@ -32,6 +32,10 @@
 
 class AP_HAL::RCOutput {
 public:
+    enum Flags {
+        FLAGS_ASYNC = 0x01,
+    };
+
     virtual void init(void* implspecific) = 0;
 
     /* Output freq (1/period) control */
@@ -43,9 +47,21 @@ public:
     virtual void     enable_ch(uint8_t ch) = 0;
     virtual void     disable_ch(uint8_t ch) = 0;
 
-    /* Output, either single channel or bulk array of channels */
-    virtual void     write(uint8_t ch, uint16_t period_us) = 0;
-    virtual void     write(uint8_t ch, uint16_t* period_us, uint8_t len) = 0;
+    /*
+     * Output a single channel. If @param flags does not contain FLAGS_ASYNC
+     * the write is considered synchronous, i.e. the value is automatically
+     * pushed to the underlying hardware. Subclasses may implement a different
+     * behavior for FLAGS_ASYNC in which updates are grouped until a
+     * synchronous write or a call to flush()
+     */
+    virtual void     write(uint8_t ch, uint16_t period_us, int flags = 0) = 0;
+
+    /*
+     * Flush pending data added with async write(). Default implementation
+     * does nothing and matches default write() behavior that all writes are
+     * synchronous
+     */
+    virtual void     flush() { }
 
     /* Read back current output state, as either single channel or
      * array of channels. */

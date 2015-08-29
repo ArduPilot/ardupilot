@@ -163,7 +163,7 @@ void VRBRAINRCOutput::force_safety_off(void)
     }
 }
 
-void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
+void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us, int)
 {
     if (ch >= _servo_count) {
         return;
@@ -179,13 +179,6 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
         _period[ch] = period_us;
         _need_update = true;
         up_pwm_servo_set(ch, period_us);
-    }
-}
-
-void VRBRAINRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        write(i, period_us[i]);
     }
 }
 

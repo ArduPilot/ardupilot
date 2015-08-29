@@ -47,6 +47,7 @@
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 13
+#define CHANNEL_OFFSET 3
 #define PCA9685_OUTPUT_ENABLE RPI_GPIO_27
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -150,38 +151,59 @@ void LinuxRCOutput_Navio::disable_ch(uint8_t ch)
     write(ch, 0);
 }
 
-void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us)
+/* calls to write() and flush() must occur on the same thread */
+void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t period_us, int flags)
 {
-    if(ch >= PWM_CHAN_COUNT){
+    if (ch >= PWM_CHAN_COUNT) {
         return;
     }
-
-    if (!_i2c_sem->take_nonblocking()) {
-        return;
-    }
-
-    uint16_t length;
-
-    if (period_us == 0)
-        length = 0;
-    else
-        length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
-
-    uint8_t data[2] = {length & 0xFF, length >> 8};
-    uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS,
-                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + 3),
-                                             2,
-                                             data);
 
     _pulses_buffer[ch] = period_us;
+    _pending_write_mask |= (1U << ch);
 
-    _i2c_sem->give();
+    if (flags & AP_HAL::RCOutput::FLAGS_ASYNC)
+        return;
+
+    flush();
 }
 
-void LinuxRCOutput_Navio::write(uint8_t ch, uint16_t* period_us, uint8_t len)
+/* calls to write() and flush() must occur on the same thread */
+void LinuxRCOutput_Navio::flush()
 {
-    for (int i = 0; i < len; i++)
-        write(ch + i, period_us[i]);
+    uint8_t data[PWM_CHAN_COUNT * 4] = { };
+    uint8_t max_ch, min_ch;
+
+    if (_pending_write_mask == 0)
+        return;
+
+    max_ch = (sizeof(unsigned) * 8) - __builtin_clz(_pending_write_mask);
+    min_ch = __builtin_ctz(_pending_write_mask);
+    _pending_write_mask = 0;
+
+    for (unsigned ch = min_ch; ch < max_ch; ch++) {
+        uint16_t width;
+
+        if (_pulses_buffer[ch] == 0)
+            width = 0;
+        else
+            width = round((_pulses_buffer[ch] * 4096) / (1000000.f / _frequency)) - 1;
+
+        uint8_t *d = &data[ch * 4 + 2];
+        *d++ = width && 0xFF;
+        *d = width >> 8;
+    }
+
+    if (!_i2c_sem->take(100)) {
+        hal.console->printf("RCOutput: Unable to get bus semaphore");
+        return;
+    }
+
+    hal.i2c->writeRegisters(PCA9685_ADDRESS,
+                            PCA9685_RA_LED0_ON_L + 4 * (CHANNEL_OFFSET + min_ch),
+                            (max_ch - min_ch) * 4,
+                            &data[min_ch * 4]);
+
+    _i2c_sem->give();
 }
 
 uint16_t LinuxRCOutput_Navio::read(uint8_t ch)

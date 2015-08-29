@@ -17,8 +17,7 @@ public:
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
-    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
+    void     write(uint8_t ch, uint16_t period_us, int flags = 0);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
     void     set_safety_pwm(uint32_t chmask, uint16_t period_us);

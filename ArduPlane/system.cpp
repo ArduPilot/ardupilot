@@ -699,7 +699,7 @@ void Plane::print_comma(void)
 /*
   write to a servo
  */
-void Plane::servo_write(uint8_t ch, uint16_t pwm)
+void Plane::servo_write(uint8_t ch, uint16_t pwm, bool async)
 {
 #if HIL_SUPPORT
     if (g.hil_mode==1 && !g.hil_servos) {
@@ -709,8 +709,12 @@ void Plane::servo_write(uint8_t ch, uint16_t pwm)
         return;
     }
 #endif
+    int flags = 0;
+    if (async)
+        flags |= AP_HAL::RCOutput::FLAGS_ASYNC;
+
     hal.rcout->enable_ch(ch);
-    hal.rcout->write(ch, pwm);
+    hal.rcout->write(ch, pwm, flags);
 }
 
 /*
