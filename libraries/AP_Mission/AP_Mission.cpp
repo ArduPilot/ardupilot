@@ -528,6 +528,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
         copy_location = true;
+        cmd.p1 = packet.param1;                         // abort target altitude(m)  (plane only)
         break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
@@ -859,6 +860,7 @@ bool AP_Mission::mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, 
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
         copy_location = true;
+        packet.param1 = cmd.p1;                        // abort target altitude(m)  (plane only)
         break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
