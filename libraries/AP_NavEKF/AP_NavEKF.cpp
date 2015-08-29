@@ -531,8 +531,9 @@ bool NavEKF::InitialiseFilterDynamic(void)
         return false;
     }
 
-    // If the DCM solution has not converged, then don't initialise
-    if (_ahrs->get_error_rp() > 0.05f) {
+    // If the DCM solution has not converged and we are on the ground (vehicle arm status used as a surrogate) then don't initialise as we should wait for the alignment quality to improve
+    // If we are in-flight (vehicle ar status used as a surrogate) then we cannot wait
+    if (_ahrs->get_error_rp() > 0.05f && !hal.util->get_soft_armed()) {
         return false;
     }
 
@@ -697,11 +698,9 @@ void NavEKF::UpdateFilter()
     // read IMU data and convert to delta angles and velocities
     readIMUData();
 
-    static bool prev_armed = false;
-    bool armed = getVehicleArmStatus();
-
     // the vehicle was previously disarmed and time has slipped
     // gyro auto-zero has likely just been done - skip this timestep
+    bool armed = getVehicleArmStatus();
     if (!prev_armed && dtIMUactual > dtIMUavg*5.0f) {
         // stop the timer used for load measurement
         perf_end(_perf_UpdateFilter);
@@ -1189,6 +1188,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
 
     // limit states to protect against divergence
     ConstrainStates();
+
 }
 
 // calculate the predicted state covariance matrix
@@ -4684,6 +4684,23 @@ void NavEKF::InitialiseVariables()
     hgtInnovFiltState = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
+    velTestRatio = 0.0f;
+    posTestRatio = 0.0f;
+    hgtTestRatio = 0.0f;
+    memset(&innovVelPos, 0, sizeof(innovVelPos));
+    usingInFlight = false;
+    prev_armed = false;
+    memset(&storedRngMeas, 0, sizeof(storedRngMeas));
+    memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
+    lastRngMeasTime_ms = 0;
+    rngMeasIndex = 0;
+    gpsSpdAccPass = false;
+    ekfInnovationsPass = false;
+    lpfFilterState = 0.0f;
+    peakHoldFilterState = 0.0f;
+    lastTime_ms = 0;
+    lastInnovPassTime_ms = 0;
+    lastInnovFailTime_ms = 0;
 }
 
 // return true if we should use the airspeed sensor
@@ -5113,7 +5130,6 @@ void NavEKF::setTouchdownExpected(bool val)
 // If we have landed with good GPS, then the status is assumed good for 5 seconds to allow transients to settle
 bool NavEKF::calcGpsGoodToAlign(void)
 {
-    static struct Location gpsloc_prev;    // LLH location of previous GPS measurement
 
     // calculate absolute difference between GPS vert vel and inertial vert vel
     float velDiffAbs;
@@ -5207,7 +5223,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
 
     // return healthy if we already have an origin and are inflight to prevent a race condition when checking the status on the ground after landing
     // return healthy for a few seconds after landing so that filter disturbances don't fail the GPS
-    static bool usingInFlight = false;
     usingInFlight = (vehicleArmed && validOrigin && !constPosMode) || (!vehicleArmed && usingInFlight && (imuSampleTime_ms - timeAtDisarm_ms) < 5000 && gpsAccuracyGood);
 
     if (usingInFlight) {
@@ -5232,10 +5247,6 @@ bool NavEKF::calcGpsGoodToAlign(void)
 // Read at 20Hz and apply a median filter
 void NavEKF::readRangeFinder(void)
 {
-    static float storedRngMeas[3];
-    static uint32_t storedRngMeasTime_ms[3];
-    static uint32_t lastRngMeasTime_ms = 0;
-    static uint8_t rngMeasIndex = 0;
     uint8_t midIndex;
     uint8_t maxIndex;
     uint8_t minIndex;
@@ -5340,15 +5351,10 @@ void NavEKF::getQuaternion(Quaternion& ret) const
 void NavEKF::calcGpsGoodForFlight(void)
 {
     // use a simple criteria based on the GPS receivers claimed speed accuracy and the EKF innovation consistency checks
-    static bool gpsSpdAccPass = false;
-    static bool ekfInnovationsPass = false;
 
     // set up varaibles and constants used by filter that is applied to GPS speed accuracy
     const float alpha1 = 0.2f; // coefficient for first stage LPF applied to raw speed accuracy data
     const float tau = 10.0f; // time constant (sec) of peak hold decay
-    static float lpfFilterState = 0.0f; // first stage LPF filter state
-    static float peakHoldFilterState = 0.0f; // peak hold with exponential decay filter state
-    static uint32_t lastTime_ms = 0;
     if (lastTime_ms == 0) {
         lastTime_ms =  imuSampleTime_ms;
     }
@@ -5377,8 +5383,6 @@ void NavEKF::calcGpsGoodForFlight(void)
 
     // Apply a threshold test with hysteresis to the normalised position and velocity innovations
     // Require a fail for one second and a pass for 5 seconds to transition
-    static uint32_t lastInnovPassTime_ms = 0;
-    static uint32_t lastInnovFailTime_ms = 0;
     if (lastInnovFailTime_ms == 0) {
         lastInnovFailTime_ms = imuSampleTime_ms;
         lastInnovPassTime_ms = imuSampleTime_ms;
