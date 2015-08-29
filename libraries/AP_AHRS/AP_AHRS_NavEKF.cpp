@@ -84,10 +84,40 @@ void AP_AHRS_NavEKF::update(void)
         }
         if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
             ekf_started = EKF.InitialiseFilterDynamic();
+
+            if (ekf_started) {
+                lastEkfHealthyTime_ms = hal.scheduler->millis();
+                lastEkfResetTime_ms = lastEkfHealthyTime_ms;
+            }
         }
     }
     if (ekf_started) {
         EKF.UpdateFilter();
+        // If EKF is started we switch away if it reports unhealthy. This could be due to bad
+        // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
+        // an internal processing error, but not for bad sensor data.
+        uint8_t ekf_faults;
+        EKF.getFilterFaults(ekf_faults);
+        bool ekfHealthy = ekf_started && ((_ekf_use == EKF_USE_WITH_FALLBACK && EKF.healthy()) || (_ekf_use == EKF_USE_WITHOUT_FALLBACK && ekf_faults == 0));
+        // Check if the EKF is healthy and reinitialise if unhealthy for 200 msec
+        // Don't repeat until 1500 msec has lapsed to allow EKF time to restart
+        // Don't do on the ground because the health criteria are tightened before the vehicle arms and we could end up with repeating resets
+        if (ekfHealthy || !hal.util->get_soft_armed()) {
+            lastEkfHealthyTime_ms = hal.scheduler->millis();
+        }
+        if ((hal.scheduler->millis() - lastEkfHealthyTime_ms > 200) && !ekfStarting) {
+            bool restartSuccessful = EKF.InitialiseFilterDynamic();
+            if (restartSuccessful) {
+                hal.console->printf("EKF restarted\n");
+                lastEkfHealthyTime_ms = hal.scheduler->millis();
+                ekfStarting = true;
+                lastEkfResetTime_ms = lastEkfHealthyTime_ms;
+             }
+        }
+        if (ekfStarting && (hal.scheduler->millis() - lastEkfResetTime_ms > 1500)) {
+            ekfStarting = false;
+        }
+
         EKF.getRotationBodyToNED(_dcm_matrix);
         if (using_EKF()) {
             Vector3f eulers;
@@ -352,6 +382,7 @@ bool AP_AHRS_NavEKF::using_EKF(void) const
     // If EKF is started we switch away if it reports unhealthy. This could be due to bad
     // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
     // an internal processing error, but not for bad sensor data.
+    // if EKF is unhealthy for longer than 200msec, we re-initiliase the filter
     bool ret = ekf_started && ((_ekf_use == EKF_USE_WITH_FALLBACK && EKF.healthy()) || (_ekf_use == EKF_USE_WITHOUT_FALLBACK && ekf_faults == 0));
     if (!ret) {
         return false;
