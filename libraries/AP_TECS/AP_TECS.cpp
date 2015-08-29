@@ -551,7 +551,7 @@ void AP_TECS::_update_throttle(void)
   		// Calculate integrator state, constraining state
 		// Set integrator to a max throttle value during climbout
         _integ6_state = _integ6_state + (_STE_error * _integGain) * _DT * K_STE2Thr;
-		if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
+		if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)
 		{
 			_integ6_state = integ_max;
 		}
@@ -645,7 +645,7 @@ void AP_TECS::_update_pitch(void)
 	float SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
     if (!_ahrs.airspeed_sensor_enabled()) {
 		SKE_weighting = 0.0f;
-    } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF) {
+    } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
 		SKE_weighting = 2.0f;
     } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
         SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
@@ -694,7 +694,7 @@ void AP_TECS::_update_pitch(void)
     } else {
         temp += SEBdot_error * _ptchDamp;
     }
-    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF) {
+    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         temp += _PITCHminf * gainInv;
     }
     _integ7_state = constrain_float(_integ7_state, (gainInv * (_PITCHminf - 0.0783f)) - temp, (gainInv * (_PITCHmaxf + 0.0783f)) - temp);
@@ -744,7 +744,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 		_DT                = 0.1f; // when first starting TECS, use a
 								   // small time constant
 	}
-	else if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF)
+	else if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)
 	{
 		_PITCHminf          = 0.000174533f * ptchMinCO_cd;
 		_hgt_dem_adj_last  = hgt_afe;
@@ -784,7 +784,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 	// Convert inputs
     _hgt_dem = hgt_dem_cm * 0.01f;
 	_EAS_dem = EAS_dem_cm * 0.01f;
-    if (_flight_stage == AP_TECS::FLIGHT_TAKEOFF && aparm.takeoff_throttle_max != 0) {
+    if (aparm.takeoff_throttle_max != 0 &&
+        (_flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT)) {
         _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
     } else {
         _THRmaxf  = aparm.throttle_max * 0.01f;
