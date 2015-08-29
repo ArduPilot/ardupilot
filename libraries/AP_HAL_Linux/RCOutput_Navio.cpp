@@ -1,5 +1,5 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "GPIO.h"
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
@@ -124,11 +124,11 @@ void LinuxRCOutput_Navio::set_freq(uint32_t chmask, uint16_t freq_hz)
     hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
 
     /* Enable external clocking */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
+    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
                             PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT); 
 
     /* Restart the device to apply new settings and enable auto-incremented write */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, 
+    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
                             PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
     _frequency = freq_hz;
 

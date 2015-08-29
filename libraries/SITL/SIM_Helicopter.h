@@ -51,6 +51,12 @@ private:
     float rsc_setpoint = 0.8f;
     float thrust_scale;
     float tail_thrust_scale;
+    enum frame_types {
+        HELI_FRAME_CONVENTIONAL,
+        HELI_FRAME_DUAL,
+        HELI_FRAME_COMPOUND
+    } frame_type = HELI_FRAME_CONVENTIONAL;
+    bool gas_heli = false;
 };
 
 

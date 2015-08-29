@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
@@ -69,7 +69,17 @@ void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     switch (pin) {
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
-        ioctl(_gpio_fmu_fd, output?GPIO_SET_OUTPUT:GPIO_SET_INPUT, 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0)));
+        uint32_t pinmask = 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0));
+        if (output) {
+            uint8_t old_value = read(pin);
+            if (old_value) {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
+            } else {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
+            }
+        } else {
+            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
+        }
         break;
     }
 }
@@ -242,7 +252,13 @@ bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mo
  */
 bool PX4GPIO::usb_connected(void)
 {
-    return stm32_gpioread(GPIO_OTGFS_VBUS);
+    /*
+      we use a combination of voltage on the USB connector and the
+      open of the /dev/ttyACM0 character device. This copes with
+      systems where the VBUS may go high even with no USB connected
+      (such as AUAV-X2)
+     */
+    return stm32_gpioread(GPIO_OTGFS_VBUS) && _usb_connected;
 }
 
 

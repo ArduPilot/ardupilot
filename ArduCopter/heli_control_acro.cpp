@@ -11,7 +11,7 @@
 bool Copter::heli_acro_init(bool ignore_checks)
 {
     // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
-    attitude_control.use_flybar_passthrough(motors.has_flybar());
+    attitude_control.use_flybar_passthrough(motors.has_flybar(), motors.tail_type() == AP_MOTORS_HELI_TAILTYPE_SERVO_EXTGYRO);
 
     // always successfully enter acro
     return true;
@@ -33,10 +33,13 @@ void Copter::heli_acro_run()
         heli_flags.init_targets_on_arming=true;
         attitude_control.set_yaw_target_to_current_heading();
     }
-
+    
     if(motors.armed() && heli_flags.init_targets_on_arming) {
-        heli_flags.init_targets_on_arming=false;
         attitude_control.relax_bf_rate_controller();
+        attitude_control.set_yaw_target_to_current_heading();
+        if (motors.rotor_speed_above_critical()) {
+            heli_flags.init_targets_on_arming=false;
+        }
     }   
 
     // send RC inputs direct into motors library for use during manual passthrough for helicopter setup

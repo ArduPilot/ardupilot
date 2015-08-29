@@ -3,7 +3,7 @@
  *       DataFlash.cpp - DataFlash log library generic code
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "DataFlash.h"
 
 extern AP_HAL::HAL& hal;

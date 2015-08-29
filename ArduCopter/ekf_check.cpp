@@ -30,6 +30,12 @@ static struct {
 // should be called at 10hz
 void Copter::ekf_check()
 {
+    // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
+    Location temp_loc;
+    if (!ahrs.get_NavEKF_const().getOriginLLH(temp_loc)) {
+        return;
+    }
+
     // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
     if (!motors.armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
@@ -54,7 +60,7 @@ void Copter::ekf_check()
                 Log_Write_Error(ERROR_SUBSYSTEM_EKFCHECK, ERROR_CODE_EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((hal.scheduler->millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs_send_text_P(SEVERITY_HIGH,PSTR("EKF variance"));
+                    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("EKF variance"));
                     ekf_check_state.last_warn_time = hal.scheduler->millis();
                 }
                 failsafe_ekf_event();
@@ -91,7 +97,7 @@ bool Copter::ekf_over_threshold()
     }
 
     // return true immediately if position is bad
-    if (!position_ok() && !optflow_position_ok()) {
+    if (!ekf_position_ok() && !optflow_position_ok()) {
         return true;
     }
 

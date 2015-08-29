@@ -16,7 +16,7 @@
   simple socket handling class for systems with BSD socket API
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if HAL_OS_SOCKETS
 
 #include "Socket.h"
@@ -25,12 +25,27 @@
   constructor
  */
 SocketAPM::SocketAPM(bool _datagram) :
-datagram(_datagram)
+    SocketAPM(_datagram, 
+              socket(AF_INET, _datagram?SOCK_DGRAM:SOCK_STREAM, 0))
+{}
+
+SocketAPM::SocketAPM(bool _datagram, int _fd) :
+    datagram(_datagram),
+    fd(_fd)
 {
-    fd = socket(AF_INET, datagram?SOCK_DGRAM:SOCK_STREAM, 0);
     fcntl(fd, F_SETFD, FD_CLOEXEC);
-    int one = 1;
-    setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    if (!datagram) {
+        int one = 1;
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    }
+}
+
+SocketAPM::~SocketAPM()
+{
+    if (fd != -1) {
+        ::close(fd);
+        fd = -1;
+    }
 }
 
 void SocketAPM::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
@@ -98,7 +113,7 @@ void SocketAPM::set_blocking(bool blocking)
 /*
   send some data
  */
-ssize_t SocketAPM::send(void *buf, size_t size)
+ssize_t SocketAPM::send(const void *buf, size_t size)
 {
     return ::send(fd, buf, size, 0);
 }
@@ -106,7 +121,7 @@ ssize_t SocketAPM::send(void *buf, size_t size)
 /*
   send some data
  */
-ssize_t SocketAPM::sendto(void *buf, size_t size, const char *address, uint16_t port)
+ssize_t SocketAPM::sendto(const void *buf, size_t size, const char *address, uint16_t port)
 {
     struct sockaddr_in sockaddr;
     make_sockaddr(address, port, sockaddr);
@@ -118,6 +133,33 @@ ssize_t SocketAPM::sendto(void *buf, size_t size, const char *address, uint16_t 
  */
 ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 {
+    if (!pollin(timeout_ms)) {
+        return -1;
+    }
+    socklen_t len = sizeof(in_addr);
+    return ::recvfrom(fd, buf, size, MSG_DONTWAIT, (sockaddr *)&in_addr, &len);
+}
+
+/*
+  return the IP address and port of the last received packet
+ */
+void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port)
+{
+    ip_addr = inet_ntoa(in_addr.sin_addr);
+    port = ntohs(in_addr.sin_port);
+}
+
+void SocketAPM::set_broadcast(void)
+{
+    int one = 1;
+    setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+}
+
+/*
+  return true if there is pending data for input
+ */
+bool SocketAPM::pollin(uint32_t timeout_ms)
+{
     fd_set fds;
     struct timeval tv;
 
@@ -128,10 +170,58 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
     if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
-        return -1;
+        return false;
     }
-    
-    return ::recv(fd, buf, size, 0);
+    return true;
+}
+
+
+/*
+  return true if there is room for output data
+ */
+bool SocketAPM::pollout(uint32_t timeout_ms)
+{
+    fd_set fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000UL;
+
+    if (select(fd+1, NULL, &fds, NULL, &tv) != 1) {
+        return false;
+    }
+    return true;
+}
+
+/* 
+   start listening for new tcp connections
+ */
+bool SocketAPM::listen(uint16_t backlog)
+{
+    return ::listen(fd, (int)backlog) == 0;
+}
+
+/*
+  accept a new connection. Only valid for TCP connections after
+  listen has been used. A new socket is returned
+*/
+SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
+{
+    if (!pollin(timeout_ms)) {
+        return NULL;
+    }
+
+    int newfd = ::accept(fd, NULL, NULL);
+    if (newfd == -1) {
+        return NULL;
+    }
+    // turn off nagle for lower latency
+    int one = 1;
+    setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    return new SocketAPM(false, newfd);
 }
 
 #endif // HAL_OS_SOCKETS

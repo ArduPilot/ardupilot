@@ -18,6 +18,7 @@
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
 #define INS_VIBRATION_CHECK 1
+#define INS_VIBRATION_CHECK_INSTANCES 2
 #else
 #define INS_MAX_INSTANCES 1
 #define INS_MAX_BACKENDS  1
@@ -26,12 +27,13 @@
 
 
 #include <stdint.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
-#include <LowPassFilter.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_InertialSensor_Backend;
+class AuxiliaryBus;
 
 /*
   forward declare DataFlash class. We can't include DataFlash.h
@@ -52,6 +54,7 @@ class AP_InertialSensor
 
 public:
     AP_InertialSensor();
+    static AP_InertialSensor *get_instance();
 
     enum Start_style {
         COLD_START = 0,
@@ -87,13 +90,11 @@ public:
     uint8_t register_gyro(void);
     uint8_t register_accel(void);
 
-#if !defined( __AVR_ATmega1280__ )
     // perform accelerometer calibration including providing user instructions
     // and feedback
     bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
                          float& trim_roll,
                          float& trim_pitch);
-#endif
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
@@ -112,31 +113,21 @@ public:
     ///
     const Vector3f     &get_gyro(uint8_t i) const { return _gyro[i]; }
     const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
-    void               set_gyro(uint8_t instance, const Vector3f &gyro);
 
     // set gyro offsets in radians/sec
     const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
     //get delta angle if available
-    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const {
-        if(_delta_angle_valid[i]) delta_angle = _delta_angle[i];
-        return _delta_angle_valid[i];
-    }
-
+    bool get_delta_angle(uint8_t i, Vector3f &delta_angle) const;
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
 
     //get delta velocity if available
-    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const {
-        if(_delta_velocity_valid[i]) delta_velocity = _delta_velocity[i];
-        return _delta_velocity_valid[i];
-    }
+    bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
     bool get_delta_velocity(Vector3f &delta_velocity) const { return get_delta_velocity(_primary_accel, delta_velocity); }
 
-    float get_delta_velocity_dt(uint8_t i) const {
-        return _delta_velocity_dt[i];
-    }
-    float get_delta_velocity() const { return get_delta_velocity_dt(_primary_accel); }
+    float get_delta_velocity_dt(uint8_t i) const;
+    float get_delta_velocity_dt() const { return get_delta_velocity_dt(_primary_accel); }
 
     /// Fetch the current accelerometer values
     ///
@@ -144,7 +135,6 @@ public:
     ///
     const Vector3f     &get_accel(uint8_t i) const { return _accel[i]; }
     const Vector3f     &get_accel(void) const { return get_accel(_primary_accel); }
-    void               set_accel(uint8_t instance, const Vector3f &accel);
 
     uint32_t get_gyro_error_count(uint8_t i) const { return _gyro_error_count[i]; }
     uint32_t get_accel_error_count(uint8_t i) const { return _accel_error_count[i]; }
@@ -156,12 +146,14 @@ public:
     uint8_t get_gyro_count(void) const { return _gyro_count; }
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
+    bool use_gyro(uint8_t instance) const;
 
     bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
     bool get_accel_health_all(void) const;
     uint8_t get_accel_count(void) const { return _accel_count; };
     bool accel_calibrated_ok_all() const;
+    bool use_accel(uint8_t instance) const;
 
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
@@ -227,35 +219,56 @@ public:
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
     // retrieve latest calculated vibration levels
-    Vector3f get_vibration_levels() const;
+    Vector3f get_vibration_levels() const { return get_vibration_levels(_primary_accel); }
+    Vector3f get_vibration_levels(uint8_t instance) const;
 
     // retrieve and clear accelerometer clipping count
     uint32_t get_accel_clip_count(uint8_t instance) const;
 #endif
 
+    // check for vibration movement. True when all axis show nearly zero movement
+    bool is_still();
+
+    /*
+      HIL set functions. The minimum for HIL is set_accel() and
+      set_gyro(). The others are option for higher fidelity log
+      playback
+     */
+    void set_accel(uint8_t instance, const Vector3f &accel);
+    void set_gyro(uint8_t instance, const Vector3f &gyro);
+    void set_delta_time(float delta_time);
+    void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
+    void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
+
+    AuxiliaryBus *get_auxiliar_bus(int16_t backend_id);
+
 private:
 
     // load backend drivers
-    void _add_backend(AP_InertialSensor_Backend *(detect)(AP_InertialSensor &));
+    void _add_backend(AP_InertialSensor_Backend *backend);
     void _detect_backends(void);
+    void _start_backends();
+    AP_InertialSensor_Backend *_find_backend(int16_t backend_id);
 
     // gyro initialisation
     void _init_gyro();
 
-#if !defined( __AVR_ATmega1280__ )
     // Calibration routines borrowed from Rolfe Schmidt
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
     // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(const Vector3f accel_sample[6], Vector3f& accel_offsets, Vector3f& accel_scale, enum Rotation r);
+    bool _calibrate_accel(const Vector3f accel_sample[6],
+                          Vector3f& accel_offsets,
+                          Vector3f& accel_scale,
+                          float max_abs_offsets,
+                          enum Rotation rotation);
     bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
                              AP_InertialSensor_UserInteract* interact);
     void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
     void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
     void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
-#endif
 
     // save parameters to eeprom
     void  _save_parameters();
@@ -292,12 +305,18 @@ private:
     AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
     AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
 
+    // accelerometer max absolute offsets to be used for calibration
+    float _accel_max_abs_offsets[INS_MAX_INSTANCES];
+
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
     AP_Int8     _accel_filter_cutoff;
     AP_Int8     _gyro_filter_cutoff;
+
+    // use for attitude, velocity, position estimates
+    AP_Int8     _use[INS_MAX_INSTANCES];
 
     // board orientation from AHRS
     enum Rotation _board_orientation;
@@ -321,6 +340,8 @@ private:
     // should we log raw accel/gyro data?
     bool _log_raw_data:1;
 
+    bool _backends_detected:1;
+
     // the delta time in seconds for the last sample
     float _delta_time;
 
@@ -343,11 +364,23 @@ private:
 #if INS_VIBRATION_CHECK
     // vibration and clipping
     uint32_t _accel_clip_count[INS_MAX_INSTANCES];
-    LowPassFilterVector3f _accel_vibe_floor_filter;
-    LowPassFilterVector3f _accel_vibe_filter;
+    LowPassFilterVector3f _accel_vibe_floor_filter[INS_VIBRATION_CHECK_INSTANCES];
+    LowPassFilterVector3f _accel_vibe_filter[INS_VIBRATION_CHECK_INSTANCES];
+
+    // threshold for detecting stillness
+    AP_Float _still_threshold;
 #endif
 
+    /*
+      state for HIL support
+     */
+    struct {
+        float delta_time;
+    } _hil {};
+
     DataFlash_Class *_dataflash;
+
+    static AP_InertialSensor *_s_instance;
 };
 
 #include "AP_InertialSensor_Backend.h"
@@ -358,6 +391,7 @@ private:
 #include "AP_InertialSensor_L3G4200D.h"
 #include "AP_InertialSensor_Flymaple.h"
 #include "AP_InertialSensor_MPU9150.h"
+#include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_HIL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"

@@ -18,38 +18,22 @@
 #ifndef __AP_NOTIFY_H__
 #define __AP_NOTIFY_H__
 
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
-#include <AP_BoardLED.h>
-#include <ToshibaLED.h>
-#include <ToshibaLED_I2C.h>
-#include <ToshibaLED_PX4.h>
-#include <ToneAlarm_PX4.h>
-#include <ToneAlarm_Linux.h>
-#include <NavioLED_I2C.h>
-#include <ExternalLED.h>
-#include <Buzzer.h>
-#include <VRBoard_LED.h>
-#include <OreoLED_PX4.h>
+#include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_BoardLED.h"
+#include "ToshibaLED.h"
+#include "ToshibaLED_I2C.h"
+#include "ToshibaLED_PX4.h"
+#include "ToneAlarm_PX4.h"
+#include "ToneAlarm_Linux.h"
+#include "NavioLED_I2C.h"
+#include "ExternalLED.h"
+#include "Buzzer.h"
+#include "VRBoard_LED.h"
+#include "OreoLED_PX4.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    #define CONFIG_NOTIFY_DEVICES_COUNT (3+OREOLED_ENABLED)
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 
-    #define CONFIG_NOTIFY_DEVICES_COUNT 3
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    #define CONFIG_NOTIFY_DEVICES_COUNT 4
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-        #define CONFIG_NOTIFY_DEVICES_COUNT 2
-    #else
-        #define CONFIG_NOTIFY_DEVICES_COUNT 3
-    #endif
-#else
-    #define CONFIG_NOTIFY_DEVICES_COUNT 2
 #endif
 
 class AP_Notify
@@ -105,7 +89,7 @@ public:
     static void handle_led_control(mavlink_message_t* msg);
 
 private:
-    static NotifyDevice* _devices[CONFIG_NOTIFY_DEVICES_COUNT];
+    static NotifyDevice* _devices[];
 };
 
 #endif    // __AP_NOTIFY_H__

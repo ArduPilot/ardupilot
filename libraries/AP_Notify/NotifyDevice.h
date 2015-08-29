@@ -1,8 +1,8 @@
 #ifndef __NOTIFYDEVICE_H__
 #define __NOTIFYDEVICE_H__
 
-#include <AP_Common.h>
-#include <GCS_MAVLink.h>
+#include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class NotifyDevice {
 public:

@@ -2,11 +2,13 @@
 #ifndef __AP_HAL_LINUX_I2CDRIVER_H__
 #define __AP_HAL_LINUX_I2CDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
 public:
     LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
+    ~LinuxI2CDriver();
 
     void begin();
     void end();
@@ -41,11 +43,12 @@ public:
     AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
 
 private:
-    AP_HAL::Semaphore* _semaphore;
     bool set_address(uint8_t addr);
-    int _fd;
+
+    AP_HAL::Semaphore* _semaphore;
+    char *_device = NULL;
+    int _fd = -1;
     uint8_t _addr;
-    const char *_device;
 };
 
 #endif // __AP_HAL_LINUX_I2CDRIVER_H__

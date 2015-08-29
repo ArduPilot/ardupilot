@@ -17,7 +17,7 @@
   multicopter simulator class
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Multicopter.h"
 #include <stdio.h>
@@ -109,7 +109,7 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     terminal_velocity(15.0),
     terminal_rotation_rate(4*radians(360.0))
 {
-    for (uint8_t i=0; i<sizeof(supported_frames)/sizeof(supported_frames[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
         if (strcasecmp(frame_str, supported_frames[i].name) == 0) {
             frame = &supported_frames[i];
         }

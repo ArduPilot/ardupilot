@@ -3,7 +3,7 @@
 #define __AP_HAL_LINUX_GPIO_RPI_H__
 
 #include <stdint.h>
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #define LOW                 0
 #define HIGH                1

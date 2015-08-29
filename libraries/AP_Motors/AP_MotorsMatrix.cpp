@@ -19,7 +19,7 @@
  *       Code by RandyMackay. DIYDrones.com
  *
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 
 extern const AP_HAL::HAL& hal;
@@ -27,9 +27,6 @@ extern const AP_HAL::HAL& hal;
 // Init
 void AP_MotorsMatrix::Init()
 {
-    // call parent Init function to set-up throttle curve
-    AP_Motors::Init();
-
     // setup the motors
     setup_motors();
 
@@ -132,10 +129,9 @@ void AP_MotorsMatrix::output_armed_not_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    int16_t min_thr = rel_pwm_to_thr_range(_spin_when_armed_ramped);
-
-    if (_throttle_control_input <= min_thr) {
-        _throttle_control_input = min_thr;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
         limit.throttle_lower = true;
     }
 
@@ -201,8 +197,9 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     limit.throttle_upper = false;
 
     // Ensure throttle is within bounds of 0 to 1000
-    if (_throttle_control_input <= _min_throttle) {
-        _throttle_control_input = _min_throttle;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
         limit.throttle_lower = true;
     }
     if (_throttle_control_input >= _max_throttle) {
@@ -318,12 +315,18 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // do we need to reduce roll, pitch, yaw command
     // earlier code does not allow both limit's to be passed simultaneously with abs(_yaw_factor)<1
     if ((rpy_low+out_best_thr_pwm)+thr_adj < out_min_pwm){
-        rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
+        // protect against divide by zero
+        if (rpy_low != 0) {
+            rpy_scale = (float)(out_min_pwm-thr_adj-out_best_thr_pwm)/rpy_low;
+        }
         // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
         limit.roll_pitch = true;
         limit.yaw = true;
     }else if((rpy_high+out_best_thr_pwm)+thr_adj > out_max_pwm){
-        rpy_scale = (float)(out_max_pwm-thr_adj-out_best_thr_pwm)/rpy_high;
+        // protect against divide by zero
+        if (rpy_high != 0) {
+            rpy_scale = (float)(out_max_pwm-thr_adj-out_best_thr_pwm)/rpy_high;
+        }
         // we haven't even been able to apply full roll, pitch and minimal yaw without scaling
         limit.roll_pitch = true;
         limit.yaw = true;

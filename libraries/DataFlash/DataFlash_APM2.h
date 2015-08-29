@@ -6,8 +6,8 @@
 #ifndef __DATAFLASH_APM2_H__
 #define __DATAFLASH_APM2_H__
 
-#include <AP_HAL.h>
-#include "DataFlash.h"
+#include <AP_HAL/AP_HAL.h>
+#include "DataFlash_Block.h"
 
 class DataFlash_APM2 : public DataFlash_Block
 {
@@ -44,6 +44,9 @@ private:
     AP_HAL::Semaphore* _spi_sem;
 
 public:
+    DataFlash_APM2(DataFlash_Class &front) :
+        DataFlash_Block(front) { }
+
     void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();

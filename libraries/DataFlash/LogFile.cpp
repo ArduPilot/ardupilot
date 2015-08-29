@@ -1,14 +1,14 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "DataFlash.h"
 #include <stdlib.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_Baro.h>
-#include <AP_AHRS.h>
-#include "../AP_BattMonitor/AP_BattMonitor.h"
-#include <AP_Compass.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Compass/AP_Compass.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -16,7 +16,22 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 {
     _num_types = num_types;
     _structures = structure;
-    _writes_enabled = true;
+
+    // DataFlash
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+    backend = new DataFlash_APM1(*this);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+    backend = new DataFlash_APM2(*this);
+#elif defined(HAL_BOARD_LOG_DIRECTORY)
+    backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
+#else
+    // no dataflash driver
+    backend = new DataFlash_Empty(*this);
+#endif
+    if (backend == NULL) {
+        hal.scheduler->panic(PSTR("Unable to open dataflash"));
+    }
+    backend->Init(structure, num_types);
 }
 
 // This function determines the number of whole or partial log files in the DataFlash
@@ -275,10 +290,11 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 #ifndef DATAFLASH_NO_CLI
 /*
   read and print a log entry using the format strings from the given structure
+  - this really should in in the frontend, not the backend
  */
-void DataFlash_Class::_print_log_entry(uint8_t msg_type,
-                                       print_mode_fn print_mode,
-                                       AP_HAL::BetterStream *port)
+void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
+                                         print_mode_fn print_mode,
+                                         AP_HAL::BetterStream *port)
 {
     uint8_t i;
     for (i=0; i<_num_types; i++) {
@@ -354,6 +370,16 @@ void DataFlash_Class::_print_log_entry(uint8_t msg_type,
         case 'f': {
             float v;
             memcpy(&v, &pkt[ofs], sizeof(v));
+            port->printf_P(PSTR("%f"), (double)v);
+            ofs += sizeof(v);
+            break;
+        }
+        case 'd': {
+            double v;
+            memcpy(&v, &pkt[ofs], sizeof(v));
+            // note that %f here *really* means a single-precision
+            // float, so we lose precision printing this double out
+            // dtoa_engine needed....
             port->printf_P(PSTR("%f"), (double)v);
             ofs += sizeof(v);
             break;
@@ -575,13 +601,13 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
 #endif // DATAFLASH_NO_CLI
 
 // This function starts a new log file in the DataFlash, and writes
-// the format of supported messages in the log, plus all parameters
+// the format of supported messages in the log
 uint16_t DataFlash_Class::StartNewLog(void)
 {
     uint16_t ret;
     ret = start_new_log();
     if (ret == 0xFFFF) {
-        // don't write out parameters if we fail to open the log
+        // don't write out formats if we fail to open the log
         return ret;
     }
     // write log formats so the log is self-describing
@@ -605,9 +631,9 @@ void DataFlash_Class::AddLogFormats(const struct LogStructure *structures, uint8
 }
 
 /*
-  write a structure format to the log
+  write a structure format to the log - should be in frontend
  */
-void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
+void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
 {
     memset(&pkt, 0, sizeof(pkt));
     pkt.head1 = HEAD_BYTE1;
@@ -680,49 +706,25 @@ void DataFlash_Class::Log_Write_Parameters(void)
 // Write an GPS packet
 void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relative_alt)
 {
-    if (i == 0) {
-        const struct Location &loc = gps.location(i);
-        struct log_GPS pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
-            time_us       : hal.scheduler->micros64(),
-            status        : (uint8_t)gps.status(i),
-            gps_week_ms   : gps.time_week_ms(i),
-            gps_week      : gps.time_week(i),
-            num_sats      : gps.num_sats(i),
-            hdop          : gps.get_hdop(i),
-            latitude      : loc.lat,
-            longitude     : loc.lng,
-            rel_altitude  : relative_alt,
-            altitude      : loc.alt,
-            ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
-            ground_course : gps.ground_course_cd(i),
-            vel_z         : gps.velocity(i).z,
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-    if (i > 0) {
-        const struct Location &loc2 = gps.location(i);
-        struct log_GPS2 pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_GPS2_MSG),
-            time_us       : hal.scheduler->micros64(),
-            status        : (uint8_t)gps.status(i),
-            gps_week_ms   : gps.time_week_ms(i),
-            gps_week      : gps.time_week(i),
-            num_sats      : gps.num_sats(i),
-            hdop          : gps.get_hdop(i),
-            latitude      : loc2.lat,
-            longitude     : loc2.lng,
-            altitude      : loc2.alt,
-            ground_speed  : (uint32_t)(gps.ground_speed(i)*100),
-            ground_course : gps.ground_course_cd(i),
-            vel_z         : gps.velocity(i).z,
-            dgps_numch    : 0,
-            dgps_age      : 0
-        };
-        WriteBlock(&pkt2, sizeof(pkt2));
-    }
-#endif
+    const struct Location &loc = gps.location(i);
+    struct log_GPS pkt = {
+        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
+        time_us       : hal.scheduler->micros64(),
+        status        : (uint8_t)gps.status(i),
+        gps_week_ms   : gps.time_week_ms(i),
+        gps_week      : gps.time_week(i),
+        num_sats      : gps.num_sats(i),
+        hdop          : gps.get_hdop(i),
+        latitude      : loc.lat,
+        longitude     : loc.lng,
+        rel_altitude  : relative_alt,
+        altitude      : loc.alt,
+        ground_speed  : (uint32_t)(gps.ground_speed(i) * 100),
+        ground_course : gps.ground_course_cd(i),
+        vel_z         : gps.velocity(i).z,
+        used          : (uint8_t)(gps.primary_sensor() == i)
+    };
+    WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write an RCIN packet
@@ -868,6 +870,80 @@ void DataFlash_Class::Log_Write_IMU(const AP_InertialSensor &ins)
 #endif
 }
 
+// Write an accel/gyro delta time data packet
+void DataFlash_Class::Log_Write_IMUDT(const AP_InertialSensor &ins)
+{
+    float delta_t = ins.get_delta_time();
+    float delta_vel_t = ins.get_delta_velocity_dt(0);
+    Vector3f delta_angle, delta_velocity;
+    ins.get_delta_angle(0, delta_angle);
+    ins.get_delta_velocity(0, delta_velocity);
+
+    uint64_t time_us = hal.scheduler->micros64();
+    struct log_IMUDT pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT_MSG),
+        time_us : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
+        return;
+    }
+#if INS_MAX_INSTANCES > 1
+    delta_vel_t = ins.get_delta_velocity_dt(1);
+    if (!ins.get_delta_angle(1, delta_angle)) {
+        delta_angle.zero();
+    }
+    if (!ins.get_delta_velocity(1, delta_velocity)) {
+        delta_velocity.zero();
+    }
+    struct log_IMUDT pkt2 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT2_MSG),
+        time_us     : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt2, sizeof(pkt2));
+
+    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
+        return;
+    }
+    delta_vel_t = ins.get_delta_velocity_dt(1);
+    if (!ins.get_delta_angle(2, delta_angle)) {
+        delta_angle.zero();
+    }
+    if (!ins.get_delta_velocity(2, delta_velocity)) {
+        delta_velocity.zero();
+    }
+    struct log_IMUDT pkt3 = {
+        LOG_PACKET_HEADER_INIT(LOG_IMUDT3_MSG),
+        time_us     : time_us,
+        delta_time   : delta_t,
+        delta_vel_dt : delta_vel_t,
+        delta_ang_x  : delta_angle.x,
+        delta_ang_y  : delta_angle.y,
+        delta_ang_z  : delta_angle.z,
+        delta_vel_x  : delta_velocity.x,
+        delta_vel_y  : delta_velocity.y,
+        delta_vel_z  : delta_velocity.z
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
+#endif
+}
+
 void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
 {
 #if INS_VIBRATION_CHECK
@@ -885,6 +961,45 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
     };
     WriteBlock(&pkt, sizeof(pkt));
 #endif
+}
+
+void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+{
+    Log_Write_Message_P(firmware_string);
+
+#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
+    Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+#endif
+
+    // write system identifier as well if available
+    char sysid[40];
+    if (hal.util->get_system_id(sysid)) {
+        Log_Write_Message(sysid);
+    }
+
+    // Write all current parameters
+    Log_Write_Parameters();
+}
+
+// Write a mission command. Total length : 36 bytes
+void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
+                                            const AP_Mission::Mission_Command &cmd)
+{
+    mavlink_mission_item_t mav_cmd = {};
+    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
+    Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+}
+
+void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
+{
+    Log_Write_Message_P(PSTR("New mission"));
+
+    AP_Mission::Mission_Command cmd;
+    for (uint16_t i = 0; i < mission.num_commands(); i++) {
+        if (mission.read_cmd_from_storage(i,cmd)) {
+            Log_Write_Mission_Cmd(mission, cmd);
+        }
+    }
 }
 
 // Write a text message to the log
@@ -1361,6 +1476,31 @@ void DataFlash_Class::Log_Write_PID(uint8_t msg_type, const PID_Info &info)
         D               : info.D,
         FF              : info.FF,
         AFF             : info.AFF
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void DataFlash_Class::Log_Write_Origin(uint8_t origin_type, const Location &loc)
+{
+    uint64_t time_us = hal.scheduler->micros64();
+    struct log_ORGN pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
+        time_us     : time_us,
+        origin_type : origin_type,
+        latitude    : loc.lat,
+        longitude   : loc.lng,
+        altitude    : loc.alt
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void DataFlash_Class::Log_Write_RPM(const AP_RPM &rpm_sensor)
+{
+    struct log_RPM pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
+        time_us     : hal.scheduler->micros64(),
+        rpm1        : rpm_sensor.get_rpm(0),
+        rpm2        : rpm_sensor.get_rpm(1)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

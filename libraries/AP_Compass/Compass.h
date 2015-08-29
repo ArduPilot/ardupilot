@@ -3,11 +3,11 @@
 #define Compass_h
 
 #include <inttypes.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_HAL/AP_HAL.h>
 #include "AP_Compass_Backend.h"
 
 // compass product id
@@ -18,6 +18,7 @@
 #define AP_COMPASS_TYPE_PX4             0x04
 #define AP_COMPASS_TYPE_VRBRAIN         0x05
 #define AP_COMPASS_TYPE_AK8963_MPU9250  0x06
+#define AP_COMPASS_TYPE_AK8963_I2C      0x07
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -232,7 +233,7 @@ public:
     void        set_hil_mode(void) { _hil_mode = true; }
 
     // return last update time in microseconds
-    uint32_t last_update_usec(void) const { return _last_update_usec; }
+    uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -251,11 +252,8 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    void _add_backend(AP_Compass_Backend *(detect)(Compass &));
+    void _add_backend(AP_Compass_Backend *backend);
     void _detect_backends(void);
-
-    //< micros() time of last update
-    uint32_t _last_update_usec;
 
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
@@ -320,6 +318,7 @@ private:
 
         // when we last got data
         uint32_t    last_update_ms;
+        uint32_t    last_update_usec;
     } _state[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only

@@ -8,7 +8,7 @@
 /// @author Andrew Tridgell
 ///         Andreas Antonopoulos
 
-#include <AP_Limit_GPSLock.h>
+#include "AP_Limit_GPSLock.h"
 
 const AP_Param::GroupInfo AP_Limit_GPSLock::var_info[] PROGMEM = {
     // @Param: GPSLCK_ON

@@ -17,10 +17,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <GCS.h>
-#include <AP_AHRS.h>
-#include <AP_HAL.h>
-#include <AP_Vehicle.h>
+#include "GCS.h"
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -89,6 +89,9 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
         uart->write(0x30);
         uart->write(0x20);
     }
+    // since tcdrain() and TCSADRAIN may not be implemented...
+    hal.scheduler->delay(1);
+    
     uart->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
@@ -218,8 +221,8 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
 {
 #if AP_AHRS_NAVEKF_AVAILABLE
     Vector3f euler;
-    struct Location loc;
-    if (ahrs.get_secondary_attitude(euler) && ahrs.get_secondary_position(loc)) {
+    struct Location loc {};
+    if (ahrs.get_secondary_attitude(euler)) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
                                euler.y,
@@ -377,7 +380,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     if ((unsigned)packet.start_index > mission.num_commands() ||
         (unsigned)packet.end_index > mission.num_commands() ||
         packet.end_index < packet.start_index) {
-        send_text_P(SEVERITY_LOW,PSTR("flight plan update rejected"));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("flight plan update rejected"));
         return;
     }
 
@@ -498,7 +501,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
-        send_text(SEVERITY_LOW, sysid);
+        send_text(MAV_SEVERITY_WARNING, sysid);
     }
 #endif
 
@@ -556,13 +559,27 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     strncpy(key, (char *)packet.param_id, AP_MAX_NAME_SIZE);
     key[AP_MAX_NAME_SIZE] = 0;
 
-    vp = AP_Param::set_param_by_name(key, packet.param_value, &var_type);
+    // find existing param so we can get the old value
+    vp = AP_Param::find(key, &var_type);
     if (vp == NULL) {
         return;
     }
+    float old_value = vp->cast_to_float(var_type);
+
+    // set the value
+    vp->set_float(packet.param_value, var_type);
+
+    /*
+      we force the save if the value is not equal to the old
+      value. This copes with the use of override values in
+      constructors, such as PID elements. Otherwise a set to the
+      default value which differs from the constructor value doesn't
+      save the change
+     */
+    bool force_save = !is_equal(packet.param_value, old_value);
 
     // save the change
-    vp->save();
+    vp->save(force_save);
 
     // Report back the new value if we accepted the change
     // we send the value we actually set, which could be
@@ -584,9 +601,9 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 
 
 void
-GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
+GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
 {
-    if (severity != SEVERITY_LOW && 
+    if (severity < MAV_SEVERITY_WARNING && 
         comm_get_txspace(chan) >= 
         MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
         // send immediately
@@ -601,7 +618,7 @@ GCS_MAVLINK::send_text(gcs_severity severity, const char *str)
 }
 
 void
-GCS_MAVLINK::send_text_P(gcs_severity severity, const prog_char_t *str)
+GCS_MAVLINK::send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
 {
     mavlink_statustext_t m;
     uint8_t i;
@@ -737,7 +754,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             msg->compid,
             MAV_MISSION_ACCEPTED);
         
-        send_text_P(SEVERITY_LOW,PSTR("flight plan received"));
+        send_text_P(MAV_SEVERITY_WARNING,PSTR("flight plan received"));
         waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
@@ -1161,7 +1178,7 @@ void GCS_MAVLINK::send_statustext_all(const prog_char_t *msg)
                 char msg2[50];
                 strncpy_P(msg2, msg, sizeof(msg2));
                 mavlink_msg_statustext_send(chan,
-                                            SEVERITY_HIGH,
+                                            MAV_SEVERITY_CRITICAL,
                                             msg2);
             }
         }
@@ -1245,9 +1262,8 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
 /*
   send AUTOPILOT_VERSION packet
  */
-void GCS_MAVLINK::send_autopilot_version(void) const
+void GCS_MAVLINK::send_autopilot_version(uint8_t major_version, uint8_t minor_version, uint8_t patch_version, uint8_t version_type) const
 {
-    uint16_t capabilities = 0;
     uint32_t flight_sw_version = 0;
     uint32_t middleware_sw_version = 0;
     uint32_t os_sw_version = 0;
@@ -1259,6 +1275,11 @@ void GCS_MAVLINK::send_autopilot_version(void) const
     uint16_t product_id = 0;
     uint64_t uid = 0;
     
+    flight_sw_version = major_version << (8*3) | \
+                        minor_version << (8*2) | \
+                        patch_version << (8*1) | \
+                        version_type  << (8*0);
+
 #if defined(GIT_VERSION)
     strncpy((char *)flight_custom_version, GIT_VERSION, 8);
 #else
@@ -1279,7 +1300,7 @@ void GCS_MAVLINK::send_autopilot_version(void) const
     
     mavlink_msg_autopilot_version_send(
         chan,
-        capabilities,
+        hal.util->get_capabilities(),
         flight_sw_version,
         middleware_sw_version,
         os_sw_version,

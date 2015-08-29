@@ -1,7 +1,7 @@
 #ifndef __TONE_ALARM_DRIVER_H__
 #define __TONE_ALARM_DRIVER_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
 
 #define OCTAVE_OFFSET 0

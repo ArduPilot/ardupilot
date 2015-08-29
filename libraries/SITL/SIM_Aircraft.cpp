@@ -17,9 +17,9 @@
   parent class for aircraft simulators
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 #include "SIM_Aircraft.h"
 #include <unistd.h>
 #include <sys/time.h>
@@ -49,8 +49,8 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     gyro_noise(radians(0.1f)),
     accel_noise(0.3),
     rate_hz(400),
-    last_time_us(0),
     autotest_dir(NULL),
+    frame(frame_str),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
 #else

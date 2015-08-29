@@ -4,25 +4,25 @@
  */
 
 
-#include <AP_Common.h>
-#include <AP_ADC.h>
-#include <AP_InertialSensor.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_ADC/AP_ADC.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <math.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_HAL.h>
-#include <AP_Buffer.h>
-#include <AP_Notify.h>
-#include <Filter.h>
-#include <AP_Baro.h>
-#include <DataFlash.h>
-#include <GCS_MAVLink.h>
-#include <AP_Mission.h>
-#include <StorageManager.h>
-#include <AP_Terrain.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Buffer/AP_Buffer.h>
+#include <AP_Notify/AP_Notify.h>
+#include <Filter/Filter.h>
+#include <AP_Baro/AP_Baro.h>
+#include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Mission/AP_Mission.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_Terrain/AP_Terrain.h>
 
-#include <AP_HAL_FLYMAPLE.h>
+#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 

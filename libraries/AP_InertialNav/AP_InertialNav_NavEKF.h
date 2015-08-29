@@ -10,7 +10,7 @@
 #ifndef __AP_INERTIALNAV_NAVEKF_H__
 #define __AP_INERTIALNAV_NAVEKF_H__
 
-#include <AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
+#include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 class AP_InertialNav_NavEKF : public AP_InertialNav
 {
@@ -92,7 +92,7 @@ public:
      * getHgtAboveGnd - get latest altitude estimate above ground level in centimetres and validity flag
      * @return
      */
-    bool       get_hagl(float hagl) const;
+    bool       get_hagl(float &hagl) const;
 
     /**
      * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag

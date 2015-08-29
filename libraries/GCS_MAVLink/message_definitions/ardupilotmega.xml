@@ -55,6 +55,39 @@
               <param index="6">Empty</param>
               <param index="7">Empty</param>
             </entry>
+
+            <entry name="MAV_CMD_DO_START_MAG_CAL" value="42424">
+                <description>Initiate a magnetometer calibration</description>
+                <param index="1">uint8_t bitmask of magnetometers (0 means all)</param>
+                <param index="2">Automatically retry on failure (0=no retry, 1=retry).</param>
+                <param index="3">Save without user input (0=require input, 1=autosave).</param>
+                <param index="4">Delay (seconds)</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
+
+            <entry name="MAV_CMD_DO_ACCEPT_MAG_CAL" value="42425">
+                <description>Initiate a magnetometer calibration</description>
+                <param index="1">uint8_t bitmask of magnetometers (0 means all)</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
+
+            <entry name="MAV_CMD_DO_CANCEL_MAG_CAL" value="42426">
+                <description>Cancel a running magnetometer calibration</description>
+                <param index="1">uint8_t bitmask of magnetometers (0 means all)</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
@@ -279,6 +312,15 @@
         <entry name="EKF_PRED_POS_HORIZ_REL" value="256"> <description>set if EKF's predicted horizontal position (relative) estimate is good</description></entry>
         <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
 	</enum>
+
+    <enum name="MAG_CAL_STATUS">
+        <entry name="MAG_CAL_NOT_STARTED" value="0"></entry>
+        <entry name="MAG_CAL_WAITING_TO_START" value="1"></entry>
+        <entry name="MAG_CAL_RUNNING_STEP_ONE" value="2"></entry>
+        <entry name="MAG_CAL_RUNNING_STEP_TWO" value="3"></entry>
+        <entry name="MAG_CAL_SUCCESS" value="4"></entry>
+        <entry name="MAG_CAL_FAILED" value="5"></entry>
+    </enum>
 
         <enum name="PID_TUNING_AXIS">
           <entry name="PID_TUNING_ROLL"  value="1"></entry>
@@ -668,7 +710,36 @@
         <field type="uint8_t[24]" name="custom_bytes">Custom Bytes</field>
     </message>
 
-    <!-- 191 to 192 RESERVED for mag calibration -->
+    <message name="MAG_CAL_PROGRESS" id="191">
+        <description>Reports progress of compass calibration.</description>
+        <field type="uint8_t" name="compass_id">Compass being calibrated</field>
+        <field type="uint8_t" name="cal_mask">Bitmask of compasses being calibrated</field>
+        <field type="uint8_t" name="cal_status">Status (see MAG_CAL_STATUS enum)</field>
+        <field type="uint8_t" name="attempt">Attempt number</field>
+        <field type="uint8_t" name="completion_pct">Completion percentage</field>
+        <field type="uint8_t[10]" name="completion_mask">Bitmask of sphere sections (see http://en.wikipedia.org/wiki/Geodesic_grid)</field>
+        <field type="float" name="direction_x">Body frame direction vector for display</field>
+        <field type="float" name="direction_y">Body frame direction vector for display</field>
+        <field type="float" name="direction_z">Body frame direction vector for display</field>
+    </message>
+
+    <message name="MAG_CAL_REPORT" id="192">
+        <description>Reports results of completed compass calibration. Sent until MAG_CAL_ACK received.</description>
+        <field type="uint8_t" name="compass_id">Compass being calibrated</field>
+        <field type="uint8_t" name="cal_mask">Bitmask of compasses being calibrated</field>
+        <field type="uint8_t" name="cal_status">Status (see MAG_CAL_STATUS enum)</field>
+        <field type="uint8_t" name="autosaved">0=requires a MAV_CMD_DO_ACCEPT_MAG_CAL, 1=saved to parameters</field>
+        <field type="float" name="fitness">RMS milligauss residuals</field>
+        <field type="float" name="ofs_x">X offset</field>
+        <field type="float" name="ofs_y">Y offset</field>
+        <field type="float" name="ofs_z">Z offset</field>
+        <field type="float" name="diag_x">X diagonal (matrix 11)</field>
+        <field type="float" name="diag_y">Y diagonal (matrix 22)</field>
+        <field type="float" name="diag_z">Z diagonal (matrix 33)</field>
+        <field type="float" name="offdiag_x">X off-diagonal (matrix 12 and 21)</field>
+        <field type="float" name="offdiag_y">Y off-diagonal (matrix 13 and 31)</field>
+        <field type="float" name="offdiag_z">Z off-diagonal (matrix 32 and 23)</field>
+    </message>
     
     <!-- EKF status message from autopilot to GCS.   -->
     <message name="EKF_STATUS_REPORT" id="193">
@@ -868,6 +939,12 @@
     </message>
 
     <!-- 219 to 225 RESERVED for more GOPRO-->
+
+    <message name="RPM" id="226">
+      <description>RPM sensor output</description>
+      <field name="rpm1" type="float">RPM Sensor1</field>
+      <field name="rpm2" type="float">RPM Sensor2</field>
+    </message>
 
      </messages>
 </mavlink>

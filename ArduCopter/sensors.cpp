@@ -4,13 +4,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("Calibrating barometer"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text_P(SEVERITY_LOW, PSTR("barometer calibration complete"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
 }
 
 // return barometric altitude in centimeters
@@ -40,7 +40,7 @@ int16_t Copter::read_sonar(void)
     sonar.update();
 
     // exit immediately if sonar is disabled
-    if (!sonar_enabled || (sonar.status() != RangeFinder::RangeFinder_Good)) {
+    if (sonar.status() != RangeFinder::RangeFinder_Good) {
         sonar_alt_health = 0;
         return 0;
     }
@@ -67,6 +67,19 @@ int16_t Copter::read_sonar(void)
 #else
     return 0;
 #endif
+}
+
+/*
+  update RPM sensors
+ */
+void Copter::rpm_update(void)
+{
+    rpm_sensor.update();
+    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+        if (should_log(MASK_LOG_RCIN)) {
+            DataFlash.Log_Write_RPM(rpm_sensor);
+        }
+    }
 }
 
 // initialise compass

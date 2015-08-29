@@ -21,15 +21,15 @@
 
 #ifndef AP_PARAM_H
 #define AP_PARAM_H
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 #include "float.h"
 
-#include <AP_Progmem.h>
-#include <../StorageManager/StorageManager.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <StorageManager/StorageManager.h>
 
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
@@ -40,7 +40,7 @@
 #define AP_VAROFFSET(type, element) (((uintptr_t)(&((const type *)1)->element))-1)
 
 // find the type of a variable given the class and element
-#define AP_CLASSTYPE(class, element) (((const class *) 1)->element.vtype)
+#define AP_CLASSTYPE(class, element) ((uint8_t)(((const class *) 1)->element.vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, class, element, def) { AP_CLASSTYPE(class, element), idx, name, AP_VAROFFSET(class, element), {def_value : def} }
@@ -198,13 +198,10 @@ public:
     // set a AP_Param variable to a specified value
     static void         set_value(enum ap_var_type type, void *ptr, float def_value);
 
-
     /*
-      set a parameter by name
-
-      The parameter pointer is returned on success
+      set a parameter to a float
     */
-    static AP_Param *set_param_by_name(const char *pname, float value, enum ap_var_type *ptype);
+    void set_float(float value, enum ap_var_type var_type);
 
     // load default values for scalars in a group
     static void         setup_object_defaults(const void *object_pointer, const struct GroupInfo *group_info);

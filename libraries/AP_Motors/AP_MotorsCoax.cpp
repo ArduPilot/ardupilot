@@ -20,8 +20,8 @@
  *
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_MotorsCoax.h"
 
 extern const AP_HAL::HAL& hal;
@@ -29,9 +29,9 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsCoax::var_info[] PROGMEM = {
     // variables from parent vehicle
-    AP_NESTEDGROUPINFO(AP_Motors, 0),
+    AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
 
-    // parameters 1 ~ 29 reserved for tradheli
+    // parameters 1 ~ 29 were reserved for tradheli
     // parameters 30 ~ 39 reserved for tricopter
     // parameters 40 ~ 49 for single copter and coax copter (these have identical parameter files)
 
@@ -64,9 +64,6 @@ const AP_Param::GroupInfo AP_MotorsCoax::var_info[] PROGMEM = {
 // init
 void AP_MotorsCoax::Init()
 {
-    // call parent Init function to set-up throttle curve
-    AP_Motors::Init();
-
     // set update rate for the 2 motors (but not the servo on channel 1&2)
     set_update_rate(_speed_hz);
 
@@ -178,8 +175,9 @@ void AP_MotorsCoax::output_armed_stabilizing()
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    if (_throttle_control_input <= _min_throttle) {
-        _throttle_control_input = _min_throttle;
+    int16_t thr_in_min = rel_pwm_to_thr_range(_min_throttle);
+    if (_throttle_control_input <= thr_in_min) {
+        _throttle_control_input = thr_in_min;
         limit.throttle_lower = true;
     }
     if (_throttle_control_input >= _max_throttle) {

@@ -6,14 +6,14 @@
 #ifndef AC_AttitudeControl_H
 #define AC_AttitudeControl_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_InertialSensor.h>
-#include <AP_AHRS.h>
-#include <AP_Motors.h>
-#include <AC_PID.h>
-#include <AC_P.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Motors/AP_Motors.h>
+#include <AC_PID/AC_PID.h>
+#include <AC_PID/AC_P.h>
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                   // constant to convert from radians to centi-degrees
@@ -81,17 +81,26 @@ public:
     // get_accel_roll_max - gets the roll acceleration limit
     float get_accel_roll_max() { return _accel_roll_max; }
 
+    // set_accel_roll_max - sets the roll acceleration limit
+    void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
+
     // save_accel_roll_max - sets and saves the roll acceleration limit
     void save_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; _accel_roll_max.save(); }
 
     // get_accel_pitch_max - gets the pitch acceleration limit
     float get_accel_pitch_max() { return _accel_pitch_max; }
 
+    // set_accel_pitch_max - sets the pitch acceleration limit
+    void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
+
     // save_accel_pitch_max - sets and saves the pitch acceleration limit
     void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; _accel_pitch_max.save(); }
 
     // get_accel_yaw_max - gets the yaw acceleration limit
     float get_accel_yaw_max() { return _accel_yaw_max; }
+
+    // set_accel_yaw_max - sets the yaw acceleration limit
+    void set_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
 
     // save_accel_yaw_max - sets and saves the yaw acceleration limit
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
@@ -101,6 +110,9 @@ public:
 
     // set_yaw_target_to_current_heading - sets yaw target to current heading
     void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
+
+    // shifts earth frame yaw target by yaw_shift_cd.  yaw_shift_cd should be in centi-degreesa and is added to the current target heading
+    void shift_ef_yaw_target(float yaw_shift_cd);
 
     //
     // methods to be called by upper controllers to request and implement a desired attitude
@@ -251,7 +263,7 @@ protected:
     //
 
     // calculate total body frame throttle required to produce the given earth frame throttle
-    virtual float get_boosted_throttle(float throttle_in);
+    virtual float get_boosted_throttle(float throttle_in) = 0;
 
     // references to external libraries
     const AP_AHRS&      _ahrs;

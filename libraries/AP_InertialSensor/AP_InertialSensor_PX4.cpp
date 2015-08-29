@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_InertialSensor_PX4.h"
 
 const extern AP_HAL::HAL& hal;
 
-#include <DataFlash.h>
+#include <DataFlash/DataFlash.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -103,6 +103,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 
         switch(devid) {
             case DRV_GYR_DEVTYPE_MPU6000:
+            case DRV_GYR_DEVTYPE_MPU9250:
                 // hardware LPF off
                 ioctl(fd, GYROIOCSHWLOWPASS, 256);
                 // khz sampling
@@ -121,6 +122,12 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
             default:
                 break;
         }
+        // calculate gyro sample time
+        int samplerate = ioctl(fd,  GYROIOCGSAMPLERATE, 0);
+        if (samplerate < 100 || samplerate > 10000) {
+            hal.scheduler->panic("Invalid gyro sample rate");
+        }
+        _gyro_sample_time[i] = 1.0f / samplerate;
     }
 
     for (uint8_t i=0; i<_num_accel_instances; i++) {
@@ -134,6 +141,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 
         switch(devid) {
             case DRV_ACC_DEVTYPE_MPU6000:
+            case DRV_ACC_DEVTYPE_MPU9250:
                 // hardware LPF off
                 ioctl(fd, ACCELIOCSHWLOWPASS, 256);
                 // khz sampling
@@ -153,6 +161,12 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
             default:
                 break;
         }
+        // calculate accel sample time
+        int samplerate = ioctl(fd,  ACCELIOCGSAMPLERATE, 0);
+        if (samplerate < 100 || samplerate > 10000) {
+            hal.scheduler->panic("Invalid accel sample rate");
+        }
+        _accel_sample_time[i] = 1.0f / samplerate;
     }
 
     _set_accel_filter_frequency(_accel_filter_cutoff());
@@ -176,13 +190,8 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 {
     for (uint8_t i=0; i<_num_accel_instances; i++) {
-        int samplerate = ioctl(_accel_fd[i],  ACCELIOCGSAMPLERATE, 0);
-        if(samplerate < 100 || samplerate > 2000) {
-            // sample rate doesn't seem sane, turn off filter
-            _accel_filter[i].set_cutoff_frequency(0, 0);
-        } else {
-            _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-        }
+        float samplerate = 1.0f / _accel_sample_time[i];
+        _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
     }
 }
 
@@ -192,13 +201,8 @@ void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 void AP_InertialSensor_PX4::_set_gyro_filter_frequency(uint8_t filter_hz)
 {
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        int samplerate = ioctl(_gyro_fd[i],  GYROIOCGSAMPLERATE, 0);
-        if(samplerate < 100 || samplerate > 2000) {
-            // sample rate doesn't seem sane, turn off filter
-            _gyro_filter[i].set_cutoff_frequency(0, 0);
-        } else {
-            _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-        }
+        float samplerate = 1.0f / _gyro_sample_time[i];
+        _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
     }
 }
 
@@ -259,8 +263,8 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // apply filter for control path
     _accel_in[i] = _accel_filter[i].apply(accel);
 
-    // compute time since last sample
-    float dt = (accel_report.timestamp - _last_accel_timestamp[i]) * 1.0e-6f;
+    // get time since last sample
+    float dt = _accel_sample_time[i];
 
     // compute delta velocity
     Vector3f delVel = Vector3f(accel.x, accel.y, accel.z) * dt;
@@ -309,8 +313,8 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     // apply filter for control path
     _gyro_in[i] = _gyro_filter[i].apply(gyro);
 
-    // compute time since last sample - not more than 50ms
-    float dt = min((gyro_report.timestamp - _last_gyro_timestamp[i]) * 1.0e-6f, 0.05f);
+    // get time since last sample
+    float dt = _gyro_sample_time[i];
 
     // compute delta angle
     Vector3f delAng = (gyro+_last_gyro[i]) * 0.5f * dt;

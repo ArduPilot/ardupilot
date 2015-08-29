@@ -1,33 +1,26 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Mount_SToRM32.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
+#include "AP_Mount_SToRM32.h"
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
     _initialised(false),
+    _sysid(0),
+    _compid(0),
     _chan(MAVLINK_COMM_0),
     _last_send(0)
 {}
-
-// init - performs any required initialisation for this instance
-void AP_Mount_SToRM32::init(const AP_SerialManager& serial_manager)
-{
-    // get_mavlink_channel for MAVLink2
-    if (serial_manager.get_mavlink_channel(AP_SerialManager::SerialProtocol_MAVLink, 1, _chan)) {
-        _initialised = true;
-        set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
-    }
-}
 
 // update mount position - should be called periodically
 void AP_Mount_SToRM32::update()
 {
     // exit immediately if not initialised
     if (!_initialised) {
+        find_gimbal();
         return;
     }
 
@@ -113,11 +106,34 @@ void AP_Mount_SToRM32::status_msg(mavlink_channel_t chan)
     mavlink_msg_mount_status_send(chan, 0, 0, ToDeg(_angle_ef_target_rad.y)*100, ToDeg(_angle_ef_target_rad.x)*100, ToDeg(_angle_ef_target_rad.z)*100);
 }
 
+// search for gimbal in GCS_MAVLink routing table
+void AP_Mount_SToRM32::find_gimbal()
+{
+    // return immediately if initialised
+    if (_initialised) {
+        return;
+    }
+
+    // return if search time has has passed
+    if (hal.scheduler->millis() > AP_MOUNT_STORM32_SEARCH_MS) {
+        return;
+    }
+
+    if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, _sysid, _compid, _chan)) {
+        _initialised = true;
+    }
+}
+
 // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
 void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode)
 {
     // exit immediately if not initialised
     if (!_initialised) {
+        return;
+    }
+
+    // check we have space for the message
+    if (comm_get_txspace(_chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_COMMAND_LONG_LEN) {
         return;
     }
 
@@ -127,8 +143,8 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
 
     // send command_long command containing a do_mount_control command
     mavlink_msg_command_long_send(_chan,
-                                  AP_MOUNT_STORM32_SYSID,
-                                  AP_MOUNT_STORM32_COMPID,
+                                  _sysid,
+                                  _compid,
                                   MAV_CMD_DO_MOUNT_CONTROL,
                                   0,        // confirmation of zero means this is the first time this message has been sent
                                   pitch_deg,

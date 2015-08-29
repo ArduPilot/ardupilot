@@ -19,9 +19,9 @@
  */
 
 
-#include <AP_HAL.h>
-#include <GCS.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include "GCS.h"
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -34,6 +34,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     mavlink_msg_serial_control_decode(msg, &packet);
 
     AP_HAL::UARTDriver *port = NULL;
+    AP_HAL::Stream *stream = NULL;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
@@ -44,27 +45,30 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
 
     switch (packet.device) {
     case SERIAL_CONTROL_DEV_TELEM1:
-        port = hal.uartC;
+        stream = port = hal.uartC;
         lock_channel(MAVLINK_COMM_1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_TELEM2:
-        port = hal.uartD;
+        stream = port = hal.uartD;
         lock_channel(MAVLINK_COMM_2, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS1:
-        port = hal.uartB;
+        stream = port = hal.uartB;
         gps.lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
-        port = hal.uartE;
+        stream = port = hal.uartE;
         gps.lock_port(1, exclusive);
+        break;
+    case SERIAL_CONTROL_DEV_SHELL:
+        stream = hal.util->get_shell_stream();
         break;
     default:
         // not supported yet
         return;
     }
     
-    if (exclusive) {
+    if (exclusive && port != NULL) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
         // control support
@@ -72,26 +76,26 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     }
 
     // optionally change the baudrate
-    if (packet.baudrate != 0) {
+    if (packet.baudrate != 0 && port != NULL) {
         port->begin(packet.baudrate);
     }
 
     // write the data
     if (packet.count != 0) {
         if ((packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) == 0) {
-            port->write(packet.data, packet.count);
+            stream->write(packet.data, packet.count);
         } else {
             const uint8_t *data = &packet.data[0];
             uint8_t count = packet.count;
             while (count > 0) {
-                while (port->txspace() <= 0) {
+                while (stream->txspace() <= 0) {
                     hal.scheduler->delay(5);
                 }
-                uint16_t n = port->txspace();
+                uint16_t n = stream->txspace();
                 if (n > packet.count) {
                     n = packet.count;
                 }
-                port->write(data, n);                
+                stream->write(data, n);                
                 data += n;
                 count -= n;
             }
@@ -108,7 +112,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
 more_data:
     // sleep for the timeout
     while (packet.timeout != 0 && 
-           port->available() < (int16_t)sizeof(packet.data)) {
+           stream->available() < (int16_t)sizeof(packet.data)) {
         hal.scheduler->delay(1);
         packet.timeout--;
     }
@@ -116,19 +120,33 @@ more_data:
     packet.flags = SERIAL_CONTROL_FLAG_REPLY;
 
     // work out how many bytes are available
-    int16_t available = port->available();
+    int16_t available = stream->available();
     if (available < 0) {
         available = 0;
     }
     if (available > (int16_t)sizeof(packet.data)) {
         available = sizeof(packet.data);
     }
+    if (available == 0 && (flags & SERIAL_CONTROL_FLAG_BLOCKING) == 0) {
+        return;
+    }
+
+    if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) {
+        while (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+            hal.scheduler->delay(1);
+        }
+    } else {
+        if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+            // no space for reply
+            return;
+        }
+    }
 
     // read any reply data
     packet.count = 0;
     memset(packet.data, 0, sizeof(packet.data));
     while (available > 0) {
-        packet.data[packet.count++] = (uint8_t)port->read();
+        packet.data[packet.count++] = (uint8_t)stream->read();
         available--;
     }
 
@@ -139,7 +157,9 @@ more_data:
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {
-        hal.scheduler->delay(1);
+        if (flags & SERIAL_CONTROL_FLAG_BLOCKING) {
+            hal.scheduler->delay(1);
+        }
         goto more_data;
     }
 }

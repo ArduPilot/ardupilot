@@ -2,7 +2,7 @@
 #ifndef __AP_INERTIAL_SENSOR_USER_INTERACT_STREAM_H__
 #define __AP_INERTIAL_SENSOR_USER_INTERACT_STREAM_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_UserInteract.h"
 
 /**

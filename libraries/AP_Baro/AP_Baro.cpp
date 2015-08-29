@@ -19,10 +19,10 @@
  *
  */
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_Baro.h>
-#include <AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_Baro.h"
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,13 +45,15 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
     // @Increment: 1
     AP_GROUPINFO("TEMP", 3, AP_Baro, sensors[0].ground_temperature, 0),
 
+    // index 4 reserved for old AP_Int8 version in legacy FRAM
+    //AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
+
     // @Param: ALT_OFFSET
     // @DisplayName: altitude offset
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
     // @Units: meters
-    // @Range: -128 127
-    // @Increment: 1
-    AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
+    // @Increment: 0.1
+    AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
     AP_GROUPEND
 };
@@ -282,9 +284,9 @@ void AP_Baro::init(void)
         drivers[0] = new AP_Baro_BMP085(*this);
         _num_drivers = 1;
     }
-#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611
+#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611 && HAL_BARO_MS5611_I2C_BUS == 0
     {
-        drivers[0] = new AP_Baro_MS5611(*this, new AP_SerialBus_I2C(MS5611_I2C_ADDR), false);
+        drivers[0] = new AP_Baro_MS5611(*this, new AP_SerialBus_I2C(hal.i2c, HAL_BARO_MS5611_I2C_ADDR), false);
         _num_drivers = 1;
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
@@ -293,6 +295,11 @@ void AP_Baro::init(void)
                                         new AP_SerialBus_SPI(AP_HAL::SPIDevice_MS5611, 
                                                              AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH),
                                         true);
+        _num_drivers = 1;
+    }
+#elif HAL_BARO_DEFAULT == HAL_BARO_MS5607 && HAL_BARO_MS5607_I2C_BUS == 1
+    {
+        drivers[0] = new AP_Baro_MS5607(*this, new AP_SerialBus_I2C(hal.i2c1, HAL_BARO_MS5607_I2C_ADDR), true);
         _num_drivers = 1;
     }
 #endif    
@@ -326,9 +333,12 @@ void AP_Baro::update(void)
             if (is_zero(sensors[i].ground_pressure)) {
                 sensors[i].ground_pressure = sensors[i].pressure;
             }
-            sensors[i].altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
+            float altitude = get_altitude_difference(sensors[i].ground_pressure, sensors[i].pressure);
             // sanity check altitude
-            sensors[i].alt_ok = !(isnan(sensors[i].altitude) || isinf(sensors[i].altitude));
+            sensors[i].alt_ok = !(isnan(altitude) || isinf(altitude));
+            if (sensors[i].alt_ok) {
+                sensors[i].altitude = altitude + _alt_offset;
+            }
         }
     }
 
@@ -342,7 +352,9 @@ void AP_Baro::update(void)
     }
 
     // ensure the climb rate filter is updated
-    _climb_rate_filter.update(get_altitude(), get_last_update());
+    if (healthy()) {
+        _climb_rate_filter.update(get_altitude(), get_last_update());
+    }
 }
 
 /*

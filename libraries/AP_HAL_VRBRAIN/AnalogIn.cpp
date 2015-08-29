@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AnalogIn.h"
@@ -16,9 +16,9 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/system_power.h>
-#include <GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <errno.h>
-#include <AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -108,7 +108,7 @@ float VRBRAINAnalogSource::read_latest()
 float VRBRAINAnalogSource::_pin_scaler(void)
 {
     float scaling = VRBRAIN_VOLTAGE_SCALING;
-    uint8_t num_scalings = sizeof(pin_scaling)/sizeof(pin_scaling[0]);
+    uint8_t num_scalings = ARRAY_SIZE(pin_scaling);
     for (uint8_t i=0; i<num_scalings; i++) {
         if (pin_scaling[i].pin == _pin) {
             scaling = pin_scaling[i].scaling;

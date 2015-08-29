@@ -117,3 +117,12 @@ float pythagorous2(float a, float b) {
 float pythagorous3(float a, float b, float c) {
 	return sqrtf(sq(a)+sq(b)+sq(c));
 }
+
+float maxf(float a, float b)
+{
+    return (a>b?a:b);
+}
+float minf(float a, float b)
+{
+    return (a<b?a:b);
+}

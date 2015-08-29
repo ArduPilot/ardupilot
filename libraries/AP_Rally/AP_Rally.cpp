@@ -4,7 +4,7 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
 
 // storage object
@@ -14,15 +14,22 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #ifdef APM_BUILD_DIRECTORY
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     #define RALLY_LIMIT_KM_DEFAULT 0.3f
+    #define RALLY_INCLUDE_HOME_DEFAULT 1
   #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define RALLY_LIMIT_KM_DEFAULT 5.0f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
     #define RALLY_LIMIT_KM_DEFAULT 0.5f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #endif
 #endif  // APM_BUILD_DIRECTORY
 
 #ifndef RALLY_LIMIT_KM_DEFAULT
 #define RALLY_LIMIT_KM_DEFAULT 1.0f
+#endif
+
+#ifndef RALLY_INCLUDE_HOME_DEFAULT
+#define RALLY_INCLUDE_HOME_DEFAULT 0
 #endif
 
 const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
@@ -39,6 +46,13 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Units: kilometers
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
+
+    // @Param: INCL_HOME
+    // @DisplayName: Rally Include Home
+    // @Description: Controls if Home is included as a Rally point (i.e. as a safe landing place) for RTL
+    // @User: Standard
+    // @Values: 0:DoNotIncludeHome,1:IncludeHome
+    AP_GROUPINFO("INCL_HOME", 2, AP_Rally, _rally_incl_home, RALLY_INCLUDE_HOME_DEFAULT),
 
     AP_GROUPEND
 };
@@ -124,10 +138,17 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         }
     }
 
+    // if home is included, return false (meaning use home) if it is closer than all rally points
+    if (_rally_incl_home && (get_distance(current_loc, home_loc) < min_dis)) {
+        return false;
+    }
+
+    // if a limit is defined and all rally points are beyond that limit, use home if it is closer
     if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
         return false; // use home position
     }
 
+    // use home if no rally points found
     return min_dis >= 0;
 }
 

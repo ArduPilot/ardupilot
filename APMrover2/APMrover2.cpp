@@ -20,9 +20,9 @@
    ArduPlane by Jean-Louis Naudin (JLN), and then rewritten after the
    AP_HAL merge by Andrew Tridgell
 
-   Maintainer: Andrew Tridgell
+   Maintainer: Grant Morphett
 
-   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin
+   Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Andrew Tridgell, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Jean-Louis Naudin, Grant Morphett
 
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier 
 
@@ -61,7 +61,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(gcs_retry_deferred),     1,   1000 },
     { SCHED_TASK(gcs_update),             1,   1700 },
     { SCHED_TASK(gcs_data_stream_send),   1,   3000 },
-    { SCHED_TASK(read_control_switch),   15,   1000 },
+    { SCHED_TASK(read_control_switch),    7,   1000 },
     { SCHED_TASK(read_trim_switch),       5,   1000 },
     { SCHED_TASK(read_battery),           5,   1000 },
     { SCHED_TASK(read_receiver_rssi),     5,   1000 },
@@ -100,7 +100,7 @@ void Rover::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 /*
@@ -124,7 +124,17 @@ void Rover::loop()
 
     // tell the scheduler one tick has passed
     scheduler.tick();
-    scheduler.run(19500U);
+
+    // run all the tasks that are due to run. Note that we only
+    // have to call this once per loop, as the tasks are scheduled
+    // in multiples of the main loop tick. So if they don't run on
+    // the first call to the scheduler they won't run on a later
+    // call until scheduler.tick() is called again
+    uint32_t remaining = (timer + 20000) - micros();
+    if (remaining > 19500) {
+        remaining = 19500;
+    }
+    scheduler.run(remaining);
 }
 
 // update AHRS system
@@ -154,8 +164,10 @@ void Rover::ahrs_update()
     if (should_log(MASK_LOG_ATTITUDE_FAST))
         Log_Write_Attitude();
 
-    if (should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_IMU)) {
         DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMUDT(ins);
+    }
 }
 
 /*
@@ -374,17 +386,15 @@ void Rover::update_current_mode(void)
 
     case GUIDED:
         set_reverse(false);
-        if (!rtl_complete) {
-            if (verify_RTL()) {
-                // we have reached destination so stop where we are
-                channel_throttle->servo_out = g.throttle_min.get();
-                channel_steer->servo_out = 0;
-                lateral_acceleration = 0;
-            } else {
-                calc_lateral_acceleration();
-                calc_nav_steer();
-                calc_throttle(g.speed_cruise);
-            }
+        if (rtl_complete || verify_RTL()) {
+            // we have reached destination so stop where we are
+            channel_throttle->servo_out = g.throttle_min.get();
+            channel_steer->servo_out = 0;
+            lateral_acceleration = 0;
+        } else {
+            calc_lateral_acceleration();
+            calc_nav_steer();
+            calc_throttle(g.speed_cruise);
         }
         break;
 
@@ -473,13 +483,11 @@ void Rover::update_navigation()
         // no loitering around the wp with the rover, goes direct to the wp position
         calc_lateral_acceleration();
         calc_nav_steer();
-        if (!rtl_complete) {
-            if (verify_RTL()) {
-                // we have reached destination so stop where we are
-                channel_throttle->servo_out = g.throttle_min.get();
-                channel_steer->servo_out = 0;
-                lateral_acceleration = 0;
-            }
+        if (rtl_complete || verify_RTL()) {
+            // we have reached destination so stop where we are
+            channel_throttle->servo_out = g.throttle_min.get();
+            channel_steer->servo_out = 0;
+            lateral_acceleration = 0;
         }
         break;
     }

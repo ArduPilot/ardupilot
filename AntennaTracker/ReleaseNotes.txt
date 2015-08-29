@@ -1,5 +1,9 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 0.7.2 1-Aug-2015
+Changes from 0.7.1
+1) Fixed Pitch
+------------------------------------------------------------------
 AntennaTracker 0.7.1 29-May-2015
 Changes from 0.7
 1) Added support for continuous rotation (CR) servos

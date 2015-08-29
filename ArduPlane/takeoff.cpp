@@ -61,7 +61,7 @@ bool Plane::auto_takeoff_check(void)
     // Check aircraft attitude for bad launch
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
-        abs(ahrs.roll_sensor) > 3000) {
+        labs(ahrs.roll_sensor) > 3000) {
         gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
         goto no_launch;
     }
@@ -166,7 +166,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag off"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag off"));
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

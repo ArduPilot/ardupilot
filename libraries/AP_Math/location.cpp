@@ -20,7 +20,7 @@
 /*
  *  this module deals with calculations involving struct Location
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
 
@@ -35,8 +35,10 @@
 
 float longitude_scale(const struct Location &loc)
 {
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_150
     static int32_t last_lat;
     static float scale = 1.0;
+    // don't optimise on faster CPUs. It causes some minor errors on Replay
     if (labs(last_lat - loc.lat) < 100000) {
         // we are within 0.01 degrees (about 1km) of the
         // same latitude. We can avoid the cos() and return
@@ -47,6 +49,10 @@ float longitude_scale(const struct Location &loc)
     scale = constrain_float(scale, 0.01f, 1.0f);
     last_lat = loc.lat;
     return scale;
+#else
+    float scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    return constrain_float(scale, 0.01f, 1.0f);
+#endif
 }
 
 

@@ -24,14 +24,16 @@
  */
 
 // AVR LibC Includes
-#include <AP_Math.h>
-#include <AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_Compass_HMC5843.h"
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_InertialSensor/AuxiliaryBus.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define COMPASS_ADDRESS      0x1E
+#define HMC5843_I2C_ADDR     0x1E
 #define ConfigRegA           0x00
 #define ConfigRegB           0x01
 #define magGain              0x20
@@ -58,10 +60,10 @@ extern const AP_HAL::HAL& hal;
 #define DataOutputRate_75HZ   0x06
 
 // constructor
-AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
+AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass, AP_HMC5843_SerialBus *bus) :
     AP_Compass_Backend(compass),
+    _bus(bus),
     _retry_time(0),
-    _i2c_sem(NULL),
     _mag_x(0),
     _mag_y(0),
     _mag_z(0),
@@ -74,24 +76,50 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(Compass &compass):
     _product_id(0)
 {}
 
-// detect the sensor
-AP_Compass_Backend *AP_Compass_HMC5843::detect(Compass &compass)
+AP_Compass_HMC5843::~AP_Compass_HMC5843()
 {
-    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass);
-    if (sensor == NULL) {
-        return NULL;
+    delete _bus;
+}
+
+// detect the sensor
+AP_Compass_Backend *AP_Compass_HMC5843::detect_i2c(Compass &compass,
+                                                   AP_HAL::I2CDriver *i2c)
+{
+    AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_I2C(i2c, HMC5843_I2C_ADDR);
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
+
+AP_Compass_Backend *AP_Compass_HMC5843::detect_mpu6000(Compass &compass)
+{
+    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    AP_HMC5843_SerialBus *bus = new AP_HMC5843_SerialBus_MPU6000(ins, HMC5843_I2C_ADDR);
+    if (!bus)
+        return nullptr;
+    return _detect(compass, bus);
+}
+
+AP_Compass_Backend *AP_Compass_HMC5843::_detect(Compass &compass,
+                                                AP_HMC5843_SerialBus *bus)
+{
+    AP_Compass_HMC5843 *sensor = new AP_Compass_HMC5843(compass, bus);
+    if (!sensor) {
+        delete bus;
+        return nullptr;
     }
     if (!sensor->init()) {
         delete sensor;
-        return NULL;
+        return nullptr;
     }
+
     return sensor;
 }
 
 // read_register - read a register value
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
-    if (hal.i2c->readRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (_bus->register_read(address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -101,7 +129,7 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 // write_register - update a register value
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
-    if (hal.i2c->writeRegister((uint8_t)COMPASS_ADDRESS, address, value) != 0) {
+    if (_bus->register_write(address, value) != 0) {
         _retry_time = hal.scheduler->millis() + 1000;
         return false;
     }
@@ -111,23 +139,22 @@ bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 // Read Sensor data
 bool AP_Compass_HMC5843::read_raw()
 {
-    uint8_t buff[6];
+    struct AP_HMC5843_SerialBus::raw_value rv;
 
-    if (hal.i2c->readRegisters(COMPASS_ADDRESS, 0x03, 6, buff) != 0) {
-        hal.i2c->setHighSpeed(false);
+    if (_bus->read_raw(&rv) != 0) {
+        _bus->set_high_speed(false);
         _retry_time = hal.scheduler->millis() + 1000;
-        _i2c_sem->give();
         return false;
     }
 
     int16_t rx, ry, rz;
-    rx = (((int16_t)buff[0]) << 8) | buff[1];
+    rx = (((int16_t)rv.val[0]) << 8) | rv.val[1];
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
-        rz = (((int16_t)buff[2]) << 8) | buff[3];
-        ry = (((int16_t)buff[4]) << 8) | buff[5];
+        rz = (((int16_t)rv.val[2]) << 8) | rv.val[3];
+        ry = (((int16_t)rv.val[4]) << 8) | rv.val[5];
     } else {
-        ry = (((int16_t)buff[2]) << 8) | buff[3];
-        rz = (((int16_t)buff[4]) << 8) | buff[5];
+        ry = (((int16_t)rv.val[2]) << 8) | rv.val[3];
+        rz = (((int16_t)rv.val[4]) << 8) | rv.val[5];
     }
     if (rx == -4096 || ry == -4096 || rz == -4096) {
         // no valid data available
@@ -151,37 +178,37 @@ void AP_Compass_HMC5843::accumulate(void)
         // have the right orientation!)
         return;
     }
-   uint32_t tnow = hal.scheduler->micros();
-   if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
-	  // the compass gets new data at 75Hz
-	  return;
-   }
+    uint32_t tnow = hal.scheduler->micros();
+    if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
+        // the compass gets new data at 75Hz
+        return;
+    }
 
-   if (!_i2c_sem->take(1)) {
-       // the bus is busy - try again later
-       return;
-   }
-   bool result = read_raw();
-   _i2c_sem->give();
+    if (!_bus_sem->take(1)) {
+        // the bus is busy - try again later
+        return;
+    }
+    bool result = read_raw();
+    _bus_sem->give();
 
-   if (result) {
-	  // the _mag_N values are in the range -2048 to 2047, so we can
-	  // accumulate up to 15 of them in an int16_t. Let's make it 14
-	  // for ease of calculation. We expect to do reads at 10Hz, and
-	  // we get new data at most 75Hz, so we don't expect to
-	  // accumulate more than 8 before a read
-	  _mag_x_accum += _mag_x;
-	  _mag_y_accum += _mag_y;
-	  _mag_z_accum += _mag_z;
-	  _accum_count++;
-	  if (_accum_count == 14) {
-		 _mag_x_accum /= 2;
-		 _mag_y_accum /= 2;
-		 _mag_z_accum /= 2;
-		 _accum_count = 7;
-	  }
-	  _last_accum_time = tnow;
-   }
+    if (result) {
+        // the _mag_N values are in the range -2048 to 2047, so we can
+        // accumulate up to 15 of them in an int16_t. Let's make it 14
+        // for ease of calculation. We expect to do reads at 10Hz, and
+        // we get new data at most 75Hz, so we don't expect to
+        // accumulate more than 8 before a read
+        _mag_x_accum += _mag_x;
+        _mag_y_accum += _mag_y;
+        _mag_z_accum += _mag_z;
+        _accum_count++;
+        if (_accum_count == 14) {
+            _mag_x_accum /= 2;
+            _mag_y_accum /= 2;
+            _mag_z_accum /= 2;
+            _accum_count = 7;
+        }
+        _last_accum_time = tnow;
+    }
 }
 
 
@@ -198,36 +225,55 @@ bool AP_Compass_HMC5843::re_initialise()
 }
 
 
+bool AP_Compass_HMC5843::_detect_version()
+{
+    _base_config = 0x0;
+
+    if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
+        !read_register(ConfigRegA, &_base_config)) {
+        return false;
+    }
+    if (_base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
+        /* a 5883L supports the sample averaging config */
+        _product_id = AP_COMPASS_TYPE_HMC5883L;
+        return true;
+    } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
+        _product_id = AP_COMPASS_TYPE_HMC5843;
+        return true;
+    } else {
+        /* not behaving like either supported compass type */
+        return false;
+    }
+}
+
 // Public Methods //////////////////////////////////////////////////////////////
 bool
 AP_Compass_HMC5843::init()
 {
-    int numAttempts = 0, good_count = 0;
-    bool success = false;
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
     float gain_multiple = 1.0;
 
+    _bus_sem = _bus->get_semaphore();
     hal.scheduler->suspend_timer_procs();
-    hal.scheduler->delay(10);
 
-    _i2c_sem = hal.i2c->get_semaphore();
-    if (!_i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.scheduler->panic(PSTR("Failed to get HMC5843 semaphore"));
+    if (!_bus_sem || !_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        hal.console->printf_P(PSTR("HMC5843: Unable to get bus semaphore\n"));
+        goto fail_sem;
     }
 
-    // determine if we are using 5843 or 5883L
-    _base_config = 0;
-    if (!write_register(ConfigRegA, SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation) ||
-        !read_register(ConfigRegA, &_base_config)) {
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
+    if (!_bus->configure()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not configure the bus\n"));
+        goto errout;
     }
-    if ( _base_config == (SampleAveraging_8<<5 | DataOutputRate_75HZ<<2 | NormalOperation)) {
-        // a 5883L supports the sample averaging config
-        _product_id = AP_COMPASS_TYPE_HMC5883L;
+
+    if (!_detect_version()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not detect version\n"));
+        goto errout;
+    }
+
+    if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
         calibration_gain = 0x60;
         /*
           note that the HMC5883 datasheet gives the x and y expected
@@ -237,27 +283,63 @@ AP_Compass_HMC5843::init()
         expected_x = 766;
         expected_yz  = 713;
         gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
-    } else if (_base_config == (NormalOperation | DataOutputRate_75HZ<<2)) {
-        _product_id = AP_COMPASS_TYPE_HMC5843;
-    } else {
-        // not behaving like either supported compass type
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
     }
 
-    calibration[0] = 0;
-    calibration[1] = 0;
-    calibration[2] = 0;
+    if (!_calibrate(calibration_gain, expected_x, expected_yz, gain_multiple)) {
+        hal.console->printf_P(PSTR("HMC5843: Could not calibrate sensor\n"));
+        goto errout;
+    }
 
-    while ( success == 0 && numAttempts < 25 && good_count < 5)
+    // leave test mode
+    if (!re_initialise()) {
+        goto errout;
+    }
+
+    if (!_bus->start_measurements()) {
+        hal.console->printf_P(PSTR("HMC5843: Could not start measurements on bus\n"));
+        goto errout;
+    }
+    _initialised = true;
+
+    _bus_sem->give();
+    hal.scheduler->resume_timer_procs();
+
+    // perform an initial read
+    read();
+
+#if 0
+    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"),
+                          _scaling[0], _scaling[1], _scaling[2]);
+#endif
+
+    _compass_instance = register_compass();
+    set_dev_id(_compass_instance, _product_id);
+
+    return true;
+
+errout:
+    _bus_sem->give();
+fail_sem:
+    hal.scheduler->resume_timer_procs();
+    return false;
+}
+
+bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
+        uint16_t expected_x,
+        uint16_t expected_yz,
+        float gain_multiple)
+{
+    int numAttempts = 0, good_count = 0;
+    bool success = false;
+
+    while (success == 0 && numAttempts < 25 && good_count < 5)
     {
-        // record number of attempts at initialisation
         numAttempts++;
 
         // force positiveBias (compass should return 715 for all channels)
         if (!write_register(ConfigRegA, PositiveBiasConfig))
-            continue;      // compass not responding on the bus
+            continue;   // compass not responding on the bus
+
         hal.scheduler->delay(50);
 
         // set gains
@@ -275,6 +357,7 @@ AP_Compass_HMC5843::init()
         float cal[3];
 
         // hal.console->printf_P(PSTR("mag %d %d %d\n"), _mag_x, _mag_y, _mag_z);
+
         cal[0] = fabsf(expected_x / (float)_mag_x);
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
@@ -285,16 +368,25 @@ AP_Compass_HMC5843::init()
         // still be changing its state from the application of the
         // strap excitation. After that we accept values in a
         // reasonable range
-        if (numAttempts > 2 &&
-            cal[0] > 0.7f && cal[0] < 1.35f &&
-            cal[1] > 0.7f && cal[1] < 1.35f &&
-            cal[2] > 0.7f && cal[2] < 1.35f) {
-            // hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
-            good_count++;
-            calibration[0] += cal[0];
-            calibration[1] += cal[1];
-            calibration[2] += cal[2];
+
+        if (numAttempts <= 2) {
+            continue;
         }
+
+#define IS_CALIBRATION_VALUE_VALID(val) (val > 0.7f && val < 1.35f)
+
+        if (IS_CALIBRATION_VALUE_VALID(cal[0]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[1]) &&
+            IS_CALIBRATION_VALUE_VALID(cal[2])) {
+            // hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
+            good_count++;
+
+            _scaling[0] += cal[0];
+            _scaling[1] += cal[1];
+            _scaling[2] += cal[2];
+        }
+
+#undef IS_CALIBRATION_VALUE_VALID
 
 #if 0
         /* useful for debugging */
@@ -315,39 +407,15 @@ AP_Compass_HMC5843::init()
           doesn't have any impact other than the learned compass
           offsets
          */
-        calibration[0] = calibration[0] * gain_multiple / good_count;
-        calibration[1] = calibration[1] * gain_multiple / good_count;
-        calibration[2] = calibration[2] * gain_multiple / good_count;
+        _scaling[0] = _scaling[0] * gain_multiple / good_count;
+        _scaling[1] = _scaling[1] * gain_multiple / good_count;
+        _scaling[2] = _scaling[2] * gain_multiple / good_count;
         success = true;
     } else {
         /* best guess */
-        calibration[0] = 1.0;
-        calibration[1] = 1.0;
-        calibration[2] = 1.0;
-    }
-
-    // leave test mode
-    if (!re_initialise()) {
-        _i2c_sem->give();
-        hal.scheduler->resume_timer_procs();
-        return false;
-    }
-
-    _i2c_sem->give();
-    hal.scheduler->resume_timer_procs();
-    _initialised = true;
-
-	// perform an initial read
-	read();
-
-#if 0
-    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), 
-                          calibration[0], calibration[1], calibration[2]);
-#endif
-
-    if (success) {
-        // register the compass instance in the frontend
-        _compass_instance = register_compass();
+        _scaling[0] = 1.0;
+        _scaling[1] = 1.0;
+        _scaling[2] = 1.0;
     }
 
     return success;
@@ -368,26 +436,26 @@ void AP_Compass_HMC5843::read()
         }
         if (!re_initialise()) {
             _retry_time = hal.scheduler->millis() + 1000;
-			hal.i2c->setHighSpeed(false);
+            _bus->set_high_speed(false);
             return;
         }
     }
 
-	if (_accum_count == 0) {
-	   accumulate();
+    if (_accum_count == 0) {
+       accumulate();
        if (_retry_time != 0) {
-		  hal.i2c->setHighSpeed(false);
-		  return;
-	   }
-	}
+          _bus->set_high_speed(false);
+          return;
+       }
+    }
 
-    Vector3f field(_mag_x_accum * calibration[0],
-                   _mag_y_accum * calibration[1],
-                   _mag_z_accum * calibration[2]);
+    Vector3f field(_mag_x_accum * _scaling[0],
+                   _mag_y_accum * _scaling[1],
+                   _mag_z_accum * _scaling[2]);
     field /= _accum_count;
 
-	_accum_count = 0;
-	_mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    _accum_count = 0;
+    _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
 
     // rotate to the desired orientation
     if (_product_id == AP_COMPASS_TYPE_HMC5883L) {
@@ -396,4 +464,100 @@ void AP_Compass_HMC5843::read()
 
     publish_field(field, _compass_instance);
     _retry_time = 0;
+}
+
+/* I2C implementation of the HMC5843 */
+AP_HMC5843_SerialBus_I2C::AP_HMC5843_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr)
+    : _i2c(i2c)
+    , _addr(addr)
+{
+}
+
+void AP_HMC5843_SerialBus_I2C::set_high_speed(bool val)
+{
+    _i2c->setHighSpeed(val);
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::register_read(uint8_t reg, uint8_t *buf, uint8_t size)
+{
+    return _i2c->readRegisters(_addr, reg, size, buf);
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::register_write(uint8_t reg, uint8_t val)
+{
+    return _i2c->writeRegister(_addr, reg, val);
+}
+
+AP_HAL::Semaphore* AP_HMC5843_SerialBus_I2C::get_semaphore()
+{
+    return _i2c->get_semaphore();
+}
+
+uint8_t AP_HMC5843_SerialBus_I2C::read_raw(struct raw_value *rv)
+{
+    return register_read(0x03, (uint8_t*)rv, sizeof(*rv));
+}
+
+
+/* MPU6000 implementation of the HMC5843 */
+AP_HMC5843_SerialBus_MPU6000::AP_HMC5843_SerialBus_MPU6000(AP_InertialSensor &ins,
+                                                           uint8_t addr)
+{
+    // Only initialize members. Fails are handled by configure or while
+    // getting the semaphore
+    _bus = ins.get_auxiliar_bus(HAL_INS_MPU60XX_SPI);
+    if (!_bus)
+        return;
+    _slave = _bus->request_next_slave(addr);
+}
+
+AP_HMC5843_SerialBus_MPU6000::~AP_HMC5843_SerialBus_MPU6000()
+{
+    /* After started it's owned by AuxiliaryBus */
+    if (!_started)
+        delete _slave;
+}
+
+bool AP_HMC5843_SerialBus_MPU6000::configure()
+{
+    if (!_bus || !_slave)
+        return false;
+    return true;
+}
+
+void AP_HMC5843_SerialBus_MPU6000::set_high_speed(bool val)
+{
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::register_read(uint8_t reg, uint8_t *buf, uint8_t size)
+{
+    return _slave->passthrough_read(reg, buf, size) == size ? 0 : 1;
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::register_write(uint8_t reg, uint8_t val)
+{
+    return _slave->passthrough_write(reg, val) >= 0 ? 0 : 1;
+}
+
+AP_HAL::Semaphore* AP_HMC5843_SerialBus_MPU6000::get_semaphore()
+{
+    return _bus ? _bus->get_semaphore() : nullptr;
+}
+
+uint8_t AP_HMC5843_SerialBus_MPU6000::read_raw(struct raw_value *rv)
+{
+    if (_started)
+        return _slave->read((uint8_t*)rv) >= 0 ? 0 : 1;
+
+    return _slave->passthrough_read(0x03, (uint8_t*)rv, sizeof(*rv)) >= 0 ? 0 : 1;
+}
+
+bool AP_HMC5843_SerialBus_MPU6000::start_measurements()
+{
+    if (_bus->register_periodic_read(_slave, 0x03, sizeof(struct raw_value)) < 0)
+        return false;
+
+    _started = true;
+
+    return true;
 }

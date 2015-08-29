@@ -1,7 +1,7 @@
 #ifndef AP_LR_MSGHANDLER_H
 #define AP_LR_MSGHANDLER_H
 
-#include <MsgHandler.h>
+#include "MsgHandler.h"
 
 class LR_MsgHandler : public MsgHandler {
 public:
@@ -10,6 +10,14 @@ public:
                   uint64_t &last_timestamp_usec);
     virtual void process_message(uint8_t *msg) = 0;
     bool set_parameter(const char *name, float value);
+
+    // state for CHEK message
+    struct CheckState {
+        uint64_t time_us;
+        Vector3f euler;
+        Location pos;
+        Vector3f velocity;
+    };
 
 protected:
     DataFlash_Class &dataflash;
@@ -86,6 +94,20 @@ private:
     Vector3f &attitude;
 };
 
+
+class LR_MsgHandler_CHEK : public LR_MsgHandler
+{
+public:
+    LR_MsgHandler_CHEK(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec, CheckState &_check_state)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), 
+          check_state(_check_state)
+        { };
+    virtual void process_message(uint8_t *msg);
+
+private:
+    CheckState &check_state;
+};
 
 class LR_MsgHandler_BARO : public LR_MsgHandler
 {
@@ -187,7 +209,7 @@ public:
         accel_mask(_accel_mask),
         gyro_mask(_gyro_mask),
         ins(_ins) { };
-    void update_from_msg_imu(uint8_t gps_offset, uint8_t *msg);
+    void update_from_msg_imu(uint8_t imu_offset, uint8_t *msg);
 
 private:
     uint8_t &accel_mask;
@@ -234,6 +256,70 @@ public:
     virtual void process_message(uint8_t *msg);
 };
 
+
+class LR_MsgHandler_IMT_Base : public LR_MsgHandler
+{
+public:
+    LR_MsgHandler_IMT_Base(log_Format &_f, DataFlash_Class &_dataflash,
+                           uint64_t &_last_timestamp_usec,
+                           uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                           bool &_use_imt,
+                           AP_InertialSensor &_ins) :
+        LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
+        accel_mask(_accel_mask),
+        gyro_mask(_gyro_mask),
+        use_imt(_use_imt),
+        ins(_ins) { };
+    void update_from_msg_imt(uint8_t imu_offset, uint8_t *msg);
+
+private:
+    uint8_t &accel_mask;
+    uint8_t &gyro_mask;
+    bool &use_imt;
+    AP_InertialSensor &ins;
+};
+
+class LR_MsgHandler_IMT : public LR_MsgHandler_IMT_Base
+{
+public:
+    LR_MsgHandler_IMT(log_Format &_f, DataFlash_Class &_dataflash,
+                      uint64_t &_last_timestamp_usec,
+                      uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                      bool &_use_imt,
+                      AP_InertialSensor &_ins)
+        : LR_MsgHandler_IMT_Base(_f, _dataflash, _last_timestamp_usec,
+                                 _accel_mask, _gyro_mask, _use_imt, _ins) { };
+
+    void process_message(uint8_t *msg);
+};
+
+class LR_MsgHandler_IMT2 : public LR_MsgHandler_IMT_Base
+{
+public:
+    LR_MsgHandler_IMT2(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec,
+                       uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                       bool &_use_imt,
+                       AP_InertialSensor &_ins)
+        : LR_MsgHandler_IMT_Base(_f, _dataflash, _last_timestamp_usec,
+                                 _accel_mask, _gyro_mask, _use_imt, _ins) { };
+
+    void process_message(uint8_t *msg);
+};
+
+class LR_MsgHandler_IMT3 : public LR_MsgHandler_IMT_Base
+{
+public:
+    LR_MsgHandler_IMT3(log_Format &_f, DataFlash_Class &_dataflash,
+                       uint64_t &_last_timestamp_usec,
+                       uint8_t &_accel_mask, uint8_t &_gyro_mask,
+                       bool &_use_imt,
+                       AP_InertialSensor &_ins)
+        : LR_MsgHandler_IMT_Base(_f, _dataflash, _last_timestamp_usec,
+                                 _accel_mask, _gyro_mask, _use_imt, _ins) { };
+
+    void process_message(uint8_t *msg);
+};
 
 
 class LR_MsgHandler_MAG_Base : public LR_MsgHandler

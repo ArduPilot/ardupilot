@@ -19,9 +19,9 @@
  */
 
 
-#include <AP_HAL.h>
-#include <GCS.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include "GCS.h"
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -159,7 +159,11 @@ void GCS_MAVLINK::handle_log_send(DataFlash_Class &dataflash)
         // when on USB we can send a lot more data
         num_sends = 40;
     } else if (have_flow_control()) {
-        num_sends = 10;        
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+        num_sends = 80;
+#else
+        num_sends = 10;
+#endif
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

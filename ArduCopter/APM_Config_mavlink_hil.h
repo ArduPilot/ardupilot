@@ -28,6 +28,3 @@
 
 #define HIL_PORT            3
 
-// Sensors
-// All sensors are supported in all modes.
-#define MAGNETOMETER        ENABLED

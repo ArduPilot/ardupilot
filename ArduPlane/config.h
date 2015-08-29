@@ -455,6 +455,12 @@
 #define CLI_ENABLED DISABLED
 #endif
 
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
+#define HIL_SUPPORT DISABLED
+#else
+#define HIL_SUPPORT ENABLED
+#endif
+
 /*
   build a firmware version string.
   GIT_VERSION comes from Makefile builds

@@ -3,11 +3,11 @@
 #ifndef __SITL_H__
 #define __SITL_H__
 
-#include <AP_Param.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <GCS_MAVLink.h>
-#include <DataFlash.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <DataFlash/DataFlash.h>
 
 struct PACKED sitl_fdm {
     // this is the packet sent by the simulator
@@ -24,6 +24,9 @@ struct PACKED sitl_fdm {
     double airspeed; // m/s
     uint32_t magic; // 0x4c56414f
 };
+
+// number of rc output channels
+#define SITL_NUM_CHANNELS 14
 
 
 class SITL
@@ -56,8 +59,11 @@ public:
     AP_Float baro_glitch; // glitch in meters
     AP_Float gyro_noise;  // in degrees/second
     AP_Float accel_noise; // in m/s/s
+    AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
     AP_Float aspd_noise;  // in m/s
+    AP_Float aspd_fail;   // pitot tube failure
+
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp

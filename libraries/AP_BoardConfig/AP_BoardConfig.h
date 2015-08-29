@@ -3,9 +3,9 @@
 #ifndef __AP_BOARDCONFIG_H__
 #define __AP_BOARDCONFIG_H__
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 class AP_BoardConfig
 {
@@ -21,6 +21,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    AP_Int16 vehicleSerialNumber;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     AP_Int8 _pwm_count;
     AP_Int8 _ser1_rtscts;

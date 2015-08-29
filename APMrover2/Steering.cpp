@@ -31,7 +31,7 @@ bool Rover::auto_check_trigger(void)
 
     // check for user pressing the auto trigger to off
     if (auto_triggered && g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 1) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("AUTO triggered off"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("AUTO triggered off"));
         auto_triggered = false;
         return false; 
     }
@@ -49,7 +49,7 @@ bool Rover::auto_check_trigger(void)
     }
  
     if (g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 0) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Triggered AUTO with pin"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Triggered AUTO with pin"));
         auto_triggered = true;
         return true;            
     }
@@ -85,8 +85,10 @@ bool Rover::use_pivot_steering(void)
   calculate the throtte for auto-throttle modes
  */
 void Rover::calc_throttle(float target_speed)
-{  
-    if (!auto_check_trigger()) {
+{
+    // If not autostarting OR we are loitering at a waypoint
+    // then set the throttle to minimum
+    if (!auto_check_trigger() || ((loiter_time > 0) && (control_mode == AUTO))) {
         channel_throttle->servo_out = g.throttle_min.get();
         return;
     }
@@ -196,6 +198,12 @@ void Rover::calc_lateral_acceleration()
  */
 void Rover::calc_nav_steer()
 {
+    // check to see if the rover is loitering
+    if ((loiter_time > 0) && (control_mode == AUTO)) {
+        channel_steer->servo_out = 0;
+        return;
+    }
+
     // add in obstacle avoidance
     lateral_acceleration += (obstacle.turn_angle/45.0f) * g.turn_max_g;
 

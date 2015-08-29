@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Mount_SToRM32_serial.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
-#include "include/mavlink/v1.0/checksum.h"
-#include "../AP_HAL/utility/RingBuffer.h"
+#include "AP_Mount_SToRM32_serial.h"
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/include/mavlink/v1.0/checksum.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -151,11 +151,8 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
 {
 
     static cmd_set_angles_struct cmd_set_angles_data = {
-        0xFD,
+        0xFA,
         0x0E,
-        0x00,
-        0x52,
-        0x43,
         0x11,
         0, // pitch
         0, // roll

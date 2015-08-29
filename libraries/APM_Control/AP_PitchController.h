@@ -3,12 +3,12 @@
 #ifndef __AP_PITCH_CONTROLLER_H__
 #define __AP_PITCH_CONTROLLER_H__
 
-#include <AP_AHRS.h>
-#include <AP_Common.h>
-#include <AP_Vehicle.h>
-#include <AP_AutoTune.h>
-#include <DataFlash.h>
-#include <AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include "AP_AutoTune.h"
+#include <DataFlash/DataFlash.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_PitchController {
 public:

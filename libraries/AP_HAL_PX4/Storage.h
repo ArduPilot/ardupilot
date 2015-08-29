@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_PX4_STORAGE_H__
 #define __AP_HAL_PX4_STORAGE_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_PX4_Namespace.h"
 #include <systemlib/perf_counter.h>
 

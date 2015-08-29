@@ -38,8 +38,15 @@ public:
         SPI_SPEED_LOW, SPI_SPEED_HIGH
     };
 
+    enum class State : uint8_t {
+        UNKNOWN,
+        RUNNING,
+        FAILED,
+    };
+
     virtual void set_bus_speed(enum bus_speed speed) {}
-    
+    virtual void set_state(State state) { };
+    virtual State get_state() { return State::UNKNOWN; }
 };
 
 #endif // __AP_HAL_SPI_DRIVER_H__

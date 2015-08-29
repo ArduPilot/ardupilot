@@ -94,7 +94,8 @@ void Plane::geofence_load(void)
     uint8_t i;
 
     if (geofence_state == NULL) {
-        if (hal.util->available_memory() < 512 + sizeof(struct GeofenceState)) {
+        uint16_t boundary_size = sizeof(Vector2l) * max_fencepoints();
+        if (hal.util->available_memory() < 100 + boundary_size + sizeof(struct GeofenceState)) {
             // too risky to enable as we could run out of stack
             goto failed;
         }
@@ -104,7 +105,7 @@ void Plane::geofence_load(void)
             goto failed;
         }
 
-        geofence_state->boundary = (Vector2l *)calloc(sizeof(Vector2l), max_fencepoints());
+        geofence_state->boundary = (Vector2l *)calloc(1, boundary_size);
         if (geofence_state->boundary == NULL) {
             free(geofence_state);
             geofence_state = NULL;
@@ -136,13 +137,13 @@ void Plane::geofence_load(void)
     geofence_state->boundary_uptodate = true;
     geofence_state->fence_triggered = false;
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence loaded"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence loaded"));
     gcs_send_message(MSG_FENCE_STATUS);
     return;
 
 failed:
     g.fence_action.set(FENCE_ACTION_NONE);
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("geo-fence setup error"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("geo-fence setup error"));
 }
 
 /*
@@ -334,7 +335,7 @@ void Plane::geofence_check(bool altitude_check_only)
         if (geofence_state->fence_triggered && !altitude_check_only) {
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
-            gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence OK"));
+            gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence OK"));
  #if FENCE_TRIGGERED_PIN > 0
             hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
             hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
@@ -364,7 +365,7 @@ void Plane::geofence_check(bool altitude_check_only)
     hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("geo-fence triggered"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("geo-fence triggered"));
     gcs_send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants

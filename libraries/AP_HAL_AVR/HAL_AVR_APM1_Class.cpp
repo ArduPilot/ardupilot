@@ -1,12 +1,12 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 /* To save linker space, we need to make sure the HAL_AVR_APM1 class
  * is built iff we are building for HAL_BOARD_APM1. These defines must
  * wrap the whole HAL_AVR_APM1 class declaration and definition. */
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
-#include <AP_HAL_AVR.h>
+#include "AP_HAL_AVR.h"
 #include "AP_HAL_AVR_private.h"
 #include "HAL_AVR_APM1_Class.h"
 
@@ -43,6 +43,8 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         NULL, /* no uartD */
         NULL, /* no uartE */
         &avrI2CDriver,
+        NULL, /* only 1 i2c */
+        NULL, /* only 1 i2c */
         &apm1SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,

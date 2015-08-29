@@ -17,16 +17,16 @@
 #ifndef __AP_GPS_H__
 #define __AP_GPS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <inttypes.h>
-#include <AP_Progmem.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <GCS_MAVLink.h>
-#include <AP_Vehicle.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
-#include "../AP_SerialManager/AP_SerialManager.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -43,6 +43,8 @@
 #else
 #define GPS_RTK_AVAILABLE 0
 #endif
+
+#define GPS_RTK_INJECT_TO_ALL 127
 
 /**
  * save flash by skipping NMEA and SIRF support on copter and plane
@@ -336,6 +338,7 @@ public:
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
+    AP_Int8 _gnss_mode;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
@@ -405,18 +408,21 @@ private:
 
     static const uint32_t  _baudrates[];
     static const prog_char _initialisation_blob[];
+    static const prog_char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);
 };
 
-#include <GPS_Backend.h>
-#include <AP_GPS_UBLOX.h>
-#include <AP_GPS_MTK.h>
-#include <AP_GPS_MTK19.h>
-#include <AP_GPS_NMEA.h>
-#include <AP_GPS_SIRF.h>
-#include <AP_GPS_SBP.h>
-#include <AP_GPS_PX4.h>
+#define GPS_BAUD_TIME_MS 1200
+
+#include "GPS_Backend.h"
+#include "AP_GPS_UBLOX.h"
+#include "AP_GPS_MTK.h"
+#include "AP_GPS_MTK19.h"
+#include "AP_GPS_NMEA.h"
+#include "AP_GPS_SIRF.h"
+#include "AP_GPS_SBP.h"
+#include "AP_GPS_PX4.h"
 
 #endif // __AP_GPS_H__

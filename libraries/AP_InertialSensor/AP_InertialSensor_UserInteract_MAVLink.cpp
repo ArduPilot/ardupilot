@@ -1,10 +1,10 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #include <stdarg.h>
-#include <AP_HAL.h>
-#include <GCS_MAVLink.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
-#include <GCS.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -58,6 +58,6 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
     while (uart->txspace() < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_STATUSTEXT_LEN) {
         hal.scheduler->delay(1);
     }
-    _gcs->send_text(SEVERITY_HIGH, msg);
+    _gcs->send_text(MAV_SEVERITY_CRITICAL, msg);
 }
 

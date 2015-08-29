@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_LINUX_SCHEDULER_H__
 #define __AP_HAL_LINUX_SCHEDULER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX

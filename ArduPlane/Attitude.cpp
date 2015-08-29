@@ -909,13 +909,11 @@ void Plane::set_servos(void)
         } else {
             flapSpeedSource = aparm.throttle_cruise;
         }
-        if ( g.flap_1_speed != 0 && flapSpeedSource > g.flap_1_speed) {
-            auto_flap_percent = 0;
-        } else if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
+        if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
             auto_flap_percent = g.flap_2_percent;
-        } else {
+        } else if ( g.flap_1_speed != 0 && flapSpeedSource <= g.flap_1_speed) {
             auto_flap_percent = g.flap_1_percent;
-        }
+        } //else flaps stay at default zero deflection
 
         /*
           special flap levels for takeoff and landing. This works
@@ -997,6 +995,7 @@ void Plane::set_servos(void)
     obc.check_crash_plane();
 #endif
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // get the servos to the GCS immediately for HIL
         if (comm_get_txspace(MAVLINK_COMM_0) >= 
@@ -1007,6 +1006,7 @@ void Plane::set_servos(void)
             return;
         }
     }
+#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------
@@ -1025,7 +1025,7 @@ void Plane::set_servos(void)
 void Plane::demo_servos(uint8_t i) 
 {
     while(i > 0) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Demo Servos!"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Demo Servos!"));
         demoing_servos = true;
         servo_write(1, 1400);
         hal.scheduler->delay(400);
@@ -1082,6 +1082,7 @@ void Plane::update_load_factor(void)
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees
         nav_roll_cd = constrain_int32(nav_roll_cd, -2500, 2500);
+        roll_limit_cd = constrain_int32(roll_limit_cd, -2500, 2500);
     } else if (max_load_factor < aerodynamic_load_factor) {
         // the demanded nav_roll would take us past the aerodymamic
         // load limit. Limit our roll to a bank angle that will keep
@@ -1094,5 +1095,6 @@ void Plane::update_load_factor(void)
             roll_limit = 2500;
         }
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit, roll_limit);
+        roll_limit_cd = constrain_int32(roll_limit_cd, -roll_limit, roll_limit);
     }    
 }

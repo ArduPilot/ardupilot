@@ -130,8 +130,8 @@ void Copter::tuning() {
         break;
 
     case TUNING_CIRCLE_RATE:
-        // set circle rate
-        circle_nav.set_rate(g.rc_6.control_in/25-20);   // allow approximately 45 degree turn rate in either direction
+        // set circle rate up to approximately 45 deg/sec in either direction
+        circle_nav.set_rate((float)g.rc_6.control_in/25.0f-20.0f);
         break;
 
     case TUNING_SONAR_GAIN:
@@ -186,9 +186,11 @@ void Copter::tuning() {
         g.pid_rate_roll.kD(tuning_value);
         break;
 
+#if FRAME_CONFIG != HELI_FRAME
     case TUNING_RATE_MOT_YAW_HEADROOM:
         motors.set_yaw_headroom(tuning_value*1000);
         break;
+#endif
 
      case TUNING_RATE_YAW_FILT:
          g.pid_rate_yaw.filt_hz(tuning_value);

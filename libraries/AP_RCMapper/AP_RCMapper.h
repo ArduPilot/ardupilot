@@ -3,8 +3,8 @@
 #define AP_RCMAPPER_H
 
 #include <inttypes.h>
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 class RCMapper
 {

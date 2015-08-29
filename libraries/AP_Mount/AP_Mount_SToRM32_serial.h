@@ -7,15 +7,15 @@
 #ifndef __AP_MOUNT_STORM32_SERIAL_H__
 #define __AP_MOUNT_STORM32_SERIAL_H__
 
-#include <AP_HAL.h>
-#include <AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_GPS.h>
-#include <GCS_MAVLink.h>
-#include <RC_Channel.h>
-#include <AP_Mount_Backend.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_GPS/AP_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <RC_Channel/RC_Channel.h>
+#include "AP_Mount_Backend.h"
 
 #define AP_MOUNT_STORM32_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
 
@@ -113,8 +113,9 @@ private:
     };
 
     struct PACKED SToRM32_reply_ack_struct {
-        uint8_t magic;
-        uint8_t something[5];
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
         uint8_t data;
         uint16_t crc;
     };
@@ -123,9 +124,6 @@ private:
         uint8_t byte1;
         uint8_t byte2;
         uint8_t byte3;
-        uint8_t byte4;
-        uint8_t byte5;
-        uint8_t byte6;
         float pitch;
         float roll;
         float yaw;

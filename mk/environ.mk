@@ -58,6 +58,11 @@ $(info Reading $(SKETCHBOOK)/config.mk)
 include $(SKETCHBOOK)/config.mk
 endif
 
+ifneq ($(wildcard $(SKETCHBOOK)/developer.mk),)
+$(info Reading $(SKETCHBOOK)/developer.mk)
+include $(SKETCHBOOK)/developer.mk
+endif
+
 #
 # Work out the sketch name from the name of the source directory.
 #
@@ -146,6 +151,12 @@ ifneq ($(findstring pxf, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
+
+ifneq ($(findstring bebop, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BEBOP
+endif
+
 
 ifneq ($(findstring navio, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX

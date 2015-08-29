@@ -18,16 +18,16 @@
  */
 
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_ADC.h>
-#include <AP_Airspeed.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_ADC/AP_ADC.h>
+#include "AP_Airspeed.h"
 
 extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- #include <AP_ADC_AnalogSource.h>
+ #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
  #define ARSPD_DEFAULT_PIN 64
 #elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define ARSPD_DEFAULT_PIN 0
@@ -60,8 +60,6 @@ extern const AP_HAL::HAL& hal;
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
  #define ARSPD_DEFAULT_PIN 16
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
  #define ARSPD_DEFAULT_PIN AP_AIRSPEED_I2C_PIN
 #else

@@ -87,7 +87,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @DisplayName: Takeoff trigger deadzone
     // @Description: Offset from mid stick at which takeoff is triggered
     // @User: Standard
-    // @Range 0.0 500.0
+    // @Range: 0.0 500.0
     // @Increment: 10
     GSCALAR(takeoff_trigger_dz, "PILOT_TKOFF_DZ", THR_DZ_DEFAULT),
 
@@ -196,6 +196,15 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
 
+    // @Param: RTL_CLIMB_MIN
+    // @DisplayName: RTL minimum climb
+    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
+    // @Units: Centimeters
+    // @Range: 0 3000
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
+
     // @Param: RSSI_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: This selects an analog pin for the receiver RSSI voltage. It assumes the voltage is RSSI_RANGE for max rssi, 0V for minimum
@@ -220,7 +229,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
-    // @Description: Time (in milliseconds) to loiter above home before begining final descent
+    // @Description: Time (in milliseconds) to loiter above home before beginning final descent
     // @Units: ms
     // @Range: 0 60000
     // @Increment: 1000
@@ -300,42 +309,42 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,16:PosHold,17:Brake
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake
     // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               FLIGHT_MODE_6),
 
@@ -353,12 +362,12 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: ESC
+    // @Param: ESC_CALIBRATION
     // @DisplayName: ESC Calibration
     // @Description: Controls whether ArduCopter will enter ESC calibration on the next restart.  Do not adjust this parameter manually.
     // @User: Advanced
-    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle
-    GSCALAR(esc_calibrate, "ESC",                   0),
+    // @Values: 0:Normal Start-up, 1:Start-up in ESC Calibration mode if throttle high, 2:Start-up in ESC Calibration mode regardless of throttle, 9:Disabled
+    GSCALAR(esc_calibrate, "ESC_CALIBRATION",       0),
 
     // @Param: TUNE
     // @DisplayName: Channel 6 Tuning
@@ -434,6 +443,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @DisplayName: Arming check
     // @Description: Allows enabling or disabling of pre-arming checks of receiver, accelerometer, barometer, compass and GPS
     // @Values: 0:Disabled, 1:Enabled, -3:Skip Baro, -5:Skip Compass, -9:Skip GPS, -17:Skip INS, -33:Skip Params/Sonar, -65:Skip RC, 127:Skip Voltage
+    // @Bitmask: 0:All,1:Baro,2:Compass,3:GPS,4:INS,5:Parameters+Sonar,6:RC,7:Voltage
     // @User: Standard
     GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_ALL),
 
@@ -441,7 +451,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
     // @Units: Centi-degrees
-    // @Range 1000 8000
+    // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
@@ -792,6 +802,13 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Description: Throttle acceleration controller D gain.  Compensates for short-term change in desired vertical acceleration vs actual acceleration
     // @Range: 0.000 0.400
     // @User: Standard
+
+    // @Param: ACCEL_Z_FILT_HZ
+    // @DisplayName: Throttle acceleration filter
+    // @Description: Filter applied to acceleration to reduce noise.  Lower values reduce noise but add delay.
+    // @Range: 1.000 100.000
+    // @Units: Hz
+    // @User: Standard
     GGROUP(pid_accel_z, "ACCEL_Z_", AC_PID),
 
     // P controllers
@@ -876,8 +893,6 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
 
 #if FRAME_CONFIG == HELI_FRAME
-    // @Group: ATC_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     GOBJECT(attitude_control, "ATC_", AC_AttitudeControl_Heli),
 #else
     // @Group: ATC_
@@ -890,22 +905,22 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(pos_control, "PSC", AC_PosControl),
 
     // @Group: SR0_
-    // @Path: GCS_Mavlink.pde
+    // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[0],  gcs0,       "SR0_",     GCS_MAVLINK),
 
     // @Group: SR1_
-    // @Path: GCS_Mavlink.pde
+    // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
 #if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
-    // @Path: GCS_Mavlink.pde
+    // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
 #endif
 
 #if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
-    // @Path: GCS_Mavlink.pde
+    // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 #endif
 
@@ -919,7 +934,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
-    // @Group: BATT_
+    // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT",         AP_BattMonitor),
 
@@ -1002,8 +1017,8 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
 #else
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_Motors_Class.cpp
-    GOBJECT(motors, "MOT_",         AP_Motors),
+    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+    GOBJECT(motors, "MOT_",         AP_MotorsMulticopter),
 #endif
 
     // @Group: RCMAP_
@@ -1036,7 +1051,11 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 
-    // @Param: AUTOTUNE_AXIS_BITMASK
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+
+    // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
     // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
@@ -1044,12 +1063,19 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
 
-    // @Param: AUTOTUNE_AGGRESSIVENESS
-    // @DisplayName: autotune_aggressiveness
-    // @Description: autotune_aggressiveness. Defines the bounce back used to detect size of the D term.
+    // @Param: AUTOTUNE_AGGR
+    // @DisplayName: Autotune aggressiveness
+    // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
     // @Range: 0.05 0.10
     // @User: Standard
     GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
+
+    // @Param: AUTOTUNE_MIN_D
+    // @DisplayName: AutoTune minimum D
+    // @Description: Defines the minimum D gain
+    // @Range: 0.001 0.006
+    // @User: Standard
+    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.004f),
 
     AP_VAREND
 };
@@ -1105,7 +1131,7 @@ void Copter::load_parameters(void)
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-        AP_Param::convert_old_parameters(&conversion_table[0], sizeof(conversion_table)/sizeof(conversion_table[0]));
+        AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
         cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
     }
 }

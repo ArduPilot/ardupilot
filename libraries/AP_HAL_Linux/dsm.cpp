@@ -38,6 +38,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
+#include <AP_Common/AP_Common.h>
+
 #include "dsm.h"
 
 #define DSM_FRAME_SIZE		16		/**<DSM frame size in bytes*/
@@ -159,7 +162,7 @@ dsm_guess_format(bool reset, const uint8_t dsm_frame[16])
 	unsigned votes10 = 0;
 	unsigned votes11 = 0;
 
-	for (unsigned i = 0; i < (sizeof(masks) / sizeof(masks[0])); i++) {
+	for (unsigned i = 0; i < ARRAY_SIZE(masks); i++) {
 
 		if (cs10 == masks[i])
 			votes10++;

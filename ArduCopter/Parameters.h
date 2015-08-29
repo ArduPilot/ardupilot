@@ -3,7 +3,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 // Global parameter class.
 //
@@ -335,7 +335,10 @@ public:
         k_param_autotune_axis_bitmask,
         k_param_autotune_aggressiveness,
         k_param_pi_vel_xy,
-        k_param_fs_ekf_action, // 248
+        k_param_fs_ekf_action,
+        k_param_rtl_climb_min,
+        k_param_rpm_sensor,
+        k_param_autotune_min_d, // 251
 
         // 254,255: reserved
     };
@@ -370,6 +373,7 @@ public:
     AP_Int8         compass_enabled;
     AP_Int8         super_simple;
     AP_Int16        rtl_alt_final;
+    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
 
     AP_Int8         rssi_pin;
     AP_Float        rssi_range;                 // allows to set max voltage for rssi pin such as 5.0, 3.3 etc. 
@@ -495,6 +499,7 @@ public:
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
+    AP_Float                autotune_min_d;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

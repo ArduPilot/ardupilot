@@ -4,14 +4,14 @@
 // scan I2C and SPI buses for expected devices
 //
 
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_HAL.h>
-#include <AP_HAL_Linux.h>
-#include <AP_HAL_Empty.h>
-#include <AP_Math.h>
-#include <AP_Param.h>
-#include <StorageManager.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Param/AP_Param.h>
+#include <StorageManager/StorageManager.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -40,7 +40,7 @@ void loop(void)
 
     hal.console->printf("Scanning SPI bus devices\n");
 
-    for (uint8_t i=0; i<sizeof(whoami_list)/sizeof(whoami_list[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(whoami_list); i++) {
         spi = hal.spi->device(whoami_list[i].dev);
         if (spi == NULL) {
             hal.console->printf("Failed to get SPI device for %s\n", whoami_list[i].name);

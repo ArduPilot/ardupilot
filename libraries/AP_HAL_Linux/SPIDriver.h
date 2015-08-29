@@ -2,18 +2,8 @@
 #ifndef __AP_HAL_EMPTY_SPIDRIVER_H__
 #define __AP_HAL_EMPTY_SPIDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 #include "Semaphores.h"
-
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
-#define LINUX_SPI_DEVICE_NUM_DEVICES 6
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-#define LINUX_SPI_DEVICE_NUM_DEVICES 2
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-#define LINUX_SPI_DEVICE_NUM_DEVICES 2
-#else
-#define LINUX_SPI_DEVICE_NUM_DEVICES 0
-#endif
 
 // Most platforms won't need to declare the spidev bus offset
 #ifndef LINUX_SPIDEV_BUS_OFFSET
@@ -38,6 +28,8 @@ public:
     uint8_t transfer (uint8_t data);
     void transfer (const uint8_t *data, uint16_t len);
     void set_bus_speed(enum bus_speed speed);
+    void set_state(State state) override { _state = state; }
+    State get_state() override { return _state; }
 
 private:
     uint16_t _bus;
@@ -46,6 +38,7 @@ private:
     AP_HAL::DigitalSource *_cs;
     uint8_t _mode;
     uint8_t _bitsPerWord;
+    State _state = State::UNKNOWN;
     uint32_t _lowspeed;
     uint32_t _highspeed;
     uint32_t _speed;
@@ -65,7 +58,7 @@ public:
     static void transaction(LinuxSPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len);
 
 private:
-    static LinuxSPIDeviceDriver _device[LINUX_SPI_DEVICE_NUM_DEVICES];
+    static LinuxSPIDeviceDriver _device[];
     static LinuxSemaphore _semaphore[LINUX_SPI_MAX_BUSES];
 };
 

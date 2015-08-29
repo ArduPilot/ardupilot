@@ -6,22 +6,22 @@
   Andrew Tridgell November 2011
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL_SITL.h>
+#include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 
-#include <AP_Math.h>
-#include "../AP_Compass/AP_Compass.h"
-#include "../AP_Declination/AP_Declination.h"
-#include "../AP_RangeFinder/AP_RangeFinder.h"
-#include "../SITL/SITL.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <SITL/SITL.h>
 #include "Scheduler.h"
-#include <AP_Math.h>
-#include "../AP_ADC/AP_ADC.h"
-#include <SITL_State.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_ADC/AP_ADC.h>
+#include "SITL_State.h"
 #include <fenv.h>
 
 extern const AP_HAL::HAL& hal;
@@ -159,11 +159,13 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     // minimum noise levels are 2 bits, but averaged over many
     // samples, giving around 0.01 m/s/s
     float accel_noise = 0.01f;
+    float accel2_noise = 0.01f;
     // minimum gyro noise is also less than 1 bit
     float gyro_noise = ToRad(0.04f);
     if (_motors_on) {
         // add extra noise when the motors are on
         accel_noise += _sitl->accel_noise;
+        accel2_noise += _sitl->accel2_noise;
         gyro_noise += ToRad(_sitl->gyro_noise);
     }
     // get accel bias (add only to first accelerometer)
@@ -172,9 +174,9 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
     float yAccel1 = yAccel + accel_noise * _rand_float() + accel_bias.y;
     float zAccel1 = zAccel + accel_noise * _rand_float() + accel_bias.z;
 
-    float xAccel2 = xAccel + accel_noise * _rand_float();
-    float yAccel2 = yAccel + accel_noise * _rand_float();
-    float zAccel2 = zAccel + accel_noise * _rand_float();
+    float xAccel2 = xAccel + accel2_noise * _rand_float();
+    float yAccel2 = yAccel + accel2_noise * _rand_float();
+    float zAccel2 = zAccel + accel2_noise * _rand_float();
 
     if (fabsf(_sitl->accel_fail) > 1.0e-6f) {
         xAccel1 = _sitl->accel_fail;
@@ -182,8 +184,14 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
         zAccel1 = _sitl->accel_fail;
     }
 
-    _ins->set_accel(0, Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0));
-    _ins->set_accel(1, Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1));
+    Vector3f accel0 = Vector3f(xAccel1, yAccel1, zAccel1) + _ins->get_accel_offsets(0);
+    Vector3f accel1 = Vector3f(xAccel2, yAccel2, zAccel2) + _ins->get_accel_offsets(1);
+    _ins->set_accel(0, accel0);
+    _ins->set_accel(1, accel1);
+
+    // check noise
+    _ins->calc_vibration_and_clipping(0, accel0, 0.0025f);
+    _ins->calc_vibration_and_clipping(1, accel1, 0.0025f);
 
     float p = radians(rollRate) + _gyro_drift();
     float q = radians(pitchRate) + _gyro_drift();
@@ -202,7 +210,8 @@ void SITL_State::_update_ins(float roll, 	float pitch, 	float yaw,		// Relative 
 
 
     sonar_pin_value    = _ground_sonar();
-    airspeed_pin_value = _airspeed_sensor(airspeed + (_sitl->aspd_noise * _rand_float()));
+    float airspeed_simulated = (fabsf(_sitl->aspd_fail) > 1.0e-6f) ? _sitl->aspd_fail : airspeed;
+    airspeed_pin_value = _airspeed_sensor(airspeed_simulated + (_sitl->aspd_noise * _rand_float()));
 }
 
 #endif

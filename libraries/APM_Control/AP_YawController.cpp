@@ -18,8 +18,7 @@
 //  Modified by Paul Riseborough to implement a three loop autopilot
 //  topology
 //
-#include <AP_Math.h>
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_YawController.h"
 
 extern const AP_HAL::HAL& hal;
@@ -34,7 +33,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
 	AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
 
 	// @Param: INT
-	// @DisplayName: Sidelsip control integrator
+	// @DisplayName: Sideslip control integrator
 	// @Description: This is the integral gain from lateral acceleration error. This gain should only be non-zero if active control over sideslip is desired. If active control over sideslip is required then this can be set to 1.0 as a first try.
 	// @Range: 0 2
 	// @Increment: 0.25
@@ -166,7 +165,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	// Save to last value before application of limiter so that integrator limiting
 	// can detect exceedance next frame
 	// Scale using inverse dynamic pressure (1/V^2)
-	_last_out =  _K_D * (_integrator - rate_hp_out) * scaler * scaler;
+	_pid_info.I = _K_D * _integrator * scaler * scaler;
+	_pid_info.D = _K_D * (-rate_hp_out) * scaler * scaler;
+	_last_out =  _pid_info.I + _pid_info.D;
 
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);

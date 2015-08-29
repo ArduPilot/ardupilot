@@ -26,6 +26,7 @@ TRACKER_ARGS=""
 EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
+OVERRIDE_BUILD_TARGET=""
 
 usage()
 {
@@ -53,6 +54,7 @@ Options:
     -f FRAME         set aircraft frame type
                      for copters can choose +, X, quad or octa
                      for planes can choose elevon or vtail
+    -b BUILD_TARGET  override SITL build target
     -j NUM_PROC      number of processors to use during build (default 1)
     -H               start HIL
     -e               use external simulator
@@ -73,7 +75,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -143,6 +145,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:" opt; do
     e)
       EXTERNAL_SIM=1
       ;;
+    b)
+      OVERRIDE_BUILD_TARGET="$OPTARG"
+      ;;
     h)
       usage
       exit 0
@@ -183,7 +188,12 @@ SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
 FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 
 [ -z "$VEHICLE" ] && {
-    VEHICLE=$(basename $PWD)
+    CDIR="$PWD"
+    rpath=$(which realpath)
+    [ -n "$rpath" ] && {
+        CDIR=$(realpath $CDIR)
+    }
+    VEHICLE=$(basename $CDIR)
 }
 
 [ -z "$FRAME" -a "$VEHICLE" = "APMrover2" ] && {
@@ -201,11 +211,6 @@ FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
 }
 
 EXTRA_PARM=""
-EXTRA_SIM=""
-
-[ "$SPEEDUP" != "1" ] && {
-    EXTRA_SIM="$EXTRA_SIM --speedup=$SPEEDUP"
-}
 
 check_jsbsim_version()
 {
@@ -232,47 +237,53 @@ EOF
 case $FRAME in
     +|quad)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=quad"
         MODEL="+"
 	;;
     X)
 	BUILD_TARGET="sitl"
         EXTRA_PARM="param set FRAME 1;"
-        EXTRA_SIM="$EXTRA_SIM --frame=X"
         MODEL="X"
 	;;
     octa*)
 	BUILD_TARGET="sitl-octa"
-        EXTRA_SIM="$EXTRA_SIM --frame=octa"
         MODEL="$FRAME"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
-        EXTRA_SIM="$EXTRA_SIM --frame=heli"
         MODEL="heli"
 	;;
+    heli-dual)
+  BUILD_TARGET="sitl-heli-dual"
+        EXTRA_SIM="$EXTRA_SIM --frame=heli-dual"
+        MODEL="heli-dual"
+  ;;
+    heli-compound)
+  BUILD_TARGET="sitl-heli-compound"
+        EXTRA_SIM="$EXTRA_SIM --frame=heli-compound"
+        MODEL="heli-compound"
+  ;;
     IrisRos)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=IrisRos"
+	;;
+    Gazebo)
+	BUILD_TARGET="sitl"
+        EXTRA_SIM="$EXTRA_SIM --frame=Gazebo"
+        MODEL="$FRAME"
 	;;
     CRRCSim-heli)
 	BUILD_TARGET="sitl-heli"
-        EXTRA_SIM="$EXTRA_SIM --frame=CRRCSim-heli"
         MODEL="$FRAME"
 	;;
     CRRCSim|last_letter*)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
 	;;
     jsbsim*)
 	BUILD_TARGET="sitl"
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
         check_jsbsim_version
 	;;
     *)
-        EXTRA_SIM="$EXTRA_SIM --frame=$FRAME"
         MODEL="$FRAME"
 	;;
 esac
@@ -281,12 +292,27 @@ if [ $DEBUG_BUILD == 1 ]; then
     BUILD_TARGET="$BUILD_TARGET-debug"
 fi
 
-autotest=$(dirname $(readlink -e $0))
-pushd $autotest/../../$VEHICLE || {
-    echo "Failed to change to vehicle directory for $VEHICLE"
+if [ -n "$OVERRIDE_BUILD_TARGET" ]; then
+    BUILD_TARGET="$OVERRIDE_BUILD_TARGET"
+fi
+
+autotest="../Tools/autotest"
+[ -d "$autotest" ] || {
+    # we are not running from one of the standard vehicle directories. Use 
+    # the location of the sim_vehicle.sh script to find the path
+    autotest=$(dirname $(readlink -e $0))
+}
+VEHICLEDIR="$autotest/../../$VEHICLE"
+[ -d "$VEHICLEDIR" ] || {
+    VEHICLEDIR=$(dirname $(readlink -e $VEHICLEDIR))
+}
+pushd $VEHICLEDIR || {
+    echo "Failed to change to vehicle directory for $VEHICLEDIR"
     usage
     exit 1
 }
+AUTOTEST=$autotest
+export AUTOTEST
 VEHICLEDIR=$(pwd)
 
 if [ $NO_REBUILD == 0 ]; then
@@ -297,7 +323,10 @@ fi
 echo "Building $BUILD_TARGET"
 make $BUILD_TARGET -j$NUM_PROCS || {
     make clean
-    make $BUILD_TARGET -j$NUM_PROCS
+    make $BUILD_TARGET -j$NUM_PROCS || {
+	echo >&2 "$0: Build failed"
+	exit 1
+    }
 }
 fi
 popd

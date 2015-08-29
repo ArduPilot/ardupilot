@@ -52,7 +52,7 @@ void Plane::set_next_WP(const struct Location &loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Resetting prev_WP"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Resetting prev_WP"));
         prev_WP_loc = current_loc;
     }
 
@@ -100,10 +100,11 @@ void Plane::set_guided_WP(void)
 // -------------------------------
 void Plane::init_home()
 {
-    gcs_send_text_P(SEVERITY_LOW, PSTR("init home"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("init home"));
 
     ahrs.set_home(gps.location());
     home_is_set = HOME_SET_NOT_LOCKED;
+    Log_Write_Home_And_Origin();
 
     gcs_send_text_fmt(PSTR("gps alt: %lu"), (unsigned long)home.alt);
 
@@ -124,6 +125,7 @@ void Plane::update_home()
 {
     if (home_is_set == HOME_SET_NOT_LOCKED) {
         ahrs.set_home(gps.location());
+        Log_Write_Home_And_Origin();
     }
     barometer.update_calibration();
 }

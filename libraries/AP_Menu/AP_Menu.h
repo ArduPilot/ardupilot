@@ -17,7 +17,7 @@
 #define __AP_MENU_H__
 
 #include <inttypes.h>
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #define MENU_COMMANDLINE_MAX    32      ///< maximum input line length
 #define MENU_ARGS_MAX           3       ///< maximum number of arguments
@@ -168,10 +168,10 @@ private:
 ///
 #define MENU(name, prompt, commands)                                                    \
     static const char __menu_name__ ## name[] PROGMEM = prompt;      \
-    static Menu name(__menu_name__ ## name, commands, sizeof(commands) / sizeof(commands[0]))
+    static Menu name(__menu_name__ ## name, commands, ARRAY_SIZE(commands))
 
 #define MENU2(name, prompt, commands, preprompt)                                \
     static const char __menu_name__ ## name[] PROGMEM = prompt;      \
-    static Menu name(__menu_name__ ## name, commands, sizeof(commands) / sizeof(commands[0]), preprompt)
+    static Menu name(__menu_name__ ## name, commands, ARRAY_SIZE(commands), preprompt)
 
 #endif // __AP_COMMON_MENU_H__

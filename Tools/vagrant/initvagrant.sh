@@ -46,6 +46,9 @@ exportline="export PATH=/opt/$ARM_ROOT/bin:\$PATH"
 if grep -Fxq "$exportline" /home/vagrant/.profile; then echo nothing to do ; else echo $exportline >> /home/vagrant/.profile; fi
 
 echo "source /vagrant/Tools/vagrant/shellinit.sh" >>/home/vagrant/.profile
+# This allows the PX4NuttX build to proceed when the underlying fs is on windows
+# It is only marginally less efficient on Linux
+echo "export PX4_WINTOOL=y" >>/home/vagrant/.profile
 ln -fs /vagrant/Tools/vagrant/screenrc /home/vagrant/.screenrc
 
 # build JSB sim

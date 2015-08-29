@@ -1,19 +1,19 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Progmem.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include "OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
-    // @Param: ENABLE
+    // @Param: _ENABLE
     // @DisplayName: Optical flow enable/disable
     // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
     AP_GROUPINFO("_ENABLE", 0,  OpticalFlow,    _enabled,   0),
 
-    // @Param: FXSCALER
+    // @Param: _FXSCALER
     // @DisplayName: X axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor X axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the X axis optical flow reading by 0.1%. Negative values reduce the scale factor.
     // @Range: -200 +200
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("_FXSCALER", 1,  OpticalFlow,    _flowScalerX,   0),
 
-    // @Param: FYSCALER
+    // @Param: _FYSCALER
     // @DisplayName: Y axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor Y axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the Y axis optical flow reading by 0.1%. Negative values reduce the scale factor.
     // @Range: -200 +200
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("_FYSCALER", 2,  OpticalFlow,    _flowScalerY,   0),
 
-    // @Param: ORIENT_YAW
+    // @Param: _ORIENT_YAW
     // @DisplayName: Flow sensor yaw alignment
     // @Description: Specifies the number of centi-degrees that the flow sensor is yawed relative to the vehicle. A sensor with its X-axis pointing to the right of the vehicle X axis has a positive yaw angle.
     // @Range: -18000 +18000
@@ -46,6 +46,8 @@ OpticalFlow::OpticalFlow(void) :
     backend(new AP_OpticalFlow_PX4(*this)),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     backend(new AP_OpticalFlow_HIL(*this)),
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    backend(new AP_OpticalFlow_Linux(*this)),
 #else
     backend(NULL),
 #endif

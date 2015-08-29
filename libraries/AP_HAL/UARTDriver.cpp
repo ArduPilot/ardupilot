@@ -14,7 +14,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL.h>
+#include "AP_HAL.h"
 
 #include "utility/print_vprintf.h"
 #include "UARTDriver.h"

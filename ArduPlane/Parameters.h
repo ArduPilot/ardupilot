@@ -3,7 +3,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 // Global parameter class.
 //
@@ -139,6 +139,7 @@ public:
         k_param_rudder_only,
         k_param_gcs3,            // 93
         k_param_gcs_pid_mask,
+        k_param_crash_detection_enable,
 
         // 100: Arming parameters
         k_param_arming = 100,
@@ -338,6 +339,7 @@ public:
     AP_Int8  rtl_autoland;
 
     AP_Int8  trim_rc_at_start;
+    AP_Int8  crash_detection_enable;
 
     // Feed-forward gains
     //
@@ -448,7 +450,9 @@ public:
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
     AP_Int8  hil_servos;
+#if HIL_SUPPORT
     AP_Int8  hil_mode;
+#endif
 
     AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;

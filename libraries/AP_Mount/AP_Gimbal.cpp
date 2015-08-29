@@ -1,14 +1,14 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Gimbal.h>
+#include "AP_Gimbal.h"
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
 #include <stdio.h>
-#include <AP_Common.h>
-#include <GCS.h>
-#include <AP_SmallEKF.h>
-#include "AP_Math.h"
+#include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_NavEKF/AP_SmallEKF.h>
+#include <AP_Math/AP_Math.h>
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {

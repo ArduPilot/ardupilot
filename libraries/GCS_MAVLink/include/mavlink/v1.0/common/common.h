@@ -97,6 +97,20 @@ typedef enum MAV_TYPE
 } MAV_TYPE;
 #endif
 
+/** @brief These values define the type of firmware release.  These values indicate the first version or release of this type.  For example the first alpha release would be 64, the second would be 65. */
+#ifndef HAVE_ENUM_FIRMWARE_VERSION_TYPE
+#define HAVE_ENUM_FIRMWARE_VERSION_TYPE
+typedef enum FIRMWARE_VERSION_TYPE
+{
+	FIRMWARE_VERSION_TYPE_DEV=0, /* development release | */
+	FIRMWARE_VERSION_TYPE_ALPHA=64, /* alpha release | */
+	FIRMWARE_VERSION_TYPE_BETA=128, /* beta release | */
+	FIRMWARE_VERSION_TYPE_RC=192, /* release candidate | */
+	FIRMWARE_VERSION_TYPE_OFFICIAL=255, /* official stable release | */
+	FIRMWARE_VERSION_TYPE_ENUM_END=256, /*  | */
+} FIRMWARE_VERSION_TYPE;
+#endif
+
 /** @brief These flags encode the MAV mode. */
 #ifndef HAVE_ENUM_MAV_MODE_FLAG
 #define HAVE_ENUM_MAV_MODE_FLAG
@@ -478,7 +492,8 @@ typedef enum SERIAL_CONTROL_DEV
 	SERIAL_CONTROL_DEV_TELEM2=1, /* Second telemetry port | */
 	SERIAL_CONTROL_DEV_GPS1=2, /* First GPS port | */
 	SERIAL_CONTROL_DEV_GPS2=3, /* Second GPS port | */
-	SERIAL_CONTROL_DEV_ENUM_END=4, /*  | */
+	SERIAL_CONTROL_DEV_SHELL=10, /* system shell | */
+	SERIAL_CONTROL_DEV_ENUM_END=11, /*  | */
 } SERIAL_CONTROL_DEV;
 #endif
 
@@ -523,7 +538,9 @@ typedef enum MAV_PROTOCOL_CAPABILITY
 	MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT=256, /* Autopilot supports commanding position and velocity targets in global scaled integers. | */
 	MAV_PROTOCOL_CAPABILITY_TERRAIN=512, /* Autopilot supports terrain protocol / data handling. | */
 	MAV_PROTOCOL_CAPABILITY_SET_ACTUATOR_TARGET=1024, /* Autopilot supports direct actuator control. | */
-	MAV_PROTOCOL_CAPABILITY_ENUM_END=1025, /*  | */
+	MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION=2048, /* Autopilot supports the flight termination command. | */
+	MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION=4096, /* Autopilot supports onboard compass calibration. | */
+	MAV_PROTOCOL_CAPABILITY_ENUM_END=4097, /*  | */
 } MAV_PROTOCOL_CAPABILITY;
 #endif
 

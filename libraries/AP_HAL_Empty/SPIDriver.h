@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_EMPTY_SPIDRIVER_H__
 #define __AP_HAL_EMPTY_SPIDRIVER_H__
 
-#include <AP_HAL_Empty.h>
+#include "AP_HAL_Empty.h"
 #include "Semaphores.h"
 
 class Empty::EmptySPIDeviceDriver : public AP_HAL::SPIDeviceDriver {

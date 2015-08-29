@@ -28,6 +28,9 @@
         "P8.46",	/* pru1: pr1_pru1_pru_r30_1, CH_11 */
         "P8.45",	/* pru1: pr1_pru1_pru_r30_0, CH_12 */
 
+        "P8.12",	/* pru0: pr1_pru0_pru_r30_14, HC-SR04 trigger */
+        "P8.16",	/* pru0: pr1_pru0_pru_r31_14, HC-SR04 echo */
+
         /* SPI0 */
         "P9.22",    /* spi0: spi0_sclk, SPI0_SCLK */
         "P9.21",    /* spi0: spi0_d0, SPI0_MISO */
@@ -81,6 +84,9 @@
                     0x0a8 0x25	/* lcd_data2.pr1_pru1_pru_r30_2, MODE5 | OUTPUT | PRU, CH_10 */
                     0x0a4 0x25	/* lcd_data1.pr1_pru1_pru_r30_1, MODE5 | OUTPUT | PRU, CH_11 */
                     0x0a0 0x25	/* lcd_data0.pr1_pru1_pru_r30_0, MODE5 | OUTPUT | PRU, CH_12 */
+
+                    0x030 0x6 	/* gpmc_ad12.pr1_pru0_pru_r30_14, MODE6 | OUTPUT_PULLDOWN | HC-SR04 trigger */
+                    0x038 0x26	/* gpmc_ad14.pr1_pru0_pru_r31_14, MODE6 | INPUT_PULLDOWN | HC-SR04 echo */
                 >;
             };
 

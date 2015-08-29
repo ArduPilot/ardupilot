@@ -1,6 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: -*- nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -22,7 +22,12 @@
 #include <netinet/tcp.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include "../AP_HAL/utility/RingBuffer.h"
+#include <AP_HAL/utility/RingBuffer.h>
+
+#include "UARTDevice.h"
+#include "UDPDevice.h"
+#include "ConsoleDevice.h"
+#include "TCPServerDevice.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -30,14 +35,12 @@ using namespace Linux;
 
 LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
     device_path(NULL),
-    _rd_fd(-1),
-    _wr_fd(-1),
     _packetise(false),
     _flow_control(FLOW_CONTROL_DISABLE)
 {
     if (default_console) {
-        _rd_fd = 0;
-        _wr_fd = 1;
+        _device = new ConsoleDevice();
+        _device->open();
         _console = true;
     }
 }
@@ -45,7 +48,7 @@ LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
 /*
   set the tty device to use for this UART
  */
-void LinuxUARTDriver::set_device_path(char *path)
+void LinuxUARTDriver::set_device_path(const char *path)
 {
     device_path = path;
 }
@@ -61,101 +64,70 @@ void LinuxUARTDriver::begin(uint32_t b)
 void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     if (device_path == NULL && _console) {
-        _rd_fd = 0;
-        _wr_fd = 1;
-        fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-        fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
+        _device = new ConsoleDevice();
+        _device->open();
+        _device->set_blocking(false);
     } else if (!_initialised) {
         if (device_path == NULL) {
             return;
         }
-        
-        switch (_parseDevicePath(device_path)){        
+
+        switch (_parseDevicePath(device_path)) {
         case DEVICE_TCP:
         {
-            _connected = false;
-            if (_flag != NULL){
-                if (!strcmp(_flag, "wait")){    
-                    _tcp_start_connection(true);    
-                } else {
-                    _tcp_start_connection(false);    
-                }
-            } else {
-                _tcp_start_connection(false);    
-            }
-            
-            if (!_connected) {
-                ::printf("LinuxUARTDriver TCP connection not established\n");
-                exit(1);
-            }
+            _tcp_start_connection();
             _flow_control = FLOW_CONTROL_ENABLE;
             break;
-        }   
+        }
 
         case DEVICE_UDP:
         {
             _udp_start_connection();
             _flow_control = FLOW_CONTROL_ENABLE;
             break;
-        }   
+        }
 
-        case DEVICE_SERIAL:            
+        case DEVICE_SERIAL:
         {
-            _rd_fd = open(device_path, O_RDWR);
-            _wr_fd = _rd_fd;
-            if (_rd_fd == -1) {
-                ::fprintf(stdout, "Failed to open UART device %s - %s\n",
-                          device_path, strerror(errno));
-                return;
+            if (!_serial_start_connection()) {
+                break; /* Whatever it might mean */
             }
-            
-            // always run the file descriptor non-blocking, and deal with
-            // blocking IO in the higher level calls
-            fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            // TODO: add proper flow control support
-            _flow_control = FLOW_CONTROL_DISABLE;
             break;
         }
         default:
         {
             // Notify that the option is not valid and select standart input and output
-            ::printf("LinuxUARTDriver parsing failed, using default\n");
+            ::printf("Argument is not valid. Fallback to console.\n");
+            ::printf("Launch with --help to see an example.\n");
 
-            _rd_fd = 0;
-            _wr_fd = 1;
-            fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-            fcntl(_wr_fd, F_SETFL, fcntl(_wr_fd, F_GETFL, 0) | O_NONBLOCK);
+            _device = new ConsoleDevice();
+            _device->open();
+            _device->set_blocking(false);
             break;
         }
         }
     }
 
-    // we have enough memory to have a larger transmit buffer for
-    // all ports. This means we don't get delays while waiting to
-    // write GPS config packets
-    if (rxS < 1024) {
-        rxS = 8192;
-    }            
-    if (txS < 8192) {
-        txS = 8192;
-    }
-    
     _initialised = false;
     while (_in_timer) hal.scheduler->delay(1);
 
-    if (b != 0 && _rd_fd == _wr_fd) {
-        // set the baud rate
-        struct termios t;
-        memset(&t, 0, sizeof(t));
-        tcgetattr(_rd_fd, &t);
-        cfsetspeed(&t, b);
-        // disable LF -> CR/LF
-        t.c_iflag &= ~(BRKINT | ICRNL | IMAXBEL | IXON | IXOFF);
-        t.c_oflag &= ~(OPOST | ONLCR);
-        t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
-        t.c_cc[VMIN] = 0;
-        tcsetattr(_rd_fd, TCSANOW, &t);
+    _device->set_speed(b);
+
+    _allocate_buffers(rxS, txS);
+}
+
+void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
+{
+    /* we have enough memory to have a larger transmit buffer for
+     * all ports. This means we don't get delays while waiting to
+     * write GPS config packets
+     */
+
+    if (rxS < 8192) {
+        rxS = 8192;
+    }
+    if (txS < 32000) {
+        txS = 32000;
     }
 
     /*
@@ -189,6 +161,25 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
+void LinuxUARTDriver::_deallocate_buffers()
+{
+    if (_readbuf) {
+        free(_readbuf);
+        _readbuf = NULL;
+    }
+
+    if (_writebuf) {
+        free(_writebuf);
+        _writebuf = NULL;
+    }
+
+    _readbuf_size = _writebuf_size = 0;
+    _writebuf_head = 0;
+    _writebuf_tail = 0;
+    _readbuf_head = 0;
+    _readbuf_tail = 0;
+}
+
 /*
     Device path accepts the following syntaxes:
         - /dev/ttyO1
@@ -198,192 +189,96 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 LinuxUARTDriver::device_type LinuxUARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
-    _flag = NULL; // init flag
 
+    if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
+        return DEVICE_SERIAL;
+    } else if (strncmp(arg, "tcp:", 4) != 0 && 
+               strncmp(arg, "udp:", 4) != 0) {
+        return DEVICE_UNKNOWN;
+    }
 
     char *devstr = strdup(arg);
     if (devstr == NULL) {
         return DEVICE_UNKNOWN;
     }
 
-    if (stat(devstr, &st) == 0 && S_ISCHR(st.st_mode)) {
-        free(devstr);
-        return DEVICE_SERIAL;
-    } else if (strncmp(devstr, "tcp:", 4) == 0 ||
-               strncmp(devstr, "udp:", 4) == 0) {
-        char *saveptr = NULL;
-        // Parse the string        
-        char *protocol, *ip, *port, *flag;
-        protocol = strtok_r(devstr, ":", &saveptr);
-        ip = strtok_r(NULL, ":", &saveptr);
-        port = strtok_r(NULL, ":", &saveptr);
-        flag = strtok_r(NULL, ":", &saveptr);        
-        
-        _base_port = (uint16_t) atoi(port);
-        if (_ip) free(_ip);
+    char *saveptr = NULL;
+    char *protocol, *ip, *port, *flag;
+
+    protocol = strtok_r(devstr, ":", &saveptr);
+    ip = strtok_r(NULL, ":", &saveptr);
+    port = strtok_r(NULL, ":", &saveptr);
+    flag = strtok_r(NULL, ":", &saveptr);
+
+    device_type type = DEVICE_UNKNOWN;
+
+    if (ip == NULL || port == NULL) {
+        fprintf(stderr, "IP or port is set incorrectly.\n");
+        type = DEVICE_UNKNOWN;
+        goto errout;
+    }
+
+    if (_ip) {
+        free(_ip);
         _ip = NULL;
-        if (ip) {
-            _ip = strdup(ip);        
-        }
-        if (_flag) free(_flag);
+    }
+
+    if (_flag) {
+        free(_flag);
         _flag = NULL;
-        if (flag) {
-            _flag = strdup(flag);
-        }
-        if (strcmp(protocol, "udp") == 0) {
-            free(devstr);
-            return DEVICE_UDP;
-        }
-        free(devstr);
-        return DEVICE_TCP;
     }
+
+    _base_port = (uint16_t) atoi(port);
+    _ip = strdup(ip);
+
+    /* Optional flag for TCP */
+    if (flag != NULL) {
+        _flag = strdup(flag);
+    }
+
+    if (strcmp(protocol, "udp") == 0) {
+        type = DEVICE_UDP;
+    } else {
+        type = DEVICE_TCP;
+    }
+
+errout:
+
     free(devstr);
-    return DEVICE_UNKNOWN;
+    return type;
 }
 
-/*
-  start a TCP connection for the serial port. If wait_for_connection
-  is true then block until a client connects
- */
-void LinuxUARTDriver::_tcp_start_connection(bool wait_for_connection)
+
+bool LinuxUARTDriver::_serial_start_connection()
 {
-    int one=1;
-    struct sockaddr_in sockaddr;
-    int ret;    
-    int listen_fd = -1;  // socket we are listening on    
-    int net_fd = -1; // network file descriptor, will be linked to wr_fd and rd_fd
-    uint8_t portNumber = 0; // connecto to _base_port + portNumber
+    _device = new UARTDevice(device_path);
+    _connected = _device->open();
+    _device->set_blocking(false);
+    _flow_control = FLOW_CONTROL_DISABLE;
 
-    if (net_fd != -1) {
-        close(net_fd);
-    }
-
-    if (listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
-
-#ifdef HAVE_SOCK_SIN_LEN
-        sockaddr.sin_len = sizeof(sockaddr);
-#endif
-        sockaddr.sin_port = htons(_base_port + portNumber);
-        sockaddr.sin_family = AF_INET;
-        if (strcmp(_ip, "*") == 0) {
-            // Bind to all interfaces
-            sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        } else {
-            sockaddr.sin_addr.s_addr = inet_addr(_ip);
-        }
-
-        listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (listen_fd == -1) {
-            ::printf("socket failed - %s\n", strerror(errno));
-            exit(1);
-        }
-
-        /* we want to be able to re-use ports quickly */
-        setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-        if (!wait_for_connection) {
-
-            ret = connect(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-
-            if (ret < 0) {
-                ::printf("connect failed on port %u - %s\n",
-                         (unsigned)ntohs(sockaddr.sin_port),
-                         strerror(errno));
-                exit(1);
-            }
-
-            fcntl(listen_fd, F_SETFL, fcntl(listen_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            _rd_fd = listen_fd;
-
-            _connected = true;
-
-            ::printf("Serial port %u on TCP port %u\n", portNumber, 
-                     _base_port + portNumber);
-            fflush(stdout);
-
-        } else {
-
-            ret = bind(listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-            if (ret == -1) {
-                ::printf("bind failed on port %u - %s\n",
-                         (unsigned)ntohs(sockaddr.sin_port),
-                         strerror(errno));
-                exit(1);
-            }
-
-            ret = listen(listen_fd, 5);
-            if (ret == -1) {
-                ::printf("listen failed - %s\n", strerror(errno));
-                exit(1);
-            }
-
-            ::printf("Serial port %u on TCP port %u\n", portNumber, 
-                     _base_port + portNumber);
-            ::fflush(stdout);
-
-            ::printf("Waiting for connection ....\n");
-            ::fflush(stdout);
-            net_fd = accept(listen_fd, NULL, NULL);
-            if (net_fd == -1) {
-                ::printf("accept() error - %s", strerror(errno));
-                exit(1);
-            }
-            setsockopt(net_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-            setsockopt(net_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-
-            // always run the file descriptor non-blocking, and deal with                                         |
-            // blocking IO in the higher level calls
-            fcntl(net_fd, F_SETFL, fcntl(net_fd, F_GETFL, 0) | O_NONBLOCK);
-
-            _connected = true;
-            _rd_fd = net_fd;
-            _wr_fd = net_fd;
-        }
-
-    }
+    return true;
 }
-
 
 /*
   start a UDP connection for the serial port
  */
 void LinuxUARTDriver::_udp_start_connection(void)
 {
-    struct sockaddr_in sockaddr;
-    int ret;    
-    
-    memset(&sockaddr,0,sizeof(sockaddr));
+    bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
+    _device = new UDPDevice(_ip, _base_port, bcast);
+    _connected = _device->open();
+    _device->set_blocking(false);
 
-#ifdef HAVE_SOCK_SIN_LEN
-    sockaddr.sin_len = sizeof(sockaddr);
-#endif
-    sockaddr.sin_port = htons(_base_port);
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(_ip);
-
-    _rd_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (_rd_fd == -1) {
-        ::printf("socket failed - %s\n", strerror(errno));
-        exit(1);
-    }
-        
-    ret = connect(_rd_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        ::printf("connect failed to %s:%u - %s\n",
-                 _ip, (unsigned)_base_port,
-                 strerror(errno));
-        exit(1);
-    }
-
-    // always run the file descriptor non-blocking, and deal with                                         |
-    // blocking IO in the higher level calls
-    fcntl(_rd_fd, F_SETFL, fcntl(_rd_fd, F_GETFL, 0) | O_NONBLOCK);
-    _wr_fd = _rd_fd;
-
-    // try to write on MAVLink packet boundaries if possible
+    /* try to write on MAVLink packet boundaries if possible */
     _packetise = true;
+}
+
+void LinuxUARTDriver::_tcp_start_connection(void)
+{
+    bool wait = (_flag && strcmp(_flag, "wait") == 0);
+    _device = new TCPServerDevice(_ip, _base_port, wait);
+
+    _connected = _device->open();
 }
 
 /*
@@ -393,25 +288,13 @@ void LinuxUARTDriver::end()
 {
     _initialised = false;
     _connected = false;
-    while (_in_timer) hal.scheduler->delay(1);
-    if (_rd_fd == _wr_fd && _rd_fd != -1) {
-        close(_rd_fd);
+
+    while (_in_timer) {
+        hal.scheduler->delay(1);
     }
-    _rd_fd = -1;
-    _wr_fd = -1;
-    if (_readbuf) {
-        free(_readbuf);
-        _readbuf = NULL;
-    }
-    if (_writebuf) {
-        free(_writebuf);
-        _writebuf = NULL;
-    }
-    _readbuf_size = _writebuf_size = 0;
-    _writebuf_head = 0;
-    _writebuf_tail = 0;
-    _readbuf_head = 0;
-    _readbuf_tail = 0;
+
+    _device->close();
+    _deallocate_buffers();
 }
 
 
@@ -563,14 +446,18 @@ int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
     int ret = 0;
 
-    struct pollfd fds;
-    fds.fd = _wr_fd;
-    fds.events = POLLOUT;
-    fds.revents = 0;
-
-    if (poll(&fds, 1, 0) == 1) {
-        ret = ::write(_wr_fd, buf, n);
+    /*
+      allow for delayed connection. This allows ArduPilot to start
+      before a network interface is available.
+     */
+    if (!_connected) {
+        _connected = _device->open();
     }
+    if (!_connected) {
+        return 0;
+    }
+    
+    ret = _device->write(buf, n);
 
     if (ret > 0) {
         BUF_ADVANCEHEAD(_writebuf, ret);
@@ -586,43 +473,29 @@ int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     int ret;
-    ret = ::read(_rd_fd, buf, n);
+
+    ret = _device->read(buf, n);
+
     if (ret > 0) {
         BUF_ADVANCETAIL(_readbuf, ret);
-    } else {
-        switch (errno) {
-            case EAGAIN: 
-                /* Ignore EAGAIN that resulted from non-blocking read */
-                break;
-            case EPIPE:
-                /* Ignore EPIPE that resulted from peer shutdown */
-                break;
-            default:
-               ::fprintf(stdout, "read failed - %s\n", strerror(errno));
-               break;
-        }
-    }
+    } 
 
     return ret;
 }
 
 
 /*
-  push any pending bytes to/from the serial port. This is called at
-  1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously. 
+  try to push out one lump of pending bytes
+  return true if progress is made
  */
-void LinuxUARTDriver::_timer_tick(void)
+bool LinuxUARTDriver::_write_pending_bytes(void)
 {
     uint16_t n;
 
-    if (!_initialised) return;
-
-    _in_timer = true;
-
     // write any pending bytes
     uint16_t _tail;
-    n = BUF_AVAILABLE(_writebuf);
+    uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
+    n = available_bytes;
     if (_packetise && n > 0 && _writebuf[_writebuf_head] == 254) {
         // this looks like a MAVLink packet - try to write on
         // packet boundaries when possible
@@ -667,6 +540,27 @@ void LinuxUARTDriver::_timer_tick(void)
                 }
             }
         }
+    }
+
+    return BUF_AVAILABLE(_writebuf) != available_bytes;
+}
+
+/*
+  push any pending bytes to/from the serial port. This is called at
+  1kHz in the timer thread. Doing it this way reduces the system call
+  overhead in the main task enormously. 
+ */
+void LinuxUARTDriver::_timer_tick(void)
+{
+    uint16_t n;
+
+    if (!_initialised) return;
+
+    _in_timer = true;
+
+    uint8_t num_send = 10;
+    while (num_send != 0 && _write_pending_bytes()) {
+        num_send--;
     }
 
     // try to fill the read buffer

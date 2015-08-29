@@ -7,8 +7,8 @@
  *      Author: Andreas Jochum
  */
 
-#include <AP_EPM.h>
-#include <AP_HAL.h>
+#include "AP_EPM.h"
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

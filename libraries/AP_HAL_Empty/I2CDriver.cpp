@@ -1,5 +1,5 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "I2CDriver.h"
 
 using namespace Empty;

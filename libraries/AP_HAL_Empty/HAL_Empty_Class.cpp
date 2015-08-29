@@ -1,5 +1,5 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
 
 #include "HAL_Empty_Class.h"
@@ -29,6 +29,8 @@ HAL_Empty::HAL_Empty() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
+        NULL, /* only one i2c */
+        NULL, /* only one i2c */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,

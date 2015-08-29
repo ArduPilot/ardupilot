@@ -10,7 +10,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -35,7 +35,7 @@ static void catch_sigbus(int sig)
 }
 void LinuxRCOutput_AioPRU::init(void* machtnicht)
 {
-   uint32_t mem_fd, i;
+   uint32_t mem_fd;
    uint32_t *iram;
    uint32_t *ctrl;
 
@@ -54,9 +54,7 @@ void LinuxRCOutput_AioPRU::init(void* machtnicht)
    hal.scheduler->delay(1);
 
    // Load firmware
-   for(i = 0; i < sizeof(PRUcode); i++) {
-      *(iram + i) = PRUcode[i];
-   }
+   memcpy(iram, PRUcode, sizeof(PRUcode));
 
    // Start PRU 1
    *ctrl = 3;

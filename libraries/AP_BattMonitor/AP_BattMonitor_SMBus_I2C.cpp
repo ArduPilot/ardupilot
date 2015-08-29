@@ -1,13 +1,13 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_I2C.h"
 
 extern const AP_HAL::HAL& hal;
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_PX4
 
@@ -67,7 +67,6 @@ bool AP_BattMonitor_SMBus_I2C::read_word(uint8_t reg, uint16_t& data) const
 
     // take i2c bus semaphore
     if (!i2c_sem->take_nonblocking()) {
-        i2c_sem->give();
         return false;
     }
 
@@ -106,7 +105,6 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
 
     // take i2c bus semaphore
     if (!i2c_sem->take_nonblocking()) {
-        i2c_sem->give();
         return 0;
     }
 
@@ -130,7 +128,6 @@ uint8_t AP_BattMonitor_SMBus_I2C::read_block(uint8_t reg, uint8_t* data, uint8_t
     // check PEC
     uint8_t pec = get_PEC(BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
     if (pec != buff[bufflen+1]) {
-        i2c_sem->give();
         return 0;
     }
 

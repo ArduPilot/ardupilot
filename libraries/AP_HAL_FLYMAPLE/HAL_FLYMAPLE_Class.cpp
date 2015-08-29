@@ -16,7 +16,7 @@
   Flymaple port by Mike McCauley
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "HAL_FLYMAPLE_Class.h"
@@ -50,6 +50,8 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &i2cDriver,
+        NULL,   /* only 1 i2c */
+        NULL,   /* only 1 i2c */
 	&spiDeviceManager,
 	&analogIn,
 	&storageDriver,

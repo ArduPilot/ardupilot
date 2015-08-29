@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -20,7 +20,11 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#define STORAGE_DIR "/data/ftp/internal_000/APM"
+#else
 #define STORAGE_DIR "/var/APM"
+#endif
 #define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
@@ -35,6 +39,7 @@ void LinuxStorage::_storage_create(void)
     }
     for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
         if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
+            perror("write");
             hal.scheduler->panic("Error filling " STORAGE_FILE);            
         }
     }
@@ -50,15 +55,27 @@ void LinuxStorage::_storage_open(void)
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDONLY);
+    int fd = open(STORAGE_FILE, O_RDWR);
     if (fd == -1) {
         _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY);
+        fd = open(STORAGE_FILE, O_RDWR);
         if (fd == -1) {
             hal.scheduler->panic("Failed to open " STORAGE_FILE);
         }
     }
-    if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
+    memset(_buffer, 0, sizeof(_buffer));
+    /*
+      we allow a read of size 4096 to cope with the old storage size
+      without forcing users to reset all parameters
+     */
+    ssize_t ret = read(fd, _buffer, sizeof(_buffer));
+    if (ret == 4096 && ret != sizeof(_buffer)) {
+        if (ftruncate(fd, sizeof(_buffer)) != 0) {
+            hal.scheduler->panic("Failed to expand " STORAGE_FILE);            
+        }
+        ret = sizeof(_buffer);
+    }
+    if (ret != sizeof(_buffer)) {
         close(fd);
         _storage_create();
         fd = open(STORAGE_FILE, O_RDONLY);

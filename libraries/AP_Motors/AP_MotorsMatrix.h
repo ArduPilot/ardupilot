@@ -6,21 +6,21 @@
 #ifndef __AP_MOTORS_MATRIX_H__
 #define __AP_MOTORS_MATRIX_H__
 
-#include <AP_Common.h>
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel.h>     // RC Channel Library
-#include "AP_Motors_Class.h"
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include "AP_MotorsMulticopter.h"
 
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
 
 /// @class      AP_MotorsMatrix
-class AP_MotorsMatrix : public AP_Motors {
+class AP_MotorsMatrix : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
     AP_MotorsMatrix(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_Motors(loop_rate, speed_hz)
+        AP_MotorsMulticopter(loop_rate, speed_hz)
     {};
 
     // init

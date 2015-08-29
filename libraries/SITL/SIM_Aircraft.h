@@ -21,8 +21,8 @@
 #define _SIM_AIRCRAFT_H
 
 #include "SITL.h"
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 
 /*
   parent class for all simulator types
@@ -41,7 +41,7 @@ public:
         struct {
             float speed;      // m/s
             float direction;  // degrees 0..360
-            float turbulance;
+            float turbulence;
         } wind;
     };
 
@@ -98,6 +98,7 @@ protected:
     uint64_t last_wall_time_us;
     uint8_t instance;
     const char *autotest_dir;
+    const char *frame;
 
     bool on_ground(const Vector3f &pos) const;
 
@@ -130,8 +131,8 @@ protected:
     double rand_normal(double mean, double stddev);
 
 private:
-    uint64_t last_time_us;
-    uint32_t frame_counter;
+    uint64_t last_time_us = 0;
+    uint32_t frame_counter = 0;
     const uint32_t min_sleep_time;
 };
 

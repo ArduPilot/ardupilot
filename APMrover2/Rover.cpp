@@ -25,9 +25,6 @@ Rover::Rover(void) :
     channel_steer(NULL),
     channel_throttle(NULL),
     channel_learn(NULL),
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    DataFlash(HAL_BOARD_LOG_DIRECTORY),
-#endif
     in_log_download(false),
     modes(&g.mode1),
     L1_controller(ahrs),
@@ -35,7 +32,7 @@ Rover::Rover(void) :
     steerController(ahrs),
     mission(ahrs,
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::verify_command, bool, const AP_Mission::Mission_Command&),
+            FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)),
     num_gcs(MAVLINK_COMM_NUM_BUFFERS),
     ServoRelayEvents(relay),

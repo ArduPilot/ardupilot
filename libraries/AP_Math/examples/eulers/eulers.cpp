@@ -3,39 +3,39 @@
 // Unit tests for the AP_Math euler code
 //
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Param.h>
-#include <AP_HAL_AVR.h>
-#include <AP_HAL_SITL.h>
-#include <AP_HAL_Empty.h>
-#include <AP_HAL_PX4.h>
-#include <AP_HAL_Linux.h>
-#include <AP_Math.h>
-#include <Filter.h>
-#include <AP_ADC.h>
-#include <SITL.h>
-#include <AP_Compass.h>
-#include <AP_Baro.h>
-#include <AP_Notify.h>
-#include <AP_InertialSensor.h>
-#include <AP_GPS.h>
-#include <DataFlash.h>
-#include <GCS_MAVLink.h>
-#include <AP_Mission.h>
-#include <StorageManager.h>
-#include <AP_Terrain.h>
-#include <AP_Declination.h>
-#include <AP_AHRS.h>
-#include <AP_NavEKF.h>
-#include <AP_Airspeed.h>
-#include <AP_Vehicle.h>
-#include <AP_ADC_AnalogSource.h>
-#include <AP_Rally.h>
-#include <AP_BattMonitor.h>
-#include <AP_RangeFinder.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_PX4/AP_HAL_PX4.h>
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
+#include <AP_Math/AP_Math.h>
+#include <Filter/Filter.h>
+#include <AP_ADC/AP_ADC.h>
+#include <SITL/SITL.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Notify/AP_Notify.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_GPS/AP_GPS.h>
+#include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Mission/AP_Mission.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Declination/AP_Declination.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
+#include <AP_Rally/AP_Rally.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -108,15 +108,13 @@ static void test_euler(float roll, float pitch, float yaw)
     check_result("test_euler", roll, pitch, yaw, roll2, pitch2, yaw2);
 }
 
-#define ARRAY_LENGTH(x) (sizeof((x))/sizeof((x)[0]))
-
 static const float angles[] = { 0, PI/8, PI/4, PI/2, PI,
                                 -PI/8, -PI/4, -PI/2, -PI};
 
 void test_matrix_eulers(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("rotation matrix unit tests\n");
 
@@ -155,7 +153,7 @@ static void test_quaternion(float roll, float pitch, float yaw)
 void test_quaternion_eulers(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("quaternion unit tests\n");
 
@@ -215,7 +213,7 @@ static void test_conversion(float roll, float pitch, float yaw)
 void test_conversions(void)
 {
     uint8_t i, j, k;
-    uint8_t N = ARRAY_LENGTH(angles);
+    uint8_t N = ARRAY_SIZE(angles);
 
     hal.console->println("matrix/quaternion tests\n");
 

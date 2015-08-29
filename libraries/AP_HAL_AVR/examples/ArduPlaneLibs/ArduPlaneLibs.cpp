@@ -1,42 +1,42 @@
 
 
 // Libraries
-#include <AP_Common.h>
-#include <AP_Progmem.h>
-#include <AP_Menu.h>
-#include <AP_Param.h>
-#include <AP_GPS.h>         // ArduPilot GPS library
-#include <AP_Baro.h>        // ArduPilot barometer library
-#include <AP_Compass.h>     // ArduPilot Mega Magnetometer Library
-#include <AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_InertialSensor.h> // Inertial Sensor Library
-#include <AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <PID.h>            // PID library
-#include <RC_Channel.h>     // RC Channel Library
-#include <AP_ADC_AnalogSource.h>
-#include <AP_RangeFinder.h>     // Range finder library
-#include <Filter.h>                     // Filter library
-#include <AP_Buffer.h>      // APM FIFO Buffer
-#include <AP_Relay.h>       // APM relay
-#include <AP_Camera.h>          // Photo or video camera
-#include <AP_Airspeed.h>
-#include <AP_Notify.h>
-#include <memcheck.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Menu/AP_Menu.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS.h>         // ArduPilot GPS library
+#include <AP_Baro/AP_Baro.h>        // ArduPilot barometer library
+#include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
+#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
+#include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
+#include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
+#include <PID/PID.h>            // PID library
+#include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
+#include <Filter/Filter.h>                     // Filter library
+#include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
+#include <AP_Relay/AP_Relay.h>       // APM relay
+#include <AP_Camera/AP_Camera.h>          // Photo or video camera
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Notify/AP_Notify.h>
+#include <AP_HAL_AVR/memcheck.h>
 
-#include <DataFlash.h>
-#include <APM_Control.h>
-#include <AP_Vehicle.h>
-#include <GCS_MAVLink.h>    // MAVLink GCS definitions
-#include <AP_Mission.h>
-#include <StorageManager.h>
-#include <AP_Terrain.h>
-#include <AP_Mount.h>           // Camera/Antenna mount
-#include <AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <AP_BattMonitor.h>
+#include <DataFlash/DataFlash.h>
+#include <APM_Control/APM_Control.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>    // MAVLink GCS definitions
+#include <AP_Mission/AP_Mission.h>
+#include <StorageManager/StorageManager.h>
+#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
+#include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL_AVR/AP_HAL_AVR.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;

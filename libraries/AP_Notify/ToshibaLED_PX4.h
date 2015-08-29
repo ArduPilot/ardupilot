@@ -19,8 +19,8 @@
 #define __TOSHIBA_LED_PX4_H__
 
 #include "ToshibaLED.h"
-#include "AP_Math.h"
-#include "vectorN.h"
+#include <AP_Math/AP_Math.h>
+#include <AP_Math/vectorN.h>
 
 class ToshibaLED_PX4 : public ToshibaLED
 {

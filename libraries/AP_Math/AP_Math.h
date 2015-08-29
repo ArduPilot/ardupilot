@@ -5,11 +5,11 @@
 
 // Assorted useful math operations for ArduPilot(Mega)
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <math.h>
 #ifdef __AVR__
-# include <AP_Math_AVR_Compat.h>
+# include "AP_Math_AVR_Compat.h"
 #endif
 #include <stdint.h>
 #include "rotations.h"
@@ -20,7 +20,7 @@
 #include "polygon.h"
 #include "edc.h"
 #include "float.h"
-#include "AP_Param.h"
+#include <AP_Param/AP_Param.h>
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
@@ -193,6 +193,8 @@ float pythagorous3(float a, float b, float c);
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
 
+float maxf(float a, float b);
+float minf(float a, float b);
 
 #endif // AP_MATH_H
 

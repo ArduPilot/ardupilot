@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "Compass.h"
 #include "AP_Compass_Backend.h"
 
@@ -34,7 +34,7 @@ void AP_Compass_Backend::publish_field(const Vector3f &mag, uint8_t instance)
     apply_corrections(state.field, instance);
 
     state.last_update_ms = hal.scheduler->millis();
-    _compass._last_update_usec = hal.scheduler->micros();
+    state.last_update_usec = hal.scheduler->micros();
 }
 
 /*

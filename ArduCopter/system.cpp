@@ -223,7 +223,7 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Waiting for first HIL_STATE message"));
         delay(1000);
     }
 
@@ -240,6 +240,9 @@ void Copter::init_ardupilot()
     init_sonar();
 #endif
 
+    // initialise AP_RPM library
+    rpm_sensor.init();
+
     // initialise mission library
     mission.init();
 
@@ -255,10 +258,6 @@ void Copter::init_ardupilot()
 
     startup_ground(true);
 
-#if LOGGING_ENABLED == ENABLED
-    Log_Write_Startup();
-#endif
-
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
@@ -269,6 +268,9 @@ void Copter::init_ardupilot()
 
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
+
+    // init vehicle capabilties
+    init_capabilities();
 
     cliSerial->print_P(PSTR("\nReady to FLY "));
 
@@ -282,7 +284,7 @@ void Copter::init_ardupilot()
 //******************************************************************************
 void Copter::startup_ground(bool force_gyro_cal)
 {
-    gcs_send_text_P(SEVERITY_LOW,PSTR("GROUND START"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("GROUND START"));
 
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
@@ -309,13 +311,20 @@ void Copter::startup_ground(bool force_gyro_cal)
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Copter::position_ok()
 {
-    if (!ahrs.have_inertial_nav()) {
-        // do not allow navigation with dcm position
+    // return false if ekf failsafe has triggered
+    if (failsafe.ekf) {
         return false;
     }
 
-    // return false if ekf failsafe has triggered
-    if (failsafe.ekf) {
+    // check ekf position estimate
+    return ekf_position_ok();
+}
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Copter::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
         return false;
     }
 
@@ -344,7 +353,13 @@ bool Copter::optflow_position_ok()
 
     // get filter status from EKF
     nav_filter_status filt_status = inertial_nav.get_filter_status();
-    return (filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
+
+    // if disarmed we accept a predicted horizontal relative position
+    if (!motors.armed()) {
+        return (filt_status.flags.pred_horiz_pos_rel);
+    } else {
+        return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
+    }
 #endif
 }
 
@@ -362,6 +377,13 @@ void Copter::update_auto_armed()
         if(mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
+#if FRAME_CONFIG == HELI_FRAME 
+        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
+        // so that rotor runup is checked again before attempting to take-off
+        if(ap.land_complete && !motors.rotor_runup_complete()) {
+            set_auto_armed(false);
+        }
+#endif // HELI_FRAME
     }else{
         // arm checks
         

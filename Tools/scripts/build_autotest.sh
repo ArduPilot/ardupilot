@@ -88,6 +88,9 @@ report_pull_failure() {
 oldhash=$(cd APM && git rev-parse HEAD)
 
 pushd APM
+git checkout -f master
+git fetch origin
+git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"

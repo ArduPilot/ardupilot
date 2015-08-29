@@ -227,7 +227,7 @@
 
 // prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
- # define GPS_HDOP_GOOD_DEFAULT         230     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+ # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
 
 // GCS failsafe
@@ -237,6 +237,11 @@
 #ifndef FS_GCS_TIMEOUT_MS
  # define FS_GCS_TIMEOUT_MS             5000    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
 #endif
+
+// possible values for FS_GCS parameter
+#define FS_GCS_DISABLED                     0
+#define FS_GCS_ENABLED_ALWAYS_RTL           1
+#define FS_GCS_ENABLED_CONTINUE_MISSION     2
 
 // Radio failsafe while using RC_override
 #ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
@@ -248,10 +253,9 @@
  #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
 #endif
 
-// possible values for FS_GCS parameter
-#define FS_GCS_DISABLED                     0
-#define FS_GCS_ENABLED_ALWAYS_RTL           1
-#define FS_GCS_ENABLED_CONTINUE_MISSION     2
+#ifndef FS_CLOSE_TO_HOME_CM
+ # define FS_CLOSE_TO_HOME_CM               500 // if vehicle within 5m of home, vehicle will LAND instead of RTL during some failsafes
+#endif
 
 // pre-arm baro vs inertial nav max alt disparity
 #ifndef PREARM_MAX_ALT_DISPARITY_CM
@@ -398,24 +402,6 @@
 #ifndef LAND_START_ALT
  # define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
 #endif
-#ifndef LAND_DETECTOR_TRIGGER_SEC
- # define LAND_DETECTOR_TRIGGER_SEC 1.0f // number of seconds to detect a landing
-#endif
-#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
- # define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f  // number of 50hz iterations with near zero climb rate and low throttle that means we might be landed (used to reset horizontal position targets to prevent tipping over)
-#endif
-#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
-# define LAND_DETECTOR_ACCEL_LPF_CUTOFF 1.0f // frequency cutoff of land detector accelerometer filter
-#endif
-#ifndef LAND_DETECTOR_CLIMBRATE_MAX
-# define LAND_DETECTOR_CLIMBRATE_MAX    30  // vehicle climb rate must be between -30 and +30 cm/s
-#endif
-#ifndef LAND_DETECTOR_DESIRED_CLIMBRATE_MAX
-# define LAND_DETECTOR_DESIRED_CLIMBRATE_MAX    -20    // vehicle desired climb rate must be below -20cm/s
-#endif
-#ifndef LAND_DETECTOR_ROTATION_MAX
- # define LAND_DETECTOR_ROTATION_MAX    0.50f   // vehicle rotation must be below 0.5 rad/sec (=30deg/sec for) vehicle to consider itself landed
-#endif
 #ifndef LAND_REQUIRE_MIN_THROTTLE_TO_DISARM
  # define LAND_REQUIRE_MIN_THROTTLE_TO_DISARM DISABLED  // we do not require pilot to reduce throttle to minimum before vehicle will disarm in AUTO, LAND or RTL
 #endif
@@ -424,6 +410,22 @@
 #endif
 #ifndef LAND_WITH_DELAY_MS
  # define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Landing Detector
+//
+#ifndef LAND_DETECTOR_TRIGGER_SEC
+ # define LAND_DETECTOR_TRIGGER_SEC         1.0f    // number of seconds to detect a landing
+#endif
+#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
+ # define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f    // number of seconds that means we might be landed (used to reset horizontal position targets to prevent tipping over)
+#endif
+#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
+# define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
+#endif
+#ifndef LAND_DETECTOR_ACCEL_MAX
+# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -494,6 +496,10 @@
 
 #ifndef RTL_ALT_MIN
  # define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
+#endif
+
+#ifndef RTL_CLIMB_MIN_DEFAULT
+ # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
 #ifndef RTL_LOITER_TIME

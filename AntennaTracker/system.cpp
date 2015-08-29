@@ -7,7 +7,7 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 static void mavlink_snoop_static(const mavlink_message_t* msg)
 {
-    return tracker.mavlink_snoop(msg);
+    tracker.mavlink_snoop(msg);
 }
 
 static void mavlink_delay_cb_static()
@@ -94,15 +94,21 @@ void Tracker::init_tracker()
 
     // use given start positions - useful for indoor testing, and
     // while waiting for GPS lock
-    current_loc.lat = g.start_latitude * 1.0e7f;
-    current_loc.lng = g.start_longitude * 1.0e7f;
+    // sanity check location
+    if (fabsf(current_loc.lat) <= 90.0f && fabsf(current_loc.lng) <= 180.0f) {
+        current_loc.lat = g.start_latitude * 1.0e7f;
+        current_loc.lng = g.start_longitude * 1.0e7f;
+        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
+    }
 
     // see if EEPROM has a default location as well
     if (current_loc.lat == 0 && current_loc.lng == 0) {
         get_home_eeprom(current_loc);
     }
 
-    gcs_send_text_P(SEVERITY_LOW,PSTR("\nReady to track."));
+    init_capabilities();
+
+    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\nReady to track."));
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking

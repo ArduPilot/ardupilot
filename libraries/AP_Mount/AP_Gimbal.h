@@ -9,18 +9,18 @@
 #ifndef __AP_GIMBAL_H__
 #define __AP_GIMBAL_H__
 
-#include <AP_HAL.h>
-#include <AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_GPS.h>
-#include <GCS_MAVLink.h>
-#include <AP_Mount.h>
-#include <AP_SmallEKF.h>
-#include <AP_NavEKF.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_GPS/AP_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Mount.h"
+#include <AP_NavEKF/AP_SmallEKF.h>
+#include <AP_NavEKF/AP_NavEKF.h>
 
 class AP_Gimbal
 {

@@ -1,11 +1,11 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include <AP_HAL.h>
-#include <AP_HAL_AVR.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_HAL_AVR.h"
 #include "RCInput.h"
 #include "utility/ISRRegistry.h"
 using namespace AP_HAL;

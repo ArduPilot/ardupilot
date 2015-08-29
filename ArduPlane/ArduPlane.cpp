@@ -74,6 +74,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(frsky_telemetry_send),  10,    100 },
 #endif
     { SCHED_TASK(terrain_update),         5,    500 },
+    { SCHED_TASK(update_is_flying_5Hz),  10,    100 },
 };
 
 void Plane::setup() 
@@ -92,7 +93,7 @@ void Plane::setup()
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
 }
 
 void Plane::loop()
@@ -137,10 +138,12 @@ void Plane::ahrs_update()
     hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
+#if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // update hil before AHRS update
         gcs_update();
     }
+#endif
 
     ahrs.update();
 
@@ -148,8 +151,12 @@ void Plane::ahrs_update()
         Log_Write_Attitude();
     }
 
-    if (should_log(MASK_LOG_IMU))
+    if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        DataFlash.Log_Write_IMUDT(ins);
+#endif
+    }
 
     // calculate a scaled roll limit based on current pitch
     roll_limit_cd = g.roll_limit_cd * cosf(ahrs.pitch);
@@ -251,8 +258,10 @@ void Plane::update_logging2(void)
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_IMU))
         DataFlash.Log_Write_Vibration(ins);
+#endif
 }
 
 
@@ -273,9 +282,7 @@ void Plane::obc_fs_check(void)
  */
 void Plane::update_aux(void)
 {
-    if (!px4io_override_enabled) {
-        RC_Channel_aux::enable_aux_servos();
-    }
+    RC_Channel_aux::enable_aux_servos();
 }
 
 void Plane::one_second_loop()
@@ -297,13 +304,12 @@ void Plane::one_second_loop()
 
     update_aux();
 
-    // determine if we are flying or not
-    determine_is_flying();
-
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
+    crash_detection_update();
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
@@ -315,7 +321,9 @@ void Plane::one_second_loop()
         Log_Write_Status();
     }
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+#endif
 }
 
 void Plane::log_perf_info()
@@ -325,8 +333,10 @@ void Plane::log_perf_info()
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
+#endif
     G_Dt_max = 0;
     G_Dt_min = 0;
     resetPerfData();
@@ -372,7 +382,7 @@ void Plane::airspeed_ratio_update(void)
         // never coming up again
         return;
     }
-    if (abs(ahrs.roll_sensor) > roll_limit_cd ||
+    if (labs(ahrs.roll_sensor) > roll_limit_cd ||
         ahrs.pitch_sensor > aparm.pitch_limit_max_cd ||
         ahrs.pitch_sensor < pitch_limit_min_cd) {
         // don't calibrate when going beyond normal flight envelope
@@ -542,6 +552,7 @@ void Plane::update_flight_mode(void)
     case TRAINING: {
         training_manual_roll = false;
         training_manual_pitch = false;
+        update_load_factor();
         
         // if the roll is past the set roll limit, then
         // we set target roll to the limit
@@ -614,7 +625,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text_P(SEVERITY_LOW, PSTR("FBWA tdrag mode\n"));
+                    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag mode\n"));
                 }
             }
         }
@@ -758,15 +769,15 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence failed (autodisable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Disable fence failed (autodisable)"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence disabled (autodisable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence disabled (autodisable)"));
             }
         } else if (g.fence_autoenable == 2) {
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Disable fence floor failed (autodisable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Disable fence floor failed (autodisable)"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence floor disabled (auto disable)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence floor disabled (auto disable)"));
             }
         }
 #endif
@@ -840,66 +851,6 @@ void Plane::update_flight_stage(void)
 }
 
 
-
-/*
-  Do we think we are flying?
-  Probabilistic method where a bool is low-passed and considered a probability.
-*/
-void Plane::determine_is_flying(void)
-{
-    float aspeed;
-    bool isFlyingBool;
-
-    bool airspeedMovement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= 5);
-
-    // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
-                        gps.ground_speed() >= 5);
-
-
-    if (hal.util->get_soft_armed()) {
-        // when armed, we need overwhelming evidence that we ARE NOT flying
-        isFlyingBool = airspeedMovement || gpsMovement;
-
-        /*
-          make is_flying() more accurate for landing approach
-         */
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-            fabsf(auto_state.sink_rate) > 0.2f) {
-            isFlyingBool = true;
-        }
-    } else {
-        // when disarmed, we need overwhelming evidence that we ARE flying
-        isFlyingBool = airspeedMovement && gpsMovement;
-    }
-
-    // low-pass the result.
-    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
-
-    /*
-      update last_flying_ms so we always know how long we have not
-      been flying for. This helps for crash detection and auto-disarm
-     */
-    if (is_flying()) {
-        auto_state.last_flying_ms = millis();
-    }
-}
-
-/*
-  return true if we think we are flying. This is a probabilistic
-  estimate, and needs to be used very carefully. Each use case needs
-  to be thought about individually.
- */
-bool Plane::is_flying(void)
-{
-    if (hal.util->get_soft_armed()) {
-        // when armed, assume we're flying unless we probably aren't
-        return (isFlyingProbability >= 0.1f);
-    }
-
-    // when disarmed, assume we're not flying unless we probably are
-    return (isFlyingProbability >= 0.9f);
-}
 
 
 #if OPTFLOW == ENABLED

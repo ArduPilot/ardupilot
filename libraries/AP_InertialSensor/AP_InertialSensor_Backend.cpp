@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
@@ -76,6 +76,12 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     if (rotate_and_correct) {
         _rotate_and_correct_accel(instance, _imu._accel[instance]);
     }
+}
+
+void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
+                                                          float max_offset)
+{
+    _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
 // set accelerometer error_count

@@ -7,7 +7,7 @@
 #ifndef __RC_CHANNEL_AUX_H__
 #define __RC_CHANNEL_AUX_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "RC_Channel.h"
 
 #if HAL_CPU_CLASS > HAL_CPU_CLASS_16

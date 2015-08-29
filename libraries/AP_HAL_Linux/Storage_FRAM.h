@@ -1,7 +1,7 @@
 #ifndef __AP_HAL_LINUX_STORAGE_FRAM_H__
 #define __AP_HAL_LINUX_STORAGE_FRAM_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_Linux_Namespace.h"
 
 #define OPCODE_WREN   0b0110        /* Write Enable Latch */

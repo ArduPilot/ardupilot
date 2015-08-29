@@ -3,7 +3,7 @@
   hacked up DataFlash library for Desktop support
 */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -29,7 +29,7 @@ static uint8_t buffer[2][DF_PAGE_SIZE];
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_SITL::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
 	if (flash_fd == 0) {
 		flash_fd = open("dataflash.bin", O_RDWR, 0777);
 		if (flash_fd == -1) {

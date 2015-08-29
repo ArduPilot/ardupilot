@@ -9,7 +9,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
-        Log_Write_Cmd(cmd);
+        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     // special handling for nav vs non-nav commands
@@ -28,6 +28,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // start non-idle
         auto_state.idle_mode = false;
         
+        // once landed, post some landing statistics to the GCS
+        auto_state.post_landing_stats = false;
+
         gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),cmd.id);
     } else {
         gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
@@ -36,6 +39,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     switch(cmd.id) {
 
     case MAV_CMD_NAV_TAKEOFF:
+        crash_state.is_crashed = false;
         do_takeoff(cmd);
         break;
 
@@ -145,6 +149,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             }
         }    
 #endif
+        break;
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         autotune_enable(cmd.p1);
@@ -244,15 +249,12 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_CONDITION_DELAY:
         return verify_wait_delay();
-        break;
 
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
-        break;
 
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
-        break;
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -276,9 +278,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     default:
         // error message
         if (AP_Mission::is_nav_cmd(cmd)) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_nav: Invalid or no current Nav cmd"));
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_nav: Invalid or no current Nav cmd"));
         }else{
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("verify_conditon: Invalid or no current Condition cmd"));
+        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Invalid or no current Condition cmd"));
     }
         // return true so that we do not get stuck at this command
         return true;
@@ -375,6 +377,7 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
 {
     next_WP_loc.alt = cmd.content.location.alt + home.alt;
+    condition_value = cmd.p1;
     reset_offset_altitude();
 }
 
@@ -459,9 +462,9 @@ bool Plane::verify_takeoff()
 #if GEOFENCE_ENABLED == ENABLED
         if (g.fence_autoenable > 0) {
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Enable fence failed (cannot autoenable"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Enable fence failed (cannot autoenable"));
             } else {
-                gcs_send_text_P(SEVERITY_HIGH, PSTR("Fence enabled. (autoenabled)"));
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence enabled. (autoenabled)"));
             }
         }
 #endif
@@ -538,7 +541,7 @@ bool Plane::verify_loiter_time()
             loiter.start_time_ms = millis();
         }
     } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER time complete"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER time complete"));
         return true;
     }
     return false;
@@ -549,7 +552,7 @@ bool Plane::verify_loiter_turns()
     update_loiter();
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
-        gcs_send_text_P(SEVERITY_LOW,PSTR("verify_nav: LOITER orbits complete"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
         // clear the command queue;
         return true;
     }
@@ -587,7 +590,15 @@ bool Plane::verify_loiter_to_alt()
                                        next_nav_cmd)) {
             //no next waypoint to shoot for -- go ahead and break out of loiter
             return true;        
-        } 
+        }
+
+        if (get_distance(next_WP_loc, next_nav_cmd.content.location) < labs(g.loiter_radius)) {
+            /* Whenever next waypoint is within the loiter radius, 
+               maintaining loiter would prevent us from ever pointing toward the next waypoint.
+               Hence break out of loiter immediately
+             */
+            return true;
+        }
 
         // Bearing in radians
         int32_t bearing_cd = get_bearing_cd(current_loc,next_nav_cmd.content.location);
@@ -604,7 +615,7 @@ bool Plane::verify_loiter_to_alt()
           We use 10 degrees of slop so that we can handle 100
           degrees/second of yaw
         */
-        if (abs(heading_err_cd) <= 1000) {
+        if (labs(heading_err_cd) <= 1000) {
             //Want to head in a straight line from _here_ to the next waypoint.
             //DON'T want to head in a line from the center of the loiter to 
             //the next waypoint.
@@ -625,7 +636,7 @@ bool Plane::verify_RTL()
     update_loiter();
 	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
-			gcs_send_text_P(SEVERITY_LOW,PSTR("Reached home"));
+			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached home"));
 			return true;
     } else {
         return false;
@@ -634,7 +645,17 @@ bool Plane::verify_RTL()
 
 bool Plane::verify_continue_and_change_alt()
 {
-    if (abs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
+    //climbing?
+    if (condition_value == 1 && adjusted_altitude_cm() >= next_WP_loc.alt) {
+        return true;
+    }
+    //descending?
+    else if (condition_value == 2 &&
+             adjusted_altitude_cm() <= next_WP_loc.alt) {
+        return true;
+    }    
+    //don't care if we're climbing or descending
+    else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
     }
    
@@ -657,11 +678,11 @@ bool Plane::verify_continue_and_change_alt()
 bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 {
     if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
-        gcs_send_text_P(SEVERITY_LOW,PSTR("Reached altitude"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached altitude"));
         return true;
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), auto_state.sink_rate);
+        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), (double)auto_state.sink_rate);
         return true;        
     }
 
@@ -789,6 +810,7 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
     } else {
         ahrs.set_home(cmd.content.location);
         home_is_set = HOME_SET_NOT_LOCKED;
+        Log_Write_Home_And_Origin();
     }
 }
 
@@ -821,10 +843,12 @@ void Plane::do_take_picture()
 // log_picture - log picture taken and send feedback to GCS
 void Plane::log_picture()
 {
+#if CAMERA == ENABLED
     gcs_send_message(MSG_CAMERA_FEEDBACK);
     if (should_log(MASK_LOG_CAMERA)) {
         DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
     }
+#endif
 }
 
 // start_command_callback - callback function called from ap-mission when it begins a new mission command
@@ -842,7 +866,14 @@ bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
 bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     if (control_mode == AUTO) {
-        return verify_command(cmd);
+        bool cmd_complete = verify_command(cmd);
+
+        // send message to GCS
+        if (cmd_complete) {
+            gcs_send_mission_item_reached_message(cmd.index);
+        }
+
+        return cmd_complete;
     }
     return false;
 }

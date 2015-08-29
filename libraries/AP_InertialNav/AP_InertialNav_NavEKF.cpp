@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_InertialNav.h"
 
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -125,7 +125,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
  *
  * @return
  */
-bool AP_InertialNav_NavEKF::get_hagl(float height) const
+bool AP_InertialNav_NavEKF::get_hagl(float &height) const
 {
     // true when estimate is valid
     bool valid = _ahrs_ekf.get_NavEKF().getHAGL(height);

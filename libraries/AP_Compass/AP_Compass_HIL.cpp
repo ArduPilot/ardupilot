@@ -20,7 +20,7 @@
  */
 
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_Compass_HIL.h"
 
 extern const AP_HAL::HAL& hal;
@@ -59,7 +59,7 @@ AP_Compass_HIL::init(void)
 
 void AP_Compass_HIL::read()
 {
-    for (uint8_t i=0; i<sizeof(_compass_instance)/sizeof(_compass_instance[0]); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(_compass_instance); i++) {
         if (_compass._hil.healthy[i]) {
             publish_field(_compass._hil.field[_compass_instance[i]], _compass_instance[i]);
         }

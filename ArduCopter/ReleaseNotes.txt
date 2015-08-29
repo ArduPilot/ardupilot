@@ -1,5 +1,104 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc10 28-Aug-2015
+Changes from 3.3-rc9
+1) EKF improvements:
+    a) simpler optical flow takeoff check
+2) Bug Fixes/Minor enhancements:
+    a) fix INS3_USE parameter eeprom location
+    b) fix SToRM32 serial protocol driver to work with recent versions
+    c) increase motor pwm->thrust conversion (aka MOT_THST_EXPO) to 0.65 (was 0.50)
+    d) Firmware version sent to GCS in AUTOPILOT_VERSION message
+3) Safety:
+    a) pre-arm check of compass variance if arming in Loiter, PosHold, Guided
+    b) always check GPS before arming in Loiter (previously could be disabled if ARMING_CHECK=0)
+    c) sanity check locations received from GCS for follow-me, do-set-home, do-set-ROI
+    d) fix optical flow failsafe (was not always triggering LAND when optical flow failed)
+    e) failsafe RTL vs LAND decision based on hardcoded 5m from home check (previously used WPNAV_RADIUS parameter)
+------------------------------------------------------------------
+Copter 3.3-rc9 19-Aug-2015
+Changes from 3.3-rc8
+1) EKF improvements:
+    a) IMU weighting based on vibration levels (previously used accel clipping)
+    b) fix blended acceleration (used for altitude control) in cases where first IMU fails
+    c) ensure unhealthy barometer values are never consumed
+2) TradHeli: remove acceleration feed forward
+3) Safety:
+    a) check accel, gyro and baro are healthy when arming (previously was only checked pre-arm)
+    b) Guided mode velocity controller timeout (vehicle stops) after 3 seconds with no update from GCS
+4) Minor enhancements:
+    a) fix for AUAV board's usb-connected detection
+    b) add Lidar-Lite-V2 support
+    c) MOT_THR_MIN_MAX param added to control prioritisation of throttle vs attitude during dynamic flight
+    d) RALLY_INCL_HOME param allows always including home when using rally points
+    e) DO_FLIGHT_TERMINATION message from GCS acts as kill switch
+5) Bug Fixes:
+    a) fix to ensure motors start slowly on 2nd spin-up
+    b) fix RTL_CLIMB_MIN feature (vehicle climbed too high above home)
+------------------------------------------------------------------
+Copter 3.3-rc8 25-Jul-2015
+Changes from 3.3-rc7
+1) EKF improvements:
+    a) de-weight accelerometers that are clipping to improve resistance to high vibration
+    b) fix EKF to use primary compass instead of first compass (normally the same)
+2) UBlox "HDOP" corrected to actually be hdop (was pdop) which leads to 40% lower value reported
+3) TradHeli:
+    a) Motors library split into "Multicopter" and "TradHeli" so TradHeli does not see multicopter parameters
+    b) Heading target reset during landing to reduce vehicle fighting to rotate while on the ground
+4) Minor enhancements:
+    a) SToRM32 gimbal can be connected to any serial port
+    b) log when baro, compass become unhealthy
+    c) ESC_CALIBRATION parameter can be set to "9" to disable esc calibration startup check
+    d) Circle rate adjustment with ch6 takes effect immediately
+    e) log home and origin
+    f) pre-arm check of battery voltage and fence
+    g) RTL_CLIMB_MIN parameter forces vehicle to climb at least this many cm when RTL is engaged (default is zero)
+5) Bug fixes:
+    a) fix THR_MIN being incorrectly scaled as pwm value during low-throttle check
+    b) fence distance calculated from home (was incorrectly calculated from ekf-origin)
+    c) When flying with joystick and joystick is disconnected, control returns immediately to regular TX
+    d) dataflash's ATT yaw fixed to report heading as 0 ~ 360
+    e) fix to mission's first command being run multiple times during mission if it was a do-command
+    f) ekf-check is enabled only after ekf-origin is set (stops red-yellow flashing led when flying without GPS lock)
+    g) fix initialisation of mount's mode
+    h) start-up logging so parameters only logged once, mission always written
+6) Linux:
+    a) bebop support
+------------------------------------------------------------------
+Copter 3.3-rc7 28-Jun-2015
+Changes from 3.3-rc6
+1) reduce EKF gyro bias uncertainty that caused attitude estimate errors
+2) force 400hz IMU logging on (temporary for release candidate testing)
+------------------------------------------------------------------
+Copter 3.3-rc6 25-Jun-2015
+Changes from 3.3-rc5
+1) EKF related changes:
+    a) reset altitude even when arming without GPS lock
+    b) fix yaw twitch caused by EKF heading estimate reset
+    c) fix IMU time scaling bug that caused height estimate to deviate from the baro
+2) AutoTune improvements:
+    a) improved yaw tuning by increasing yaw step magnitude
+    b) added logging of accelerations
+    c) improvements to step tests
+3) Improved crash check:
+    a) allow triggering even if pilot doesn't move throttle to zero
+    b) easier triggering by removing baro check and using angle error instead of absolute tilt angle 
+4) TradHeli:
+    a) swash moves while landed in AltHold mode
+    b) improvements to land detector
+    c) fixed RSC Runup Time calculation
+    d) Rate FF Low-pass Filter changed from 5Hz to 10Hz, more responsive
+5) support Linux builds for NAVIO+ and Erle-Brain (http://firmware.diydrones.com/Copter/beta/)
+6) Other improvements / Bug Fixes:
+    a) sonar pre-arm checks only enforced if using optical flow
+    b) fix EKF failsafe bug that would not allow recovery
+    c) full rate IMU logging for improved vibration analysis (set LOG_BITMASK to All+FullIMU)
+    d) new VIBE dataflash message records vibration levels
+    e) default MNT_TYPE to "1" if servo gimbal rc outputs were defined
+    f) RC_FEEL defaults to medium
+    g) addition of SToRM32 serial support (supports mount angle feedback to GCS)
+    h) new tricopter's tail servo parameters (MOT_YAW_SV_MIN, MAX, TRIM, REV)
+------------------------------------------------------------------
 Copter 3.3-rc5 23-May-2015
 Changes from 3.3-rc4
 1) Fix AHRS bad gyro health message caused by timing jitter and log IMU health

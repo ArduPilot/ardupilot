@@ -26,7 +26,7 @@ void Copter::failsafe_radio_on_event()
                 set_mode_land_with_pause();
 
             // if far from home then RTL
-            }else if(home_distance > wp_nav.get_wp_radius()) {
+            } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
                 // switch to RTL or if that fails, LAND
                 set_mode_RTL_or_land_with_pause();
 
@@ -47,7 +47,7 @@ void Copter::failsafe_radio_on_event()
 
             // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
             } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
-                if(home_distance > wp_nav.get_wp_radius()) {
+                if (home_distance > FS_CLOSE_TO_HOME_CM) {
                     // switch to RTL or if that fails, LAND
                     set_mode_RTL_or_land_with_pause();
                 }else{
@@ -75,7 +75,7 @@ void Copter::failsafe_radio_on_event()
                 set_mode_land_with_pause();
 
             // if far from home then RTL
-            }else if(home_distance > wp_nav.get_wp_radius()) {
+            } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
                 // switch to RTL or if that fails, LAND
                 set_mode_RTL_or_land_with_pause();
             }else{
@@ -117,7 +117,7 @@ void Copter::failsafe_battery_event(void)
                     init_disarm_motors();
                 }else{
                     // set mode to RTL or LAND
-                    if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
+                    if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > FS_CLOSE_TO_HOME_CM) {
                         // switch to RTL or if that fails, LAND
                         set_mode_RTL_or_land_with_pause();
                     }else{
@@ -131,7 +131,7 @@ void Copter::failsafe_battery_event(void)
                     init_disarm_motors();
 
                 // set mode to RTL or LAND
-                } else if (home_distance > wp_nav.get_wp_radius()) {
+                } else if (home_distance > FS_CLOSE_TO_HOME_CM) {
                     // switch to RTL or if that fails, LAND
                     set_mode_RTL_or_land_with_pause();
                 } else {
@@ -145,7 +145,7 @@ void Copter::failsafe_battery_event(void)
                     init_disarm_motors();
 
                 // set mode to RTL or LAND
-                } else if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
+                } else if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > FS_CLOSE_TO_HOME_CM) {
                     // switch to RTL or if that fails, LAND
                     set_mode_RTL_or_land_with_pause();
                 } else {
@@ -159,7 +159,7 @@ void Copter::failsafe_battery_event(void)
     set_failsafe_battery(true);
 
     // warn the ground station and log to dataflash
-    gcs_send_text_P(SEVERITY_HIGH,PSTR("Low Battery!"));
+    gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Low Battery!"));
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
 }
@@ -212,7 +212,7 @@ void Copter::failsafe_gcs_check()
             // if throttle is zero disarm motors
             if (ap.throttle_zero || ap.land_complete) {
                 init_disarm_motors();
-            }else if(home_distance > wp_nav.get_wp_radius()) {
+            }else if(home_distance > FS_CLOSE_TO_HOME_CM) {
                 // switch to RTL or if that fails, LAND
                 set_mode_RTL_or_land_with_pause();
             }else{
@@ -226,7 +226,7 @@ void Copter::failsafe_gcs_check()
                 init_disarm_motors();
             // if g.failsafe_gcs is 1 do RTL, 2 means continue with the mission
             } else if (g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL) {
-                if (home_distance > wp_nav.get_wp_radius()) {
+                if (home_distance > FS_CLOSE_TO_HOME_CM) {
                     // switch to RTL or if that fails, LAND
                     set_mode_RTL_or_land_with_pause();
                 }else{
@@ -241,7 +241,7 @@ void Copter::failsafe_gcs_check()
             // if landed disarm
             if (ap.land_complete) {
                 init_disarm_motors();
-            } else if (home_distance > wp_nav.get_wp_radius()) {
+            } else if (home_distance > FS_CLOSE_TO_HOME_CM) {
                 // switch to RTL or if that fails, LAND
                 set_mode_RTL_or_land_with_pause();
             }else{

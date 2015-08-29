@@ -20,8 +20,8 @@
  *       Code by Randy Mackay. DIYDrones.com
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 class OpticalFlow_backend;
 
@@ -96,5 +96,6 @@ private:
 #include "OpticalFlow_backend.h"
 #include "AP_OpticalFlow_HIL.h"
 #include "AP_OpticalFlow_PX4.h"
+#include "AP_OpticalFlow_Linux.h"
 
 #endif

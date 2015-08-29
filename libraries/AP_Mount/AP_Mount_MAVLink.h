@@ -7,17 +7,17 @@
 #ifndef __AP_MOUNT_MAVLINK_H__
 #define __AP_MOUNT_MAVLINK_H__
 
-#include <AP_HAL.h>
-#include <AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_GPS.h>
-#include <GCS_MAVLink.h>
-#include <RC_Channel.h>
-#include <AP_Mount_Backend.h>
-#include <AP_Gimbal.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_GPS/AP_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <RC_Channel/RC_Channel.h>
+#include "AP_Mount_Backend.h"
+#include "AP_Gimbal.h"
 
 class AP_Mount_MAVLink : public AP_Mount_Backend
 {
