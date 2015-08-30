@@ -10,10 +10,10 @@
 // default constructor
 IRLock::IRLock() :
 		_last_update(0),
-		_num_blocks(0)
+		_num_targets(0)
 {
-	// clear the frame buffer
-    memset(_current_frame, 0, sizeof(_current_frame));
+	// clear target info
+    memset(_target_info, 0, sizeof(_target_info));
 
 	// will be adjusted when init is called
 	_flags.healthy = false;
@@ -26,12 +26,12 @@ IRLock::~IRLock() {}
 bool IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const
 {
     // return false if we have no target
-    if (_num_blocks == 0) {
+    if (_num_targets == 0) {
         return false;
     }
 
     // use data from first object
-    x_angle_rad = (((float)(_current_frame[0].center_x-IRLOCK_CENTER_X))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
-    y_angle_rad = (((float)(_current_frame[0].center_y-IRLOCK_CENTER_Y))/IRLOCK_Y_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    x_angle_rad = _target_info[0].angle_x;
+    y_angle_rad = _target_info[0].angle_y;
     return true;
 }
