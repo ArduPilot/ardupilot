@@ -511,11 +511,17 @@ void NavEKF::ResetHeight(void)
     state.position.z = -hgtMea; // down position from blended accel data
     state.posD1 = -hgtMea; // down position from IMU1 accel data
     state.posD2 = -hgtMea; // down position from IMU2 accel data
+    terrainState = state.position.z + rngOnGnd;
+    // Reset the vertical velocity state using GPS vertical velocity if we are airborne (use arm status as a surrogate)
+    // Check that GPS vertical velocity data is available and can be used
+    if (vehicleArmed && !gpsNotAvailable && _fusionModeGPS == 0) {
+        state.velocity.z =  velNED.z;
+    }
     // reset stored vertical position states to prevent subsequent GPS measurements from being rejected
     for (uint8_t i=0; i<=49; i++){
-        storedStates[i].position.z = -hgtMea;
+        storedStates[i].position.z = state.position.z;
+        storedStates[i].velocity.z = state.velocity.z;
     }
-    terrainState = state.position.z + rngOnGnd;
 }
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
