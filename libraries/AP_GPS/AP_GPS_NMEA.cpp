@@ -296,7 +296,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.location.lat     = _new_latitude;
                     state.location.lng     = _new_longitude;
                     state.ground_speed     = _new_speed*0.01f;
-                    state.ground_course_cd = _new_course;
+                    state.ground_course_cd = wrap_360_cd(_new_course);
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = hal.scheduler->millis();
                     // To-Do: add support for proper reporting of 2D and 3D fix
@@ -314,7 +314,7 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
-                    state.ground_course_cd = _new_course;
+                    state.ground_course_cd = wrap_360_cd(_new_course);
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }

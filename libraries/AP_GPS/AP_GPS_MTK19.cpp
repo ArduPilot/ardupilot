@@ -144,7 +144,7 @@ restart:
 			}
             state.location.alt      = _buffer.msg.altitude;
             state.ground_speed      = _buffer.msg.ground_speed*0.01f;
-            state.ground_course_cd  = _buffer.msg.ground_course;
+            state.ground_course_cd  = wrap_360_cd(_buffer.msg.ground_course);
             state.num_sats          = _buffer.msg.satellites;
             state.hdop              = _buffer.msg.hdop;
             

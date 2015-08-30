@@ -186,7 +186,7 @@ AP_GPS_SIRF::_parse_gps(void)
         state.location.lng      = swap_int32(_buffer.nav.longitude);
         state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
         state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
-        state.ground_course_cd  = swap_int16(_buffer.nav.ground_course);
+        state.ground_course_cd  = wrap_360_cd(swap_int16(_buffer.nav.ground_course));
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;
