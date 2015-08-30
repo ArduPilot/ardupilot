@@ -25,6 +25,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -699,6 +702,31 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d)
     do_every_count++;
 }
 
+
+/*
+  temporary method to use file as GPS data
+ */
+void SITL_State::_update_gps_file(const struct gps_data *d)
+{
+    static int fd = -1;
+    if (fd == -1) {
+        fd = open("/tmp/gps.dat", O_RDONLY);
+    }
+    if (fd == -1) {
+        return;
+    }
+    char buf[200];
+    ssize_t ret = ::read(fd, buf, sizeof(buf));
+    if (ret > 0) {
+        ::printf("wrote gps %u bytes\n", (unsigned)ret);
+        _gps_write((const uint8_t *)buf, ret);
+    }
+    if (ret == 0) {
+        ::printf("gps rewind\n");
+        lseek(fd, 0, SEEK_SET);
+    }
+}
+
 /*
   possibly send a new GPS packet
  */
@@ -800,6 +828,10 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     case SITL::GPS_TYPE_SBP:
         _update_gps_sbp(&d);
+        break;
+
+    case SITL::GPS_TYPE_FILE:
+        _update_gps_file(&d);
         break;
 
     }
