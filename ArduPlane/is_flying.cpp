@@ -98,6 +98,11 @@ void Plane::update_is_flying_5Hz(void)
 
         auto_state.last_flying_ms = now_ms;
 
+        if (!previous_is_flying) {
+            // just started flying in any mode
+            started_flying_ms = now_ms;
+        }
+
         if ((control_mode == AUTO) &&
             ((auto_state.started_flying_in_auto_ms == 0) || !previous_is_flying) ) {
 
