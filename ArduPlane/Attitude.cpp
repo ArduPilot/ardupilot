@@ -577,7 +577,7 @@ bool Plane::suppress_throttle(void)
         auto_state.takeoff_complete == false) {
 
         if (is_flying() &&
-            millis() - auto_state.started_flying_in_auto_ms > 5000 && // been flying >5s
+            millis() - started_flying_ms > 5000 && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500) { // are >5m above AGL/home
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
