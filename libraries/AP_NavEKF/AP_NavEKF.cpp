@@ -5191,7 +5191,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
     // return healthy if we already have an origin and are inflight to prevent a race condition when checking the status on the ground after landing
     // return healthy for a few seconds after landing so that filter disturbances don't fail the GPS
     static bool usingInFlight = false;
-    usingInFlight = (vehicleArmed && validOrigin && !constVelMode && !constPosMode) || (!vehicleArmed && usingInFlight && (imuSampleTime_ms - timeAtDisarm_ms) < 5000);
+    usingInFlight = (vehicleArmed && validOrigin && !constVelMode && !constPosMode) || (!vehicleArmed && usingInFlight && (imuSampleTime_ms - timeAtDisarm_ms) < 5000 && gpsAccuracyGood);
 
     if (usingInFlight) {
         return true;
