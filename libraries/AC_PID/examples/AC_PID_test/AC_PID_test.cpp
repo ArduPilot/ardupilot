@@ -47,6 +47,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 #define TEST_IMAX 10
 #define TEST_FILTER 5.0f
 #define TEST_DT 0.01f
+#define TEST_INITIAL_FF 0.0f
 
 // setup function
 void setup()
@@ -61,7 +62,7 @@ void loop()
 {
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
     AC_PID pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
-    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT);
+    AC_HELI_PID heli_pid(TEST_P, TEST_I, TEST_D, TEST_IMAX * 100, TEST_FILTER, TEST_DT, TEST_INITIAL_FF);
     uint16_t radio_in;
     uint16_t radio_trim;
     int16_t error;
