@@ -31,53 +31,53 @@
 extern const AP_HAL::HAL& hal;
 
 AP_IRLock_PX4::AP_IRLock_PX4() :
-        _fd(0),
-		_last_timestamp(0)
+    _fd(0),
+    _last_timestamp(0)
 {}
 
 void AP_IRLock_PX4::init()
 {
-	_fd = open(IRLOCK0_DEVICE_PATH, O_RDONLY);
-	if (_fd < 0) {
-		hal.console->printf("Unable to open " IRLOCK0_DEVICE_PATH "\n");
-		return;
-	}
+    _fd = open(IRLOCK0_DEVICE_PATH, O_RDONLY);
+    if (_fd < 0) {
+        hal.console->printf("Unable to open " IRLOCK0_DEVICE_PATH "\n");
+        return;
+    }
 
-	_flags.healthy = true;
+    _flags.healthy = true;
 }
 
 // retrieve latest sensor data - returns true if new data is available
 bool AP_IRLock_PX4::update()
 {
     // return immediately if not healthy
-	if (!_flags.healthy) {
-		return false;
-	}
+    if (!_flags.healthy) {
+        return false;
+    }
 
-	// read position of all objects
-	struct irlock_s report;
-	uint16_t count = 0;
-	while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s) && report.timestamp >_last_timestamp) {
-	    _target_info[count].timestamp = report.timestamp;
-	    _target_info[count].target_num = report.target_num;
-	    _target_info[count].angle_x = report.angle_x;
-	    _target_info[count].angle_y = report.angle_y;
-	    _target_info[count].size_x = report.size_x;
-	    _target_info[count].size_y = report.size_y;
-		count++;
-		_last_timestamp = report.timestamp;
-		_last_update = hal.scheduler->millis();
-	}
+    // read position of all objects
+    struct irlock_s report;
+    uint16_t count = 0;
+    while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s) && report.timestamp >_last_timestamp) {
+        _target_info[count].timestamp = report.timestamp;
+        _target_info[count].target_num = report.target_num;
+        _target_info[count].angle_x = report.angle_x;
+        _target_info[count].angle_y = report.angle_y;
+        _target_info[count].size_x = report.size_x;
+        _target_info[count].size_y = report.size_y;
+        count++;
+        _last_timestamp = report.timestamp;
+        _last_update = hal.scheduler->millis();
+    }
 
-	// update num_blocks and implement timeout
-	if (count > 0) {
-	    _num_targets = count;
-	} else if ((hal.scheduler->millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
-	    _num_targets = 0;
-	}
+    // update num_blocks and implement timeout
+    if (count > 0) {
+        _num_targets = count;
+    } else if ((hal.scheduler->millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
+        _num_targets = 0;
+    }
 
-	// return true if new data found
-	return (_num_targets > 0);
+    // return true if new data found
+    return (_num_targets > 0);
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

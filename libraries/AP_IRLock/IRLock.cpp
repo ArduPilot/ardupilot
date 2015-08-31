@@ -9,14 +9,14 @@
 
 // default constructor
 IRLock::IRLock() :
-		_last_update(0),
-		_num_targets(0)
+    _last_update(0),
+    _num_targets(0)
 {
-	// clear target info
+    // clear target info
     memset(_target_info, 0, sizeof(_target_info));
 
-	// will be adjusted when init is called
-	_flags.healthy = false;
+    // will be adjusted when init is called
+    _flags.healthy = false;
 }
 
 IRLock::~IRLock() {}
