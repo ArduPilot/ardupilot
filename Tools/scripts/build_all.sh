@@ -10,7 +10,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all sitl linux; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
@@ -28,7 +28,7 @@ popd
 
 echo "Testing APMRover build"
 pushd APMrover2
-for b in all sitl linux; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
