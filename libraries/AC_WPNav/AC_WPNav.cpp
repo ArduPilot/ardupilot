@@ -639,6 +639,11 @@ void AC_WPNav::update_wpnav()
 
     // update at poscontrol update rate
     if (dt >= _pos_control.get_dt_xy()) {
+        // allow the accel and speed values to be set without changing
+        // out of auto mode. This makes it easier to tune auto flight
+        _pos_control.set_accel_xy(_wp_accel_cms);
+        _pos_control.set_accel_z(_wp_accel_z_cms);
+    
         // sanity check dt
         if (dt >= 0.2f) {
             dt = 0.0f;
