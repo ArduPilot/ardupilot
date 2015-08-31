@@ -170,6 +170,7 @@ public:
         // 90: Motors
         //
         k_param_motors = 90,
+        k_param_disarm_delay,
 
         //
         // 100: Inertial Nav
@@ -427,6 +428,7 @@ public:
     AP_Int8         ch11_option;
     AP_Int8         ch12_option;
     AP_Int8         arming_check;
+    AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;
     AP_Int8         fs_ekf_action;
