@@ -163,10 +163,11 @@ public:
         k_param_heli_stab_col_max,  // 88
 
         //
-        // 90: Motors
+        // 90: misc2
         //
         k_param_motors = 90,
         k_param_disarm_delay,
+        k_param_fs_crash_check,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -429,6 +430,7 @@ public:
 
     AP_Int8         land_repositioning;
     AP_Int8         fs_ekf_action;
+    AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 

@@ -496,6 +496,13 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH",    FS_EKF_THRESHOLD_DEFAULT),
 
+    // @Param: FS_CRASH_CHECK
+    // @DisplayName: Crash check enable
+    // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
+    
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: HS1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
