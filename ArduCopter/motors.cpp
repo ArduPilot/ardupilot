@@ -5,8 +5,6 @@
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define AUTO_DISARMING_DELAY_LONG   10  // called at 1hz so 10 seconds
-#define AUTO_DISARMING_DELAY_SHORT   5  // called at 1hz so 5 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint8_t auto_disarming_counter;
@@ -75,10 +73,11 @@ void Copter::arm_motors_check()
 // called at 1hz
 void Copter::auto_disarm_check()
 {
-    uint8_t disarm_delay = AUTO_DISARMING_DELAY_LONG;
+    uint8_t disarm_delay = constrain_int16(g.disarm_delay, 0, 127);
 
-    // exit immediately if we are already disarmed
-    if (!motors.armed()) {
+    // exit immediately if we are already disarmed, or if auto
+    // disarming is disabled
+    if (!motors.armed() || disarm_delay == 0) {
         auto_disarming_counter = 0;
         return;
     }
@@ -88,7 +87,7 @@ void Copter::auto_disarm_check()
         auto_disarming_counter++;
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
-        disarm_delay = AUTO_DISARMING_DELAY_SHORT;
+        disarm_delay /= 2;
     } else {
         bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
         bool thr_low;

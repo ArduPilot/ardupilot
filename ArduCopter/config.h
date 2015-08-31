@@ -695,6 +695,10 @@
  # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
+#ifndef AUTO_DISARMING_DELAY
+# define AUTO_DISARMING_DELAY  10
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //

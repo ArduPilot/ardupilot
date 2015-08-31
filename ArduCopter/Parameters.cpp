@@ -432,6 +432,14 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(arming_check, "ARMING_CHECK",           ARMING_CHECK_ALL),
 
+    // @Param: DISARM_DELAY
+    // @DisplayName: Disarm delay
+    // @Description: Delay before automatic disarm in seconds. A value of zero disables auto disarm.
+    // @Units: Seconds
+    // @Range: 0 127
+    // @User: Advanced
+    GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
+    
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
