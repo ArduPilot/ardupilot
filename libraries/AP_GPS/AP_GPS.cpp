@@ -115,8 +115,9 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
 
     // @Param: GNSS_MODE
     // @DisplayName: GNSS system configuration
-    // @Description: Bitmask for what GNSS system to use
-    // @Values: 0: Leave as currently configured 1: GPS 2: SBAS 4: Galileo 8: Beidou 16: IMES 32: QZSS 64: GLONASS
+    // @Description: Bitmask for what GNSS system to use (all unchecked or zero to leave GPS as configured)
+    // @Values: 0:Leave as currently configured 1:GPS 2:SBAS 4:Galileo 8:Beidou 16:IMES 32:QZSS 64:GLONASS
+    // @Bitmask: 0:GPS, 1:SBAS, 2:Galileo, 3:Beidou, 4:IMES, 5:QZSS, 6:GLOSNASS
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
