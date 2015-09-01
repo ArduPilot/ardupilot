@@ -166,6 +166,11 @@ void Copter::init_ardupilot()
     log_init();
 #endif
 
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
+    
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
@@ -256,11 +261,6 @@ void Copter::init_ardupilot()
     // ---------------------------
     reset_control_switch();
     init_aux_switches();
-
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
 
     startup_ground(true);
 

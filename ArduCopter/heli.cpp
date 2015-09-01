@@ -18,6 +18,19 @@ void Copter::heli_init()
 {
     // helicopters are always using motor interlock
     set_using_interlock(true);
+
+    /*
+      automatically set H_RSC_MIN and H_RSC_MAX from RC8_MIN and
+      RC8_MAX so that when users upgrade from tradheli version 3.3 to
+      3.4 they get the same throttle range as in previous versions of
+      the code
+     */
+    if (!g.heli_servo_rsc.radio_min.load()) {
+        g.heli_servo_rsc.radio_min.set_and_save(g.rc_8.radio_min.get());
+    }
+    if (!g.heli_servo_rsc.radio_max.load()) {
+        g.heli_servo_rsc.radio_max.set_and_save(g.rc_8.radio_max.get());
+    }
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
