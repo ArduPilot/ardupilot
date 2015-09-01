@@ -27,7 +27,7 @@
 .metadata/
 .project
 .settings/
-.autotools/
+.autotools
 .vagrant
 /tmp/*
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
