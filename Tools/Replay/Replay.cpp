@@ -87,7 +87,7 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed{aparm};
-    DataFlash_Class dataflash;
+    DataFlash_Class dataflash{PSTR("Replay v0.1")};
 
 private:
     Parameters g;

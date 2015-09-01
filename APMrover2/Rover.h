@@ -135,7 +135,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_learn;
 
-    DataFlash_Class DataFlash;
+    DataFlash_Class DataFlash{FIRMWARE_STRING};
 
     bool in_log_download;
 
@@ -402,10 +402,11 @@ private:
     void gcs_update(void);
     void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str);
     void gcs_retry_deferred(void);
+
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
-    void Log_Write_Startup(uint8_t type);
+    bool Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();
@@ -414,9 +415,11 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Baro(void);
     void Log_Write_Home_And_Origin();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
     void start_logging() ;
+
     void load_parameters(void);
     void throttle_slew_limit(int16_t last_throttle);
     bool auto_check_trigger(void);
@@ -533,6 +536,8 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     int8_t test_shell(uint8_t argc, const Menu::arg *argv);
 #endif
+
+    void dataflash_periodic(void);
 };
 
 #define MENU_FUNC(func) FUNCTOR_BIND(&rover, &Rover::func, int8_t, uint8_t, const Menu::arg *)

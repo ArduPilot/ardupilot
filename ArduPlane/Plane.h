@@ -1,6 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef _PLANE_H_
-#define _PLANE_H_
+
+#ifndef _PLANE_H
+#define _PLANE_H
 
 #define THISFIRMWARE "ArduPlane V3.4.0beta1"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_BETA
@@ -163,7 +164,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    DataFlash_Class DataFlash;
+    DataFlash_Class DataFlash{FIRMWARE_STRING};
 
     // has a log download started?
     bool in_log_download;
@@ -698,10 +699,11 @@ private:
     void gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
     void gcs_retry_deferred(void);
+
     void do_erase_logs(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
-    void Log_Write_Startup(uint8_t type);
+    bool Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
@@ -716,8 +718,10 @@ private:
     void Log_Write_Baro(void);
     void Log_Write_Airspeed(void);
     void Log_Write_Home_And_Origin();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, int16_t start_page, int16_t end_page);
     void start_logging();
+
     void load_parameters(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
@@ -943,6 +947,7 @@ private:
     uint32_t millis() const;
     uint32_t micros() const;
     void init_capabilities(void);
+    void dataflash_periodic(void);
 
 public:
     void mavlink_delay_cb();

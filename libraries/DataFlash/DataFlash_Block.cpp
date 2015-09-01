@@ -3,14 +3,22 @@
  *       DataFlash.cpp - DataFlash log library generic code
  */
 
+#include "DataFlash_Block.h"
+
 #include <AP_HAL/AP_HAL.h>
-#include "DataFlash.h"
 
 extern AP_HAL::HAL& hal;
 
 // the last page holds the log format in first 4 bytes. Please change
 // this if (and only if!) the low level format changes
 #define DF_LOGGING_FORMAT    0x28122013
+
+uint16_t DataFlash_Block::bufferspace_available()
+{
+    // because DataFlash_Block devices are ring buffers, we *always*
+    // have room...
+    return df_NumPages * df_PageSize; 
+}
 
 // *** DATAFLASH PUBLIC FUNCTIONS ***
 void DataFlash_Block::StartWrite(uint16_t PageAdr)
@@ -35,11 +43,20 @@ void DataFlash_Block::FinishWrite(void)
     df_BufferIdx = 0;
 }
 
-void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
+bool DataFlash_Block::WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    bool is_critical)
 {
+    // is_critical is ignored - we're a ring buffer and never run out
+    // of space.  possibly if we do more complicated bandwidth
+    // limiting we can reservice bandwidth based on is_critical
     if (!CardInserted() || !log_write_started || !_writes_enabled) {
-        return;
+        return false;
     }
+
+    if (! WriteBlockCheckStartupMessages()) {
+        return false;
+    }
+
     while (size > 0) {
         uint16_t n = df_PageSize - df_BufferIdx;
         if (n > size) {
@@ -68,6 +85,8 @@ void DataFlash_Block::WriteBlock(const void *pBuffer, uint16_t size)
             df_FilePage++;
         }
     }
+
+    return true;
 }
 
 

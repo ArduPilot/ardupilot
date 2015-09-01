@@ -782,28 +782,23 @@ void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 }
 #endif // CLI_ENABLED
 
+void Copter::Log_Write_Vehicle_Startup_Messages()
+{
+    // only 200(?) bytes are guaranteed by DataFlash
+    DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
+    DataFlash.Log_Write_Mode(control_mode);
+}
+
+
 // start a new log
 void Copter::start_logging() 
 {
     if (g.log_bitmask != 0) {
         if (!ap.logging_started) {
             ap.logging_started = true;
-            in_mavlink_delay = true;
+            DataFlash.set_mission(&mission);
+            DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
             DataFlash.StartNewLog();
-            DataFlash.Log_Write_SysInfo(PSTR(FIRMWARE_STRING));
-            in_mavlink_delay = false;
-
-            DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING));
-
-            // write mission commands
-            if (MASK_LOG_CMD & g.log_bitmask) {
-                DataFlash.Log_Write_EntireMission(mission);
-            }
-
-            Log_Write_Startup();
-
-            // log the flight mode
-            DataFlash.Log_Write_Mode(control_mode);
         }
         // enable writes
         DataFlash.EnableWrites(true);
