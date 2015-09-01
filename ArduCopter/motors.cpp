@@ -198,6 +198,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     if (ap.using_interlock && motors.get_interlock()){
         gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Motor Interlock Enabled"));
         AP_Notify::flags.armed = false;
+        in_arm_motors = false;
         return false;
     }
 
@@ -209,6 +210,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
         gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Motor Emergency Stopped"));
         AP_Notify::flags.armed = false;
+        in_arm_motors = false;
         return false;
     }
 
