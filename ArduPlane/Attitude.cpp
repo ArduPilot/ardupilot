@@ -573,12 +573,13 @@ bool Plane::suppress_throttle(void)
     if (control_mode==AUTO && 
         auto_state.takeoff_complete == false) {
 
+        uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
         if (is_flying() &&
-            millis() - started_flying_ms > 5000 && // been flying >5s in any mode
+            millis() - started_flying_ms > max(launch_duration_ms,5000) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500) { // are >5m above AGL/home
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
-            // but we're still flying around
+            // but we're currently flying around below the takeoff altitude
             throttle_suppressed = false;
             return false;
         }
