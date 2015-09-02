@@ -77,9 +77,12 @@ Compass::start_calibration_all(bool retry, bool autosave, float delay)
 void
 Compass::cancel_calibration(uint8_t i)
 {
-    _calibrator[i].clear();
-    AP_Notify::events.compass_cal_canceled = 1;
     AP_Notify::events.initiated_compass_cal = 0;
+
+    if (_calibrator[i].running() || _calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
+        AP_Notify::events.compass_cal_canceled = 1;
+    }
+    _calibrator[i].clear();
 }
 
 void
