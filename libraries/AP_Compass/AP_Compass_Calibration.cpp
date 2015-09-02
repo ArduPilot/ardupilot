@@ -38,22 +38,21 @@ Compass::compass_cal_update()
 bool
 Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bool autoreboot)
 {
-    if (healthy(i)) {
-        memset(_reports_sent,0,sizeof(_reports_sent));
-        if (!is_calibrating() && delay > 0.5f) {
-            AP_Notify::events.initiated_compass_cal = 1;
-        }
-        if (i == get_primary()) {
-            _calibrator[i].set_tolerance(8);
-        } else {
-            _calibrator[i].set_tolerance(16);
-        }
-        _calibrator[i].start(retry, autosave, delay);
-        _compass_cal_autoreboot = autoreboot;
-        return true;
-    } else {
+    if (!healthy(i)) {
         return false;
     }
+    memset(_reports_sent,0,sizeof(_reports_sent));
+    if (!is_calibrating() && delay > 0.5f) {
+        AP_Notify::events.initiated_compass_cal = 1;
+    }
+    if (i == get_primary()) {
+        _calibrator[i].set_tolerance(8);
+    } else {
+        _calibrator[i].set_tolerance(16);
+    }
+    _calibrator[i].start(retry, autosave, delay);
+    _compass_cal_autoreboot = autoreboot;
+    return true;
 }
 
 bool
