@@ -26,26 +26,39 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
 }
 
-// configure_msg - process MOUNT_CONFIGURE messages received from GCS
+// configure_msg - process MOUNT_CONFIGURE messages received from GCS.  deprecated.
 void AP_Mount_Backend::configure_msg(mavlink_message_t* msg)
 {
     __mavlink_mount_configure_t packet;
     mavlink_msg_mount_configure_decode(msg, &packet);
 
-    // set mode
-    _frontend.set_mode(_instance,(enum MAV_MOUNT_MODE)packet.mount_mode);
-
-    // set which axis are stabilized
-    _state._stab_roll = packet.stab_roll;
-    _state._stab_tilt = packet.stab_pitch;
-    _state._stab_pan = packet.stab_yaw;
+    configure((MAV_MOUNT_MODE)packet.mount_mode, packet.stab_roll, packet.stab_pitch, packet.stab_yaw);
 }
 
-// control_msg - process MOUNT_CONTROL messages received from GCS
+void AP_Mount_Backend::configure(MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_tilt, uint8_t stab_pan)
+{
+    // set mode
+    _frontend.set_mode(_instance, mount_mode);
+    // set which axis are stabilized
+    _state._stab_roll = stab_roll;
+    _state._stab_tilt = stab_tilt;
+    _state._stab_pan = stab_pan;
+}
+
+// control_msg - process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
 {
     __mavlink_mount_control_t packet;
     mavlink_msg_mount_control_decode(msg, &packet);
+
+    control((int32_t) packet.input_a, (int32_t) packet.input_b, (int32_t) packet.input_c, 0);
+}
+
+void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, uint8_t mount_mode)
+{
+    if(mount_mode > 0) {
+        _frontend.set_mode(_instance, (MAV_MOUNT_MODE) mount_mode);
+    }
 
     // interpret message fields based on mode
     switch (_frontend.get_mode(_instance)) {
@@ -56,7 +69,7 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
 
         // set earth frame target angles from mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            set_angle_targets(packet.input_b*0.01f, packet.input_a*0.01f, packet.input_c*0.01f);
+            set_angle_targets(roll_or_lon*0.01f, pitch_or_lat*0.01f, yaw_or_alt*0.01f);
             break;
 
         // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
@@ -68,9 +81,9 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
         case MAV_MOUNT_MODE_GPS_POINT:
             Location target_location;
             memset(&target_location, 0, sizeof(target_location));
-            target_location.lat = packet.input_a;
-            target_location.lng = packet.input_b;
-            target_location.alt = packet.input_c;
+            target_location.lat = pitch_or_lat;
+            target_location.lng = roll_or_lon;
+            target_location.alt = yaw_or_alt;
             target_location.flags.relative_alt = true;
             set_roi_target(target_location);
             break;
