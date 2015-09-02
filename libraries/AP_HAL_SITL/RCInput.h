@@ -16,6 +16,10 @@ public:
     uint8_t num_channels() {
         return 8;
     }
+    float link_quality() {
+        // Always perfect link in the simulator
+        return 1.0;
+    }    
     uint16_t read(uint8_t ch);
     uint8_t read(uint16_t* periods, uint8_t len);
 

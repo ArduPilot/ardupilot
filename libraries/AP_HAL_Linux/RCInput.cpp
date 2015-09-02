@@ -42,6 +42,12 @@ uint8_t LinuxRCInput::num_channels()
     return _num_channels;
 }
 
+/* Return the Link Quality of the RC link. 0.0 = worst quality, 1.0 = best quality. */
+float LinuxRCInput::link_quality() {
+    // Unimplemented
+    return 0.0f;
+}
+
 uint16_t LinuxRCInput::read(uint8_t ch) 
 {
     new_rc_input = false;

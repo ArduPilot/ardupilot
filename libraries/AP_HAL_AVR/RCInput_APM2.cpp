@@ -102,6 +102,12 @@ bool APM2RCInput::new_input()
 
 uint8_t APM2RCInput::num_channels() { return _num_channels; }
 
+/* Return the Link Quality of the RC link. 0.0 = worst quality, 1.0 = best quality. */
+float APM2RCInput::link_quality() {
+    // Unimplemented
+    return 0.0f;
+}
+
 /* constrain captured pulse to be between min and max pulsewidth. */
 static inline uint16_t constrain_pulse(uint16_t p) {
     if (p > RC_INPUT_MAX_PULSEWIDTH) return RC_INPUT_MAX_PULSEWIDTH;

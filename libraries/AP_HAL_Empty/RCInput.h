@@ -10,6 +10,7 @@ public:
     void init(void* machtnichts);
     bool  new_input();
     uint8_t num_channels();
+    float link_quality();
     uint16_t read(uint8_t ch);
     uint8_t read(uint16_t* periods, uint8_t len);
 
