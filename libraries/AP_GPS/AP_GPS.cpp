@@ -145,7 +145,7 @@ const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY ;
 const prog_char AP_GPS::_initialisation_raw_blob[] PROGMEM = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
@@ -272,6 +272,10 @@ AP_GPS::detect_instance(uint8_t instance)
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             hal.console->print_P(PSTR(" SBP "));
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
+        }
+        else if (_type[instance] == GPS_TYPE_SBF) {
+            hal.console->print_P(PSTR(" SBF "));
+            new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
 #if !defined(GPS_SKIP_SIRF_NMEA)

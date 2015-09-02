@@ -68,3 +68,4 @@ struct SBP_detect_state {
     uint16_t crc_so_far;
     uint16_t crc;
 };
+
