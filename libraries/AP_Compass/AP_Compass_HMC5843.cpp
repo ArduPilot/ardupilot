@@ -213,9 +213,9 @@ void AP_Compass_HMC5843::accumulate(void)
        // publish raw_field (corrected point sample) for EKF use
        publish_unfiltered_field(raw_field, tnow, _compass_instance);
 
-	  _mag_x_accum += _mag_x;
-	  _mag_y_accum += _mag_y;
-	  _mag_z_accum += _mag_z;
+	  _mag_x_accum += raw_field.x;
+	  _mag_y_accum += raw_field.y;
+	  _mag_z_accum += raw_field.z;
 	  _accum_count++;
 	  if (_accum_count == 14) {
 		 _mag_x_accum /= 2;
@@ -478,9 +478,6 @@ void AP_Compass_HMC5843::read()
         field.rotate(ROTATION_YAW_90);
     }
 
-
-    rotate_field(field, _compass_instance);
-    correct_field(field, _compass_instance);
     publish_filtered_field(field, _compass_instance);
     _retry_time = 0;
 }
