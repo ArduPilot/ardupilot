@@ -1114,7 +1114,7 @@ void AP_Param::show(const AP_Param *ap, const ParamToken &token,
 }
 
 // print the value of all variables
-void AP_Param::show_all(AP_HAL::BetterStream *port)
+void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 {
     ParamToken token;
     AP_Param *ap;
@@ -1123,6 +1123,9 @@ void AP_Param::show_all(AP_HAL::BetterStream *port)
     for (ap=AP_Param::first(&token, &type);
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
+        if (showKeyValues) {
+            port->printf_P(PSTR("Key %i: Index %i: GroupElement %i  :  "), token.key, token.idx, token.group_element);
+        }
         show(ap, token, type, port);
     }
 }
