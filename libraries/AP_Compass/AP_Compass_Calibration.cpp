@@ -6,7 +6,7 @@
 void
 Compass::compass_cal_update()
 {
-    AP_Notify::flags.compass_cal_running = 0;
+    bool running = false;
 
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         bool failure;
@@ -21,9 +21,10 @@ Compass::compass_cal_update()
         }
 
         if (_calibrator[i].running()) {
-            AP_Notify::flags.compass_cal_running = 1;
+            running = true;
         }
     }
+    AP_Notify::flags.compass_cal_running = running;
 }
 
 bool
