@@ -169,19 +169,16 @@ Compass::send_mag_cal_progress(mavlink_channel_t chan)
 {
     uint8_t cal_mask = get_cal_mask();
 
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        CompassCalibrator& cal = _calibrator[i];
-
-        uint8_t& compass_id = i;
-        uint8_t cal_status = cal.get_status();
+    for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
+        uint8_t cal_status = _calibrator[compass_id].get_status();
 
         if (cal_status == COMPASS_CAL_WAITING_TO_START  ||
             cal_status == COMPASS_CAL_RUNNING_STEP_ONE ||
             cal_status == COMPASS_CAL_RUNNING_STEP_TWO) {
-            uint8_t completion_pct = cal.get_completion_percent();
+            uint8_t completion_pct = _calibrator[compass_id].get_completion_percent();
             uint8_t completion_mask[10];
             Vector3f direction(0.0f,0.0f,0.0f);
-            uint8_t attempt = cal.get_attempt();
+            uint8_t attempt = _calibrator[compass_id].get_attempt();
 
             memset(completion_mask, 0, sizeof(completion_mask));
 
@@ -199,18 +196,16 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
 {
     uint8_t cal_mask = get_cal_mask();
 
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-         CompassCalibrator& cal = _calibrator[i];
+    for (uint8_t compass_id=0; compass_id<COMPASS_MAX_INSTANCES; compass_id++) {
 
-        uint8_t& compass_id = i;
-        uint8_t cal_status = cal.get_status();
+        uint8_t cal_status = _calibrator[compass_id].get_status();
 
         if ((cal_status == COMPASS_CAL_SUCCESS ||
-            cal_status == COMPASS_CAL_FAILED) && ((_reports_sent[i] < MAX_CAL_REPORTS) || CONTINUOUS_REPORTS)) {
-            float fitness = cal.get_fitness();
+            cal_status == COMPASS_CAL_FAILED) && ((_reports_sent[compass_id] < MAX_CAL_REPORTS) || CONTINUOUS_REPORTS)) {
+            float fitness = _calibrator[compass_id].get_fitness();
             Vector3f ofs, diag, offdiag;
-            cal.get_calibration(ofs, diag, offdiag);
-            uint8_t autosaved = cal.get_autosave();
+            _calibrator[compass_id].get_calibration(ofs, diag, offdiag);
+            uint8_t autosaved = _calibrator[compass_id].get_autosave();
 
             mavlink_msg_mag_cal_report_send(
                 chan,
@@ -221,11 +216,11 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
                 diag.x, diag.y, diag.z,
                 offdiag.x, offdiag.y, offdiag.z
             );
-            _reports_sent[i]++;
+            _reports_sent[compass_id]++;
         }
 
-        if (cal_status == COMPASS_CAL_SUCCESS && cal.get_autosave()) {
-            accept_calibration(i);
+        if (cal_status == COMPASS_CAL_SUCCESS && _calibrator[compass_id].get_autosave()) {
+            accept_calibration(compass_id);
         }
     }
 }
