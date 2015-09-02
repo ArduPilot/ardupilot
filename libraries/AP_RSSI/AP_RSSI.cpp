@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @Param: RSSI_TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
-    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue
+    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:SBUSLinkQuality (Pixhawk only)
     // @User: Standard
     AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  0),
                 
@@ -78,6 +78,24 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("CHAN_HIGH", 6, AP_RSSI, rssi_channel_high_pwm_value,  2000),
     
+    // @Param: RSSI_SBUS_LOW
+    // @DisplayName: Receiver SBUS Link Quality low value
+    // @Description: The lowest value expected from the SBUS Link Quality metric. This is normally 0.0, which would happen when there is no signal.
+    // @Units: Percent
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("SBUS_LOW", 7, AP_RSSI, rssi_sbus_low_value, 0),
+    
+    // @Param: RSSI_SBUS_HIGH
+    // @DisplayName: Receiver SBUS Link Quality high value
+    // @Description: The lowest value expected from the SBUS Link Quality metric. This can be as high as 1.0, but may be lower depending on your particular hardware, since a certain level of frames dropped may be normal even at short distances.
+    // @Units: Percent
+    // @Increment: 1
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("SBUS_HIGH", 8, AP_RSSI, rssi_sbus_high_value, 100),
+          
     AP_GROUPEND
 };
 
@@ -120,6 +138,9 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RSSI_RC_CHANNEL_VALUE :
             receiver_rssi = read_channel_rssi();
             break;
+        case RssiType::SBUS_LINK_QUALITY :
+            receiver_rssi = read_sbus_link_quality();
+            break;
         default :   
             receiver_rssi = 0.0f;      
     }    
@@ -152,6 +173,13 @@ float AP_RSSI::read_channel_rssi()
     int rssi_channel_value = hal.rcin->read(rssi_channel-1);
     float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
     return channel_rssi;    
+}
+
+// read the SBUS Link Quality
+float AP_RSSI::read_sbus_link_quality()
+{
+    float current_link_quality = hal.rcin->link_quality() * 100;
+    return scale_and_constrain_float_rssi(current_link_quality, rssi_sbus_low_value, rssi_sbus_high_value);
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
