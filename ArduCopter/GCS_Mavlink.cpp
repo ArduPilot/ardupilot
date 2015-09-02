@@ -1263,12 +1263,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_ACCEPTED;
             break;
 
-        case MAV_CMD_DO_MOUNT_CONFIGURE:
-            copter.camera_mount.configure((MAV_MOUNT_MODE)packet.param1, packet.param2, packet.param3, packet.param4);
-            break;
-
         case MAV_CMD_DO_MOUNT_CONTROL:
+#if MOUNT == ENABLED
             copter.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+#endif
             break;
 
         case MAV_CMD_MISSION_START:
