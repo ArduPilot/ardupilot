@@ -68,3 +68,25 @@ struct SBP_detect_state {
     uint16_t crc_so_far;
     uint16_t crc;
 };
+
+struct SBF_detect_state {
+    enum
+    {
+        PREAMBLE1 = 0,
+        PREAMBLE2,
+        CRC1,
+        CRC2,
+        BLOCKID1,
+        BLOCKID2,
+        LENGTH1,
+        LENGTH2,
+        DATA
+    } sbf_state;
+    uint16_t preamble;
+    uint16_t crc;
+    uint16_t blockid;
+    uint16_t length;
+	
+    uint16_t crcbuild;
+    uint16_t read;
+};
