@@ -4,6 +4,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// this only builds for PX4 so far
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
 // Constructor
 AC_PrecLand_IRLock::AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
     : AC_PrecLand_Backend(frontend, state),
@@ -35,3 +38,5 @@ bool AC_PrecLand_IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_
 {
     return irlock.get_angle_to_target(x_angle_rad, y_angle_rad);
 }
+
+#endif // PX4

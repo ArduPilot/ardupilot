@@ -7,6 +7,9 @@
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
 #include <AP_IRLock/AP_IRLock.h>
 
+// this only builds for PX4 so far
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
 /*
  * AC_PrecLand_IRLock - implements precision landing using target vectors provided
  *                         by a companion computer (i.e. Odroid) communicating via MAVLink
@@ -36,4 +39,5 @@ private:
     AP_IRLock_PX4 irlock;
 
 };
+#endif
 #endif	// __AC_PRECLAND_IRLOCK_H__
