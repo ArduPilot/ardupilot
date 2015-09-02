@@ -52,6 +52,8 @@ const char* AP_Gimbal_Parameters::get_param_name(gmb_param_t param)
             return "GMB_POS_HOLD";
         case GMB_PARAM_GMB_MAX_TORQUE:
             return "GMB_MAX_TORQUE";
+        case GMB_PARAM_GMB_SND_TORQUE:
+            return "GMB_SND_TORQUE";
         case GMB_PARAM_GMB_SYSID:
             return "GMB_SYSID";
         case GMB_PARAM_GMB_FLASH:
