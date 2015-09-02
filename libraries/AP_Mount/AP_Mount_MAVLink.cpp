@@ -16,7 +16,10 @@ extern const AP_HAL::HAL& hal;
 AP_Mount_MAVLink::AP_Mount_MAVLink(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
     _initialised(false),
-    _gimbal(frontend._ahrs,frontend._externalParameters)
+    _gimbal(frontend._ahrs,frontend._externalParameters),
+    _log_dt(0),
+    _log_del_ang(),
+    _log_del_vel()
 {}
 
 // init - performs any required initialisation for this instance
@@ -28,43 +31,53 @@ void AP_Mount_MAVLink::init(const AP_SerialManager& serial_manager)
 
 void AP_Mount_MAVLink::Log_Write_Gimbal(AP_Gimbal &gimbal)
 {
-    uint32_t tstamp = hal.scheduler->millis();
-    Quaternion quatEst;
-    gimbal._ekf.getQuat(quatEst);
-    Vector3f eulerEst;
-    quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
+    _log_dt += gimbal._measurement.delta_time;
+    _log_del_ang += gimbal._measurement.delta_angles;
+    _log_del_vel += gimbal._measurement.delta_velocity;
 
-    struct log_Gimbal1 pkt1 = {
-        LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
-        time_ms : tstamp,
-        delta_time      : gimbal._measurement.delta_time,
-        delta_angles_x  : gimbal._measurement.delta_angles.x,
-        delta_angles_y  : gimbal._measurement.delta_angles.y,
-        delta_angles_z  : gimbal._measurement.delta_angles.z,
-        delta_velocity_x : gimbal._measurement.delta_velocity.x,
-        delta_velocity_y : gimbal._measurement.delta_velocity.y,
-        delta_velocity_z : gimbal._measurement.delta_velocity.z,
-        joint_angles_x  : gimbal._measurement.joint_angles.x,
-        joint_angles_y  : gimbal._measurement.joint_angles.y,
-        joint_angles_z  : gimbal._measurement.joint_angles.z
-    };
-    _frontend._dataflash->WriteBlock(&pkt1, sizeof(pkt1));
+    if (_log_dt >= 1.0f/25.0f) {
+        uint32_t tstamp = hal.scheduler->millis();
+        Quaternion quatEst;
+        gimbal._ekf.getQuat(quatEst);
+        Vector3f eulerEst;
+        quatEst.to_euler(eulerEst.x, eulerEst.y, eulerEst.z);
 
-    struct log_Gimbal2 pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
-        time_ms : tstamp,
-        est_sta : (uint8_t) gimbal._ekf.getStatus(),
-        est_x   : eulerEst.x,
-        est_y   : eulerEst.y,
-        est_z   : eulerEst.z,
-        rate_x  : gimbal.gimbalRateDemVec.x,
-        rate_y  : gimbal.gimbalRateDemVec.y,
-        rate_z  : gimbal.gimbalRateDemVec.z,
-        target_x: gimbal._angle_ef_target_rad.x,
-        target_y: gimbal._angle_ef_target_rad.y,
-        target_z: gimbal._angle_ef_target_rad.z
-       };
-    _frontend._dataflash->WriteBlock(&pkt2, sizeof(pkt2));
+        struct log_Gimbal1 pkt1 = {
+            LOG_PACKET_HEADER_INIT(LOG_GIMBAL1_MSG),
+            time_ms : tstamp,
+            delta_time      : _log_dt,
+            delta_angles_x  : _log_del_ang.x,
+            delta_angles_y  : _log_del_ang.y,
+            delta_angles_z  : _log_del_ang.z,
+            delta_velocity_x : _log_del_vel.x,
+            delta_velocity_y : _log_del_vel.y,
+            delta_velocity_z : _log_del_vel.z,
+            joint_angles_x  : gimbal._measurement.joint_angles.x,
+            joint_angles_y  : gimbal._measurement.joint_angles.y,
+            joint_angles_z  : gimbal._measurement.joint_angles.z
+        };
+        _frontend._dataflash->WriteBlock(&pkt1, sizeof(pkt1));
+
+        struct log_Gimbal2 pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_GIMBAL2_MSG),
+            time_ms : tstamp,
+            est_sta : (uint8_t) gimbal._ekf.getStatus(),
+            est_x   : eulerEst.x,
+            est_y   : eulerEst.y,
+            est_z   : eulerEst.z,
+            rate_x  : gimbal.gimbalRateDemVec.x,
+            rate_y  : gimbal.gimbalRateDemVec.y,
+            rate_z  : gimbal.gimbalRateDemVec.z,
+            target_x: gimbal._angle_ef_target_rad.x,
+            target_y: gimbal._angle_ef_target_rad.y,
+            target_z: gimbal._angle_ef_target_rad.z
+        };
+        _frontend._dataflash->WriteBlock(&pkt2, sizeof(pkt2));
+
+        _log_dt = 0;
+        _log_del_ang.zero();
+        _log_del_vel.zero();
+    }
 }
 
 void AP_Mount_MAVLink::update_fast()

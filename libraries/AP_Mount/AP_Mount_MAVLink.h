@@ -57,6 +57,10 @@ private:
     // Write a gimbal measurament and estimation data packet
     void Log_Write_Gimbal(AP_Gimbal &gimbal);
 
+    float _log_dt;
+    Vector3f _log_del_ang;
+    Vector3f _log_del_vel;
+
     bool _params_saved;
 
     AP_Gimbal _gimbal;
