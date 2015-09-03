@@ -47,11 +47,8 @@ private:
 class DFMessageWriter_WriteEntireMission : public DFMessageWriter {
 public:
     DFMessageWriter_WriteEntireMission(DataFlash_Class &DataFlash) :
-        DFMessageWriter(DataFlash),
-        _mission_number_to_send(0),
-        stage(em_blockwriter_stage_init),
-        _mission(NULL)
-        { }
+        DFMessageWriter(DataFlash)
+        {}
     void reset();
     void process();
 
@@ -65,9 +62,9 @@ private:
         em_blockwriter_stage_done
     };
 
-    const AP_Mission *_mission;
-    uint16_t _mission_number_to_send;
-    entire_mission_blockwriter_stage stage;
+    const AP_Mission *_mission = nullptr;
+    uint16_t _mission_number_to_send = 0;
+    entire_mission_blockwriter_stage stage = em_blockwriter_stage_init;
 };
 
 class DFMessageWriter_DFLogStart : public DFMessageWriter {
