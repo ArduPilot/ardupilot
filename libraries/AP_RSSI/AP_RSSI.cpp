@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     
     // @Param: RSSI_SBUS_LOW
     // @DisplayName: Receiver SBUS Link Quality low value
-    // @Description: The lowest value expected from the SBUS Link Quality metric. This is normally 0.0, which would happen when there is no signal.
+    // @Description: The lowest value expected from the SBUS Link Quality metric. This is normally 0, which would happen when there is no signal.
     // @Units: Percent
     // @Increment: 1
     // @Range: 0 100
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     
     // @Param: RSSI_SBUS_HIGH
     // @DisplayName: Receiver SBUS Link Quality high value
-    // @Description: The lowest value expected from the SBUS Link Quality metric. This can be as high as 1.0, but may be lower depending on your particular hardware, since a certain level of frames dropped may be normal even at short distances.
+    // @Description: The lowest value expected from the SBUS Link Quality metric. This can be as high as 100, but may be lower depending on your particular hardware, since a certain level of frames dropped may be normal even at short distances.
     // @Units: Percent
     // @Increment: 1
     // @Range: 0 100
