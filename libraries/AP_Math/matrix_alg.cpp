@@ -16,7 +16,14 @@ float detnxn(const float C[],const uint8_t n)
 {
   float f;
   float *A = new float[n*n];
+  if( A == NULL) {
+      return 0;
+  }
   int8_t *ipiv = new int8_t[n];
+  if(ipiv == NULL) {
+      delete[] A;
+      return 0;
+  }
   int32_t i0;
   int32_t j;
   int32_t c;
@@ -28,6 +35,7 @@ float detnxn(const float C[],const uint8_t n)
   int32_t b_j;
   int32_t ijA;
   bool isodd;
+
   memcpy(&A[0], &C[0], n*n * sizeof(float));
   for (i0 = 0; i0 < n; i0++) {
     ipiv[i0] = (int8_t)(1 + i0);
@@ -119,8 +127,15 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
     }
 
     float *A = new float[n*n];
+    if( A == NULL ){
+        return false;
+    }
     int32_t i0;
     int32_t *ipiv = new int32_t[n];
+    if(ipiv == NULL) {
+        delete[] A;
+        return false;
+    }
     int32_t j;
     int32_t c;
     int32_t pipk;
@@ -131,6 +146,12 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
     int32_t jy;
     int32_t ijA;
     int32_t *p = new int32_t[n];
+    if(p == NULL) {
+        delete[] A;
+        delete[] ipiv;
+        return false;
+    }
+    
     for (i0 = 0; i0 < n*n; i0++) {
         A[i0] = x[i0];
         y[i0] = 0.0f;
