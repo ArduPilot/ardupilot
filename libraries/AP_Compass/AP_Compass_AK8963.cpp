@@ -240,7 +240,7 @@ void AP_Compass_AK8963::_update()
     struct AP_AK8963_SerialBus::raw_value rv;
     float mag_x, mag_y, mag_z;
     // get raw_field - sensor frame, uncorrected
-    Vector3f raw_field = Vector3f(mag_x, mag_y, mag_z);
+    Vector3f raw_field;
     uint32_t time_us = hal.scheduler->micros();
 
 
@@ -268,6 +268,8 @@ void AP_Compass_AK8963::_update()
         goto fail;
     }
 
+    raw_field = Vector3f(mag_x, mag_y, mag_z);
+    
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
