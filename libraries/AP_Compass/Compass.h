@@ -3,6 +3,8 @@
 #define Compass_h
 
 #include <inttypes.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "CompassCalibrator.h"
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -43,6 +45,10 @@
 #define COMPASS_MAX_INSTANCES 1
 #define COMPASS_MAX_BACKEND   1   
 #endif
+
+//MAXIMUM COMPASS REPORTS
+#define MAX_CAL_REPORTS 10
+#define CONTINUOUS_REPORTS 0
 
 class Compass
 {
@@ -88,6 +94,8 @@ public:
     /// @param  offsets             Offsets to the raw mag_ values.
     ///
     void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
+    void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
+    void set_and_save_offdiagonals(uint8_t i, const Vector3f &diagonals);
 
     /// Saves the current offset x/y/z values for one or all compasses
     ///
@@ -106,9 +114,56 @@ public:
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
+    // raw/unfiltered measurement interface
+    uint32_t raw_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
+    uint32_t raw_meas_time_us() const { return _state[get_primary()].raw_meas_time_us; }
+    uint32_t unfiltered_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
+    uint32_t unfiltered_meas_time_us() const { return _state[get_primary()].raw_meas_time_us; }
+
+    bool has_raw_field(uint8_t i) const { return _state[i].has_raw_field; }
+    bool has_raw_field() const { return has_raw_field(get_primary()); }
+
+    bool has_unfiltered_field(uint8_t i) const { return _state[i].has_unfiltered_field; }
+    bool has_unfiltered_field() const { return has_unfiltered_field(get_primary()); }
+
+    const Vector3f &get_raw_field(uint8_t i) const { return _state[i].raw_field; }
+    const Vector3f &get_raw_field(void) const { return get_unfiltered_field(get_primary()); }
+
+    const Vector3f &get_unfiltered_field(uint8_t i) const { return _state[i].unfiltered_field; }
+    const Vector3f &get_unfiltered_field(void) const { return get_unfiltered_field(get_primary()); }
+
+    // compass calibrator interface
+    void compass_cal_update();
+
+    bool start_calibration(uint8_t i, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+    bool start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
+
+    void cancel_calibration(uint8_t i);
+    void cancel_calibration_all();
+    void cancel_calibration_mask(uint8_t mask);
+
+    bool accept_calibration(uint8_t i);
+    bool accept_calibration_all();
+    bool accept_calibration_mask(uint8_t mask);
+
+    bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
+    bool auto_reboot() { return _compass_cal_autoreboot; }
+    uint8_t get_cal_mask() const;
+    bool is_calibrating() const;
+
+    /*
+      handle an incoming MAG_CAL command
+    */
+    uint8_t handle_mag_cal_command(const mavlink_command_long_t &packet);
+
+    void send_mag_cal_progress(mavlink_channel_t chan);
+    void send_mag_cal_report(mavlink_channel_t chan);
+
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
     bool healthy(void) const { return healthy(get_primary()); }
+    uint8_t get_healthy_mask() const;
 
     /// Returns the current offset values
     ///
@@ -255,6 +310,14 @@ private:
     void _add_backend(AP_Compass_Backend *backend);
     void _detect_backends(void);
 
+    //keep track of number of calibration reports sent
+    uint8_t _reports_sent[COMPASS_MAX_INSTANCES];
+    
+    //autoreboot after compass calibration
+    bool _compass_cal_autoreboot;
+    bool _cal_complete_requires_reboot;
+    bool _cal_has_run;
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -295,6 +358,8 @@ private:
         bool        healthy;
         AP_Int8     orientation;
         AP_Vector3f offset;
+        AP_Vector3f diagonals;
+        AP_Vector3f offdiagonals;
 
 #if COMPASS_MAX_INSTANCES > 1
         // device id detected at init.  
@@ -319,7 +384,17 @@ private:
         // when we last got data
         uint32_t    last_update_ms;
         uint32_t    last_update_usec;
+
+        uint32_t    raw_meas_time_us;
+        bool        has_raw_field;
+        bool        has_unfiltered_field;
+        bool        updated_raw_field;
+        bool        updated_unfiltered_field;
+        Vector3f    raw_field;
+        Vector3f    unfiltered_field;
     } _state[COMPASS_MAX_INSTANCES];
+
+    CompassCalibrator _calibrator[COMPASS_MAX_INSTANCES];
 
     // if we want HIL only
     bool _hil_mode:1;

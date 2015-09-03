@@ -172,6 +172,9 @@ float   constrain_float(float amt, float low, float high);
 int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
 int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
 
+//matrix algebra
+bool inverse(float x[], float y[], uint16_t dim);
+
 // degrees -> radians
 float radians(float deg);
 

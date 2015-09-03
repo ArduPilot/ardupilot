@@ -69,7 +69,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (motors.armed()) {
+    if (copter.motors.armed()) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -739,6 +739,14 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_RETRY_DEFERRED:
         break; // just here to prevent a warning
+
+    case MSG_MAG_CAL_PROGRESS:
+        copter.compass.send_mag_cal_progress(chan);
+        break;
+
+    case MSG_MAG_CAL_REPORT:
+        copter.compass.send_mag_cal_report(chan);
+        break;
     }
 
     return true;
@@ -960,6 +968,8 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
+        send_message(MSG_MAG_CAL_REPORT);
+        send_message(MSG_MAG_CAL_PROGRESS);
         send_message(MSG_EKF_STATUS_REPORT);
         send_message(MSG_VIBRATION);
         send_message(MSG_RPM);
@@ -1455,6 +1465,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+
+        case MAV_CMD_DO_START_MAG_CAL:
+        case MAV_CMD_DO_ACCEPT_MAG_CAL:
+        case MAV_CMD_DO_CANCEL_MAG_CAL:
+            result = copter.compass.handle_mag_cal_command(packet);
+
+            break;
 
         default:
             result = MAV_RESULT_UNSUPPORTED;

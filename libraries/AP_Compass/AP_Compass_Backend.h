@@ -44,8 +44,25 @@ public:
     virtual void accumulate(void) {};
 
 protected:
-    // publish a magnetic field vector to the frontend
-    void publish_field(const Vector3f &mag, uint8_t instance);
+
+    /*
+     * A compass measurement is expected to pass through the following functions:
+     * 1. rotate_field - this rotates the measurement in-place from sensor frame
+     *      to body frame
+     * 2. publish_raw_field - this provides an uncorrected point-sample for
+     *      calibration libraries
+     * 3. correct_field - this corrects the measurement in-place for hard iron,
+     *      soft iron, motor interference, and non-orthagonality errors
+     * 4. publish_unfiltered_field - this (optionally) provides a corrected
+     *      point sample for fusion into the EKF
+     * 5. publish_filtered_field - legacy filtered magnetic field
+     */
+
+    void rotate_field(Vector3f &mag, uint8_t instance);
+    void publish_raw_field(const Vector3f &mag, uint32_t time_us, uint8_t instance);
+    void correct_field(Vector3f &mag, uint8_t i);
+    void publish_unfiltered_field(const Vector3f &mag, uint32_t time_us, uint8_t instance);
+    void publish_filtered_field(const Vector3f &mag, uint8_t instance);
 
     // register a new compass instance with the frontend
     uint8_t register_compass(void) const;

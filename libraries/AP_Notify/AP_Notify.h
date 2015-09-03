@@ -53,6 +53,7 @@ public:
         uint32_t parachute_release  : 1;    // 1 if parachute is being released
         uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
         uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
+        uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
@@ -72,6 +73,10 @@ public:
         uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
         uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
         uint16_t firmware_update        : 1;    // 1 just before vehicle firmware is updated
+        uint16_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
+        uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
+        uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
     };
 
     // the notify flags are static to allow direct class access

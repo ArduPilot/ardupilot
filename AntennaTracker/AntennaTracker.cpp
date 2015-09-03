@@ -49,6 +49,7 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(check_usb_mux,           5,    300),
     SCHED_TASK(gcs_retry_deferred,      1,   1000),
     SCHED_TASK(one_second_loop,        50,   3900),
+    SCHED_TASK(compass_cal_update,      1,    100),
 };
 
 /**

@@ -211,8 +211,7 @@ void AP_Compass_AK8963::read()
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     field.rotate(ROTATION_YAW_90);
 #endif
-
-    publish_field(field, _compass_instance);
+    publish_filtered_field(field, _compass_instance);
 }
 
 Vector3f AP_Compass_AK8963::_get_filtered_field() const
@@ -240,6 +239,10 @@ void AP_Compass_AK8963::_update()
 {
     struct AP_AK8963_SerialBus::raw_value rv;
     float mag_x, mag_y, mag_z;
+    // get raw_field - sensor frame, uncorrected
+    Vector3f raw_field = Vector3f(mag_x, mag_y, mag_z);
+    uint32_t time_us = hal.scheduler->micros();
+
 
     if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
         goto end;
@@ -265,9 +268,21 @@ void AP_Compass_AK8963::_update()
         goto fail;
     }
 
-    _mag_x_accum += mag_x;
-    _mag_y_accum += mag_y;
-    _mag_z_accum += mag_z;
+    // rotate raw_field from sensor frame to body frame
+    rotate_field(raw_field, _compass_instance);
+
+    // publish raw_field (uncorrected point sample) for calibration use
+    publish_raw_field(raw_field, time_us, _compass_instance);
+
+    // correct raw_field for known errors
+    correct_field(raw_field, _compass_instance);
+
+    // publish raw_field (corrected point sample) for EKF use
+    publish_unfiltered_field(raw_field, time_us, _compass_instance);
+
+    _mag_x_accum += raw_field.x;
+    _mag_y_accum += raw_field.y;
+    _mag_z_accum += raw_field.z;
     _accum_count++;
     if (_accum_count == 10) {
         _mag_x_accum /= 2;

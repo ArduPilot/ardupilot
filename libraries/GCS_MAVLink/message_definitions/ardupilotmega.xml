@@ -62,7 +62,7 @@
                 <param index="2">Automatically retry on failure (0=no retry, 1=retry).</param>
                 <param index="3">Save without user input (0=require input, 1=autosave).</param>
                 <param index="4">Delay (seconds)</param>
-                <param index="5">Empty</param>
+                <param index="5">Autoreboot (0=user reboot, 1=autoreboot)</param>
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
             </entry>
@@ -313,6 +313,14 @@
         <entry name="EKF_PRED_POS_HORIZ_ABS" value="512"> <description>set if EKF's predicted horizontal position (absolute) estimate is good</description></entry>
 	</enum>
 
+        <enum name="PID_TUNING_AXIS">
+          <entry name="PID_TUNING_ROLL"  value="1"></entry>
+          <entry name="PID_TUNING_PITCH" value="2"></entry>
+          <entry name="PID_TUNING_YAW"   value="3"></entry>
+          <entry name="PID_TUNING_ACCZ"  value="4"></entry>
+          <entry name="PID_TUNING_STEER" value="5"></entry>
+        </enum>
+
     <enum name="MAG_CAL_STATUS">
         <entry name="MAG_CAL_NOT_STARTED" value="0"></entry>
         <entry name="MAG_CAL_WAITING_TO_START" value="1"></entry>
@@ -321,14 +329,6 @@
         <entry name="MAG_CAL_SUCCESS" value="4"></entry>
         <entry name="MAG_CAL_FAILED" value="5"></entry>
     </enum>
-
-        <enum name="PID_TUNING_AXIS">
-          <entry name="PID_TUNING_ROLL"  value="1"></entry>
-          <entry name="PID_TUNING_PITCH" value="2"></entry>
-          <entry name="PID_TUNING_YAW"   value="3"></entry>
-          <entry name="PID_TUNING_ACCZ"  value="4"></entry>
-          <entry name="PID_TUNING_STEER" value="5"></entry>
-        </enum>
 
       </enums>
 
@@ -660,7 +660,7 @@
     <message name="CAMERA_FEEDBACK" id="180">
         <description>Camera Capture Feedback</description>
         <field name="time_usec" type="uint64_t">Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)</field>
-        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->  
+        <field name="target_system" type="uint8_t" >System ID</field>   <!-- support multiple concurrent vehicles -->
         <field name="cam_idx"   type="uint8_t" >Camera ID</field>       <!-- component ID, to support multiple cameras -->
         <field name="img_idx"   type="uint16_t">Image index</field>     <!-- per camera image index, should be unique+sequential within a mission, preferably non-wrapping -->
         <field name="lat"       type="int32_t" >Latitude in (deg * 1E7)</field>
@@ -740,7 +740,7 @@
         <field type="float" name="offdiag_y">Y off-diagonal (matrix 13 and 31)</field>
         <field type="float" name="offdiag_z">Z off-diagonal (matrix 32 and 23)</field>
     </message>
-    
+
     <!-- EKF status message from autopilot to GCS.   -->
     <message name="EKF_STATUS_REPORT" id="193">
         <description>EKF Status message including flags and variances</description>
