@@ -88,7 +88,8 @@ public:
         GPS_TYPE_SIRF  = 6,
         GPS_TYPE_HIL   = 7,
         GPS_TYPE_SBP   = 8,
-        GPS_TYPE_PX4   = 9
+        GPS_TYPE_PX4   = 9,
+        GPS_TYPE_SBF   = 10,
     };
 
     /// GPS status codes
@@ -398,6 +399,7 @@ private:
         struct NMEA_detect_state nmea_detect_state;
 #if GPS_RTK_AVAILABLE
         struct SBP_detect_state sbp_detect_state;
+        struct SBF_detect_state sbf_detect_state;
 #endif
     } detect_state[GPS_MAX_INSTANCES];
 
@@ -424,5 +426,6 @@ private:
 #include "AP_GPS_SIRF.h"
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_PX4.h"
+#include "AP_GPS_SBF.h"
 
 #endif // __AP_GPS_H__

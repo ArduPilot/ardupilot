@@ -592,6 +592,23 @@ struct PACKED log_GPS_RAWS {
     uint8_t trkStat;
 };
 
+struct PACKED log_GPS_SBF_EVENT {  
+	LOG_PACKET_HEADER; 
+	uint64_t time_us;
+	uint32_t TOW;
+	uint16_t WNc;
+	uint8_t Mode;
+	uint8_t Error;
+	double Latitude;
+	double Longitude;
+	double Height;
+	float Undulation;
+	float Vn;
+	float Ve;
+	float Vu;
+	float COG;
+};
+
 struct PACKED log_Esc {
     LOG_PACKET_HEADER;
     uint64_t time_us;     
@@ -737,6 +754,8 @@ Format characters in the format string for binary log messages
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat" }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk" }, \
+    { LOG_GPS_SBF_EVENT_MSG, sizeof(log_GPS_SBF_EVENT), \
+      "SBFE", "QIHBBdddfffff", "TimeUS,TOW,WN,Mode,Err,Lat,Long,Height,Undul,Vn,Ve,Vu,COG" }, \
     { LOG_ESC1_MSG, sizeof(log_Esc), \
       "ESC1",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC2_MSG, sizeof(log_Esc), \
@@ -852,6 +871,7 @@ enum LogMessages {
     LOG_GPS_RAW_MSG,
     LOG_GPS_RAWH_MSG,
     LOG_GPS_RAWS_MSG,
+	LOG_GPS_SBF_EVENT_MSG,
     LOG_ACC1_MSG,
     LOG_ACC2_MSG,
     LOG_ACC3_MSG,
