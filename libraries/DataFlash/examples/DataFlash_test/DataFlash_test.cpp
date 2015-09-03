@@ -66,7 +66,7 @@ public:
 
 private:
 
-    DataFlash_Class dataflash;
+    DataFlash_Class dataflash{PSTR("DF Test 0.1")};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
