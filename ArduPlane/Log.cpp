@@ -442,6 +442,7 @@ void Plane::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
     DataFlash.Log_Write_RCOUT();
+    DataFlash.Log_Write_RSSI(rssi);
 }
 
 void Plane::Log_Write_Baro(void)
