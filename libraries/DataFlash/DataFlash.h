@@ -11,6 +11,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_RSSI/AP_RSSI.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -94,6 +95,7 @@ public:
     void Log_Write_Vibration(const AP_InertialSensor &ins);
     void Log_Write_RCIN(void);
     void Log_Write_RCOUT(void);
+    void Log_Write_RSSI(AP_RSSI &rssi);
     void Log_Write_Baro(AP_Baro &baro);
     void Log_Write_Power(void);
     void Log_Write_AHRS2(AP_AHRS &ahrs);
@@ -301,6 +303,12 @@ struct PACKED log_RCOUT {
     uint16_t chan10;
     uint16_t chan11;
     uint16_t chan12;
+};
+
+struct PACKED log_RSSI {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float RXRSSI;
 };
 
 struct PACKED log_BARO {
@@ -730,6 +738,8 @@ Format characters in the format string for binary log messages
       "RCIN",  "Qhhhhhhhhhhhhhh",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "Qhhhhhhhhhhhh",     "TimeUS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
+    { LOG_RSSI_MSG, sizeof(log_RSSI), \
+      "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
@@ -868,6 +878,7 @@ enum LogMessages {
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
     LOG_RCOUT_MSG,
+    LOG_RSSI_MSG,
     LOG_IMU2_MSG,
     LOG_BARO_MSG,
     LOG_POWR_MSG,
