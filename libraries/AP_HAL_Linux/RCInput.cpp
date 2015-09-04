@@ -337,4 +337,19 @@ void LinuxRCInput::_process_rc_pulse(uint16_t width_s0, uint16_t width_s1)
     _process_dsm_pulse(width_s0, width_s1);
 }
 
+/*
+ * Update channel values directly
+ */
+void LinuxRCInput::_update_periods(uint16_t *periods, uint8_t len)
+{
+    if (len > LINUX_RC_INPUT_NUM_CHANNELS) {
+        len = LINUX_RC_INPUT_NUM_CHANNELS;
+    }
+    for (unsigned int i=0; i < len; i++) {
+        _pwm_values[i] = periods[i];
+    }
+    _num_channels = len;
+    new_rc_input = true;
+}
+
 #endif // CONFIG_HAL_BOARD
