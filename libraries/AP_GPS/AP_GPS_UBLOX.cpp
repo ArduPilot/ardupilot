@@ -529,15 +529,17 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.alt    = _buffer.posllh.altitude_msl / 10;
         state.status          = next_fix;
         _new_position = true;
-#if UBLOX_FAKE_3DLOCK
-        state.location.lng = 1491652300L;
-        state.location.lat = -353632610L;
-        state.location.alt = 58400;
-#endif
         state.horizontal_accuracy = _buffer.posllh.horizontal_accuracy*1.0e-3f;
         state.vertical_accuracy = _buffer.posllh.vertical_accuracy*1.0e-3f;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
+#if UBLOX_FAKE_3DLOCK
+        state.location.lng = 1491652300L;
+        state.location.lat = -353632610L;
+        state.location.alt = 58400;
+        state.vertical_accuracy = 0;
+        state.horizontal_accuracy = 0;
+#endif
         break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
@@ -616,6 +618,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.time_week = 1721;
         state.time_week_ms = hal.scheduler->millis() + 3*60*60*1000 + 37000;
         state.last_gps_time_ms = hal.scheduler->millis();
+        state.hdop = 130;
 #endif
         break;
     case MSG_VELNED:
@@ -629,6 +632,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.velocity.z = _buffer.velned.ned_down * 0.01f;
         state.have_speed_accuracy = true;
         state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
+#if UBLOX_FAKE_3DLOCK
+        state.speed_accuracy = 0;
+#endif
         _new_speed = true;
         break;
 #if UBLOX_VERSION_AUTODETECTION
