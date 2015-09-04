@@ -374,6 +374,9 @@ void Copter::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_RCIN)) {
         DataFlash.Log_Write_RCIN();
+        if (rssi.enabled()) {
+            DataFlash.Log_Write_RSSI(rssi);
+        }
     }
     if (should_log(MASK_LOG_RCOUT)) {
         DataFlash.Log_Write_RCOUT();
