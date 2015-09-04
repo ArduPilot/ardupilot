@@ -96,7 +96,7 @@ private:
     void write_log_headers(void);
     void write_log(float servo, float demanded, float achieved);
 
-    void log_param_change(float v, const prog_char_t *suffix);
+    void log_param_change(const prog_char_t *suffix);
     void save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix);
     void save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix);        
 };
