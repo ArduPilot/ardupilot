@@ -129,7 +129,7 @@ public:
     bool has_unfiltered_field() const { return has_unfiltered_field(get_primary()); }
 
     const Vector3f &get_raw_field(uint8_t i) const { return _state[i].raw_field; }
-    const Vector3f &get_raw_field(void) const { return get_unfiltered_field(get_primary()); }
+    const Vector3f &get_raw_field(void) const { return get_raw_field(get_primary()); }
 
     const Vector3f &get_unfiltered_field(uint8_t i) const { return _state[i].unfiltered_field; }
     const Vector3f &get_unfiltered_field(void) const { return get_unfiltered_field(get_primary()); }
