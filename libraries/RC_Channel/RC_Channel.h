@@ -78,9 +78,6 @@ public:
     // call after first set_pwm
     void        trim();
 
-    // did our read come in 50µs below the min?
-    bool        get_failsafe(void);
-
     // value generated from PWM
     int16_t         control_in;
 

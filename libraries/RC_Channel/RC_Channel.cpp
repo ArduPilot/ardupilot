@@ -197,13 +197,6 @@ RC_Channel::control_mix(float value)
     return (1 - abs(control_in / _high)) * value + control_in;
 }
 
-// are we below a threshold?
-bool
-RC_Channel::get_failsafe(void)
-{
-    return (radio_in < (radio_min - 50));
-}
-
 // returns just the PWM without the offset from radio_min
 void
 RC_Channel::calc_pwm(void)
