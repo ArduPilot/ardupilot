@@ -17,6 +17,7 @@
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
 #include "RCInput_Navio.h"
+#include "RCInput_UDP.h"
 #include "RCOutput_PRU.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_PCA9685.h"

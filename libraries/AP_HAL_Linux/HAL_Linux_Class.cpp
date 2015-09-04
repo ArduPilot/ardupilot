@@ -79,6 +79,8 @@ static LinuxRCInput_AioPRU rcinDriver;
 static LinuxRCInput_Navio rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static LinuxRCInput_ZYNQ rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxRCInput_UDP  rcinDriver;
 #else
 static LinuxRCInput rcinDriver;
 #endif
