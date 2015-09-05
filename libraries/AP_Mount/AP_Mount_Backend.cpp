@@ -32,17 +32,7 @@ void AP_Mount_Backend::configure_msg(mavlink_message_t* msg)
     __mavlink_mount_configure_t packet;
     mavlink_msg_mount_configure_decode(msg, &packet);
 
-    configure((MAV_MOUNT_MODE)packet.mount_mode, packet.stab_roll, packet.stab_pitch, packet.stab_yaw);
-}
-
-void AP_Mount_Backend::configure(MAV_MOUNT_MODE mount_mode, uint8_t stab_roll, uint8_t stab_tilt, uint8_t stab_pan)
-{
-    // set mode
-    _frontend.set_mode(_instance, mount_mode);
-    // set which axis are stabilized
-    _state._stab_roll = stab_roll;
-    _state._stab_tilt = stab_tilt;
-    _state._stab_pan = stab_pan;
+    set_mode((MAV_MOUNT_MODE)packet.mount_mode);
 }
 
 // control_msg - process MOUNT_CONTROL messages received from GCS. deprecated.
@@ -51,14 +41,12 @@ void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
     __mavlink_mount_control_t packet;
     mavlink_msg_mount_control_decode(msg, &packet);
 
-    control((int32_t) packet.input_a, (int32_t) packet.input_b, (int32_t) packet.input_c, 0);
+    control((int32_t)packet.input_a, (int32_t)packet.input_b, (int32_t)packet.input_c, _state._mode);
 }
 
-void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, uint8_t mount_mode)
+void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode)
 {
-    if(mount_mode > 0) {
-        _frontend.set_mode(_instance, (MAV_MOUNT_MODE) mount_mode);
-    }
+    _frontend.set_mode(_instance, mount_mode);
 
     // interpret message fields based on mode
     switch (_frontend.get_mode(_instance)) {
