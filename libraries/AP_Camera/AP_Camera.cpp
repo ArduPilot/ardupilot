@@ -49,6 +49,13 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
+    // @Param: RELAY_ON
+    // @DisplayName: Relay ON value
+    // @Description: This sets whether the relay goes high or low when it triggers. Note that you should also set RELAY_DEFAULT appropriately for your camera
+    // @Values: 0:Low,1:High
+    // @User: Standard
+    AP_GROUPINFO("RELAY_ON",    5, AP_Camera, _relay_on, 1),
+    
     AP_GROUPEND
 };
 
@@ -67,7 +74,11 @@ AP_Camera::servo_pic()
 void
 AP_Camera::relay_pic()
 {
-    _apm_relay->on(0);
+    if (_relay_on) {
+        _apm_relay->on(0);
+    } else {
+        _apm_relay->off(0);
+    }
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -117,7 +128,11 @@ AP_Camera::trigger_pic_cleanup()
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                _apm_relay->off(0);
+                if (_relay_on) {
+                    _apm_relay->off(0);
+                } else {
+                    _apm_relay->on(0);
+                }
                 break;
         }
     }
