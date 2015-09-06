@@ -6,14 +6,15 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_HAL_SITL.h"
 
-class HALSITL::SITLRCOutput : public AP_HAL::RCOutput {
+class HALSITL::SITLRCOutput : public AP_HAL::RCOutput_Backend {
 public:
     SITLRCOutput(SITL_State *sitlState) {
         _sitlState = sitlState;
         _freq_hz = 50;
     }
-    void     init(void* machtnichts);
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
+    bool     init();
+    uint8_t  get_num_channels();
+    void     set_freq(uint64_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
