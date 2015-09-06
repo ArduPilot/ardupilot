@@ -3,7 +3,7 @@
 # This script allows you to select which sensors you can use. For now it's resctricted to IMU use
 #		Coded by Víctor Mayoral Vilches <victor@erlerobot.com>
 
-IMU_CONFIG=$(grep -A 5 "#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE" ../../libraries/AP_HAL/AP_HAL_Boards.h| grep HAL_INS_DEFAULT)
+IMU_CONFIG=$(grep -A 5 "#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD" ../../libraries/AP_HAL/AP_HAL_Boards.h| grep HAL_INS_DEFAULT)
 echo "Current setup is: "$IMU_CONFIG
 
 if [ $# -eq 0 ]
