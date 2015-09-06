@@ -57,6 +57,14 @@ void Plane::init_rc_out()
 {
     channel_roll->enable_out();
     channel_pitch->enable_out();
+
+    /*
+      change throttle trim to minimum throttle. This prevents a
+      configuration error where the user sets CH3_TRIM incorrectly and
+      the motor may start on power up
+     */
+    channel_throttle->radio_trim = channel_throttle->get_reverse() ? channel_throttle->radio_max : channel_throttle->radio_min;
+    
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
     }
