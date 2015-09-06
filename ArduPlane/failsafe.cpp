@@ -50,7 +50,7 @@ void Plane::failsafe_check(void)
         }
 #endif
 
-        if (hal.rcin->num_channels() == 0) {
+        if (hal.rcin->num_channels() < 5) {
             // we don't have any RC input to pass through
             return;
         }
