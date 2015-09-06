@@ -4,9 +4,10 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::LinuxRCOutput_Raspilot : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
+class Linux::LinuxRCOutput_Raspilot : public AP_HAL::RCOutput_Backend {
+    bool     init();
+    uint8_t  get_num_channels();
+    void     set_freq(uint64_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);

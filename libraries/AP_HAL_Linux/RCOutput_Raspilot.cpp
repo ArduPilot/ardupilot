@@ -22,7 +22,7 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-void LinuxRCOutput_Raspilot::init(void* machtnicht)
+bool LinuxRCOutput_Raspilot::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
     _spi_sem = _spi->get_semaphore();
@@ -30,13 +30,20 @@ void LinuxRCOutput_Raspilot::init(void* machtnicht)
     if (_spi_sem == NULL) {
         hal.scheduler->panic(PSTR("PANIC: RCOutput_Raspilot did not get "
                                   "valid SPI semaphore!"));
-        return; // never reached
+        return false; // never reached
     }
     
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&LinuxRCOutput_Raspilot::_update, void));
+
+    return true;
 }
 
-void LinuxRCOutput_Raspilot::set_freq(uint32_t chmask, uint16_t freq_hz)
+uint8_t LinuxRCOutput_Raspilot::get_num_channels()
+{
+    return PWM_CHAN_COUNT;
+}
+
+void LinuxRCOutput_Raspilot::set_freq(uint64_t chmask, uint16_t freq_hz)
 {    
     if (!_spi_sem->take(10)) {
         return;
@@ -88,12 +95,6 @@ uint16_t LinuxRCOutput_Raspilot::read(uint8_t ch)
     }
     
     return _period_us[ch];
-}
-
-void LinuxRCOutput_Raspilot::read(uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++) 
-        period_us[i] = read(0 + i);
 }
 
 void LinuxRCOutput_Raspilot::_update(void)

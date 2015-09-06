@@ -29,7 +29,8 @@ static void catch_sigbus(int sig)
 {
     hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void LinuxRCOutput_PRU::init(void* machtnicht)
+
+bool LinuxRCOutput_PRU::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
@@ -41,9 +42,16 @@ void LinuxRCOutput_PRU::init(void* machtnicht)
     // all outputs default to 50Hz, the top level vehicle code
     // overrides this when necessary
     set_freq(0xFFFFFFFF, 50);
+
+    return true;
 }
 
-void LinuxRCOutput_PRU::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
+uint8_t LinuxRCOutput_PRU::get_num_channels()
+{
+    return MAX_PWMS;
+}
+
+void LinuxRCOutput_PRU::set_freq(uint64_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
@@ -78,17 +86,6 @@ void LinuxRCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 uint16_t LinuxRCOutput_PRU::read(uint8_t ch)
 {
     return (sharedMem_cmd->hilo_read[chan_pru_map[ch]][1]/TICK_PER_US);
-}
-
-void LinuxRCOutput_PRU::read(uint16_t* period_us, uint8_t len)
-{
-    uint8_t i;
-    if(len>PWM_CHAN_COUNT){
-        len = PWM_CHAN_COUNT;
-    }
-    for(i=0;i<len;i++){
-        period_us[i] = sharedMem_cmd->hilo_read[chan_pru_map[i]][1]/TICK_PER_US;
-    }
 }
 
 #endif

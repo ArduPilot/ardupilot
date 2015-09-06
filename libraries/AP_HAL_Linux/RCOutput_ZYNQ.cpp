@@ -25,7 +25,8 @@ static void catch_sigbus(int sig)
 {
     hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void LinuxRCOutput_ZYNQ::init(void* machtnicht)
+
+bool LinuxRCOutput_ZYNQ::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
@@ -37,9 +38,16 @@ void LinuxRCOutput_ZYNQ::init(void* machtnicht)
     // all outputs default to 50Hz, the top level vehicle code
     // overrides this when necessary
     set_freq(0xFFFFFFFF, 50);
+
+    return true;
 }
 
-void LinuxRCOutput_ZYNQ::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
+uint8_t LinuxRCOutput_ZYNQ::get_num_channels()
+{
+    return PWM_CHAN_COUNT;
+}
+
+void LinuxRCOutput_ZYNQ::set_freq(uint64_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
@@ -74,17 +82,6 @@ void LinuxRCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
 uint16_t LinuxRCOutput_ZYNQ::read(uint8_t ch)
 {
     return (sharedMem_cmd->periodhi[ch].hi/TICK_PER_US);
-}
-
-void LinuxRCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
-{
-    uint8_t i;
-    if(len>PWM_CHAN_COUNT){
-        len = PWM_CHAN_COUNT;
-    }
-    for(i=0;i<len;i++){
-        period_us[i] = sharedMem_cmd->periodhi[i].hi/TICK_PER_US;
-    }
 }
 
 #endif
