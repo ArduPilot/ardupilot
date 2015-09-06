@@ -1,5 +1,5 @@
-Release 3.4.0beta1, 20th August 2015
-------------------------------------
+Release 3.4.0beta2, 7th September 2015
+--------------------------------------
 
 I have started the beta release cycle for the 3.4.0 release of
 plane. This will be the last release that supports the APM1/APM2 boards.
@@ -52,6 +52,23 @@ Other key changes include:
   - improved auto-detections of flow control on pixhawk UARTs
   - Failsafe actions are not executed if already on final approach or land.
   - Option to trigger GCS failsafe only in AUTO mode.
+  - added climb/descend parameter to CONTINUE_AND_CHANGE_ALT
+  - added HDOP to uavcan GPS driver
+  - improved sending of autopilot version
+  - prevent motor startup with bad throttle trim on reboot
+  - log zero rangefinder distance when unhealthy
+  - added PRU firmware files for BeagleBoneBlack port
+  - fix for recent STORM32 gimbal support
+  - changed sending of STATUSTEXT severity to use correct values
+  - added new RSSI library with PWM input support
+  - fixed MAVLink heading report for UAVCAN GPS
+  - support LightWare I2C rangefinder on Linux
+  - improved staging of parameters and formats on startup to dataflash
+  - added new on-board compass calibrator
+  - improved RCOutput code for NavIO port
+  - added support for Septentrio GPS receiver
+  - support DO_MOUNT_CONTROl via command-long interface
+  - added CAM_RELAY_ON parameter
 
 Please test out the beta and report back on how it goes! There has
 been a lot of testing of this release already by core developers so
