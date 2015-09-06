@@ -18,7 +18,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace PX4;
 
-void PX4RCOutput::init(void* unused) 
+bool PX4RCOutput::init() 
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT0_DEVICE_PATH, O_RDWR);
@@ -38,7 +38,7 @@ void PX4RCOutput::init(void* unused)
 
     if (ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
-        return;
+        return false;
     }
 
     for (uint8_t i=0; i<ORB_MULTI_MAX_INSTANCES; i++) {
@@ -48,7 +48,7 @@ void PX4RCOutput::init(void* unused)
     _alt_fd = open("/dev/px4fmu", O_RDWR);
     if (_alt_fd == -1) {
         hal.console->printf("RCOutput: failed to open /dev/px4fmu");
-        return;
+        return false;
     }
 
     // ensure not to write zeros to disabled channels
@@ -62,8 +62,14 @@ void PX4RCOutput::init(void* unused)
 
     // and armed state
     _actuator_armed_pub = NULL;
+
+    return true;
 }
 
+uint8_t PX4RCOutput::get_num_channels()
+{
+    return PX4_NUM_OUTPUT_CHANNELS;
+}
 
 void PX4RCOutput::_init_alt_channels(void) 
 {
@@ -83,7 +89,7 @@ void PX4RCOutput::_init_alt_channels(void)
     }
 }
 
-void PX4RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+void PX4RCOutput::set_freq(uint64_t chmask, uint16_t freq_hz) 
 {
     // we can't set this per channel yet
     if (freq_hz > 50) {
@@ -251,13 +257,6 @@ uint16_t PX4RCOutput::read(uint8_t ch)
         }
     }
     return _period[ch];
-}
-
-void PX4RCOutput::read(uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        period_us[i] = read(i);
-    }
 }
 
 /*
