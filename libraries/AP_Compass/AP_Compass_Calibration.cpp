@@ -52,6 +52,10 @@ Compass::start_calibration(uint8_t i, bool retry, bool autosave, float delay, bo
     }
     _calibrator[i].start(retry, autosave, delay);
     _compass_cal_autoreboot = autoreboot;
+
+    // disable compass learning both for calibration and after completion
+    _learn.set_and_save(0);
+
     return true;
 }
 
