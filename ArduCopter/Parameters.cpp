@@ -593,6 +593,14 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
 #endif
 
+    // @Group: RC15_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_15,                   "RC15_", RC_Channel_aux),
+
+    // @Group: RC31_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_31,                   "RC31_", RC_Channel_aux),
+
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
     // @Description: This is the speed in Hertz that your ESCs will receive updates

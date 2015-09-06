@@ -186,6 +186,9 @@ public:
         k_param_pos_control,
         k_param_circle_nav,     // 104
 
+        k_param_rc_15,
+        k_param_rc_31,
+
         // 110: Telemetry control
         //
         k_param_gcs0 = 110,
@@ -477,6 +480,9 @@ public:
     RC_Channel_aux          rc_14;
 #endif
 
+    RC_Channel_aux          rc_15;
+    RC_Channel_aux          rc_31;
+
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
     // Acro parameters
@@ -558,6 +564,8 @@ public:
         rc_13               (CH_13),
         rc_14               (CH_14),
 #endif
+        rc_15               (CH_15),
+        rc_31               (CH_31),
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------
