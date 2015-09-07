@@ -116,6 +116,25 @@ void Rover::control_failsafe(uint16_t pwm)
 	}
 }
 
+/*
+  return true if throttle level is below throttle failsafe threshold
+  or RC input is invalid
+ */
+bool Rover::throttle_failsafe_active(void)
+{
+    if (!g.fs_throttle_enabled) {
+        return false;
+    }
+    if (millis() - failsafe.last_valid_rc_ms > 1000) {
+        // we haven't had a valid RC frame for 1 seconds
+        return true;
+    }
+    if (channel_throttle->get_reverse()) {
+        return channel_throttle->radio_in >= g.fs_throttle_value;
+    }
+    return channel_throttle->radio_in <= g.fs_throttle_value;
+}
+
 void Rover::trim_control_surfaces()
 {
 	read_radio();
