@@ -56,6 +56,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include "Parameters.h"
 #include "VehicleType.h"
 #include "MsgHandler.h"
@@ -81,7 +82,8 @@ public:
     AP_Baro barometer;
     AP_GPS gps;
     Compass compass;
-    RangeFinder rng;
+    AP_SerialManager serial_manager;
+    RangeFinder rng {serial_manager};
     NavEKF EKF{&ahrs, barometer, rng};
     AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
