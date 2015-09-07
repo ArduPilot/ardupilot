@@ -327,7 +327,7 @@ void Plane::send_location(mavlink_channel_t chan)
         fix_time_ms,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        gps.location().alt * 10UL,      // millimeters above sea level
+        current_loc.alt * 10UL,         // millimeters above sea level
         relative_altitude() * 1.0e3f,    // millimeters above ground
         vel.x * 100,  // X speed cm/s (+ve North)
         vel.y * 100,  // Y speed cm/s (+ve East)
