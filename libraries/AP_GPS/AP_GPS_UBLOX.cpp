@@ -582,8 +582,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_DOP");
         noReceivedHdop = false;
         state.hdop        = _buffer.dop.hDOP;
+        state.vdop        = _buffer.dop.vDOP;
 #if UBLOX_FAKE_3DLOCK
         state.hdop = 130;
+        state.hdop = 170;
 #endif
         break;
     case MSG_SOL:
