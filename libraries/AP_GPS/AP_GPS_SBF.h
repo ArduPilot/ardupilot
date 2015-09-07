@@ -101,7 +101,7 @@ private:
 	union PACKED msgbuffer {
         msg4007 msg4007u;
 		msg4001 msg4001u;
-        uint8_t bytes[];
+        uint8_t bytes[128];
     };
 	
     struct sbf_msg_parser_t

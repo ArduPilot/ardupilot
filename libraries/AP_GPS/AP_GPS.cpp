@@ -215,6 +215,14 @@ AP_GPS::detect_instance(uint8_t instance)
     state[instance].status = NO_GPS;
     state[instance].hdop = 9999;
 
+	#if GPS_RTK_AVAILABLE
+	// by default the sbf gps outputs no data on its port, until configured.
+	if (_type[instance] == GPS_TYPE_SBF) {
+		hal.console->print_P(PSTR(" SBF "));
+		new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
+	}
+	#endif // GPS_RTK_AVAILABLE
+	
     // record the time when we started detection. This is used to try
     // to avoid initialising a uBlox as a NMEA GPS
     if (dstate->detect_started_ms == 0) {
@@ -272,10 +280,6 @@ AP_GPS::detect_instance(uint8_t instance)
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             hal.console->print_P(PSTR(" SBP "));
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
-        }
-        else if (_type[instance] == GPS_TYPE_SBF) {
-            hal.console->print_P(PSTR(" SBF "));
-            new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
 #if !defined(GPS_SKIP_SIRF_NMEA)

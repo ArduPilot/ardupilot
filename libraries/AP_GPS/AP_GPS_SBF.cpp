@@ -46,6 +46,8 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     AP_GPS_Backend(_gps, _state, _port)
 {	
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+	
+	port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
 }
 
 // Process all bytes available from the stream
@@ -220,8 +222,8 @@ AP_GPS_SBF::process_message(void)
 
         // Update position state (dont use −2·10^10)
         if (temp.Latitude > -200000) {
-            state.location.lat = (int32_t)(temp.Latitude * 57.295779513 * 1e7);
-            state.location.lng = (int32_t)(temp.Longitude * 57.295779513 * 1e7);
+            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * 1e7);
+            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * 1e7);
             state.location.alt = (int32_t)((float)temp.Height * 1e2f);
         }
 
