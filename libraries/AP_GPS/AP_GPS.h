@@ -131,6 +131,7 @@ public:
         float ground_speed;                 ///< ground speed in m/sec
         int32_t ground_course_cd;           ///< ground course in 100ths of a degree
         uint16_t hdop;                      ///< horizontal dilution of precision in cm
+        uint16_t vdop;                      ///< vertical dilution of precision in cm
         uint8_t num_sats;                   ///< Number of visible satelites        
         Vector3f velocity;                  ///< 3D velocitiy in m/s, in NED format
         float speed_accuracy;
