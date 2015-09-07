@@ -191,7 +191,7 @@ private:
 
 #if RANGEFINDER_ENABLED == ENABLED
     // rangefinder
-    RangeFinder rangefinder;
+    RangeFinder rangefinder {serial_manager};
 
     struct {
         bool in_range;
