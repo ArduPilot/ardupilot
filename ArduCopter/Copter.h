@@ -178,7 +178,7 @@ private:
     AP_InertialSensor ins;
 
 #if CONFIG_SONAR == ENABLED
-    RangeFinder sonar;
+    RangeFinder sonar {serial_manager};
     bool sonar_enabled; // enable user switch for sonar
 #endif
 
