@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
@@ -35,7 +36,7 @@ class RangeFinder
 public:
     friend class AP_RangeFinder_Backend;
 
-    RangeFinder(void);
+    RangeFinder(AP_SerialManager &_serial_manager);
 
     // RangeFinder driver types
     enum RangeFinder_Type {
@@ -46,7 +47,8 @@ public:
         RangeFinder_TYPE_PX4    = 4,
         RangeFinder_TYPE_PX4_PWM= 5,
         RangeFinder_TYPE_BBB_PRU= 6,
-        RangeFinder_TYPE_LWI2C  = 7
+        RangeFinder_TYPE_LWI2C  = 7,
+        RangeFinder_TYPE_LWSER  = 8
     };
 
     enum RangeFinder_Function {
@@ -182,6 +184,7 @@ private:
     uint8_t primary_instance:2;
     uint8_t num_instances:2;
     float estimated_terrain_height;
+    AP_SerialManager &serial_manager;
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  

@@ -22,6 +22,7 @@
 #include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
+#include "AP_RangeFinder_LightWareSerial.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
@@ -205,10 +206,11 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-RangeFinder::RangeFinder(void) :
+RangeFinder::RangeFinder(AP_SerialManager &_serial_manager) :
     primary_instance(0),
     num_instances(0),
-    estimated_terrain_height(0)
+    estimated_terrain_height(0),
+    serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -332,6 +334,13 @@ void RangeFinder::detect_instance(uint8_t instance)
         }
     }
 #endif
+    if (type == RangeFinder_TYPE_LWSER) {
+        if (AP_RangeFinder_LightWareSerial::detect(*this, instance, serial_manager)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RangeFinder_LightWareSerial(*this, instance, state[instance], serial_manager);
+            return;
+        }
+    } 
     if (type == RangeFinder_TYPE_ANALOG) {
         // note that analog must be the last to be checked, as it will
         // always come back as present if the pin is valid
