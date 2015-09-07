@@ -282,6 +282,14 @@ public:
         return get_hdop(primary_instance);
     }
 
+    // vertical dilution of precision
+    uint16_t get_vdop(uint8_t instance) const {
+        return _GPS_STATE(instance).vdop;
+    }
+    uint16_t get_vdop() const {
+        return get_vdop(primary_instance);
+    }
+
     // the time we got our last fix in system milliseconds. This is
     // used when calculating how far we might have moved since that fix
     uint32_t last_fix_time_ms(uint8_t instance) const {
