@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
@@ -410,6 +411,15 @@ bool AP_AHRS_NavEKF::getMagOffsets(Vector3f &magOffsets)
 {
     bool status = EKF.getMagOffsets(magOffsets);
     return status;
+}
+
+// report any reason for why the backend is refusing to initialise
+const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
+{
+    if (_ekf_use != EKF_DO_NOT_USE) {
+        return EKF.prearm_failure_reason();
+    }
+    return nullptr;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
