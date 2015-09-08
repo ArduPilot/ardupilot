@@ -57,6 +57,7 @@ void Plane::update_is_flying_5Hz(void)
                 }
                 break;
 
+            case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
             case AP_SpdHgtControl::FLIGHT_NORMAL:
                 // TODO: detect ground impacts
                 break;
@@ -162,6 +163,7 @@ void Plane::crash_detection_update(void)
             }
             break;
 
+        case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
         case AP_SpdHgtControl::FLIGHT_NORMAL:
             if (been_auto_flying) {
                 crashed = true;

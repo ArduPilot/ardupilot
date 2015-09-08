@@ -444,7 +444,8 @@ void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         channel_throttle->control_in == 0 &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -453,7 +454,8 @@ void Plane::calc_nav_yaw_ground(void)
     }
 
     float steer_rate = (rudder_input/4500.0f) * g.ground_steer_dps;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF ||
+        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
         steer_rate = 0;
     }
     if (!is_zero(steer_rate)) {
@@ -462,7 +464,8 @@ void Plane::calc_nav_yaw_ground(void)
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        if (flight_stage != AP_SpdHgtControl::FLIGHT_TAKEOFF &&
+            flight_stage != AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
             steer_state.locked_course_err = 0;
         }
     }
@@ -846,7 +849,8 @@ void Plane::set_servos(void)
         if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
             min_throttle = 0;
         }
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
+        if (control_mode == AUTO &&
+            (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT)) {
             if(aparm.takeoff_throttle_max != 0) {
                 max_throttle = aparm.takeoff_throttle_max;
             } else {
@@ -923,6 +927,7 @@ void Plane::set_servos(void)
         if (control_mode == AUTO) {
             switch (flight_stage) {
             case AP_SpdHgtControl::FLIGHT_TAKEOFF:
+            case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
                 if (g.takeoff_flap_percent != 0) {
                     auto_flap_percent = g.takeoff_flap_percent;
                 }

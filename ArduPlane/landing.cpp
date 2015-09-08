@@ -25,6 +25,29 @@ bool Plane::verify_land()
         return true;
     }
 
+    // when aborting a landing, mimic the verify_takeoff with steering hold. Once
+    // the altitude has been reached, restart the landing sequence
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
+
+        throttle_suppressed = false;
+        auto_state.land_complete = false;
+        nav_controller->update_heading_hold(get_bearing_cd(prev_WP_loc, next_WP_loc));
+
+        // see if we have reached abort altitude
+        if (adjusted_relative_altitude_cm() > auto_state.takeoff_altitude_rel_cm) {
+            next_WP_loc = current_loc;
+            mission.stop();
+            bool success = restart_landing_sequence();
+            mission.resume();
+            if (!success) {
+                // on a restart failure lets RTL or else the plane may fly away with nowhere to go!
+                set_mode(RTL);
+            }
+            // make sure to return false so it leaves the mission index alone
+        }
+        return false;
+    }
+
     float height = height_above_target();
 
     // use rangefinder to correct if possible
@@ -95,7 +118,8 @@ bool Plane::verify_land()
       we return false as a landing mission item never completes
 
       we stay on this waypoint unless the GCS commands us to change
-      mission item or reset the mission, or a go-around is commanded
+      mission item, reset the mission, command a go-around or finish
+      a land_abort procedure.
      */
     return false;
 }
@@ -216,28 +240,34 @@ void Plane::setup_landing_glide_slope(void)
      jump there. Otherwise decrement waypoint so we would re-start
      from the top with same glide slope. Return true if successful.
  */
-void Plane::restart_landing_sequence()
+bool Plane::restart_landing_sequence()
 {
     if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
-        return;
+        return false;
     }
-
 
     uint16_t do_land_start_index = mission.get_landing_sequence_start();
     uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
+    bool success = false;
 
     if (do_land_start_index != 0 &&
         mission.set_current_cmd(do_land_start_index))
     {
         // look for a DO_LAND_START and use that index
         gcs_send_text_fmt(PSTR("Restarted landing via DO_LAND_START: %d"),do_land_start_index);
+        success =  true;
     } else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
                mission.set_current_cmd(prev_cmd_with_wp_index))
     {
         // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
         // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
         gcs_send_text_fmt(PSTR("Restarted landing sequence at waypoint %d"), prev_cmd_with_wp_index);
+        success =  true;
+    } else {
+        gcs_send_text_fmt(PSTR("Unable to restart landing sequence!"));
+        success =  false;
     }
+    return success;
 }
 
 /* 

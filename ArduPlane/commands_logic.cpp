@@ -329,7 +329,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 
     // zero locked course
     steer_state.locked_course_err = 0;
-    
+    steer_state.hold_course_cd = -1;
 }
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
@@ -341,6 +341,19 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 {
     auto_state.commanded_go_around = false;
     set_next_WP(cmd.content.location);
+
+    // configure abort altitude and pitch
+    // if NAV_LAND has an abort altitude then use it, else use last takeoff, else use 50m
+    if (cmd.p1 > 0) {
+        auto_state.takeoff_altitude_rel_cm = (int16_t)cmd.p1 * 100;
+    } else if (auto_state.takeoff_altitude_rel_cm <= 0) {
+        auto_state.takeoff_altitude_rel_cm = 3000;
+    }
+
+    if (auto_state.takeoff_pitch_cd <= 0) {
+        // If no takeoff command has ever been used, default to a conservative 10deg
+        auto_state.takeoff_pitch_cd = 1000;
+    }
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
