@@ -54,7 +54,7 @@
 
 using namespace Linux;
 
-#define PWM_CHAN_COUNT 13
+#define PWM_CHAN_COUNT 16
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
@@ -64,7 +64,7 @@ LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(bool external_clock,
     _i2c_sem(NULL),
     _enable_pin(NULL),
     _frequency(50),
-    _pulses_buffer(new uint16_t[PWM_CHAN_COUNT]),
+    _pulses_buffer(new uint16_t[PWM_CHAN_COUNT - channel_offset]),
     _external_clock(external_clock),
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
@@ -119,7 +119,7 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
 
     /* Correctly finish last pulses */
-    for (int i = 0; i < PWM_CHAN_COUNT; i++) {
+    for (int i = 0; i < (PWM_CHAN_COUNT - _channel_offset); i++) {
         write(i, _pulses_buffer[i]);
     }
 
@@ -175,7 +175,7 @@ void LinuxRCOutput_PCA9685::disable_ch(uint8_t ch)
 
 void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 {
-    if(ch >= PWM_CHAN_COUNT){
+    if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
         return;
     }
 
