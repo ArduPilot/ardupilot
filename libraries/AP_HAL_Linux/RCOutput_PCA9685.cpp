@@ -15,8 +15,6 @@
 #include <stdint.h>
 #include <math.h>
 
-#define PCA9685_ADDRESS            0x40 // All address pins low, Navio default
-
 #define PCA9685_RA_MODE1           0x00
 #define PCA9685_RA_MODE2           0x01
 #define PCA9685_RA_LED0_ON_L       0x06
@@ -58,13 +56,15 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
-LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(bool external_clock,
+LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
+                                             bool external_clock,
                                              uint8_t channel_offset,
                                              int16_t oe_pin_number) :
     _i2c_sem(NULL),
     _enable_pin(NULL),
     _frequency(50),
     _pulses_buffer(new uint16_t[PWM_CHAN_COUNT - channel_offset]),
+    _addr(addr),
     _external_clock(external_clock),
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
@@ -109,7 +109,7 @@ void LinuxRCOutput_PCA9685::reset_all_channels()
     }
 
     uint8_t data[4] = {0x00, 0x00, 0x00, 0x00};
-    hal.i2c->writeRegisters(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_ON_L, 4, data);
+    hal.i2c->writeRegisters(_addr, PCA9685_RA_ALL_LED_ON_L, 4, data);
 
     /* Wait for the last pulse to end */
     hal.scheduler->delay(2);
@@ -132,10 +132,10 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
     /* Shutdown before sleeping.
      * see p.14 of PCA9685 product datasheet
      */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
+    hal.i2c->writeRegister(_addr, PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
 
     /* Put PCA9685 to sleep (required to write prescaler) */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
+    hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
 
     /* Calculate prescale and save frequency using this value: it may be
      * different from @freq_hz due to rounding/ceiling. We use ceil() rather
@@ -145,16 +145,16 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
     _frequency = _osc_clock / (4096 * (prescale + 1));
 
     /* Write prescale value to match frequency */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_PRE_SCALE, prescale);
+    hal.i2c->writeRegister(_addr, PCA9685_RA_PRE_SCALE, prescale);
 
     if (_external_clock) {
         /* Enable external clocking */
-        hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
+        hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1,
                                PCA9685_MODE1_SLEEP_BIT | PCA9685_MODE1_EXTCLK_BIT);
     }
 
     /* Restart the device to apply new settings and enable auto-incremented write */
-    hal.i2c->writeRegister(PCA9685_ADDRESS, PCA9685_RA_MODE1,
+    hal.i2c->writeRegister(_addr, PCA9685_RA_MODE1,
                             PCA9685_MODE1_RESTART_BIT | PCA9685_MODE1_AI_BIT);
 
     _i2c_sem->give();
@@ -193,7 +193,7 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
         length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
 
     uint8_t data[2] = {length & 0xFF, length >> 8};
-    uint8_t status = hal.i2c->writeRegisters(PCA9685_ADDRESS,
+    uint8_t status = hal.i2c->writeRegisters(_addr,
                                              PCA9685_RA_LED0_OFF_L + 4 * (ch + _channel_offset),
                                              2,
                                              data);
