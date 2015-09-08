@@ -6,8 +6,9 @@
 
 class Linux::LinuxRCOutput_PCA9685 : public AP_HAL::RCOutput {
     public:
+
     LinuxRCOutput_PCA9685(bool external_clock, uint8_t channel_offset,
-                          uint8_t oe_pin_number);
+                          int16_t oe_pin_number);
     ~LinuxRCOutput_PCA9685();
     void     init(void* machtnichts);
     void     reset_all_channels();
@@ -32,7 +33,7 @@ private:
 
     bool _external_clock;
     uint8_t _channel_offset;
-    uint8_t _oe_pin_number;
+    int16_t _oe_pin_number;
 };
 
 #endif // __AP_HAL_LINUX_RCOUTPUT_PCA9685_H__
