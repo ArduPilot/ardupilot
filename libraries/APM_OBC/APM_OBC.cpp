@@ -131,7 +131,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     // we always check for fence breach
     if (geofence_breached || check_altlimit()) {
         if (!_terminate) {
-            GCS_MAVLINK::send_statustext_all(PSTR("Fence TERMINATE"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("Fence TERMINATE"));
             _terminate.set(1);
         }
     }
@@ -142,7 +142,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         _rc_fail_time != 0 && 
         (hal.scheduler->millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
         if (!_terminate) {
-            GCS_MAVLINK::send_statustext_all(PSTR("RC failure terminate"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("RC failure terminate"));
             _terminate.set(1);
         }
     }
@@ -164,7 +164,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         // we startup in preflight mode. This mode ends when
         // we first enter auto.
         if (mode == OBC_AUTO) {
-            GCS_MAVLINK::send_statustext_all(PSTR("Starting AFS_AUTO"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("Starting AFS_AUTO"));
             _state = STATE_AUTO;
         }
         break;
@@ -172,7 +172,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     case STATE_AUTO:
         // this is the normal mode. 
         if (!gcs_link_ok) {
-            GCS_MAVLINK::send_statustext_all(PSTR("State DATA_LINK_LOSS"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("State DATA_LINK_LOSS"));
             _state = STATE_DATA_LINK_LOSS;
             if (_wp_comms_hold) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -186,7 +186,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             break;
         }
         if (!gps_lock_ok) {
-            GCS_MAVLINK::send_statustext_all(PSTR("State GPS_LOSS"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("State GPS_LOSS"));
             _state = STATE_GPS_LOSS;
             if (_wp_gps_loss) {
                 _saved_wp = mission.get_current_nav_cmd().index;
@@ -206,12 +206,12 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // losing GPS lock when data link is lost
             // leads to termination
             if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(PSTR("Dual loss TERMINATE"));
+                GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("Dual loss TERMINATE"));
                 _terminate.set(1);
             }
         } else if (gcs_link_ok) {
             _state = STATE_AUTO;
-            GCS_MAVLINK::send_statustext_all(PSTR("GCS OK"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("GCS OK"));
             // we only return to the mission if we have not exceeded AFS_MAX_COM_LOSS
             if (_saved_wp != 0 && 
                 (_max_comms_loss <= 0 || 
@@ -227,11 +227,11 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // losing GCS link when GPS lock lost
             // leads to termination
             if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(PSTR("Dual loss TERMINATE"));
+                GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("Dual loss TERMINATE"));
                 _terminate.set(1);
             }
         } else if (gps_lock_ok) {
-            GCS_MAVLINK::send_statustext_all(PSTR("GPS OK"));
+            GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("GPS OK"));
             _state = STATE_AUTO;
             // we only return to the mission if we have not exceeded AFS_MAX_GPS_LOSS
             if (_saved_wp != 0 &&
