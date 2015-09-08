@@ -124,6 +124,9 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     // true if offsets are valid
     bool getMagOffsets(Vector3f &magOffsets);
 
+    // report any reason for why the backend is refusing to initialise
+    const char *prearm_failure_reason(void) const override;
+
 private:
     bool using_EKF(void) const;
 
