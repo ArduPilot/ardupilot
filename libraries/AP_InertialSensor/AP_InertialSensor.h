@@ -276,6 +276,10 @@ private:
     Vector3f _delta_velocity[INS_MAX_INSTANCES];
     float _delta_velocity_dt[INS_MAX_INSTANCES];
     bool _delta_velocity_valid[INS_MAX_INSTANCES];
+    // delta velocity accumulator
+    Vector3f _delta_velocity_acc[INS_MAX_INSTANCES];
+    // time accumulator for delta velocity accumulator
+    float _delta_velocity_acc_dt[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];

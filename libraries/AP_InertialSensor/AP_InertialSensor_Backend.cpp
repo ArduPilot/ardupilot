@@ -68,17 +68,35 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 {
     _imu._accel[instance] = accel;
     _imu._accel_healthy[instance] = true;
+
+    if (_imu._accel_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    // publish delta velocity
+    _imu._delta_velocity[instance] = _imu._delta_velocity_acc[instance];
+    _imu._delta_velocity_dt[instance] = _imu._delta_velocity_acc_dt[instance];
+    _imu._delta_velocity_valid[instance] = true;
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel)
 {
-#if INS_VIBRATION_CHECK
-    if (_imu._accel_sample_rates[instance] > 0) {
-        float dt = 1.0f / _imu._accel_sample_rates[instance];
-        _imu.calc_vibration_and_clipping(instance, accel, dt);
+    float dt;
+
+    if (_imu._accel_sample_rates[instance] <= 0) {
+        return;
     }
+
+    dt = 1.0f / _imu._accel_sample_rates[instance];
+
+#if INS_VIBRATION_CHECK
+    _imu.calc_vibration_and_clipping(instance, accel, dt);
 #endif
+
+    // delta velocity
+    _imu._delta_velocity_acc[instance] += accel * dt;
+    _imu._delta_velocity_acc_dt[instance] += dt;
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
