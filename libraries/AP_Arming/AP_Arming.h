@@ -43,11 +43,8 @@ public:
         ARMING_RUDDER_ARMDISARM = 2
     };
 
-    // for the hacky function pointer to gcs_send_text_p
-    FUNCTOR_TYPEDEF(gcs_send_t_p, void, MAV_SEVERITY, const prog_char_t *);
-
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const enum HomeState &home_set, gcs_send_t_p);
+              const enum HomeState &home_set);
 
     ArmingRequired arming_required();
     bool arm(uint8_t method);
@@ -86,7 +83,6 @@ protected:
     const AP_Baro                                  &barometer;
     Compass                                         &_compass;
     const enum HomeState                         &home_is_set;
-    gcs_send_t_p                              gcs_send_text_P;
     uint32_t                                  last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                                  last_gyro_pass_ms[INS_MAX_INSTANCES];
 
