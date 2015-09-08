@@ -573,13 +573,17 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
+    bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
+    
     if (control_mode==AUTO && 
         auto_state.takeoff_complete == false) {
 
         uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
         if (is_flying() &&
             millis() - started_flying_ms > max(launch_duration_ms,5000) && // been flying >5s in any mode
-            adjusted_relative_altitude_cm() > 500) { // are >5m above AGL/home
+            adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
+            labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
+            gps_movement) { // definate gps movement
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
             // but we're currently flying around below the takeoff altitude
@@ -598,19 +602,18 @@ bool Plane::suppress_throttle(void)
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
-        gcs_send_text_fmt(PSTR("Throttle unsuppressed - altitude %.2f"), 
+        gcs_send_text_fmt(PSTR("Throttle enabled - altitude %.2f"), 
                           (double)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
 
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && 
-        gps.ground_speed() >= 5) {
+    if (gps_movement) {
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
-            gcs_send_text_fmt(PSTR("Throttle unsuppressed - speed %.2f airspeed %.2f"), 
+            gcs_send_text_fmt(PSTR("Throttle enabled - speed %.2f airspeed %.2f"), 
                               (double)gps.ground_speed(),
                               (double)airspeed.get_airspeed());
             throttle_suppressed = false;
