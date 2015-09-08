@@ -60,7 +60,7 @@ static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
 LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(bool external_clock,
                                              uint8_t channel_offset,
-                                             uint8_t oe_pin_number) :
+                                             int16_t oe_pin_number) :
     _i2c_sem(NULL),
     _enable_pin(NULL),
     _frequency(50),
@@ -95,9 +95,11 @@ void LinuxRCOutput_PCA9685::init(void* machtnicht)
     set_freq(0, 50);
 
     /* Enable PCA9685 PWM */
-    _enable_pin = hal.gpio->channel(_oe_pin_number);
-    _enable_pin->mode(HAL_GPIO_OUTPUT);
-    _enable_pin->write(0);
+    if (_oe_pin_number != -1) {
+        _enable_pin = hal.gpio->channel(_oe_pin_number);
+        _enable_pin->mode(HAL_GPIO_OUTPUT);
+        _enable_pin->write(0);
+    }
 }
 
 void LinuxRCOutput_PCA9685::reset_all_channels()
