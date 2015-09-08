@@ -29,8 +29,6 @@ AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
 {
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _delta_angle_accumulator[i].zero();
-        _delta_velocity_accumulator[i].zero();
-        _delta_velocity_dt[i] = 0.0f;
     }
 }
 
@@ -218,7 +216,6 @@ bool AP_InertialSensor_PX4::update(void)
         // so we only want to do this if we have new data from it
         if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
             _publish_accel(_accel_instance[k], accel);
-            _publish_delta_velocity(_accel_instance[k], _delta_velocity_accumulator[k], _delta_velocity_dt[k]);
             _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
         }
     }
@@ -236,8 +233,6 @@ bool AP_InertialSensor_PX4::update(void)
 
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _delta_angle_accumulator[i].zero();
-        _delta_velocity_accumulator[i].zero();
-        _delta_velocity_dt[i] = 0.0f;
     }
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
@@ -265,16 +260,6 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // apply filter for control path
     _accel_in[i] = _accel_filter[i].apply(accel);
 
-    // get time since last sample
-    float dt = _accel_sample_time[i];
-
-    // compute delta velocity
-    Vector3f delVel = Vector3f(accel.x, accel.y, accel.z) * dt;
-
-    // integrate delta velocity accumulator
-    _delta_velocity_accumulator[i] += delVel;
-    _delta_velocity_dt[i] += dt;
-
     // save last timestamp
     _last_accel_timestamp[i] = accel_report.timestamp;
 
@@ -285,6 +270,9 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     _publish_temperature(frontend_instance, accel_report.temperature);
 
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
+    // get time since last sample
+    float dt = _accel_sample_time[i];
+
     _accel_dt_max[i] = max(_accel_dt_max[i],dt);
 
     _accel_meas_count[i] ++;
