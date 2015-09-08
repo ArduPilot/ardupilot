@@ -646,7 +646,12 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // ensure GPS is ok
     if (!position_ok()) {
         if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
+            const char *reason = ahrs.prearm_failure_reason();
+            if (reason) {
+                GCS_MAVLINK::send_statustext_all(SEVERITY_HIGH, PSTR("PreArm: %s"), reason);
+            } else {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Need 3D Fix"));
+        }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
