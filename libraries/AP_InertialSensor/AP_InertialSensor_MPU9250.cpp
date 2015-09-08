@@ -404,6 +404,7 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     gyro *= GYRO_SCALE;
     gyro.rotate(_default_rotation);
     _rotate_and_correct_gyro(_gyro_instance, gyro);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
 
     // update the shared buffer
