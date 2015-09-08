@@ -321,6 +321,7 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                 // Adjust for chip scaling to get radians/sec
                 gyro *= L3G4200D_GYRO_SCALE_R_S;
                 _rotate_and_correct_gyro(_gyro_instance, gyro);
+                _notify_new_gyro_raw_sample(_gyro_instance, gyro);
                 _data[_data_idx].gyro_filtered = _gyro_filter.apply(gyro);
                 _have_gyro_sample = true;
             }

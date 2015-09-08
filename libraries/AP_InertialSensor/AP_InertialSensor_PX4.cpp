@@ -296,6 +296,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
     // apply corrections
     _rotate_and_correct_gyro(frontend_instance, gyro);
+    _notify_new_gyro_raw_sample(frontend_instance, gyro);
 
     // apply filter for control path
     _gyro_in[i] = _gyro_filter[i].apply(gyro);

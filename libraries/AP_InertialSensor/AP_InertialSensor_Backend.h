@@ -85,6 +85,12 @@ protected:
     // rotate gyro vector, offset and publish
     void _publish_gyro(uint8_t instance, const Vector3f &gyro);
 
+    // this should be called every time a new gyro raw sample is available -
+    // be it published or not
+    // the sample is raw in the sense that it's not filtered yet, but it must
+    // be rotated and corrected (_rotate_and_correct_gyro)
+    void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel);
+
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel);
 

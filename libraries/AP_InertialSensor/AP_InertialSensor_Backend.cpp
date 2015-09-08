@@ -53,6 +53,11 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._gyro_healthy[instance] = true;
 }
 
+void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
+                                                            const Vector3f &gyro)
+{
+}
+
 /*
   rotate accel vector, scale and add the accel offset
  */

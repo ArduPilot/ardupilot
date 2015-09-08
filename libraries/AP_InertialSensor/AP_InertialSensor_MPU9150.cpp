@@ -1098,6 +1098,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
         gyro = Vector3f(gyro_x, gyro_y, gyro_z);
         gyro *= MPU9150_GYRO_SCALE_2000;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
         _gyro_filtered = _gyro_filter.apply(gyro);
 
         _have_sample_available = true;
