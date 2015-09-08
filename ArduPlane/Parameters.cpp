@@ -263,8 +263,7 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
     // @Param: LAND_ABORT_THR
     // @DisplayName: Landing abort using throttle
     // @Description: Allow a landing abort to trigger with a throttle > 95%
-    // @Units: boolean
-    // @Range: 0 1
+    // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     GSCALAR(land_abort_throttle_enable,       "LAND_ABORT_THR",  0),
 
