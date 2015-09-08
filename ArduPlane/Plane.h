@@ -512,6 +512,9 @@ private:
     // previous value of is_flying()
     bool previous_is_flying;
 
+    // time since started flying in any mode in milliseconds
+    uint32_t started_flying_ms;
+
     // Navigation control variables
     // The instantaneous desired bank angle.  Hundredths of a degree
     int32_t nav_roll_cd;
