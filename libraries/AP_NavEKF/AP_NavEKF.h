@@ -267,6 +267,9 @@ public:
     // this function should not have more than one client
     bool getLastYawResetAngle(float &yawAng);
 
+    // report any reason for why the backend is refusing to initialise    
+    const char *prearm_failure_reason(void) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -827,6 +830,8 @@ private:
         Vector9 SH_MAG;
 	} mag_state;
 
+    // string representing last reason for prearm failure
+    char prearm_fail_string[40];
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters

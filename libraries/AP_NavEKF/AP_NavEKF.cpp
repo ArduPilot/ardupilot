@@ -5177,9 +5177,13 @@ void NavEKF::setTouchdownExpected(bool val)
     expectGndEffectTouchdown = val;
 }
 
-// Monitor GPS data to see if quality is good enough to initialise the EKF
-// Monitor magnetometer innovations to to see if the heading is good enough to use GPS
-// Return true if all criteria pass for 10 seconds
+/* Monitor GPS data to see if quality is good enough to initialise the EKF
+   Monitor magnetometer innovations to to see if the heading is good enough to use GPS
+   Return true if all criteria pass for 10 seconds
+   
+   We also record the failure reason so that prearm_failure_reason()
+   can give a good report to the user on why arming is failing
+*/
 bool NavEKF::calcGpsGoodToAlign(void)
 {
     // calculate absolute difference between GPS vert vel and inertial vert vel
@@ -5189,10 +5193,21 @@ bool NavEKF::calcGpsGoodToAlign(void)
     } else {
         velDiffAbs = 0.0f;
     }
+    
     // fail if velocity difference or reported speed accuracy greater than threshold
     bool gpsVelFail = (velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f);
-    // fail if not enough sats
-    bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
+
+    if (velDiffAbs > 1.0f) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS vert vel error %.1f", (double)velDiffAbs);
+    }
+    if (gpsSpdAccuracy > 1.0f) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS speed error %.1f", (double)gpsSpdAccuracy);
+    }
+    
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
@@ -5201,6 +5216,12 @@ bool NavEKF::calcGpsGoodToAlign(void)
     } else {
         hAccFail =  false;
     }
+    if (hAccFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS horiz error %.1f", (double)hAcc);
+    }
+    
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
@@ -5209,19 +5230,52 @@ bool NavEKF::calcGpsGoodToAlign(void)
     } else {
         yawFail = false;
     }
-    // record time of fail
-    // assume  fail first time called
-    if (gpsVelFail || numSatsFail || hAccFail || yawFail || lastGpsVelFail_ms == 0) {
+    if (yawFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "Mag yaw error x=%.1f y=%.1f",
+                           (double)magTestRatio.x,
+                           (double)magTestRatio.y);
+    }
+
+    // fail if not enough sats
+    bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
+    if (numSatsFail) {
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
+                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
+    }
+    
+    // record time of fail if failing
+    if (gpsVelFail || numSatsFail || hAccFail || yawFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
+
+    if (lastGpsVelFail_ms == 0) {
+        // first time through, start with a failure
+        lastGpsVelFail_ms = imuSampleTime_ms;
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF warmup");
+    }
+    
     // DEBUG PRINT
     //hal.console->printf("velDiff = %5.2f, nSats = %i, hAcc = %5.2f, sAcc = %5.2f, delTime = %i\n", velDiffAbs, _ahrs->get_gps().num_sats(), hAcc, gpsSpdAccuracy, imuSampleTime_ms - lastGpsVelFail_ms);
     // continuous period without fail required to return healthy
+
     if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        // we have not failed in the last 10 seconds
         return true;
-    } else {
-        return false;
     }
+
+    return false;
+}
+
+// report the reason for why the backend is refusing to initialise
+const char *NavEKF::prearm_failure_reason(void) const
+{
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        // we are not failing
+        return nullptr;
+    }
+    return prearm_fail_string;
 }
 
 // Read the range finder and take new measurements if available
