@@ -163,7 +163,7 @@ public:
       connections. This function is static so it can be called from
       any library
     */
-    static void send_statustext_all(const prog_char_t *msg);
+    static void send_statustext_all(const prog_char_t *fmt, ...);
 
     /*
       send a MAVLink message to all components with this vehicle's system id
