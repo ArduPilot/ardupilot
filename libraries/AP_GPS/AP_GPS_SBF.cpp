@@ -218,6 +218,11 @@ AP_GPS_SBF::process_message(void)
 
             state.ground_course_cd = (int32_t)(100 * ToDeg(atan2f(state.velocity[1], state.velocity[0])));
             state.ground_course_cd = wrap_360_cd(state.ground_course_cd);
+			
+			state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
+			state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
+			state.have_horizontal_accuracy = true;
+			state.have_vertical_accuracy = true;
         }
 
         // Update position state (dont use −2·10^10)
