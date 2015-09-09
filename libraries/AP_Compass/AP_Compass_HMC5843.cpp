@@ -331,6 +331,8 @@ AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
+    set_milligauss_ratio(_compass_instance, 1.0f / _gain_multiple);
+    
     return true;
 
 errout:
@@ -479,14 +481,6 @@ void AP_Compass_HMC5843::read()
 
     publish_filtered_field(field, _compass_instance);
     _retry_time = 0;
-}
-
-float AP_Compass_HMC5843::get_conversion_ratio(void)
-{
-    /* This value converts from hmc-units to milligauss. It looks strange for a reason.
-     * It's meant to cancel the unneccassary division in the read() method.
-     */
-    return 1.0f / _gain_multiple;
 }
 
 /* I2C implementation of the HMC5843 */

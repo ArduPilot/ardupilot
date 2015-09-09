@@ -178,6 +178,8 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _bus->get_dev_id());
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
+    set_milligauss_ratio(_compass_instance, 10.0f);
+    
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
@@ -214,12 +216,6 @@ void AP_Compass_AK8963::read()
     field.rotate(ROTATION_YAW_90);
 #endif
     publish_filtered_field(field, _compass_instance);
-}
-
-float AP_Compass_AK8963::get_conversion_ratio(void)
-{
-    /* Convert from microTesla to milliGauss */
-    return 10.0f;
 }
 
 Vector3f AP_Compass_AK8963::_get_filtered_field() const

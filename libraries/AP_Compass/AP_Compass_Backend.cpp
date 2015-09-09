@@ -41,11 +41,6 @@ void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us
 {
     Compass::mag_state &state = _compass._state[instance];
 
-    /* Update field in milligauss. Later this will be used throughout all codebase.
-     * We need this trick in order not to make users recalibrate their compasses.
-     * */
-    state.field_milligauss =  state.field * get_conversion_ratio();
-
     state.last_update_ms = hal.scheduler->millis();
     state.last_update_usec = hal.scheduler->micros();
     state.raw_field = mag;
@@ -145,4 +140,10 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
     _compass._state[instance].external.set(external);
+}
+
+// set ratio to convert to milligauss
+void AP_Compass_Backend::set_milligauss_ratio(uint8_t instance, float ratio)
+{
+    _compass._state[instance].milligauss_ratio = ratio;
 }

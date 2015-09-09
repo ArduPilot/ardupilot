@@ -12,7 +12,6 @@ public:
     bool        init(void);
     void        read(void);
     void        accumulate(void);
-    float       get_conversion_ratio(void) override;
 
     AP_Compass_PX4(Compass &compass);
     // detect the sensor

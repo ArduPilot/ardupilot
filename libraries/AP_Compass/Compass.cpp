@@ -517,9 +517,6 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
     if (i < COMPASS_MAX_INSTANCES) {
         _state[i].offset.set(offsets);
         save_offsets(i);
-
-        /* Ugly hack to update offsets in milligauss that are going to be used across all the codebase in the future */
-        _state[i].offset_milligauss = offsets * _backends[i]->get_conversion_ratio();
     }
 }
 

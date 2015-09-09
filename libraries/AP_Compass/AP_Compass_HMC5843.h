@@ -61,7 +61,6 @@ public:
     bool        init(void);
     void        read(void);
     void        accumulate(void);
-    float       get_conversion_ratio(void) override;
 };
 
 class AP_HMC5843_SerialBus

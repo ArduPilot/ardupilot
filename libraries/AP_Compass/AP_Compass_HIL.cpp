@@ -53,6 +53,7 @@ AP_Compass_HIL::init(void)
     // register two compass instances
     for (uint8_t i=0; i<HIL_NUM_COMPASSES; i++) {
         _compass_instance[i] = register_compass();
+        set_milligauss_ratio(_compass_instance[i], 1.0f);
     }
     return true;
 }
@@ -69,9 +70,4 @@ void AP_Compass_HIL::read()
             publish_filtered_field(field, compass_instance);
         }
     }
-}
-
-float AP_Compass_HIL::get_conversion_ratio(void)
-{
-    return 1.0f;
 }
