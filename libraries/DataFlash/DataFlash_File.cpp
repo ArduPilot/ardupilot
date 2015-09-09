@@ -26,7 +26,12 @@
 #include <time.h>
 #include <dirent.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#ifdef __APPLE__
+#include <sys/param.h>
+#include <sys/mount.h>
+#else
 #include <sys/statfs.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
