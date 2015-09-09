@@ -215,7 +215,6 @@ struct PACKED log_GPS {
     uint16_t gps_week;
     uint8_t  num_sats;
     uint16_t hdop;
-    uint16_t vdop;
     int32_t  latitude;
     int32_t  longitude;
     int32_t  rel_altitude;
@@ -224,6 +223,15 @@ struct PACKED log_GPS {
     int32_t  ground_course;
     float    vel_z;
     uint8_t  used;
+};
+
+struct PACKED log_GPA {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t vdop;
+    uint16_t hacc;
+    uint16_t vacc;
+    uint16_t sacc;
 };
 
 struct PACKED log_Message {
@@ -693,7 +701,13 @@ Format characters in the format string for binary log messages
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
       "PARM", "QNf",        "TimeUS,Name,Value" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBIHBccLLeeEefB", "TimeUS,Stat,GMS,GWk,NSat,EPH,EPV,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+      "GPS",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+    { LOG_GPS2_MSG, sizeof(log_GPS), \
+      "GPS2", "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
+    { LOG_GPA_MSG,  sizeof(log_GPA), \
+      "GPA",  "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
+    { LOG_GPA2_MSG, sizeof(log_GPA), \
+      "GPA2", "QCCCC", "TimeUS,VDop,HAcc,VAcc,SAcc" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -725,8 +739,6 @@ Format characters in the format string for binary log messages
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
-    { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_IMU2_MSG, sizeof(log_IMU), \
       "IMU2",  "QffffffIIfBB",     "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,ErrG,ErrA,Temp,GyHlt,AcHlt" }, \
     { LOG_IMU3_MSG, sizeof(log_IMU), \
@@ -894,7 +906,9 @@ enum LogMessages {
     LOG_IMUDT2_MSG,
     LOG_IMUDT3_MSG,
     LOG_ORGN_MSG,
-    LOG_RPM_MSG
+    LOG_RPM_MSG,
+    LOG_GPA_MSG,
+    LOG_GPA2_MSG,
 };
 
 enum LogOriginType {
