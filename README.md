@@ -13,8 +13,7 @@
 
 ### Default root password
 
-Contact open-source@3drobotics.com to request access to the default root
-password.
+> TjSDBkAu
 
 ## How to load to Pixhawk 2 on Solo
 
