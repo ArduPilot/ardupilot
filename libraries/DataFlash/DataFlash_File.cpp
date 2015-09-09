@@ -155,28 +155,28 @@ bool DataFlash_File::CardInserted(void)
     return _initialised && !_open_error;
 }
 
-ssize_t DataFlash_File::disk_space_avail()
+uint64_t DataFlash_File::disk_space_avail()
 {
     struct statfs stats;
     if (statfs(_log_directory, &stats) < 0) {
         return -1;
     }
-    return (stats.f_bavail * stats.f_bsize);
+    return (((uint64_t)stats.f_bavail) * stats.f_bsize);
 }
 
-ssize_t DataFlash_File::disk_space()
+uint64_t DataFlash_File::disk_space()
 {
     struct statfs stats;
     if (statfs(_log_directory, &stats) < 0) {
         return -1;
     }
-    return (stats.f_blocks * stats.f_bsize);
+    return (((uint64_t)stats.f_blocks) * stats.f_bsize);
 }
 
 float DataFlash_File::avail_space_percent()
 {
-    ssize_t avail = disk_space_avail();
-    ssize_t space = disk_space();
+    uint64_t avail = disk_space_avail();
+    uint64_t space = disk_space();
 
     return (avail/(float)space) * 100;
 }

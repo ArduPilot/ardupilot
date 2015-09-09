@@ -83,8 +83,8 @@ private:
     // possibly time-consuming preparations handling
     void Prep_MinSpace();
     uint16_t find_first_log(void);
-    ssize_t disk_space_avail();
-    ssize_t disk_space();
+    uint64_t disk_space_avail();
+    uint64_t disk_space();
     float avail_space_percent();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
