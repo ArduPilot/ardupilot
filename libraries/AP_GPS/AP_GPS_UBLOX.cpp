@@ -309,20 +309,6 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_GPS_UBLOX::log_accuracy(void) {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
-        return;
-    }
-    struct log_Ubx3 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_UBX3_MSG),
-        time_us  : hal.scheduler->micros64(),
-        instance   : state.instance,
-        hAcc     : state.horizontal_accuracy,
-        vAcc     : state.vertical_accuracy,
-        sAcc     : state.speed_accuracy
-    };
-    gps._DataFlash->WriteBlock(&pkt, sizeof(pkt));
-}
 #endif // UBLOX_HW_LOGGING
 
 #if UBLOX_RXM_RAW_LOGGING
@@ -704,11 +690,6 @@ AP_GPS_UBLOX::_parse_gps(void)
 			_send_message(CLASS_CFG, MSG_CFG_NAV_SETTINGS, NULL, 0);
             _fix_count = 0;
 		}
-
-#if UBLOX_HW_LOGGING
-        log_accuracy();
-#endif //UBLOX_HW_LOGGING
-
         return true;
     }
     return false;
