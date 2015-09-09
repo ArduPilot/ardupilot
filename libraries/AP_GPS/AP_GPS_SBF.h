@@ -82,6 +82,14 @@ private:
          uint16_t MeanCorrAge;
          uint32_t SignalInfo;
          uint8_t AlertFlag;
+		 // rev1
+		 uint8_t NrBases;
+		 uint16_t PPPInfo;
+		 // rev2
+		 uint16_t Latency;
+		 uint16_t HAccuracy;
+		 uint16_t VAccuracy;
+		 uint8_t Misc;
     };
   
     struct PACKED msg4001
