@@ -54,7 +54,7 @@
 #endif
 
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
-#define UBX_MSG_TYPES 3
+#define UBX_MSG_TYPES 2
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
@@ -386,11 +386,6 @@ private:
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
 
-    // UBX specific dilution of precision
-    uint16_t        _gdop;
-    uint16_t        _pdop;
-    uint16_t        _vdop;
-
     // do we have new position information?
     bool            _new_position:1;
     // do we have new speed information?
@@ -409,9 +404,6 @@ private:
     uint32_t _last_5hz_time;
 
     bool noReceivedHdop = true;
-    // number of active ublox instances used to determine UBX processing
-    uint8_t ublox_instance;
-    static uint8_t ublox_instances;
 
     void 	    _configure_navigation_rate(uint16_t rate_ms);
     void        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
@@ -429,9 +421,9 @@ private:
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 
-    // Actual LogMessage index we are going to use
-    uint8_t ubx_msg_index(uint8_t ubx_msg) {
-        return (uint8_t)(ubx_msg + (ublox_instance * UBX_MSG_TYPES));
+    // Calculates the correct log message ID based on what GPS instance is being logged
+    uint8_t _ubx_msg_log_index(uint8_t ubx_msg) {
+        return (uint8_t)(ubx_msg + (state.instance * UBX_MSG_TYPES));
     }
 };
 

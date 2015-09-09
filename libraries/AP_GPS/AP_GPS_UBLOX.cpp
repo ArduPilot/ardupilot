@@ -33,11 +33,7 @@
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
 
-#define UBX_MAX_GPS_INSTANCES 2
-
 extern const AP_HAL::HAL& hal;
-
-uint8_t AP_GPS_UBLOX::ublox_instances = 0;
 
 #if UBLOX_DEBUGGING
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
@@ -53,9 +49,6 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _payload_counter(0),
     _fix_count(0),
     _class(0),
-    _gdop(0),
-    _pdop(0),
-    _vdop(0),
     _new_position(0),
     _new_speed(0),
     need_rate_update(false),
@@ -65,8 +58,6 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _last_5hz_time(0),
     noReceivedHdop(true)
 {
-	ublox_instance = ublox_instances++;
-
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
 
@@ -279,12 +270,11 @@ AP_GPS_UBLOX::read(void)
 
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()
-    		|| ublox_instance >= UBX_MAX_GPS_INSTANCES) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
     struct log_Ubx1 pkt = {
-        LOG_PACKET_HEADER_INIT(ubx_msg_index(LOG_GPS_UBX1_MSG)),
+        LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX1_MSG)),
         time_us    : hal.scheduler->micros64(),
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
@@ -303,13 +293,12 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()
-    		|| ublox_instance >= UBX_MAX_GPS_INSTANCES) {
+    if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
         return;
     }
 
     struct log_Ubx2 pkt = {
-        LOG_PACKET_HEADER_INIT(ubx_msg_index(LOG_GPS_UBX2_MSG)),
+        LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX2_MSG)),
         time_us   : hal.scheduler->micros64(),
         instance  : state.instance,
         ofsI      : _buffer.mon_hw2.ofsI,
@@ -582,9 +571,6 @@ AP_GPS_UBLOX::_parse_gps(void)
         noReceivedHdop = false;
         state.hdop        = _buffer.dop.hDOP;
         state.vdop        = _buffer.dop.vDOP;
-        _vdop        = _buffer.dop.vDOP;
-        _pdop        = _buffer.dop.pDOP;
-        _gdop        = _buffer.dop.gDOP;
 #if UBLOX_FAKE_3DLOCK
         state.hdop = 130;
         state.hdop = 170;
