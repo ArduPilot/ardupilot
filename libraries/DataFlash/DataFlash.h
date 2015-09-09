@@ -52,9 +52,9 @@ public:
     void EraseAll();
 
     /* Write a block of data at current offset */
-    bool WriteBlock(const void *pBuffer, uint16_t size);
+    bool WriteBlock(const void *pBuffer, uint16_t size) const;
     /* Write an *important* block of data at current offset */
-    bool WriteCriticalBlock(const void *pBuffer, uint16_t size);
+    bool WriteCriticalBlock(const void *pBuffer, uint16_t size) const;
 
     // high level interface
     uint16_t find_last_log(void);
@@ -81,7 +81,6 @@ public:
     void EnableWrites(bool enable);
     void Log_Write_SysInfo(const prog_char_t *firmware_string);
     bool Log_Write_Format(const struct LogStructure *structure);
-    bool Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_IMUDT(const AP_InertialSensor &ins);
@@ -106,7 +105,6 @@ public:
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     bool Log_Write_Mode(uint8_t mode);
-    void Log_Write_Parameters(void);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     bool Log_Write_Mission_Cmd(const AP_Mission &mission,
@@ -135,10 +133,8 @@ public:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
-    // this is out here for the trickle-startup-messages logging.
-    // Think before calling.
-    bool Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
-                             enum ap_var_type type);
+    // write the current value of a parameter out to flash:
+    bool Log_Write_Parameter(const char *name) const;
 
     DFMessageWriter_DFLogStart _startup_messagewriter;
     vehicle_startup_message_Log_Writer _vehicle_messages;
@@ -150,6 +146,11 @@ protected:
     void WroteStartupFormat();
     void WroteStartupParam();
 
+    bool Log_Write_Parameter(const char *name, float value, float defaultvalue) const;
+    void Log_Write_Parameters(void);
+    bool Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token,
+                             enum ap_var_type type);
+
     const struct LogStructure *_structures;
     uint8_t _num_types;
 
@@ -157,7 +158,7 @@ protected:
     /* might be useful if you have a boolean indicating a message is
      * important... */
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
-                               bool is_critical);
+                               bool is_critical) const;
 
 private:
     DataFlash_Backend *backend;
@@ -201,6 +202,7 @@ struct PACKED log_Parameter {
     uint64_t time_us;
     char name[16];
     float value;
+    float defaultvalue;
 };
 
 struct PACKED log_GPS {
@@ -686,7 +688,7 @@ Format characters in the format string for binary log messages
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns" },    \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
-      "PARM", "QNf",        "TimeUS,Name,Value" },    \
+      "PARM", "QNff",        "TimeUS,Name,Value,Default" },    \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBIHBcLLeeEefB", "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,RAlt,Alt,Spd,GCrs,VZ,U" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \

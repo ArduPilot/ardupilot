@@ -12,15 +12,15 @@ void DataFlash_Class::set_mission(const AP_Mission *mission) {
 }
 
 // start functions pass straight through to backend:
-bool DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+bool DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) const {
     return backend->WriteBlock(pBuffer, size);
 }
 
-bool DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+bool DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) const {
     return backend->WriteCriticalBlock(pBuffer, size);
 }
 
-bool DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+bool DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) const {
     return backend->WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 

@@ -267,12 +267,13 @@ void AP_AutoTune::check_save(void)
 /*
   log a parameter change from autotune
  */
-void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
+void AP_AutoTune::log_param_change(const prog_char_t *suffix)
 {
     if (!dataflash.logging_started()) {
         return;
     }
     char key[AP_MAX_NAME_SIZE+1];
+    memset(key, '\0', sizeof(key));
     if (type == AUTOTUNE_ROLL) {
         strncpy_P(key, PSTR("RLL2SRV_"), 8);
         strncpy_P(&key[8], suffix, AP_MAX_NAME_SIZE-8);
@@ -280,8 +281,7 @@ void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
         strncpy_P(key, PSTR("PTCH2SRV_"), 9);
         strncpy_P(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
-    key[AP_MAX_NAME_SIZE] = 0;
-    dataflash.Log_Write_Parameter(key, v);
+    dataflash.Log_Write_Parameter(key);
 }
 
 /*
@@ -294,7 +294,7 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_cha
     v.set(value);
     if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
         v.save();
-        log_param_change(v.get(), suffix);
+        log_param_change(suffix);
     }
 }
 
@@ -307,7 +307,7 @@ void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_c
     v.set(value);
     if (old_value != v.get()) {
         v.save();
-        log_param_change(v.get(), suffix);
+        log_param_change(suffix);
     }
 }
 

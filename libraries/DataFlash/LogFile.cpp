@@ -664,16 +664,28 @@ bool DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
 /*
   write a parameter to the log
  */
-bool DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+bool DataFlash_Class::Log_Write_Parameter(const char *name, const float value,
+                                          const float defaultvalue) const
 {
     struct log_Parameter pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
         time_us : hal.scheduler->micros64(),
         name  : {},
-        value : value
+        value : value,
+        defaultvalue: defaultvalue
     };
     strncpy(pkt.name, name, sizeof(pkt.name));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+bool DataFlash_Class::Log_Write_Parameter(const char *name) const
+{
+    enum ap_var_type var_type;
+    AP_Param *ap = AP_Param::find(name, &var_type);
+    if (ap == NULL) {
+        return false;
+    }
+    return Log_Write_Parameter(name, ap->cast_to_float(var_type), ap->get_default_value());
 }
 
 /*
@@ -685,7 +697,8 @@ bool DataFlash_Class::Log_Write_Parameter(const AP_Param *ap,
 {
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
-    return Log_Write_Parameter(name, ap->cast_to_float(type));
+    return Log_Write_Parameter(name, ap->cast_to_float(type),
+                               ap->get_default_value());
 }
 
 /*
