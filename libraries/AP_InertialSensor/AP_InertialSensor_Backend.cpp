@@ -114,6 +114,12 @@ void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_
     _imu._accel_error_count[instance] = error_count;
 }
 
+void AP_InertialSensor_Backend::_set_gyro_sample_rate(uint8_t instance,
+                                                      uint32_t rate)
+{
+    _imu._gyro_raw_sample_rates[instance] = rate;
+}
+
 // set gyro error_count
 void AP_InertialSensor_Backend::_set_gyro_error_count(uint8_t instance, uint32_t error_count)
 {

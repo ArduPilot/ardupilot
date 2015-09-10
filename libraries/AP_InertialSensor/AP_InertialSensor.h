@@ -297,8 +297,9 @@ private:
     // accelerometer max absolute offsets to be used for calibration
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
-    // accelerometer sample rate in units of Hz
+    // accelerometer and gyro raw sample rate in units of Hz
     uint32_t _accel_sample_rates[INS_MAX_INSTANCES];
+    uint32_t _gyro_sample_rates[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];

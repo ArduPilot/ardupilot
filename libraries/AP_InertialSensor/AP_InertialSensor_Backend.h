@@ -109,6 +109,12 @@ protected:
         return _imu._accel_sample_rates[instance];
     }
 
+    // set gyroscope sample rate
+    void _set_gyro_sample_rate(uint8_t instance, uint32_t rate);
+    uint32_t _gyro_sample_rate(uint8_t instance) const {
+        return _imu._gyro_sample_rates[instance];
+    }
+
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 
