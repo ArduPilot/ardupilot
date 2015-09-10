@@ -57,6 +57,9 @@ public:
     // get_target_shift - returns 3D vector of earth-frame position adjustments to target
     Vector3f get_target_shift(const Vector3f& orig_target);
 
+    // handle_msg - Process a LANDING_TARGET mavlink message
+    void handle_msg(mavlink_message_t* msg);
+
     // accessors for logging
     bool enabled() const { return _enabled; }
     const Vector2f& last_bf_angle_to_target() const { return _bf_angle_to_target; }
@@ -86,6 +89,7 @@ private:
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
     AP_Int8                     _type;              // precision landing controller type
     AP_Float                    _speed_xy;          // maximum horizontal speed in cm/s
+    AP_Float                    _scale;             // scale the angular offset from the LANDING_TARGET msg
 
     // internal variables
     float                       _dt;                // time difference (in seconds) between calls from the main program
