@@ -367,6 +367,8 @@ void Plane::Log_Write_Sonar()
         correction  : rangefinder_state.correction
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+
+    DataFlash.Log_Write_RFND(rangefinder);
 #endif
 }
 
