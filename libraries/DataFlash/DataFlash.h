@@ -467,6 +467,9 @@ struct PACKED log_EKF6 {
     float VPX;
     float VPY;
     float VPZ;
+    float VPN;
+    float VPE;
+    float VPD;
     float VIX;
     float VIY;
     float VIZ;
@@ -866,7 +869,7 @@ Format characters in the format string for binary log messages
     { LOG_EKF5_MSG, sizeof(log_EKF5), \
       "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
 	{ LOG_EKF6_MSG, sizeof(log_EKF6), \
-	  "EKF6","Qffffff","TimeUS,VPX,VPY,VPZ,VIX,VIY,VIZ" },  \
+	  "EKF6","Qfffffffff","TimeUS,VPX,VPY,VPZ,VPN,VPE,VPD,VIX,VIY,VIZ" },  \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \

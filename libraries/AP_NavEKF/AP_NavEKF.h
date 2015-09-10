@@ -217,7 +217,7 @@ public:
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     // return data for debugging vision position fusion
-    void getVisionPosDebug(float &posX, float &posY, float &posZ, float &vpInnovX, float &vpInnovY, float &vpInnovZ);
+    void getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -520,6 +520,7 @@ private:
     AP_Int8 _useVisionPosition;     // 0 - don't use vision position to coorect state 1 - use
     AP_Float _visionHorizPosNoise;  // vision horizontal position measurement noise m
     AP_Float _visionVerticalPosNoise;//vision vertical position measurement noise m
+    AP_Float _visionFrameYaw;		//yaw angle between vision system frame and NED rad
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -721,7 +722,8 @@ private:
     //variables added for vision position fusion
     bool newDataVisionPosition;     // true when new vision position data has arrived
     bool fuseVisionPositionData;    // this boolean causes the last vision position measurement to be fused
-    Vector3f visionPosition; 		// vision position in NED frame (m)
+    Vector3f visionPosition; 		// marker vision position in camera (body) frame (m)
+    Vector3f worldVisionPos;		// vision position in NED frame (m)
     state_elements statesAtVisionPosTime; // States at the effective time of vision posNE measurements
     Vector3 innovVisionPos;            // innovation output for a group of measurements
     Vector3 varInnovVisionPos;         // innovation variance output for a group of measurements

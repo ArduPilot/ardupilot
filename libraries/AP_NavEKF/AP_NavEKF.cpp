@@ -409,6 +409,16 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Units: meters
     AP_GROUPINFO("VPOSD_NOISE",    35, NavEKF, _visionVerticalPosNoise, 0.1f),
 
+    // @Param: VP_YAW
+    // @DisplayName: The rotate angle of visual system coordinate frame relation on NED (rad)
+    // @Description: This angle is used to transform coordinates from visual system frame to NED
+    // @Range: 0.0 6.2832
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("VP_YAW",    36, NavEKF, _visionFrameYaw, 0.0f),
+
+
     AP_GROUPEND
 };
 
@@ -764,11 +774,14 @@ void NavEKF::UpdateFilter()
     // Check arm status and perform required checks and mode changes
     performArmingChecks();
 
+
+    //printf("1... Before x=%.3f y=%.3f\n", state.position.x, state.position.y);
     // run the strapdown INS equations every IMU update
     UpdateStrapdownEquationsNED();
 
     // store the predicted states for subsequent use by measurement fusion
     StoreStates();
+    //printf("1... After x=%.3f y=%.3f\n", state.position.x, state.position.y);
 
     // sum delta angles and time used by covariance prediction
     summedDelAng = summedDelAng + correctedDelAng;
@@ -787,12 +800,14 @@ void NavEKF::UpdateFilter()
     readRangeFinder();
 
     // Update states using GPS, altimeter, compass, airspeed and synthetic sideslip observations
+    //printf("2... Before x=%.3f y=%.3f\n", state.position.x, state.position.y);
     SelectVelPosFusion();
     SelectMagFusion();
     SelectFlowFusion();
     SelectVisionPositionFusion();
     SelectTasFusion();
     SelectBetaFusion();
+    //printf("2... After x=%.3f y=%.3f\n", state.position.x, state.position.y);
 
     // stop the timer used for load measurement
     perf_end(_perf_UpdateFilter);
@@ -2404,6 +2419,10 @@ void NavEKF::FuseVisionPosNED()
     // start performance timer
     //perf_begin(_perf_FuseVisionPosNED);
 
+	Vector3f markerpos_world(0.0,0.0,0.0);
+
+	worldVisionPos = markerpos_world - prevTnb*visionPosition;
+
     uint8_t stateIndex;
     uint8_t obsIndex;
 
@@ -2423,9 +2442,9 @@ void NavEKF::FuseVisionPosNED()
     	statesAtVisionPosTime = state;
     }
 
-    observation[0] = visionPosition.x;
-    observation[1] = visionPosition.y;
-    observation[2] = visionPosition.z;
+    observation[0] = worldVisionPos.x;
+    observation[1] = worldVisionPos.y;
+    observation[2] = worldVisionPos.z;
 
     R_OBS[0] = sq(constrain_float(_visionHorizPosNoise, 0.05f, 5.0f));
     R_OBS[1] = R_OBS[0];
@@ -4005,6 +4024,7 @@ bool NavEKF::getLLH(struct Location &loc) const
             loc.lat = EKF_origin.lat;
             loc.lng = EKF_origin.lng;
             location_offset(loc, state.position.x, state.position.y);
+            //printf("1... x=%.3f y=%.3f lat=%d lng=%d\n", state.position.x, state.position.y, loc.lat, loc.lng );
             return true;
         } else {
             // we could be in constant position mode  becasue the vehicle has taken off without GPS, or has lost GPS
@@ -4014,10 +4034,12 @@ bool NavEKF::getLLH(struct Location &loc) const
                 const struct Location &gpsloc = _ahrs->get_gps().location();
                 loc.lat = gpsloc.lat;
                 loc.lng = gpsloc.lng;
+                //printf("2... x=%.3f y=%.3f lat=%d lng=%d\n", state.position.x, state.position.y, loc.lat, loc.lng );
                 return true;
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 location_offset(loc, lastKnownPositionNE.x, lastKnownPositionNE.y);
+                //printf("3... x=%.3f y=%.3f lat=%d lng=%d\n", state.position.x, state.position.y, loc.lat, loc.lng );
                 return false;
             }
         }
@@ -4029,6 +4051,7 @@ bool NavEKF::getLLH(struct Location &loc) const
             loc = gpsloc;
             loc.flags.relative_alt = 0;
             loc.flags.terrain_alt = 0;
+            //printf("4... x=%.3f y=%.3f lat=%d lng=%d\n", state.position.x, state.position.y, loc.lat, loc.lng );
         }
         return false;
     }
@@ -4057,11 +4080,14 @@ void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, f
 }
 
 // return data for debugging vision position fusion
-void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &vpInnovX, float &vpInnovY, float &vpInnovZ)
+void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ)
 {
     posX = visionPosition.x;
     posY = visionPosition.y;
     posZ = visionPosition.z;
+    posN = worldVisionPos.x;
+    posE = worldVisionPos.y;
+    posD = worldVisionPos.z;
     vpInnovX = innovVisionPos[0];
     vpInnovY = innovVisionPos[1];
     vpInnovZ = innovVisionPos[2];
@@ -4632,7 +4658,9 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
 
 void  NavEKF::writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &rawVisionOrientation, uint64_t &msecVisionPositionMeas)
 {
-	visionPosition = rawVisionPosition;
+	visionPosition.x = rawVisionPosition.x*cos(_visionFrameYaw)+rawVisionPosition.y*sin(_visionFrameYaw);
+	visionPosition.y = rawVisionPosition.x*sin(_visionFrameYaw)+rawVisionPosition.y*cos(_visionFrameYaw);
+	visionPosition.z = rawVisionPosition.z;
 	newDataVisionPosition = true;
 	visionPosValidMeaTime_ms = imuSampleTime_ms;
     // recall vehicle states at mid sample time for flow observations allowing for delays

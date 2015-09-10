@@ -1280,14 +1280,18 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled, b
         float posX; // x vision position  from external source
         float posY; // y vision position  from external source
         float posZ; // z vision position  from external source
+        float posN, posE, posD; //robot position in NED frame calculated with marker vision position
         float vpInnovX, vpInnovY, vpInnovZ; // vision position innovations from the main nav filter
-        ahrs.get_NavEKF().getVisionPosDebug(posX, posY, posZ, vpInnovX, vpInnovY, vpInnovZ);
+        ahrs.get_NavEKF().getVisionPosDebug(posX, posY, posZ, posN, posE, posD, vpInnovX, vpInnovY, vpInnovZ);
         struct log_EKF6 pkt6 = {
             LOG_PACKET_HEADER_INIT(LOG_EKF6_MSG),
             time_us : hal.scheduler->micros64(),
 			VPX : (float)(posX),
 			VPY : (float)(posY),
 			VPZ : (float)(posZ),
+			VPN : (float)(posN),
+			VPE : (float)(posE),
+			VPD : (float)(posD),
 			VIX : (float)(vpInnovX),
 			VIY : (float)(vpInnovY),
 			VIZ : (float)(vpInnovZ),

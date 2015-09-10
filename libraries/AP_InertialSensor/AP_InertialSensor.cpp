@@ -1034,7 +1034,7 @@ AP_InertialSensor::_init_gyro()
             _gyro_cal_ok[k] = false;
         } else {
             _gyro_cal_ok[k] = true;
-            _gyro_offset[k] = new_gyro_offset[k];
+            //_gyro_offset[k] = new_gyro_offset[k];
         }
     }
 

@@ -736,7 +736,7 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qhhfffecchh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
+      "CTUN", "Qhhfffehhhh", "TimeUS,ThrIn,AngBst,ThrOut,DAlt,Alt,BarAlt,DSAlt,SAlt,DCRt,CRt" },
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QHHIhBH",    "TimeUS,NLon,NLoop,MaxT,PMT,I2CErr,INSErr" },
     { LOG_RATE_MSG, sizeof(log_Rate),
