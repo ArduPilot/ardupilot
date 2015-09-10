@@ -358,6 +358,10 @@ AP_InertialSensor::AP_InertialSensor() :
 
         _delta_velocity_acc[i].zero();
         _delta_velocity_acc_dt[i] = 0;
+
+        _delta_angle_acc[i].zero();
+        _last_delta_angle[i].zero();
+        _last_raw_gyro[i].zero();
     }
 #if INS_VIBRATION_CHECK
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
