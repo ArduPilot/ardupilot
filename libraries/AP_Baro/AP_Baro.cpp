@@ -55,6 +55,12 @@ const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
     // @Increment: 0.1
     AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
+    // @Param: PRIMARY
+    // @DisplayName: Primary barometer
+    // @Description: This selects which barometer will be the primary if multiple barometers are found
+    // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
+    AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
+    
     AP_GROUPEND
 };
 
@@ -342,18 +348,22 @@ void AP_Baro::update(void)
         }
     }
 
-    // choose primary sensor
-    _primary = 0;
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        if (healthy(i)) {
-            _primary = i;
-            break;
-        }
-    }
-
     // ensure the climb rate filter is updated
     if (healthy()) {
         _climb_rate_filter.update(get_altitude(), get_last_update());
+    }
+
+    // choose primary sensor
+    if (_primary_baro >= 0 && _primary_baro < _num_sensors && healthy(_primary_baro)) {
+        _primary = _primary_baro;
+    } else {
+        _primary = 0;
+        for (uint8_t i=0; i<_num_sensors; i++) {
+            if (healthy(i)) {
+                _primary = i;
+                break;
+            }
+        }
     }
 }
 
