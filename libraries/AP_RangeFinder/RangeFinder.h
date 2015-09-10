@@ -24,7 +24,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 // Maximum number of range finder instances available on this platform
-#define RANGEFINDER_MAX_INSTANCES 2
+#define RANGEFINDER_MAX_INSTANCES 4
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
@@ -110,7 +110,7 @@ public:
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).distance_cm;
+        return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
     }
     uint16_t distance_cm() const {
         return distance_cm(primary_instance);
@@ -181,8 +181,8 @@ public:
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
-    uint8_t primary_instance:2;
-    uint8_t num_instances:2;
+    uint8_t primary_instance:3;
+    uint8_t num_instances:3;
     float estimated_terrain_height;
     AP_SerialManager &serial_manager;
 
