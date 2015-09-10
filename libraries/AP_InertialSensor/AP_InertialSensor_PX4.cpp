@@ -27,9 +27,6 @@ AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     _last_gyro_filter_hz(-1),
     _last_accel_filter_hz(-1)
 {
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _delta_angle_accumulator[i].zero();
-    }
 }
 
 /*
@@ -226,13 +223,8 @@ bool AP_InertialSensor_PX4::update(void)
         // so we only want to do this if we have new data from it
         if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
             _publish_gyro(_gyro_instance[k], gyro);
-            _publish_delta_angle(_gyro_instance[k], _delta_angle_accumulator[k]);
             _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
         }
-    }
-
-    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _delta_angle_accumulator[i].zero();
     }
 
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
@@ -301,36 +293,16 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     // apply filter for control path
     _gyro_in[i] = _gyro_filter[i].apply(gyro);
 
-    // get time since last sample
-    float dt = _gyro_sample_time[i];
-
-    // compute delta angle
-    Vector3f delAng = (gyro+_last_gyro[i]) * 0.5f * dt;
-
-    /* compute coning correction
-     * see page 26 of:
-     * Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
-     * Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
-     * see also examples/coning.py
-     */
-    Vector3f delConing = ((_delta_angle_accumulator[i]+_last_delAng[i]*(1.0f/6.0f)) % delAng) * 0.5f;
-
-    // integrate delta angle accumulator
-    // the angles and coning corrections are accumulated separately in the
-    // referenced paper, but in simulation little difference was found between
-    // integrating together and integrating separately (see examples/coning.py)
-    _delta_angle_accumulator[i] += delAng + delConing;
-
-    // save previous delta angle for coning correction
-    _last_delAng[i] = delAng;
-    _last_gyro[i] = gyro;
-
     // save last timestamp
     _last_gyro_timestamp[i] = gyro_report.timestamp;
 
     // report error count
     _set_gyro_error_count(_gyro_instance[i], gyro_report.error_count);
+
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
+    // get time since last sample
+    float dt = _gyro_sample_time[i];
+
     _gyro_dt_max[i] = max(_gyro_dt_max[i],dt);
 
     _gyro_meas_count[i] ++;
