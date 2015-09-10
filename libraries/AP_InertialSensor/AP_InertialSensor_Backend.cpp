@@ -37,13 +37,6 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
     gyro.rotate(_imu._board_orientation);
 }
 
-void AP_InertialSensor_Backend::_publish_delta_angle(uint8_t instance, const Vector3f &delta_angle)
-{
-    // publish delta angle
-    _imu._delta_angle[instance] = delta_angle;
-    _imu._delta_angle_valid[instance] = true;
-}
-
 /*
   rotate gyro vector and add the gyro offset
  */
