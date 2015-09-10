@@ -87,6 +87,7 @@ public:
     bool Log_Write_Format(const struct LogStructure *structure);
     bool Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
+    void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
     void Log_Write_IMUDT(const AP_InertialSensor &ins);
     void Log_Write_Vibration(const AP_InertialSensor &ins);
@@ -516,6 +517,18 @@ struct PACKED log_Mode {
 };
 
 /*
+  rangefinder - support for 4 sensors
+ */
+struct PACKED log_RFND {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t dist1;
+    uint16_t dist2;
+    uint16_t dist3;
+    uint16_t dist4;
+};
+
+/*
   terrain log structure
  */
 struct PACKED log_TERRAIN {
@@ -735,7 +748,9 @@ Format characters in the format string for binary log messages
     { LOG_COMPASS_MSG, sizeof(log_Compass), \
       "MAG", "QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
-      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }
+      "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
+    { LOG_RFND_MSG, sizeof(log_RFND), \
+      "RFND", "QCCCC",         "TimeUS,Dist1,Dist2,Dist3,Dist4" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -819,6 +834,8 @@ Format characters in the format string for binary log messages
       "PIDS", "Qffffff",  "TimeUS,Des,P,I,D,FF,AFF" }, \
     { LOG_BAR2_MSG, sizeof(log_BARO), \
       "BAR2",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
+    { LOG_BAR3_MSG, sizeof(log_BARO), \
+      "BAR3",  "Qffcf", "TimeUS,Alt,Press,Temp,CRt" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
@@ -909,6 +926,8 @@ enum LogMessages {
     LOG_RPM_MSG,
     LOG_GPA_MSG,
     LOG_GPA2_MSG,
+    LOG_RFND_MSG,
+    LOG_BAR3_MSG,
 };
 
 enum LogOriginType {
