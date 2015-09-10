@@ -459,14 +459,15 @@ public:
     bool handle_log_format_msg(const struct log_Format &f);
     bool handle_msg(const struct log_Format &f, uint8_t *msg);
 
-    uint64_t last_imu_timestamp;
+    uint64_t last_clock_timestamp;
 private:
     MsgHandler *handler;
 };
 
 bool IMUCounter::handle_log_format_msg(const struct log_Format &f) {
-    if (!strncmp(f.name,"IMU",4)) {
-        // an IMU message
+    if (!strncmp(f.name,"IMU",4) ||
+        !strncmp(f.name,"IMT",4)) {
+        // an IMU or IMT message message
         handler = new MsgHandler(f);
     }
 
@@ -474,16 +475,17 @@ bool IMUCounter::handle_log_format_msg(const struct log_Format &f) {
 };
 
 bool IMUCounter::handle_msg(const struct log_Format &f, uint8_t *msg) {
-    if (strncmp(f.name,"IMU",4)) {
+    if (strncmp(f.name,"IMU",4) &&
+        strncmp(f.name,"IMT",4)) {
         // not an IMU message
         return true;
     }
 
-    if (handler->field_value(msg, "TimeUS", last_imu_timestamp)) {
-    } else if (handler->field_value(msg, "TimeMS", last_imu_timestamp)) {
-        last_imu_timestamp *= 1000;
+    if (handler->field_value(msg, "TimeUS", last_clock_timestamp)) {
+    } else if (handler->field_value(msg, "TimeMS", last_clock_timestamp)) {
+        last_clock_timestamp *= 1000;
     } else {
-        ::printf("Unable to find timestamp in IMU message");
+        ::printf("Unable to find timestamp in message");
     }
     return true;
 }
@@ -498,32 +500,47 @@ bool Replay::find_log_info(struct log_information &info)
         perror(filename);
         exit(1);
     }
+    char clock_source[5] = { };
     int samplecount = 0;
     uint64_t prev = 0;
     uint64_t smallest_delta = 0;
     prev = 0;
-    while (samplecount < 1000) {
+    const uint16_t samples_required = 1000;
+    while (samplecount < samples_required) {
         char type[5];
         if (!reader.update(type)) {
             break;
         }
-        if (streq(type, "IMU")) {
-            if (prev == 0) {
-                prev = reader.last_imu_timestamp;
+
+        if (strlen(clock_source) == 0) {
+            // if you want to add a clock source, also add it to
+            // handle_msg and handle_log_format_msg, above
+            if (streq(type, "IMU")) {
+                memcpy(clock_source, "IMU", 3);
+            } else if (streq(type, "IMT")) {
+                memcpy(clock_source, "IMT", 3);
             } else {
-                uint64_t delta = reader.last_imu_timestamp - prev;
+                continue;
+            }
+        }
+        if (streq(type, clock_source)) {
+            if (prev == 0) {
+                prev = reader.last_clock_timestamp;
+            } else {
+                uint64_t delta = reader.last_clock_timestamp - prev;
                 if (smallest_delta == 0 || delta < smallest_delta) {
                     smallest_delta = delta;
                 }
                 samplecount++;
             }
         }
+
         if (streq(type, "IMU2") && !info.have_imu2) {
             info.have_imu2 = true;
         }
     }
     if (smallest_delta == 0) {
-        ::printf("Unable to determine log rate - insufficient IMU messages?!");
+        ::printf("Unable to determine log rate - insufficient IMU/IMT messages? (need=%d got=%d)", samples_required, samplecount);
         return false;
     }
 
