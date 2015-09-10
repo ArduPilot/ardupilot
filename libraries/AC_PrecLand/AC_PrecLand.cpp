@@ -28,6 +28,14 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("SPEED",   2, AC_PrecLand, _speed_xy, AC_PRECLAND_SPEED_XY_DEFAULT),
 
+    // @Param: SCALE
+    // @DisplayName: Scale the angular offset from the LANDING_TARGET. Used to compensate for under/over shoot. 50 = %50 the value, 100 = unmodified value, 200 = %200 the value
+    // @Description: Scale the angular offset from the LANDING_TARGET. Used to compensate for under/over shoot. 50 = %50 the value, 100 = unmodified value, 200 = %200 the value
+    // @Range: 50 200
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("SCALE",   3, AC_PrecLand, _scale, 100),
+
     AP_GROUPEND
 };
 
@@ -113,7 +121,7 @@ Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
 
     // shift is target_offset - (original target - current position)
     Vector3f curr_offset_from_target = orig_target - _inav.get_position();
-    shift = _target_pos_offset - curr_offset_from_target;
+    shift = (_target_pos_offset * _scale/100.0f) - curr_offset_from_target;
     shift.z = 0.0f;
 
     // record we have consumed this reading (perhaps there is a cleaner way to do this using timestamps)
@@ -132,11 +140,13 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     // exit immediately if not enabled
     if (_backend == NULL) {
         _have_estimate = false;
+        return;
     }
 
     // get body-frame angles to target from backend
     if (!_backend->get_angle_to_target(_bf_angle_to_target.x, _bf_angle_to_target.y)) {
         _have_estimate = false;
+        return;
     }
 
     // subtract vehicle lean angles
@@ -156,4 +166,14 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     _target_pos_offset.z = 0;  // not used
 
     _have_estimate = true;
+}
+
+// handle_msg - Process a LANDING_TARGET mavlink message
+void AC_PrecLand::handle_msg(mavlink_message_t* msg){
+
+    // run backend update
+    if (_backend != NULL) {
+        // cast type and handle msg
+       _backend->handle_msg(msg);
+    }
 }
