@@ -285,6 +285,9 @@ private:
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
     bool _delta_angle_valid[INS_MAX_INSTANCES];
+    Vector3f _delta_angle_acc[INS_MAX_INSTANCES];
+    Vector3f _last_delta_angle[INS_MAX_INSTANCES];
+    Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;

@@ -51,11 +51,49 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 {
     _imu._gyro[instance] = gyro;
     _imu._gyro_healthy[instance] = true;
+
+    if (_imu._gyro_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    // publish delta angle
+    _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
+    _imu._delta_angle_valid[instance] = true;
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro)
 {
+    float dt;
+
+    if (_imu._gyro_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    dt = 1.0f / _imu._gyro_sample_rates[instance];
+
+    // compute delta angle
+    Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
+
+    // compute coning correction
+    // see page 26 of:
+    // Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
+    // Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
+    // see also examples/coning.py
+    Vector3f delta_coning = (_imu._delta_angle_acc[instance] +
+                             _imu._last_delta_angle[instance] * (1.0f / 6.0f));
+    delta_coning = delta_coning % delta_angle;
+    delta_coning *= 0.5f;
+
+    // integrate delta angle accumulator
+    // the angles and coning corrections are accumulated separately in the
+    // referenced paper, but in simulation little difference was found between
+    // integrating together and integrating separately (see examples/coning.py)
+    _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+
+    // save previous delta angle for coning correction
+    _imu._last_delta_angle[instance] = delta_angle;
+    _imu._last_raw_gyro[instance] = gyro;
 }
 
 /*
