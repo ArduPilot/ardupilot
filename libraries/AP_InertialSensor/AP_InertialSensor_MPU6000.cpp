@@ -593,7 +593,7 @@ void AP_InertialSensor_MPU6000::start()
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
-    _set_accel_sample_rate(_accel_instance, 1000);
+    _set_accel_raw_sample_rate(_accel_instance, 1000);
 
     hal.scheduler->resume_timer_procs();
 

@@ -161,7 +161,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             hal.scheduler->panic("Invalid accel sample rate");
         }
-        _set_accel_sample_rate(_accel_instance[i], (uint32_t) samplerate);
+        _set_accel_raw_sample_rate(_accel_instance[i], (uint32_t) samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -186,7 +186,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 {
     for (uint8_t i=0; i<_num_accel_instances; i++) {
-        float samplerate = _accel_sample_rate(_accel_instance[i]);
+        float samplerate = _accel_raw_sample_rate(_accel_instance[i]);
         _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
     }
 }

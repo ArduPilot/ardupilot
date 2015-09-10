@@ -301,8 +301,8 @@ private:
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // accelerometer and gyro raw sample rate in units of Hz
-    uint32_t _accel_sample_rates[INS_MAX_INSTANCES];
-    uint32_t _gyro_sample_rates[INS_MAX_INSTANCES];
+    uint32_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    uint32_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];

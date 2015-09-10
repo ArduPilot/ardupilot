@@ -45,7 +45,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._gyro[instance] = gyro;
     _imu._gyro_healthy[instance] = true;
 
-    if (_imu._gyro_sample_rates[instance] <= 0) {
+    if (_imu._gyro_raw_sample_rates[instance] <= 0) {
         return;
     }
 
@@ -59,11 +59,11 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 {
     float dt;
 
-    if (_imu._gyro_sample_rates[instance] <= 0) {
+    if (_imu._gyro_raw_sample_rates[instance] <= 0) {
         return;
     }
 
-    dt = 1.0f / _imu._gyro_sample_rates[instance];
+    dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
 
     // compute delta angle
     Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
@@ -97,7 +97,7 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._accel[instance] = accel;
     _imu._accel_healthy[instance] = true;
 
-    if (_imu._accel_sample_rates[instance] <= 0) {
+    if (_imu._accel_raw_sample_rates[instance] <= 0) {
         return;
     }
 
@@ -112,11 +112,11 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 {
     float dt;
 
-    if (_imu._accel_sample_rates[instance] <= 0) {
+    if (_imu._accel_raw_sample_rates[instance] <= 0) {
         return;
     }
 
-    dt = 1.0f / _imu._accel_sample_rates[instance];
+    dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
 #if INS_VIBRATION_CHECK
     _imu.calc_vibration_and_clipping(instance, accel, dt);
@@ -133,10 +133,10 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
     _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
-void AP_InertialSensor_Backend::_set_accel_sample_rate(uint8_t instance,
-                                                       uint32_t rate)
+void AP_InertialSensor_Backend::_set_accel_raw_sample_rate(uint8_t instance,
+                                                           uint32_t rate)
 {
-    _imu._accel_sample_rates[instance] = rate;
+    _imu._accel_raw_sample_rates[instance] = rate;
 }
 
 // set accelerometer error_count
@@ -145,8 +145,8 @@ void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_
     _imu._accel_error_count[instance] = error_count;
 }
 
-void AP_InertialSensor_Backend::_set_gyro_sample_rate(uint8_t instance,
-                                                      uint32_t rate)
+void AP_InertialSensor_Backend::_set_gyro_raw_sample_rate(uint8_t instance,
+                                                          uint32_t rate)
 {
     _imu._gyro_raw_sample_rates[instance] = rate;
 }

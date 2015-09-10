@@ -101,16 +101,16 @@ protected:
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
-    // set accelerometer sample rate
-    void _set_accel_sample_rate(uint8_t instance, uint32_t rate);
-    uint32_t _accel_sample_rate(uint8_t instance) const {
-        return _imu._accel_sample_rates[instance];
+    // set accelerometer raw sample rate
+    void _set_accel_raw_sample_rate(uint8_t instance, uint32_t rate);
+    uint32_t _accel_raw_sample_rate(uint8_t instance) const {
+        return _imu._accel_raw_sample_rates[instance];
     }
 
-    // set gyroscope sample rate
-    void _set_gyro_sample_rate(uint8_t instance, uint32_t rate);
-    uint32_t _gyro_sample_rate(uint8_t instance) const {
-        return _imu._gyro_sample_rates[instance];
+    // set gyroscope raw sample rate
+    void _set_gyro_raw_sample_rate(uint8_t instance, uint32_t rate);
+    uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
+        return _imu._gyro_raw_sample_rates[instance];
     }
 
     // publish a temperature value
