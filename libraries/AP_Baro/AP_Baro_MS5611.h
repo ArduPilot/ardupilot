@@ -86,6 +86,7 @@ private:
     bool _check_crc();
 
     void _timer();
+    void _read_from_device();
 
     /* Asynchronous state: */
     volatile bool            _updated;
@@ -94,6 +95,7 @@ private:
     volatile uint32_t        _s_D1, _s_D2;
     uint8_t                  _state;
     uint32_t                 _last_timer;
+    bool                     _timesliced;
 
     bool _use_timer;
 
