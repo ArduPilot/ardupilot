@@ -247,7 +247,7 @@ bool AP_Compass_LSM303D::_data_ready()
 
 
 // Read Sensor data
-bool AP_Compass_LSM303D::read_raw()
+bool AP_Compass_LSM303D::_read_raw()
 {
     if (_register_read(ADDR_CTRL_REG7) != _reg7_expected) {
         hal.console->println_P(
@@ -339,9 +339,9 @@ AP_Compass_LSM303D::init()
         }
     } while (1);
 
-    calibration[0] = 1.0;
-    calibration[1] = 1.0;
-    calibration[2] = 1.0;
+    _scaling[0] = 1.0;
+    _scaling[1] = 1.0;
+    _scaling[2] = 1.0;
 
     _spi_sem->give();
     hal.scheduler->resume_timer_procs();
@@ -368,7 +368,7 @@ bool AP_Compass_LSM303D::_hardware_init(void)
     _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
 
     // ensure the chip doesn't interpret any other bus traffic as I2C
-    disable_i2c();
+    _disable_i2c();
 
     /* enable mag */
     _reg7_expected = REG7_CONT_MODE_M;
@@ -376,8 +376,8 @@ bool AP_Compass_LSM303D::_hardware_init(void)
     _register_write(ADDR_CTRL_REG5, REG5_RES_HIGH_M);
     _register_write(ADDR_CTRL_REG4, 0x04); // DRDY on MAG on INT2
 
-    mag_set_range(LSM303D_MAG_DEFAULT_RANGE_GA);
-    mag_set_samplerate(LSM303D_MAG_DEFAULT_RATE);
+    _mag_set_range(LSM303D_MAG_DEFAULT_RANGE_GA);
+    _mag_set_samplerate(LSM303D_MAG_DEFAULT_RATE);
 
     // TODO: Software filtering
 
@@ -410,8 +410,8 @@ void AP_Compass_LSM303D::_collect_samples()
         return;
     }
 
-    if (!read_raw()) {
-        error("read_raw failed\n");
+    if (!_read_raw()) {
+        error("_read_raw() failed\n");
     } else {
         Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
         uint32_t time_us = hal.scheduler->micros();
@@ -419,7 +419,7 @@ void AP_Compass_LSM303D::_collect_samples()
         // rotate raw_field from sensor frame to body frame
         rotate_field(raw_field, _compass_instance);
 
-        // publish raw_field (uncorrected point sample) for calibration use
+        // publish raw_field (uncorrected point sample) for _scaling use
         publish_raw_field(raw_field, time_us, _compass_instance);
 
         // correct raw_field for known errors
@@ -456,9 +456,9 @@ void AP_Compass_LSM303D::read()
         return;
     }
 
-    Vector3f field(_mag_x_accum * calibration[0],
-                   _mag_y_accum * calibration[1],
-                   _mag_z_accum * calibration[2]);
+    Vector3f field(_mag_x_accum * _scaling[0],
+                   _mag_y_accum * _scaling[1],
+                   _mag_z_accum * _scaling[2]);
     field /= _accum_count;
 
     _accum_count = 0;
@@ -467,7 +467,7 @@ void AP_Compass_LSM303D::read()
     publish_filtered_field(field, _compass_instance);
 }
 
-void AP_Compass_LSM303D::disable_i2c(void)
+void AP_Compass_LSM303D::_disable_i2c(void)
 {
     // TODO: use the register names
     uint8_t a = _register_read(0x02);
@@ -480,7 +480,7 @@ void AP_Compass_LSM303D::disable_i2c(void)
     _register_write(0x02, (0xE7 & a));
 }
 
-uint8_t AP_Compass_LSM303D::mag_set_range(uint8_t max_ga)
+uint8_t AP_Compass_LSM303D::_mag_set_range(uint8_t max_ga)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG6_FULL_SCALE_BITS_M;
@@ -518,7 +518,7 @@ uint8_t AP_Compass_LSM303D::mag_set_range(uint8_t max_ga)
     return 0;
 }
 
-uint8_t AP_Compass_LSM303D::mag_set_samplerate(uint16_t frequency)
+uint8_t AP_Compass_LSM303D::_mag_set_samplerate(uint16_t frequency)
 {
     uint8_t setbits = 0;
     uint8_t clearbits = REG5_RATE_BITS_M;

@@ -12,9 +12,9 @@ class AP_Compass_LSM303D : public AP_Compass_Backend
 {
 private:
     AP_HAL::DigitalSource *_drdy_pin_m;
-    float   calibration[3];
+    float   _scaling[3] = { 0 };
     bool    _initialised;
-    bool    read_raw(void);
+    bool    _read_raw(void);
     uint8_t _register_read( uint8_t reg );
     void    _register_write( uint8_t reg, uint8_t val );
     void    _register_modify(uint8_t reg, uint8_t clearbits, uint8_t setbits);
@@ -22,9 +22,9 @@ private:
     bool    _hardware_init(void);
     void    _collect_samples();
     void    _update();
-    void    disable_i2c(void);
-    uint8_t mag_set_range(uint8_t max_ga);
-    uint8_t mag_set_samplerate(uint16_t frequency);
+    void    _disable_i2c(void);
+    uint8_t _mag_set_range(uint8_t max_ga);
+    uint8_t _mag_set_samplerate(uint16_t frequency);
 
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
