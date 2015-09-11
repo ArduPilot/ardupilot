@@ -480,10 +480,16 @@ void Copter::one_hz_loop()
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
 
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters are always using motor interlock
+        set_using_interlock(true);
+#else
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
 
-#if FRAME_CONFIG != HELI_FRAME
+        // check if we are using motor interlock control on an aux switch
+        set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+
         // set all throttle channel settings
         motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
         // set hover throttle
