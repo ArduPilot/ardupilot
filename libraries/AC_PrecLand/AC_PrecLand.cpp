@@ -159,3 +159,12 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
 
     _have_estimate = true;
 }
+
+// handle_msg - Process a LANDING_TARGET mavlink message
+void AC_PrecLand::handle_msg(mavlink_message_t* msg)
+{
+    // run backend update
+    if (_backend != NULL) {
+        _backend->handle_msg(msg);
+    }
+}

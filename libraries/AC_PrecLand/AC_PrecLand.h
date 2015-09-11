@@ -57,6 +57,9 @@ public:
     // get_target_shift - returns 3D vector of earth-frame position adjustments to target
     Vector3f get_target_shift(const Vector3f& orig_target);
 
+    // handle_msg - Process a LANDING_TARGET mavlink message
+    void handle_msg(mavlink_message_t* msg);
+
     // accessors for logging
     bool enabled() const { return _enabled; }
     const Vector2f& last_bf_angle_to_target() const { return _bf_angle_to_target; }

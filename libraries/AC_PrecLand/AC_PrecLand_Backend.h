@@ -33,6 +33,9 @@ public:
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
     virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) = 0;
 
+    // handle_msg - parses a mavlink message from the companion computer
+    virtual void handle_msg(mavlink_message_t* msg) = 0;
+
 protected:
 
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
