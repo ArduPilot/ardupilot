@@ -33,7 +33,7 @@ public:
     //  returns true if angles are available, false if not (i.e. no target)
     //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
     //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
-    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const;
+    bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad);
 
 private:
     AP_IRLock_PX4 irlock;
