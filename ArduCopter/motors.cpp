@@ -190,32 +190,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         did_ground_start = true;
     }
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are always using motor interlock
-    set_using_interlock(true);
-#else
-    // check if we are using motor interlock control on an aux switch
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
-#endif
-
-    // if we are using motor interlock switch and it's enabled, fail to arm
-    if (ap.using_interlock && motors.get_interlock()){
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Interlock Enabled"));
-        AP_Notify::flags.armed = false;
-        return false;
-    }
-
-    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
-    // can run normally
-    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
-        set_motor_emergency_stop(false);
-    // if we are using motor Estop switch, it must not be in Estop position
-    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
-        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Emergency Stopped"));
-        AP_Notify::flags.armed = false;
-        return false;
-    }
-
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
@@ -267,15 +241,6 @@ bool Copter::pre_arm_checks(bool display_failure)
     if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
         if (display_failure) {
             gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Interlock/E-Stop Conflict"));
-        }
-        return false;
-    }
-
-    // if we are using Motor Emergency Stop aux switch, check it is not enabled 
-    // and warn if it is
-    if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Motor Emergency Stopped"));
         }
         return false;
     }
@@ -731,8 +696,8 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // heli specific arming check
 #if FRAME_CONFIG == HELI_FRAME
+	// heli specific arming check
     // check if rotor is spinning on heli because this could disrupt gyro calibration
     if (!motors.allow_arming()){
         if (display_failure) {
@@ -740,7 +705,24 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
         return false;
     }
-#endif  // HELI_FRAME
+#endif
+
+    // if we are using motor interlock switch and it's enabled, fail to arm
+    if (ap.using_interlock && motors.get_interlock()){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Interlock Enabled"));
+        AP_Notify::flags.armed = false;
+        return false;
+    }
+
+    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
+    // can run normally
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        set_motor_emergency_stop(false);
+    // if we are using motor Estop switch, it must not be in Estop position
+    } else if (check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && ap.motor_emergency_stop){
+        gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Motor Emergency Stopped"));
+        return false;
+    }
 
     // succeed if arming checks are disabled
     if (g.arming_check == ARMING_CHECK_NONE) {
