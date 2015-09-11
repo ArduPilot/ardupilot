@@ -11,9 +11,6 @@
 class AP_Compass_LSM303D : public AP_Compass_Backend
 {
 private:
-    AP_HAL::DigitalSource *_drdy_pin_m;
-    float   _scaling[3] = { 0 };
-    bool    _initialised;
     bool    _read_raw(void);
     uint8_t _register_read( uint8_t reg );
     void    _register_write( uint8_t reg, uint8_t val );
@@ -26,26 +23,29 @@ private:
     uint8_t _mag_set_range(uint8_t max_ga);
     uint8_t _mag_set_samplerate(uint16_t frequency);
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_HAL::SPIDeviceDriver *_spi = nullptr;
+    AP_HAL::Semaphore *_spi_sem = nullptr;
+    AP_HAL::DigitalSource *_drdy_pin_m = nullptr;
+    float _scaling[3] = { 0 };
+    bool _initialised = false;
 
-    int16_t _mag_x;
-    int16_t _mag_y;
-    int16_t _mag_z;
-    int16_t _mag_x_accum;
-    int16_t _mag_y_accum;
-    int16_t _mag_z_accum;
-    uint32_t _last_accum_time;
-    uint32_t _last_update_timestamp;
-    uint8_t _accum_count;
+    int16_t _mag_x = 0;
+    int16_t _mag_y = 0;
+    int16_t _mag_z = 0;
+    int16_t _mag_x_accum = 0;
+    int16_t _mag_y_accum = 0;
+    int16_t _mag_z_accum = 0;
+    uint32_t _last_accum_time = 0;
+    uint32_t _last_update_timestamp = 0;
+    uint8_t _accum_count = 0;
 
-    uint8_t _compass_instance;
-    uint8_t _product_id;
+    uint8_t _compass_instance = 0;
+    uint8_t _product_id = 0;
 
-    uint8_t _mag_range_ga;
-    uint8_t _mag_samplerate;
-    uint8_t _reg7_expected;
-    float _mag_range_scale;
+    uint8_t _mag_range_ga = 0;
+    uint8_t _mag_samplerate = 0;
+    uint8_t _reg7_expected = 0;
+    float _mag_range_scale = 0.0f;
 
 public:
     AP_Compass_LSM303D(Compass &compass);

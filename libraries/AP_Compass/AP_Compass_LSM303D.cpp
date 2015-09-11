@@ -174,18 +174,7 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_Compass_LSM303D::AP_Compass_LSM303D(Compass &compass):
-    AP_Compass_Backend(compass),
-    _spi_sem(NULL),
-    _mag_x(0),
-    _mag_y(0),
-    _mag_z(0),
-    _mag_x_accum(0),
-    _mag_y_accum(0),
-    _mag_z_accum(0),
-    _accum_count(0),
-    _last_accum_time(0),
-    _compass_instance(0),
-    _product_id(0)
+    AP_Compass_Backend(compass)
 {}
 
 // detect the sensor
