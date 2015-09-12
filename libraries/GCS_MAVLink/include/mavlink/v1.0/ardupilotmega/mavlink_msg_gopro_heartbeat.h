@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_gopro_heartbeat_t
 {
- uint8_t status; ///< Status
+ uint8_t status; /*< Status*/
 } mavlink_gopro_heartbeat_t;
 
 #define MAVLINK_MSG_ID_GOPRO_HEARTBEAT_LEN 1

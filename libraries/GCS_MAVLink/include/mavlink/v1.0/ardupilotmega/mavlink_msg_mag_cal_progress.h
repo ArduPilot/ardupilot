@@ -4,15 +4,15 @@
 
 typedef struct __mavlink_mag_cal_progress_t
 {
- float direction_x; ///< Body frame direction vector for display
- float direction_y; ///< Body frame direction vector for display
- float direction_z; ///< Body frame direction vector for display
- uint8_t compass_id; ///< Compass being calibrated
- uint8_t cal_mask; ///< Bitmask of compasses being calibrated
- uint8_t cal_status; ///< Status (see MAG_CAL_STATUS enum)
- uint8_t attempt; ///< Attempt number
- uint8_t completion_pct; ///< Completion percentage
- uint8_t completion_mask[10]; ///< Bitmask of sphere sections (see http://en.wikipedia.org/wiki/Geodesic_grid)
+ float direction_x; /*< Body frame direction vector for display*/
+ float direction_y; /*< Body frame direction vector for display*/
+ float direction_z; /*< Body frame direction vector for display*/
+ uint8_t compass_id; /*< Compass being calibrated*/
+ uint8_t cal_mask; /*< Bitmask of compasses being calibrated*/
+ uint8_t cal_status; /*< Status (see MAG_CAL_STATUS enum)*/
+ uint8_t attempt; /*< Attempt number*/
+ uint8_t completion_pct; /*< Completion percentage*/
+ uint8_t completion_mask[10]; /*< Bitmask of sphere sections (see http://en.wikipedia.org/wiki/Geodesic_grid)*/
 } mavlink_mag_cal_progress_t;
 
 #define MAVLINK_MSG_ID_MAG_CAL_PROGRESS_LEN 27

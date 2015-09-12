@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_gimbal_request_axis_calibration_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_request_axis_calibration_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_REQUEST_AXIS_CALIBRATION_LEN 2

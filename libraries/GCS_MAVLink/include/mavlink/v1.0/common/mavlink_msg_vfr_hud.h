@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_vfr_hud_t
 {
- float airspeed; ///< Current airspeed in m/s
- float groundspeed; ///< Current ground speed in m/s
- float alt; ///< Current altitude (MSL), in meters
- float climb; ///< Current climb rate in meters/second
- int16_t heading; ///< Current heading in degrees, in compass units (0..360, 0=north)
- uint16_t throttle; ///< Current throttle setting in integer percent, 0 to 100
+ float airspeed; /*< Current airspeed in m/s*/
+ float groundspeed; /*< Current ground speed in m/s*/
+ float alt; /*< Current altitude (MSL), in meters*/
+ float climb; /*< Current climb rate in meters/second*/
+ int16_t heading; /*< Current heading in degrees, in compass units (0..360, 0=north)*/
+ uint16_t throttle; /*< Current throttle setting in integer percent, 0 to 100*/
 } mavlink_vfr_hud_t;
 
 #define MAVLINK_MSG_ID_VFR_HUD_LEN 20

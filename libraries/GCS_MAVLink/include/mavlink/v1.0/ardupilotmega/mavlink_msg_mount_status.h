@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_mount_status_t
 {
- int32_t pointing_a; ///< pitch(deg*100)
- int32_t pointing_b; ///< roll(deg*100)
- int32_t pointing_c; ///< yaw(deg*100)
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ int32_t pointing_a; /*< pitch(deg*100)*/
+ int32_t pointing_b; /*< roll(deg*100)*/
+ int32_t pointing_c; /*< yaw(deg*100)*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_mount_status_t;
 
 #define MAVLINK_MSG_ID_MOUNT_STATUS_LEN 14

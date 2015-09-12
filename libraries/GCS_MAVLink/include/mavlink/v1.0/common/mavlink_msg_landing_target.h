@@ -4,14 +4,14 @@
 
 typedef struct __mavlink_landing_target_t
 {
- uint64_t time_usec; ///< Timestamp (micros since boot or Unix epoch)
- float angle_x; ///< X-axis angular offset (in radians) of the target from the center of the image
- float angle_y; ///< Y-axis angular offset (in radians) of the target from the center of the image
- float distance; ///< Distance to the target from the vehicle in meters
- float size_x; ///< Size in radians of target along x-axis
- float size_y; ///< Size in radians of target along y-axis
- uint8_t target_num; ///< The ID of the target if multiple targets are present
- uint8_t frame; ///< MAV_FRAME enum specifying the whether the following feilds are earth-frame, body-frame, etc.
+ uint64_t time_usec; /*< Timestamp (micros since boot or Unix epoch)*/
+ float angle_x; /*< X-axis angular offset (in radians) of the target from the center of the image*/
+ float angle_y; /*< Y-axis angular offset (in radians) of the target from the center of the image*/
+ float distance; /*< Distance to the target from the vehicle in meters*/
+ float size_x; /*< Size in radians of target along x-axis*/
+ float size_y; /*< Size in radians of target along y-axis*/
+ uint8_t target_num; /*< The ID of the target if multiple targets are present*/
+ uint8_t frame; /*< MAV_FRAME enum specifying the whether the following feilds are earth-frame, body-frame, etc.*/
 } mavlink_landing_target_t;
 
 #define MAVLINK_MSG_ID_LANDING_TARGET_LEN 30

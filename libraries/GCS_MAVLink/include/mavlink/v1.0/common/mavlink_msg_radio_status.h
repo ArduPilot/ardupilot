@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_radio_status_t
 {
- uint16_t rxerrors; ///< Receive errors
- uint16_t fixed; ///< Count of error corrected packets
- uint8_t rssi; ///< Local signal strength
- uint8_t remrssi; ///< Remote signal strength
- uint8_t txbuf; ///< Remaining free buffer space in percent.
- uint8_t noise; ///< Background noise level
- uint8_t remnoise; ///< Remote background noise level
+ uint16_t rxerrors; /*< Receive errors*/
+ uint16_t fixed; /*< Count of error corrected packets*/
+ uint8_t rssi; /*< Local signal strength*/
+ uint8_t remrssi; /*< Remote signal strength*/
+ uint8_t txbuf; /*< Remaining free buffer space in percent.*/
+ uint8_t noise; /*< Background noise level*/
+ uint8_t remnoise; /*< Remote background noise level*/
 } mavlink_radio_status_t;
 
 #define MAVLINK_MSG_ID_RADIO_STATUS_LEN 9

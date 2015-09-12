@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_local_position_ned_system_global_offset_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- float x; ///< X Position
- float y; ///< Y Position
- float z; ///< Z Position
- float roll; ///< Roll
- float pitch; ///< Pitch
- float yaw; ///< Yaw
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ float x; /*< X Position*/
+ float y; /*< Y Position*/
+ float z; /*< Z Position*/
+ float roll; /*< Roll*/
+ float pitch; /*< Pitch*/
+ float yaw; /*< Yaw*/
 } mavlink_local_position_ned_system_global_offset_t;
 
 #define MAVLINK_MSG_ID_LOCAL_POSITION_NED_SYSTEM_GLOBAL_OFFSET_LEN 28

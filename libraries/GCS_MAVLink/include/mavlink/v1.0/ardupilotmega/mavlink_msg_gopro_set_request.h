@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_gopro_set_request_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t cmd_id; ///< Command ID
- uint8_t value; ///< Value
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t cmd_id; /*< Command ID*/
+ uint8_t value; /*< Value*/
 } mavlink_gopro_set_request_t;
 
 #define MAVLINK_MSG_ID_GOPRO_SET_REQUEST_LEN 4

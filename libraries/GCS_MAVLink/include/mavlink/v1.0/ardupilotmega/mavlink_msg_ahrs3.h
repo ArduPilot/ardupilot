@@ -4,16 +4,16 @@
 
 typedef struct __mavlink_ahrs3_t
 {
- float roll; ///< Roll angle (rad)
- float pitch; ///< Pitch angle (rad)
- float yaw; ///< Yaw angle (rad)
- float altitude; ///< Altitude (MSL)
- int32_t lat; ///< Latitude in degrees * 1E7
- int32_t lng; ///< Longitude in degrees * 1E7
- float v1; ///< test variable1
- float v2; ///< test variable2
- float v3; ///< test variable3
- float v4; ///< test variable4
+ float roll; /*< Roll angle (rad)*/
+ float pitch; /*< Pitch angle (rad)*/
+ float yaw; /*< Yaw angle (rad)*/
+ float altitude; /*< Altitude (MSL)*/
+ int32_t lat; /*< Latitude in degrees * 1E7*/
+ int32_t lng; /*< Longitude in degrees * 1E7*/
+ float v1; /*< test variable1*/
+ float v2; /*< test variable2*/
+ float v3; /*< test variable3*/
+ float v4; /*< test variable4*/
 } mavlink_ahrs3_t;
 
 #define MAVLINK_MSG_ID_AHRS3_LEN 40

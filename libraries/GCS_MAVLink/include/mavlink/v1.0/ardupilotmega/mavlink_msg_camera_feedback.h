@@ -4,19 +4,19 @@
 
 typedef struct __mavlink_camera_feedback_t
 {
- uint64_t time_usec; ///< Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)
- int32_t lat; ///< Latitude in (deg * 1E7)
- int32_t lng; ///< Longitude in (deg * 1E7)
- float alt_msl; ///< Altitude Absolute (meters AMSL)
- float alt_rel; ///< Altitude Relative (meters above HOME location)
- float roll; ///< Camera Roll angle (earth frame, degrees, +-180)
- float pitch; ///< Camera Pitch angle (earth frame, degrees, +-180)
- float yaw; ///< Camera Yaw (earth frame, degrees, 0-360, true)
- float foc_len; ///< Focal Length (mm)
- uint16_t img_idx; ///< Image index
- uint8_t target_system; ///< System ID
- uint8_t cam_idx; ///< Camera ID
- uint8_t flags; ///< See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask
+ uint64_t time_usec; /*< Image timestamp (microseconds since UNIX epoch), as passed in by CAMERA_STATUS message (or autopilot if no CCB)*/
+ int32_t lat; /*< Latitude in (deg * 1E7)*/
+ int32_t lng; /*< Longitude in (deg * 1E7)*/
+ float alt_msl; /*< Altitude Absolute (meters AMSL)*/
+ float alt_rel; /*< Altitude Relative (meters above HOME location)*/
+ float roll; /*< Camera Roll angle (earth frame, degrees, +-180)*/
+ float pitch; /*< Camera Pitch angle (earth frame, degrees, +-180)*/
+ float yaw; /*< Camera Yaw (earth frame, degrees, 0-360, true)*/
+ float foc_len; /*< Focal Length (mm)*/
+ uint16_t img_idx; /*< Image index*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t cam_idx; /*< Camera ID*/
+ uint8_t flags; /*< See CAMERA_FEEDBACK_FLAGS enum for definition of the bitmask*/
 } mavlink_camera_feedback_t;
 
 #define MAVLINK_MSG_ID_CAMERA_FEEDBACK_LEN 45

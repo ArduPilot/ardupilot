@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_gimbal_set_home_offsets_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_set_home_offsets_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_SET_HOME_OFFSETS_LEN 2

@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_gimbal_factory_parameters_loaded_t
 {
- uint8_t dummy; ///< Dummy field because mavgen doesn't allow messages with no fields
+ uint8_t dummy; /*< Dummy field because mavgen doesn't allow messages with no fields*/
 } mavlink_gimbal_factory_parameters_loaded_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_FACTORY_PARAMETERS_LOADED_LEN 1
