@@ -630,7 +630,12 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // always check if inertial nav has started and is ready
     if(!ahrs.get_NavEKF().healthy()) {
         if (display_failure) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Waiting for Nav Checks"));
+            const char *reason = ahrs.prearm_failure_reason();
+            if (reason) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: %s"), reason);
+            } else {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Waiting for Nav Checks"));
+            }
         }
         return false;
     }
@@ -735,7 +740,12 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
         if (display_failure) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Waiting for Nav Checks"));
+            const char *reason = ahrs.prearm_failure_reason();
+            if (reason) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("Arm: %s"), reason);
+            } else {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Waiting for Nav Checks"));
+            }
         }
         return false;
     }
