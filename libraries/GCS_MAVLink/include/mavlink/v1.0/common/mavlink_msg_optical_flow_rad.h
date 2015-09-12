@@ -4,18 +4,18 @@
 
 typedef struct __mavlink_optical_flow_rad_t
 {
- uint64_t time_usec; ///< Timestamp (microseconds, synced to UNIX time or since system boot)
- uint32_t integration_time_us; ///< Integration time in microseconds. Divide integrated_x and integrated_y by the integration time to obtain average flow. The integration time also indicates the.
- float integrated_x; ///< Flow in radians around X axis (Sensor RH rotation about the X axis induces a positive flow. Sensor linear motion along the positive Y axis induces a negative flow.)
- float integrated_y; ///< Flow in radians around Y axis (Sensor RH rotation about the Y axis induces a positive flow. Sensor linear motion along the positive X axis induces a positive flow.)
- float integrated_xgyro; ///< RH rotation around X axis (rad)
- float integrated_ygyro; ///< RH rotation around Y axis (rad)
- float integrated_zgyro; ///< RH rotation around Z axis (rad)
- uint32_t time_delta_distance_us; ///< Time in microseconds since the distance was sampled.
- float distance; ///< Distance to the center of the flow field in meters. Positive value (including zero): distance known. Negative value: Unknown distance.
- int16_t temperature; ///< Temperature * 100 in centi-degrees Celsius
- uint8_t sensor_id; ///< Sensor ID
- uint8_t quality; ///< Optical flow quality / confidence. 0: no valid flow, 255: maximum quality
+ uint64_t time_usec; /*< Timestamp (microseconds, synced to UNIX time or since system boot)*/
+ uint32_t integration_time_us; /*< Integration time in microseconds. Divide integrated_x and integrated_y by the integration time to obtain average flow. The integration time also indicates the.*/
+ float integrated_x; /*< Flow in radians around X axis (Sensor RH rotation about the X axis induces a positive flow. Sensor linear motion along the positive Y axis induces a negative flow.)*/
+ float integrated_y; /*< Flow in radians around Y axis (Sensor RH rotation about the Y axis induces a positive flow. Sensor linear motion along the positive X axis induces a positive flow.)*/
+ float integrated_xgyro; /*< RH rotation around X axis (rad)*/
+ float integrated_ygyro; /*< RH rotation around Y axis (rad)*/
+ float integrated_zgyro; /*< RH rotation around Z axis (rad)*/
+ uint32_t time_delta_distance_us; /*< Time in microseconds since the distance was sampled.*/
+ float distance; /*< Distance to the center of the flow field in meters. Positive value (including zero): distance known. Negative value: Unknown distance.*/
+ int16_t temperature; /*< Temperature * 100 in centi-degrees Celsius*/
+ uint8_t sensor_id; /*< Sensor ID*/
+ uint8_t quality; /*< Optical flow quality / confidence. 0: no valid flow, 255: maximum quality*/
 } mavlink_optical_flow_rad_t;
 
 #define MAVLINK_MSG_ID_OPTICAL_FLOW_RAD_LEN 44

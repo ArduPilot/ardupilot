@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_battery2_t
 {
- uint16_t voltage; ///< voltage in millivolts
- int16_t current_battery; ///< Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current
+ uint16_t voltage; /*< voltage in millivolts*/
+ int16_t current_battery; /*< Battery current, in 10*milliamperes (1 = 10 milliampere), -1: autopilot does not measure the current*/
 } mavlink_battery2_t;
 
 #define MAVLINK_MSG_ID_BATTERY2_LEN 4

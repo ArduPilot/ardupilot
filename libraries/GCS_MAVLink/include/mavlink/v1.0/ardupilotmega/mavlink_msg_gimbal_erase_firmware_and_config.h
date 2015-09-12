@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_gimbal_erase_firmware_and_config_t
 {
- uint32_t knock; ///< Knock value to confirm this is a valid request
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint32_t knock; /*< Knock value to confirm this is a valid request*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_erase_firmware_and_config_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_ERASE_FIRMWARE_AND_CONFIG_LEN 6

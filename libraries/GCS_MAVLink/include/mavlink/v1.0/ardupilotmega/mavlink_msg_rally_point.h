@@ -4,16 +4,16 @@
 
 typedef struct __mavlink_rally_point_t
 {
- int32_t lat; ///< Latitude of point in degrees * 1E7
- int32_t lng; ///< Longitude of point in degrees * 1E7
- int16_t alt; ///< Transit / loiter altitude in meters relative to home
- int16_t break_alt; ///< Break altitude in meters relative to home
- uint16_t land_dir; ///< Heading to aim for when landing. In centi-degrees.
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t idx; ///< point index (first point is 0)
- uint8_t count; ///< total number of points (for sanity checking)
- uint8_t flags; ///< See RALLY_FLAGS enum for definition of the bitmask.
+ int32_t lat; /*< Latitude of point in degrees * 1E7*/
+ int32_t lng; /*< Longitude of point in degrees * 1E7*/
+ int16_t alt; /*< Transit / loiter altitude in meters relative to home*/
+ int16_t break_alt; /*< Break altitude in meters relative to home*/
+ uint16_t land_dir; /*< Heading to aim for when landing. In centi-degrees.*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t idx; /*< point index (first point is 0)*/
+ uint8_t count; /*< total number of points (for sanity checking)*/
+ uint8_t flags; /*< See RALLY_FLAGS enum for definition of the bitmask.*/
 } mavlink_rally_point_t;
 
 #define MAVLINK_MSG_ID_RALLY_POINT_LEN 19

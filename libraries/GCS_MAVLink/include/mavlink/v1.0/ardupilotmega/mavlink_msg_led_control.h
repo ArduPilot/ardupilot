@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_led_control_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t instance; ///< Instance (LED instance to control or 255 for all LEDs)
- uint8_t pattern; ///< Pattern (see LED_PATTERN_ENUM)
- uint8_t custom_len; ///< Custom Byte Length
- uint8_t custom_bytes[24]; ///< Custom Bytes
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t instance; /*< Instance (LED instance to control or 255 for all LEDs)*/
+ uint8_t pattern; /*< Pattern (see LED_PATTERN_ENUM)*/
+ uint8_t custom_len; /*< Custom Byte Length*/
+ uint8_t custom_bytes[24]; /*< Custom Bytes*/
 } mavlink_led_control_t;
 
 #define MAVLINK_MSG_ID_LED_CONTROL_LEN 29

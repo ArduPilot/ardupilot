@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_pid_tuning_t
 {
- float desired; ///< desired rate (degrees/s)
- float achieved; ///< achieved rate (degrees/s)
- float FF; ///< FF component
- float P; ///< P component
- float I; ///< I component
- float D; ///< D component
- uint8_t axis; ///< axis
+ float desired; /*< desired rate (degrees/s)*/
+ float achieved; /*< achieved rate (degrees/s)*/
+ float FF; /*< FF component*/
+ float P; /*< P component*/
+ float I; /*< I component*/
+ float D; /*< D component*/
+ uint8_t axis; /*< axis*/
 } mavlink_pid_tuning_t;
 
 #define MAVLINK_MSG_ID_PID_TUNING_LEN 25

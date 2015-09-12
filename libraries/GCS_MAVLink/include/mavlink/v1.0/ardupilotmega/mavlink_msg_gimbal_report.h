@@ -4,18 +4,18 @@
 
 typedef struct __mavlink_gimbal_report_t
 {
- float delta_time; ///< Time since last update (seconds)
- float delta_angle_x; ///< Delta angle X (radians)
- float delta_angle_y; ///< Delta angle Y (radians)
- float delta_angle_z; ///< Delta angle X (radians)
- float delta_velocity_x; ///< Delta velocity X (m/s)
- float delta_velocity_y; ///< Delta velocity Y (m/s)
- float delta_velocity_z; ///< Delta velocity Z (m/s)
- float joint_roll; ///<  Joint ROLL (radians)
- float joint_el; ///<  Joint EL (radians)
- float joint_az; ///<  Joint AZ (radians)
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ float delta_time; /*< Time since last update (seconds)*/
+ float delta_angle_x; /*< Delta angle X (radians)*/
+ float delta_angle_y; /*< Delta angle Y (radians)*/
+ float delta_angle_z; /*< Delta angle X (radians)*/
+ float delta_velocity_x; /*< Delta velocity X (m/s)*/
+ float delta_velocity_y; /*< Delta velocity Y (m/s)*/
+ float delta_velocity_z; /*< Delta velocity Z (m/s)*/
+ float joint_roll; /*<  Joint ROLL (radians)*/
+ float joint_el; /*<  Joint EL (radians)*/
+ float joint_az; /*<  Joint AZ (radians)*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_report_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_REPORT_LEN 42

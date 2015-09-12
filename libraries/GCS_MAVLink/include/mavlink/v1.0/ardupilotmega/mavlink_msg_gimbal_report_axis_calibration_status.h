@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_gimbal_report_axis_calibration_status_t
 {
- uint8_t yaw_requires_calibration; ///< Whether or not the yaw axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration
- uint8_t pitch_requires_calibration; ///< Whether or not the pitch axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration
- uint8_t roll_requires_calibration; ///< Whether or not the roll axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration
+ uint8_t yaw_requires_calibration; /*< Whether or not the yaw axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration*/
+ uint8_t pitch_requires_calibration; /*< Whether or not the pitch axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration*/
+ uint8_t roll_requires_calibration; /*< Whether or not the roll axis requires calibration, see GIMBAL_AXIS_CALIBRATION_REQUIRED enumeration*/
 } mavlink_gimbal_report_axis_calibration_status_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_REPORT_AXIS_CALIBRATION_STATUS_LEN 3

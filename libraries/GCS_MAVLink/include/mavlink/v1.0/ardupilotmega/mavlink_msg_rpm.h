@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_rpm_t
 {
- float rpm1; ///< RPM Sensor1
- float rpm2; ///< RPM Sensor2
+ float rpm1; /*< RPM Sensor1*/
+ float rpm2; /*< RPM Sensor2*/
 } mavlink_rpm_t;
 
 #define MAVLINK_MSG_ID_RPM_LEN 8

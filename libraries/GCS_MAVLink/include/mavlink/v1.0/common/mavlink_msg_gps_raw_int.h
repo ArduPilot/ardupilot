@@ -4,16 +4,16 @@
 
 typedef struct __mavlink_gps_raw_int_t
 {
- uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- int32_t lat; ///< Latitude (WGS84), in degrees * 1E7
- int32_t lon; ///< Longitude (WGS84), in degrees * 1E7
- int32_t alt; ///< Altitude (AMSL, NOT WGS84), in meters * 1000 (positive for up). Note that virtually all GPS modules provide the AMSL altitude in addition to the WGS84 altitude.
- uint16_t eph; ///< GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
- uint16_t epv; ///< GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX
- uint16_t vel; ///< GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX
- uint16_t cog; ///< Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
- uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.
- uint8_t satellites_visible; ///< Number of satellites visible. If unknown, set to 255
+ uint64_t time_usec; /*< Timestamp (microseconds since UNIX epoch or microseconds since system boot)*/
+ int32_t lat; /*< Latitude (WGS84), in degrees * 1E7*/
+ int32_t lon; /*< Longitude (WGS84), in degrees * 1E7*/
+ int32_t alt; /*< Altitude (AMSL, NOT WGS84), in meters * 1000 (positive for up). Note that virtually all GPS modules provide the AMSL altitude in addition to the WGS84 altitude.*/
+ uint16_t eph; /*< GPS HDOP horizontal dilution of position in cm (m*100). If unknown, set to: UINT16_MAX*/
+ uint16_t epv; /*< GPS VDOP vertical dilution of position in cm (m*100). If unknown, set to: UINT16_MAX*/
+ uint16_t vel; /*< GPS ground speed (m/s * 100). If unknown, set to: UINT16_MAX*/
+ uint16_t cog; /*< Course over ground (NOT heading, but direction of movement) in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX*/
+ uint8_t fix_type; /*< 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.*/
+ uint8_t satellites_visible; /*< Number of satellites visible. If unknown, set to 255*/
 } mavlink_gps_raw_int_t;
 
 #define MAVLINK_MSG_ID_GPS_RAW_INT_LEN 30

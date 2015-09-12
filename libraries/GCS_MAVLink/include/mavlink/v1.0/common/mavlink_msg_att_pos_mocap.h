@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_att_pos_mocap_t
 {
- uint64_t time_usec; ///< Timestamp (micros since boot or Unix epoch)
- float q[4]; ///< Attitude quaternion (w, x, y, z order, zero-rotation is 1, 0, 0, 0)
- float x; ///< X position in meters (NED)
- float y; ///< Y position in meters (NED)
- float z; ///< Z position in meters (NED)
+ uint64_t time_usec; /*< Timestamp (micros since boot or Unix epoch)*/
+ float q[4]; /*< Attitude quaternion (w, x, y, z order, zero-rotation is 1, 0, 0, 0)*/
+ float x; /*< X position in meters (NED)*/
+ float y; /*< Y position in meters (NED)*/
+ float z; /*< Z position in meters (NED)*/
 } mavlink_att_pos_mocap_t;
 
 #define MAVLINK_MSG_ID_ATT_POS_MOCAP_LEN 36

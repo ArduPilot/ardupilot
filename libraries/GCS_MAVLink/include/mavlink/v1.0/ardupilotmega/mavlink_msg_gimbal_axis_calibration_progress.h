@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_gimbal_axis_calibration_progress_t
 {
- uint8_t calibration_axis; ///< Which gimbal axis we're reporting calibration progress for
- uint8_t calibration_progress; ///< The current calibration progress for this axis, 0x64=100%
- uint8_t calibration_status; ///< The status of the running calibration
+ uint8_t calibration_axis; /*< Which gimbal axis we're reporting calibration progress for*/
+ uint8_t calibration_progress; /*< The current calibration progress for this axis, 0x64=100%*/
+ uint8_t calibration_status; /*< The status of the running calibration*/
 } mavlink_gimbal_axis_calibration_progress_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_AXIS_CALIBRATION_PROGRESS_LEN 3

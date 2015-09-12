@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_gopro_set_response_t
 {
- uint8_t cmd_id; ///< Command ID
- uint8_t result; ///< Result
+ uint8_t cmd_id; /*< Command ID*/
+ uint8_t result; /*< Result*/
 } mavlink_gopro_set_response_t;
 
 #define MAVLINK_MSG_ID_GOPRO_SET_RESPONSE_LEN 2

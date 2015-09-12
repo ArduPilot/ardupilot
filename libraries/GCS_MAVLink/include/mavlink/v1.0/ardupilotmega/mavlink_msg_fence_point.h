@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_fence_point_t
 {
- float lat; ///< Latitude of point
- float lng; ///< Longitude of point
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t idx; ///< point index (first point is 1, 0 is for return point)
- uint8_t count; ///< total number of points (for sanity checking)
+ float lat; /*< Latitude of point*/
+ float lng; /*< Longitude of point*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t idx; /*< point index (first point is 1, 0 is for return point)*/
+ uint8_t count; /*< total number of points (for sanity checking)*/
 } mavlink_fence_point_t;
 
 #define MAVLINK_MSG_ID_FENCE_POINT_LEN 12
