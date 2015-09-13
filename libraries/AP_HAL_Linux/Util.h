@@ -8,6 +8,10 @@
 
 class Linux::LinuxUtil : public AP_HAL::Util {
 public:
+    static LinuxUtil *from(AP_HAL::Util *util) {
+        return static_cast<LinuxUtil*>(util);
+    }
+
     void init(int argc, char * const *argv) {
         saved_argc = argc;
         saved_argv = argv;

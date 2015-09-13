@@ -50,6 +50,11 @@ public:
 class Linux::LinuxRCOutput_Bebop : public AP_HAL::RCOutput {
 public:
     LinuxRCOutput_Bebop();
+
+    static LinuxRCOutput_Bebop *from(AP_HAL::RCOutput *rcout) {
+        return static_cast<LinuxRCOutput_Bebop*>(rcout);
+    }
+
     void     init(void* dummy);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);

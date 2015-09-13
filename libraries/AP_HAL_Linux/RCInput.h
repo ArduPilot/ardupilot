@@ -9,6 +9,11 @@
 class Linux::LinuxRCInput : public AP_HAL::RCInput {
 public:
     LinuxRCInput();
+
+    static LinuxRCInput *from(AP_HAL::RCInput *rcinput) {
+        return static_cast<LinuxRCInput*>(rcinput);
+    }
+
     virtual void init(void* machtnichts);
     bool new_input();
     uint8_t num_channels();
