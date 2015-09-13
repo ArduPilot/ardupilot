@@ -54,8 +54,8 @@ export GIT_SUBMODULES_ARE_EVIL = 1
 PYTHONPATH=$(SKETCHBOOK)/mk/PX4/Tools/genmsg/src:$(SKETCHBOOK)/mk/PX4/Tools/gencpp/src
 export PYTHONPATH
 
-PX4_MAKE = $(v) GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 make -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
-PX4_MAKE_ARCHIVES = make -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
+PX4_MAKE = $(v)+ GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 $(MAKE) -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
+PX4_MAKE_ARCHIVES = $(MAKE) -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
 
 HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
 
@@ -122,7 +122,7 @@ px4-archives-clean:
 	$(v) /bin/rm -rf $(PX4_ROOT)/Archives
 
 px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
-	$(v) make -C $(PX4_ROOT) px4io-v1_default
+	$(v)+ $(MAKE) -C $(PX4_ROOT) px4io-v1_default
 	$(v) /bin/rm -f px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v1_default.bin px4io-v1.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v1_default.build/firmware.elf px4io-v1.elf
@@ -136,7 +136,7 @@ px4-io-v1: $(PX4_ROOT)/Archives/px4io-v1.export
 
 
 px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
-	$(v) make -C $(PX4_ROOT) px4io-v2_default
+	$(v)+ $(MAKE) -C $(PX4_ROOT) px4io-v2_default
 	$(v) /bin/rm -f px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Build/px4io-v2_default.build/firmware.bin px4io-v2.bin
 	$(v) cp $(PX4_ROOT)/Images/px4io-v2_default.bin px4io-v2.bin
@@ -151,6 +151,19 @@ px4-io-v2: $(PX4_ROOT)/Archives/px4io-v2.export
 
 px4-io: px4-io-v1 px4-io-v2
 
+# These targets can't run in parallel because they all need to generate a tool
+# to generate the config.h inside them. This could trigger races if done in
+# parallel, trying to generate the tool and replacing it while the header is already
+# being generated
+#
+# We could serialize inside PX4Firmware, but it's easier to serialize here
+# while maintaining the rest of the build parallelized
+
+.NOTPARALLEL: \
+	$(PX4_ROOT)/Archives/px4fmu-v1.export \
+	$(PX4_ROOT)/Archives/px4fmu-v2.export \
+	$(PX4_ROOT)/Archives/px4io-v1.export \
+	$(PX4_ROOT)/Archives/px4io-v2.export
 
 $(PX4_ROOT)/Archives/px4fmu-v1.export:
 	$(v) $(PX4_MAKE_ARCHIVES) BOARDS="px4fmu-v1"
