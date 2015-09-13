@@ -952,7 +952,7 @@ AP_MPU6000_AuxiliaryBusSlave::AP_MPU6000_AuxiliaryBusSlave(AuxiliaryBus &bus, ui
 int AP_MPU6000_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t size,
                                                   uint8_t *out)
 {
-    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    auto backend = AP_InertialSensor_MPU6000::from(_bus.get_backend());
     uint8_t addr;
 
     /* Ensure the slave read/write is disabled before changing the registers */
@@ -989,7 +989,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     /* wait the value to be read from the slave and read it back */
     hal.scheduler->delay(10);
 
-    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    auto backend = AP_InertialSensor_MPU6000::from(_bus.get_backend());
     backend._read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, size);
 
     /* disable new reads */
@@ -1012,7 +1012,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
     /* wait the value to be written to the slave */
     hal.scheduler->delay(10);
 
-    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    auto backend = AP_InertialSensor_MPU6000::from(_bus.get_backend());
 
     /* disable new writes */
     backend._register_write(_mpu6000_ctrl, 0);
@@ -1027,7 +1027,7 @@ int AP_MPU6000_AuxiliaryBusSlave::read(uint8_t *buf)
         return -1;
     }
 
-    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_bus.get_backend());
+    auto backend = AP_InertialSensor_MPU6000::from(_bus.get_backend());
     backend._read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, _sample_size);
 
     return 0;
@@ -1056,7 +1056,7 @@ AuxiliaryBusSlave *AP_MPU6000_AuxiliaryBus::_instantiate_slave(uint8_t addr, uin
 
 void AP_MPU6000_AuxiliaryBus::_configure_slaves()
 {
-    AP_InertialSensor_MPU6000 &backend = static_cast<AP_InertialSensor_MPU6000&>(_ins_backend);
+    auto backend = AP_InertialSensor_MPU6000::from(_ins_backend);
 
     uint8_t user_ctrl;
     user_ctrl = backend._register_read(MPUREG_USER_CTRL);
