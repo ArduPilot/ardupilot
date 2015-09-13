@@ -28,7 +28,7 @@ void Plane::set_control_channels(void)
     channel_throttle->set_range(0, 100);
 
     if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
     }
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
@@ -63,7 +63,7 @@ void Plane::init_rc_out()
       configuration error where the user sets CH3_TRIM incorrectly and
       the motor may start on power up
      */
-    channel_throttle->radio_trim = channel_throttle->get_reverse() ? channel_throttle->radio_max : channel_throttle->radio_min;
+    channel_throttle->radio_trim = throttle_min();
     
     if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
         channel_throttle->enable_out();
@@ -80,7 +80,7 @@ void Plane::init_rc_out()
     // setup PX4 to output the min throttle when safety off if arming
     // is setup for min on disarm
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
     }
 }
 

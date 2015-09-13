@@ -737,6 +737,14 @@ void Plane::set_servos_idle(void)
     channel_throttle->output_trim();
 }
 
+/*
+  return minimum throttle, taking account of throttle reversal
+ */
+uint16_t Plane::throttle_min(void) const
+{
+    return channel_throttle->get_reverse() ? channel_throttle->radio_max : channel_throttle->radio_min;
+};
+
 
 /*****************************************
 * Set the flight control servos based on the current calculated values
@@ -1004,7 +1012,7 @@ void Plane::set_servos(void)
 
         case AP_Arming::YES_MIN_PWM:
         default:
-            channel_throttle->radio_out = channel_throttle->radio_min;
+            channel_throttle->radio_out = throttle_min();
             break;
         }
     }

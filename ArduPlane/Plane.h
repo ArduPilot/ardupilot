@@ -956,7 +956,8 @@ private:
     uint32_t micros() const;
     void init_capabilities(void);
     void dataflash_periodic(void);
-
+    uint16_t throttle_min(void) const;
+    
 public:
     void mavlink_delay_cb();
     void failsafe_check(void);

@@ -259,7 +259,7 @@ bool Plane::setup_failsafe_mixing(void)
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         // make sure the throttle has a non-zero failsafe value before we
         // disable safety. This prevents sending zero PWM during switch over
-        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_min);
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), throttle_min());
     }
 
     // we need to force safety on to allow us to load a mixer. We call
