@@ -13,6 +13,10 @@
 class HALSITL::SITLScheduler : public AP_HAL::Scheduler {
 public:
     SITLScheduler(SITL_State *sitlState);
+    static SITLScheduler *from(AP_HAL::Scheduler *scheduler) {
+        return static_cast<SITLScheduler*>(scheduler);
+    }
+
     /* AP_HAL::Scheduler methods */
 
     void     init(void *unused);

@@ -524,7 +524,7 @@ void SITL_State::init(int argc, char * const argv[])
     pwm_input[4] = pwm_input[7] = 1800;
     pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
 
-    _scheduler = (SITLScheduler *)hal.scheduler;
+    _scheduler = SITLScheduler::from(hal.scheduler);
     _parse_command_line(argc, argv);
 }
 
