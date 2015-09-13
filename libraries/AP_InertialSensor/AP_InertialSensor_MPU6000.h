@@ -65,6 +65,9 @@ public:
                                                  AP_HAL::I2CDriver *i2c,
                                                  uint8_t addr);
     static AP_InertialSensor_Backend *detect_spi(AP_InertialSensor &_imu);
+    static AP_InertialSensor_MPU6000 &from(AP_InertialSensor_Backend &backend) {
+        return static_cast<AP_InertialSensor_MPU6000&>(backend);
+    }
 
     /* update accel and gyro state */
     bool update();
