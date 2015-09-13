@@ -9,6 +9,11 @@
 class Linux::LinuxRPIOUARTDriver : public Linux::LinuxUARTDriver {
 public:
     LinuxRPIOUARTDriver();
+
+    static LinuxRPIOUARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<LinuxRPIOUARTDriver*>(uart);
+    }
+
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void _timer_tick(void);
     bool isExternal(void);

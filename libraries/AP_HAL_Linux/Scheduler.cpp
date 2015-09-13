@@ -341,7 +341,7 @@ void *LinuxScheduler::_rcin_thread(void *arg)
     }
     while (true) {
         sched->_microsleep(APM_LINUX_RCIN_PERIOD);
-        ((LinuxRCInput *)hal.rcin)->_timer_tick();
+        LinuxRCInput::from(hal.rcin)->_timer_tick();
     }
     return NULL;
 }
@@ -357,18 +357,17 @@ void *LinuxScheduler::_uart_thread(void* arg)
         sched->_microsleep(APM_LINUX_UART_PERIOD);
 
         // process any pending serial bytes
-        ((LinuxUARTDriver *)hal.uartA)->_timer_tick();
-        ((LinuxUARTDriver *)hal.uartB)->_timer_tick();
+        LinuxUARTDriver::from(hal.uartA)->_timer_tick();
+        LinuxUARTDriver::from(hal.uartB)->_timer_tick();
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
         //SPI UART not use SPI
-        if ( ((LinuxRPIOUARTDriver *)hal.uartC)->isExternal() )
-        {
-            ((LinuxRPIOUARTDriver *)hal.uartC)->_timer_tick();
+        if (LinuxRPIOUARTDriver::from(hal.uartC)->isExternal()) {
+            LinuxRPIOUARTDriver::from(hal.uartC)->_timer_tick();
         }
 #else
-        ((LinuxUARTDriver *)hal.uartC)->_timer_tick();
+        LinuxUARTDriver::from(hal.uartC)->_timer_tick();
 #endif
-        ((LinuxUARTDriver *)hal.uartE)->_timer_tick();
+        LinuxUARTDriver::from(hal.uartE)->_timer_tick();
     }
     return NULL;
 }
@@ -384,7 +383,7 @@ void *LinuxScheduler::_tonealarm_thread(void* arg)
         sched->_microsleep(APM_LINUX_TONEALARM_PERIOD);
 
         // process tone command
-        ((LinuxUtil *)hal.util)->_toneAlarm_timer_tick();
+        LinuxUtil::from(hal.util)->_toneAlarm_timer_tick();
     }
     return NULL;
 }
@@ -400,7 +399,7 @@ void *LinuxScheduler::_io_thread(void* arg)
         sched->_microsleep(APM_LINUX_IO_PERIOD);
 
         // process any pending storage writes
-        ((LinuxStorage *)hal.storage)->_timer_tick();
+        LinuxStorage::from(hal.storage)->_timer_tick();
 
         // run registered IO procepsses
         sched->_run_io();

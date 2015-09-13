@@ -9,6 +9,11 @@
 class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
 public:
     LinuxUARTDriver(bool default_console);
+
+    static LinuxUARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<LinuxUARTDriver*>(uart);
+    }
+
     /* Linux implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
