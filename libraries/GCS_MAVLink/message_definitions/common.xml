@@ -600,7 +600,7 @@
                </entry>
                <entry value="21" name="MAV_CMD_NAV_LAND">
                     <description>Land at location</description>
-                    <param index="1">Empty</param>
+                    <param index="1">Abort Alt</param>
                     <param index="2">Empty</param>
                     <param index="3">Empty</param>
                     <param index="4">Desired yaw angle.</param>
