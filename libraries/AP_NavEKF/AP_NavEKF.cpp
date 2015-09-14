@@ -2110,7 +2110,7 @@ void NavEKF::FuseVelPosNED()
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
-            // Fuse height data if healthy or timed out or in constant position mode
+            // Fuse height data if healthy or timed out
             if (hgtHealth || hgtTimeout) {
                 hgtHealth = true;
                 lastHgtPassTime = imuSampleTime_ms;
