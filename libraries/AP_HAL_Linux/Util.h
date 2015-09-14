@@ -39,7 +39,11 @@ public:
     void set_imu_temp(float current);
 
 private:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    static Linux::ToneAlarm_Raspilot _toneAlarm;
+#else
     static Linux::ToneAlarm _toneAlarm;
+#endif
     Linux::LinuxHeat *_heat;
     int saved_argc;
     char* const *saved_argv;

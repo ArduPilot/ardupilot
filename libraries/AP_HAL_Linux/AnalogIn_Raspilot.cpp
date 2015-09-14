@@ -2,8 +2,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include <stdio.h>
-#include "RaspilotAnalogIn.h"
+#include "AnalogIn_Raspilot.h"
 #include "px4io_protocol.h"
 
 #define RASPILOT_ANALOGIN_DEBUG 0
@@ -12,8 +11,8 @@
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
-#define debug(fmt, args ...)  
-#define error(fmt, args ...)  
+#define debug(fmt, args ...)
+#define error(fmt, args ...)
 #endif
 
 RaspilotAnalogSource::RaspilotAnalogSource(int16_t pin):
@@ -31,7 +30,7 @@ void RaspilotAnalogSource::set_pin(uint8_t pin)
 }
 
 float RaspilotAnalogSource::read_average()
-{ 
+{
     return read_latest();
 }
 
@@ -65,7 +64,7 @@ RaspilotAnalogIn::RaspilotAnalogIn()
 float RaspilotAnalogIn::board_voltage(void)
 {
     _vcc_pin_analog_source->set_pin(4);
-    
+
     return 5.0;
     //return _vcc_pin_analog_source->voltage_average() * 2.0;
 }
@@ -86,16 +85,16 @@ AP_HAL::AnalogSource* RaspilotAnalogIn::channel(int16_t pin)
 void RaspilotAnalogIn::init(void* implspecific)
 {
     _vcc_pin_analog_source = channel(4);
-    
+
     _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
     _spi_sem = _spi->get_semaphore();
-    
+
     if (_spi_sem == NULL) {
         hal.scheduler->panic(PSTR("PANIC: RCIutput_Raspilot did not get "
                                   "valid SPI semaphore!"));
         return; // never reached
     }
-    
+
     hal.scheduler->suspend_timer_procs();
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RaspilotAnalogIn::_update, void));
     hal.scheduler->resume_timer_procs();
@@ -106,11 +105,11 @@ void RaspilotAnalogIn::_update()
     if (hal.scheduler->micros() - _last_update_timestamp < 100000) {
         return;
     }
-    
+
     if (!_spi_sem->take_nonblocking()) {
         return;
     }
-    
+
     struct IOPacket _dma_packet_tx, _dma_packet_rx;
     uint16_t count = RASPILOT_ADC_MAX_CHANNELS;
     _dma_packet_tx.count_code = count | PKT_CODE_READ;
@@ -120,12 +119,12 @@ void RaspilotAnalogIn::_update()
     _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* set raspilotio to read reg4 */
     _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
+
     hal.scheduler->delay_microseconds(200);
-    
+
     /* get reg4 data from raspilotio */
     _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
-    
+
     _spi_sem->give();
 
     for (int16_t i = 0; i < RASPILOT_ADC_MAX_CHANNELS; i++) {
