@@ -23,13 +23,13 @@ public:
 
     bool toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tune);
-    
+
     void _toneAlarm_timer_tick();
 
     /*
       set system clock in UTC microseconds
      */
-    void set_system_clock(uint64_t time_utc_usec);    
+    void set_system_clock(uint64_t time_utc_usec);
     const char* get_custom_log_directory() { return custom_log_directory; }
     const char* get_custom_terrain_directory() { return custom_terrain_directory; }
 
@@ -39,11 +39,15 @@ public:
     bool is_chardev_node(const char *path);
 
 private:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    static Linux::ToneAlarm_Raspilot _toneAlarm;
+#else
     static Linux::ToneAlarm _toneAlarm;
+#endif
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;
-    const char* custom_terrain_directory = NULL;	
+    const char* custom_terrain_directory = NULL;
 };
 
 
