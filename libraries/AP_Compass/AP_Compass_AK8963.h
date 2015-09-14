@@ -100,7 +100,6 @@ private:
         _write(reg, &value, 1);
     }
     AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
 };
 
 class AP_AK8963_SerialBus_I2C: public AP_AK8963_SerialBus
@@ -121,7 +120,6 @@ private:
         _write(reg, &value, 1);
     }
     AP_HAL::I2CDriver *_i2c;
-    AP_HAL::Semaphore *_i2c_sem;
     uint8_t _addr;
 };
 #endif
