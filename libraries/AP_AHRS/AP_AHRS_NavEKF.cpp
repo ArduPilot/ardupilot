@@ -102,20 +102,21 @@ void AP_AHRS_NavEKF::update(void)
         // Check if the EKF is healthy and reinitialise if unhealthy for 200 msec
         // Don't repeat until 1500 msec has lapsed to allow EKF time to restart
         // Don't do on the ground because the health criteria are tightened before the vehicle arms and we could end up with repeating resets
-        if (ekfHealthy || !hal.util->get_soft_armed()) {
+        // Use the vehicle arm status as a proxy for determining if we are on-ground or in-air
+        if (ekfHealthy) {
             lastEkfHealthyTime_ms = hal.scheduler->millis();
         }
-        if ((hal.scheduler->millis() - lastEkfHealthyTime_ms > 200) && !ekfStarting) {
+        if ((hal.scheduler->millis() - lastEkfHealthyTime_ms > 200) && (hal.scheduler->millis() - lastEkfResetTime_ms > 1500) && hal.util->get_soft_armed()) {
             bool restartSuccessful = EKF.InitialiseFilterDynamic();
             if (restartSuccessful) {
                 hal.console->printf("EKF restarted\n");
                 lastEkfHealthyTime_ms = hal.scheduler->millis();
-                ekfStarting = true;
                 lastEkfResetTime_ms = lastEkfHealthyTime_ms;
+             } else {
+                // If the restart is unsuccessful, then indicate that the ekf has not started and bypass the update steps
+                ekf_started = false;
+                goto skip_ekf_update;
              }
-        }
-        if (ekfStarting && (hal.scheduler->millis() - lastEkfResetTime_ms > 1500)) {
-            ekfStarting = false;
         }
 
         EKF.getRotationBodyToNED(_dcm_matrix);
@@ -175,6 +176,9 @@ void AP_AHRS_NavEKF::update(void)
             }
         }
     }
+
+    // We goto this point if the EKF start fails
+    skip_ekf_update:
 
     static uint32_t last_update_ms = 0;
     uint32_t tnow = hal.scheduler->millis();
