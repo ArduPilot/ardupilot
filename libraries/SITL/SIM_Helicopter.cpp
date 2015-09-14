@@ -60,7 +60,6 @@ void Helicopter::update(const struct sitl_input &input)
     float delta_time = frame_time_us * 1.0e-6f;
 
     float rsc = (input.servos[7]-1000) / 1000.0f;
-    float rsc_scale = rsc/rsc_setpoint;
     // ignition only for gas helis
     bool ignition_enabled = gas_heli?(input.servos[6] > 1500):true;
 
@@ -79,6 +78,7 @@ void Helicopter::update(const struct sitl_input &input)
     if (!ignition_enabled) {
         rsc = 0;
     }
+    float rsc_scale = rsc/rsc_setpoint;
 
     switch (frame_type) {
     case HELI_FRAME_CONVENTIONAL: {
