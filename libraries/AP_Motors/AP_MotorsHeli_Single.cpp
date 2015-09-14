@@ -225,30 +225,11 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
     _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
 }
 
-// calculate_scalars - recalculates various scalers used.
-void AP_MotorsHeli_Single::calculate_scalars()
+/*
+  calculate_armed_scalars - recalculates scalars that can be changed while armed
+*/
+void AP_MotorsHeli_Single::calculate_armed_scalars()
 {
-    // range check collective min, max and mid
-    if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
-    }
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
-
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
-
-    // calculate maximum collective pitch range from full positive pitch to zero pitch
-    _collective_range = 1000 - _collective_mid_pwm;
-
-    // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_roll_max/4500.0f;
-    _pitch_scaler = (float)_pitch_max/4500.0f;
-    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-
-    // calculate factors based on swash type and servo position
-    calculate_roll_pitch_collective_factors();
-
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
     _main_rotor.set_ramp_time(_rsc_ramp_time);
@@ -273,6 +254,34 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_idle_output(0);
     }
     _tail_rotor.recalc_scalers();
+}
+
+
+// calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli_Single::calculate_scalars()
+{
+    // range check collective min, max and mid
+    if( _collective_min >= _collective_max ) {
+        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
+        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+    }
+    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+
+    // calculate collective mid point as a number from 0 to 1000
+    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
+
+    // calculate maximum collective pitch range from full positive pitch to zero pitch
+    _collective_range = 1000 - _collective_mid_pwm;
+
+    // determine roll, pitch and collective input scaling
+    _roll_scaler = (float)_roll_max/4500.0f;
+    _pitch_scaler = (float)_pitch_max/4500.0f;
+    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
+
+    // calculate factors based on swash type and servo position
+    calculate_roll_pitch_collective_factors();
+
+    calculate_armed_scalars();
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
