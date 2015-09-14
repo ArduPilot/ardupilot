@@ -406,6 +406,8 @@ private:
 
     // if we want HIL only
     bool _hil_mode:1;
+
+    AP_Float _calibration_threshold;
 };
 
 #include "AP_Compass_Backend.h"

@@ -365,6 +365,14 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
 #endif
 
+    // @Param: CAL_FIT
+    // @DisplayName: Compass calibration fitness
+    // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
+    // @Range: 4 20
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, 8.0f),
+    
     AP_GROUPEND
 };
 
