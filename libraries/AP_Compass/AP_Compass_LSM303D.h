@@ -32,9 +32,9 @@ private:
     int16_t _mag_x = 0;
     int16_t _mag_y = 0;
     int16_t _mag_z = 0;
-    int16_t _mag_x_accum = 0;
-    int16_t _mag_y_accum = 0;
-    int16_t _mag_z_accum = 0;
+    float _mag_x_accum = 0.0f;
+    float _mag_y_accum = 0.0f;
+    float _mag_z_accum = 0.0f;
     uint32_t _last_accum_time = 0;
     uint32_t _last_update_timestamp = 0;
     uint8_t _accum_count = 0;
@@ -51,6 +51,7 @@ public:
     AP_Compass_LSM303D(Compass &compass);
     bool        init(void);
     void        read(void);
+    uint32_t    get_dev_id();
 
     // detect the sensor
     static AP_Compass_Backend *detect_spi(Compass &compass);
