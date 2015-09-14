@@ -261,11 +261,16 @@ bool LinuxSPIDeviceManager::transaction(LinuxSPIDeviceDriver &driver, const uint
 /*
   return a SPIDeviceDriver for a particular device
  */
-AP_HAL::SPIDeviceDriver *LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev)
+AP_HAL::SPIDeviceDriver *LinuxSPIDeviceManager::device(enum AP_HAL::SPIDevice dev, uint8_t index)
 {
+    uint8_t count = 0;
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._type == dev) {
-            return &_device[i];
+            if (count == index) {
+                return &_device[i];
+            } else {
+                count++;
+            }
         }
     }
     return NULL;
