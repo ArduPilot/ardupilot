@@ -41,6 +41,8 @@ static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-1");
 static LinuxSPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static NavioAnalogIn analogIn;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLE
+static PXFAnalogIn analogIn;
 #else
 static LinuxAnalogIn analogIn;
 #endif
