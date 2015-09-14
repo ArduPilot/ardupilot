@@ -550,10 +550,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 #endif
 #if FRAME_CONFIG == HELI_FRAME
         // check helicopter parameters
-        if (!motors.parameter_check()) {
-            if (display_failure) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check Heli Parameters"));
-            }
+        if (!motors.parameter_check(display_failure)) {
             return false;
         }
 #endif // HELI_FRAME
