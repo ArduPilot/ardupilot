@@ -271,9 +271,9 @@ bool AP_Compass_LSM303D::_read_raw()
     raw_mag_report_tx.cmd = ADDR_STATUS_M | DIR_READ | ADDR_INCREMENT;
     _spi->transaction((uint8_t *)&raw_mag_report_tx, (uint8_t *)&raw_mag_report_rx, sizeof(raw_mag_report_tx));
 
-    _mag_x = raw_mag_report_rx.x / 16;
-    _mag_y = raw_mag_report_rx.y / 16;
-    _mag_z = raw_mag_report_rx.z / 16;
+    _mag_x = raw_mag_report_rx.x;
+    _mag_y = raw_mag_report_rx.y;
+    _mag_z = raw_mag_report_rx.z;
 
     if (is_zero(_mag_x) && is_zero(_mag_y) && is_zero(_mag_z)) {
         return false;
@@ -332,19 +332,27 @@ AP_Compass_LSM303D::init()
     _scaling[1] = 1.0;
     _scaling[2] = 1.0;
 
-    _spi_sem->give();
-    hal.scheduler->resume_timer_procs();
-    _initialised = true;
-
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
-
+    /* register the compass instance in the frontend */
     _compass_instance = register_compass();
-
+    set_dev_id(_compass_instance, get_dev_id());
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     set_external(_compass_instance, false);
 #endif
 
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
+
+    set_milligauss_ratio(_compass_instance, 1.0f);
+
+    _spi_sem->give();
+    hal.scheduler->resume_timer_procs();
+    _initialised = true;
+
     return _initialised;
+}
+
+uint32_t AP_Compass_LSM303D::get_dev_id()
+{
+    return AP_COMPASS_TYPE_LSM303D;
 }
 
 bool AP_Compass_LSM303D::_hardware_init(void)
@@ -402,7 +410,7 @@ void AP_Compass_LSM303D::_collect_samples()
     if (!_read_raw()) {
         error("_read_raw() failed\n");
     } else {
-        Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
+        Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
         uint32_t time_us = hal.scheduler->micros();
 
         // rotate raw_field from sensor frame to body frame
@@ -445,6 +453,7 @@ void AP_Compass_LSM303D::read()
         return;
     }
 
+    hal.scheduler->suspend_timer_procs();
     Vector3f field(_mag_x_accum * _scaling[0],
                    _mag_y_accum * _scaling[1],
                    _mag_z_accum * _scaling[2]);
@@ -452,6 +461,7 @@ void AP_Compass_LSM303D::read()
 
     _accum_count = 0;
     _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
+    hal.scheduler->resume_timer_procs();
 
     publish_filtered_field(field, _compass_instance);
 }
@@ -481,22 +491,22 @@ uint8_t AP_Compass_LSM303D::_mag_set_range(uint8_t max_ga)
     if (max_ga <= 2) {
         _mag_range_ga = 2;
         setbits |= REG6_FULL_SCALE_2GA_M;
-        new_scale_ga_digit = 0.080e-3f;
+        new_scale_ga_digit = 0.080f;
 
     } else if (max_ga <= 4) {
         _mag_range_ga = 4;
         setbits |= REG6_FULL_SCALE_4GA_M;
-        new_scale_ga_digit = 0.160e-3f;
+        new_scale_ga_digit = 0.160f;
 
     } else if (max_ga <= 8) {
         _mag_range_ga = 8;
         setbits |= REG6_FULL_SCALE_8GA_M;
-        new_scale_ga_digit = 0.320e-3f;
+        new_scale_ga_digit = 0.320f;
 
     } else if (max_ga <= 12) {
         _mag_range_ga = 12;
         setbits |= REG6_FULL_SCALE_12GA_M;
-        new_scale_ga_digit = 0.479e-3f;
+        new_scale_ga_digit = 0.479f;
 
     } else {
         return -1;
