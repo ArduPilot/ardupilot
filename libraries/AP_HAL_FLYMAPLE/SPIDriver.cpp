@@ -93,7 +93,7 @@ void FLYMAPLESPIDeviceManager::init(void *)
 {
 }
 
-AP_HAL::SPIDeviceDriver* FLYMAPLESPIDeviceManager::device(enum AP_HAL::SPIDevice)
+AP_HAL::SPIDeviceDriver* FLYMAPLESPIDeviceManager::device(enum AP_HAL::SPIDevice, uint8_t index)
 {
     _device.init(); // Defer this until GPIO pin 13 is set up else its a slave
     return &_device;
