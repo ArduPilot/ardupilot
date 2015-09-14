@@ -212,9 +212,6 @@ void AP_Compass_AK8963::read()
     _make_factory_sensitivity_adjustment(field);
     _make_adc_sensitivity_adjustment(field);
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    field.rotate(ROTATION_YAW_90);
-#endif
     publish_filtered_field(field, _compass_instance);
 }
 
