@@ -157,6 +157,9 @@ static void init_ardupilot()
         do_erase_logs();
         gcs[0].reset_cli_timeout();
     }
+    if (DataFlash.CardInserted()) {
+        DataFlash.Prep_MinSpace();
+    }
 #endif
 
     init_rc_in();               // sets up rc channels from radio
