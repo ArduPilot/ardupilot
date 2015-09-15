@@ -167,6 +167,8 @@ steps = [
     'build.Helicopter',
     'fly.CopterAVC',
 
+    'build.AntennaTracker',
+
     'convertgpx',
     ]
 
@@ -205,6 +207,9 @@ def run_step(step):
 
     if step == 'build.ArduCopter':
         return util.build_SIL('ArduCopter', j=opts.j)
+
+    if step == 'build.AntennaTracker':
+        return util.build_SIL('AntennaTracker', j=opts.j)
 
     if step == 'build.Helicopter':
         return util.build_SIL('ArduCopter', target='sitl-heli', j=opts.j)
@@ -341,6 +346,10 @@ def write_fullresults():
     results.addglob("APMrover2 log", 'APMrover2-*.BIN')
     results.addglob("APMrover2 core", 'APMrover2.core')
     results.addglob("APMrover2 ELF", 'APMrover2.elf')
+    results.addfile('AntennaTracker build log', 'AntennaTracker.txt')
+    results.addfile('AntennaTracker code size', 'AntennaTracker.sizes.txt')
+    results.addfile('AntennaTracker stack sizes', 'AntennaTracker.framesizes.txt')
+    results.addglob("AntennaTracker ELF", 'AntennaTracker.elf')
     results.addglob('APM:Libraries documentation', 'docs/libraries/index.html')
     results.addglob('APM:Plane documentation', 'docs/ArduPlane/index.html')
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
