@@ -373,25 +373,13 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
-#if COMPASS_MAX_INSTANCES > 1
         // check all compasses point in roughly same direction
-        if (compass.get_count() > 1) {
-            Vector3f prime_mag_vec = compass.get_field_milligauss();
-            prime_mag_vec.normalize();
-            for(uint8_t i=0; i<compass.get_count(); i++) {
-                // get next compass
-                Vector3f mag_vec = compass.get_field_milligauss(i);
-                mag_vec.normalize();
-                Vector3f vec_diff = mag_vec - prime_mag_vec;
-                if (compass.use_for_yaw(i) && vec_diff.length() > COMPASS_ACCEPTABLE_VECTOR_DIFF) {
-                    if (display_failure) {
-                        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: inconsistent compasses"));
-                    }
-                    return false;
-                }
+        if (!compass.consistent()) {
+            if (display_failure) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: inconsistent compasses"));
             }
+            return false;
         }
-#endif
 
     }
 
