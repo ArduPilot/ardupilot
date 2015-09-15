@@ -110,9 +110,8 @@ public:
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
-    uint8_t get_use_mask() const;
-    bool consistent(uint8_t mask) const;
-    bool consistent() const { return consistent(get_use_mask()); }
+    // check if the compasses are pointing in the same direction
+    bool consistent() const;
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }
