@@ -170,9 +170,8 @@ public:
     void send_mag_cal_progress(mavlink_channel_t chan);
     void send_mag_cal_report(mavlink_channel_t chan);
 
-    uint8_t get_use_mask() const;
-    bool consistent(uint8_t mask) const;
-    bool consistent() const { return consistent(get_use_mask()); }
+    // check if the compasses are pointing in the same direction
+    bool consistent() const;
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _state[i].healthy; }

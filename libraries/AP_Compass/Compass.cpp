@@ -782,57 +782,42 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
     }
 }
 
-uint8_t Compass::get_use_mask() const
+bool Compass::consistent() const
 {
-    uint8_t ret = 0;
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if (use_for_yaw(i)) {
-            ret |= 1 << i;
-        }
-    }
-    return ret;
-}
-
-bool Compass::consistent(uint8_t mask) const
-{
-    Vector3f primary_mag_field = get_field();
-    float primary_mag_field_mag = primary_mag_field.length();
+    Vector3f primary_mag_field = get_field_milligauss();
     Vector3f primary_mag_field_norm;
 
-    if (!is_zero(primary_mag_field_mag)) {
-        primary_mag_field_norm = primary_mag_field / primary_mag_field_mag;
+    if (!primary_mag_field.is_zero()) {
+        primary_mag_field_norm = primary_mag_field.normalized();
     } else {
         return false;
     }
 
     Vector2f primary_mag_field_xy = Vector2f(primary_mag_field.x,primary_mag_field.y);
-    float primary_mag_field_xy_mag = primary_mag_field_xy.length();
     Vector2f primary_mag_field_xy_norm;
 
-    if (!is_zero(primary_mag_field_xy_mag)) {
-        primary_mag_field_xy_norm = primary_mag_field_xy / primary_mag_field_xy_mag;
+    if (!primary_mag_field_xy.is_zero()) {
+        primary_mag_field_xy_norm = primary_mag_field_xy.normalized();
     } else {
         return false;
     }
 
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        if ((1<<i) & mask) {
-            Vector3f mag_field = get_field(i);
-            float mag_field_mag = mag_field.length();
+    for (uint8_t i=0; i<get_count(); i++) {
+        if (use_for_yaw(i)) {
+            Vector3f mag_field = get_field_milligauss(i);
             Vector3f mag_field_norm;
 
-            if (!is_zero(mag_field_mag)) {
-                mag_field_norm = mag_field / mag_field_mag;
+            if (!mag_field.is_zero()) {
+                mag_field_norm = mag_field.normalized();
             } else {
                 return false;
             }
 
             Vector2f mag_field_xy = Vector2f(mag_field.x,mag_field.y);
-            float mag_field_xy_mag = mag_field_xy.length();
             Vector2f mag_field_xy_norm;
 
-            if (!is_zero(mag_field_xy_mag)) {
-                mag_field_xy_norm = mag_field_xy / mag_field_xy_mag;
+            if (!mag_field_xy.is_zero()) {
+                mag_field_xy_norm = mag_field_xy.normalized();
             } else {
                 return false;
             }
@@ -858,3 +843,4 @@ bool Compass::consistent(uint8_t mask) const
     }
     return true;
 }
+
