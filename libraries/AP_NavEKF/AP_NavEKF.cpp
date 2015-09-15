@@ -5232,6 +5232,8 @@ bool NavEKF::calcGpsGoodToAlign(void)
         Vector3f eulerAngles;
         getEulerAngles(eulerAngles);
         state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        // reset timer to ensure that bad magnetometer data cannot cause a heading reset more often than every 5 seconds
+        magYawResetTimer_ms = imuSampleTime_ms;
     }
 
     // fail if magnetometer innovations are outside limits indicating bad yaw
