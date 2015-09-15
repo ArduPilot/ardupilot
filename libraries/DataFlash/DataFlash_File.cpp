@@ -25,6 +25,12 @@
 #include <time.h>
 #include <dirent.h>
 #include "../AP_HAL/utility/RingBuffer.h"
+#ifdef __APPLE__
+#include <sys/param.h>
+#include <sys/mount.h>
+#else
+#include <sys/statfs.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -260,6 +266,136 @@ uint16_t DataFlash_File::find_last_log(void)
     return ret;
 }
 
+// returns the amount of disk space available in _log_directory (in bytes)
+// returns -1 on error
+int64_t DataFlash_File::disk_space_avail()
+{
+    struct statfs stats;
+    if (statfs(_log_directory, &stats) < 0) {
+        return -1;
+    }
+    return (((int64_t)stats.f_bavail) * stats.f_bsize);
+}
+
+// returns the total amount of disk space (in use + available) in
+// _log_directory (in bytes).
+// returns -1 on error
+int64_t DataFlash_File::disk_space()
+{
+    struct statfs stats;
+    if (statfs(_log_directory, &stats) < 0) {
+        return -1;
+    }
+    return (((int64_t)stats.f_blocks) * stats.f_bsize);
+}
+
+// returns the available space in _log_directory as a percentage
+// returns -1.0f on error
+float DataFlash_File::avail_space_percent()
+{
+    int64_t avail = disk_space_avail();
+    if (avail == -1) {
+        return -1.0f;
+    }
+    int64_t space = disk_space();
+    if (space == -1) {
+        return -1.0f;
+    }
+
+    return (avail/(float)space) * 100;
+}
+
+// find_first_log - find lowest-numbered log in _log_directory
+// returns 0 if no log was found
+uint16_t DataFlash_File::find_first_log(void)
+{
+    // iterate through directory entries to find lowest log number.
+    // We could count up to find_last_log(), but if people start
+    // relying on the min_avail_space_percent feature we could end up
+    // doing a *lot* of asprintf()s and stat()s
+    DIR *d = opendir(_log_directory);
+    if (d == NULL) {
+        // internal_error();
+        return 0;
+    }
+
+    // we only remove files which look like xxx.BIN
+    uint32_t lowest_number = (uint32_t)-1; // unsigned integer wrap
+    for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        uint8_t length = strlen(de->d_name);
+        if (length < 5) {
+            // not long enough for \d+[.]BIN
+            continue;
+        }
+        if (strncmp(&de->d_name[length-4], ".BIN", 4)) {
+            // doesn't end in .BIN
+            continue;
+        }
+
+        uint16_t thisnum = strtoul(de->d_name, NULL, 10);
+        if (thisnum < lowest_number) {
+            lowest_number = thisnum;
+        }
+    }
+    closedir(d);
+
+    if (lowest_number == (uint32_t)-1) {
+        return 0;
+    }
+    return lowest_number;
+}
+
+void DataFlash_File::Prep_MinSpace()
+{
+    uint16_t log_to_remove = find_first_log();
+    if (log_to_remove == 0) {
+        // no files to remove
+        return;
+    }
+    uint16_t count = 0;
+    while (true) {
+        float avail = avail_space_percent();
+        if (is_equal(avail, -1.0f)) {
+            // internal_error()
+            break;
+        }
+        if (avail >= min_avail_space_percent) {
+            break;
+        }
+        if (count++ > 500) {
+            // *way* too many deletions going on here.  Possible internal error.
+            // deletion rate seems to be ~50 files/second.
+            // internal_error();
+            break;
+        }
+        char *filename_to_remove = _log_file_name(log_to_remove);
+        if (filename_to_remove == NULL) {
+            // internal_error();
+            break;
+        }
+        hal.console->printf("Removing (%s) for minimum-space requirements\n",
+                              filename_to_remove);
+        if (unlink(filename_to_remove) == -1) {
+            hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+            free(filename_to_remove);
+            if (errno == ENOENT) {
+                log_to_remove = find_first_log();
+                if (log_to_remove == 0) {
+                    // out of files to remove...
+                    break;
+                }
+                // corruption - should always have a continuous
+                // sequence of files...  however, we now have a file
+                // we can delete, so keep going.
+            } else {
+                break;
+            }
+        } else {
+            free(filename_to_remove);
+            log_to_remove++;
+        }
+    }
+}
 
 uint32_t DataFlash_File::_get_log_size(uint16_t log_num)
 {

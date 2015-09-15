@@ -51,6 +51,9 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 
+    // possibly time-consuming preparations handling
+    void Prep_MinSpace();
+
 private:
     int _write_fd;
     int _read_fd;
@@ -65,6 +68,18 @@ private:
       read a block
     */
     void ReadBlock(void *pkt, uint16_t size);
+
+    uint16_t find_first_log(void);
+    int64_t disk_space_avail();
+    int64_t disk_space();
+    float avail_space_percent();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    // I always seem to have less than 10% free space on my laptop:
+    const float min_avail_space_percent = 0.1f;
+#else
+    const float min_avail_space_percent = 10.0f;
+#endif
 
     // write buffer
     uint8_t *_writebuf;
