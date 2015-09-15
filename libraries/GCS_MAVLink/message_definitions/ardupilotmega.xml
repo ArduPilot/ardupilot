@@ -905,8 +905,18 @@
       <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
       <field name="result" type="uint8_t" enum="GOPRO_SET_RESPONSE_RESULT">Result</field>
     </message>
+    <!-- 219 to 224 RESERVED for more GOPRO-->
 
-    <!-- 219 to 225 RESERVED for more GOPRO-->
+    <message name="GPS_ACCURACY" id="225">
+        <description>Accuracy statistics for GPS lock</description>
+        <field type="uint8_t" name="instance">Which instance of GPS we're reporting on</field>
+        <field type="float" name="h_acc">GPS-reported horizontal accuracy</field>
+        <field type="float" name="s_acc">GPS-reported speed accuracy</field>
+        <field type="float" name="h_vel_filt">GPS-reported, filtered horizontal velocity</field>
+        <field type="float" name="v_vel_filt">GPS-reported, filtered vertical velocity</field>
+        <field type="float" name="p_drift">GPS position drift</field>
+        <field type="uint8_t" name="ekf_check_mask">Which fields pass EKF checks</field>
+    </message>
 
      </messages>
 </mavlink>
