@@ -15,6 +15,10 @@ bool EmptyRCInput::new_input() {
 uint8_t EmptyRCInput::num_channels() {
     return 0;
 }
+    
+float EmptyRCInput::link_quality() {
+    return 0.0f;
+}
 
 uint16_t EmptyRCInput::read(uint8_t ch) {
     if (ch == 2) return 900; /* throttle should be low, for safety */

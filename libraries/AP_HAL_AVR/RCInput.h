@@ -37,6 +37,9 @@ public:
      */
     uint8_t num_channels();
 
+    /* Return the Link Quality of the RC link. 0.0 = worst quality, 1.0 = best quality. */
+    float link_quality();
+        
     /**
      * read(uint8_t):
      * Read a single channel at a time
@@ -82,6 +85,7 @@ class AP_HAL_AVR::APM2RCInput : public AP_HAL::RCInput {
     void     init(void* isrregistry);
     bool  new_input();
     uint8_t num_channels();
+    float link_quality();
     uint16_t read(uint8_t ch);
     uint8_t  read(uint16_t* periods, uint8_t len);
     bool set_overrides(int16_t *overrides, uint8_t len);
