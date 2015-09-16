@@ -31,6 +31,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // once landed, post some landing statistics to the GCS
         auto_state.post_landing_stats = false;
 
+        // reset loiter start time. New command is a new loiter
+        loiter.start_time_ms = 0;
+
         gcs_send_text_fmt("Executing nav command ID #%i",cmd.id);
     } else {
         gcs_send_text_fmt("Executing command ID #%i",cmd.id);
@@ -405,7 +408,6 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // we set start_time_ms when we reach the waypoint
-    loiter.start_time_ms = 0;
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(cmd);
 }

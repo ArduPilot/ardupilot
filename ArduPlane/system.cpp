@@ -360,6 +360,9 @@ void Plane::set_mode(enum FlightMode mode)
     // start with previous WP at current location
     prev_WP_loc = current_loc;
 
+    // new mode means new loiter
+    loiter.start_time_ms = 0;
+
     switch(control_mode)
     {
     case INITIALISING:
