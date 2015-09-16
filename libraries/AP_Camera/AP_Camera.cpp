@@ -157,6 +157,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
     mavlink_command_long_t mav_cmd_long = {};
 
     // convert mission command to mavlink command_long
+    mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONFIGURE;
     mav_cmd_long.param1 = shooting_mode;
     mav_cmd_long.param2 = shutter_speed;
     mav_cmd_long.param3 = aperture;
@@ -175,7 +176,7 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
 void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
     // take picture
-    if(is_equal(shooting_cmd,1.0f)){
+    if (is_equal(shooting_cmd,1.0f)) {
         trigger_pic(false);
     }
 
@@ -183,10 +184,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
     mavlink_command_long_t mav_cmd_long = {};
 
     // convert command to mavlink command long
-    mav_cmd_long.target_system = 0;
-    mav_cmd_long.target_component = 0;
     mav_cmd_long.command = MAV_CMD_DO_DIGICAM_CONTROL;
-    mav_cmd_long.confirmation = 0;
     mav_cmd_long.param1 = session;
     mav_cmd_long.param2 = zoom_pos;
     mav_cmd_long.param3 = zoom_step;
