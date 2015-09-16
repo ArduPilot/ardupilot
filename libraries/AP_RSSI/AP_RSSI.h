@@ -25,22 +25,10 @@ class AP_RSSI
 {
 public:
     enum RssiType {
-        RSSI_DISABLED           = 0x0000,
-        RSSI_ANALOG_PIN         = 0x0001,
-        RSSI_RC_CHANNEL_VALUE   = 0x0002
+        RSSI_DISABLED           = 0,
+        RSSI_ANALOG_PIN         = 1,
+        RSSI_RC_CHANNEL_VALUE   = 2
     };
-
-    // parameter block
-    static const struct AP_Param::GroupInfo var_info[];     
-
-    // RSSI parameters
-    AP_Int8         rssi_type;                              // Type of RSSI being used
-    AP_Int8         rssi_analog_pin;                        // Analog pin RSSI value found on
-    AP_Float        rssi_analog_pin_range_low;              // Voltage value for weakest rssi signal 
-    AP_Float        rssi_analog_pin_range_high;             // Voltage value for strongest rssi signal
-    AP_Int8         rssi_channel;                           // allows rssi to be read from given channel as PWM value
-    AP_Int16        rssi_channel_low_pwm_value;             // PWM value for weakest rssi signal
-    AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal 
 
     // constructor
     AP_RSSI();
@@ -59,7 +47,19 @@ public:
     // 0 represents weakest signal, 255 represents maximum signal.
     uint8_t read_receiver_rssi_uint8();   
 
+    // parameter block
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
+
+    // RSSI parameters
+    AP_Int8         rssi_type;                              // Type of RSSI being used
+    AP_Int8         rssi_analog_pin;                        // Analog pin RSSI value found on
+    AP_Float        rssi_analog_pin_range_low;              // Voltage value for weakest rssi signal
+    AP_Float        rssi_analog_pin_range_high;             // Voltage value for strongest rssi signal
+    AP_Int8         rssi_channel;                           // allows rssi to be read from given channel as PWM value
+    AP_Int16        rssi_channel_low_pwm_value;             // PWM value for weakest rssi signal
+    AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal
 
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
