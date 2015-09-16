@@ -121,7 +121,8 @@ float AP_RSSI::read_receiver_rssi()
             receiver_rssi = read_channel_rssi();
             break;
         default :   
-            receiver_rssi = 0.0f;      
+            receiver_rssi = 0.0f;
+            break;
     }    
                   
     return receiver_rssi;
@@ -157,8 +158,8 @@ float AP_RSSI::read_channel_rssi()
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
 float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range)
 {    
-    float rssi_value_range = abs(high_rssi_range - low_rssi_range);
-    if ((int)rssi_value_range == (int)0) {
+    float rssi_value_range = fabsf(high_rssi_range - low_rssi_range);
+    if (is_zero(rssi_value_range)) {
         // User range isn't meaningful, return 0 for RSSI (and avoid divide by zero)
         return 0.0f;   
     }
