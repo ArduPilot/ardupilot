@@ -41,7 +41,6 @@ public:
 	// Update of the estimated height and height rate internal state
 	// Update of the inertial speed rate internal state
 	// Should be called at 50Hz or greater
-	// hgt_afe is the height above field elevation (takeoff height)
 	void update_50hz(float hgt_afe);
 
 	// Update the control loop calculations
@@ -133,21 +132,29 @@ private:
 	AP_Int8  _pitch_max;
 	AP_Int8  _pitch_min;
 	AP_Int8  _land_pitch_max;
+
+	// current height estimate (above field elevation)
+	float _height;
 	
 	// throttle demand in the range from 0.0 to 1.0
     float _throttle_dem;
 	
 	// pitch angle demand in radians
     float _pitch_dem;
-	
-	// Integrator state 1 - height filter second derivative
-	float _integ1_state;
-	
-	// Integrator state 2 - height rate
+
+	// estimated climb rate (m/s)
 	float _climb_rate;
 
-	// Integrator state 3 - height
-	float _integ3_state;
+	/*
+	  a filter to estimate climb rate if we don't have it from the EKF
+	 */
+	struct {
+		// height filter second derivative
+		float dd_height;
+
+		// height integration
+		float height;
+	} _height_filter;
 
 	// Integrator state 4 - airspeed filter first derivative
 	float _integ4_state;

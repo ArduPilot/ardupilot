@@ -207,47 +207,66 @@ void AP_TECS::update_50hz(float hgt_afe)
 { 
 	// Implement third order complementary filter for height and height rate
 	// estimted height rate = _climb_rate
-	// estimated height above field elevation  = _integ3_state
+	// estimated height above field elevation  = _height
     // Reference Paper : 
 	// Optimising the Gains of the Baro-Inertial Vertical Channel
 	// Widnall W.S, Sinha P.K, 
 	// AIAA Journal of Guidance and Control, 78-1307R
 
+    /*
+      if we have a vertical position estimate from the EKF then use
+      it, otherwise use barometric altitude
+     */
+    Vector3f posned;
+    if (_ahrs.get_relative_position_NED(posned)) {
+        _height = - posned.z;
+    } else {
+        _height = _ahrs.get_baro().get_altitude();
+    }
+    
     // Calculate time in seconds since last update
     uint32_t now = hal.scheduler->micros();
 	float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
 	if (DT > 1.0f) {
-	    _integ3_state = hgt_afe;
 		_climb_rate = 0.0f;
-		_integ1_state = 0.0f;
+		_height_filter.dd_height = 0.0f;
 		DT            = 0.02f; // when first starting TECS, use a
 							   // small time constant
 	}
 	_update_50hz_last_usec = now;	
 
-	// USe inertial nav verical velocity and height if available
-	Vector3f posned, velned;
-	if (_ahrs.get_velocity_NED(velned) && _ahrs.get_relative_position_NED(posned)) {
-		_climb_rate   = - velned.z;
-		_integ3_state   = - posned.z;
+	// Use inertial nav verical velocity and height if available
+	Vector3f velned;
+	if (_ahrs.get_velocity_NED(velned)) {
+        // if possible use the EKF vertical velocity
+		_climb_rate = -velned.z;
 	} else {
+        /*
+          use a complimentary filter to calculate climb_rate. This is
+          designed to minimise lag
+         */
+        float baro_alt = _ahrs.get_baro().get_altitude();
 		// Get height acceleration
 		float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
 		// Perform filter calculation using backwards Euler integration
 		// Coefficients selected to place all three filter poles at omega
 		float omega2 = _hgtCompFiltOmega*_hgtCompFiltOmega;
-		float hgt_err = hgt_afe - _integ3_state;
+		float hgt_err = baro_alt - _height_filter.height;
 		float integ1_input = hgt_err * omega2 * _hgtCompFiltOmega;
-		_integ1_state = _integ1_state + integ1_input * DT;
-		float integ2_input = _integ1_state + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
-		_climb_rate = _climb_rate + integ2_input * DT;
+
+		_height_filter.dd_height += integ1_input * DT;
+
+		float integ2_input = _height_filter.dd_height + hgt_ddot_mea + hgt_err * omega2 * 3.0f;
+
+		_climb_rate += integ2_input * DT;
+        
 		float integ3_input = _climb_rate + hgt_err * _hgtCompFiltOmega * 3.0f;
 		// If more than 1 second has elapsed since last update then reset the integrator state
 		// to the measured height
 		if (DT > 1.0f) {
-		    _integ3_state = hgt_afe;
+		    _height_filter.height = _height;
 		} else {
-			_integ3_state = _integ3_state + integ3_input*DT;
+			_height_filter.height += integ3_input*DT;
 		}
 	}
 
@@ -438,7 +457,7 @@ void AP_TECS::_detect_underspeed(void)
     if (((_integ5_state < _TASmin * 0.9f) && 
 		 (_throttle_dem >= _THRmaxf * 0.95f) &&
 		 _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) || 
-		((_integ3_state < _hgt_dem_adj) && _underspeed))
+		((_height < _hgt_dem_adj) && _underspeed))
     {
         _underspeed = true;
     }
@@ -459,7 +478,7 @@ void AP_TECS::_update_energies(void)
     _SKEdot_dem = _integ5_state * _TAS_rate_dem;
 
     // Calculate specific energy
-    _SPE_est = _integ3_state * GRAVITY_MSS;
+    _SPE_est = _height * GRAVITY_MSS;
     _SKE_est = 0.5f * _integ5_state * _integ5_state;
 
     // Calculate specific energy rate
@@ -877,7 +896,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Write internal variables to the log_tuning structure. This
     // structure will be logged in dataflash at 10Hz
 	log_tuning.hgt_dem  = _hgt_dem_adj;
-	log_tuning.hgt      = _integ3_state;
+	log_tuning.hgt      = _height;
 	log_tuning.dhgt_dem = _hgt_rate_dem;
 	log_tuning.dhgt     = _climb_rate;
 	log_tuning.spd_dem  = _TAS_dem_adj;
