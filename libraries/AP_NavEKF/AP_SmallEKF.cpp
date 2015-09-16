@@ -71,24 +71,17 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
             return;
         }
 
-        // normalise the acceleration vector
-        float pitch=0, roll=0;
-        if (delta_velocity.length() > 0.001f) {
-            Vector3f delta_velocity_unit = delta_velocity;
-            delta_velocity_unit.normalize();
-            // calculate initial pitch angle
-            pitch = asinf(delta_velocity_unit.x);
-            // calculate initial roll angle
-            roll = -asinf(delta_velocity_unit.y / cosf(pitch));
-        } else {
-            roll = pitch = 0.0f;
-        }
+        Quaternion ned_to_vehicle_quat;
+        _main_ekf.getQuaternion(ned_to_vehicle_quat);
+
+        Quaternion vehicle_to_gimbal_quat;
+        vehicle_to_gimbal_quat.from_vector312(joint_angles.x,joint_angles.y,joint_angles.z);
 
         // calculate initial orientation
-        state.quat.from_euler(roll, pitch, 0.0f);
+        state.quat = ned_to_vehicle_quat * vehicle_to_gimbal_quat;
 
         const float Sigma_velNED = 0.5f; // 1 sigma uncertainty in horizontal velocity components
-        const float Sigma_dAngBias  = 0.05f*dtIMU; // 1 Sigma uncertainty in delta angle bias
+        const float Sigma_dAngBias  = 0.002f*dtIMU; // 1 Sigma uncertainty in delta angle bias (rad)
         const float Sigma_angErr = 0.1f; // 1 Sigma uncertainty in angular misalignment (rad)
         for (uint8_t i=0; i <= 2; i++) Cov[i][i] = sq(Sigma_angErr);
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
@@ -191,6 +184,10 @@ void SmallEKF::predictStates()
 
     // sum delta velocities to get velocity
     state.velocity += delVelNav;
+
+    state.delAngBias.x = constrain_float(state.delAngBias.x, -0.1f*dtIMU,0.1f*dtIMU);
+    state.delAngBias.y = constrain_float(state.delAngBias.y, -0.1f*dtIMU,0.1f*dtIMU);
+    state.delAngBias.z = constrain_float(state.delAngBias.z, -0.1f*dtIMU,0.1f*dtIMU);
 }
 
 // covariance prediction using optimised algebraic toolbox expressions
@@ -850,8 +847,7 @@ void SmallEKF::fuseCompass()
 void SmallEKF::alignHeading()
 {
     // calculate the correction rotation vector in NED frame
-    Vector3f deltaRotNED;
-    deltaRotNED.z = -calcMagHeadingInnov();
+    Vector3f deltaRotNED = Vector3f(0,0,-calcMagHeadingInnov());
 
     // rotate into sensor frame
     Vector3f angleCorrection = Tsn.transposed()*deltaRotNED;
