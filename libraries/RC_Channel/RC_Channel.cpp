@@ -330,6 +330,7 @@ int16_t
 RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+    int16_t ret;
 
     if (_reverse == -1) {
 	    r_in = radio_max.get() - (r_in - radio_min.get());
@@ -337,12 +338,18 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 
     int16_t radio_trim_low  = radio_min + dead_zone;
 
-    if (r_in > radio_trim_low)
-        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
-    else if (dead_zone > 0)
-        return 0;
-    else
-        return _low;
+    if (r_in > radio_trim_low) {
+        int32_t v;
+        int16_t d;
+
+        d = radio_max - radio_trim_low;
+        v = (int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low) + d/2;
+        ret = _low + v / d;
+        if (ret - _prev_control_in == 1 && v % d < d/2) ret--;
+    } else if (dead_zone > 0) ret = 0;
+    else ret = _low;
+    _prev_control_in = ret;
+    return ret;
 }
 
 /*

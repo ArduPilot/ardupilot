@@ -143,6 +143,7 @@ private:
     int16_t         _low;
     int16_t         _high_out;
     int16_t         _low_out;
+    int16_t         _prev_control_in;
 
     static RC_Channel *rc_ch[RC_MAX_CHANNELS];
 
