@@ -39,6 +39,9 @@ public:
     // Initialize the rssi object and prepare it for use
     void init();
 
+    // return true if rssi reading is enabled
+    bool enabled() const { return rssi_type != RSSI_DISABLED; }
+
     // Read the receiver RSSI value as a float 0.0f - 1.0f.
     // 0.0 represents weakest signal, 1.0 represents maximum signal.
     float read_receiver_rssi();
