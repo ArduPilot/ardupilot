@@ -29,10 +29,10 @@ public:
         RSSI_ANALOG_PIN         = 0x0001,
         RSSI_RC_CHANNEL_VALUE   = 0x0002
     };
-    
+
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];     
-    
+
     // RSSI parameters
     AP_Int8         rssi_type;                              // Type of RSSI being used
     AP_Int8         rssi_analog_pin;                        // Analog pin RSSI value found on
@@ -47,24 +47,24 @@ public:
 
     // destructor
     ~AP_RSSI(void);        
-        
+
     // Initialize the rssi object and prepare it for use
     void init();
-        
+
     // Read the receiver RSSI value as a float 0.0f - 1.0f.
     // 0.0 represents weakest signal, 1.0 represents maximum signal.
     float read_receiver_rssi();
-    
+
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
     uint8_t read_receiver_rssi_uint8();   
-    
+
 private:
 
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
     AP_HAL::AnalogSource *rssi_analog_source;
-    
+
     // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
     float read_pin_rssi();
 

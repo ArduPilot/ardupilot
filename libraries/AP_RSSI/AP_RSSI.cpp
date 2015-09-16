@@ -21,14 +21,14 @@ extern const AP_HAL::HAL& hal;
 
 
 const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
-                                
+
     // @Param: RSSI_TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
     // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue
     // @User: Standard
     AP_GROUPINFO("TYPE", 0, AP_RSSI, rssi_type,  0),
-                
+
     // @Param: RSSI_ANA_PIN
     // @DisplayName: Receiver RSSI analog sensing pin
     // @Description: This selects an analog pin where the receiver RSSI voltage will be read.
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @Range: 0 5.0
     // @User: Standard
     AP_GROUPINFO("PIN_HIGH", 3, AP_RSSI, rssi_analog_pin_range_high, 5.0f),
-    
+
     // @Param: RSSI_CHANNEL
     // @DisplayName: Receiver RSSI channel number
     // @Description: The channel number where RSSI will be output by the radio receiver.
@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @Values: 5:Channel5,6:Channel6,7:Channel7,8:Channel8
     // @User: Standard
     AP_GROUPINFO("CHANNEL", 4, AP_RSSI, rssi_channel,  0),
-    
+
     // @Param: RSSI_CHAN_LOW
     // @DisplayName: Receiver RSSI PWM low value
     // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH. 
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @Range: 0 2000
     // @User: Standard
     AP_GROUPINFO("CHAN_LOW", 5, AP_RSSI, rssi_channel_low_pwm_value,  1000),
-    
+
     // @Param: RSSI_CHAN_HIGH
     // @DisplayName: Receiver RSSI PWM high value
     // @Description: This is the PWM value that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW. 
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] PROGMEM = {
     // @Range: 0 2000
     // @User: Standard
     AP_GROUPINFO("CHAN_HIGH", 6, AP_RSSI, rssi_channel_high_pwm_value,  2000),
-    
+
     AP_GROUPEND
 };
 
@@ -109,7 +109,7 @@ float AP_RSSI::read_receiver_rssi()
 {
     // Default to 0 RSSI
     float receiver_rssi = 0.0f;  
-            
+
     switch (rssi_type) {
         case RssiType::RSSI_DISABLED :
             receiver_rssi = 0.0f;
@@ -142,14 +142,14 @@ float AP_RSSI::read_pin_rssi()
 {
     rssi_analog_source->set_pin(rssi_analog_pin);
     float current_analog_voltage = rssi_analog_source->voltage_average();
-    
+
     return scale_and_constrain_float_rssi(current_analog_voltage, rssi_analog_pin_range_low, rssi_analog_pin_range_high);
 }
 
 // read the RSSI value from a PWM value on a RC channel
 float AP_RSSI::read_channel_rssi()
 {
-    int rssi_channel_value = hal.rcin->read(rssi_channel-1);
+    uint16_t rssi_channel_value = hal.rcin->read(rssi_channel-1);
     float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
     return channel_rssi;    
 }
@@ -169,18 +169,17 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     current_rssi_value = constrain_float(current_rssi_value, 
                                         range_is_inverted ? high_rssi_range : low_rssi_range, 
                                         range_is_inverted ? low_rssi_range : high_rssi_range);    
-    
+
     if (range_is_inverted)
     {
         // Swap values so we can treat them as low->high uniformly in the code that follows
         current_rssi_value = high_rssi_range + abs(current_rssi_value - low_rssi_range);
         std::swap(low_rssi_range, high_rssi_range);        
     }
-         
+
     // Scale the value down to a 0.0 - 1.0 range
     float rssi_value_scaled = (current_rssi_value - low_rssi_range) / rssi_value_range;
     // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
     // value retrieved falls outside the user-supplied range.
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
 }
-
