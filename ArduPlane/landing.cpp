@@ -76,8 +76,10 @@ bool Plane::verify_land()
             if (!is_flying() && (millis()-auto_state.last_flying_ms) > 3000) {
                 gcs_send_text_fmt(PSTR("Flare crash detected: speed=%.1f"), (double)gps.ground_speed());
             } else {
-                gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f"), 
-                        (double)height, (double)auto_state.sink_rate, (double)gps.ground_speed());
+                gcs_send_text_fmt(PSTR("Flare %.1fm sink=%.2f speed=%.1f dist=%.1f"), 
+                                  (double)height, (double)auto_state.sink_rate,
+                                  (double)gps.ground_speed(),
+                                  (double)get_distance(current_loc, next_WP_loc));
             }
         }
         auto_state.land_complete = true;

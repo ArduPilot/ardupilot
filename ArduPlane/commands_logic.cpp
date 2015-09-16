@@ -358,6 +358,11 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         // If no takeoff command has ever been used, default to a conservative 10deg
         auto_state.takeoff_pitch_cd = 1000;
     }
+
+#if RANGEFINDER_ENABLED == ENABLED
+    // zero rangefinder state, start to accumulate good samples now
+    memset(&rangefinder_state, 0, sizeof(rangefinder_state));
+#endif
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
