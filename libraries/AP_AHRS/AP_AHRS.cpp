@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
 
     // @Param: COMP_BETA
-    // @DisplayName: AHRS Velocity Complmentary Filter Beta Coefficient
+    // @DisplayName: AHRS Velocity Complementary Filter Beta Coefficient
     // @Description: This controls the time constant for the cross-over frequency used to fuse AHRS (airspeed and heading) and GPS data to estimate ground velocity. Time constant is 0.1/beta. A larger time constant will use GPS data less and a small time constant will use air data less.
     // @Range: 0.001 0.5
     // @Increment: .01
