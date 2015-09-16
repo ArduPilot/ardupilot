@@ -147,7 +147,7 @@ private:
     void predictCovariance();
 
     // EKF velocity fusion
-    void fuseVelocity(bool yawInit);
+    void fuseVelocity();
     
     // read magnetometer data
     void readMagData();

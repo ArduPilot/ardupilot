@@ -113,7 +113,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
     predictCovariance();
 
     // fuse SmallEKF velocity data
-    fuseVelocity(YawAligned);
+    fuseVelocity();
 
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
@@ -196,6 +196,9 @@ void SmallEKF::predictStates()
 void SmallEKF::predictCovariance()
 {
     float delAngBiasVariance = sq(dtIMU*5E-6f);
+    if (YawAligned && !hal.util->get_soft_armed()) {
+        delAngBiasVariance *= 4.0f;
+    }
 
     float daxNoise = sq(dtIMU*0.0087f);
     float dayNoise = sq(dtIMU*0.0087f);
@@ -591,7 +594,7 @@ void SmallEKF::predictCovariance()
 }
 
 // Fuse the SmallEKF velocity estimates - this enables alevel reference to be maintained during constant turns
-void SmallEKF::fuseVelocity(bool yawInit)
+void SmallEKF::fuseVelocity()
 {
     float R_OBS = 0.25f;
     float innovation[3];
@@ -605,7 +608,7 @@ void SmallEKF::fuseVelocity(bool yawInit)
 
         // Calculate the velocity measurement innovation using the SmallEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
-        if (yawInit) {
+        if (YawAligned) {
             Vector3f measVelNED(0,0,0);
             nav_filter_status main_ekf_status;
             _main_ekf.getFilterStatus(main_ekf_status);
