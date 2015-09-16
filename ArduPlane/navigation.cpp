@@ -128,7 +128,25 @@ void Plane::calc_gndspeed_undershoot()
 
 void Plane::update_loiter()
 {
-    nav_controller->update_loiter(next_WP_loc, abs(g.loiter_radius), loiter.direction);
+    int16_t radius = abs(g.loiter_radius);
+
+    if (loiter.start_time_ms == 0 &&
+        control_mode == AUTO &&
+        !auto_state.no_crosstrack &&
+        get_distance(current_loc, next_WP_loc) > radius*2) {
+        // if never reached loiter point and using crosstrack and somewhat far away from loiter point
+        // navigate to it like in auto-mode for normal crosstrack behavior
+        nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
+    } else {
+        nav_controller->update_loiter(next_WP_loc, radius, loiter.direction);
+    }
+
+    if (loiter.start_time_ms == 0) {
+        if (nav_controller->reached_loiter_target()) {
+            // we've reached the target, start the timer
+            loiter.start_time_ms = millis();
+        }
+    }
 }
 
 /*
