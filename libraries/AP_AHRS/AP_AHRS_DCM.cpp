@@ -148,13 +148,10 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
         // normalise the acceleration vector
         if (initAccVec.length() > 5.0f) {
-            initAccVec.normalize();
-
             // calculate initial pitch angle
-            pitch = asinf(initAccVec.x);
-
+            pitch = atan2f(initAccVec.x, pythagorous2(initAccVec.y, initAccVec.z));
             // calculate initial roll angle
-            roll = -asinf(initAccVec.y / cosf(pitch));
+            roll = atan2f(-initAccVec.y, -initAccVec.z);
         } else {
             // If we cant use the accel vector, then align flat
             roll = 0.0f;
