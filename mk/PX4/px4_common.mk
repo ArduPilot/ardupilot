@@ -48,6 +48,7 @@ MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/pwm
 MODULES		+= systemcmds/reboot
 MODULES		+= systemcmds/top
+MODULES		+= systemcmds/otp
 #MODULES	+= systemcmds/tests
 MODULES		+= systemcmds/nshterm
 MODULES         += systemcmds/mtd
