@@ -762,11 +762,6 @@ void Plane::change_arm_state(void)
     Log_Arm_Disarm();
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-
-    // log the mode, so the following log is recorded as the correct mode
-    if (should_log(MASK_LOG_MODE)) {
-        DataFlash.Log_Write_Mode(control_mode);
-    }
 }
 
 /*
