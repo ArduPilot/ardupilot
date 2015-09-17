@@ -9,7 +9,8 @@
 class AP_HAL::Util {
 public:
     // soft_armed starts out true
-    Util() : soft_armed(true) {}
+    Util() : soft_armed(true),
+             in_test_mode(false) {}
 
     int snprintf(char* str, size_t size,
                  const char *format, ...);
@@ -25,6 +26,10 @@ public:
 
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
+
+    // set and get funcs for autopilot testing/diagnostic mode
+    void set_test_mode(bool b) { in_test_mode = b; }
+    bool get_test_mode() const { return in_test_mode; }
 
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
@@ -74,6 +79,7 @@ public:
 
 protected:
     bool soft_armed;
+    bool in_test_mode;
 };
 
 #endif // __AP_HAL_UTIL_H__

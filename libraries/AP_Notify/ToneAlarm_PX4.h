@@ -60,6 +60,7 @@ private:
         uint8_t vehicle_lost          : 1;    // 1 if lost copter tone requested
         uint8_t compass_cal_running   : 1;    // 1 if compass calibration is running
         uint8_t gps_connected         : 1;
+        uint8_t test_mode             : 1;    // 1 if in test_mode
     } flags;
 
     int8_t _cont_tone_playing;

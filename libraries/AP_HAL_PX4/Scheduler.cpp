@@ -242,6 +242,9 @@ void PX4Scheduler::resume_timer_procs()
 
 void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
+    if(hal.util->get_test_mode()) {
+        return;     //do not reboot command when in factory test/diagnostics mode
+    }
 	systemreset(hold_in_bootloader);
 }
 

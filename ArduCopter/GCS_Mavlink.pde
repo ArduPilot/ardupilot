@@ -1459,6 +1459,16 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        case MAV_CMD_SET_FACTORY_TEST_MODE: {
+            result = MAV_RESULT_ACCEPTED;
+            if(packet.param1 < 0 || packet.param1 > 1) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
+
+            hal.util->set_test_mode(packet.param1);
+            break;
+        }
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;

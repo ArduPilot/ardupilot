@@ -153,23 +153,39 @@ void ToneAlarm_PX4::update()
     }
     flags.compass_cal_running = AP_Notify::flags.compass_cal_running;
 
-    //play tone if UBLOX gps not detected : Solo Specific
-    if(AP_Notify::flags.initialising || hal.scheduler->millis()-_init_time < 10000) {
-        _gps_disconnected_time = hal.scheduler->millis();
-    }
-    if(!AP_Notify::flags.initialising && (hal.scheduler->millis() - _gps_disconnected_time) > 10000){
-        if (AP_Notify::flags.gps_connected != flags.gps_connected) {
-            if(!AP_Notify::flags.gps_connected) {
-                play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
-            } else {
-                if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
-                    stop_cont_tone();
+    if (!hal.util->get_test_mode()) {    //don't notify for GPS disconnection when under Jig
+        //play tone if UBLOX gps not detected : Solo Specific
+        if(AP_Notify::flags.initialising || hal.scheduler->millis()-_init_time < 10000) {
+            _gps_disconnected_time = hal.scheduler->millis();
+        }
+        if(!AP_Notify::flags.initialising && (hal.scheduler->millis() - _gps_disconnected_time) > 10000){
+            if (AP_Notify::flags.gps_connected != flags.gps_connected) {
+                if(!AP_Notify::flags.gps_connected) {
+                    play_tone(AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED);
+                } else {
+                    if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
+                        stop_cont_tone();
+                    }
                 }
             }
+            flags.gps_connected = AP_Notify::flags.gps_connected;
         }
-        flags.gps_connected = AP_Notify::flags.gps_connected;
+    } else {
+        if(_cont_tone_playing == AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED) {
+            stop_cont_tone();
+        }
     }
 
+   if (flags.test_mode != hal.util->get_test_mode()) {
+        flags.test_mode = hal.util->get_test_mode();
+        if (hal.util->get_test_mode()) {
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_POS_FEEDBACK);
+        } else {
+            play_tone(AP_NOTIFY_PX4_TONE_LOUD_NEG_FEEDBACK);
+        }
+        return;
+    }
+    
     if (AP_Notify::events.compass_cal_canceled) {
         play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
         return;
