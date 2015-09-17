@@ -122,6 +122,12 @@ void RaspilotAnalogIn::_update()
 
     hal.scheduler->delay_microseconds(200);
 
+    count = 0;
+    _dma_packet_tx.count_code = count | PKT_CODE_READ;
+    _dma_packet_tx.page = 0;
+    _dma_packet_tx.offset = 0;
+    _dma_packet_tx.crc = 0;
+    _dma_packet_tx.crc = crc_packet(&_dma_packet_tx);
     /* get reg4 data from raspilotio */
     _spi->transaction((uint8_t *)&_dma_packet_tx, (uint8_t *)&_dma_packet_rx, sizeof(_dma_packet_tx));
 
