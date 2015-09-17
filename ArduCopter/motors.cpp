@@ -468,6 +468,14 @@ bool Copter::pre_arm_checks(bool display_failure)
             }
         }
 #endif
+
+        // get ekf attitude (if bad, it's usually the gyro biases)
+        if (!pre_arm_ekf_attitude_check()) {
+            if (display_failure) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: gyros still settling"));
+            }
+            return false;
+        }
     }
 #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
@@ -696,6 +704,15 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     return true;
 }
 
+// check ekf attitude is acceptable
+bool Copter::pre_arm_ekf_attitude_check()
+{
+    // get ekf filter status
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    return filt_status.flags.attitude;
+}
+
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
@@ -717,6 +734,13 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         if(!ins.get_gyro_health_all()) {
             if (display_failure) {
                 gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Gyros not healthy"));
+            }
+            return false;
+        }
+        // get ekf attitude (if bad, it's usually the gyro biases)
+        if (!pre_arm_ekf_attitude_check()) {
+            if (display_failure) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: gyros still settling"));
             }
             return false;
         }
