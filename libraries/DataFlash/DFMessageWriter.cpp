@@ -17,6 +17,7 @@ void DFMessageWriter_DFLogStart::reset()
 {
     DFMessageWriter::reset();
 
+    _fmt_done = false;
     _writesysinfo.reset();
     _writeentiremission.reset();
 
@@ -43,6 +44,7 @@ void DFMessageWriter_DFLogStart::process()
             _DataFlash.WroteStartupFormat();
             next_format_to_send++;
         }
+        _fmt_done = true;
         stage = ls_blockwriter_stage_parms;
         // fall through
 

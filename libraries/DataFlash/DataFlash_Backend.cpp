@@ -42,11 +42,11 @@ void DataFlash_Backend::push_log_blocks() {
     WriteMoreStartupMessages();
 }
 
-// returns true if all startup messages have been written (and thus it
-// is OK for other messages to go to the log)
+// returns true if all format messages have been written, and thus it is OK
+// for other messages to go out to the log
 bool DataFlash_Backend::WriteBlockCheckStartupMessages()
 {
-    if (_front._startup_messagewriter.finished()) {
+    if (_front._startup_messagewriter.fmt_done()) {
         return true;
     }
 
@@ -59,7 +59,7 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
     push_log_blocks();
-    if (_front._startup_messagewriter.finished()) {
+    if (_front._startup_messagewriter.fmt_done()) {
         return true;
     }
 
