@@ -259,9 +259,8 @@ public:
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the system time at which the yaw angle was reset
+    uint32_t getLastYawResetAngle(float &yawAng);
 
     // report any reason for why the backend is refusing to initialise    
     const char *prearm_failure_reason(void) const;
@@ -683,7 +682,7 @@ private:
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
     float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
-    bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
+    uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
 
