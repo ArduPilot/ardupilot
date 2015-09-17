@@ -56,11 +56,6 @@ public:
     AP_InertialSensor();
     static AP_InertialSensor *get_instance();
 
-    enum Start_style {
-        COLD_START = 0,
-        WARM_START
-    };
-
     // the rate that updates will be available to the application
     enum Sample_rate {
         RATE_50HZ  = 50,
@@ -69,21 +64,21 @@ public:
         RATE_400HZ = 400
     };
 
+    enum Gyro_Calibration_Timing {
+        GYRO_CAL_NEVER = 0,
+        GYRO_CAL_STARTUP_ONLY = 1,
+        GYRO_CAL_STARTUP_AND_FIRST_BOOT = 2
+    };
+
     /// Perform startup initialisation.
     ///
     /// Called to initialise the state of the IMU.
     ///
-    /// For COLD_START, implementations using real sensors can assume
-    /// that the airframe is stationary and nominally oriented.
-    ///
-    /// For WARM_START, no assumptions should be made about the
-    /// orientation or motion of the airframe.  Calibration should be
-    /// as for the previous COLD_START call.
+    /// Gyros will be calibrated unless INS_GYRO_CAL is zero
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init( Start_style style,
-               Sample_rate sample_rate);
+    void init(Sample_rate sample_rate);
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
@@ -147,6 +142,7 @@ public:
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
     bool use_gyro(uint8_t instance) const;
+    Gyro_Calibration_Timing gyro_calibration_timing() { return (Gyro_Calibration_Timing)_gyro_cal_timing.get(); }
 
     bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
@@ -317,6 +313,7 @@ private:
     // filtering frequency (0 means default)
     AP_Int8     _accel_filter_cutoff;
     AP_Int8     _gyro_filter_cutoff;
+    AP_Int8     _gyro_cal_timing;
 
     // use for attitude, velocity, position estimates
     AP_Int8     _use[INS_MAX_INSTANCES];

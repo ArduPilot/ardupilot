@@ -303,6 +303,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     AP_GROUPINFO("STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
 #endif
 
+    // @Param: GYR_CAL
+    // @DisplayName: Gyro Calibration scheme
+    // @Description: Conrols when automatic gyro calibration is performed
+    // @Values: 0:Never, 1:Start-up only, 2:Start-up and first arming (Copter only)
+    // @User: Advanced
+    AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
+
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -339,6 +346,7 @@ AP_InertialSensor::AP_InertialSensor() :
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
+        _gyro_cal_ok[i] = true;
 #if INS_VIBRATION_CHECK
         _accel_clip_count[i] = 0;
 #endif
@@ -424,8 +432,7 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
 }
 
 void
-AP_InertialSensor::init( Start_style style,
-                         Sample_rate sample_rate)
+AP_InertialSensor::init(Sample_rate sample_rate)
 {
     // remember the sample rate
     _sample_rate = sample_rate;
@@ -442,8 +449,8 @@ AP_InertialSensor::init( Start_style style,
         }
     }
 
-    if (WARM_START != style) {
-        // do cold-start calibration for gyro only
+    // calibrate gyros unless gyro calibration has been disabled
+    if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
         _init_gyro();
     }
 
