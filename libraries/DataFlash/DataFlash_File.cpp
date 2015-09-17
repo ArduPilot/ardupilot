@@ -354,10 +354,22 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
     uint16_t _head;
     uint16_t space = BUF_SPACE(_writebuf);
 
-    // we reserve some amount of space for critical messages:
-    if (!is_critical && space < critical_message_reserved_space()) {
-        _dropped++;
-        return false;
+    if (_writing_startup_messages &&
+        _front._startup_messagewriter.fmt_done()) {
+        // the state machine has called us, and it has finished
+        // writing format messages out.  It can always get back to us
+        // with more messages later, so let's leave room for other
+        // things:
+        if (space < non_messagewriter_message_reserved_space()) {
+            // this message isn't dropped, it will be sent again...
+            return false;
+        }
+    } else {
+        // we reserve some amount of space for critical messages:
+        if (!is_critical && space < critical_message_reserved_space()) {
+            _dropped++;
+            return false;
+        }
     }
 
     // if no room for entire message - drop it:

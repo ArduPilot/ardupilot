@@ -115,6 +115,10 @@ private:
         // possibly make this a proportional to buffer size?
         return 1024;
     };
+    uint16_t non_messagewriter_message_reserved_space() const {
+        // possibly make this a proportional to buffer size?
+        return 1024;
+    };
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
