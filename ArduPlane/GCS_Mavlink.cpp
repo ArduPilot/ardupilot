@@ -237,7 +237,7 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
-    if (!ins.get_gyro_health_all() || (!g.skip_gyro_cal && !ins.gyro_calibrated_ok_all())) {
+    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
     }
     if (!ins.get_accel_health_all()) {
@@ -1219,10 +1219,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             } else if (is_equal(packet.param5,1.0f)) {
                 float trim_roll, trim_pitch;
                 AP_InertialSensor_UserInteract_MAVLink interact(this);
-                if (plane.g.skip_gyro_cal) {
-                    // start with gyro calibration, otherwise if the user
-                    // has SKIP_GYRO_CAL=1 they don't get to do it
-                    plane.ins.init_gyro();
+                // start with gyro calibration
+                plane.ins.init_gyro();
+                // reset ahrs gyro bias
+                if (plane.ins.gyro_calibrated_ok_all()) {
+                    plane.ahrs.reset_gyro_drift();
                 }
                 if(plane.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
@@ -1232,6 +1233,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                 }
             } else if (is_equal(packet.param5,2.0f)) {
+                // start with gyro calibration
+                plane.ins.init_gyro();
                 // accel trim
                 float trim_roll, trim_pitch;
                 if(plane.ins.calibrate_trim(trim_roll, trim_pitch)) {

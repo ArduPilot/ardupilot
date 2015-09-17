@@ -91,7 +91,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_takeoff_throttle_delay,
-        k_param_skip_gyro_cal,
+        k_param_skip_gyro_cal, // unused
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
         k_param_ground_steer_alt,        
@@ -363,8 +363,6 @@ public:
     // attitude controller type.
     AP_Int8  att_controller;
 
-    // skip gyro calibration
-    AP_Int8  skip_gyro_cal;
     AP_Int8  auto_fbw_steer;
 
     // Estimation

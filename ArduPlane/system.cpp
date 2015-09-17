@@ -276,7 +276,7 @@ void Plane::startup_ground(void)
     // Makes the servos wiggle
     // step 1 = 1 wiggle
     // -----------------------
-    if (!g.skip_gyro_cal) {
+    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         demo_servos(1);
     }
 
@@ -300,7 +300,7 @@ void Plane::startup_ground(void)
 
     // Makes the servos wiggle - 3 times signals ready to fly
     // -----------------------
-    if (!g.skip_gyro_cal) {
+    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         demo_servos(3);
     }
 
@@ -566,15 +566,7 @@ void Plane::startup_INS_ground(void)
     }
 #endif
 
-    AP_InertialSensor::Start_style style;
-    if (g.skip_gyro_cal) {
-        style = AP_InertialSensor::WARM_START;
-        arming.set_skip_gyro_cal(true);
-    } else {
-        style = AP_InertialSensor::COLD_START;
-    }
-
-    if (style == AP_InertialSensor::COLD_START) {
+    if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Beginning INS calibration; do not move plane"));
         hal.scheduler->delay(100);
     }
@@ -584,7 +576,7 @@ void Plane::startup_INS_ground(void)
     ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
     ahrs.set_wind_estimation(true);
 
-    ins.init(style, ins_sample_rate);
+    ins.init(ins_sample_rate);
     ahrs.reset();
 
     // read Baro pressure at ground
