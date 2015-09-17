@@ -169,7 +169,7 @@ void AP_Gimbal_Parameters::handle_param_value(DataFlash_Class *dataflash, mavlin
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
 
-    if (flashing() && packet.param_value == 1 && !strcmp(packet.param_id, "GMB_FLASH")) {
+    if (_flashing_step == GMB_PARAM_FLASHING_WAITING_FOR_ACK && packet.param_value == 1 && !strcmp(packet.param_id, "GMB_FLASH")) {
         mavlink_msg_command_long_send(_chan, 0, MAV_COMP_ID_GIMBAL, 42501, 0, 0, 0, 0, 0, 0, 0, 0);
         reset();
         return;
