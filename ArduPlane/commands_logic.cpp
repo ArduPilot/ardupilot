@@ -360,6 +360,9 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         auto_state.takeoff_pitch_cd = 1000;
     }
 
+    // update top of glide slope point. This will update on first rangefinder acquisition if available
+    auto_state.landing_glideslope_top_loc = prev_WP_loc;
+
 #if RANGEFINDER_ENABLED == ENABLED
     // zero rangefinder state, start to accumulate good samples now
     memset(&rangefinder_state, 0, sizeof(rangefinder_state));
