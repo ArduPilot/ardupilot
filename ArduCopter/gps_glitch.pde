@@ -17,6 +17,14 @@ static void gps_glitch_update() {
     }
 }
 
+static void gps_glitch_mode_change_commanded(uint8_t mode_commanded)
+{
+    // ensure that commanded mode switches to ALT_HOLD will cancel the switch back to FLY
+    if (mode_commanded == ALT_HOLD) {
+        gps_glitch_switch_mode_on_resolve = false;
+    }
+}
+
 static bool gps_glitch_action_mode(uint8_t mode) {
     switch(control_mode) {
         case LAND:
@@ -39,9 +47,9 @@ static void gps_glitch_on_event() {
     failsafe.gps_glitch = true;
 
     if (motors.armed() && gps_glitch_action_mode(control_mode) && !failsafe.radio) {
-        gps_glitch_switch_mode_on_resolve = true;
-
-        set_mode(ALT_HOLD);
+        if(set_mode(ALT_HOLD)) {
+            gps_glitch_switch_mode_on_resolve = true;
+        }
     }
 }
 
