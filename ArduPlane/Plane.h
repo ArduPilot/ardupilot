@@ -489,6 +489,9 @@ private:
 
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
+
+        // when landing, update the glide slope on ranegfinder acquisition
+        Location landing_glideslope_top_loc;
     } auto_state;
 
     struct {

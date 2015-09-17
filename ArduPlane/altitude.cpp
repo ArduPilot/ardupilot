@@ -605,6 +605,7 @@ void Plane::rangefinder_height_update(void)
         if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
+            auto_state.landing_glideslope_top_loc = current_loc;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {

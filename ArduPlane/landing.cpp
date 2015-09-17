@@ -158,12 +158,13 @@ void Plane::disarm_if_autoland_complete()
 void Plane::setup_landing_glide_slope(void)
 {
         Location loc = next_WP_loc;
+        Location top_of_slope_loc = auto_state.landing_glideslope_top_loc;
 
         // project a point 500 meters past the landing point, passing
         // through the landing point
         const float land_projection = 500;        
-        int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
-        float total_distance = get_distance(prev_WP_loc, next_WP_loc);
+        int32_t land_bearing_cd = get_bearing_cd(top_of_slope_loc, next_WP_loc);
+        float total_distance = get_distance(top_of_slope_loc, next_WP_loc);
 
         // If someone mistakenly puts all 0's in their LAND command then total_distance
         // will be calculated as 0 and cause a divide by 0 error below.  Lets avoid that.
@@ -172,7 +173,7 @@ void Plane::setup_landing_glide_slope(void)
         }
 
         // height we need to sink for this WP
-        float sink_height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
+        float sink_height = (top_of_slope_loc.alt - next_WP_loc.alt)*0.01f;
 
         // current ground speed
         float groundspeed = ahrs.groundspeed();
@@ -225,16 +226,16 @@ void Plane::setup_landing_glide_slope(void)
         loc.alt -= land_slope * land_projection * 100;
 
         // setup the offset_cm for set_target_altitude_proportion()
-        target_altitude.offset_cm = loc.alt - prev_WP_loc.alt;
+        target_altitude.offset_cm = loc.alt - top_of_slope_loc.alt;
 
         // calculate the proportion we are to the target
-        float land_proportion = location_path_proportion(current_loc, prev_WP_loc, loc);
+        float land_proportion = location_path_proportion(current_loc, top_of_slope_loc, loc);
 
         // now setup the glide slope for landing
         set_target_altitude_proportion(loc, 1.0f - land_proportion);
 
         // stay within the range of the start and end locations in altitude
-        constrain_target_altitude_location(loc, prev_WP_loc);
+        constrain_target_altitude_location(loc, top_of_slope_loc);
 }
 
 /*
