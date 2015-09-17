@@ -18,6 +18,8 @@ public:
     { update_status(); }
 
     void start(GCS_MAVLINK *gcs);
+    void fail();
+    void success();
     void clear();
     void update();
     void register_client(AP_AccelCal_Client* client);

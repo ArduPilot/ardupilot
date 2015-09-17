@@ -21,13 +21,13 @@ void AP_AccelCal::update()
             num_calibrators++;
         }
         if (num_calibrators != _num_calibrators) {
-            clear();
+            fail();
             return;
         }
 
         switch(_status) {
             case ACCEL_CAL_NOT_STARTED:
-                clear();
+                fail();
                 return;
             case ACCEL_CAL_WAITING_FOR_ORIENTATION: {
                 // if we're waiting for orientation, first ensure that all calibrators are on the same step
@@ -37,7 +37,7 @@ void AP_AccelCal::update()
 
                 for(uint8_t i=1 ; (cal = get_calibrator(i))  ; i++) {
                     if (step != cal->get_num_samples_collected()+1) {
-                        clear();
+                        fail();
                         return;
                     }
                 }
@@ -67,7 +67,7 @@ void AP_AccelCal::update()
                             msg = "on its BACK";
                             break;
                         default:
-                            clear();
+                            fail();
                             return;
                     }
                     _printf("Place vehicle %s and press any key.", msg);
@@ -84,7 +84,7 @@ void AP_AccelCal::update()
                 update_status();
 
                 if (_status == ACCEL_CAL_FAILED) {
-                    clear();
+                    fail();
                 }
                 return;
             case ACCEL_CAL_SUCCESS:
@@ -98,17 +98,13 @@ void AP_AccelCal::update()
                         }
                     }
                     if (done) {
-                        _printf("Calibration successful");
-                        clear();
-                        hal.scheduler->delay(1000);
-                        hal.scheduler->reboot(false);
+                        success();
                     }
                     return;
                 } else {
                     for(uint8_t i=0; i<_num_clients; i++) {
                         if(client_active(i) && _clients[i]->_acal_failed()) {
-                            _status = ACCEL_CAL_FAILED;
-                            clear();
+                            fail();
                             return;
                         }
                     }
@@ -122,7 +118,7 @@ void AP_AccelCal::update()
                 return;
             default:
             case ACCEL_CAL_FAILED:
-                clear();
+                fail();
                 return;
         }
     }
@@ -151,14 +147,24 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     update_status();
 }
 
+void AP_AccelCal::success()
+{
+    _printf("Calibration successful");
+    clear();
+    hal.scheduler->delay(1000);
+    hal.scheduler->reboot(false);
+}
+
+void AP_AccelCal::fail()
+{
+    _printf("Calibration FAILED");
+    clear();
+}
+
 void AP_AccelCal::clear()
 {
     if (!_started) {
         return;
-    }
-
-    if (_status != ACCEL_CAL_SUCCESS) {
-        _printf("Calibration FAILED");
     }
 
     for(uint8_t i=0 ; i < _num_clients ; i++) {
@@ -205,7 +211,7 @@ void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
     }
 
     if (_started) {
-        clear();
+        fail();
     }
 
     for(uint8_t i=0; i<_num_clients; i++) {
