@@ -67,7 +67,7 @@ public:
         k_param_serial0_baud_old,
         k_param_serial1_baud_old,
         k_param_telem_delay,
-        k_param_skip_gyro_cal,
+        k_param_skip_gyro_cal, // unused
         k_param_gcs2,       // stream rates for uartD
         k_param_serial2_baud_old,
         k_param_serial2_protocol,   // deprecated, can be deleted
@@ -214,7 +214,6 @@ public:
 	AP_Int16    sysid_this_mav;
 	AP_Int16    sysid_my_gcs;
     AP_Int8     telem_delay;
-    AP_Int8     skip_gyro_cal;
 #if CLI_ENABLED == ENABLED
     AP_Int8     cli_enabled;
 #endif

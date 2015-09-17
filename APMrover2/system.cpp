@@ -405,14 +405,7 @@ void Rover::startup_INS_ground(void)
 	ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
-    AP_InertialSensor::Start_style style;
-    if (g.skip_gyro_cal) {
-        style = AP_InertialSensor::WARM_START;
-    } else {
-        style = AP_InertialSensor::COLD_START;
-    }
-
-	ins.init(style, ins_sample_rate);
+	ins.init(ins_sample_rate);
 
     ahrs.reset();
 }
