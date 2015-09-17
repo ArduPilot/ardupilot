@@ -471,6 +471,9 @@ private:
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
 
+    // Check for signs of bad gyro health before flight
+    bool checkGyroHealthPreFlight(void) const;
+
     // EKF Mavlink Tuneable Parameters
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s

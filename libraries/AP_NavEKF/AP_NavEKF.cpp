@@ -108,6 +108,9 @@ extern const AP_HAL::HAL& hal;
 // initial imu bias uncertainty (deg/sec)
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
+// maximum gyro bias in rad/sec that can be compensated for
+#define MAX_GYRO_BIAS 0.1f
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
@@ -4935,9 +4938,10 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
     bool filterHealthy = healthy();
+    bool gyroHealthy = checkGyroHealthPreFlight();
 
     // set individual flags
-    status.flags.attitude = !state.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
+    status.flags.attitude = !state.quat.is_nan() && filterHealthy && gyroHealthy;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
@@ -4945,8 +4949,8 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = constPosMode && filterHealthy;     // constant position mode
-    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
-    status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy; // we should be able to estimate an absolute position when we enter flight mode
+    status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy && gyroHealthy; // we should be able to estimate a relative position when we enter flight mode
+    status.flags.pred_horiz_pos_abs = gpsNavPossible && filterHealthy && gyroHealthy; // we should be able to estimate an absolute position when we enter flight mode
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
@@ -5258,7 +5262,7 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
                            "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
     }
-    
+
     // record time of fail if failing
     if (gpsVelFail || numSatsFail || hAccFail || yawFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
@@ -5417,5 +5421,25 @@ bool NavEKF::getLastYawResetAngle(float &yawAng)
     }
 }
 
+// Check for signs of bad gyro health before flight
+bool NavEKF::checkGyroHealthPreFlight(void) const
+{
+    bool retVar;
+    if (hal.util->get_soft_armed()) {
+        // Always return true if we are flying (use arm status as a surrogate for flying)
+        retVar = true;
+    } else if
+    (state.gyro_bias.x < 0.5f*MAX_GYRO_BIAS*dtIMUavg &&
+            state.gyro_bias.y < 0.5f*MAX_GYRO_BIAS*dtIMUavg &&
+            state.gyro_bias.z < 0.5f*MAX_GYRO_BIAS*dtIMUavg &&
+            posTestRatio < 0.1f) {
+        // If the synthetic position innovations are too high or the estimated gyro bias exceeds 50% of the available adjustment we declare the gyro as unhealthy
+        // this condition is likely caused by excessive gyro bias and the operator should be prompted to perform a gyro calibration and reset.
+        retVar = true;
+    } else {
+        retVar = false;
+    }
+    return retVar;
+}
 
 #endif // HAL_CPU_CLASS
