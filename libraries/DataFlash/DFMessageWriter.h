@@ -16,7 +16,7 @@ public:
     virtual bool finished() { return _finished; };
 
 protected:
-    bool _finished;
+    bool _finished = false;
     DataFlash_Class &_DataFlash;
 };
 
@@ -79,6 +79,7 @@ public:
 
     void reset();
     void process();
+    bool fmt_done() { return _fmt_done; };
 
     void set_mission(const AP_Mission *mission);
 
@@ -93,6 +94,8 @@ private:
         ls_blockwriter_stage_vehicle_messages,
         ls_blockwriter_stage_done,
     };
+
+    bool _fmt_done = false;
 
     log_start_blockwriter_stage stage;
 
