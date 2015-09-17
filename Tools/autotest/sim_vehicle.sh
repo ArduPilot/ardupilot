@@ -416,6 +416,10 @@ else
 fi
 fi
 
+if [ $START_HIL == 1 ]; then
+    $autotest/run_in_terminal_window.sh "JSBSim" $autotest/jsb_sim/runsim.py --home $SIMHOME --speedup=$SPEEDUP || exit 1
+fi
+
 trap kill_tasks SIGINT
 
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
