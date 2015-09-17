@@ -44,7 +44,6 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &comp
                      const enum HomeState &home_set)
     : armed(false)
    , logging_available(false)
-   , skip_gyro_cal(false)
    , arming_method(NONE)
    , ahrs(ahrs_ref)
    , barometer(baro)
@@ -130,7 +129,7 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        if (!skip_gyro_cal && ! ins.gyro_calibrated_ok_all()) {
+        if (!ins.gyro_calibrated_ok_all()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not calibrated!"));
             }

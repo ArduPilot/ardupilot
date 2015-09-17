@@ -58,7 +58,6 @@ public:
       in a vehicle specific subclass
     */
     virtual bool pre_arm_checks(bool report);
-    void set_skip_gyro_cal(bool set) { skip_gyro_cal = set; }
 
     void set_logging_available(bool set) { logging_available = set; }
 
@@ -68,7 +67,6 @@ public:
 protected:
     bool                                                armed:1;
     bool                                                logging_available:1;
-    bool                                                skip_gyro_cal:1;
 
     //Parameters
     AP_Int8                                           require;
