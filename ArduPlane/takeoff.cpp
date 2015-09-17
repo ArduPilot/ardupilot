@@ -98,9 +98,22 @@ void Plane::takeoff_calc_roll(void)
 
     calc_nav_roll();
 
-    // during takeoff use the level flight roll limit to
-    // prevent large course corrections
-    nav_roll_cd = constrain_int32(nav_roll_cd, -g.level_roll_limit*100UL, g.level_roll_limit*100UL);
+    // during takeoff use the level flight roll limit to prevent large
+    // wing strike. Slowly allow for more roll as we get higher above
+    // the takeoff altitude
+    float roll_limit = roll_limit_cd*0.01f;
+    float baro_alt = barometer.get_altitude();
+    // below 5m use the LEVEL_ROLL_LIMIT
+    const float lim1 = 5;    
+    // at 15m allow for full roll
+    const float lim2 = 15;
+    if (baro_alt < auto_state.baro_takeoff_alt+lim1) {
+        roll_limit = g.level_roll_limit;
+    } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {
+        float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
+        roll_limit = (1-proportion) * g.level_roll_limit + proportion * roll_limit;
+    }
+    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
 }
 
         

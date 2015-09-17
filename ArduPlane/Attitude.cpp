@@ -593,6 +593,7 @@ bool Plane::suppress_throttle(void)
         if (auto_takeoff_check()) {
             // we're in auto takeoff 
             throttle_suppressed = false;
+            auto_state.baro_takeoff_alt = barometer.get_altitude();
             return false;
         }
         // keep throttle suppressed

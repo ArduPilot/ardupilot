@@ -486,6 +486,9 @@ private:
 
         // time stamp of when we start flying while in auto mode in milliseconds
         uint32_t started_flying_in_auto_ms;
+
+        // barometric altitude at start of takeoff
+        float baro_takeoff_alt;
     } auto_state;
 
     struct {
