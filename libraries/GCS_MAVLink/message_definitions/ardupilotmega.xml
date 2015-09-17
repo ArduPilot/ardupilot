@@ -77,6 +77,17 @@
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
             </entry>
+
+            <entry name="MAV_CMD_SET_FACTORY_TEST_MODE" value="42427">
+                <description>Command autopilot to get into factory test/diagnostic mode</description>
+                <param index="1">0 means get out of test mode, 1 means get into test mode</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
