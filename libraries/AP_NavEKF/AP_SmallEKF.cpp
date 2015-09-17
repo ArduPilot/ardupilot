@@ -81,7 +81,7 @@ void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vect
         state.quat = ned_to_vehicle_quat * vehicle_to_gimbal_quat;
 
         const float Sigma_velNED = 0.5f; // 1 sigma uncertainty in horizontal velocity components
-        const float Sigma_dAngBias  = 0.002f*dtIMU; // 1 Sigma uncertainty in delta angle bias (rad)
+        const float Sigma_dAngBias = 0.002f*dtIMU; // 1 Sigma uncertainty in delta angle bias (rad)
         const float Sigma_angErr = 0.1f; // 1 Sigma uncertainty in angular misalignment (rad)
         for (uint8_t i=0; i <= 2; i++) Cov[i][i] = sq(Sigma_angErr);
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
@@ -913,10 +913,10 @@ float SmallEKF::calcMagHeadingInnov()
     float innovation = atan2f(magMeasNED.y,magMeasNED.x) - declination;
 
     // wrap the innovation so it sits on the range from +-pi
-    if (innovation > 3.1415927f) {
-        innovation = innovation - 6.2831853f;
-    } else if (innovation < -3.1415927f) {
-        innovation = innovation + 6.2831853f;
+    if (innovation > M_PI) {
+        innovation = innovation - 2*M_PI;
+    } else if (innovation < -M_PI) {
+        innovation = innovation + 2*M_PI;
     }
 
     return innovation;
