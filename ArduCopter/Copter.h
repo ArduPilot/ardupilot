@@ -208,6 +208,8 @@ private:
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
     float ekfNavVelGainScaler;
 
+    uint32_t ekfYawReset_ms;
+
     // GCS selection
     AP_SerialManager serial_manager;
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
