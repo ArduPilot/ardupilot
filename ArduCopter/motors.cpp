@@ -124,7 +124,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // Flag used to track if we have armed the motors the first time.
     // This is used to decide if we should run the ground_start routine
     // which calibrates the IMU
-    static bool did_ground_start = false;
+    static bool did_gyro_cal = false;
     static bool in_arm_motors = false;
 
     // exit immediately if already in this function
@@ -173,17 +173,19 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     calc_distance_and_bearing();
 
-    if(did_ground_start == false) {
-        startup_ground(true);
-        // final check that gyros calibrated successfully
-        if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) && !ins.gyro_calibrated_ok_all()) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Gyro calibration failed"));
-            AP_Notify::flags.armed = false;
-            failsafe_enable();
-            in_arm_motors = false;
-            return false;
+    // gyro calibration on first arming
+    if ((did_gyro_cal == false) && (ins.gyro_calibration_timing() == AP_InertialSensor::GYRO_CAL_STARTUP_AND_FIRST_BOOT)) {
+        if (!calibrate_gyros()) {
+            // final check that gyros calibrated successfully
+            if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS))) {
+                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Gyro calibration failed"));
+                AP_Notify::flags.armed = false;
+                failsafe_enable();
+                in_arm_motors = false;
+                return false;
+            }
         }
-        did_ground_start = true;
+        did_gyro_cal = true;
     }
 
 #if FRAME_CONFIG == HELI_FRAME

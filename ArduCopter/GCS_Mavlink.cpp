@@ -1310,11 +1310,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
             }
             if (is_equal(packet.param1,1.0f)) {
-                // gyro offset calibration
-                copter.ins.init_gyro();
-                // reset ahrs gyro bias
-                if (copter.ins.gyro_calibrated_ok_all()) {
-                    copter.ahrs.reset_gyro_drift();
+                if (copter.calibrate_gyros()) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;

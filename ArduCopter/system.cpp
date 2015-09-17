@@ -262,7 +262,11 @@ void Copter::init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-    startup_ground(true);
+    startup_INS_ground();
+
+    // set landed flags
+    set_land_complete(true);
+    set_land_complete_maybe(true);
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -288,30 +292,32 @@ void Copter::init_ardupilot()
 //******************************************************************************
 //This function does all the calibrations, etc. that we need during a ground start
 //******************************************************************************
-void Copter::startup_ground(bool force_gyro_cal)
+void Copter::startup_INS_ground()
 {
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("GROUND START"));
-
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
     ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
 
-    // Warm up and read Gyro offsets
-    // -----------------------------
-    ins.init(force_gyro_cal?AP_InertialSensor::COLD_START:AP_InertialSensor::WARM_START,
-             ins_sample_rate);
- #if CLI_ENABLED == ENABLED
-    report_ins();
- #endif
+    // Warm up and calibrate gyro offsets
+    ins.init(ins_sample_rate);
+
+    // reset ahrs including gyro bias
+    ahrs.reset();
+}
+
+// calibrate gyros - returns true if succesfully calibrated
+bool Copter::calibrate_gyros()
+{
+    // gyro offset calibration
+    copter.ins.init_gyro();
 
     // reset ahrs gyro bias
-    if (force_gyro_cal) {
-        ahrs.reset_gyro_drift();
+    if (copter.ins.gyro_calibrated_ok_all()) {
+        copter.ahrs.reset_gyro_drift();
+        return true;
     }
 
-    // set landed flag
-    set_land_complete(true);
-    set_land_complete_maybe(true);
+    return false;
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
