@@ -1247,7 +1247,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (init_arm_motors(true)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
-            } else if (packet.param1 == 0.0f && (mode_has_manual_throttle(control_mode) || ap.land_complete || static_cast<int32_t>(packet.param2+0.5f) == 21196))  {
+            } else if (packet.param1 == 0.0f && (ap.land_complete || static_cast<int32_t>(packet.param2+0.5f) == 21196))  {
                 init_disarm_motors();
                 result = MAV_RESULT_ACCEPTED;
             } else {
