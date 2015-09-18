@@ -35,10 +35,10 @@ public:
      * successful the bus is left on low speed so the caller can finish the
      * initialization of its driver.
      */
-    static bool initialize_driver_state();
+    static bool initialize_driver_state(AP_HAL::SPIDeviceDriver *spi);
 
     // detect the sensor
-    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
+    static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu, AP_HAL::SPIDeviceDriver *spi);
 
 private:
 
@@ -46,7 +46,7 @@ private:
     static void _register_write(AP_HAL::SPIDeviceDriver *spi, uint8_t reg,
                                 uint8_t val);
 
-    bool                 _init_sensor(void);
+    bool                 _init_sensor(AP_HAL::SPIDeviceDriver *spi);
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);

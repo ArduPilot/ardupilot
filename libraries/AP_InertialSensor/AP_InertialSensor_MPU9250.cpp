@@ -201,13 +201,13 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 /*
   detect the sensor
  */
-AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu)
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu, AP_HAL::SPIDeviceDriver *spi)
 {
     AP_InertialSensor_MPU9250 *sensor = new AP_InertialSensor_MPU9250(_imu);
     if (sensor == NULL) {
         return NULL;
     }
-    if (!sensor->_init_sensor()) {
+    if (!sensor->_init_sensor(spi)) {
         delete sensor;
         return NULL;
     }
@@ -215,8 +215,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &
     return sensor;
 }
 
-bool AP_InertialSensor_MPU9250::initialize_driver_state() {
-    AP_HAL::SPIDeviceDriver *spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
+bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver *spi) {
+
     if (!spi)
         return false;
 
@@ -276,7 +276,7 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state() {
             break;
         }
 #if MPU9250_DEBUG
-        _dump_registers(_spi);
+        _dump_registers(spi);
 #endif
     }
 
@@ -299,9 +299,9 @@ fail_whoami:
 /*
   initialise the sensor
  */
-bool AP_InertialSensor_MPU9250::_init_sensor(void)
+bool AP_InertialSensor_MPU9250::_init_sensor(AP_HAL::SPIDeviceDriver *spi)
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
+    _spi = spi;
     _spi_sem = _spi->get_semaphore();
 
     if (!_hardware_init())
@@ -487,7 +487,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         return false;
     }
 
-    if (!initialize_driver_state())
+    if (!initialize_driver_state(_spi))
         return false;
 
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
