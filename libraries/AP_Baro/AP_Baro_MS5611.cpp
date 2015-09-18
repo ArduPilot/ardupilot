@@ -286,6 +286,10 @@ void AP_Baro_MS56XX::_timer(void)
             if (_serial->write(CMD_CONVERT_D1_OSR4096)) {      // Command to read pressure
                 _state++;
             }
+        } else {
+            /* if read fails, re-initiate a temperature read command or we are
+             * stuck */
+            _serial->write(CMD_CONVERT_D2_OSR4096);
         }
     } else {
         uint32_t d1 = _serial->read_24bits(0);;
@@ -313,6 +317,10 @@ void AP_Baro_MS56XX::_timer(void)
                     _state++;
                 }
             }
+        } else {
+            /* if read fails, re-initiate a pressure read command or we are
+             * stuck */
+            _serial->write(CMD_CONVERT_D1_OSR4096);
         }
     }
 
