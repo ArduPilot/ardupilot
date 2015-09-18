@@ -88,6 +88,17 @@
                 <param index="6">Empty</param>
                 <param index="7">Empty</param>
             </entry>
+
+            <entry name="MAV_CMD_DO_SEND_BANNER" value="42428">
+                <description>Reply with the version banner</description>
+                <param index="1">Empty</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
           </enum>
 	  
 	  	<!--  AP_Limits Enums -->
