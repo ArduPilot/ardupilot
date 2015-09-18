@@ -454,7 +454,7 @@ void AP_AK8963_SerialBus_MPU9250::_write(uint8_t address, const uint8_t *buf, ui
 
 bool AP_AK8963_SerialBus_MPU9250::configure()
 {
-    if (!AP_InertialSensor_MPU9250::initialize_driver_state())
+    if (!AP_InertialSensor_MPU9250::initialize_driver_state(_spi))
         return false;
 
     uint8_t user_ctrl;
