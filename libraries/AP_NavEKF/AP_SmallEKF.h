@@ -83,11 +83,16 @@ public:
     // Run the EKF main loop once every time we receive sensor data
     void RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles);
 
+    void reset();
+
     // get some debug information
     void getDebug(float &tilt, Vector3f &velocity, Vector3f &euler, Vector3f &gyroBias) const;
 
     // get gyro bias data
     void getGyroBias(Vector3f &gyroBias) const;
+
+    // set gyro bias
+    void setGyroBias(const Vector3f &gyroBias);
 
     // get quaternion data
     void getQuat(Quaternion &quat) const;

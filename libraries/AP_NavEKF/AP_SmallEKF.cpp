@@ -32,16 +32,24 @@ SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
     _ahrs(ahrs),
     _main_ekf(ahrs.get_NavEKF_const()),
     states(),
-    state(*reinterpret_cast<struct state_elements *>(&states)),
-    TiltCorrection(0),
-    StartTime_ms(0),
-    FiltInit(false),
-    lastMagUpdate(0),
-    dtIMU(0)
+    state(*reinterpret_cast<struct state_elements *>(&states))
 {
     AP_Param::setup_object_defaults(this, var_info);
+    reset();
+}
+
+
+// complete reset
+void SmallEKF::reset()
+{
+    memset(&states,0,sizeof(states));
     memset(&gSense,0,sizeof(gSense));
     memset(&Cov,0,sizeof(Cov));
+    TiltCorrection = 0;
+    StartTime_ms = 0;
+    FiltInit = false;
+    lastMagUpdate = 0;
+    dtIMU = 0;
 }
 
 // run a 9-state EKF used to calculate orientation
@@ -963,6 +971,15 @@ void SmallEKF::getGyroBias(Vector3f &gyroBias) const
         gyroBias = state.delAngBias / dtIMU;
     }
 }
+
+void SmallEKF::setGyroBias(const Vector3f &gyroBias)
+{
+    if (dtIMU < 1.0e-6f) {
+        return;
+    }
+    state.delAngBias = gyroBias * dtIMU;
+}
+
 
 // get quaternion data
 void SmallEKF::getQuat(Quaternion &quat) const
