@@ -74,12 +74,7 @@ private:
     int64_t disk_space();
     float avail_space_percent();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // I always seem to have less than 10% free space on my laptop:
-    const float min_avail_space_percent = 0.1f;
-#else
-    const float min_avail_space_percent = 10.0f;
-#endif
+    const float min_avail_space_percent;
 
     // write buffer
     uint8_t *_writebuf;

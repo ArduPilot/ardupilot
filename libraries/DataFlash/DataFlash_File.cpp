@@ -50,6 +50,12 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
     _log_directory(log_directory),
     _writebuf(NULL),
     _writebuf_size(16*1024),
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    // Peter Barker can't keep 10% free space on his laptop:
+    min_avail_space_percent(0.1f),
+#else
+    min_avail_space_percent(10.0f),
+#endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
     _writebuf_chunk(512),
