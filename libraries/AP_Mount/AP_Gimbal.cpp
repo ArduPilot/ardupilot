@@ -13,7 +13,31 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Gimbal::present()
 {
-    return hal.scheduler->millis() - _last_report_msg_ms < 1000;
+    if (_state != GIMBAL_STATE_NOT_PRESENT && hal.scheduler->millis()-_last_report_msg_ms > 1000) {
+        // gimbal went away
+        _state = GIMBAL_STATE_NOT_PRESENT;
+        return false;
+    }
+
+    return _state != GIMBAL_STATE_NOT_PRESENT;
+}
+
+bool AP_Gimbal::aligned()
+{
+    return present() && _state == GIMBAL_STATE_PRESENT_RUNNING;
+}
+
+gimbal_mode_t AP_Gimbal::get_mode()
+{
+    if ((_gimbalParams.initialized() && _gimbalParams.get_K_rate()==0.0f) || (_ahrs.get_dcm_matrix().c.z < 0 && !(lockedToBody || _calibrator.running()))) {
+        return GIMBAL_MODE_IDLE;
+    } else if (!_ekf.getStatus()) {
+        return GIMBAL_MODE_POS_HOLD;
+    } else if (_calibrator.running() || lockedToBody) {
+        return GIMBAL_MODE_POS_HOLD_FF;
+    } else {
+        return GIMBAL_MODE_STABILIZE;
+    }
 }
 
 void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
@@ -21,42 +45,106 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     mavlink_gimbal_report_t report_msg;
     mavlink_msg_gimbal_report_decode(msg, &report_msg);
 
-    _gimbalParams.set_channel(chan);
-
-    if(report_msg.target_system != 1) {
-        // gimbal must have been power cycled or reconnected
-        _gimbalParams.reset();
-        _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
-        return;
-    }
-
-    _gimbalParams.update();
-    if(!_gimbalParams.initialized()){
-        return;
-    }
-
     _last_report_msg_ms = hal.scheduler->millis();
 
-    extract_feedback(report_msg);
+    _gimbalParams.set_channel(chan);
 
-    update_mode();
-    update_state();
+    if (report_msg.target_system != 1) {
+        _state = GIMBAL_STATE_NOT_PRESENT;
+    }
 
-    switch(_mode) {
-        case GIMBAL_MODE_IDLE:
-            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
+    switch(_state) {
+        case GIMBAL_STATE_NOT_PRESENT:
+            // gimbal was just connected or we just rebooted, transition to PRESENT_INITIALIZING
+            _gimbalParams.reset();
+            _gimbalParams.set_param(GMB_PARAM_GMB_SYSID, 1);
+            _state = GIMBAL_STATE_PRESENT_INITIALIZING;
             break;
-        case GIMBAL_MODE_POS_HOLD:
-            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 1);
+
+        case GIMBAL_STATE_PRESENT_INITIALIZING:
+            _gimbalParams.update();
+            if (_gimbalParams.initialized()) {
+                // parameters done initializing, finalize initialization and transition to aligning
+                _initial_gyro_bias = _gimbalParams.get_gyro_bias();
+                _expected_gyro_bias = _initial_gyro_bias;
+                extract_feedback(report_msg);
+                _ang_vel_mag_filt = 20;
+                filtered_joint_angles = _measurement.joint_angles;
+                vehicle_to_gimbal_quat_filt.from_vector312(filtered_joint_angles.x,filtered_joint_angles.y,filtered_joint_angles.z);
+                _ekf.reset();
+                _state = GIMBAL_STATE_PRESENT_ALIGNING;
+            }
             break;
-        case GIMBAL_MODE_POS_HOLD_FF:
-        case GIMBAL_MODE_STABILIZE:
-            send_control(chan);
-            _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
-        default:
+
+        case GIMBAL_STATE_PRESENT_ALIGNING:
+            extract_feedback(report_msg);
+            update_estimators();
+            if (_ekf.getStatus()) {
+                // EKF done aligning, transition to running
+                _state = GIMBAL_STATE_PRESENT_RUNNING;
+                _last_gyro_bias_save_ms = hal.scheduler->micros();
+            }
+            break;
+
+        case GIMBAL_STATE_PRESENT_RUNNING:
+            extract_feedback(report_msg);
+            update_estimators();
+            update_gimbal_gyro_bias();
             break;
     }
 
+    send_controls(chan);
+}
+
+void AP_Gimbal::send_controls(mavlink_channel_t chan)
+{
+    if (_state == GIMBAL_STATE_PRESENT_RUNNING) {
+        // get the gimbal quaternion estimate
+        Quaternion quatEst;
+        _ekf.getQuat(quatEst);
+
+        // run rate controller
+        gimbalRateDemVec.zero();
+        switch(get_mode()) {
+            case GIMBAL_MODE_POS_HOLD_FF: {
+                gimbalRateDemVec += getGimbalRateBodyLock();
+                gimbalRateDemVec += getGimbalRateDemVecGyroBias();
+                float gimbalRateDemVecLen = gimbalRateDemVec.length();
+                if (gimbalRateDemVecLen > radians(400)) {
+                    gimbalRateDemVec *= radians(400)/gimbalRateDemVecLen;
+                }
+                mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
+                                                gimbalRateDemVec.x, gimbalRateDemVec.y, gimbalRateDemVec.z);
+                break;
+            }
+            case GIMBAL_MODE_STABILIZE: {
+                gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
+                gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
+                gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
+                gimbalRateDemVec += getGimbalRateDemVecGyroBias();
+                float gimbalRateDemVecLen = gimbalRateDemVec.length();
+                if (gimbalRateDemVecLen > radians(400)) {
+                    gimbalRateDemVec *= radians(400)/gimbalRateDemVecLen;
+                }
+                mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
+                                                gimbalRateDemVec.x, gimbalRateDemVec.y, gimbalRateDemVec.z);
+                break;
+            }
+            default:
+            case GIMBAL_MODE_IDLE:
+            case GIMBAL_MODE_POS_HOLD:
+                break;
+        }
+    }
+
+    // set GMB_POS_HOLD
+    if (get_mode() == GIMBAL_MODE_POS_HOLD) {
+        _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 1);
+    } else {
+        _gimbalParams.set_param(GMB_PARAM_GMB_POS_HOLD, 0);
+    }
+
+    // set GMB_MAX_TORQUE
     float max_torque;
     _gimbalParams.get_param(GMB_PARAM_GMB_MAX_TORQUE, max_torque, 0);
     if (max_torque != _max_torque && max_torque != 0) {
@@ -70,33 +158,41 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
     }
 }
 
-void AP_Gimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
-
-    if (ins_index < ins.get_gyro_count()) {
-        if (!ins.get_delta_angle(ins_index,dAng)) {
-            dAng = ins.get_gyro(ins_index) / ins.get_sample_rate();
-        }
+void AP_Gimbal::update_gimbal_gyro_bias()
+{
+    // reset the timer if EKF is not aligned
+    if (!_ekf.getStatus()) {
+        _last_gyro_bias_save_ms = hal.scheduler->micros();
+        return;
     }
-}
 
-void AP_Gimbal::update_fast() {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
-
-    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
-        // dual gyro mode - average first two gyros
-        Vector3f dAng;
-        readVehicleDeltaAngle(0, dAng);
-        vehicle_delta_angles += dAng*0.5f;
-        readVehicleDeltaAngle(1, dAng);
-        vehicle_delta_angles += dAng*0.5f;
-    } else {
-        // single gyro mode - one of the first two gyros are unhealthy or don't exist
-        // just read primary gyro
-        Vector3f dAng;
-        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
-        vehicle_delta_angles += dAng;
+    // wait 60 seconds before updating gyro bias. flashing blocks momentarily, so don't do it while armed
+    if (hal.util->get_soft_armed() || hal.scheduler->micros()-_last_gyro_bias_save_ms < 60000) {
+        return;
     }
+
+    _last_gyro_bias_save_ms = hal.scheduler->micros();
+
+    Vector3f gimbal_gyro_bias = _gimbalParams.get_gyro_bias();
+
+    // if there was an external modification to the gyro bias parameter, don't save
+    if (_expected_gyro_bias != gimbal_gyro_bias) {
+        return;
+    }
+
+    Vector3f total_gyro_bias;
+    _ekf.getGyroBias(total_gyro_bias);
+    total_gyro_bias += gimbal_gyro_bias;
+
+    // allow a maximum of 1 deg/s of change per boot cycle
+    Vector3f output_gyro_bias = total_gyro_bias;
+    output_gyro_bias.x = constrain_float(output_gyro_bias.x, _initial_gyro_bias.x-radians(1.0f), _initial_gyro_bias.x+radians(1.0f));
+    output_gyro_bias.y = constrain_float(output_gyro_bias.y, _initial_gyro_bias.y-radians(1.0f), _initial_gyro_bias.y+radians(1.0f));
+    output_gyro_bias.z = constrain_float(output_gyro_bias.z, _initial_gyro_bias.z-radians(1.0f), _initial_gyro_bias.z+radians(1.0f));
+
+    _gimbalParams.set_gyro_bias(output_gyro_bias);
+    _ekf.setGyroBias(total_gyro_bias - output_gyro_bias);
+    _gimbalParams.flash();
 }
 
 void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
@@ -136,51 +232,43 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     vehicle_to_gimbal_quat.from_vector312(_measurement.joint_angles.x,_measurement.joint_angles.y,_measurement.joint_angles.z);
 }
 
-void AP_Gimbal::update_mode()
+void AP_Gimbal::update_estimators()
 {
-    if (_gimbalParams.get_K_rate()==0.0f || (isCopterFlipped() && !(lockedToBody || _calibrator.running()))) {
-        _mode = GIMBAL_MODE_IDLE;
-    } else if (!_ekf.getStatus()) {
-        _mode = GIMBAL_MODE_POS_HOLD;
-    } else if (_calibrator.running() || lockedToBody) {
-        _mode = GIMBAL_MODE_POS_HOLD_FF;
-    } else {
-        _mode = GIMBAL_MODE_STABILIZE;
+    if (_state == GIMBAL_STATE_NOT_PRESENT || _state == GIMBAL_STATE_PRESENT_INITIALIZING) {
+        return;
+    }
+
+    // Run the gimbal attitude and gyro bias estimator
+    _ekf.RunEKF(_measurement.delta_time, _measurement.delta_angles, _measurement.delta_velocity, _measurement.joint_angles);
+    update_joint_angle_est();
+}
+
+void AP_Gimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+    const AP_InertialSensor &ins = _ahrs.get_ins();
+
+    if (ins_index < ins.get_gyro_count()) {
+        if (!ins.get_delta_angle(ins_index,dAng)) {
+            dAng = ins.get_gyro(ins_index) / ins.get_sample_rate();
+        }
     }
 }
 
-void AP_Gimbal::update_state()
-{
-    // Run the gimbal attitude and gyro bias estimator
-    _ekf.RunEKF(_measurement.delta_time, _measurement.delta_angles, _measurement.delta_velocity, _measurement.joint_angles);
+void AP_Gimbal::update_fast() {
+    const AP_InertialSensor &ins = _ahrs.get_ins();
 
-    // get the gimbal quaternion estimate
-    Quaternion quatEst;
-    _ekf.getQuat(quatEst);
-
-    update_joint_angle_est();
-
-    gimbalRateDemVec.zero();
-    switch(_mode) {
-        case GIMBAL_MODE_POS_HOLD_FF:
-            gimbalRateDemVec += getGimbalRateBodyLock();
-            gimbalRateDemVec += getGimbalRateDemVecGyroBias();
-            break;
-        case GIMBAL_MODE_STABILIZE:
-            gimbalRateDemVec += getGimbalRateDemVecYaw(quatEst);
-            gimbalRateDemVec += getGimbalRateDemVecTilt(quatEst);
-            gimbalRateDemVec += getGimbalRateDemVecForward(quatEst);
-            gimbalRateDemVec += getGimbalRateDemVecGyroBias();
-            break;
-        default:
-        case GIMBAL_MODE_IDLE:
-        case GIMBAL_MODE_POS_HOLD:
-            break;
-    }
-
-    float gimbalRateDemVecLen = gimbalRateDemVec.length();
-    if (gimbalRateDemVecLen > radians(400)) {
-        gimbalRateDemVec *= radians(400)/gimbalRateDemVecLen;
+    if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
+        // dual gyro mode - average first two gyros
+        Vector3f dAng;
+        readVehicleDeltaAngle(0, dAng);
+        vehicle_delta_angles += dAng*0.5f;
+        readVehicleDeltaAngle(1, dAng);
+        vehicle_delta_angles += dAng*0.5f;
+    } else {
+        // single gyro mode - one of the first two gyros are unhealthy or don't exist
+        // just read primary gyro
+        Vector3f dAng;
+        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
+        vehicle_delta_angles += dAng;
     }
 }
 
@@ -208,35 +296,6 @@ void AP_Gimbal::update_joint_angle_est()
     vehicle_delta_angles.zero();
 }
 
-void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
-{
-    float sin_theta = sinf(_measurement.joint_angles.y);
-    float cos_theta = cosf(_measurement.joint_angles.y);
-
-    float sin_phi = sinf(_measurement.joint_angles.x);
-    float cos_phi = cosf(_measurement.joint_angles.x);
-    float sec_phi = 1.0f/cos_phi;
-    float tan_phi = sin_phi/cos_phi;
-
-    joint_rates.x = ang_vel.x*cos_theta+ang_vel.z*sin_theta;
-    joint_rates.y = ang_vel.x*sin_theta*tan_phi-ang_vel.z*cos_theta*tan_phi+ang_vel.y;
-    joint_rates.z = sec_phi*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
-}
-
-void AP_Gimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)
-{
-    float sin_theta = sinf(_measurement.joint_angles.y);
-    float cos_theta = cosf(_measurement.joint_angles.y);
-
-    float sin_phi = sinf(_measurement.joint_angles.x);
-    float cos_phi = cosf(_measurement.joint_angles.x);
-
-    ang_vel.x = cos_theta*joint_rates.x-sin_theta*cos_phi*joint_rates.z;
-    ang_vel.y = joint_rates.y + sin_phi*joint_rates.z;
-    ang_vel.z = sin_theta*joint_rates.x+cos_theta*cos_phi*joint_rates.z;
-}
-
-
 Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
         // define the rotation from vehicle to earth
@@ -255,7 +314,7 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
          // calculate the maximum steady state rate error corresponding to the maximum permitted yaw angle error
         float maxRate = _gimbalParams.get_K_rate() * yawErrorLimit;
         float vehicle_rate_mag_ef = vehicle_rate_ef.length();
-        float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
+        float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate;
         if (vehicle_rate_mag_ef > maxRate) {
             if (vehicle_rate_ef.z>0.0f){
                 gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
@@ -338,12 +397,6 @@ Vector3f AP_Gimbal::getGimbalRateBodyLock()
         return gimbalRateDemVecBodyLock;
 }
 
-void AP_Gimbal::send_control(mavlink_channel_t chan)
-{
-    mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
-        gimbalRateDemVec.x, gimbalRateDemVec.y, gimbalRateDemVec.z);
-}
-
 void AP_Gimbal::update_target(Vector3f newTarget)
 {
     // Low-pass filter
@@ -359,11 +412,6 @@ Vector3f AP_Gimbal::getGimbalEstimateEF()
     Vector3f eulerEst;
     quatEst.to_vector312(eulerEst.x, eulerEst.y, eulerEst.z);
     return eulerEst;
-}
-
-bool AP_Gimbal::isCopterFlipped()
-{
-    return _ahrs.get_dcm_matrix().c.z < 0;
 }
 
 bool AP_Gimbal::joints_near_limits()
@@ -401,6 +449,34 @@ void AP_Gimbal::_acal_save_calibrations()
     _gimbalParams.set_accel_bias(bias);
     _gimbalParams.set_accel_gain(gain);
     _gimbalParams.flash();
+}
+
+void AP_Gimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
+{
+    float sin_theta = sinf(_measurement.joint_angles.y);
+    float cos_theta = cosf(_measurement.joint_angles.y);
+
+    float sin_phi = sinf(_measurement.joint_angles.x);
+    float cos_phi = cosf(_measurement.joint_angles.x);
+    float sec_phi = 1.0f/cos_phi;
+    float tan_phi = sin_phi/cos_phi;
+
+    joint_rates.x = ang_vel.x*cos_theta+ang_vel.z*sin_theta;
+    joint_rates.y = ang_vel.x*sin_theta*tan_phi-ang_vel.z*cos_theta*tan_phi+ang_vel.y;
+    joint_rates.z = sec_phi*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
+}
+
+void AP_Gimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)
+{
+    float sin_theta = sinf(_measurement.joint_angles.y);
+    float cos_theta = cosf(_measurement.joint_angles.y);
+
+    float sin_phi = sinf(_measurement.joint_angles.x);
+    float cos_phi = cosf(_measurement.joint_angles.x);
+
+    ang_vel.x = cos_theta*joint_rates.x-sin_theta*cos_phi*joint_rates.z;
+    ang_vel.y = joint_rates.y + sin_phi*joint_rates.z;
+    ang_vel.z = sin_theta*joint_rates.x+cos_theta*cos_phi*joint_rates.z;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

@@ -23,8 +23,15 @@
 #include <AP_NavEKF.h>
 #include <AP_AccelCal.h>
 
+enum gimbal_state_t {
+    GIMBAL_STATE_NOT_PRESENT = 0,
+    GIMBAL_STATE_PRESENT_INITIALIZING,
+    GIMBAL_STATE_PRESENT_ALIGNING,
+    GIMBAL_STATE_PRESENT_RUNNING
+};
+
 enum gimbal_mode_t {
-    GIMBAL_MODE_IDLE=0,
+    GIMBAL_MODE_IDLE = 0,
     GIMBAL_MODE_POS_HOLD,
     GIMBAL_MODE_POS_HOLD_FF,
     GIMBAL_MODE_STABILIZE
@@ -37,6 +44,7 @@ public:
     AP_Gimbal(const AP_AHRS_NavEKF &ahrs, AP_Gimbal_Parameters &parameters) :
         _ekf(ahrs),
         _ahrs(ahrs),
+        _state(GIMBAL_STATE_NOT_PRESENT),
         _gimbalParams(parameters),
         vehicleYawRateFilt(0.0f),
         yawRateFiltPole(10.0f),
@@ -57,6 +65,7 @@ public:
     void update_fast();
 
     bool present();
+    bool aligned();
 
     Vector3f getGimbalEstimateEF();
 
@@ -71,13 +80,13 @@ public:
     const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF
     AP_Gimbal_Parameters &_gimbalParams;
 
-    Vector3f    gimbalRateDemVec;       // degrees/s
+    Vector3f    gimbalRateDemVec;       // rad/s
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and pan angles in radians
 
     bool lockedToBody;
 
 private:
-    gimbal_mode_t _mode;
+    gimbal_state_t _state;
 
     // filtered yaw rate from the vehicle
     float vehicleYawRateFilt;
@@ -94,14 +103,14 @@ private:
 
     static const uint8_t _compid = MAV_COMP_ID_GIMBAL;
 
-    void send_control(mavlink_channel_t chan);
-    void update_state();
+    void update_estimators();
+    void send_controls(mavlink_channel_t chan);
     void extract_feedback(const mavlink_gimbal_report_t& report_msg);
     void update_joint_angle_est();
+    void update_gimbal_gyro_bias();
 
-    void update_mode();
+    gimbal_mode_t get_mode();
 
-    bool isCopterFlipped();
     bool joints_near_limits();
 
     // Control loop functions
@@ -128,6 +137,10 @@ private:
     float _max_torque;
 
     float _ang_vel_mag_filt;
+
+    uint32_t _last_gyro_bias_save_ms;
+    Vector3f _initial_gyro_bias;
+    Vector3f _expected_gyro_bias;
 
     AccelCalibrator _calibrator;
     void _acal_save_calibrations();

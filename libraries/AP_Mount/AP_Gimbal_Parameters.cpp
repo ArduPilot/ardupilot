@@ -240,6 +240,14 @@ Vector3f AP_Gimbal_Parameters::get_gyro_bias()
     get_param(GMB_PARAM_GMB_OFF_GYRO_Z,ret.z);
     return ret;
 }
+
+void AP_Gimbal_Parameters::set_gyro_bias(const Vector3f& bias)
+{
+    set_param(GMB_PARAM_GMB_OFF_GYRO_X,bias.x);
+    set_param(GMB_PARAM_GMB_OFF_GYRO_Y,bias.y);
+    set_param(GMB_PARAM_GMB_OFF_GYRO_Z,bias.z);
+}
+
 Vector3f AP_Gimbal_Parameters::get_joint_bias()
 {
     Vector3f ret;

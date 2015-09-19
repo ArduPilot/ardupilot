@@ -62,6 +62,7 @@ public:
     void set_accel_bias(const Vector3f& bias);
     void set_accel_gain(const Vector3f& gain);
     Vector3f get_gyro_bias();
+    void set_gyro_bias(const Vector3f& bias);
     Vector3f get_joint_bias();
 
     float get_K_rate();
