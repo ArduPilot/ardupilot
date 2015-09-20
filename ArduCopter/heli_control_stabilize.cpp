@@ -36,7 +36,6 @@ void Copter::heli_stabilize_run()
     }
     
     if(motors.armed() && heli_flags.init_targets_on_arming) {
-        attitude_control.relax_bf_rate_controller();
         attitude_control.set_yaw_target_to_current_heading();
         if (motors.rotor_speed_above_critical()) {
             heli_flags.init_targets_on_arming=false;
