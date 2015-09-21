@@ -624,11 +624,19 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 } else if (is_equal(packet.param5,1.0f)) {
                     float trim_roll, trim_pitch;
                     AP_InertialSensor_UserInteract_MAVLink interact(this);
+                    // start with gyro calibration
+                    tracker.ins.init_gyro();
+                    // reset ahrs gyro bias
+                    if (tracker.ins.gyro_calibrated_ok_all()) {
+                        tracker.ahrs.reset_gyro_drift();
+                    }
                     if(tracker.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                         // reset ahrs's trim to suggested values from calibration routine
                         tracker.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                     }
                 } else if (is_equal(packet.param5,2.0f)) {
+                    // start with gyro calibration
+                    tracker.ins.init_gyro();
                     // accel trim
                     float trim_roll, trim_pitch;
                     if(tracker.ins.calibrate_trim(trim_roll, trim_pitch)) {
