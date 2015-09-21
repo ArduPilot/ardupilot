@@ -84,8 +84,7 @@ const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
 void SchedTest::setup(void)
 {
     // we 
-    ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_50HZ);
+    ins.init(AP_InertialSensor::RATE_50HZ);
 
     // initialise the scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
