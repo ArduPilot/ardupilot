@@ -604,16 +604,16 @@ void Replay::setup()
 void Replay::set_ins_update_rate(uint16_t _update_rate) {
     switch (_update_rate) {
     case 50:
-        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_50HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_50HZ);
         break;
     case 100:
-        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_100HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_100HZ);
         break;
     case 200:
-        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_200HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_200HZ);
         break;
     case 400:
-        _vehicle.ins.init(AP_InertialSensor::WARM_START, AP_InertialSensor::RATE_400HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_400HZ);
         break;
     default:
         printf("Invalid update rate (%d); use 50, 100, 200 or 400\n", _update_rate);
