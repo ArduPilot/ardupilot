@@ -260,10 +260,8 @@ public:
     // returns true of the EKF thinks the GPS is glitching
     bool getGpsGlitchStatus(void) const;
 
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the system time at which the yaw angle was reset
+    uint32_t getLastYawResetAngle(float &yawAng);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -689,8 +687,7 @@ private:
     uint32_t lastConstPosFuseTime_ms;   // last time in msec the constant position constraint was applied
     uint32_t lastGpsAccuracySendTime_ms;    //last sendtime of mavlink GPS_ACCURACY packet
     float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
-    bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
-
+    uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
     Vector10 hgtIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next height measurement
