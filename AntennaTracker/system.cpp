@@ -81,7 +81,7 @@ void Tracker::init_tracker()
     ahrs.init();
     ahrs.set_fly_forward(false);
 
-    ins.init(AP_InertialSensor::WARM_START, ins_sample_rate);
+    ins.init(ins_sample_rate);
     ahrs.reset();
 
     init_barometer();
