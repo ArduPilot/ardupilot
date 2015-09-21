@@ -308,6 +308,8 @@ static float ekfGndSpdLimit;
 // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
 static float ekfNavVelGainScaler;
 
+static uint32_t ekfYawReset_ms = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 // GCS selection
 ////////////////////////////////////////////////////////////////////////////////
@@ -915,6 +917,9 @@ static void fast_loop()
     // Inertial Nav
     // --------------------
     read_inertia();
+
+    // check if ekf has reset target heading
+    check_ekf_yaw_reset();
 
     // run the attitude controllers
     update_flight_mode();
