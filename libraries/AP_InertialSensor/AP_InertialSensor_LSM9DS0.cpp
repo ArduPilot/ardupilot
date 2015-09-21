@@ -669,7 +669,7 @@ bool AP_InertialSensor_LSM9DS0::_gyro_data_ready()
         return _drdy_pin_g->read() != 0;
     }
 
-    uint8_t status = _register_read_xm(STATUS_REG_G);
+    uint8_t status = _register_read_g(STATUS_REG_G);
     return status & STATUS_REG_G_ZYXDA;
 }
 
