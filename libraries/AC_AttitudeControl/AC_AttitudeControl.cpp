@@ -245,7 +245,7 @@ void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitc
     // calculate earth frame errors
     angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
     angle_ef_error.y = wrap_180_cd_float(_angle_ef_target.y - _ahrs.pitch_sensor);
-    angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.get_yaw_for_control_cd());
+    angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.yaw_sensor);
 
     // constrain the yaw angle error
     if (slew_yaw) {
@@ -382,7 +382,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
         if (frame_conversion_bf_to_ef(_angle_bf_error, angle_ef_error)) {
             _angle_ef_target.x = wrap_180_cd_float(angle_ef_error.x + _ahrs.roll_sensor);
             _angle_ef_target.y = wrap_180_cd_float(angle_ef_error.y + _ahrs.pitch_sensor);
-            _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.get_yaw_for_control_cd());
+            _angle_ef_target.z = wrap_360_cd_float(angle_ef_error.z + _ahrs.yaw_sensor);
         }
         if (_angle_ef_target.y > 9000.0f) {
             _angle_ef_target.x = wrap_180_cd_float(_angle_ef_target.x + 18000.0f);
@@ -486,11 +486,11 @@ void AC_AttitudeControl::update_ef_pitch_angle_and_error(float pitch_rate_ef, Ve
 void AC_AttitudeControl::update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error, float overshoot_max)
 {
     // calculate angle error with maximum of +- max angle overshoot
-    angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.get_yaw_for_control_cd());
+    angle_ef_error.z = wrap_180_cd_float(_angle_ef_target.z - _ahrs.yaw_sensor);
     angle_ef_error.z  = constrain_float(angle_ef_error.z, -overshoot_max, overshoot_max);
 
     // update yaw angle target to be within max angle overshoot of our current heading
-    _angle_ef_target.z = angle_ef_error.z + _ahrs.get_yaw_for_control_cd();
+    _angle_ef_target.z = angle_ef_error.z + _ahrs.yaw_sensor;
 
 
     // increment the yaw angle target
