@@ -75,8 +75,7 @@ void setup(void)
     hal.gpio->write(40, HIGH);
 #endif
 
-    ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ);
+    ins.init(AP_InertialSensor::RATE_100HZ);
     ahrs.init();
     serial_manager.init();
 
