@@ -122,6 +122,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             hal.scheduler->panic("Invalid gyro sample rate");
         }
+        _set_gyro_raw_sample_rate(_gyro_instance[i], (uint32_t)samplerate);
         _gyro_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -197,7 +198,7 @@ void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
 void AP_InertialSensor_PX4::_set_gyro_filter_frequency(uint8_t filter_hz)
 {
     for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        float samplerate = 1.0f / _gyro_sample_time[i];
+        float samplerate = _gyro_raw_sample_rate(_gyro_instance[i]);
         _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
     }
 }
