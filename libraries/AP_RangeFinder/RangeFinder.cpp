@@ -204,72 +204,72 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
-    // @Param: 2_TYPE
+    // @Param: 3_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, _type[2], 0),
 
-    // @Param: 2_PIN
+    // @Param: 3_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     AP_GROUPINFO("3_PIN",     26, RangeFinder, _pin[2], -1),
 
-    // @Param: 2_SCALING
+    // @Param: 3_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
     // @Units: meters/Volt
     // @Increment: 0.001
     AP_GROUPINFO("3_SCALING", 27, RangeFinder, _scaling[2], 3.0f),
 
-    // @Param: 2_OFFSET
+    // @Param: 3_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
     // @Units: Volts
     // @Increment: 0.001
     AP_GROUPINFO("3_OFFSET",  28, RangeFinder, _offset[2], 0.0f),
 
-    // @Param: 2_FUNCTION
+    // @Param: 3_FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     AP_GROUPINFO("3_FUNCTION",  29, RangeFinder, _function[2], 0),
 
-    // @Param: 2_MIN_CM
+    // @Param: 3_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, _min_distance_cm[2], 20),
 
-    // @Param: 2_MAX_CM
+    // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, _max_distance_cm[2], 700),
 
-    // @Param: 2_STOP_PIN
+    // @Param: 3_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("3_STOP_PIN", 32, RangeFinder, _stop_pin[2], -1),
 
-    // @Param: 2_SETTLE
+    // @Param: 3_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
     AP_GROUPINFO("3_SETTLE", 33, RangeFinder, _settle_time_ms[2], 0),
 
-    // @Param: 2_RMETRIC
+    // @Param: 3_RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("3_RMETRIC", 34, RangeFinder, _ratiometric[2], 1),
 
-    // @Param: 2_GNDCLEAR
+    // @Param: 3_GNDCLEAR
     // @DisplayName: Distance (in cm) from the second range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
     // @Units: centimeters
@@ -288,72 +288,72 @@ const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("3_ADDR", 36, RangeFinder, _address[2], 0),
     
-    // @Param: 2_TYPE
+    // @Param: 4_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
     // @Values: 0:None,1:Analog,2:APM2-MaxbotixI2C,3:APM2-PulsedLightI2C,4:PX4-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, _type[3], 0),
 
-    // @Param: 2_PIN
+    // @Param: 4_PIN
     // @DisplayName: Rangefinder pin
     // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
     AP_GROUPINFO("4_PIN",     38, RangeFinder, _pin[3], -1),
 
-    // @Param: 2_SCALING
+    // @Param: 4_SCALING
     // @DisplayName: Rangefinder scaling
     // @Description: Scaling factor between rangefinder reading and distance. For the linear and inverted functions this is in meters per volt. For the hyperbolic function the units are meterVolts.
     // @Units: meters/Volt
     // @Increment: 0.001
     AP_GROUPINFO("4_SCALING", 39, RangeFinder, _scaling[3], 3.0f),
 
-    // @Param: 2_OFFSET
+    // @Param: 4_OFFSET
     // @DisplayName: rangefinder offset
     // @Description: Offset in volts for zero distance
     // @Units: Volts
     // @Increment: 0.001
     AP_GROUPINFO("4_OFFSET",  40, RangeFinder, _offset[3], 0.0f),
 
-    // @Param: 2_FUNCTION
+    // @Param: 4_FUNCTION
     // @DisplayName: Rangefinder function
     // @Description: Control over what function is used to calculate distance. For a linear function, the distance is (voltage-offset)*scaling. For a inverted function the distance is (offset-voltage)*scaling. For a hyperbolic function the distance is scaling/(voltage-offset). The functions return the distance in meters.
     // @Values: 0:Linear,1:Inverted,2:Hyperbolic
     AP_GROUPINFO("4_FUNCTION",  41, RangeFinder, _function[3], 0),
 
-    // @Param: 2_MIN_CM
+    // @Param: 4_MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("4_MIN_CM",  42, RangeFinder, _min_distance_cm[3], 20),
 
-    // @Param: 2_MAX_CM
+    // @Param: 4_MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
 	// @Units: centimeters
     // @Increment: 1
     AP_GROUPINFO("4_MAX_CM",  43, RangeFinder, _max_distance_cm[3], 700),
 
-    // @Param: 2_STOP_PIN
+    // @Param: 4_STOP_PIN
     // @DisplayName: Rangefinder stop pin
     // @Description: Digital pin that enables/disables rangefinder measurement for an analog rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This can be used to ensure that multiple sonar rangefinders don't interfere with each other.
     // @Values: -1:Not Used,50:Pixhawk AUXOUT1,51:Pixhawk AUXOUT2,52:Pixhawk AUXOUT3,53:Pixhawk AUXOUT4,54:Pixhawk AUXOUT5,55:Pixhawk AUXOUT6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     AP_GROUPINFO("4_STOP_PIN", 44, RangeFinder, _stop_pin[3], -1),
 
-    // @Param: 2_SETTLE
+    // @Param: 4_SETTLE
     // @DisplayName: Sonar settle time
     // @Description: The time in milliseconds that the rangefinder reading takes to settle. This is only used when a STOP_PIN is specified. It determines how long we have to wait for the rangefinder to give a reading after we set the STOP_PIN high. For a sonar rangefinder with a range of around 7m this would need to be around 50 milliseconds to allow for the sonar pulse to travel to the target and back again.
     // @Units: milliseconds
     // @Increment: 1
     AP_GROUPINFO("4_SETTLE", 45, RangeFinder, _settle_time_ms[3], 0),
 
-    // @Param: 2_RMETRIC
+    // @Param: 4_RMETRIC
     // @DisplayName: Ratiometric
     // @Description: This parameter sets whether an analog rangefinder is ratiometric. Most analog rangefinders are ratiometric, meaning that their output voltage is influenced by the supply voltage. Some analog rangefinders (such as the SF/02) have their own internal voltage regulators so they are not ratiometric.
     // @Values: 0:No,1:Yes
     AP_GROUPINFO("4_RMETRIC", 46, RangeFinder, _ratiometric[3], 1),
 
-    // @Param: 2_GNDCLEAR
+    // @Param: 4_GNDCLEAR
     // @DisplayName: Distance (in cm) from the second range finder to the ground
     // @Description: This parameter sets the expected range measurement(in cm) that the second range finder should return when the vehicle is on the ground.
     // @Units: centimeters
