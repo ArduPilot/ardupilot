@@ -33,3 +33,4 @@ help:
 	@echo "  bbbmini - the Beagle Bone Black mini"
 	@echo "  bebop - the Parrot Bebop"
 	@echo "  raspilot - the RaspberryPi + pilot cape combination"
+	@echo "  erlebrain2 - the Erle-Brain 2 board"	
