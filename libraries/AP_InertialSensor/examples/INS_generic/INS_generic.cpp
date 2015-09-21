@@ -63,8 +63,7 @@ void setup(void)
     hal.gpio->write(40, 1);
 #endif
 
-    ins.init(AP_InertialSensor::COLD_START, 
-			 AP_InertialSensor::RATE_100HZ);
+    ins.init(AP_InertialSensor::RATE_100HZ);
 
     // display initial values
     display_offsets_and_scaling();
