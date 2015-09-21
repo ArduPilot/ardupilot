@@ -533,8 +533,6 @@ struct PACKED log_RFND {
     uint64_t time_us;
     uint16_t dist1;
     uint16_t dist2;
-    uint16_t dist3;
-    uint16_t dist4;
 };
 
 /*
@@ -761,7 +759,7 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QCCCC",         "TimeUS,Dist1,Dist2,Dist3,Dist4" }
+      "RFND", "QCC",         "TimeUS,Dist1,Dist2" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \

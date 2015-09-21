@@ -755,9 +755,7 @@ void DataFlash_Class::Log_Write_RFND(const RangeFinder &rangefinder)
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_RFND_MSG)),
         time_us       : hal.scheduler->micros64(),
         dist1         : rangefinder.distance_cm(0),
-        dist2         : rangefinder.distance_cm(1),
-        dist3         : rangefinder.distance_cm(2),
-        dist4         : rangefinder.distance_cm(3)
+        dist2         : rangefinder.distance_cm(1)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
