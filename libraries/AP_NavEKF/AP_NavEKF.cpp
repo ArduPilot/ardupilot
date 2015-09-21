@@ -418,6 +418,23 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Units: meters
     AP_GROUPINFO("VP_YAW",    36, NavEKF, _visionFrameYaw, 0.0f),
 
+    // @Param: VPM_X
+    // @DisplayName: The x position of visual marker
+    // @Description: The x position of visual marker in visual coordinate frame (m)
+    // @Range: -100.0 100.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("VPM_X",    37, NavEKF, _markerPosX, 0.0f),
+
+    // @Param: VPM_Y
+    // @DisplayName: The y position of visual marker
+    // @Description: The y position of visual marker in visual coordinate frame (m)
+    // @Range: -100.0 100.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: meters
+    AP_GROUPINFO("VPM_Y",    38, NavEKF, _markerPosY, 0.0f),
 
     AP_GROUPEND
 };
@@ -617,6 +634,11 @@ bool NavEKF::InitialiseFilterDynamic(void)
 
     // set stored states to current state
     StoreStatesReset();
+
+	//calculate marker position in NED
+    markerposNED.x=_markerPosX*cos(_visionFrameYaw)+_markerPosY*sin(_visionFrameYaw);
+	markerposNED.y=_markerPosX*sin(_visionFrameYaw)+_markerPosY*cos(_visionFrameYaw);
+	markerposNED.z=0.0;
 
     // set to true now that states have be initialised
     statesInitialised = true;
@@ -1030,13 +1052,13 @@ void NavEKF::SelectMagFusion()
 void NavEKF::SelectVisionPositionFusion()
 {
     // start performance timer
-    //perf_begin(_perf_FuseVisionPosNED);
+    perf_begin(_perf_FuseVisionPosNED);
 
     // Check if the visual position data is still valid
     visionPositionDataValid = ((imuSampleTime_ms - visionPosValidMeaTime_ms) < 1000);
 
     // determine if conditions are right to start a new fusion cycle
-    bool dataReady = statesInitialised && newDataVisionPosition && useVisionPosition();
+    bool dataReady = statesInitialised && newDataVisionPosition && useVisionPosition() && visionPositionDataValid;
     if (dataReady) {
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
 //        memset(&visionPosIncrStateDelta[0], 0, sizeof(visionPosIncrStateDelta));
@@ -1060,7 +1082,7 @@ void NavEKF::SelectVisionPositionFusion()
 //    }
 
     // stop performance timer
-    //perf_end(_perf_FuseVisionPosNED);
+    perf_end(_perf_FuseVisionPosNED);
 }
 
 // select fusion of optical flow measurements
@@ -2417,23 +2439,20 @@ void NavEKF::FuseVelPosNED()
 void NavEKF::FuseVisionPosNED()
 {
     // start performance timer
-    //perf_begin(_perf_FuseVisionPosNED);
+    perf_begin(_perf_FuseVisionPosNED);
 
-	Vector3f markerpos_world(0.0,0.0,0.0);
 
-	worldVisionPos = markerpos_world - prevTnb*visionPosition;
+    statesAtVisionPosTime.quat.rotation_matrix(Tbn_vision);
+
+	worldVisionPos = markerposNED - Tbn_vision*visionPosition; //prevTnb
 
     uint8_t stateIndex;
     uint8_t obsIndex;
 
     // declare variables used by state and covariance update calculations
-    float posErr;
     Vector3 R_OBS; // Measurement variances used for fusion
-    Vector3 R_OBS_DATA_CHECKS; // Measurement variances used for data checks only
     Vector3 observation;
     float SK;
-
-
 
     // if constant position or constant velocity mode use the current states to calculate the predicted
     // measurement rather than use states from a previous time. We need to do this
@@ -2449,8 +2468,6 @@ void NavEKF::FuseVisionPosNED()
     R_OBS[0] = sq(constrain_float(_visionHorizPosNoise, 0.05f, 5.0f));
     R_OBS[1] = R_OBS[0];
     R_OBS[2] = sq(constrain_float(_visionVerticalPosNoise,  0.05f, 5.0f));
-
-    for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
     // fuse measurements sequentially
     for (obsIndex=0; obsIndex<=2; obsIndex++) {
@@ -2499,7 +2516,7 @@ void NavEKF::FuseVisionPosNED()
     ConstrainVariances();
 
     // stop performance timer
-    //perf_end(_perf_FuseVelPosNED);
+    perf_end(_perf_FuseVelPosNED);
 }
 
 
@@ -4080,7 +4097,7 @@ void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, f
 }
 
 // return data for debugging vision position fusion
-void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ)
+void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ, Matrix3f &R)
 {
     posX = visionPosition.x;
     posY = visionPosition.y;
@@ -4091,6 +4108,8 @@ void NavEKF::getVisionPosDebug(float &posX, float &posY, float &posZ, float &pos
     vpInnovX = innovVisionPos[0];
     vpInnovY = innovVisionPos[1];
     vpInnovZ = innovVisionPos[2];
+    R = Tbn_vision;;
+
 }
 
 // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
@@ -4658,8 +4677,8 @@ void NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, V
 
 void  NavEKF::writeVisionPositionMeas(Vector3f &rawVisionPosition, Vector3f &rawVisionOrientation, uint64_t &msecVisionPositionMeas)
 {
-	visionPosition.x = rawVisionPosition.x*cos(_visionFrameYaw)+rawVisionPosition.y*sin(_visionFrameYaw);
-	visionPosition.y = rawVisionPosition.x*sin(_visionFrameYaw)+rawVisionPosition.y*cos(_visionFrameYaw);
+	visionPosition.x = rawVisionPosition.x;
+	visionPosition.y = rawVisionPosition.y;
 	visionPosition.z = rawVisionPosition.z;
 	newDataVisionPosition = true;
 	visionPosValidMeaTime_ms = imuSampleTime_ms;

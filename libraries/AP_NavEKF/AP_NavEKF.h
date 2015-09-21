@@ -217,7 +217,7 @@ public:
     void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     // return data for debugging vision position fusion
-    void getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ);
+    void getVisionPosDebug(float &posX, float &posY, float &posZ, float &posN, float &posE, float &posD, float &vpInnovX, float &vpInnovY, float &vpInnovZ, Matrix3f &R);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -519,8 +519,10 @@ private:
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Int8 _useVisionPosition;     // 0 - don't use vision position to coorect state 1 - use
     AP_Float _visionHorizPosNoise;  // vision horizontal position measurement noise m
-    AP_Float _visionVerticalPosNoise;//vision vertical position measurement noise m
-    AP_Float _visionFrameYaw;		//yaw angle between vision system frame and NED rad
+    AP_Float _visionVerticalPosNoise;// vision vertical position measurement noise m
+    AP_Float _visionFrameYaw;		// yaw angle between vision system frame and NED rad
+    AP_Float _markerPosX;			// x position marker in vision frame
+    AP_Float _markerPosY;			// y position marker in vision frame
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -733,6 +735,8 @@ private:
     uint8_t visionPosUpdateCountMax;     // limit on the number of minor state corrections using vision position data
     Vector3 visionPosIncrStateDelta;   // vector of corrections to position to be applied over the period between the current and next vision position measurement
     bool visionPosFusePerformed; 	// true when vision position fusion has been performed in that time step
+    Vector3f markerposNED;
+    Matrix3f Tbn_vision;
 
     // variables added for optical flow fusion
     bool newDataFlow;               // true when new optical flow data has arrived
