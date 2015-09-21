@@ -122,28 +122,9 @@ void SmallEKF::predictStates()
     gimDelAngCorrected   = gSense.delAng - state.delAngBias - (gimDelAngPrev % gimDelAngCorrected) * 8.333333e-2f;
     gimDelAngPrev        = gSense.delAng - state.delAngBias;
 
-    // convert the rotation vector to its equivalent quaternion
-    float rotationMag = gimDelAngCorrected.length();
-    Quaternion deltaQuat;
-    if (rotationMag < 1e-6f)
-    {
-        deltaQuat[0] = 1.0f;
-        deltaQuat[1] = 0.0f;
-        deltaQuat[2] = 0.0f;
-        deltaQuat[3] = 0.0f;
-    }
-    else
-    {
-        deltaQuat[0] = cosf(0.5f * rotationMag);
-        float rotScaler = (sinf(0.5f * rotationMag)) / rotationMag;
-        deltaQuat[1] = gimDelAngCorrected.x * rotScaler;
-        deltaQuat[2] = gimDelAngCorrected.y * rotScaler;
-        deltaQuat[3] = gimDelAngCorrected.z * rotScaler;
-    }
-
     // update the quaternions by rotating from the previous attitude through
     // the delta angle rotation quaternion
-    state.quat *= deltaQuat;
+    state.quat.rotate(gimDelAngCorrected);
 
     // normalise the quaternions and update the quaternion states
     state.quat.normalize();
@@ -595,25 +576,12 @@ void SmallEKF::fuseVelocity(bool yawInit)
         // Store tilt error estimate for external monitoring
         angErrVec = angErrVec + state.angErr;
 
-        // the first 3 states represent the angular misalignment vector. This is
-        // is used to correct the estimated quaternion
-        // Convert the error rotation vector to its equivalent quaternion
-        // truth = estimate + error
-        float rotationMag = state.angErr.length();
-        if (rotationMag > 1e-6f) {
-            Quaternion deltaQuat;
-            float temp = sinf(0.5f*rotationMag) / rotationMag;
-            deltaQuat[0] = cosf(0.5f*rotationMag);
-            deltaQuat[1] = state.angErr.x*temp;
-            deltaQuat[2] = state.angErr.y*temp;
-            deltaQuat[3] = state.angErr.z*temp;
+        // the first 3 states represent the angular error vector where truth = estimate + error. This is is used to correct the estimated quaternion
+        // Bring the quaternion state estimate back to 'truth' by adding the error
+        state.quat.rotate(state.angErr);
 
-            // Update the quaternion states by rotating from the previous attitude through the error quaternion
-            state.quat *= deltaQuat;
-
-            // re-normalise the quaternion
-            state.quat.normalize();
-        }
+        // re-normalise the quaternion
+        state.quat.normalize();
 
         // Update the covariance
         for (uint8_t rowIndex=0;rowIndex<=8;rowIndex++) {
@@ -773,22 +741,11 @@ void SmallEKF::fuseCompass()
     }
 
     // the first 3 states represent the angular error vector where truth = estimate + error. This is is used to correct the estimated quaternion
-    float rotationMag = state.angErr.length();
-    if (rotationMag > 1e-6f) {
-        // Convert the error rotation vector to its equivalent quaternion
-        Quaternion deltaQuat;
-        float temp = sinf(0.5f*rotationMag) / rotationMag;
-        deltaQuat[0] = cosf(0.5f*rotationMag);
-        deltaQuat[1] = state.angErr.x*temp;
-        deltaQuat[2] = state.angErr.y*temp;
-        deltaQuat[3] = state.angErr.z*temp;
+    // Bring the quaternion state estimate back to 'truth' by adding the error
+    state.quat.rotate(state.angErr);
 
-        // Bring the quaternion state estimate back to 'truth' by adding the error
-        state.quat *= deltaQuat;
-
-        // re-normalise the quaternion
-        state.quat.normalize();
-    }
+    // re-normalise the quaternion
+    state.quat.normalize();
 
     // correct the covariance using P = P - K*H*P taking advantage of the fact that only the first 3 elements in H are non zero
     float HP[9];
@@ -819,22 +776,11 @@ void SmallEKF::alignHeading()
     Vector3f angleCorrection = Tsn.transposed()*deltaRotNED;
 
     // apply the correction to the quaternion state
-    float rotationMag = deltaRotNED.length();
-    if (rotationMag > 1e-6f) {
-        // Convert the error rotation vector to its equivalent quaternion
-        Quaternion deltaQuat;
-        float temp = sinf(0.5f*rotationMag) / rotationMag;
-        deltaQuat[0] = cosf(0.5f*rotationMag);
-        deltaQuat[1] = angleCorrection.x*temp;
-        deltaQuat[2] = angleCorrection.y*temp;
-        deltaQuat[3] = angleCorrection.z*temp;
+    // Bring the quaternion state estimate back to 'truth' by adding the error
+    state.quat.rotate(angleCorrection);
 
-        // Bring the quaternion state estimate back to 'truth' by adding the error
-        state.quat *= deltaQuat;
-
-        // re-normalise the quaternion
-        state.quat.normalize();
-    }
+    // re-normalize the quaternion
+    state.quat.normalize();
 }
 
 
