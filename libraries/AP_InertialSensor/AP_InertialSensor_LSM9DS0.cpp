@@ -24,6 +24,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    #define LSM9DS0_DRY_X_PIN RPI_GPIO_17  // ACCEL DRDY
+    #define LSM9DS0_DRY_G_PIN RPI_GPIO_12  // GYRO DRDY
+#endif
+
  #define LSM9DS0_G_WHOAMI    0xD4
  #define LSM9DS0_XM_WHOAMI   0x49
 
@@ -392,6 +397,14 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &
 {
     int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
 
+#ifdef  LSM9DS0_DRY_X_PIN
+    drdy_pin_num_a = LSM9DS0_DRY_X_PIN;
+#endif
+
+#ifdef  LSM9DS0_DRY_G_PIN
+    drdy_pin_num_g = LSM9DS0_DRY_G_PIN;
+#endif
+
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, drdy_pin_num_a, drdy_pin_num_g);
 
@@ -417,6 +430,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         _drdy_pin_a = hal.gpio->channel(_drdy_pin_num_a);
         if (_drdy_pin_a == NULL) {
             hal.scheduler->panic("LSM9DS0: null accel data-ready GPIO channel\n");
+        } else {
+            _drdy_pin_a->mode(HAL_GPIO_INPUT);
         }
     }
 
@@ -424,6 +439,8 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         _drdy_pin_g = hal.gpio->channel(_drdy_pin_num_g);
         if (_drdy_pin_g == NULL) {
             hal.scheduler->panic("LSM9DS0: null gyro data-ready GPIO channel\n");
+        } else {
+            _drdy_pin_g->mode(HAL_GPIO_INPUT);
         }
     }
 
@@ -595,7 +612,7 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
 {
     _gyro_disable_i2c();
     hal.scheduler->delay(1);
-    
+
     _register_write_g(CTRL_REG1_G,
                       CTRL_REG1_G_DR_760Hz_BW_50Hz |
                       CTRL_REG1_G_PD |
