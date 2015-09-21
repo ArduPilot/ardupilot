@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     #define LSM9DS0_DRY_X_PIN RPI_GPIO_17  // ACCEL DRDY
-    #define LSM9DS0_DRY_G_PIN RPI_GPIO_12  // GYRO DRDY
+    #define LSM9DS0_DRY_G_PIN RPI_GPIO_6  // GYRO DRDY
 #endif
 
  #define LSM9DS0_G_WHOAMI    0xD4
@@ -422,8 +422,13 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::detect(AP_InertialSensor &
 
 bool AP_InertialSensor_LSM9DS0::_init_sensor()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    _gyro_spi = hal.spi->device(AP_HAL::SPIDevice_L3GD20);
+    _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM303D);
+#else
     _gyro_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_G);
     _accel_spi = hal.spi->device(AP_HAL::SPIDevice_LSM9DS0_AM);
+#endif
     _spi_sem = _gyro_spi->get_semaphore(); /* same semaphore for both */
 
     if (_drdy_pin_num_a >= 0) {
@@ -804,6 +809,9 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     _gyro_raw_data(&raw_data);
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT //LSM303D on RasPilot
+    gyro_data.rotate(ROTATION_YAW_90);
+#endif
     gyro_data *= _gyro_scale;
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
     _gyro_filtered = _gyro_filter.apply(gyro_data);
