@@ -69,6 +69,8 @@ Other key changes include:
   - added support for Septentrio GPS receiver
   - support DO_MOUNT_CONTROl via command-long interface
   - added CAM_RELAY_ON parameter
+  - moved SKIP_GYRO_CAL functionality to INS_GYR_CAL
+  - added detection of bad lidar settings for landing
 
 Please test out the beta and report back on how it goes! There has
 been a lot of testing of this release already by core developers so
