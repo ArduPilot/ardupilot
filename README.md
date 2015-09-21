@@ -85,6 +85,8 @@
 >>   - ***Board***: BBBmini
 >> - [Georgii Staroselskii](https://github.com/staroselskii)
 >>   - ***Board***: NavIO
+>> - [Víctor Mayoral Vilches](https://github.com/vmayoral)
+>>   - ***Board***: Erle-Brain 2
 >> - [Emile Castelnuovo](https://github.com/emilecastelnuovo)
 >>   - ***Board***: VRBrain
 >> - [Mike McCauley](#)
