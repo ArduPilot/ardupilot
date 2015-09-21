@@ -2868,7 +2868,7 @@ void NavEKF::FuseOptFlow()
     Vector3f velNED_local;
     Vector3f relVelSensor;
 
-    uint8_t &obsIndex = flow_state.obsIndex;
+    uint8_t obsIndex = flow_state.obsIndex;
     ftype &q0 = flow_state.q0;
     ftype &q1 = flow_state.q1;
     ftype &q2 = flow_state.q2;
