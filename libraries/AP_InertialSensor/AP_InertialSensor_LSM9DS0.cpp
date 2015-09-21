@@ -24,6 +24,14 @@
 
 extern const AP_HAL::HAL &hal;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#define LSM9DS0_DRY_X_PIN RPI_GPIO_17
+#define LSM9DS0_DRY_G_PIN RPI_GPIO_6
+#else
+#define LSM9DS0_DRY_X_PIN -1
+#define LSM9DS0_DRY_G_PIN -1
+#endif
+
 #define LSM9DS0_G_WHOAMI    0xD4
 #define LSM9DS0_XM_WHOAMI   0x49
 
@@ -388,11 +396,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
                                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel)
 {
-    int drdy_pin_num_a = -1, drdy_pin_num_g = -1;
-
     AP_InertialSensor_LSM9DS0 *sensor =
         new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
-                                      drdy_pin_num_a, drdy_pin_num_g);
+                                      LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
@@ -740,6 +746,13 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     }
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    // LSM303D on RasPilot
+    // FIXME: wrong way to provide rotation per-board
+    gyro_data.rotate(ROTATION_YAW_90);
+#endif
+
     gyro_data *= _gyro_scale;
 
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
