@@ -529,8 +529,37 @@ void AP_InertialSensor_LSM9DS0::_register_write_g(uint8_t reg, uint8_t val)
     _dev_gyro->write_register(reg, val);
 }
 
+void AP_InertialSensor_LSM9DS0::_gyro_disable_i2c()
+{
+    uint8_t retries = 10;
+    while (retries--) {
+        // add retries
+        uint8_t a = _register_read_g(0x05);
+        _register_write_g(0x05, (0x20 | a));
+        if (_register_read_g(0x05) == (a | 0x20)) {
+            return;
+        }
+    }
+    AP_HAL::panic("LSM9DS0_G: Unable to disable I2C");
+}
+
+void AP_InertialSensor_LSM9DS0::_accel_disable_i2c()
+{
+    uint8_t a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0x10 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xF7 & a));
+    a = _register_read_xm(0x15);
+    _register_write_xm(0x15, (0x80 | a));
+    a = _register_read_xm(0x02);
+    _register_write_xm(0x02, (0xE7 & a));
+}
+
 void AP_InertialSensor_LSM9DS0::_gyro_init()
 {
+    _gyro_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_g(CTRL_REG1_G,
                       CTRL_REG1_G_DR_760Hz_BW_50Hz |
                       CTRL_REG1_G_PD |
@@ -560,6 +589,9 @@ void AP_InertialSensor_LSM9DS0::_gyro_init()
 
 void AP_InertialSensor_LSM9DS0::_accel_init()
 {
+    _accel_disable_i2c();
+    hal.scheduler->delay(1);
+
     _register_write_xm(CTRL_REG0_XM, 0x00);
     hal.scheduler->delay(1);
 
