@@ -32,9 +32,9 @@ linux: HAL_BOARD = HAL_BOARD_LINUX
 linux: TOOLCHAIN = NATIVE
 linux: all
 
-erle: HAL_BOARD = HAL_BOARD_LINUX
-erle: TOOLCHAIN = BBONE
-erle: all
+erleboard: HAL_BOARD = HAL_BOARD_LINUX
+erleboard: TOOLCHAIN = BBONE
+erleboard: all
 
 zynq: HAL_BOARD = HAL_BOARD_LINUX
 zynq: TOOLCHAIN = ZYNQ
