@@ -26,18 +26,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-float AP_AHRS_NavEKF::get_yaw_for_control_cd(void) const
-{
-    if (!using_EKF()) {
-        return AP_AHRS_DCM::get_yaw_for_control_cd();
-    }
-    float ret = degrees(attitude_for_control.get_euler_yaw())*100.0f;
-    if (ret < 0) {
-        ret += 36000;
-    }
-    return ret;
-}
-
 // return the smoothed gyro vector corrected for drift
 const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 {
@@ -96,10 +84,6 @@ void AP_AHRS_NavEKF::update(void)
         }
         if (hal.scheduler->millis() - start_time_ms > startup_delay_ms) {
             ekf_started = EKF.InitialiseFilterDynamic();
-            if (ekf_started) {
-                // initialize attitude_for_control to EKF attitude
-                EKF.getQuaternion(attitude_for_control);
-            }
         }
     }
     if (ekf_started) {
@@ -167,45 +151,7 @@ void AP_AHRS_NavEKF::update(void)
     float dt = (tnow-last_update_ms)*1.0e-3f;
     last_update_ms = tnow;
 
-    update_attitude_for_control(dt);
     update_gyro3_bias(dt);
-}
-
-// update an attitude reference that filters out correction steps from the EKF
-// this function uses the gyros to rotate an attitude reference, then
-// drags it towards the EKF attitude. this filters out any step functions that
-// the ekf might add to its attitude output.
-void AP_AHRS_NavEKF::update_attitude_for_control(float dt)
-{
-    static const float att_diff_max = radians(20.0f);
-    static const float attStepFiltTC = 2.0f;
-
-    // compute alpha
-    float alpha = constrain_float(dt / (dt+attStepFiltTC),0.0f,1.0f);
-
-    // get ekf attitude
-    Quaternion ekf_att;
-    EKF.getQuaternion(ekf_att);
-
-    // rotate filtered attitude with gyro
-    Quaternion del_ang;
-    del_ang = EKF.getDeltaQuaternion();
-    attitude_for_control *= del_ang;
-
-    // filter to smooth out attitude corrections
-    Vector3f attitude_adj;
-    float attitude_adj_mag = attitude_adj.length();
-    (attitude_for_control.inverse()*ekf_att).to_axis_angle(attitude_adj);
-
-    attitude_adj *= alpha;
-
-    // strictly constrain attitude_for_control to within att_diff_max radians of ekf_att
-    if (attitude_adj_mag > att_diff_max) {
-        attitude_adj *= (attitude_adj_mag-att_diff_max)/attitude_adj_mag;
-    }
-
-    attitude_for_control.rotate(attitude_adj);
-    attitude_for_control.normalize();
 }
 
 Vector3f AP_AHRS_NavEKF::get_gyro_for_control() const

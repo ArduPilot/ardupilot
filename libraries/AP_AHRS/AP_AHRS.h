@@ -295,7 +295,6 @@ public:
         return _flags.have_initial_yaw;
     }
 
-    virtual float get_yaw_for_control_cd(void) const { return yaw_sensor; }
     virtual Vector3f get_gyro_for_control(void) const { return get_gyro(); }
 
     // set the correct centrifugal flag

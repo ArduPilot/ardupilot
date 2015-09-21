@@ -40,7 +40,6 @@ public:
         ekf_started(false),
         startup_delay_ms(1000),
         start_time_ms(0),
-        attitude_for_control(),
         _gyro3_bias(0,0,0)
         {
         }
@@ -120,8 +119,6 @@ public:
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);
 
-    float get_yaw_for_control_cd() const;
-
     Vector3f get_gyro_for_control() const;
 
     // is the AHRS subsystem healthy?
@@ -137,9 +134,6 @@ public:
 private:
     bool using_EKF(void) const;
 
-    // update an attitude reference that filters out correction steps from the EKF
-    void update_attitude_for_control(float dt);
-
     // update _gyro3_bias by comparing ins.get_gyro(2) with get_gyro
     void update_gyro3_bias(float dt);
 
@@ -154,7 +148,6 @@ private:
     const uint16_t startup_delay_ms;
     uint32_t start_time_ms;
 
-    Quaternion attitude_for_control;
     Vector3f _gyro3_bias;
 };
 #endif
