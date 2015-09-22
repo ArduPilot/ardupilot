@@ -42,6 +42,7 @@ public:
             _flags_heli.leaky_i = true;
             _flags_heli.flybar_passthrough = false;
             _flags_heli.tail_passthrough = false;
+            _flags_heli.do_piro_comp = false;
         }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
@@ -64,6 +65,9 @@ public:
         _flags_heli.tail_passthrough = tail_passthrough; 
     }
 
+    // do_piro_comp - controls whether piro-comp is active or not
+    void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -77,6 +81,7 @@ private:
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
+        uint8_t do_piro_comp        :   1;  // 1 if we should do pirouette compensation on roll/pitch
     } _flags_heli;
 
     //
@@ -100,6 +105,9 @@ private:
 
     // pass through for yaw if tail_passthrough is set
     int16_t _passthrough_yaw;
+
+    // parameters
+    AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead

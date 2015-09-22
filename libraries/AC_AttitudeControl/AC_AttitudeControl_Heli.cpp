@@ -8,6 +8,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 
+    // @Param: PIRO_COMP
+    // @DisplayName: Piro Comp Enable
+    // @Description: Pirouette compensation enabled
+    // @Range: 0:Disabled 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+
     AP_GROUPEND
 };
 
@@ -237,28 +244,31 @@ static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
     last_roll_output  = cc_roll_output;
     last_pitch_output = cc_pitch_output;
 # endif // HELI_CC_COMP
+*/
 
-#if AC_ATTITUDE_HELI_PIRO_COMP == ENABLED
-    if (control_mode <= ACRO){
+    // Piro-Comp, or Pirouette Compensation is a pre-compensation calculation, which basically rotates the Roll and Pitch Rate I-terms as the
+    // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
+    // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
+    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
+    if (_piro_comp_enabled){
 
-        int32_t         piro_roll_i, piro_pitch_i;            // used to hold i term while doing prio comp
+        int32_t         piro_roll_i, piro_pitch_i;            // used to hold I-terms while doing piro comp
 
         piro_roll_i  = roll_i;
         piro_pitch_i = pitch_i;
 
         Vector2f yawratevector;
-        yawratevector.x     = cosf(-omega.z/100.0f);
-        yawratevector.y     = sinf(-omega.z/100.0f);
+        yawratevector.x     = cosf(-_ahrs.get_gyro().z * _dt);
+        yawratevector.y     = sinf(-_ahrs.get_gyro().z * _dt);
         yawratevector.normalize();
 
         roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
         pitch_i     = piro_pitch_i * yawratevector.x + piro_roll_i * yawratevector.y;
 
-        g.pid_rate_pitch.set_integrator(pitch_i);
-        g.pid_rate_roll.set_integrator(roll_i);
+        _pid_rate_pitch.set_integrator(pitch_i);
+        _pid_rate_roll.set_integrator(roll_i);
     }
-#endif //HELI_PIRO_COMP
-*/
+
 }
 
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
