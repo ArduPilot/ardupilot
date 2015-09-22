@@ -83,13 +83,20 @@
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
 
+    // @Param: ENABLE
+    // @DisplayName: Enable EKF2
+    // @Description: This enables EKF2. Enabling EKF2 only makes the maths run, it does not mean it will be used for flight control. To use it for flight control set AHRS_EKF_USE=3
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE",    0, NavEKF2, _enable, 0),
+    
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise scaler
     // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on these measurements.
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
-    AP_GROUPINFO("VELNE_NOISE",    0, NavEKF2, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
+    AP_GROUPINFO("VELNE_NOISE",    1, NavEKF2, _gpsHorizVelNoise, VELNE_NOISE_DEFAULT),
 
     // @Param: VELD_NOISE
     // @DisplayName: GPS vertical velocity measurement noise scaler
@@ -97,7 +104,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.05 5.0
     // @Increment: 0.05
     // @User: Advanced
-    AP_GROUPINFO("VELD_NOISE",    1, NavEKF2, _gpsVertVelNoise, VELD_NOISE_DEFAULT),
+    AP_GROUPINFO("VELD_NOISE",    2, NavEKF2, _gpsVertVelNoise, VELD_NOISE_DEFAULT),
 
     // @Param: POSNE_NOISE
     // @DisplayName: GPS horizontal position measurement noise (m)
@@ -106,7 +113,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Advanced
     // @Units: meters
-    AP_GROUPINFO("POSNE_NOISE",    2, NavEKF2, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
+    AP_GROUPINFO("POSNE_NOISE",    3, NavEKF2, _gpsHorizPosNoise, POSNE_NOISE_DEFAULT),
 
     // @Param: ALT_NOISE
     // @DisplayName: Altitude measurement noise (m)
@@ -115,7 +122,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Advanced
     // @Units: meters
-    AP_GROUPINFO("ALT_NOISE",    3, NavEKF2, _baroAltNoise, ALT_NOISE_DEFAULT),
+    AP_GROUPINFO("ALT_NOISE",    4, NavEKF2, _baroAltNoise, ALT_NOISE_DEFAULT),
 
     // @Param: MAG_NOISE
     // @DisplayName: Magnetometer measurement noise (Gauss)
@@ -123,7 +130,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("MAG_NOISE",    4, NavEKF2, _magNoise, MAG_NOISE_DEFAULT),
+    AP_GROUPINFO("MAG_NOISE",    5, NavEKF2, _magNoise, MAG_NOISE_DEFAULT),
 
     // @Param: EAS_NOISE
     // @DisplayName: Equivalent airspeed measurement noise (m/s)
@@ -132,7 +139,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s
-    AP_GROUPINFO("EAS_NOISE",    5, NavEKF2, _easNoise, 1.4f),
+    AP_GROUPINFO("EAS_NOISE",    6, NavEKF2, _easNoise, 1.4f),
 
     // @Param: WIND_PNOISE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -140,7 +147,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.01 1.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PNOISE",    6, NavEKF2, _windVelProcessNoise, 0.1f),
+    AP_GROUPINFO("WIND_PNOISE",  7, NavEKF2, _windVelProcessNoise, 0.1f),
 
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind procss noise scaler
@@ -148,7 +155,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0 1.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("WIND_PSCALE",    7, NavEKF2, _wndVarHgtRateScale, 0.5f),
+    AP_GROUPINFO("WIND_PSCALE",  8, NavEKF2, _wndVarHgtRateScale, 0.5f),
 
     // @Param: GYRO_PNOISE
     // @DisplayName: Rate gyro noise (rad/s)
@@ -157,7 +164,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.001
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("GYRO_PNOISE",    8, NavEKF2, _gyrNoise, GYRO_PNOISE_DEFAULT),
+    AP_GROUPINFO("GYRO_PNOISE",  9, NavEKF2, _gyrNoise, GYRO_PNOISE_DEFAULT),
 
     // @Param: ACC_PNOISE
     // @DisplayName: Accelerometer noise (m/s^2)
@@ -166,7 +173,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.01
     // @User: Advanced
     // @Units: m/s/s
-    AP_GROUPINFO("ACC_PNOISE",    9, NavEKF2, _accNoise, ACC_PNOISE_DEFAULT),
+    AP_GROUPINFO("ACC_PNOISE",   10, NavEKF2, _accNoise, ACC_PNOISE_DEFAULT),
 
     // @Param: GBIAS_PNOISE
     // @DisplayName: Rate gyro bias process noise (rad/s)
@@ -174,7 +181,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0000001 0.00001
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("GBIAS_PNOISE",    10, NavEKF2, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
+    AP_GROUPINFO("GBIAS_PNOISE", 11, NavEKF2, _gyroBiasProcessNoise, GBIAS_PNOISE_DEFAULT),
 
     // @Param: ABIAS_PNOISE
     // @DisplayName: Accelerometer bias process noise (m/s^2)
@@ -182,7 +189,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.00001 0.001
     // @User: Advanced
     // @Units: m/s/s
-    AP_GROUPINFO("ABIAS_PNOISE",    11, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
+    AP_GROUPINFO("ABIAS_PNOISE", 12, NavEKF2, _accelBiasProcessNoise, ABIAS_PNOISE_DEFAULT),
 
     // @Param: MAG_PNOISE
     // @DisplayName: Magnetic field process noise (gauss/s)
@@ -190,7 +197,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0001 0.01
     // @User: Advanced
     // @Units: gauss/s
-    AP_GROUPINFO("MAG_PNOISE",    12, NavEKF2, _magProcessNoise, MAG_PNOISE_DEFAULT),
+    AP_GROUPINFO("MAG_PNOISE",   13, NavEKF2, _magProcessNoise, MAG_PNOISE_DEFAULT),
 
     // @Param: GSCL_PNOISE
     // @DisplayName: Rate gyro scale factor process noise (1/s)
@@ -198,7 +205,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0000001 0.00001
     // @User: Advanced
     // @Units: 1/s
-   AP_GROUPINFO("GSCL_PNOISE",    13, NavEKF2, _gyroScaleProcessNoise, 1e-6f),
+   AP_GROUPINFO("GSCL_PNOISE",   14, NavEKF2, _gyroScaleProcessNoise, 1e-6f),
 
     // @Param: GPS_DELAY
     // @DisplayName: GPS measurement delay (msec)
@@ -207,9 +214,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
-    AP_GROUPINFO("VEL_DELAY",    14, NavEKF2, _msecGpsDelay, 220),
-
-    // this slot has been deprecated and reserved for later use
+    AP_GROUPINFO("VEL_DELAY",    15, NavEKF2, _msecGpsDelay, 220),
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
@@ -265,8 +270,6 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("MAG_CAL",    22, NavEKF2, _magCal, MAG_CAL_DEFAULT),
 
-    // this slot has been deprecated and reserved for later use
-
     // @Param: GLITCH_RAD
     // @DisplayName: GPS glitch radius gate size (m)
     // @Description: This parameter controls the maximum amount of difference in horizontal position (in m) between the value predicted by the filter and the value measured by the GPS before the long term glitch protection logic is activated and an offset is applied to the GPS measurement to compensate. Position steps smaller than this value will be temporarily ignored, but will then be accepted and the filter will move to the new position. Position steps larger than this value will be ignored initially, but the filter will then apply an offset to the GPS position measurement.
@@ -274,7 +277,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 5
     // @User: Advanced
     // @Units: meters
-    AP_GROUPINFO("GLITCH_RAD",    24, NavEKF2, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
+    AP_GROUPINFO("GLITCH_RAD", 23, NavEKF2, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
     // @Param: GND_GRADIENT
     // @DisplayName: Terrain Gradient % RMS
@@ -282,7 +285,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 1 - 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("GND_GRADIENT",    25, NavEKF2, _gndGradientSigma, 2),
+    AP_GROUPINFO("GND_GRADIENT", 24, NavEKF2, _gndGradientSigma, 2),
 
     // @Param: FLOW_NOISE
     // @DisplayName: Optical flow measurement noise (rad/s)
@@ -291,7 +294,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 0.05
     // @User: Advanced
     // @Units: rad/s
-    AP_GROUPINFO("FLOW_NOISE",    26, NavEKF2, _flowNoise, FLOW_NOISE_DEFAULT),
+    AP_GROUPINFO("FLOW_NOISE",  25, NavEKF2, _flowNoise, FLOW_NOISE_DEFAULT),
 
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
@@ -299,7 +302,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("FLOW_GATE",    27, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
+    AP_GROUPINFO("FLOW_GATE",   26, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
 
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
@@ -308,7 +311,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
-    AP_GROUPINFO("FLOW_DELAY",    28, NavEKF2, _msecFlowDelay, FLOW_MEAS_DELAY),
+    AP_GROUPINFO("FLOW_DELAY",  27, NavEKF2, _msecFlowDelay, FLOW_MEAS_DELAY),
 
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
@@ -316,7 +319,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 1 - 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("RNG_GATE",    29, NavEKF2, _rngInnovGate, 5),
+    AP_GROUPINFO("RNG_GATE",    28, NavEKF2, _rngInnovGate, 5),
 
     // @Param: MAX_FLOW
     // @DisplayName: Maximum valid optical flow rate
@@ -324,21 +327,21 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 1.0 - 4.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("MAX_FLOW",    30, NavEKF2, _maxFlowRate, 2.5f),
+    AP_GROUPINFO("MAX_FLOW",    29, NavEKF2, _maxFlowRate, 2.5f),
 
     // @Param: FALLBACK
     // @DisplayName: Fallback strictness
     // @Description: This parameter controls the conditions necessary to trigger a fallback to DCM and INAV. A value of 1 will cause fallbacks to occur on loss of GPS and other conditions. A value of 0 will trust the EKF more.
     // @Values: 0:Trust EKF more, 1:Trust DCM more
     // @User: Advanced
-    AP_GROUPINFO("FALLBACK",    31, NavEKF2, _fallback, 1),
+    AP_GROUPINFO("FALLBACK",    30, NavEKF2, _fallback, 1),
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
     // @Description: This parameter controls which height sensor is used by the EKF during optical flow navigation (when EKF_GPS_TYPE = 3). A value of will 0 cause it to always use baro altitude. A value of 1 will casue it to use range finder if available.
     // @Values: 0:Use Baro, 1:Use Range Finder
     // @User: Advanced
-    AP_GROUPINFO("ALT_SOURCE",    32, NavEKF2, _altSource, 1),
+    AP_GROUPINFO("ALT_SOURCE",  31, NavEKF2, _altSource, 1),
 
 
     AP_GROUPEND
