@@ -267,6 +267,9 @@ public:
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
+    // returns true of the EKF thinks the GPS is glitching
+    bool getGpsGlitchStatus(void) const;
+
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng);
@@ -700,6 +703,7 @@ private:
     float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
     float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
     float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
+    bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement

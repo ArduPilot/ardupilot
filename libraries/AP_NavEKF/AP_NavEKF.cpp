@@ -4281,12 +4281,15 @@ void NavEKF::readGpsData()
             useGpsVertVel = false;
         }
 
+        // Monitor quality of the GPS velocity data for alignment
+        gpsGoodToAlign = calcGpsGoodToAlign();
+
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
         // If we don't have an origin, then set it to the current GPS coordinates
         const struct Location &gpsloc = _ahrs->get_gps().location();
         if (validOrigin) {
             gpsPosNE = location_diff(EKF_origin, gpsloc);
-        } else if (calcGpsGoodToAlign()){
+        } else if (gpsGoodToAlign){
             // Set the NE origin to the current GPS position
             setOrigin();
             // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
@@ -4950,7 +4953,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2);
+    bool gpsNavPossible = !gpsNotAvailable && (_fusionModeGPS <= 2) && gpsGoodToAlign;
     bool filterHealthy = healthy();
     bool gyroHealthy = checkGyroHealthPreFlight();
 
@@ -5042,6 +5045,18 @@ void NavEKF::performArmingChecks()
             meaHgtAtTakeOff = hgtMea;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             state.position.z = -hgtMea;
+            // record the time we disarmed
+            timeAtDisarm_ms = imuSampleTime_ms;
+            // if the GPS is not glitching when we land, we reset the timer used to check GPS quality
+            // timer is not set to zero to avoid triggering an automatic fail
+            if (gpsAccuracyGood) {
+                lastGpsVelFail_ms = 1;
+                gpsGoodToAlign = true;
+            }
+            // we reset the GPS drift checks when disarming as the vehicle has been moving during flight
+            gpsDriftNE = 0.0f;
+            gpsVertVelFilt = 0.0f;
+            gpsHorizVelFilt = 0.0f;
         } else if (_fusionModeGPS == 3) { // arming when GPS useage has been prohibited
             if (optFlowDataPresent()) {
                 PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
@@ -5507,6 +5522,12 @@ bool NavEKF::checkGyroHealthPreFlight(void) const
         retVar = false;
     }
     return retVar;
+}
+
+// returns true of the EKF thinks the GPS is glitching or unavailable
+bool NavEKF::getGpsGlitchStatus(void) const
+{
+    return !gpsAccuracyGood;
 }
 
 #endif // HAL_CPU_CLASS
