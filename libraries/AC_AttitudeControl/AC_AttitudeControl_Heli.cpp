@@ -188,64 +188,6 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     _motors.set_roll(roll_out);
     _motors.set_pitch(pitch_out);
 
-/*
-#if HELI_CC_COMP == ENABLED
-static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
-#endif
-
-#if HELI_CC_COMP == ENABLED
-    rate_dynamics_filter.set_cutoff_frequency(0.01f, 4.0f);
-#endif
-
-#if AC_ATTITUDE_HELI_CC_COMP == ENABLED
-// Do cross-coupling compensation for low rpm helis
-// Credit: Jolyon Saunders
-// Note: This is not widely tested at this time.  Will not be used by default yet.
-    float cc_axis_ratio = 2.0f; // Ratio of compensation on pitch vs roll axes. Number >1 means pitch is affected more than roll
-    float cc_kp = 0.0002f;      // Compensation p term. Setting this to zero gives h_phang only, while increasing it will increase the p term of correction
-    float cc_kd = 0.127f;       // Compensation d term, scaled. This accounts for flexing of the blades, dampers etc. Originally was (motors.ext_gyro_gain * 0.0001)
-    float cc_angle, cc_total_output;
-    uint32_t cc_roll_d, cc_pitch_d, cc_sum_d;
-    int32_t cc_scaled_roll;
-    int32_t cc_roll_output;     // Used to temporarily hold output while rotation is being calculated
-    int32_t cc_pitch_output;    // Used to temporarily hold output while rotation is being calculated
-    static int32_t last_roll_output = 0;
-    static int32_t last_pitch_output = 0;
-
-    cc_scaled_roll  = roll_output / cc_axis_ratio; // apply axis ratio to roll
-    cc_total_output = safe_sqrt(cc_scaled_roll * cc_scaled_roll + pitch_output * pitch_output) * cc_kp;
-
-    // find the delta component
-    cc_roll_d  = (roll_output - last_roll_output) / cc_axis_ratio;
-    cc_pitch_d = pitch_output - last_pitch_output;
-    cc_sum_d = safe_sqrt(cc_roll_d * cc_roll_d + cc_pitch_d * cc_pitch_d);
-
-    // do the magic.
-    cc_angle = cc_kd * cc_sum_d * cc_total_output - cc_total_output * motors.get_phase_angle();
-
-    // smooth angle variations, apply constraints
-    cc_angle = rate_dynamics_filter.apply(cc_angle);
-    cc_angle = constrain_float(cc_angle, -90.0f, 0.0f);
-    cc_angle = radians(cc_angle);
-
-    // Make swash rate vector
-    Vector2f swashratevector;
-    swashratevector.x = cosf(cc_angle);
-    swashratevector.y = sinf(cc_angle);
-    swashratevector.normalize();
-
-    // rotate the output
-    cc_roll_output  = roll_output;
-    cc_pitch_output = pitch_output;
-    roll_output     = - (cc_pitch_output * swashratevector.y - cc_roll_output * swashratevector.x);
-    pitch_output    =    cc_pitch_output * swashratevector.x + cc_roll_output * swashratevector.y;
-
-    // make current outputs old, for next iteration
-    last_roll_output  = cc_roll_output;
-    last_pitch_output = cc_pitch_output;
-# endif // HELI_CC_COMP
-*/
-
     // Piro-Comp, or Pirouette Compensation is a pre-compensation calculation, which basically rotates the Roll and Pitch Rate I-terms as the
     // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
     // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
