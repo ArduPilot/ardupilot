@@ -30,9 +30,17 @@ public:
         pitch_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
         roll_feedforward_filter(AC_ATTITUDE_HELI_RATE_RP_FF_FILTER),
         yaw_velocity_feedforward_filter(AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER)
-		{
+        {
             AP_Param::setup_object_defaults(this, var_info);
-		}
+
+            // initialise flags
+            _flags_heli.limit_roll = false;
+            _flags_heli.limit_pitch = false;
+            _flags_heli.limit_yaw = false;
+            _flags_heli.leaky_i = true;
+            _flags_heli.flybar_passthrough = false;
+            _flags_heli.tail_passthrough = false;
+        }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf);
