@@ -1,5 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3-rc12 22-Sep-2015
+Changes from 3.3-rc11
+1) EKF recovers from pre-arm "Compass variance" failure if compasses are consistent
+------------------------------------------------------------------
 Copter 3.3-rc11 10-Sep-2015
 Changes from 3.3-rc10
 1) PreArm "Need 3D Fix" message replaced with detailed reason from EKF
