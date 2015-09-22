@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::check_disk_read(void)
 {
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state == GRID_CACHE_DISKWAIT) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitRead;
@@ -55,7 +55,7 @@ void AP_Terrain::check_disk_read(void)
  */
 void AP_Terrain::check_disk_write(void)
 {
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state == GRID_CACHE_DIRTY) {
             disk_block.block = cache[i].grid;
             disk_io_state = DiskIoWaitWrite;
@@ -69,7 +69,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0) {
+    if (enable == 0 || !allocate()) {
         return;
     }
 

@@ -167,7 +167,7 @@ public:
 
 private:
     // allocate the terrain subsystem data
-    void allocate(void);
+    bool allocate(void);
 
     /*
       a grid block is a structure in a local file containing height
@@ -338,7 +338,8 @@ private:
     const AP_Rally &rally;
 
     // cache of grids in memory, LRU
-    struct grid_cache cache[TERRAIN_GRID_BLOCK_CACHE_SIZE];
+    uint8_t cache_size = 0;
+    struct grid_cache *cache = nullptr;
 
     // a grid_cache block waiting for disk IO
     enum DiskIoState {

@@ -84,7 +84,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info 
  */
 void AP_Terrain::send_request(mavlink_channel_t chan)
 {
-    if (enable == 0) {
+    if (enable == 0 || !allocate()) {
         // not enabled
         return;
     }
@@ -131,7 +131,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     }
 
     // check cache blocks that may have been setup by a TERRAIN_CHECK
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].state >= GRID_CACHE_VALID) {
             if (request_missing(chan, cache[i])) {
                 return;
@@ -161,7 +161,7 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded)
 {
     pending = 0;
     loaded = 0;
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].grid.spacing != grid_spacing) {
             continue;
         }
@@ -261,7 +261,7 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
     mavlink_msg_terrain_data_decode(msg, &packet);
 
     uint16_t i;
-    for (i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (i=0; i<cache_size; i++) {
         if (cache[i].grid.lat == packet.lat && 
             cache[i].grid.lon == packet.lon && 
             cache[i].grid.spacing == packet.grid_spacing &&
@@ -270,7 +270,7 @@ void AP_Terrain::handle_terrain_data(mavlink_message_t *msg)
             break;
         }
     }
-    if (i == TERRAIN_GRID_BLOCK_CACHE_SIZE) {
+    if (i == cache_size) {
         // we don't have that grid, ignore data
         return;
     }

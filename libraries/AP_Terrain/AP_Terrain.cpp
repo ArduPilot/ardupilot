@@ -85,7 +85,7 @@ AP_Terrain::AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rall
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height)
 {
-    if (!enable) {
+    if (!enable || !allocate()) {
         return false;
     }
 
@@ -250,7 +250,7 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
 */
 float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 {
-    if (!enable || grid_spacing <= 0) {
+    if (!enable || !allocate() || grid_spacing <= 0) {
         return 0;
     }
 
@@ -376,6 +376,28 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
         loaded         : loaded
     };
     dataflash.WriteBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  allocate terrain cache. Making this dynamically allocated allows
+  memory to be saved when terrain functionality is disabled
+ */
+bool AP_Terrain::allocate(void)
+{
+    if (enable == 0) {
+        return false;
+    }
+    if (cache != nullptr) {
+        return true;
+    }
+    cache = (struct grid_cache *)calloc(TERRAIN_GRID_BLOCK_CACHE_SIZE, sizeof(cache[0]));
+    if (cache == nullptr) {
+        enable.set(0);
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("Terrain: allocation failed"));
+        return false;
+    }
+    cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;
+    return true;
 }
 
 #endif // AP_TERRAIN_AVAILABLE
