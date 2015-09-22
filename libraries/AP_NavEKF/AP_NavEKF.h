@@ -271,6 +271,9 @@ public:
     // returns a zero rotation quaternion if the INS calculation was not performed on that time step.
     Quaternion getDeltaQuaternion(void) const;
 
+    // returns true of the EKF thinks the GPS is glitching
+    bool getGpsGlitchStatus(void) const;
+
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns true if a reset yaw angle has been updated and not queried
     // this function should not have more than one client
@@ -705,6 +708,7 @@ private:
     float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
     float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
     float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
+    bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
