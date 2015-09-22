@@ -12,13 +12,21 @@
 #include "I2CDriver.h"
 #include "SPIDriver.h"
 #include "AnalogIn.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#include "AnalogIn_ErleBrain2.h"
+#else
 #include "AnalogIn_Navio.h"
+#endif
 #include "RaspilotAnalogIn.h"
 #include "Storage.h"
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#include "RCInput_ErleBrain2.h"
+#else
 #include "RCInput_Navio.h"
+#endif
 #include "RCInput_UDP.h"
 #include "RCInput_Raspilot.h"
 #include "RCOutput_PRU.h"

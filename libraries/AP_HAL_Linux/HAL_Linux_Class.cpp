@@ -47,6 +47,8 @@ static LinuxSPIDeviceManager spiDeviceManager;
 static NavioAnalogIn analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 static RaspilotAnalogIn analogIn;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+static ErleBrain2AnalogIn analogIn;
 #else
 static LinuxAnalogIn analogIn;
 #endif
@@ -68,7 +70,7 @@ static LinuxGPIO_BBB gpioDriver;
 /*
   use the RPI gpio driver on Navio
  */
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
 static LinuxGPIO_RPI gpioDriver;
 #else
 static Empty::EmptyGPIO gpioDriver;
@@ -85,6 +87,8 @@ static LinuxRCInput_AioPRU rcinDriver;
 static LinuxRCInput_Navio rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 static LinuxRCInput_Raspilot rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+static LinuxRCInput_ErleBrain2 rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 static LinuxRCInput_ZYNQ rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -101,9 +105,9 @@ static LinuxRCOutput_PRU rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 static LinuxRCOutput_AioPRU rcoutDriver;
 /*
-  use the PCA9685 based RCOutput driver on Navio
+  use the PCA9685 based RCOutput driver on Navio and Erle-Brain 2
  */
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
 static LinuxRCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
 /*
  use the STM32 based RCOutput driver on Raspilot
