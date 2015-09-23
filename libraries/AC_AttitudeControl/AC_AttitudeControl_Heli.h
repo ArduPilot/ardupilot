@@ -100,6 +100,9 @@ private:
 
     // pass through for yaw if tail_passthrough is set
     int16_t _passthrough_yaw;
+
+    // parameters
+    AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead

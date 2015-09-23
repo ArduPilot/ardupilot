@@ -8,6 +8,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 
+    // @Param: PIRO_COMP
+    // @DisplayName: Piro Comp Enable
+    // @Description: Pirouette compensation enabled
+    // @Range: 0:Disabled 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+
     AP_GROUPEND
 };
 
@@ -190,7 +197,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
     // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
     // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
-    if (_flags_heli.do_piro_comp){
+    if (_piro_comp_enabled){
 
         int32_t         piro_roll_i, piro_pitch_i;            // used to hold I-terms while doing piro comp
 
