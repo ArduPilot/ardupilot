@@ -467,7 +467,10 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
         whoami_ok = false;
     }
 
-    if (!whoami_ok) return false;
+    if (!whoami_ok) {
+        hal.scheduler->resume_timer_procs();
+        return false;
+    }
 
     uint8_t tries = 0;
     bool a_ready = false;
