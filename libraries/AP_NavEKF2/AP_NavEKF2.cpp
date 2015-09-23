@@ -215,7 +215,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
-    AP_GROUPINFO("VEL_DELAY",    15, NavEKF2, _msecGpsDelay, 220),
+    AP_GROUPINFO("VEL_DELAY",    15, NavEKF2, _gpsDelay_ms, 220),
 
     // @Param: GPS_TYPE
     // @DisplayName: GPS mode control
@@ -312,7 +312,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
-    AP_GROUPINFO("FLOW_DELAY",  27, NavEKF2, _msecFlowDelay, FLOW_MEAS_DELAY),
+    AP_GROUPINFO("FLOW_DELAY",  27, NavEKF2, _flowDelay_ms, FLOW_MEAS_DELAY),
 
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
@@ -355,29 +355,23 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
-    msecHgtDelay(60),               // Height measurement delay (msec)
-    msecMagDelay(60),               // Magnetometer measurement delay (msec)
-    msecTasDelay(240),              // Airspeed measurement delay (msec)
-    gpsRetryTimeUseTAS(10000),      // GPS retry time with airspeed measurements (msec)
-    gpsRetryTimeNoTAS(7000),        // GPS retry time without airspeed measurements (msec)
-    gpsFailTimeWithFlow(1000),      // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
-    hgtRetryTimeMode0(10000),       // Height retry time with vertical velocity measurement (msec)
-    hgtRetryTimeMode12(5000),       // Height retry time without vertical velocity measurement (msec)
-    tasRetryTime(5000),             // True airspeed timeout and retry interval (msec)
+    hgtDelay_ms(60),               // Height measurement delay (msec)
+    magDelay_ms(60),               // Magnetometer measurement delay (msec)
+    tasDelay_ms(240),              // Airspeed measurement delay (msec)
+    gpsRetryTimeUseTAS_ms(10000),      // GPS retry time with airspeed measurements (msec)
+    gpsRetryTimeNoTAS_ms(7000),        // GPS retry time without airspeed measurements (msec)
+    gpsFailTimeWithFlow_ms(1000),      // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    hgtRetryTimeMode0_ms(10000),       // Height retry time with vertical velocity measurement (msec)
+    hgtRetryTimeMode12_ms(5000),       // Height retry time without vertical velocity measurement (msec)
+    tasRetryTime_ms(5000),             // True airspeed timeout and retry interval (msec)
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
     accelBiasNoiseScaler(1.0f),     // scale factor applied to imu accel bias learning before the vehicle is armed
-    msecGpsAvg(200),                // average number of msec between GPS measurements
-    msecHgtAvg(100),                // average number of msec between height measurements
-    msecMagAvg(100),                // average number of msec between magnetometer measurements
-    msecBetaAvg(100),               // average number of msec between synthetic sideslip measurements
-    msecBetaMax(200),               // maximum number of msec between synthetic sideslip measurements
-    msecFlowAvg(100),               // average number of msec between optical flow measurements
-    dtVelPos(0.2f),                 // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
+    hgtAvg_ms(100),                // average number of msec between height measurements
+    betaAvg_ms(100),               // average number of msec between synthetic sideslip measurements
     covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
-    TASmsecMax(200),                // maximum allowed interval between airspeed measurement updates
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
     flowTimeDeltaAvg_ms(100),       // average interval between optical flow measurements (msec)

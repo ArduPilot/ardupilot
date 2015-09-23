@@ -331,7 +331,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // If we haven't received height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime = (useGpsVertVel && !velTimeout) ? frontend.hgtRetryTimeMode0 : frontend.hgtRetryTimeMode12;
+    hgtRetryTime = (useGpsVertVel && !velTimeout) ? frontend.hgtRetryTimeMode0_ms : frontend.hgtRetryTimeMode12_ms;
     if (imuSampleTime_ms - lastHgtReceived_ms > hgtRetryTime) {
         hgtTimeout = true;
     }
@@ -355,9 +355,9 @@ void NavEKF2_core::SelectVelPosFusion()
     // of GPS and severe loss of position accuracy.
     uint32_t gpsRetryTime;
     if (useAirspeed()) {
-        gpsRetryTime = frontend.gpsRetryTimeUseTAS;
+        gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
     } else {
-        gpsRetryTime = frontend.gpsRetryTimeNoTAS;
+        gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
     }
     if ((posTestRatio > 2.0f) && ((imuSampleTime_ms - lastPosFailTime) < gpsRetryTime) && ((imuSampleTime_ms - lastPosFailTime) > gpsRetryTime/2) && fusePosData) {
         lastGpsAidBadTime_ms = imuSampleTime_ms;
@@ -413,7 +413,7 @@ void NavEKF2_core::SelectTasFusion()
     readAirSpdData();
 
     // If we haven't received airspeed data for a while, then declare the airspeed data as being timed out
-    if (imuSampleTime_ms - tasDataNew.time_ms > frontend.tasRetryTime) {
+    if (imuSampleTime_ms - tasDataNew.time_ms > frontend.tasRetryTime_ms) {
         tasTimeout = true;
     }
 
@@ -436,9 +436,9 @@ void NavEKF2_core::SelectTasFusion()
 void NavEKF2_core::SelectBetaFusion()
 {
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= frontend.msecBetaAvg);
+    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= frontend.betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime) < frontend.gpsRetryTimeNoTAS));
+    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime) < frontend.gpsRetryTimeNoTAS_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
@@ -1293,8 +1293,8 @@ void NavEKF2_core::FuseVelPosNED()
 
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
-        if (useAirspeed()) gpsRetryTime = frontend.gpsRetryTimeUseTAS;
-        else gpsRetryTime = frontend.gpsRetryTimeNoTAS;
+        if (useAirspeed()) gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
+        else gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
 
         // form the observation vector and zero velocity and horizontal position observations if in constant position mode
         // If in constant velocity mode, hold the last known horizontal velocity vector
@@ -1348,7 +1348,7 @@ void NavEKF2_core::FuseVelPosNED()
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtReceived_ms) <  (2 * frontend.msecHgtAvg)) {
+        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtReceived_ms) <  (2 * frontend.hgtAvg_ms)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = stateStruct.position.z - observation[5];
             float velDErr = stateStruct.velocity.z - observation[2];
@@ -2065,7 +2065,7 @@ void NavEKF2_core::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime) > frontend.tasRetryTime;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime) > frontend.tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
@@ -3737,7 +3737,7 @@ void NavEKF2_core::readGpsData()
 
         // estimate when the GPS fix was valid, allowing for GPS processing and other delays
         // ideally we should be using a timing signal from the GPS receiver to set this time
-        gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend._msecGpsDelay;
+        gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend._gpsDelay_ms;
 
         // read the NED velocity from the GPS
         gpsDataNew.vel = _ahrs->get_gps().velocity();
@@ -3812,7 +3812,7 @@ void NavEKF2_core::readGpsData()
         gpsNotAvailable = true;
         if (imuSampleTime_ms - gpsDataNew.time_ms > 200) {
             gpsDataNew.pos.zero();
-            gpsDataNew.time_ms = imuSampleTime_ms-frontend._msecGpsDelay;
+            gpsDataNew.time_ms = imuSampleTime_ms-frontend._gpsDelay_ms;
             // save measurement to buffer to be fused later
             StoreGPS();
         }
@@ -3854,7 +3854,7 @@ void NavEKF2_core::readHgtData()
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!getTakeoffExpected()) {
             const float gndHgtFiltTC = 0.5f;
-            const float dtBaro = frontend.msecHgtAvg*1.0e-3f;
+            const float dtBaro = frontend.hgtAvg_ms*1.0e-3f;
             float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
             meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
         } else if (filterArmed && getTakeoffExpected()) {
@@ -3867,7 +3867,7 @@ void NavEKF2_core::readHgtData()
         lastHgtReceived_ms = _baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        hgtMeasTime_ms = lastHgtReceived_ms - frontend.msecHgtDelay;
+        hgtMeasTime_ms = lastHgtReceived_ms - frontend.hgtDelay_ms;
 
         // save baro measurement to buffer to be fused later
         baroDataNew.time_ms = hgtMeasTime_ms;
@@ -3883,7 +3883,7 @@ void NavEKF2_core::readMagData()
         lastMagUpdate = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
-        magMeasTime_ms = imuSampleTime_ms - frontend.msecMagDelay;
+        magMeasTime_ms = imuSampleTime_ms - frontend.magDelay_ms;
 
         // read compass data and scale to improve numerical conditioning
         magDataNew.mag = _ahrs->get_compass()->get_field() * 0.001f;
@@ -3919,7 +3919,7 @@ void NavEKF2_core::readAirSpdData()
             aspeed->last_update_ms() != timeTasReceived_ms) {
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
-        tasDataNew.time_ms = timeTasReceived_ms - frontend.msecTasDelay;
+        tasDataNew.time_ms = timeTasReceived_ms - frontend.tasDelay_ms;
         newDataTas = true;
         StoreTAS();
         RecallTAS();
@@ -3971,7 +3971,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // record time last observation was received so we can detect loss of data elsewhere
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
-        ofDataNew.time_ms = imuSampleTime_ms - frontend._msecFlowDelay - frontend.flowTimeDeltaAvg_ms/2;
+        ofDataNew.time_ms = imuSampleTime_ms - frontend._flowDelay_ms - frontend.flowTimeDeltaAvg_ms/2;
         // Save data to buffer
         StoreOF();
         // Check for data at the fusion time horizon
