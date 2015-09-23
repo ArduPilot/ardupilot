@@ -36,13 +36,10 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 public:
     // Constructor
 AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-               NavEKF &_EKF, NavEKF2 &_EKF2) :
+               NavEKF &_EKF1, NavEKF2 &_EKF2) :
     AP_AHRS_DCM(ins, baro, gps),
-        EKF(_EKF),
-        EKF2(_EKF2),
-        ekf_started(false),
-        startup_delay_ms(1000),
-        start_time_ms(0)
+    EKF1(_EKF1),
+    EKF2(_EKF2)
         {
         }
 
@@ -80,8 +77,9 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     // true if compass is being used
     bool use_compass(void);
 
-    NavEKF &get_NavEKF(void) { return EKF; }
-    const NavEKF &get_NavEKF_const(void) const { return EKF; }
+    // we will need to remove these to fully hide which EKF we are using
+    NavEKF &get_NavEKF(void) { return EKF1; }
+    const NavEKF &get_NavEKF_const(void) const { return EKF1; }
 
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
@@ -131,19 +129,26 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     const char *prearm_failure_reason(void) const override;
 
 private:
-    bool using_EKF(void) const;
+    enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
+    EKF_TYPE using_EKF(void) const;
 
-    NavEKF &EKF;
+    NavEKF &EKF1;
     NavEKF2 &EKF2;
-    bool ekf_started;
+    bool ekf1_started = false;
+    bool ekf2_started = false;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
     Vector3f _gyro_bias;
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
-    const uint16_t startup_delay_ms;
-    uint32_t start_time_ms;
+    const uint16_t startup_delay_ms = 1000;
+    uint32_t start_time_ms = 0;
+
+    uint8_t ekf_type(void) const;
+    void update_DCM(void);
+    void update_EKF1(void);
+    void update_EKF2(void);
 };
 #endif
 
