@@ -39,7 +39,7 @@ void LinuxRCInput_UDP::_timer_tick(void)
         }
         if (_last_buf_ts != 0 &&
             (delay = _buf.timestamp_us - _last_buf_ts) > 100000) {
-            hal.console->printf("no rc cmds received for %llu\n", delay);
+            hal.console->printf("no rc cmds received for %llu\n", (unsigned long long)delay);
         }
         _last_buf_ts = _buf.timestamp_us;
 
