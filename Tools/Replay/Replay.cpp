@@ -43,6 +43,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -85,7 +86,8 @@ public:
     AP_SerialManager serial_manager;
     RangeFinder rng {serial_manager};
     NavEKF EKF{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF};
+    NavEKF2 EKF2{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs {ins, barometer, gps, rng, EKF, EKF2};
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed{aparm};
@@ -131,6 +133,10 @@ const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
     // @Path: ../libraries/AP_NavEKF/AP_NavEKF.cpp
     GOBJECTN(EKF, NavEKF, "EKF_", NavEKF),
 
+    // @Group: EK2_
+    // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
+    GOBJECTN(EKF2, NavEKF2, "EK2_", NavEKF2),
+    
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),

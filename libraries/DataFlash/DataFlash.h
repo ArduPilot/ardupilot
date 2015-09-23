@@ -102,6 +102,7 @@ public:
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
     void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
@@ -781,6 +782,18 @@ Format characters in the format string for binary log messages
       "EKF3","Qcccccchhhc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
     { LOG_EKF4_MSG, sizeof(log_EKF4), \
       "EKF4","QcccccccbbBBH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,TS,SS" }, \
+    { LOG_EKF5_MSG, sizeof(log_EKF5), \
+      "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+    { LOG_NKF1_MSG, sizeof(log_EKF1), \
+      "NKF1","QccCffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_NKF2_MSG, sizeof(log_EKF2), \
+      "NKF2","Qbbbcchhhhhh","TimeUS,Ratio,AZ1bias,AZ2bias,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+    { LOG_NKF3_MSG, sizeof(log_EKF3), \
+      "NKF3","Qcccccchhhc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IVT" }, \
+    { LOG_NKF4_MSG, sizeof(log_EKF4), \
+      "NKF4","QcccccccbbBBH","TimeUS,SV,SP,SH,SMX,SMY,SMZ,SVT,OFN,EFE,FS,TS,SS" }, \
+    { LOG_NKF5_MSG, sizeof(log_EKF5), \
+      "NKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_UBX1_MSG, sizeof(log_Ubx1), \
@@ -813,8 +826,6 @@ Format characters in the format string for binary log messages
       "ESC7",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
-    { LOG_EKF5_MSG, sizeof(log_EKF5), \
-      "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
@@ -938,6 +949,11 @@ enum LogMessages {
     LOG_GPA2_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
+    LOG_NKF1_MSG,
+    LOG_NKF2_MSG,
+    LOG_NKF3_MSG,
+    LOG_NKF4_MSG,
+    LOG_NKF5_MSG,
 };
 
 enum LogOriginType {

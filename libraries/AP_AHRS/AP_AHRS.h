@@ -53,6 +53,7 @@
 #define EKF_DO_NOT_USE            0     // Prevents the EKF from being used by the flight controllers
 #define EKF_USE_WITH_FALLBACK     1     // Uses the EKF unless its solution is unhealthy or not initialised. This allows sensor errors to cause reversion.
 #define EKF_USE_WITHOUT_FALLBACK  2     // Uses the EKF unless it encounters numerical processing errors or isn't iniitalised. Sensor errors will not cause reversion.
+#define EKF_USE_SECONDARY         3     // Use 2nd EKF if available
 
 enum AHRS_VehicleClass {
     AHRS_VEHICLE_UNKNOWN,
@@ -379,12 +380,7 @@ protected:
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
-
-#if AHRS_EKF_USE_ALWAYS
-    static const int8_t _ekf_use = EKF_USE_WITHOUT_FALLBACK;
-#else
-    AP_Int8 _ekf_use;
-#endif
+    AP_Int8 _ekf_type;
 
     // flags structure
     struct ahrs_flags {
