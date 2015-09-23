@@ -5,6 +5,7 @@
 
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   parameter defaults for different types of vehicle. The
@@ -347,7 +348,10 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
-NavEKF2::NavEKF2() :
+NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
+    _ahrs(ahrs),
+    _baro(baro),
+    _rng(rng),
     gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
@@ -382,6 +386,410 @@ NavEKF2::NavEKF2() :
     gndEffectBaroScaler(4.0f)      // scaler applied to the barometer observation variance when operating in ground effect
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+
+// Initialise the filter
+bool NavEKF2::InitialiseFilter(void)
+{
+    if (_enable == 0) {
+        return false;
+    }
+    if (core == nullptr) {
+        core = new NavEKF2_core(*this, _ahrs, _baro, _rng);
+        if (core == nullptr) {
+            _enable.set(0);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("NavEKF2: allocation failed"));
+            return false;
+        }
+    }
+    return core->InitialiseFilterBootstrap();
+}
+
+// Update Filter States - this should be called whenever new IMU data is available
+void NavEKF2::UpdateFilter(void)
+{
+    if (core) {
+        core->UpdateFilter();
+    }
+}
+
+// Check basic filter health metrics and return a consolidated health status
+bool NavEKF2::healthy(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->healthy();
+}
+
+// Return the last calculated NED position relative to the reference point (m).
+// If a calculated solution is not available, use the best available data and return false
+// If false returned, do not use for flight control
+bool NavEKF2::getPosNED(Vector3f &pos) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getPosNED(pos);
+}
+
+// return NED velocity in m/s
+void NavEKF2::getVelNED(Vector3f &vel) const
+{
+    if (core) {
+        core->getVelNED(vel);
+    }
+}
+
+// This returns the specific forces in the NED frame
+void NavEKF2::getAccelNED(Vector3f &accelNED) const
+{
+    if (core) {
+        core->getAccelNED(accelNED);
+    }
+}
+
+// return body axis gyro bias estimates in rad/sec
+void NavEKF2::getGyroBias(Vector3f &gyroBias) const
+{
+    if (core) {
+        core->getGyroBias(gyroBias);
+    }
+}
+
+// return body axis gyro scale factor estimates
+void NavEKF2::getGyroScale(Vector3f &gyroScale) const
+{
+    if (core) {
+        core->getGyroScale(gyroScale);
+    }
+}
+
+// return tilt error convergence metric
+void NavEKF2::getTiltError(float &ang) const
+{
+    if (core) {
+        core->getTiltError(ang);
+    }
+}
+
+// reset body axis gyro bias estimates
+void NavEKF2::resetGyroBias(void)
+{
+    if (core) {
+        core->resetGyroBias();
+    }
+}
+
+// Resets the baro so that it reads zero at the current height
+// Resets the EKF height to zero
+// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Returns true if the height datum reset has been performed
+// If using a range finder for height no reset is performed and it returns false
+bool NavEKF2::resetHeightDatum(void)
+{
+    if (!core) {
+        return false;
+    }
+    return core->resetHeightDatum();
+}
+
+// Commands the EKF to not use GPS.
+// This command must be sent prior to arming as it will only be actioned when the filter is in static mode
+// This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
+// Returns 0 if command rejected
+// Returns 1 if attitude, vertical velocity and vertical position will be provided
+// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
+uint8_t NavEKF2::setInhibitGPS(void)
+{
+    if (!core) {
+        return 0;
+    }
+    return core->setInhibitGPS();
+}
+
+// return the horizontal speed limit in m/s set by optical flow sensor limits
+// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+{
+    if (core) {
+        core->getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    }
+}
+
+// return weighting of first IMU in blending function
+void NavEKF2::getIMU1Weighting(float &ret) const
+{
+    if (core) {
+        core->getIMU1Weighting(ret);
+    }
+}
+
+// return the individual Z-accel bias estimates in m/s^2
+void NavEKF2::getAccelZBias(float &zbias1, float &zbias2) const
+{
+    if (core) {
+        core->getAccelZBias(zbias1, zbias2);
+    }
+}
+
+// return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
+void NavEKF2::getWind(Vector3f &wind) const
+{
+    if (core) {
+        core->getWind(wind);
+    }
+}
+
+// return earth magnetic field estimates in measurement units / 1000
+void NavEKF2::getMagNED(Vector3f &magNED) const
+{
+    if (core) {
+        core->getMagNED(magNED);
+    }
+}
+
+// return body magnetic field estimates in measurement units / 1000
+void NavEKF2::getMagXYZ(Vector3f &magXYZ) const
+{
+    if (core) {
+        core->getMagXYZ(magXYZ);
+    }
+}
+
+// Return estimated magnetometer offsets
+// Return true if magnetometer offsets are valid
+bool NavEKF2::getMagOffsets(Vector3f &magOffsets) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getMagOffsets(magOffsets);
+}
+
+// Return the last calculated latitude, longitude and height in WGS-84
+// If a calculated location isn't available, return a raw GPS measurement
+// The status will return true if a calculation or raw measurement is available
+// The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
+bool NavEKF2::getLLH(struct Location &loc) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getLLH(loc);
+}
+
+// return the latitude and longitude and height used to set the NED origin
+// All NED positions calculated by the filter are relative to this location
+// Returns false if the origin has not been set
+bool NavEKF2::getOriginLLH(struct Location &loc) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getOriginLLH(loc);
+}
+
+// set the latitude and longitude and height used to set the NED origin
+// All NED positions calcualted by the filter will be relative to this location
+// The origin cannot be set if the filter is in a flight mode (eg vehicle armed)
+// Returns false if the filter has rejected the attempt to set the origin
+bool NavEKF2::setOriginLLH(struct Location &loc)
+{
+    if (!core) {
+        return false;
+    }
+    return core->setOriginLLH(loc);
+}
+
+// return estimated height above ground level
+// return false if ground height is not being estimated.
+bool NavEKF2::getHAGL(float &HAGL) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getHAGL(HAGL);
+}
+
+// return the Euler roll, pitch and yaw angle in radians
+void NavEKF2::getEulerAngles(Vector3f &eulers) const
+{
+    if (core) {
+        core->getEulerAngles(eulers);
+    }
+}
+
+// return the transformation matrix from XYZ (body) to NED axes
+void NavEKF2::getRotationBodyToNED(Matrix3f &mat) const
+{
+    if (core) {
+        core->getRotationBodyToNED(mat);
+    }
+}
+
+// return the quaternions defining the rotation from NED to XYZ (body) axes
+void NavEKF2::getQuaternion(Quaternion &quat) const
+{
+    if (core) {
+        core->getQuaternion(quat);
+    }
+}
+
+// return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
+void NavEKF2::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+{
+    if (core) {
+        core->getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    }
+}
+
+// return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
+void NavEKF2::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+{
+    if (core) {
+        core->getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    }
+}
+
+// should we use the compass? This is public so it can be used for
+// reporting via ahrs.use_compass()
+bool NavEKF2::use_compass(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->use_compass();
+}
+
+// write the raw optical flow measurements
+// rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
+// rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
+// rawGyroRates are the sensor rotation rates in rad/sec measured by the sensors internal gyro
+// The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
+// msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
+void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
+{
+    if (core) {
+        core->writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
+    }
+}
+
+// return data for debugging optical flow fusion
+void NavEKF2::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
+                              float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
+{
+    if (core) {
+        core->getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
+    }
+}
+
+// called by vehicle code to specify that a takeoff is happening
+// causes the EKF to compensate for expected barometer errors due to ground effect
+void NavEKF2::setTakeoffExpected(bool val)
+{
+    if (core) {
+        core->setTakeoffExpected(val);
+    }
+}
+
+// called by vehicle code to specify that a touchdown is expected to happen
+// causes the EKF to compensate for expected barometer errors due to ground effect
+void NavEKF2::setTouchdownExpected(bool val)
+{
+    if (core) {
+        core->setTouchdownExpected(val);
+    }
+}
+
+/*
+  return the filter fault status as a bitmasked integer
+  0 = quaternions are NaN
+  1 = velocities are NaN
+  2 = badly conditioned X magnetometer fusion
+  3 = badly conditioned Y magnetometer fusion
+  5 = badly conditioned Z magnetometer fusion
+  6 = badly conditioned airspeed fusion
+  7 = badly conditioned synthetic sideslip fusion
+  7 = filter is not initialised
+*/
+void NavEKF2::getFilterFaults(uint8_t &faults) const
+{
+    if (core) {
+        core->getFilterFaults(faults);
+    }
+}
+
+/*
+  return filter timeout status as a bitmasked integer
+  0 = position measurement timeout
+  1 = velocity measurement timeout
+  2 = height measurement timeout
+  3 = magnetometer measurement timeout
+  5 = unassigned
+  6 = unassigned
+  7 = unassigned
+  7 = unassigned
+*/
+void NavEKF2::getFilterTimeouts(uint8_t &timeouts) const
+{
+    if (core) {
+        core->getFilterTimeouts(timeouts);
+    }
+}
+
+/*
+  return filter status flags
+*/
+void NavEKF2::getFilterStatus(nav_filter_status &status) const
+{
+    if (core) {
+        core->getFilterStatus(status);
+    }
+}
+
+// send an EKF_STATUS_REPORT message to GCS
+void NavEKF2::send_status_report(mavlink_channel_t chan)
+{
+    if (core) {
+        core->send_status_report(chan);
+    }
+}
+
+// provides the height limit to be observed by the control loops
+// returns false if no height limiting is required
+// this is needed to ensure the vehicle does not fly too high when using optical flow navigation
+bool NavEKF2::getHeightControlLimit(float &height) const
+{
+    if (!core) {
+        return false;
+    }
+    return core->getHeightControlLimit(height);
+}
+
+// provides the quaternion that was used by the INS calculation to
+// rotate from the previous orientation to the orientaion at the
+// current time step
+// returns a zero rotation quaternion if the INS
+// calculation was not performed on that time step.
+Quaternion NavEKF2::getDeltaQuaternion(void) const
+{
+    if (!core) {
+        return Quaternion();
+    }
+    return core->getDeltaQuaternion();
+}
+
+// return the amount of yaw angle change due to the last yaw angle reset in radians
+// returns true if a reset yaw angle has been updated and not queried
+// this function should not have more than one client
+bool NavEKF2::getLastYawResetAngle(float &yawAng)
+{
+    if (!core) {
+        return false;
+    }
+    return core->getLastYawResetAngle(yawAng);
 }
 
 #endif //HAL_CPU_CLASS

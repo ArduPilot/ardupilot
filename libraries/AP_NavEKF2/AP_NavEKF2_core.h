@@ -22,13 +22,6 @@
 #define AP_NavEKF2_core
 
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_NavEKF/AP_Nav_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 #include "AP_NavEKF2.h"
 
 // #define MATH_CHECK_INDEXES 1
@@ -225,10 +218,10 @@ public:
     // this function should not have more than one client
     bool getLastYawResetAngle(float &yawAng);
 
+private:
     // Reference to the global EKF frontend for parameters
     NavEKF2 &frontend;
 
-private:
     typedef float ftype;
 #if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
     typedef VectorN<ftype,2> Vector2;
@@ -249,6 +242,7 @@ private:
     typedef VectorN<ftype,24> Vector24;
     typedef VectorN<ftype,25> Vector25;
     typedef VectorN<ftype,31> Vector31;
+    typedef VectorN<ftype,28> Vector28;
     typedef VectorN<VectorN<ftype,3>,3> Matrix3;
     typedef VectorN<VectorN<ftype,24>,24> Matrix24;
     typedef VectorN<VectorN<ftype,34>,50> Matrix34_50;
