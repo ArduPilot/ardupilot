@@ -55,6 +55,7 @@
 #include <PID/PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
@@ -119,7 +120,8 @@ private:
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF EKF{&ahrs, barometer, rng};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF};
+    NavEKF2 EKF2{&ahrs, barometer, rng};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, rng, EKF, EKF2};
 #else
     AP_AHRS_DCM ahrs{ins, barometer, gps};
 #endif
