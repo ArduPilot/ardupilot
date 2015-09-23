@@ -317,7 +317,7 @@ void NavEKF2_core::SelectVelPosFusion()
             ResetVelocity();
             CovarianceInit();
             // record the fail time
-            lastPosFailTime = imuSampleTime_ms;
+            lastPosFailTime_ms = imuSampleTime_ms;
             // Reset the normalised innovation to avoid false failing the bad position fusion test
             posTestRatio = 0.0f;
         }
@@ -331,8 +331,8 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // If we haven't received height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime = (useGpsVertVel && !velTimeout) ? frontend.hgtRetryTimeMode0_ms : frontend.hgtRetryTimeMode12_ms;
-    if (imuSampleTime_ms - lastHgtReceived_ms > hgtRetryTime) {
+    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend.hgtRetryTimeMode0_ms : frontend.hgtRetryTimeMode12_ms;
+    if (imuSampleTime_ms - lastHgtReceived_ms > hgtRetryTime_ms) {
         hgtTimeout = true;
     }
 
@@ -359,7 +359,7 @@ void NavEKF2_core::SelectVelPosFusion()
     } else {
         gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
     }
-    if ((posTestRatio > 2.0f) && ((imuSampleTime_ms - lastPosFailTime) < gpsRetryTime) && ((imuSampleTime_ms - lastPosFailTime) > gpsRetryTime/2) && fusePosData) {
+    if ((posTestRatio > 2.0f) && ((imuSampleTime_ms - lastPosFailTime_ms) < gpsRetryTime) && ((imuSampleTime_ms - lastPosFailTime_ms) > gpsRetryTime/2) && fusePosData) {
         lastGpsAidBadTime_ms = imuSampleTime_ms;
         gpsAidingBad = true;
     }
@@ -424,7 +424,7 @@ void NavEKF2_core::SelectTasFusion()
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseAirspeed();
-        TASmsecPrev = imuSampleTime_ms;
+        prevTasStep_ms = imuSampleTime_ms;
         tasDataWaiting = false;
         newDataTas = false;
     }
@@ -436,9 +436,9 @@ void NavEKF2_core::SelectTasFusion()
 void NavEKF2_core::SelectBetaFusion()
 {
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - BETAmsecPrev) >= frontend.betaAvg_ms);
+    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend.betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime) < frontend.gpsRetryTimeNoTAS_ms));
+    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend.gpsRetryTimeNoTAS_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
@@ -446,7 +446,7 @@ void NavEKF2_core::SelectBetaFusion()
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseSideslip();
-        BETAmsecPrev = imuSampleTime_ms;
+        prevBetaStep_ms = imuSampleTime_ms;
     }
 }
 
@@ -1373,13 +1373,13 @@ void NavEKF2_core::FuseVelPosNED()
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data or not aiding
-            posTimeout = (((imuSampleTime_ms - lastPosPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
+            posTimeout = (((imuSampleTime_ms - lastPosPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy, timed out, or in constant position mode
             if (posHealth || posTimeout || constPosMode) {
                 posHealth = true;
                 // only reset the failed time and do glitch timeout checks if we are doing full aiding
                 if (PV_AidingMode == AID_ABSOLUTE) {
-                    lastPosPassTime = imuSampleTime_ms;
+                    lastPosPassTime_ms = imuSampleTime_ms;
                     // if timed out or outside the specified uncertainty radius, increment the offset applied to GPS data to compensate for large GPS position jumps
                     if (posTimeout || ((varInnovVelPos[3] + varInnovVelPos[4]) > sq(float(frontend._gpsGlitchRadiusMax)))) {
                         gpsPosGlitchOffsetNE.x += innovVelPos[3];
@@ -1393,7 +1393,7 @@ void NavEKF2_core::FuseVelPosNED()
                         // don't fuse data on this time step
                         fusePosData = false;
                         // record the fail time
-                        lastPosFailTime = imuSampleTime_ms;
+                        lastPosFailTime_ms = imuSampleTime_ms;
                         // Reset the normalised innovation to avoid false failing the bad position fusion test
                         posTestRatio = 0.0f;
                     }
@@ -1429,12 +1429,12 @@ void NavEKF2_core::FuseVelPosNED()
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
-            velTimeout = (((imuSampleTime_ms - lastVelPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
+            velTimeout = (((imuSampleTime_ms - lastVelPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // if data is healthy  or in constant velocity mode we fuse it
             if (velHealth || velTimeout || constVelMode) {
                 velHealth = true;
                 // restart the timeout count
-                lastVelPassTime = imuSampleTime_ms;
+                lastVelPassTime_ms = imuSampleTime_ms;
             } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
                 // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
@@ -1455,11 +1455,11 @@ void NavEKF2_core::FuseVelPosNED()
             hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend._hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
-            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
+            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime_ms;
             // Fuse height data if healthy or timed out or in constant position mode
             if (hgtHealth || hgtTimeout || constPosMode) {
                 hgtHealth = true;
-                lastHgtPassTime = imuSampleTime_ms;
+                lastHgtPassTime_ms = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
                 if (hgtTimeout) {
                     ResetHeight();
@@ -2065,13 +2065,13 @@ void NavEKF2_core::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime) > frontend.tasRetryTime_ms;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend.tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
 
             // restart the counter
-            lastTasPassTime = imuSampleTime_ms;
+            lastTasPassTime_ms = imuSampleTime_ms;
 
 
             // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
@@ -3361,9 +3361,10 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 }
 
 // return weighting of first IMU in blending function
+// This filter always uses the primary IMU, so a weighting of 1 is returned
 void NavEKF2_core::getIMU1Weighting(float &ret) const
 {
-    ret = IMU1_weighting;
+    ret = 1.0f;
 }
 
 // return the individual Z-accel bias estimates in m/s^2
@@ -3878,9 +3879,9 @@ void NavEKF2_core::readHgtData()
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate) {
+    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate_ms) {
         // store time of last measurement update
-        lastMagUpdate = _ahrs->get_compass()->last_update_usec();
+        lastMagUpdate_ms = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magMeasTime_ms = imuSampleTime_ms - frontend.magDelay_ms;
@@ -3939,7 +3940,6 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
     // This filter uses a different definition of optical flow rates to the sensor with a positive optical flow rate produced by a
     // negative rotation about that axis. For example a positive rotation of the flight vehicle about its X (roll) axis would produce a negative X flow rate
     flowMeaTime_ms = imuSampleTime_ms;
-    flowQuality = rawFlowQuality;
     // calculate bias errors on flow sensor gyro rates, but protect against spikes in data
     // reset the accumulated body delta angle and time
     // don't do the calculation if not enough time lapsed for a reliable body rate measurement
@@ -4151,16 +4151,15 @@ void NavEKF2_core::InitialiseVariables()
     // initialise time stamps
     imuSampleTime_ms = hal.scheduler->millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
-    TASmsecPrev = imuSampleTime_ms;
-    BETAmsecPrev = imuSampleTime_ms;
-    lastMagUpdate = 0;
+    prevTasStep_ms = imuSampleTime_ms;
+    prevBetaStep_ms = imuSampleTime_ms;
+    lastMagUpdate_ms = 0;
     lastHgtReceived_ms = imuSampleTime_ms;
-    lastVelPassTime = imuSampleTime_ms;
-    lastPosPassTime = imuSampleTime_ms;
-    lastPosFailTime = 0;
-    lastHgtPassTime = imuSampleTime_ms;
-    lastTasPassTime = imuSampleTime_ms;
-    lastStateStoreTime_ms = imuSampleTime_ms;
+    lastVelPassTime_ms = imuSampleTime_ms;
+    lastPosPassTime_ms = imuSampleTime_ms;
+    lastPosFailTime_ms = 0;
+    lastHgtPassTime_ms = imuSampleTime_ms;
+    lastTasPassTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
@@ -4189,10 +4188,6 @@ void NavEKF2_core::InitialiseVariables()
     secondMagYawInit = false;
     dtIMUavg = 0.0025f;
     dt = 0;
-    lastGyroBias.zero();
-    lastAngRate.zero();
-    lastAccel1.zero();
-    lastAccel2.zero();
     velDotNEDfilt.zero();
     summedDelAng.zero();
     summedDelVel.zero();
@@ -4204,7 +4199,6 @@ void NavEKF2_core::InitialiseVariables()
     memset(&processNoise[0], 0, sizeof(processNoise));
     flowDataValid = false;
     newDataRng  = false;
-    flowFusePerformed = false;
     fuseOptFlowData = false;
     Popt = 0.0f;
     terrainState = 0.0f;
@@ -4228,14 +4222,12 @@ void NavEKF2_core::InitialiseVariables()
     hgtRate = 0.0f;
     mag_state.q0 = 1;
     mag_state.DCM.identity();
-    IMU1_weighting = 0.5f;
     onGround = true;
     manoeuvring = false;
     yawAligned = false;
     inhibitWindStates = true;
     inhibitMagStates = true;
     gndOffsetValid =  false;
-    flowXfailed = false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
     expectGndEffectTakeoff = false;
@@ -4426,7 +4418,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
-    status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime) < 4000;
+    status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime_ms) < 4000;
 }
 
 // send an EKF_STATUS message to GCS
@@ -4567,9 +4559,9 @@ void NavEKF2_core::performArmingChecks()
                 lastTimeGpsReceived_ms = imuSampleTime_ms;
                 secondLastGpsTime_ms = imuSampleTime_ms;
                 // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
-                lastPosPassTime = imuSampleTime_ms;
+                lastPosPassTime_ms = imuSampleTime_ms;
                 // reset the fail time to prevent premature reporting of loss of position accruacy
-                lastPosFailTime = 0;
+                lastPosFailTime_ms = 0;
             }
         }
         // Reset all position, velocity and covariance
