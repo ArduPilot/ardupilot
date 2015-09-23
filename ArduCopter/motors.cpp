@@ -165,7 +165,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     if (ap.home_state == HOME_UNSET) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.get_NavEKF().resetHeightDatum();
+        ahrs.resetHeightDatum();
         Log_Write_Event(DATA_EKF_ALT_RESET);
     } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
