@@ -19,6 +19,7 @@
 #include <AP_HAL.h>
 #include <GCS_MAVLink.h>
 #include <GCS.h>
+#include <AP_Notify.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
@@ -74,16 +75,17 @@ void AP_BattMonitor_SMBus_PX4::read()
 
             // send a mavlink message too all components if the system is about to power off
             if(!_state.is_powering_off && batt_status.is_powering_off) {
-              // create command long mavlink message
-              mavlink_command_long_t cmd_msg;
-              memset(&cmd_msg, 0, sizeof(cmd_msg));
-              cmd_msg.command = 42000;
-              // create message
-              mavlink_message_t msg;
-              mavlink_msg_command_long_encode(0, MAV_COMP_ID_ALL, &msg, &cmd_msg);
-              // forward to all components
-              GCS_MAVLINK::send_on_all_channels(&msg);
-              GCS_MAVLINK::send_statustext_all(PSTR("System is shutting down NOW..."));
+                // create command long mavlink message
+                mavlink_command_long_t cmd_msg;
+                memset(&cmd_msg, 0, sizeof(cmd_msg));
+                cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
+                // create message
+                mavlink_message_t msg;
+                mavlink_msg_command_long_encode(0, MAV_COMP_ID_ALL, &msg, &cmd_msg);
+                // forward to all components
+                GCS_MAVLINK::send_on_all_channels(&msg);
+                GCS_MAVLINK::send_statustext_all(PSTR("System is shutting down NOW..."));
+                AP_Notify::flags.powering_off = 1;
             }
             _state.is_powering_off = batt_status.is_powering_off;
 
