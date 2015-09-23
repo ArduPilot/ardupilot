@@ -41,6 +41,7 @@ public:
         startup_delay_ms(1000),
         start_time_ms(0),
         _gyro3_bias(0,0,0),
+        _last_gyro3_bias_update_ms(0),
         lastEkfHealthyTime_ms(0),
         lastEkfResetTime_ms(0),
         ekfStarting(false)
@@ -138,7 +139,7 @@ private:
     bool using_EKF(void) const;
 
     // update _gyro3_bias by comparing ins.get_gyro(2) with get_gyro
-    void update_gyro3_bias(float dt);
+    void update_gyro3_bias();
 
     NavEKF EKF;
     bool ekf_started;
@@ -154,6 +155,7 @@ private:
     uint32_t lastEkfResetTime_ms;
     bool ekfStarting;
 
+    uint32_t _last_gyro3_bias_update_ms;
     Vector3f _gyro3_bias;
 };
 #endif

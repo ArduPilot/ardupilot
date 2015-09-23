@@ -60,10 +60,16 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
 
     // reset the EKF gyro bias states
     EKF.resetGyroBias();
+
+    // zero gyro3 bias
+    _gyro3_bias.zero();
 }
 
 void AP_AHRS_NavEKF::update(void)
 {
+    // update gyro 3 bias
+    update_gyro3_bias();
+
     // we need to restore the old DCM attitude values as these are
     // used internally in DCM to calculate error values for gyro drift
     // correction
@@ -115,7 +121,7 @@ void AP_AHRS_NavEKF::update(void)
              } else {
                 // If the restart is unsuccessful, then indicate that the ekf has not started and bypass the update steps
                 ekf_started = false;
-                goto skip_ekf_update;
+                return;
              }
         }
 
@@ -176,16 +182,6 @@ void AP_AHRS_NavEKF::update(void)
             }
         }
     }
-
-    // We goto this point if the EKF start fails
-    skip_ekf_update:
-
-    static uint32_t last_update_ms = 0;
-    uint32_t tnow = hal.scheduler->millis();
-    float dt = (tnow-last_update_ms)*1.0e-3f;
-    last_update_ms = tnow;
-
-    update_gyro3_bias(dt);
 }
 
 Vector3f AP_AHRS_NavEKF::get_gyro_for_control() const
@@ -198,8 +194,10 @@ Vector3f AP_AHRS_NavEKF::get_gyro_for_control() const
 }
 
 // update _gyro3_bias by comparing ins.get_gyro(2) with get_gyro
-void AP_AHRS_NavEKF::update_gyro3_bias(float dt)
+void AP_AHRS_NavEKF::update_gyro3_bias()
 {
+    float dt = 1.0f/_ins.get_sample_rate();
+
     static const float gyro3BiasFiltTC = 20.0f;
 
     if (!_ins.get_gyro_health(2)) {
