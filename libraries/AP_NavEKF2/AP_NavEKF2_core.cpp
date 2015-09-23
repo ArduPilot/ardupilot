@@ -58,7 +58,7 @@ bool NavEKF2_core::healthy(void) const
     if (faultInt > 0) {
         return false;
     }
-    if (frontend._fallback && velTestRatio > 1 && posTestRatio > 1 && hgtTestRatio > 1) {
+    if (velTestRatio > 1 && posTestRatio > 1 && hgtTestRatio > 1) {
         // all three metrics being above 1 means the filter is
         // extremely unhealthy.
         return false;
@@ -2768,7 +2768,7 @@ void NavEKF2_core::EstimateTerrainOffset()
 
         // in addition to a terrain gradient error model, we also have a time based error growth that is scaled using the gradient parameter
         float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend._gndGradientSigma))) + sq(float(frontend._gndGradientSigma) * timeLapsed);
+        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend.gndGradientSigma))) + sq(float(frontend.gndGradientSigma) * timeLapsed);
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
@@ -2784,7 +2784,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             float q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            float R_RNG = 0.5f;
+            float R_RNG = frontend._rngNoise;
 
             // calculate Kalman gain
             float SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -3868,7 +3868,7 @@ void NavEKF2_core::readHgtData()
         lastHgtReceived_ms = _baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        hgtMeasTime_ms = lastHgtReceived_ms - frontend.hgtDelay_ms;
+        hgtMeasTime_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
 
         // save baro measurement to buffer to be fused later
         baroDataNew.time_ms = hgtMeasTime_ms;
