@@ -5379,14 +5379,6 @@ bool NavEKF::getHeightControlLimit(float &height) const
     }
 }
 
-// provides the delta quaternion that was used by the INS calculation to rotate from the previous orientation to the orientation at the current time
-// the delta quaternion returned will be a zero rotation if the INS calculation was not performed on that time step
-Quaternion NavEKF::getDeltaQuaternion(void) const
-{
-    // Note: correctedDelAngQuat is reset to a zero rotation at the start of every update cycle in UpdateFilter()
-    return correctedDelAngQuat;
-}
-
 // return the quaternions defining the rotation from NED to XYZ (body) axes
 void NavEKF::getQuaternion(Quaternion& ret) const
 {
