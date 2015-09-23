@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 // return the smoothed gyro vector corrected for drift
 const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 {
-    if (!using_EKF()) {
+    if (!active_EKF_type()) {
         return AP_AHRS_DCM::get_gyro();
     }
     return _gyro_estimate;
@@ -39,7 +39,7 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
 
 const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
 {
-    if (!using_EKF()) {
+    if (!active_EKF_type()) {
         return AP_AHRS_DCM::get_dcm_matrix();
     }
     return _dcm_matrix;
@@ -47,7 +47,7 @@ const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
 
 const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 {
-    if (!using_EKF()) {
+    if (!active_EKF_type()) {
         return AP_AHRS_DCM::get_gyro_drift();
     }
     return _gyro_bias;
@@ -102,7 +102,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
     if (ekf1_started) {
         EKF1.UpdateFilter();
         EKF1.getRotationBodyToNED(_dcm_matrix);
-        if (using_EKF() == EKF_TYPE1) {
+        if (active_EKF_type() == EKF_TYPE1) {
             Vector3f eulers;
             EKF1.getEulerAngles(eulers);
             roll  = eulers.x;
@@ -172,7 +172,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
     if (ekf2_started) {
         EKF2.UpdateFilter();
         EKF2.getRotationBodyToNED(_dcm_matrix);
-        if (using_EKF() == EKF_TYPE2) {
+        if (active_EKF_type() == EKF_TYPE2) {
             Vector3f eulers;
             EKF2.getEulerAngles(eulers);
             roll  = eulers.x;
@@ -230,7 +230,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
 // accelerometer values in the earth frame in m/s/s
 const Vector3f &AP_AHRS_NavEKF::get_accel_ef(uint8_t i) const
 {
-    if (using_EKF() == EKF_TYPE_NONE) {
+    if (active_EKF_type() == EKF_TYPE_NONE) {
         return AP_AHRS_DCM::get_accel_ef(i);
     }
     return _accel_ef_ekf[i];
@@ -239,7 +239,7 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef(uint8_t i) const
 // blended accelerometer values in the earth frame in m/s/s
 const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
 {
-    if (using_EKF() == EKF_TYPE_NONE) {
+    if (active_EKF_type() == EKF_TYPE_NONE) {
         return AP_AHRS_DCM::get_accel_ef_blended();
     }
     return _accel_ef_ekf_blended;
@@ -272,7 +272,7 @@ void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, con
 bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
 {
     Vector3f ned_pos;
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE1:
         if (EKF1.getLLH(loc) && EKF1.getPosNED(ned_pos)) {
             // fixup altitude using relative position from AHRS home, not
@@ -311,7 +311,7 @@ float AP_AHRS_NavEKF::get_error_yaw(void) const
 Vector3f AP_AHRS_NavEKF::wind_estimate(void)
 {
     Vector3f wind;
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         wind = AP_AHRS_DCM::wind_estimate();
         break;
@@ -337,7 +337,7 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float *airspeed_ret) const
 // true if compass is being used
 bool AP_AHRS_NavEKF::use_compass(void)
 {
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         break;
     case EKF_TYPE1:
@@ -352,7 +352,7 @@ bool AP_AHRS_NavEKF::use_compass(void)
 // return secondary attitude solution if available, as eulers in radians
 bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 {
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         // EKF is secondary
         EKF1.getEulerAngles(eulers);
@@ -370,7 +370,7 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers)
 // return secondary position solution if available
 bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
 {
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         // EKF is secondary
         EKF1.getLLH(loc);
@@ -390,7 +390,7 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 {
     Vector3f vec;
 
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         return AP_AHRS_DCM::groundspeed_vector();
 
@@ -413,14 +413,14 @@ void AP_AHRS_NavEKF::set_home(const Location &loc)
 // return true if inertial navigation is active
 bool AP_AHRS_NavEKF::have_inertial_nav(void) const
 {
-    return using_EKF() != EKF_TYPE_NONE;
+    return active_EKF_type() != EKF_TYPE_NONE;
 }
 
 // return a ground velocity in meters/second, North/East/Down
 // order. Must only be called if have_inertial_nav() is true
 bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 {
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         return false;
 
@@ -439,7 +439,7 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 // order. Must only be called if have_inertial_nav() is true
 bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 {
-    switch (using_EKF()) {
+    switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         return false;
 
@@ -472,7 +472,7 @@ uint8_t AP_AHRS_NavEKF::ekf_type(void) const
     return type;
 }
 
-AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::using_EKF(void) const
+AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
 {
     EKF_TYPE ret = EKF_TYPE_NONE;
 
@@ -568,7 +568,7 @@ bool AP_AHRS_NavEKF::healthy(void) const
         }
         if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
                 _vehicle_class == AHRS_VEHICLE_GROUND) &&
-                using_EKF() != EKF_TYPE1) {
+                active_EKF_type() != EKF_TYPE1) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;
@@ -583,7 +583,7 @@ bool AP_AHRS_NavEKF::healthy(void) const
         }
         if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
                 _vehicle_class == AHRS_VEHICLE_GROUND) &&
-                using_EKF() != EKF_TYPE2) {
+                active_EKF_type() != EKF_TYPE2) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;

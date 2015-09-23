@@ -156,7 +156,7 @@ public:
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
-    EKF_TYPE using_EKF(void) const;
+    EKF_TYPE active_EKF_type(void) const;
 
     NavEKF &EKF1;
     NavEKF2 &EKF2;
