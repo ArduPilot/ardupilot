@@ -81,6 +81,9 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     NavEKF &get_NavEKF(void) { return EKF1; }
     const NavEKF &get_NavEKF_const(void) const { return EKF1; }
 
+    NavEKF2 &get_NavEKF2(void) { return EKF2; }
+    const NavEKF2 &get_NavEKF2_const(void) const { return EKF2; }
+    
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
 
