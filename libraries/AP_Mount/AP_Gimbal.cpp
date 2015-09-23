@@ -13,7 +13,7 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Gimbal::present()
 {
-    if (_state != GIMBAL_STATE_NOT_PRESENT && hal.scheduler->millis()-_last_report_msg_ms > 1000) {
+    if (_state != GIMBAL_STATE_NOT_PRESENT && hal.scheduler->millis()-_last_report_msg_ms > 3000) {
         // gimbal went away
         _state = GIMBAL_STATE_NOT_PRESENT;
         return false;
