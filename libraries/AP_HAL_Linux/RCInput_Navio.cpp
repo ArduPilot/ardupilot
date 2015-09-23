@@ -2,6 +2,9 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #include "GPIO.h"
+#include "RCInput_Navio.h"
+#include "Util_Navio.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,7 +21,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <assert.h>
-#include "RCInput_Navio.h"
+
 
 //Parametres
 #define RCIN_NAVIO_BUFFER_LENGTH   8
@@ -186,37 +189,6 @@ uint32_t Memory_table::bytes_available(const uint32_t read_addr, const uint32_t 
 uint32_t Memory_table::get_page_count() const
 {
     return _page_count;
-}
-
-// More memory mapping
-int get_raspberry_pi_version()
-{
-    char buffer[RCIN_NAVIO_MAX_SIZE_LINE];
-    const char* hardware_description_entry = "Hardware";
-    const char* v1 = "BCM2708";
-    const char* v2 = "BCM2709";
-    char* flag;
-    FILE* fd;
-
-    fd = fopen("/proc/cpuinfo", "r");
-
-    while (fgets(buffer, RCIN_NAVIO_MAX_SIZE_LINE, fd) != NULL) {
-        flag = strstr(buffer, hardware_description_entry);
-
-        if (flag != NULL) {
-            if (strstr(buffer, v2) != NULL) {
-                printf("Raspberry Pi 2 with BCM2709!\n");
-                fclose(fd);
-                return 2;
-            } 
-            else if (strstr(buffer, v1) != NULL) {
-                printf("Raspberry Pi 1 with BCM2708!\n");
-                fclose(fd);
-                return 1;
-            }
-        }
-    }
-    return 0;
 }
 
 //Physical addresses of peripheral depends on Raspberry Pi's version
@@ -420,7 +392,7 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     last_signal(228),
     state(RCIN_NAVIO_INITIAL_STATE)
 {
-    int version = get_raspberry_pi_version();
+    int version = static_cast<LinuxUtilNavio*>(hal.util)->get_rpi_version();
     set_physical_addresses(version);
 
     //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
