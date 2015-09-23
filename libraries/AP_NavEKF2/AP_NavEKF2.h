@@ -43,6 +43,9 @@ public:
 
     NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
+    // allow logging to determine if enabled
+    bool enabled(void) const { return _enable != 0; }
+    
     // Initialise the filter
     bool InitialiseFilter(void);
 
