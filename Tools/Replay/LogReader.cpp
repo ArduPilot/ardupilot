@@ -85,7 +85,8 @@ LR_MsgHandler_PARM *parameter_handler;
 /*
   messages which we will be generating, so should be discarded
  */
-static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5", 
+static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
+                                         "NKF1", "NKF2", "NKF3", "NKF4", "NKF5",
                                          "AHR2", "POS", "CHEK", NULL };
 
 /*

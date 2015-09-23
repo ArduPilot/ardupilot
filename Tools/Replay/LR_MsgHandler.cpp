@@ -335,7 +335,7 @@ void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 
 bool LR_MsgHandler::set_parameter(const char *name, float value)
 {
-    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_USE", 
+    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE",
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
                                    "COMPASS_ORIENT3"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {

@@ -182,6 +182,8 @@ static const struct LogStructure log_structure[] PROGMEM = {
 
 void ReplayVehicle::setup(void) 
 {
+    load_parameters();
+    
     // we pass zero log structures, as we will be outputting the log
     // structures we need manually, to prevent FMT duplicates
     dataflash.Init(log_structure, 0);
@@ -192,7 +194,8 @@ void ReplayVehicle::setup(void)
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
     ahrs.set_ekf_use(true);
-
+    EKF2.set_enable(true);
+                        
     printf("Starting disarmed\n");
     hal.util->set_soft_armed(false);
 
@@ -587,6 +590,7 @@ void Replay::setup()
     }
 
     _vehicle.setup();
+
     set_ins_update_rate(log_info.update_rate);
 
     feenableexcept(FE_INVALID | FE_OVERFLOW);
