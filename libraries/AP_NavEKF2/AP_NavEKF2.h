@@ -225,6 +225,9 @@ public:
     // this function should not have more than one client
     bool getLastYawResetAngle(float &yawAng);
 
+    // allow the enable flag to be set by Replay
+    void set_enable(bool enable) { _enable.set(enable); }
+    
 private:
     NavEKF2_core *core = nullptr;
     const AP_AHRS *_ahrs;
