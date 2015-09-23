@@ -404,6 +404,22 @@ public:
         return true;
     };
 
+    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // returns true if a reset yaw angle has been updated and not queried
+    // this function should not have more than one client
+    virtual bool getLastYawResetAngle(float &yawAng) {
+        return false;
+    };
+
+    // Resets the baro so that it reads zero at the current height
+    // Resets the EKF height to zero
+    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Returns true if the height datum reset has been performed
+    // If using a range finder for height no reset is performed and it returns false
+    virtual bool resetHeightDatum(void) {
+        return false;
+    }
+    
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 

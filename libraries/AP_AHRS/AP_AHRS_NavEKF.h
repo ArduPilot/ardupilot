@@ -142,6 +142,18 @@ public:
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
 
+    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // returns true if a reset yaw angle has been updated and not queried
+    // this function should not have more than one client
+    bool getLastYawResetAngle(float &yawAng);
+
+    // Resets the baro so that it reads zero at the current height
+    // Resets the EKF height to zero
+    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Returns true if the height datum reset has been performed
+    // If using a range finder for height no reset is performed and it returns false
+    bool resetHeightDatum(void);
+    
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
     EKF_TYPE using_EKF(void) const;

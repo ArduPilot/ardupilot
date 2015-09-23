@@ -685,5 +685,37 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
     return nullptr;
 }
 
+// return the amount of yaw angle change due to the last yaw angle reset in radians
+// returns true if a reset yaw angle has been updated and not queried
+// this function should not have more than one client
+bool AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastYawResetAngle(yawAng);
+    case 2:
+        return EKF2.getLastYawResetAngle(yawAng);
+    }
+    return false;
+}
+
+// Resets the baro so that it reads zero at the current height
+// Resets the EKF height to zero
+// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Returns true if the height datum reset has been performed
+// If using a range finder for height no reset is performed and it returns false
+bool AP_AHRS_NavEKF::resetHeightDatum(void)
+{
+    switch (ekf_type()) {
+    case 1:
+        EKF2.resetHeightDatum();
+        return EKF1.resetHeightDatum();
+    case 2:
+        EKF1.resetHeightDatum();
+        return EKF2.resetHeightDatum();
+    }
+    return false;    
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
