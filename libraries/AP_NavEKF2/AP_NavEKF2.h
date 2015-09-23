@@ -216,10 +216,6 @@ public:
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // provides the quaternion that was used by the INS calculation to rotate from the previous orientation to the orientaion at the current time step
-    // returns a zero rotation quaternion if the INS calculation was not performed on that time step.
-    Quaternion getDeltaQuaternion(void) const;
-
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns true if a reset yaw angle has been updated and not queried
     // this function should not have more than one client
