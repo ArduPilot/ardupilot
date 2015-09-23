@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef __AP_AHRS_DCM_H__
 #define __AP_AHRS_DCM_H__
 /*
@@ -26,7 +27,7 @@ class AP_AHRS_DCM : public AP_AHRS
 public:
     // Constructors
     AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
-    AP_AHRS(ins, baro, gps),
+        AP_AHRS(ins, baro, gps),
         _omega_I_sum_time(0.0f),
         _renorm_val_sum(0.0f),
         _renorm_val_count(0),
@@ -90,8 +91,12 @@ public:
     virtual bool get_position(struct Location &loc) const;
 
     // status reporting
-    float           get_error_rp(void) const { return _error_rp; } 
-    float           get_error_yaw(void) const { return _error_yaw; }
+    float           get_error_rp(void) const {
+        return _error_rp;
+    }
+    float           get_error_yaw(void) const {
+        return _error_yaw;
+    }
 
     // return a wind estimation vector, in m/s
     Vector3f wind_estimate(void) {

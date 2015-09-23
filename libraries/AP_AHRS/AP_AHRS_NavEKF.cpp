@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -117,7 +118,7 @@ void AP_AHRS_NavEKF::update_EKF1(void)
 
             // calculate corrected gryo estimate for get_gyro()
             _gyro_estimate.zero();
-            uint8_t healthy_count = 0;    
+            uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
                 if (_ins.get_gyro_health(i) && healthy_count < 2) {
                     _gyro_estimate += _ins.get_gyro(i);
@@ -187,7 +188,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
 
             // calculate corrected gryo estimate for get_gyro()
             _gyro_estimate.zero();
-            uint8_t healthy_count = 0;    
+            uint8_t healthy_count = 0;
             for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
                 if (_ins.get_gyro_health(i) && healthy_count < 2) {
                     _gyro_estimate += _ins.get_gyro(i);
@@ -248,10 +249,10 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
     if (ekf1_started) {
-        ekf1_started = EKF1.InitialiseFilterBootstrap();        
+        ekf1_started = EKF1.InitialiseFilterBootstrap();
     }
     if (ekf2_started) {
-        ekf2_started = EKF2.InitialiseFilter();  
+        ekf2_started = EKF2.InitialiseFilter();
     }
 }
 
@@ -318,7 +319,7 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void)
     case EKF_TYPE1:
         EKF1.getWind(wind);
         break;
-        
+
     case EKF_TYPE2:
         EKF2.getWind(wind);
         break;
@@ -344,7 +345,7 @@ bool AP_AHRS_NavEKF::use_compass(void)
     case EKF_TYPE2:
         return EKF2.use_compass();
     }
-    return AP_AHRS_DCM::use_compass();    
+    return AP_AHRS_DCM::use_compass();
 }
 
 
@@ -381,7 +382,7 @@ bool AP_AHRS_NavEKF::get_secondary_position(struct Location &loc)
         // return DCM position
         AP_AHRS_DCM::get_position(loc);
         return true;
-    }    
+    }
 }
 
 // EKF has a better ground speed vector estimate
@@ -410,7 +411,7 @@ void AP_AHRS_NavEKF::set_home(const Location &loc)
 }
 
 // return true if inertial navigation is active
-bool AP_AHRS_NavEKF::have_inertial_nav(void) const 
+bool AP_AHRS_NavEKF::have_inertial_nav(void) const
 {
     return using_EKF() != EKF_TYPE_NONE;
 }
@@ -492,7 +493,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::using_EKF(void) const
         }
 #else
         if (EKF1.healthy()) {
-            ret = EKF_TYPE1;            
+            ret = EKF_TYPE1;
         }
 #endif
         break;
@@ -519,8 +520,8 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::using_EKF(void) const
     }
 
     if (ret != EKF_TYPE_NONE &&
-        (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-         _vehicle_class == AHRS_VEHICLE_GROUND)) {
+            (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
+             _vehicle_class == AHRS_VEHICLE_GROUND)) {
         nav_filter_status filt_state;
         if (ret == EKF_TYPE1) {
             EKF1.getFilterStatus(filt_state);
@@ -538,10 +539,10 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::using_EKF(void) const
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.attitude ||
-            !filt_state.flags.horiz_vel ||
-            !filt_state.flags.vert_vel ||
-            !filt_state.flags.horiz_pos_abs ||
-            !filt_state.flags.vert_pos) {
+                !filt_state.flags.horiz_vel ||
+                !filt_state.flags.vert_vel ||
+                !filt_state.flags.horiz_pos_abs ||
+                !filt_state.flags.vert_pos) {
             return EKF_TYPE_NONE;
         }
     }
@@ -566,8 +567,8 @@ bool AP_AHRS_NavEKF::healthy(void) const
             return false;
         }
         if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-             _vehicle_class == AHRS_VEHICLE_GROUND) &&
-            using_EKF() != EKF_TYPE1) {
+                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+                using_EKF() != EKF_TYPE1) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;
@@ -581,8 +582,8 @@ bool AP_AHRS_NavEKF::healthy(void) const
             return false;
         }
         if ((_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
-             _vehicle_class == AHRS_VEHICLE_GROUND) &&
-            using_EKF() != EKF_TYPE2) {
+                _vehicle_class == AHRS_VEHICLE_GROUND) &&
+                using_EKF() != EKF_TYPE2) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;
@@ -591,7 +592,7 @@ bool AP_AHRS_NavEKF::healthy(void) const
     }
     }
 
-    return AP_AHRS_DCM::healthy();    
+    return AP_AHRS_DCM::healthy();
 }
 
 void AP_AHRS_NavEKF::set_ekf_use(bool setting)
@@ -614,7 +615,7 @@ bool AP_AHRS_NavEKF::initialised(void) const
     case 2:
         // initialisation complete 10sec after ekf has started
         return (ekf2_started && (hal.scheduler->millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
-    }        
+    }
 };
 
 // write optical flow data to EKF

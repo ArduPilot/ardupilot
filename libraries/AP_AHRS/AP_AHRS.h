@@ -35,9 +35,9 @@
 
 // Copter defaults to EKF on by default, all others off
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
- # define AHRS_EKF_USE_ALWAYS     1
+# define AHRS_EKF_USE_ALWAYS     1
 #else
- # define AHRS_EKF_USE_ALWAYS     0
+# define AHRS_EKF_USE_ALWAYS     0
 #endif
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -155,7 +155,7 @@ public:
     const OpticalFlow* get_optflow() const {
         return _optflow;
     }
-        
+
     // allow for runtime change of orientation
     // this makes initial config easier
     void set_orientation() {
@@ -178,29 +178,39 @@ public:
     }
 
     const AP_InertialSensor &get_ins() const {
-	    return _ins;
+        return _ins;
     }
 
     const AP_Baro &get_baro() const {
-	    return _baro;
+        return _baro;
     }
 
     // accelerometer values in the earth frame in m/s/s
-    virtual const Vector3f &get_accel_ef(uint8_t i) const { return _accel_ef[i]; }
-    virtual const Vector3f &get_accel_ef(void) const { return get_accel_ef(_ins.get_primary_accel()); }
+    virtual const Vector3f &get_accel_ef(uint8_t i) const {
+        return _accel_ef[i];
+    }
+    virtual const Vector3f &get_accel_ef(void) const {
+        return get_accel_ef(_ins.get_primary_accel());
+    }
 
     // blended accelerometer values in the earth frame in m/s/s
-    virtual const Vector3f &get_accel_ef_blended(void) const { return _accel_ef_blended; }
+    virtual const Vector3f &get_accel_ef_blended(void) const {
+        return _accel_ef_blended;
+    }
 
     // get yaw rate in earth frame in radians/sec
-    float get_yaw_rate_earth(void) const { return get_gyro() * get_dcm_matrix().c; }
+    float get_yaw_rate_earth(void) const {
+        return get_gyro() * get_dcm_matrix().c;
+    }
 
     // Methods
     virtual void update(void) = 0;
 
     // report any reason for why the backend is refusing to initialise
-    virtual const char *prearm_failure_reason(void) const { return nullptr; }
-    
+    virtual const char *prearm_failure_reason(void) const {
+        return nullptr;
+    }
+
     // Euler angles (radians)
     float roll;
     float pitch;
@@ -279,13 +289,17 @@ public:
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
-    // true 
-    virtual bool get_velocity_NED(Vector3f &vec) const { return false; }
+    // true
+    virtual bool get_velocity_NED(Vector3f &vec) const {
+        return false;
+    }
 
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
-    // true 
-    virtual bool get_relative_position_NED(Vector3f &vec) const { return false; }
+    // true
+    virtual bool get_relative_position_NED(Vector3f &vec) const {
+        return false;
+    }
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {
@@ -296,7 +310,9 @@ public:
     }
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
+    virtual bool use_compass(void) {
+        return _compass && _compass->use_for_yaw();
+    }
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
@@ -315,7 +331,9 @@ public:
     }
 
     // get trim
-    const Vector3f &get_trim() const { return _trim.get(); }
+    const Vector3f &get_trim() const {
+        return _trim.get();
+    }
 
     // set trim
     virtual void            set_trim(Vector3f new_trim);
@@ -324,25 +342,43 @@ public:
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // helper trig value accessors
-    float cos_roll() const  { return _cos_roll; }
-    float cos_pitch() const { return _cos_pitch; }
-    float cos_yaw() const   { return _cos_yaw; }
-    float sin_roll() const  { return _sin_roll; }
-    float sin_pitch() const { return _sin_pitch; }
-    float sin_yaw() const   { return _sin_yaw; }
+    float cos_roll() const  {
+        return _cos_roll;
+    }
+    float cos_pitch() const {
+        return _cos_pitch;
+    }
+    float cos_yaw() const   {
+        return _cos_yaw;
+    }
+    float sin_roll() const  {
+        return _sin_roll;
+    }
+    float sin_pitch() const {
+        return _sin_pitch;
+    }
+    float sin_yaw() const   {
+        return _sin_yaw;
+    }
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) { return false; }
+    virtual bool get_secondary_attitude(Vector3f &eulers) {
+        return false;
+    }
 
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) { return false; }
+    virtual bool get_secondary_position(struct Location &loc) {
+        return false;
+    }
 
     // get the home location. This is const to prevent any changes to
-    // home without telling AHRS about the change    
-    const struct Location &get_home(void) const { return _home; }
+    // home without telling AHRS about the change
+    const struct Location &get_home(void) const {
+        return _home;
+    }
 
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
@@ -351,16 +387,22 @@ public:
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
-    virtual bool have_inertial_nav(void) const { return false; }
+    virtual bool have_inertial_nav(void) const {
+        return false;
+    }
 
     // return the active accelerometer instance
-    uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
+    uint8_t get_active_accel_instance(void) const {
+        return _active_accel_instance;
+    }
 
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
     // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const { return true; };
+    virtual bool initialised(void) const {
+        return true;
+    };
 
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
@@ -426,11 +468,11 @@ protected:
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
     Vector3f        _accel_ef_blended;
 
-	// Declare filter states for HPF and LPF used by complementary
-	// filter in AP_AHRS::groundspeed_vector
-	Vector2f _lp; // ground vector low-pass filter
-	Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input		
+    // Declare filter states for HPF and LPF used by complementary
+    // filter in AP_AHRS::groundspeed_vector
+    Vector2f _lp; // ground vector low-pass filter
+    Vector2f _hp; // ground vector high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input
 
     // reference position for NED positions
     struct Location _home;

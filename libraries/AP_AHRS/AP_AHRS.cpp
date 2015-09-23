@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   APM_AHRS.cpp
 
@@ -10,7 +11,7 @@
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -20,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
-	// index 0 and 1 are for old parameters that are no longer not used
+    // index 0 and 1 are for old parameters that are no longer not used
 
     // @Param: GPS_GAIN
     // @DisplayName: AHRS GPS gain
@@ -112,7 +113,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
     // of 1 was found to be the best choice
 
     // 13 was the old EKF_USE
-    
+
 #if AP_AHRS_NAVEKF_AVAILABLE
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
@@ -128,21 +129,21 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
 // return airspeed estimate if available
 bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 {
-	if (airspeed_sensor_enabled()) {
-		*airspeed_ret = _airspeed->get_airspeed();
-		if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-                    // constrain the airspeed by the ground speed
-                    // and AHRS_WIND_MAX
-                    float gnd_speed = _gps.ground_speed();
-                    float true_airspeed = *airspeed_ret * get_EAS2TAS();
-                    true_airspeed = constrain_float(true_airspeed,
-                                                    gnd_speed - _wind_max, 
-                                                    gnd_speed + _wind_max);
-                    *airspeed_ret = true_airspeed / get_EAS2TAS();
-		}
-		return true;
-	}
-	return false;
+    if (airspeed_sensor_enabled()) {
+        *airspeed_ret = _airspeed->get_airspeed();
+        if (_wind_max > 0 && _gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
+            // constrain the airspeed by the ground speed
+            // and AHRS_WIND_MAX
+            float gnd_speed = _gps.ground_speed();
+            float true_airspeed = *airspeed_ret * get_EAS2TAS();
+            true_airspeed = constrain_float(true_airspeed,
+                                            gnd_speed - _wind_max,
+                                            gnd_speed + _wind_max);
+            *airspeed_ret = true_airspeed / get_EAS2TAS();
+        }
+        return true;
+    }
+    return false;
 }
 
 // set_trim
@@ -182,12 +183,12 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     bool gotAirspeed = airspeed_estimate_true(&airspeed);
     bool gotGPS = (_gps.status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
-	    Vector3f wind = wind_estimate();
-	    Vector2f wind2d = Vector2f(wind.x, wind.y);
-	    Vector2f airspeed_vector = Vector2f(cosf(yaw), sinf(yaw)) * airspeed;
-	    gndVelADS = airspeed_vector - wind2d;
+        Vector3f wind = wind_estimate();
+        Vector2f wind2d = Vector2f(wind.x, wind.y);
+        Vector2f airspeed_vector = Vector2f(cosf(yaw), sinf(yaw)) * airspeed;
+        gndVelADS = airspeed_vector - wind2d;
     }
-    
+
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
         float cog = radians(_gps.ground_course_cd()*0.01f);
@@ -195,32 +196,32 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     }
     // If both ADS and GPS data is available, apply a complementary filter
     if (gotAirspeed && gotGPS) {
-	    // The LPF is applied to the GPS and the HPF is applied to the air data estimate
-	    // before the two are summed
-	    //Define filter coefficients
-	    // alpha and beta must sum to one
-	    // beta = dt/Tau, where
-	    // dt = filter time step (0.1 sec if called by nav loop)
-	    // Tau = cross-over time constant (nominal 2 seconds)
-	    // More lag on GPS requires Tau to be bigger, less lag allows it to be smaller
-	    // To-Do - set Tau as a function of GPS lag.
-	    const float alpha = 1.0f - beta; 
-	    // Run LP filters
-	    _lp = gndVelGPS * beta  + _lp * alpha;
-	    // Run HP filters
-	    _hp = (gndVelADS - _lastGndVelADS) + _hp * alpha;
-	    // Save the current ADS ground vector for the next time step
-	    _lastGndVelADS = gndVelADS;
-	    // Sum the HP and LP filter outputs
-	    return _hp + _lp;
+        // The LPF is applied to the GPS and the HPF is applied to the air data estimate
+        // before the two are summed
+        //Define filter coefficients
+        // alpha and beta must sum to one
+        // beta = dt/Tau, where
+        // dt = filter time step (0.1 sec if called by nav loop)
+        // Tau = cross-over time constant (nominal 2 seconds)
+        // More lag on GPS requires Tau to be bigger, less lag allows it to be smaller
+        // To-Do - set Tau as a function of GPS lag.
+        const float alpha = 1.0f - beta;
+        // Run LP filters
+        _lp = gndVelGPS * beta  + _lp * alpha;
+        // Run HP filters
+        _hp = (gndVelADS - _lastGndVelADS) + _hp * alpha;
+        // Save the current ADS ground vector for the next time step
+        _lastGndVelADS = gndVelADS;
+        // Sum the HP and LP filter outputs
+        return _hp + _lp;
     }
     // Only ADS data is available return ADS estimate
     if (gotAirspeed && !gotGPS) {
-	    return gndVelADS;
+        return gndVelADS;
     }
     // Only GPS data is available so return GPS estimate
     if (!gotAirspeed && gotGPS) {
-	    return gndVelGPS;
+        return gndVelGPS;
     }
     return Vector2f(0.0f, 0.0f);
 }

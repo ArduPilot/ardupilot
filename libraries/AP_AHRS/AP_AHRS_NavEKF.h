@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #ifndef __AP_AHRS_NAVEKF_H__
 #define __AP_AHRS_NAVEKF_H__
 /*
@@ -35,13 +36,13 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-               NavEKF &_EKF1, NavEKF2 &_EKF2) :
-    AP_AHRS_DCM(ins, baro, gps),
-    EKF1(_EKF1),
-    EKF2(_EKF2)
-        {
-        }
+    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
+                   NavEKF &_EKF1, NavEKF2 &_EKF2) :
+        AP_AHRS_DCM(ins, baro, gps),
+        EKF1(_EKF1),
+        EKF2(_EKF2)
+    {
+    }
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const;
@@ -78,12 +79,20 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     bool use_compass(void);
 
     // we will need to remove these to fully hide which EKF we are using
-    NavEKF &get_NavEKF(void) { return EKF1; }
-    const NavEKF &get_NavEKF_const(void) const { return EKF1; }
+    NavEKF &get_NavEKF(void) {
+        return EKF1;
+    }
+    const NavEKF &get_NavEKF_const(void) const {
+        return EKF1;
+    }
 
-    NavEKF2 &get_NavEKF2(void) { return EKF2; }
-    const NavEKF2 &get_NavEKF2_const(void) const { return EKF2; }
-    
+    NavEKF2 &get_NavEKF2(void) {
+        return EKF2;
+    }
+    const NavEKF2 &get_NavEKF2_const(void) const {
+        return EKF2;
+    }
+
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers);
 
@@ -94,7 +103,9 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     Vector2f groundspeed_vector(void);
 
     const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const { return get_accel_ef(_ins.get_primary_accel()); };
+    const Vector3f &get_accel_ef() const {
+        return get_accel_ef(_ins.get_primary_accel());
+    };
 
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended(void) const;
