@@ -103,7 +103,7 @@ void NavEKF2_core::ResetPosition(void)
 void NavEKF2_core::ResetVelocity(void)
 {
     if (constPosMode || PV_AidingMode != AID_ABSOLUTE) {
-         stateStruct.velocity.zero();
+        stateStruct.velocity.zero();
     } else if (!gpsNotAvailable) {
         // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
         stateStruct.velocity.x  = gpsDataNew.vel.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
@@ -303,28 +303,28 @@ void NavEKF2_core::SelectVelPosFusion()
     // check for and read new GPS data
     readGpsData();
 
-         if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
-            fuseVelData = true;
-            fusePosData = true;
-            // If a long time since last GPS update, then reset position and velocity and reset stored state history
-            if ((imuSampleTime_ms - secondLastGpsTime_ms > 5000) && (PV_AidingMode == AID_ABSOLUTE)) {
-                // Apply an offset to the GPS position so that the position can be corrected gradually
-                gpsPosGlitchOffsetNE.x = stateStruct.position.x - gpsDataDelayed.pos.x;
-                gpsPosGlitchOffsetNE.y = stateStruct.position.y - gpsDataDelayed.pos.y;
-                // limit the radius of the offset to 100m and decay the offset to zero radially
-                decayGpsOffset();
-                ResetPosition();
-                ResetVelocity();
-                CovarianceInit();
-                // record the fail time
-                lastPosFailTime = imuSampleTime_ms;
-                // Reset the normalised innovation to avoid false failing the bad position fusion test
-                posTestRatio = 0.0f;
-            }
-        } else {
-            fuseVelData = false;
-            fusePosData = false;
+    if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
+        fuseVelData = true;
+        fusePosData = true;
+        // If a long time since last GPS update, then reset position and velocity and reset stored state history
+        if ((imuSampleTime_ms - secondLastGpsTime_ms > 5000) && (PV_AidingMode == AID_ABSOLUTE)) {
+            // Apply an offset to the GPS position so that the position can be corrected gradually
+            gpsPosGlitchOffsetNE.x = stateStruct.position.x - gpsDataDelayed.pos.x;
+            gpsPosGlitchOffsetNE.y = stateStruct.position.y - gpsDataDelayed.pos.y;
+            // limit the radius of the offset to 100m and decay the offset to zero radially
+            decayGpsOffset();
+            ResetPosition();
+            ResetVelocity();
+            CovarianceInit();
+            // record the fail time
+            lastPosFailTime = imuSampleTime_ms;
+            // Reset the normalised innovation to avoid false failing the bad position fusion test
+            posTestRatio = 0.0f;
         }
+    } else {
+        fuseVelData = false;
+        fusePosData = false;
+    }
 
     // check for and read new height data
     readHgtData();
@@ -397,7 +397,7 @@ void NavEKF2_core::SelectMagFusion()
             magHealth = true;
             magTimeout = false;
         } else {
-        // fuse the three magnetometer componenents sequentially
+            // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) FuseMagnetometer();
         }
     }
@@ -474,16 +474,16 @@ void NavEKF2_core::SelectFlowFusion()
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
-            constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
-            constPosMode = true;
-            PV_AidingMode = AID_NONE;
-            // reset the velocity
-            ResetVelocity();
-            // store the current position to be used to keep reporting the last known position
-            lastKnownPositionNE.x = stateStruct.position.x;
-            lastKnownPositionNE.y = stateStruct.position.y;
-            // reset the position
-            ResetPosition();
+        constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
+        constPosMode = true;
+        PV_AidingMode = AID_NONE;
+        // reset the velocity
+        ResetVelocity();
+        // store the current position to be used to keep reporting the last known position
+        lastKnownPositionNE.x = stateStruct.position.x;
+        lastKnownPositionNE.y = stateStruct.position.y;
+        // reset the position
+        ResetPosition();
     }
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
     // we don't do terrain height estimation in optical flow only mode as the ground becomes our zero height reference
@@ -1217,7 +1217,7 @@ void NavEKF2_core::CovariancePrediction()
         for (uint8_t rowIndex=0; rowIndex<colIndex; rowIndex++)
         {
             nextP[colIndex][rowIndex] = nextP[rowIndex][colIndex];
-         }
+        }
     }
 
     // add the general state process noise variances
@@ -1304,7 +1304,7 @@ void NavEKF2_core::FuseVelPosNED()
             observation[2] = gpsDataDelayed.vel.z;
             observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
             observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
-        } else if (constPosMode){
+        } else if (constPosMode) {
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
         } else if (constVelMode) {
             observation[0] = heldVelNE.x;
@@ -1561,7 +1561,7 @@ void NavEKF2_core::FuseVelPosNED()
                 // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
                 // Don't apply corrections to Z bias state as this has been done already as part of the single IMU calculations
                 for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                        statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
+                    statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
                 }
 
                 // the first 3 states represent the angular misalignment vector. This is
@@ -2097,7 +2097,7 @@ void NavEKF2_core::FuseAirspeed()
                     KH[i][j] = Kfusion[i] * H_TAS[j];
                 }
                 for (uint8_t j = 6; j<=21; j++) {
-                        KH[i][j] = 0.0f;
+                    KH[i][j] = 0.0f;
                 }
                 for (uint8_t j = 22; j<=23; j++) {
                     KH[i][j] = Kfusion[i] * H_TAS[j];
@@ -2282,7 +2282,7 @@ void NavEKF2_core::FuseSideslip()
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
             for (uint8_t j = 6; j<=21; j++) {
-                    KH[i][j] = 0.0f;
+                KH[i][j] = 0.0f;
             }
             for (uint8_t j = 22; j<=23; j++) {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
@@ -2677,60 +2677,60 @@ void NavEKF2_core::FuseOptFlow()
             }
         }
 
-    // calculate the innovation consistency test ratio
-    flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend._flowInnovGate) * varInnovOptFlow[obsIndex]);
+        // calculate the innovation consistency test ratio
+        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend._flowInnovGate) * varInnovOptFlow[obsIndex]);
 
-    // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-    if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend._maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend._maxFlowRate)) {
-        // record the last time observations were accepted for fusion
-        prevFlowFuseTime_ms = imuSampleTime_ms;
+        // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
+        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend._maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend._maxFlowRate)) {
+            // record the last time observations were accepted for fusion
+            prevFlowFuseTime_ms = imuSampleTime_ms;
 
-        // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
-        stateStruct.angErr.zero();
+            // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+            stateStruct.angErr.zero();
 
-        // correct the state vector
-        for (uint8_t j= 0; j<=stateIndexLim; j++) {
-            statesArray[j] = statesArray[j] - Kfusion[j] * innovOptFlow[obsIndex];
-        }
-
-        // the first 3 states represent the angular misalignment vector. This is
-        // is used to correct the estimated quaternion on the current time step
-        correctQuatStates(stateStruct.angErr);
-
-        // correct the covariance P = (I - K*H)*P
-        // take advantage of the empty columns in KH to reduce the
-        // number of operations
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=5; j++) {
-                KH[i][j] = Kfusion[i] * H_LOS[j];
+            // correct the state vector
+            for (uint8_t j= 0; j<=stateIndexLim; j++) {
+                statesArray[j] = statesArray[j] - Kfusion[j] * innovOptFlow[obsIndex];
             }
-            for (uint8_t j = 6; j<=7; j++) {
-                KH[i][j] = 0.0f;
-            }
-            KH[i][8] = Kfusion[i] * H_LOS[8];
-            for (uint8_t j = 9; j<=23; j++) {
-                KH[i][j] = 0.0f;
-            }
-        }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                KHP[i][j] = 0;
-                for (uint8_t k = 0; k<=5; k++) {
-                    KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
+
+            // the first 3 states represent the angular misalignment vector. This is
+            // is used to correct the estimated quaternion on the current time step
+            correctQuatStates(stateStruct.angErr);
+
+            // correct the covariance P = (I - K*H)*P
+            // take advantage of the empty columns in KH to reduce the
+            // number of operations
+            for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                for (uint8_t j = 0; j<=5; j++) {
+                    KH[i][j] = Kfusion[i] * H_LOS[j];
                 }
-                KHP[i][j] = KHP[i][j] + KH[i][8] * P[8][j];
+                for (uint8_t j = 6; j<=7; j++) {
+                    KH[i][j] = 0.0f;
+                }
+                KH[i][8] = Kfusion[i] * H_LOS[8];
+                for (uint8_t j = 9; j<=23; j++) {
+                    KH[i][j] = 0.0f;
+                }
+            }
+            for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                for (uint8_t j = 0; j<=stateIndexLim; j++) {
+                    KHP[i][j] = 0;
+                    for (uint8_t k = 0; k<=5; k++) {
+                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
+                    }
+                    KHP[i][j] = KHP[i][j] + KH[i][8] * P[8][j];
+                }
+            }
+            for (uint8_t i = 0; i<=stateIndexLim; i++) {
+                for (uint8_t j = 0; j<=stateIndexLim; j++) {
+                    P[i][j] = P[i][j] - KHP[i][j];
+                }
             }
         }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                P[i][j] = P[i][j] - KHP[i][j];
-            }
-        }
-    }
 
-    // fix basic numerical errors
-    ForceSymmetry();
-    ConstrainVariances();
+        // fix basic numerical errors
+        ForceSymmetry();
+        ConstrainVariances();
 
     }
 }
@@ -3008,31 +3008,31 @@ void NavEKF2_core::RecallIMU()
 // store baro in a history array
 void NavEKF2_core::StoreBaro()
 {
-        if (baroStoreIndex >= OBS_BUFFER_LENGTH) {
-            baroStoreIndex = 0;
-        }
-        storedBaro[baroStoreIndex] = baroDataNew;
-        baroStoreIndex += 1;
+    if (baroStoreIndex >= OBS_BUFFER_LENGTH) {
+        baroStoreIndex = 0;
+    }
+    storedBaro[baroStoreIndex] = baroDataNew;
+    baroStoreIndex += 1;
 }
 
 // store TAS in a history array
 void NavEKF2_core::StoreTAS()
 {
-        if (tasStoreIndex >= OBS_BUFFER_LENGTH) {
-            tasStoreIndex = 0;
-        }
-        storedTAS[tasStoreIndex] = tasDataNew;
-        tasStoreIndex += 1;
+    if (tasStoreIndex >= OBS_BUFFER_LENGTH) {
+        tasStoreIndex = 0;
+    }
+    storedTAS[tasStoreIndex] = tasDataNew;
+    tasStoreIndex += 1;
 }
 
 // store OF data in a history array
 void NavEKF2_core::StoreOF()
 {
-        if (ofStoreIndex >= OBS_BUFFER_LENGTH) {
-            ofStoreIndex = 0;
-        }
-        storedOF[ofStoreIndex] = ofDataNew;
-        ofStoreIndex += 1;
+    if (ofStoreIndex >= OBS_BUFFER_LENGTH) {
+        ofStoreIndex = 0;
+    }
+    storedOF[ofStoreIndex] = ofDataNew;
+    ofStoreIndex += 1;
 }
 
 // return newest un-used baro data that has fallen behind the fusion time horizon
@@ -3122,11 +3122,11 @@ bool NavEKF2_core::RecallOF()
 // store magnetometer data in a history array
 void NavEKF2_core::StoreMag()
 {
-        if (magStoreIndex >= OBS_BUFFER_LENGTH) {
-            magStoreIndex = 0;
-        }
-        storedMag[magStoreIndex] = magDataNew;
-        magStoreIndex += 1;
+    if (magStoreIndex >= OBS_BUFFER_LENGTH) {
+        magStoreIndex = 0;
+    }
+    storedMag[magStoreIndex] = magDataNew;
+    magStoreIndex += 1;
 }
 
 // return newest un-used magnetometer data that has fallen behind the fusion time horizon
@@ -3160,11 +3160,11 @@ bool NavEKF2_core::RecallMag()
 // store GPS data in a history array
 void NavEKF2_core::StoreGPS()
 {
-        if (gpsStoreIndex >= OBS_BUFFER_LENGTH) {
-            gpsStoreIndex = 0;
-        }
-        storedGPS[gpsStoreIndex] = gpsDataNew;
-        gpsStoreIndex += 1;
+    if (gpsStoreIndex >= OBS_BUFFER_LENGTH) {
+        gpsStoreIndex = 0;
+    }
+    storedGPS[gpsStoreIndex] = gpsDataNew;
+    gpsStoreIndex += 1;
 }
 
 // return newest un-used GPS data that has fallen behind the fusion time horizon
@@ -3485,7 +3485,7 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
 void NavEKF2_core::SetFlightAndFusionModes()
 {
     // determine if the vehicle is manoevring
-    if (accNavMagHoriz > 0.5f){
+    if (accNavMagHoriz > 0.5f) {
         manoeuvring = true;
     } else {
         manoeuvring = false;
@@ -3777,7 +3777,7 @@ void NavEKF2_core::readGpsData()
         const struct Location &gpsloc = _ahrs->get_gps().location();
         if (validOrigin) {
             gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-        } else if (gpsQualGood){
+        } else if (gpsQualGood) {
             // Set the NE origin to the current GPS position
             setOrigin();
             // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
@@ -3898,7 +3898,7 @@ void NavEKF2_core::readMagData()
                 stateStruct.body_magfield.y += (nowMagOffsets.y - lastMagOffsets.y) * 0.001f;
                 stateStruct.body_magfield.z += (nowMagOffsets.z - lastMagOffsets.z) * 0.001f;
             }
-        lastMagOffsets = nowMagOffsets;
+            lastMagOffsets = nowMagOffsets;
         }
 
         // save magnetometer measurement to buffer to be fused later
@@ -3915,8 +3915,8 @@ void NavEKF2_core::readAirSpdData()
     // know a new measurement is available
     const AP_Airspeed *aspeed = _ahrs->get_airspeed();
     if (aspeed &&
-        aspeed->use() &&
-        aspeed->last_update_ms() != timeTasReceived_ms) {
+            aspeed->use() &&
+            aspeed->last_update_ms() != timeTasReceived_ms) {
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend.msecTasDelay;
@@ -3944,10 +3944,10 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
     // reset the accumulated body delta angle and time
     // don't do the calculation if not enough time lapsed for a reliable body rate measurement
     if (delTimeOF > 0.01f) {
-    flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
-    flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
-    delAngBodyOF.zero();
-    delTimeOF = 0.0f;
+        flowGyroBias.x = 0.99f * flowGyroBias.x + 0.01f * constrain_float((rawGyroRates.x - delAngBodyOF.x/delTimeOF),-0.1f,0.1f);
+        flowGyroBias.y = 0.99f * flowGyroBias.y + 0.01f * constrain_float((rawGyroRates.y - delAngBodyOF.y/delTimeOF),-0.1f,0.1f);
+        delAngBodyOF.zero();
+        delTimeOF = 0.0f;
     }
     // check for takeoff if relying on optical flow and zero measurements until takeoff detected
     // if we haven't taken off - constrain position and velocity states
@@ -4335,7 +4335,7 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 }
 
 
-/* 
+/*
    vehicle specific initial gyro bias uncertainty in deg/sec
  */
 float NavEKF2_core::InitialGyroBiasUncertainty(void) const
@@ -4438,16 +4438,36 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 
     // prepare flags
     uint16_t flags = 0;
-    if (filt_state.flags.attitude) { flags |= EKF_ATTITUDE; }
-    if (filt_state.flags.horiz_vel) { flags |= EKF_VELOCITY_HORIZ; }
-    if (filt_state.flags.vert_vel) { flags |= EKF_VELOCITY_VERT; }
-    if (filt_state.flags.horiz_pos_rel) { flags |= EKF_POS_HORIZ_REL; }
-    if (filt_state.flags.horiz_pos_abs) { flags |= EKF_POS_HORIZ_ABS; }
-    if (filt_state.flags.vert_pos) { flags |= EKF_POS_VERT_ABS; }
-    if (filt_state.flags.terrain_alt) { flags |= EKF_POS_VERT_AGL; }
-    if (filt_state.flags.const_pos_mode) { flags |= EKF_CONST_POS_MODE; }
-    if (filt_state.flags.pred_horiz_pos_rel) { flags |= EKF_PRED_POS_HORIZ_REL; }
-    if (filt_state.flags.pred_horiz_pos_abs) { flags |= EKF_PRED_POS_HORIZ_ABS; }
+    if (filt_state.flags.attitude) {
+        flags |= EKF_ATTITUDE;
+    }
+    if (filt_state.flags.horiz_vel) {
+        flags |= EKF_VELOCITY_HORIZ;
+    }
+    if (filt_state.flags.vert_vel) {
+        flags |= EKF_VELOCITY_VERT;
+    }
+    if (filt_state.flags.horiz_pos_rel) {
+        flags |= EKF_POS_HORIZ_REL;
+    }
+    if (filt_state.flags.horiz_pos_abs) {
+        flags |= EKF_POS_HORIZ_ABS;
+    }
+    if (filt_state.flags.vert_pos) {
+        flags |= EKF_POS_VERT_ABS;
+    }
+    if (filt_state.flags.terrain_alt) {
+        flags |= EKF_POS_VERT_AGL;
+    }
+    if (filt_state.flags.const_pos_mode) {
+        flags |= EKF_CONST_POS_MODE;
+    }
+    if (filt_state.flags.pred_horiz_pos_rel) {
+        flags |= EKF_PRED_POS_HORIZ_REL;
+    }
+    if (filt_state.flags.pred_horiz_pos_abs) {
+        flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
 
     // get variances
     float velVar, posVar, hgtVar, tasVar;
@@ -4763,9 +4783,9 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
         getGyroBias(gyroBias);
         bool dual_ins = ins.get_gyro_health(0) && ins.get_gyro_health(1);
         if (dual_ins) {
-                angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
+            angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
         } else {
-                angRateVec = ins.get_gyro() - gyroBias;
+            angRateVec = ins.get_gyro() - gyroBias;
         }
 
         takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rangeAtArming + 0.1f)));
@@ -4905,17 +4925,17 @@ void NavEKF2_core::fuseCompass()
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 3 elements in H are non zero
     float PH[3];
     float varInnov = R_MAG;
-    for (uint8_t rowIndex=0;rowIndex<=2;rowIndex++) {
+    for (uint8_t rowIndex=0; rowIndex<=2; rowIndex++) {
         PH[rowIndex] = 0.0f;
-        for (uint8_t colIndex=0;colIndex<=2;colIndex++) {
+        for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
             PH[rowIndex] += P[rowIndex][colIndex]*H_MAG[colIndex];
         }
         varInnov += H_MAG[rowIndex]*PH[rowIndex];
     }
     float varInnovInv = 1.0f / varInnov;
-    for (uint8_t rowIndex=0;rowIndex<=stateIndexLim;rowIndex++) {
+    for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
         Kfusion[rowIndex] = 0.0f;
-        for (uint8_t colIndex=0;colIndex<=2;colIndex++) {
+        for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
             Kfusion[rowIndex] += P[rowIndex][colIndex]*H_MAG[colIndex];
         }
         Kfusion[rowIndex] *= varInnovInv;
@@ -4936,7 +4956,7 @@ void NavEKF2_core::fuseCompass()
 
     // correct the state vector
     stateStruct.angErr.zero();
-    for (uint8_t i=0;i<=stateIndexLim;i++) {
+    for (uint8_t i=0; i<=stateIndexLim; i++) {
         statesArray[i] -= Kfusion[i] * innovation;
     }
 
@@ -4946,14 +4966,14 @@ void NavEKF2_core::fuseCompass()
 
     // correct the covariance using P = P - K*H*P taking advantage of the fact that only the first 3 elements in H are non zero
     float HP[24];
-    for (uint8_t colIndex=0;colIndex<=stateIndexLim;colIndex++) {
+    for (uint8_t colIndex=0; colIndex<=stateIndexLim; colIndex++) {
         HP[colIndex] = 0.0f;
-        for (uint8_t rowIndex=0;rowIndex<=2;rowIndex++) {
+        for (uint8_t rowIndex=0; rowIndex<=2; rowIndex++) {
             HP[colIndex] += H_MAG[rowIndex]*P[rowIndex][colIndex];
         }
     }
-    for (uint8_t rowIndex=0;rowIndex<=stateIndexLim;rowIndex++) {
-        for (uint8_t colIndex=0;colIndex<=stateIndexLim;colIndex++) {
+    for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
+        for (uint8_t colIndex=0; colIndex<=stateIndexLim; colIndex++) {
             P[rowIndex][colIndex] -= Kfusion[rowIndex] * HP[colIndex];
         }
     }

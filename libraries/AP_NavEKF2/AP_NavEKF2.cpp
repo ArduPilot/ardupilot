@@ -90,7 +90,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ENABLE",    0, NavEKF2, _enable, 0),
-    
+
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise scaler
     // @Description: This is the scaler that is applied to the speed accuracy reported by the receiver to estimate the horizontal velocity observation noise. If the model of receiver used does not provide a speed accurcy estimate, then a speed acuracy of 1 is assumed. Increasing it reduces the weighting on these measurements.
@@ -206,7 +206,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Range: 0.0000001 0.00001
     // @User: Advanced
     // @Units: 1/s
-   AP_GROUPINFO("GSCL_PNOISE",   14, NavEKF2, _gyroScaleProcessNoise, 1e-6f),
+    AP_GROUPINFO("GSCL_PNOISE",   14, NavEKF2, _gyroScaleProcessNoise, 1e-6f),
 
     // @Param: GPS_DELAY
     // @DisplayName: GPS measurement delay (msec)
@@ -678,7 +678,7 @@ void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, 
 
 // return data for debugging optical flow fusion
 void NavEKF2::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
-                              float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
+                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
     if (core) {
         core->getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);

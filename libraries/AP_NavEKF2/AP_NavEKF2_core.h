@@ -768,9 +768,9 @@ private:
     bool lastConstVelMode;          // last value of holdVelocity
     Vector2f heldVelNE;             // velocity held when no aiding is available
     enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
-                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
-                      AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
-                     };
+                     AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
+                     AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
+                    };
     AidingMode PV_AidingMode;           // Defines the preferred mode for aiding of velocity and position estimates from the INS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     bool flowXfailed;               // true when the X optical flow measurement has failed the innovation consistency check
@@ -813,7 +813,7 @@ private:
     // magnetometer X,Y,Z measurements are fused across three time steps
     // to level computational load as this is an expensive operation
     struct {
-    	ftype q0;
+        ftype q0;
         ftype q1;
         ftype q2;
         ftype q3;
@@ -828,7 +828,7 @@ private:
         Vector3f MagPred;
         ftype R_MAG;
         Vector9 SH_MAG;
-	} mag_state;
+    } mag_state;
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -842,7 +842,7 @@ private:
     perf_counter_t  _perf_OpticalFlowEKF;
     perf_counter_t  _perf_FuseOptFlow;
 #endif
-    
+
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

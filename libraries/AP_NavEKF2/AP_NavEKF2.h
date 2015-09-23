@@ -44,8 +44,10 @@ public:
     NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
     // allow logging to determine if enabled
-    bool enabled(void) const { return _enable != 0; }
-    
+    bool enabled(void) const {
+        return _enable != 0;
+    }
+
     // Initialise the filter
     bool InitialiseFilter(void);
 
@@ -222,7 +224,7 @@ public:
     // returns true if a reset yaw angle has been updated and not queried
     // this function should not have more than one client
     bool getLastYawResetAngle(float &yawAng);
-    
+
 private:
     NavEKF2_core *core = nullptr;
     const AP_AHRS *_ahrs;
