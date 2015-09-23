@@ -1314,8 +1314,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     WriteBlock(&pkt, sizeof(pkt));
 
     // Write second EKF packet
-    float ratio;
-    float az1bias, az2bias;
+    float ratio = 0;
+    float az1bias = 0, az2bias = 0;
     Vector3f wind;
     Vector3f magNED;
     Vector3f magXYZ;
@@ -1345,8 +1345,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f velInnov;
     Vector3f posInnov;
     Vector3f magInnov;
-    float tasInnov;
-    float yawInnov;
+    float tasInnov = 0;
+    float yawInnov = 0;
     ahrs.get_NavEKF2().getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
     struct log_EKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF3_MSG),
@@ -1365,14 +1365,14 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     WriteBlock(&pkt3, sizeof(pkt3));
 
     // Write fourth EKF packet
-    float velVar;
-    float posVar;
-    float hgtVar;
+    float velVar = 0;
+    float posVar = 0;
+    float hgtVar = 0;
     Vector3f magVar;
-    float tasVar;
+    float tasVar = 0;
     Vector2f offset;
-    uint8_t faultStatus, timeoutStatus;
-    nav_filter_status solutionStatus;
+    uint8_t faultStatus=0, timeoutStatus=0;
+    nav_filter_status solutionStatus {};
     ahrs.get_NavEKF2().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF2().getFilterFaults(faultStatus);
     ahrs.get_NavEKF2().getFilterTimeouts(timeoutStatus);
@@ -1398,14 +1398,14 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 
     // Write fifth EKF packet
     if (optFlowEnabled) {
-        float normInnov; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
-        float gndOffset; // estimated vertical position of the terrain relative to the nav filter zero datum
-        float flowInnovX, flowInnovY; // optical flow LOS rate vector innovations from the main nav filter
-        float auxFlowInnov; // optical flow LOS rate innovation from terrain offset estimator
-        float HAGL; // height above ground level
-        float rngInnov; // range finder innovations
-        float range; // measured range
-        float gndOffsetErr; // filter ground offset state error
+        float normInnov=0; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
+        float gndOffset=0; // estimated vertical position of the terrain relative to the nav filter zero datum
+        float flowInnovX=0, flowInnovY=0; // optical flow LOS rate vector innovations from the main nav filter
+        float auxFlowInnov=0; // optical flow LOS rate innovation from terrain offset estimator
+        float HAGL=0; // height above ground level
+        float rngInnov=0; // range finder innovations
+        float range=0; // measured range
+        float gndOffsetErr=0; // filter ground offset state error
         ahrs.get_NavEKF2().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
