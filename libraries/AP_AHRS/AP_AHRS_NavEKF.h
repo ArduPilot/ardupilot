@@ -26,6 +26,7 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
@@ -34,9 +35,11 @@ class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
     // Constructor
-AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng, NavEKF &_EKF) :
+AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
+               NavEKF &_EKF, NavEKF2 &_EKF2) :
     AP_AHRS_DCM(ins, baro, gps),
         EKF(_EKF),
+        EKF2(_EKF2),
         ekf_started(false),
         startup_delay_ms(1000),
         start_time_ms(0)
@@ -131,6 +134,7 @@ private:
     bool using_EKF(void) const;
 
     NavEKF &EKF;
+    NavEKF2 &EKF2;
     bool ekf_started;
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
