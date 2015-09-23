@@ -1566,7 +1566,7 @@ void NavEKF2_core::FuseVelPosNED()
 
                 // the first 3 states represent the angular misalignment vector. This is
                 // is used to correct the estimated quaternion
-                correctQuatStates(stateStruct.angErr);
+                stateStruct.quat.rotate(stateStruct.angErr);
 
                 // sum the attitude error from velocity and position fusion only
                 // used as a metric for convergence monitoring
@@ -1915,7 +1915,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step
-        correctQuatStates(stateStruct.angErr);
+        stateStruct.quat.rotate(stateStruct.angErr);
 
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in KH to reduce the
@@ -2084,7 +2084,7 @@ void NavEKF2_core::FuseAirspeed()
 
             // the first 3 states represent the angular misalignment vector. This is
             // is used to correct the estimated quaternion on the current time step
-            correctQuatStates(stateStruct.angErr);
+            stateStruct.quat.rotate(stateStruct.angErr);
 
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
@@ -2272,7 +2272,7 @@ void NavEKF2_core::FuseSideslip()
 
         // the first 3 states represent the angular misalignment vector. This is
         // is used to correct the estimated quaternion on the current time step
-        correctQuatStates(stateStruct.angErr);
+        stateStruct.quat.rotate(stateStruct.angErr);
 
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in KH to reduce the
@@ -2695,7 +2695,7 @@ void NavEKF2_core::FuseOptFlow()
 
             // the first 3 states represent the angular misalignment vector. This is
             // is used to correct the estimated quaternion on the current time step
-            correctQuatStates(stateStruct.angErr);
+            stateStruct.quat.rotate(stateStruct.angErr);
 
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
@@ -4849,28 +4849,6 @@ bool NavEKF2_core::getLastYawResetAngle(float &yawAng)
     }
 }
 
-// correct the quaternion using an attitude error vector
-void NavEKF2_core::correctQuatStates(Vector3f &errVec)
-{
-    // Convert the error rotation vector to its equivalent quaternion where
-    // truth = estimate + error
-    float rotationMag = errVec.length();
-    if (rotationMag > 1e-6f) {
-        Quaternion deltaQuat;
-        float temp = sinf(0.5f*rotationMag) / rotationMag;
-        deltaQuat[0] = cosf(0.5f*rotationMag);
-        deltaQuat[1] = errVec.x*temp;
-        deltaQuat[2] = errVec.y*temp;
-        deltaQuat[3] = errVec.z*temp;
-
-        // Update the quaternion states by rotating from the previous attitude through the error quaternion
-        stateStruct.quat *= deltaQuat;
-
-        // re-normalise the quaternion
-        stateStruct.quat.normalize();
-    }
-}
-
 // Fuse compass measurements usinga simple declination observation model that doesn't use magnetic field states
 void NavEKF2_core::fuseCompass()
 {
@@ -4962,7 +4940,7 @@ void NavEKF2_core::fuseCompass()
 
     // the first 3 states represent the angular misalignment vector. This is
     // is used to correct the estimated quaternion on the current time step
-    correctQuatStates(stateStruct.angErr);
+    stateStruct.quat.rotate(stateStruct.angErr);
 
     // correct the covariance using P = P - K*H*P taking advantage of the fact that only the first 3 elements in H are non zero
     float HP[24];

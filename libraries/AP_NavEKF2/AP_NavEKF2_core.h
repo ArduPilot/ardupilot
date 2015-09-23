@@ -546,9 +546,6 @@ private:
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
 
-    // correct the quaternion using an attitude error vector
-    void correctQuatStates(Vector3f &errVec);
-
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
     void fuseCompass();
 
