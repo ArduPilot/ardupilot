@@ -26,6 +26,7 @@ LIBRARIES += AP_Baro
 LIBRARIES += AP_InertialSensor
 LIBRARIES += AP_InertialNav
 LIBRARIES += AP_NavEKF
+LIBRARIES += AP_NavEKF2
 LIBRARIES += AP_Mission
 LIBRARIES += AP_Rally
 LIBRARIES += AP_BattMonitor
