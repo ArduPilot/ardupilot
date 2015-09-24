@@ -3,7 +3,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 
 #include "GPIO.h"
-#include "Util_Navio.h"
+#include "Util_RPI.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ LinuxGPIO_RPI::LinuxGPIO_RPI()
 
 void LinuxGPIO_RPI::init()
 {
-    int rpi_version = LinuxUtilNavio::from(hal.util)->get_rpi_version();
+    int rpi_version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
     uint32_t pwm_address  = rpi_version == 1 ? PWM_BASE(BCM2708_PERI_BASE)    : PWM_BASE(BCM2709_PERI_BASE);
     uint32_t clk_address  = rpi_version == 1 ? CLOCK_BASE(BCM2708_PERI_BASE)  : CLOCK_BASE(BCM2709_PERI_BASE);

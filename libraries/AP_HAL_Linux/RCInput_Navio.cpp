@@ -3,7 +3,7 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #include "GPIO.h"
 #include "RCInput_Navio.h"
-#include "Util_Navio.h"
+#include "Util_RPI.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -392,7 +392,7 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     last_signal(228),
     state(RCIN_NAVIO_INITIAL_STATE)
 {
-    int version = LinuxUtilNavio::from(hal.util)->get_rpi_version();
+    int version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
     set_physical_addresses(version);
 
     //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"

@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -10,19 +10,19 @@
 #include <errno.h>
 #include <time.h>
 
-#include "Util_Navio.h"
+#include "Util_RPI.h"
 
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxUtilNavio::LinuxUtilNavio()
+LinuxUtilRPI::LinuxUtilRPI()
 {
     _check_rpi_version();
 }
 
 #define MAX_SIZE_LINE 50
-int LinuxUtilNavio::_check_rpi_version()
+int LinuxUtilRPI::_check_rpi_version()
 {
     char buffer[MAX_SIZE_LINE];
     const char* hardware_description_entry = "Hardware";
@@ -61,7 +61,7 @@ int LinuxUtilNavio::_check_rpi_version()
     return _rpi_version;
 }
 
-int LinuxUtilNavio::get_rpi_version() const
+int LinuxUtilRPI::get_rpi_version() const
 {
     return _rpi_version;
 }

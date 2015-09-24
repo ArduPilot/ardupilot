@@ -120,7 +120,7 @@ static Empty::EmptyRCOutput rcoutDriver;
 
 static LinuxScheduler schedulerInstance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxUtilNavio utilInstance;
+static LinuxUtilRPI utilInstance;
 #else
 static LinuxUtil utilInstance;
 #endif
