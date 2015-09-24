@@ -392,7 +392,7 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     last_signal(228),
     state(RCIN_NAVIO_INITIAL_STATE)
 {
-    int version = static_cast<LinuxUtilNavio*>(hal.util)->get_rpi_version();
+    int version = LinuxUtilNavio::from(hal.util)->get_rpi_version();
     set_physical_addresses(version);
 
     //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
