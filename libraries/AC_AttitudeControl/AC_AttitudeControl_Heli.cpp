@@ -137,17 +137,11 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_roll || ((roll_i>0&&rate_roll_error<0)||(roll_i<0&&rate_roll_error>0))){
-        if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
-            if (rate_roll_target_cds > -50 && rate_roll_target_cds < 50){       // Frozen at high rates
-                roll_i = _pid_rate_roll.get_i();
-            }
-        }else{
-            if (_flags_heli.leaky_i){
-                roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
-            }else{
-                roll_i = _pid_rate_roll.get_i();
-            }
-        }
+		if (_flags_heli.leaky_i){
+			roll_i = ((AC_HELI_PID&)_pid_rate_roll).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+		}else{
+			roll_i = _pid_rate_roll.get_i();
+		}
     }
 
     // get pitch i term
@@ -155,17 +149,11 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     if (!_flags_heli.limit_pitch || ((pitch_i>0&&rate_pitch_error<0)||(pitch_i<0&&rate_pitch_error>0))){
-        if (((AP_MotorsHeli&)_motors).has_flybar()) {                              // Mechanical Flybars get regular integral for rate auto trim
-            if (rate_pitch_target_cds > -50 && rate_pitch_target_cds < 50){     // Frozen at high rates
-                pitch_i = _pid_rate_pitch.get_i();
-            }
-        }else{
-            if (_flags_heli.leaky_i) {
-                pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
-            }else{
-                pitch_i = _pid_rate_pitch.get_i();
-            }
-        }
+		if (_flags_heli.leaky_i) {
+			pitch_i = ((AC_HELI_PID&)_pid_rate_pitch).get_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
+		}else{
+			pitch_i = _pid_rate_pitch.get_i();
+		}
     }
     
     roll_ff = roll_feedforward_filter.apply(((AC_HELI_PID&)_pid_rate_roll).get_vff(rate_roll_target_cds), _dt);

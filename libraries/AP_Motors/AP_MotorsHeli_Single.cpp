@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVPT_SPEED_DEFAULT),
 
+    // @Param: GYR_GAIN_ACRO
+    // @DisplayName: External Gyro Gain for ACRO
+    // @Description: PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
+    // @Range: 0 1000
+    // @Units: PWM
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
+    
     AP_GROUPEND
 };
 
@@ -181,7 +190,7 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
         case 4:
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-                write_aux(_ext_gyro_gain);
+                write_aux(_acro_tail?_ext_gyro_gain_acro:_ext_gyro_gain);
             }
             hal.rcout->write(pgm_read_byte(&_motor_to_channel_map[AP_MOTORS_MOT_4]), pwm);
             break;
@@ -216,30 +225,11 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
     _tail_rotor.set_desired_speed(_direct_drive_tailspeed);
 }
 
-// calculate_scalars - recalculates various scalers used.
-void AP_MotorsHeli_Single::calculate_scalars()
+/*
+  calculate_armed_scalars - recalculates scalars that can be changed while armed
+*/
+void AP_MotorsHeli_Single::calculate_armed_scalars()
 {
-    // range check collective min, max and mid
-    if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
-    }
-    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
-
-    // calculate collective mid point as a number from 0 to 1000
-    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
-
-    // calculate maximum collective pitch range from full positive pitch to zero pitch
-    _collective_range = 1000 - _collective_mid_pwm;
-
-    // determine roll, pitch and collective input scaling
-    _roll_scaler = (float)_roll_max/4500.0f;
-    _pitch_scaler = (float)_pitch_max/4500.0f;
-    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-
-    // calculate factors based on swash type and servo position
-    calculate_roll_pitch_collective_factors();
-
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
     _main_rotor.set_ramp_time(_rsc_ramp_time);
@@ -264,6 +254,34 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_idle_output(0);
     }
     _tail_rotor.recalc_scalers();
+}
+
+
+// calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli_Single::calculate_scalars()
+{
+    // range check collective min, max and mid
+    if( _collective_min >= _collective_max ) {
+        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
+        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+    }
+    _collective_mid = constrain_int16(_collective_mid, _collective_min, _collective_max);
+
+    // calculate collective mid point as a number from 0 to 1000
+    _collective_mid_pwm = ((float)(_collective_mid-_collective_min))/((float)(_collective_max-_collective_min))*1000.0f;
+
+    // calculate maximum collective pitch range from full positive pitch to zero pitch
+    _collective_range = 1000 - _collective_mid_pwm;
+
+    // determine roll, pitch and collective input scaling
+    _roll_scaler = (float)_roll_max/4500.0f;
+    _pitch_scaler = (float)_pitch_max/4500.0f;
+    _collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
+
+    // calculate factors based on swash type and servo position
+    calculate_roll_pitch_collective_factors();
+
+    calculate_armed_scalars();
 }
 
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
@@ -456,7 +474,7 @@ void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
-        write_aux(_ext_gyro_gain);
+        write_aux(_acro_tail?_ext_gyro_gain_acro:_ext_gyro_gain);
     } else if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH && _main_rotor.get_desired_speed() > 0) {
         // output yaw servo to tail rsc
         write_aux(_yaw_servo.servo_out);

@@ -50,6 +50,7 @@ public:
     // parameters for each instance
     AP_Int8  _type[RPM_MAX_INSTANCES];
     AP_Float _scaling[RPM_MAX_INSTANCES];
+    AP_Float _maximum[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
     

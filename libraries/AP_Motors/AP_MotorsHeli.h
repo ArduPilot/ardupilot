@@ -102,7 +102,7 @@ public:
     virtual bool allow_arming() const = 0;
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check() const;
+    bool parameter_check(bool display_msg) const;
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
@@ -140,6 +140,9 @@ public:
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 
+    // calculate_armed_scalars - must be implemented by child classes
+    virtual void calculate_armed_scalars() = 0;
+    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
