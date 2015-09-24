@@ -665,6 +665,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
     Vector3f GA_e;
     GA_e = Vector3f(0, 0, -1.0f);
 
+    if (_ra_deltat <= 0) {
+        // waiting for more data
+        return;
+    }
+    
     bool using_gps_corrections = false;
     float ra_scale = 1.0f/(_ra_deltat*GRAVITY_MSS);
 
