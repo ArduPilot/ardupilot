@@ -81,8 +81,9 @@ bool NavEKF2_core::healthy(void) const
 void NavEKF2_core::ResetPosition(void)
 {
     if (PV_AidingMode != AID_ABSOLUTE) {
-        stateStruct.position.x = 0;
-        stateStruct.position.y = 0;
+        // reset all position state history to the last known position
+        stateStruct.position.x = lastKnownPositionNE.x;
+        stateStruct.position.y = lastKnownPositionNE.y;
     } else if (!gpsNotAvailable) {
         // write to state vector and compensate for offset  between last GPs measurement and the EKF time horizon
         stateStruct.position.x = gpsDataNew.pos.x + gpsPosGlitchOffsetNE.x + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(lastTimeGpsReceived_ms));
@@ -306,21 +307,6 @@ void NavEKF2_core::SelectVelPosFusion()
     if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
         fuseVelData = true;
         fusePosData = true;
-        // If a long time since last GPS update, then reset position and velocity and reset stored state history
-        if ((imuSampleTime_ms - secondLastGpsTime_ms > 5000) && (PV_AidingMode == AID_ABSOLUTE)) {
-            // Apply an offset to the GPS position so that the position can be corrected gradually
-            gpsPosGlitchOffsetNE.x = stateStruct.position.x - gpsDataDelayed.pos.x;
-            gpsPosGlitchOffsetNE.y = stateStruct.position.y - gpsDataDelayed.pos.y;
-            // limit the radius of the offset to 100m and decay the offset to zero radially
-            decayGpsOffset();
-            ResetPosition();
-            ResetVelocity();
-            CovarianceInit();
-            // record the fail time
-            lastPosFailTime_ms = imuSampleTime_ms;
-            // Reset the normalised innovation to avoid false failing the bad position fusion test
-            posTestRatio = 0.0f;
-        }
     } else {
         fuseVelData = false;
         fusePosData = false;
@@ -349,21 +335,6 @@ void NavEKF2_core::SelectVelPosFusion()
         if (!covPredStep) CovariancePrediction();
         FuseVelPosNED();
     }
-
-    // Detect and declare bad GPS aiding status for minimum 10 seconds if a GPS rejection occurs after
-    // rejection of GPS and reset to GPS position. This addresses failure case where errors cause ongoing rejection
-    // of GPS and severe loss of position accuracy.
-    uint32_t gpsRetryTime;
-    if (useAirspeed()) {
-        gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
-    } else {
-        gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
-    }
-    if ((posTestRatio > 2.0f) && ((imuSampleTime_ms - lastPosFailTime_ms) < gpsRetryTime) && ((imuSampleTime_ms - lastPosFailTime_ms) > gpsRetryTime/2) && fusePosData) {
-        lastGpsAidBadTime_ms = imuSampleTime_ms;
-        gpsAidingBad = true;
-    }
-    gpsAidingBad = gpsAidingBad && ((imuSampleTime_ms - lastGpsAidBadTime_ms) < 10000);
 }
 
 // select fusion of magnetometer data
@@ -477,7 +448,7 @@ void NavEKF2_core::SelectFlowFusion()
         PV_AidingMode = AID_NONE;
         // reset the velocity
         ResetVelocity();
-        // store the current position to be used to keep reporting the last known position
+        // store the current position to be used to as a sythetic position measurement
         lastKnownPositionNE.x = stateStruct.position.x;
         lastKnownPositionNE.y = stateStruct.position.y;
         // reset the position
@@ -1386,10 +1357,9 @@ void NavEKF2_core::FuseVelPosNED()
                         ResetVelocity();
                         // don't fuse data on this time step
                         fusePosData = false;
-                        // record the fail time
-                        lastPosFailTime_ms = imuSampleTime_ms;
                         // Reset the normalised innovation to avoid false failing the bad position fusion test
                         posTestRatio = 0.0f;
+                        velTestRatio = 0.0f;
                     }
                 }
             } else {
@@ -1433,6 +1403,8 @@ void NavEKF2_core::FuseVelPosNED()
                 // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
                 ResetVelocity();
                 fuseVelData =  false;
+                // Reset the normalised innovation to avoid false failing the bad position fusion test
+                velTestRatio = 0.0f;
             } else {
                 // if data is unhealthy and position is healthy, we do not fuse it
                 velHealth = false;
@@ -3237,8 +3209,8 @@ bool NavEKF2_core::getPosNED(Vector3f &pos) const
                 return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
-                pos.x = outputDataNew.position.x + lastKnownPositionNE.x;
-                pos.y = outputDataNew.position.y + lastKnownPositionNE.y;
+                pos.x = outputDataNew.position.x;
+                pos.y = outputDataNew.position.y;
                 return false;
             }
         } else {
@@ -3769,10 +3741,9 @@ void NavEKF2_core::readGpsData()
             EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
             // We are by definition at the origin at the instant of alignment so set NE position to zero
             gpsDataNew.pos.zero();
-            // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
+            // If GPS useage isn't explicitly prohibited, we switch to absolute position mode
             if (filterArmed && frontend._fusionModeGPS != 3) {
                 PV_AidingMode = AID_ABSOLUTE;
-                gpsNotAvailable = false;
                 // Initialise EKF position and velocity states
                 ResetPosition();
                 ResetVelocity();
@@ -3789,17 +3760,70 @@ void NavEKF2_core::readGpsData()
         gpsNotAvailable = false;
     }
 
-    // If not aiding we synthesise the GPS measurements at a zero position
-    if (PV_AidingMode == AID_NONE) {
+    // We need to handle the case where GPS is lost for a period of time that is too long to dead-reckon
+    // If that happens we need to put the filter into a constant position mode, reset the velocity states to zero
+    // and use the last estimated position as a synthetic GPS position
+
+    // check if we can use opticalflow as a backup
+    bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
+
+    // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
+    uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend.gpsRetryTimeUseTAS_ms : frontend.gpsRetryTimeNoTAS_ms;
+
+    // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
+    uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend.gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
+
+    // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
+    if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
+
+        // Let other processes know that GPS i snota vailable and that a timeout has occurred
+        posTimeout = true;
+        velTimeout = true;
         gpsNotAvailable = true;
+
+        // If we are currently reliying on GPS for navigation, then we need to switch to a non-GPS mode of operation
+        if (PV_AidingMode == AID_ABSOLUTE) {
+
+            // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
+            // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
+            if (!useAirspeed() && !assume_zero_sideslip()) {
+                if (optFlowBackupAvailable) {
+                    // we can do optical flow only nav
+                    frontend._fusionModeGPS = 3;
+                    PV_AidingMode = AID_RELATIVE;
+                } else {
+                    // store the current position
+                    lastKnownPositionNE.x = stateStruct.position.x;
+                    lastKnownPositionNE.y = stateStruct.position.y;
+
+                    // put the filter into constant position mode
+                    PV_AidingMode = AID_NONE;
+
+                    // reset all glitch states
+                    gpsPosGlitchOffsetNE.zero();
+                    gpsVelGlitchOffset.zero();
+
+                    // Reset the velocity and position states
+                    ResetVelocity();
+                    ResetPosition();
+
+                    // Reset the normalised innovation to avoid false failing the bad position fusion test
+                    velTestRatio = 0.0f;
+                    posTestRatio = 0.0f;
+                }
+            }
+        }
+    }
+
+    // If not aiding we synthesise the GPS measurements at the last known position
+    if (PV_AidingMode == AID_NONE) {
         if (imuSampleTime_ms - gpsDataNew.time_ms > 200) {
-            gpsDataNew.pos.zero();
+            gpsDataNew.pos.x = lastKnownPositionNE.x;
+            gpsDataNew.pos.y = lastKnownPositionNE.y;
             gpsDataNew.time_ms = imuSampleTime_ms-frontend._gpsDelay_ms;
             // save measurement to buffer to be fused later
             StoreGPS();
         }
-    } else if (PV_AidingMode == AID_RELATIVE) {
-        gpsNotAvailable = true;
     }
 
 }
@@ -4143,7 +4167,6 @@ void NavEKF2_core::InitialiseVariables()
     lastHgtReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = imuSampleTime_ms;
     lastPosPassTime_ms = imuSampleTime_ms;
-    lastPosFailTime_ms = 0;
     lastHgtPassTime_ms = imuSampleTime_ms;
     lastTasPassTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
@@ -4219,7 +4242,6 @@ void NavEKF2_core::InitialiseVariables()
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
-    gpsAidingBad = false;
     highYawRate = false;
     yawRateFilt = 0.0f;
     yawResetAngle = 0.0f;
@@ -4238,6 +4260,7 @@ void NavEKF2_core::InitialiseVariables()
     delVelCorrection.zero();
     velCorrection.zero();
     gpsQualGood = false;
+    gpsNotAvailable = true;
 
 }
 
@@ -4393,7 +4416,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = !gpsAidingBad && doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
+    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
@@ -4481,7 +4504,7 @@ void NavEKF2_core::performArmingChecks()
         heldVelNE.zero();
         // reset the flag that indicates takeoff for use by optical flow navigation
         takeOffDetected = false;
-        // set various  useage modes based on the condition at arming. These are then held until the vehicle is disarmed.
+        // set various  useage modes based on the condition at arming. These are then held until the filter is disarmed.
         if (!filterArmed) {
             PV_AidingMode = AID_NONE; // When dis-armed, we only estimate orientation & height using the constant position mode
             posTimeout = true;
@@ -4533,8 +4556,6 @@ void NavEKF2_core::performArmingChecks()
                 secondLastGpsTime_ms = imuSampleTime_ms;
                 // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
                 lastPosPassTime_ms = imuSampleTime_ms;
-                // reset the fail time to prevent premature reporting of loss of position accruacy
-                lastPosFailTime_ms = 0;
             }
         }
         // Reset all position, velocity and covariance
