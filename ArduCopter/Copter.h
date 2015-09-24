@@ -208,7 +208,8 @@ private:
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
     float ekfNavVelGainScaler;
 
-    uint32_t ekfYawReset_ms;
+    // system time in milliseconds of last recorded yaw reset from ekf
+    uint32_t ekfYawReset_ms = 0;
 
     // GCS selection
     AP_SerialManager serial_manager;

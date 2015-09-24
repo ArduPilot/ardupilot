@@ -125,8 +125,7 @@ Copter::Copter(void) :
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
-    param_loader(var_info),
-    ekfYawReset_ms(0)
+    param_loader(var_info)
 {
     memset(&current_loc, 0, sizeof(current_loc));
 
