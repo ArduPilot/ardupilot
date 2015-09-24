@@ -58,6 +58,7 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_RPM/AP_RPM.h>
 
 #include <APM_OBC/APM_OBC.h>
 #include <APM_Control/APM_Control.h>
@@ -206,6 +207,8 @@ private:
     } rangefinder_state;
 #endif
 
+    AP_RPM rpm_sensor;
+    
 // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
     NavEKF EKF{&ahrs, barometer, rangefinder};
@@ -704,6 +707,7 @@ private:
     void send_hwstatus(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
+    void send_rpm(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_current_waypoint(mavlink_channel_t chan);
     void send_statustext(mavlink_channel_t chan);
@@ -846,6 +850,7 @@ private:
     void zero_airspeed(bool in_startup);
     void read_battery(void);
     void read_receiver_rssi(void);
+    void rpm_update(void);
     void report_radio();
     void report_ins();
     void report_compass();

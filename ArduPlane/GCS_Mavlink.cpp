@@ -471,6 +471,19 @@ void Plane::send_wind(mavlink_channel_t chan)
 }
 
 /*
+  send RPM packet
+ */
+void NOINLINE Plane::send_rpm(mavlink_channel_t chan)
+{
+    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+        mavlink_msg_rpm_send(
+            chan,
+            rpm_sensor.get_rpm(0),
+            rpm_sensor.get_rpm(1));
+    }
+}
+
+/*
   send PID tuning message
  */
 void Plane::send_pid_tuning(mavlink_channel_t chan)
@@ -799,7 +812,8 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         break;
 
     case MSG_RPM:
-        // unused
+        CHECK_PAYLOAD_SIZE(RPM);
+        plane.send_rpm(chan);
         break;
 
     case MSG_MISSION_ITEM_REACHED:
@@ -1025,6 +1039,7 @@ GCS_MAVLINK::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE);
+        send_message(MSG_RPM);
         if (plane.control_mode != MANUAL) {
             send_message(MSG_PID_TUNING);
         }

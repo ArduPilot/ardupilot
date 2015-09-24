@@ -99,3 +99,15 @@ void Plane::read_receiver_rssi(void)
     receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
+/*
+  update RPM sensors
+ */
+void Plane::rpm_update(void)
+{
+    rpm_sensor.update();
+    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+        if (should_log(MASK_LOG_RC)) {
+            DataFlash.Log_Write_RPM(rpm_sensor);
+        }
+    }
+}
