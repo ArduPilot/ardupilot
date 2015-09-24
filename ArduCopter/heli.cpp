@@ -28,10 +28,24 @@ int16_t Copter::get_pilot_desired_collective(int16_t control_in)
         return control_in;
     }
 
-    // scale pilot input to reduced collective range
+    // calculate stabilize collective value which scales pilot input to reduced collective range
     float scalar = ((float)(g.heli_stab_col_max - g.heli_stab_col_min))/1000.0f;
-    int16_t collective_out = g.heli_stab_col_min + control_in * scalar;
+    int16_t stab_col_out = g.heli_stab_col_min + control_in * scalar;
+    stab_col_out = constrain_int16(stab_col_out, 0, 1000);
+
+    // ramp to and from stab col over 1/2 second
+    if (heli_flags.use_stab_col && (heli_stab_col_ramp < 1.0)){
+        heli_stab_col_ramp += 2*G_Dt;
+    } else if(!heli_flags.use_stab_col && (heli_stab_col_ramp > 0.0)){
+        heli_stab_col_ramp -= 2*G_Dt;
+    }
+    heli_stab_col_ramp = constrain_float(heli_stab_col_ramp, 0.0, 1.0);
+
+    // scale collective output smoothly between acro and stab col
+    int16_t collective_out;
+    collective_out = (float)((1.0-heli_stab_col_ramp)*control_in + heli_stab_col_ramp*stab_col_out);
     collective_out = constrain_int16(collective_out, 0, 1000);
+
     return collective_out;
 }
 
