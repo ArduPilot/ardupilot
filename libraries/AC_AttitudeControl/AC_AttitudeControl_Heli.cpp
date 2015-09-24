@@ -51,6 +51,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("STAB_COL_4",    5, AC_AttitudeControl_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 
+    // @Param: ACRO_COL_EXP
+    // @DisplayName: Acro Mode Collective Expo
+    // @Description: Used to soften collective pitch inputs near center point in Acro mode.
+    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @User: Advanced
+    AP_GROUPINFO("ACRO_COL_EXP",    6, AC_AttitudeControl_Heli, _acro_col_expo, 0),
+
     AP_GROUPEND
 };
 
@@ -322,6 +329,7 @@ float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
 int16_t AC_AttitudeControl_Heli::get_pilot_desired_collective(int16_t control_in)
 {
     float slope_low, slope_high, slope_range, slope_run, scalar;
+    int16_t stab_col_out, acro_col_out;
 
     // calculate stabilize collective value which scales pilot input to reduced collective range
     // code implements a 3-segment curve with knee points at 40% and 60% throttle input
@@ -343,8 +351,27 @@ int16_t AC_AttitudeControl_Heli::get_pilot_desired_collective(int16_t control_in
     }    
 
     scalar = (slope_high - slope_low)/slope_range;
-    int16_t stab_col_out = slope_low + slope_run * scalar;
+    stab_col_out = slope_low + slope_run * scalar;
     stab_col_out = constrain_int16(stab_col_out, 0, 1000);
+
+    //
+    // calculate expo-scaled acro collective
+    // range check expo
+    if (_acro_col_expo > 1.0f) {
+        _acro_col_expo = 1.0f;
+    }
+
+    if (_acro_col_expo <= 0) {
+        acro_col_out = control_in;
+    } else {
+        // expo variables
+        float col_in, col_in3, col_out;
+        col_in = (float)(control_in-500)/500.0f;
+        col_in3 = col_in*col_in*col_in;
+        col_out = (_acro_col_expo * col_in3) + ((1-_acro_col_expo)*col_in);
+        acro_col_out = 500 + col_out*500;
+    }
+    acro_col_out = constrain_int16(acro_col_out, 0, 1000);
 
     // ramp to and from stab col over 1/2 second
     if (_flags_heli.use_stab_col && (_stab_col_ramp < 1.0)){
@@ -356,7 +383,7 @@ int16_t AC_AttitudeControl_Heli::get_pilot_desired_collective(int16_t control_in
 
     // scale collective output smoothly between acro and stab col
     int16_t collective_out;
-    collective_out = (float)((1.0-_stab_col_ramp)*control_in + _stab_col_ramp*stab_col_out);
+    collective_out = (float)((1.0-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
     collective_out = constrain_int16(collective_out, 0, 1000);
 
     return collective_out;
