@@ -71,8 +71,8 @@ public:
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
-    // return body axis gyro scale factor estimates
-    void getGyroScale(Vector3f &gyroScale) const;
+    // return body axis gyro scale factor error as a percentage
+    void getGyroScaleErrorPercentage(Vector3f &gyroScale) const;
 
     // return tilt error convergence metric
     void getTiltError(float &ang) const;
@@ -99,11 +99,8 @@ public:
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
-    // return weighting of first IMU in blending function
-    void getIMU1Weighting(float &ret) const;
-
-    // return the individual Z-accel bias estimates in m/s^2
-    void getAccelZBias(float &zbias1, float &zbias2) const;
+    // return the Z-accel bias estimate in m/s^2
+    void getAccelZBias(float &zbias) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
     void getWind(Vector3f &wind) const;

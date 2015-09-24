@@ -468,11 +468,11 @@ void NavEKF2::getGyroBias(Vector3f &gyroBias) const
     }
 }
 
-// return body axis gyro scale factor estimates
-void NavEKF2::getGyroScale(Vector3f &gyroScale) const
+// return body axis gyro scale factor error as a percentage
+void NavEKF2::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
 {
     if (core) {
-        core->getGyroScale(gyroScale);
+        core->getGyroScaleErrorPercentage(gyroScale);
     }
 }
 
@@ -528,19 +528,11 @@ void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
     }
 }
 
-// return weighting of first IMU in blending function
-void NavEKF2::getIMU1Weighting(float &ret) const
-{
-    if (core) {
-        core->getIMU1Weighting(ret);
-    }
-}
-
 // return the individual Z-accel bias estimates in m/s^2
-void NavEKF2::getAccelZBias(float &zbias1, float &zbias2) const
+void NavEKF2::getAccelZBias(float &zbias) const
 {
     if (core) {
-        core->getAccelZBias(zbias1, zbias2);
+        core->getAccelZBias(zbias);
     }
 }
 
