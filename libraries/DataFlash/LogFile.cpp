@@ -1314,22 +1314,23 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     WriteBlock(&pkt, sizeof(pkt));
 
     // Write second EKF packet
-    float ratio = 0;
-    float az1bias = 0, az2bias = 0;
+    float azbias = 0;
     Vector3f wind;
     Vector3f magNED;
     Vector3f magXYZ;
-    ahrs.get_NavEKF2().getIMU1Weighting(ratio);
-    ahrs.get_NavEKF2().getAccelZBias(az1bias, az2bias);
+    Vector3f gyroScaleFactor;
+    ahrs.get_NavEKF2().getAccelZBias(azbias);
     ahrs.get_NavEKF2().getWind(wind);
     ahrs.get_NavEKF2().getMagNED(magNED);
     ahrs.get_NavEKF2().getMagXYZ(magXYZ);
-    struct log_EKF2 pkt2 = {
+    ahrs.get_NavEKF2().getGyroScaleErrorPercentage(gyroScaleFactor);
+    struct log_NKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF2_MSG),
         time_us : hal.scheduler->micros64(),
-        Ratio   : (int8_t)(100*ratio),
-        AZ1bias : (int8_t)(100*az1bias),
-        AZ2bias : (int8_t)(100*az2bias),
+        AZbias  : (int8_t)(100*azbias),
+        scaleX  : (int16_t)(100*gyroScaleFactor.x),
+        scaleY  : (int16_t)(100*gyroScaleFactor.y),
+        scaleZ  : (int16_t)(100*gyroScaleFactor.z),
         windN   : (int16_t)(100*wind.x),
         windE   : (int16_t)(100*wind.y),
         magN    : (int16_t)(magNED.x),
@@ -1348,7 +1349,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     float tasInnov = 0;
     float yawInnov = 0;
     ahrs.get_NavEKF2().getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-    struct log_EKF3 pkt3 = {
+    struct log_NKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF3_MSG),
         time_us : hal.scheduler->micros64(),
         innovVN : (int16_t)(100*velInnov.x),
@@ -1360,6 +1361,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         innovMX : (int16_t)(magInnov.x),
         innovMY : (int16_t)(magInnov.y),
         innovMZ : (int16_t)(magInnov.z),
+        innovYaw : (int16_t)(100*degrees(tasInnov)),
         innovVT : (int16_t)(100*tasInnov)
     };
     WriteBlock(&pkt3, sizeof(pkt3));
