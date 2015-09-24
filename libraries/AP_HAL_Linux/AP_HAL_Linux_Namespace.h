@@ -39,7 +39,7 @@ namespace Linux {
     class LinuxScheduler;
     class LinuxUtil;
     class ToneAlarm;					//limit the scope of ToneAlarm driver to Linux_HAL only
+    class ToneAlarm_Raspilot;
 }
 
 #endif // __AP_HAL_LINUX_NAMESPACE_H__
-
