@@ -3751,7 +3751,9 @@ void NavEKF2_core::readGpsData()
         }
 
         // Monitor quality of the GPS velocity data for alignment
-        gpsQualGood = calcGpsGoodToAlign();
+        if (PV_AidingMode != AID_ABSOLUTE) {
+            gpsQualGood = calcGpsGoodToAlign();
+        }
 
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
         // If we don't have an origin, then set it to the current GPS coordinates
