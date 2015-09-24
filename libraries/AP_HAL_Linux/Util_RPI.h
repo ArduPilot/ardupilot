@@ -2,12 +2,12 @@
 
 #include "Util.h"
 
-class Linux::LinuxUtilNavio : public Linux::LinuxUtil {
+class Linux::LinuxUtilRPI : public Linux::LinuxUtil {
 public:
-    LinuxUtilNavio();
+    LinuxUtilRPI();
 
-    static LinuxUtilNavio *from(AP_HAL::Util *util) {
-        return static_cast<LinuxUtilNavio*>(util);
+    static LinuxUtilRPI *from(AP_HAL::Util *util) {
+        return static_cast<LinuxUtilRPI*>(util);
     }
 
     /* return the Raspberry Pi version */
