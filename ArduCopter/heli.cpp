@@ -18,6 +18,11 @@ void Copter::heli_init()
 {
     // helicopters are always using motor interlock
     set_using_interlock(true);
+
+    // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
+    heli_flags.use_stab_col = true;
+    heli_stab_col_ramp = 1.0;
+
 }
 
 // get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
