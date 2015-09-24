@@ -248,9 +248,9 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
     if (old_control_mode > ACRO){
         if (new_control_mode == STABILIZE){
-            heli_stab_col_ramp = 1.0;
+            attitude_control.set_stab_col_ramp(1.0);
         } else if (new_control_mode == ACRO){
-            heli_stab_col_ramp = 0.0;
+            attitude_control.set_stab_col_ramp(0.0);
         }
     }
 

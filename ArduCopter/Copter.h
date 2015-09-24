@@ -509,14 +509,10 @@ private:
 
     int16_t rsc_control_deglitched;
 
-    //  factor used to smoothly ramp collective from Acro value to Stab-Col value
-    float heli_stab_col_ramp;
-
     // Tradheli flags
     struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
         uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
-        uint8_t use_stab_col            : 1;    // 1   // true if we are in stabilize mode, and should be using scaled collective pitch
     } heli_flags;
 #endif
 
@@ -801,7 +797,6 @@ private:
     bool mode_allows_arming(uint8_t mode, bool arming_from_gcs);
     void notify_flight_mode(uint8_t mode);
     void heli_init();
-    int16_t get_pilot_desired_collective(int16_t control_in);
     void check_dynamic_flight(void);
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();

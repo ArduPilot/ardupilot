@@ -14,7 +14,7 @@ bool Copter::heli_acro_init(bool ignore_checks)
     attitude_control.use_flybar_passthrough(motors.has_flybar(), motors.supports_yaw_passthrough());
 
     // set stab collective false to use full collective pitch range
-    heli_flags.use_stab_col = false;
+    attitude_control.set_use_stab_col(false);
 
     // always successfully enter acro
     return true;
@@ -61,7 +61,7 @@ void Copter::heli_acro_run()
     }
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_collective(channel_throttle->control_in);
+    pilot_throttle_scaled = attitude_control.get_pilot_desired_collective(channel_throttle->control_in);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

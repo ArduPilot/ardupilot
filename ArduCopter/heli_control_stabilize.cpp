@@ -15,7 +15,7 @@ bool Copter::heli_stabilize_init(bool ignore_checks)
     pos_control.set_alt_target(0);
 
     // set stab collective true to use stabilize scaled collective pitch range
-    heli_flags.use_stab_col = true;
+    attitude_control.set_use_stab_col(true);
 
     return true;
 }
@@ -60,7 +60,7 @@ void Copter::heli_stabilize_run()
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_collective(channel_throttle->control_in);
+    pilot_throttle_scaled = attitude_control.get_pilot_desired_collective(channel_throttle->control_in);
 
     // call attitude controller
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
