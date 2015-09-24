@@ -699,6 +699,8 @@ private:
     float innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // tie last TAS data was received (msec)
     bool gpsQualGood;               // true when the GPS quality can be used to initialise the navigation system
+    uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
+    bool consistentMagData;         // true when the magnetometers are passing consistency checks
 
     // variables added for optical flow fusion
     of_elements storedOF[OBS_BUFFER_LENGTH];    // OF data buffer
@@ -798,6 +800,9 @@ private:
         Vector9 SH_MAG;
     } mag_state;
 
+
+    // string representing last reason for prearm failure
+    char prearm_fail_string[40];
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
