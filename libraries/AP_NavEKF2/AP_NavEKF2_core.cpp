@@ -3272,16 +3272,16 @@ void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
     gyroBias = stateStruct.gyro_bias / dtIMUavg;
 }
 
-// return body axis gyro scale factor estimates
-void NavEKF2_core::getGyroScale(Vector3f &gyroScale) const
+// return body axis gyro scale factor error as a percentage
+void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
 {
     if (!statesInitialised) {
         gyroScale.x = gyroScale.y = gyroScale.z = 0;
         return;
     }
-    gyroScale.x = 1.0f/stateStruct.gyro_scale.x - 1.0f;
-    gyroScale.y = 1.0f/stateStruct.gyro_scale.y - 1.0f;
-    gyroScale.z = 1.0f/stateStruct.gyro_scale.z - 1.0f;
+    gyroScale.x = 100.0f/stateStruct.gyro_scale.x - 100.0f;
+    gyroScale.y = 100.0f/stateStruct.gyro_scale.y - 100.0f;
+    gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
 // return tilt error convergence metric
@@ -3360,21 +3360,12 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
     }
 }
 
-// return weighting of first IMU in blending function
-// This filter always uses the primary IMU, so a weighting of 1 is returned
-void NavEKF2_core::getIMU1Weighting(float &ret) const
-{
-    ret = 1.0f;
-}
-
-// return the individual Z-accel bias estimates in m/s^2
-void NavEKF2_core::getAccelZBias(float &zbias1, float &zbias2) const {
+// return the Z-accel bias estimate in m/s^2
+void NavEKF2_core::getAccelZBias(float &zbias) const {
     if (dtIMUavg > 0) {
-        zbias1 = stateStruct.accel_zbias / dtIMUavg;
-        zbias2 = 0;
+        zbias = stateStruct.accel_zbias / dtIMUavg;
     } else {
-        zbias1 = 0;
-        zbias2 = 0;
+        zbias = 0;
     }
 }
 
