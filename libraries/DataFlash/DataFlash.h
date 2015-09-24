@@ -608,15 +608,6 @@ struct PACKED log_Ubx2 {
     uint8_t  magQ;
 };
 
-struct PACKED log_Ubx3 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    float hAcc;
-    float vAcc;
-    float sAcc;
-};
-
 struct PACKED log_GPS_RAW {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -829,12 +820,14 @@ Format characters in the format string for binary log messages
       "NKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
-    { LOG_UBX1_MSG, sizeof(log_Ubx1), \
+    { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "QBHBBH",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
-    { LOG_UBX2_MSG, sizeof(log_Ubx2), \
+    { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ" }, \
-    { LOG_UBX3_MSG, sizeof(log_Ubx3), \
-      "UBX3", "QBfff", "TimeUS,Instance,hAcc,vAcc,sAcc" }, \
+    { LOG_GPS2_UBX1_MSG, sizeof(log_Ubx1), \
+      "UBY1", "QBHBBH",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt" }, \
+    { LOG_GPS2_UBX2_MSG, sizeof(log_Ubx2), \
+      "UBY2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ" }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
       "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli" }, \
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
@@ -936,9 +929,10 @@ enum LogMessages {
     LOG_CAMERA_MSG,
     LOG_IMU3_MSG,
     LOG_TERRAIN_MSG,
-    LOG_UBX1_MSG,
-    LOG_UBX2_MSG,
-    LOG_UBX3_MSG,
+    LOG_GPS_UBX1_MSG,
+    LOG_GPS_UBX2_MSG,
+    LOG_GPS2_UBX1_MSG,
+    LOG_GPS2_UBX2_MSG,
     LOG_ESC1_MSG,
     LOG_ESC2_MSG,
     LOG_ESC3_MSG,
