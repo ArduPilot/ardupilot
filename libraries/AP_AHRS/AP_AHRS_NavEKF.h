@@ -143,9 +143,8 @@ public:
     const char *prearm_failure_reason(void) const override;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    uint32_t getLastYawResetAngle(float &yawAng);
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
