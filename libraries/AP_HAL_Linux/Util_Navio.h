@@ -5,6 +5,11 @@
 class Linux::LinuxUtilNavio : public Linux::LinuxUtil {
 public:
     LinuxUtilNavio();
+
+    static LinuxUtilNavio *from(AP_HAL::Util *util) {
+        return static_cast<LinuxUtilNavio*>(util);
+    }
+
     /* return the Raspberry Pi version */
     int get_rpi_version() const;
 
