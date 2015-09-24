@@ -4516,8 +4516,9 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
             // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
             Vector3f tempEuler;
             state.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
+            // this check ensures we accumulate the resets that occur within a single iteration of the EKF
             if (imuSampleTime_ms != lastYawReset_ms) {
-                yawResetAngle = 0;
+                yawResetAngle = 0.0f;
             }
             yawResetAngle += wrap_PI(yaw - tempEuler.z);
             lastYawReset_ms = imuSampleTime_ms;
@@ -4877,9 +4878,9 @@ return the filter fault status as a bitmasked integer
  1 = velocities are NaN
  2 = badly conditioned X magnetometer fusion
  3 = badly conditioned Y magnetometer fusion
- 5 = badly conditioned Z magnetometer fusion
- 6 = badly conditioned airspeed fusion
- 7 = badly conditioned synthetic sideslip fusion
+ 4 = badly conditioned Z magnetometer fusion
+ 5 = badly conditioned airspeed fusion
+ 6 = badly conditioned synthetic sideslip fusion
  7 = filter is not initialised
 */
 void  NavEKF::getFilterFaults(uint8_t &faults) const
@@ -5400,7 +5401,7 @@ void NavEKF::alignMagStateDeclination()
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the system time at which the yaw angle was reset
+// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
 uint32_t NavEKF::getLastYawResetAngle(float &yawAng)
 {
     yawAng = yawResetAngle;
