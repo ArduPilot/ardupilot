@@ -15,6 +15,11 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
 
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT     400
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT    600
+# define AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
+
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS &ahrs,
@@ -63,6 +68,15 @@ public:
     // do_piro_comp - controls whether piro-comp is active or not
     void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
 
+    // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
+    int16_t get_pilot_desired_collective(int16_t control_in);
+
+    // set_use_stab_col - setter function
+    void set_use_stab_col(bool use) { _flags_heli.use_stab_col = use; }
+
+    // set_heli_stab_col_ramp - setter function
+    void set_stab_col_ramp(float ramp) { _stab_col_ramp = constrain_float(ramp, 0.0, 1.0); }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -77,6 +91,7 @@ private:
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
         uint8_t do_piro_comp        :   1;  // 1 if we should do pirouette compensation on roll/pitch
+        uint8_t use_stab_col        :   1;  // 1 if we should use Stabilise mode collective range, 0 for Acro range
     } _flags_heli;
 
     //
@@ -101,8 +116,15 @@ private:
     // pass through for yaw if tail_passthrough is set
     int16_t _passthrough_yaw;
 
+    //  factor used to smoothly ramp collective from Acro value to Stab-Col value
+    float _stab_col_ramp;
+
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
+    AP_Int16        _heli_stab_col_min;             // minimum collective pitch setting at zero throttle input in Stabilize mode
+    AP_Int16        _heli_stab_col_low;             // collective pitch setting at mid-low throttle input in Stabilize mode
+    AP_Int16        _heli_stab_col_high;            // collective pitch setting at mid-high throttle input in Stabilize mode
+    AP_Int16        _heli_stab_col_max;             // maximum collective pitch setting at full throttle input in Stabilize mode
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead

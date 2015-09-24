@@ -13,7 +13,43 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // @Description: Pirouette compensation enabled
     // @Range: 0:Disabled 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+    AP_GROUPINFO("PIRO_COMP",    1, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+
+    // @Param: STAB_COL_1
+    // @DisplayName: Stabilize Mode Collective Point 1
+    // @Description: Helicopter's minimum collective pitch setting at zero throttle input in Stabilize mode
+    // @Range: 0 500
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_1",    2, AC_AttitudeControl_Heli, _heli_stab_col_min, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT),
+
+    // @Param: STAB_COL_2
+    // @DisplayName: Stabilize Mode Collective Point 2
+    // @Description: Helicopter's collective pitch setting at mid-low throttle input in Stabilize mode
+    // @Range: 0 500
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_2",    3, AC_AttitudeControl_Heli, _heli_stab_col_low, AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
+
+    // @Param: STAB_COL_3
+    // @DisplayName: Stabilize Mode Collective Point 3
+    // @Description: Helicopter's collective pitch setting at mid-high throttle input in Stabilize mode
+    // @Range: 500 1000
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_3",    4, AC_AttitudeControl_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+
+    // @Param: STAB_COL_4
+    // @DisplayName: Stabilize Mode Collective Point 4
+    // @Description: Helicopter's maximum collective pitch setting at full throttle input in Stabilize mode
+    // @Range: 500 1000
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_4",    5, AC_AttitudeControl_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -281,3 +317,48 @@ float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
     _angle_boost = 0;
     return throttle_in;
 }
+
+// get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
+int16_t AC_AttitudeControl_Heli::get_pilot_desired_collective(int16_t control_in)
+{
+    float slope_low, slope_high, slope_range, slope_run, scalar;
+
+    // calculate stabilize collective value which scales pilot input to reduced collective range
+    // code implements a 3-segment curve with knee points at 40% and 60% throttle input
+    if (control_in < 400){
+        slope_low = _heli_stab_col_min;
+        slope_high = _heli_stab_col_low;
+        slope_range = 400;
+        slope_run = control_in;
+    } else if(control_in <600){
+        slope_low = _heli_stab_col_low;
+        slope_high = _heli_stab_col_high;
+        slope_range = 200;
+        slope_run = control_in - 400;
+    } else {
+        slope_low = _heli_stab_col_high;
+        slope_high = _heli_stab_col_max;
+        slope_range = 400;
+        slope_run = control_in - 600;
+    }    
+
+    scalar = (slope_high - slope_low)/slope_range;
+    int16_t stab_col_out = slope_low + slope_run * scalar;
+    stab_col_out = constrain_int16(stab_col_out, 0, 1000);
+
+    // ramp to and from stab col over 1/2 second
+    if (_flags_heli.use_stab_col && (_stab_col_ramp < 1.0)){
+        _stab_col_ramp += 2*_dt;
+    } else if(!_flags_heli.use_stab_col && (_stab_col_ramp > 0.0)){
+        _stab_col_ramp -= 2*_dt;
+    }
+    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0, 1.0);
+
+    // scale collective output smoothly between acro and stab col
+    int16_t collective_out;
+    collective_out = (float)((1.0-_stab_col_ramp)*control_in + _stab_col_ramp*stab_col_out);
+    collective_out = constrain_int16(collective_out, 0, 1000);
+
+    return collective_out;
+}
+
