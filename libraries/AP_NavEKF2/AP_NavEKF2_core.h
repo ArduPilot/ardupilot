@@ -207,9 +207,8 @@ public:
     bool getHeightControlLimit(float &height) const;
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns true if a reset yaw angle has been updated and not queried
-    // this function should not have more than one client
-    bool getLastYawResetAngle(float &yawAng);
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    uint32_t getLastYawResetAngle(float &yawAng);
 
 private:
     // Reference to the global EKF frontend for parameters
@@ -668,7 +667,7 @@ private:
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
     float yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
-    bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
+    uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     Vector3f tiltErrVec;            // Vector of most recent attitude error correction from Vel,Pos fusion
     float tiltErrFilt;              // Filtered tilt error metric
     bool tiltAlignComplete;         // true when tilt alignment is complete
