@@ -12,12 +12,7 @@ public:
         return static_cast<LinuxUtil*>(util);
     }
 
-    void init(int argc, char * const *argv) {
-        saved_argc = argc;
-        saved_argv = argv;
-    }
-
-
+    void init(int argc, char * const *argv);
     bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
 
     /**
@@ -41,9 +36,11 @@ public:
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
 
     bool is_chardev_node(const char *path);
+    void set_imu_temp(float current);
 
 private:
     static Linux::ToneAlarm _toneAlarm;
+    Linux::LinuxHeat *_heat;
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;
