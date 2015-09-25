@@ -40,6 +40,8 @@ namespace Linux {
     class LinuxUtil;
     class LinuxUtilRPI;
     class ToneAlarm;					//limit the scope of ToneAlarm driver to Linux_HAL only
+    class LinuxHeat;
+    class LinuxHeatPwm;
 }
 
 #endif // __AP_HAL_LINUX_NAMESPACE_H__
