@@ -192,6 +192,7 @@ void AP_Gimbal::update_gimbal_gyro_bias()
     output_gyro_bias.y = constrain_float(output_gyro_bias.y, _initial_gyro_bias.y-radians(1.0f), _initial_gyro_bias.y+radians(1.0f));
     output_gyro_bias.z = constrain_float(output_gyro_bias.z, _initial_gyro_bias.z-radians(1.0f), _initial_gyro_bias.z+radians(1.0f));
 
+    _expected_gyro_bias = output_gyro_bias;
     _gimbalParams.set_gyro_bias(output_gyro_bias);
     _ekf.setGyroBias(total_gyro_bias - output_gyro_bias);
     _gimbalParams.flash();
