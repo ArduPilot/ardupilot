@@ -13,7 +13,7 @@
 #define RC_CHANNEL_TYPE_RANGE       1
 #define RC_CHANNEL_TYPE_ANGLE_RAW   2
 
-#define RC_MAX_CHANNELS 14
+#define RC_MAX_CHANNELS 64
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
