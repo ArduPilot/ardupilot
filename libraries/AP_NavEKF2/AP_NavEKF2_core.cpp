@@ -748,15 +748,15 @@ void NavEKF2_core::CovariancePrediction()
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
     windVelSigma  = dt * constrain_float(frontend._windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend._wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
-    dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 1e-8f, 1e-4f);
+    dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 0.0f, 1e-4f);
     dVelBiasSigma = dt * constrain_float(frontend._accelBiasProcessNoise, 1e-6f, 1e-2f);
-    dAngScaleSigma = dt * constrain_float(frontend._gyroScaleProcessNoise,1e-8f,1e-5f);
+    dAngScaleSigma = dt * constrain_float(frontend._gyroScaleProcessNoise,1e-6f,1e-2f);
     magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
     magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
-    for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 1.0e-9f;
+    for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
-    for (uint8_t i=10; i<=12; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
+    processNoise[15] = dVelBiasSigma;
     if (expectGndEffectTakeoff) {
         processNoise[15] = 0.0f;
     } else if (!filterArmed) {

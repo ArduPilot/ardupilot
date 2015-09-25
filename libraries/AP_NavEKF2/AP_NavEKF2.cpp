@@ -22,9 +22,9 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    5E-06f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT      0.0003f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
@@ -34,7 +34,7 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1e-6f
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -45,9 +45,9 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    5E-06f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT      0.0003f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
@@ -57,7 +57,7 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1e-6f
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
 
 #else
 // generic defaults (and for plane)
@@ -68,19 +68,19 @@
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
-#define GBIAS_PNOISE_DEFAULT    5E-06f
-#define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAG_PNOISE_DEFAULT      0.0003f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.0E-03f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
-#define HGT_GATE_DEFAULT        5
+#define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1e-6f
+#define GSCALE_PNOISE_DEFAULT   1.5E-03f
 
 #endif // APM_BUILD_DIRECTORY
 
