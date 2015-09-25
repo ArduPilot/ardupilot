@@ -37,6 +37,10 @@
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
+// motor output modes
+#define AP_MOTORS_OUTPUT_MODE_RC    1
+#define AP_MOTORS_OUTPUT_MODE_AUX   2
+
 /// @class      AP_Motors
 class AP_Motors {
 public:

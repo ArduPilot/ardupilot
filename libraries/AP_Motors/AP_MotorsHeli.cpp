@@ -153,6 +153,13 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
 
+    // @Param: OUTPUT_MODE
+    // @DisplayName: Output Mode
+    // @Description: Determines the method of rotor speed control
+    // @Values: 1:RC channels, 2:AUX functions
+    // @User: Standard
+    AP_GROUPINFO("OUTPUT_MODE", 16, AP_MotorsHeli, _output_mode, AP_MOTORS_OUTPUT_MODE_RC), 
+
     AP_GROUPEND
 };
 
