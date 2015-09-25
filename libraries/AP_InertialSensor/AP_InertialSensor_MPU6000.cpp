@@ -295,9 +295,8 @@ void AP_MPU6000_BusDriver_SPI::read_data_transaction(uint8_t *samples,
     }
 
     n_samples = 1;
-    /* remove temperature and cmd from data sample */
-    memcpy(&samples[0], &rx.d[0], 6);
-    memcpy(&samples[6], &rx.d[8], 6);
+    /* remove cmd from data sample */
+    memcpy(&samples[0], &rx.d[0], 14);
 
     return;
 }
@@ -328,7 +327,7 @@ void AP_MPU6000_BusDriver_I2C::start(bool &fifo_mode, uint8_t &max_samples)
     // enable fifo mode
     fifo_mode = true;
     write8(MPUREG_FIFO_EN, BIT_XG_FIFO_EN | BIT_YG_FIFO_EN |
-                           BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN);
+                           BIT_ZG_FIFO_EN | BIT_ACCEL_FIFO_EN | BIT_TEMP_FIFO_EN);
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_RESET | BIT_USER_CTRL_SIG_COND_RESET);
     write8(MPUREG_USER_CTRL, BIT_USER_CTRL_FIFO_EN);
     /* maximum number of samples read by a burst
@@ -336,6 +335,7 @@ void AP_MPU6000_BusDriver_I2C::start(bool &fifo_mode, uint8_t &max_samples)
      * gyro_x
      * gyro_y
      * gyro_z
+     * temperature
      * accel_x
      * accel_y
      * accel_z
@@ -444,6 +444,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 #if MPU6000_FAST_SAMPLING
     _accel_filter(1000, 15),
     _gyro_filter(1000, 15),
+    _temp_filter(1000, 1),
 #else
     _sample_count(0),
     _accel_sum(),
@@ -651,27 +652,33 @@ bool AP_InertialSensor_MPU6000::update( void )
     // we have a full set of samples
     uint16_t num_samples;
     Vector3f accel, gyro;
+    float temp;
 
     hal.scheduler->suspend_timer_procs();
 #if MPU6000_FAST_SAMPLING
     gyro = _gyro_filtered;
     accel = _accel_filtered;
+    temp = _temp_filtered;
     num_samples = 1;
 #else
     gyro(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
     accel(_accel_sum.x, _accel_sum.y, _accel_sum.z);
+    temp = _temp_sum;
     num_samples = _sum_count;
     _accel_sum.zero();
     _gyro_sum.zero();
+    _temp_sum = 0;
 #endif
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
 
     gyro /= num_samples;
     accel /= num_samples;
+    temp /= num_samples;
 
     _publish_accel(_accel_instance, accel);
     _publish_gyro(_gyro_instance, gyro);
+    _publish_temperature(_accel_instance, temp);
 
 #if MPU6000_FAST_SAMPLING
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
@@ -745,16 +752,21 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
     for(uint8_t i=0; i < n_samples; i++) {
         uint8_t *data = samples + MPU6000_SAMPLE_SIZE * i;
         Vector3f accel, gyro;
+        float temp;
 
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
         accel *= MPU6000_ACCEL_SCALE_1G;
 
-        gyro = Vector3f(int16_val(data, 4),
-                        int16_val(data, 3),
-                        -int16_val(data, 5));
+        gyro = Vector3f(int16_val(data, 5),
+                        int16_val(data, 4),
+                        -int16_val(data, 6));
         gyro *= _gyro_scale;
+
+        temp = int16_val(data, 3);
+        /* scaling/offset values from the datasheet */
+        temp = temp/340 + 36.53;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
         accel.rotate(ROTATION_PITCH_180_YAW_90);
@@ -772,9 +784,11 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 #if MPU6000_FAST_SAMPLING
         _accel_filtered = _accel_filter.apply(accel);
         _gyro_filtered = _gyro_filter.apply(gyro);
+        _temp_filtered = _temp_filter.apply(temp);
 #else
         _accel_sum += accel;
         _gyro_sum += gyro;
+        _temp_sum += temp;
 #endif
         _sum_count++;
 
@@ -783,6 +797,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         // rollover - v unlikely
             _accel_sum.zero();
             _gyro_sum.zero();
+            _temp_sum = 0;
         }
 #endif
     }
