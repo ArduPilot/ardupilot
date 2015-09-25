@@ -83,7 +83,7 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
             if (_ekf.getStatus()) {
                 // EKF done aligning, transition to running
                 _state = GIMBAL_STATE_PRESENT_RUNNING;
-                _last_gyro_bias_save_ms = hal.scheduler->micros();
+                _last_gyro_bias_save_ms = hal.scheduler->millis();
             }
             break;
 
@@ -164,16 +164,16 @@ void AP_Gimbal::update_gimbal_gyro_bias()
 {
     // reset the timer if EKF is not aligned
     if (!_ekf.getStatus()) {
-        _last_gyro_bias_save_ms = hal.scheduler->micros();
+        _last_gyro_bias_save_ms = hal.scheduler->millis();
         return;
     }
 
     // wait 60 seconds before updating gyro bias. flashing blocks momentarily, so don't do it while armed
-    if (hal.util->get_soft_armed() || hal.scheduler->micros()-_last_gyro_bias_save_ms < 60000) {
+    if (hal.util->get_soft_armed() || hal.scheduler->millis()-_last_gyro_bias_save_ms < 60000) {
         return;
     }
 
-    _last_gyro_bias_save_ms = hal.scheduler->micros();
+    _last_gyro_bias_save_ms = hal.scheduler->millis();
 
     Vector3f gimbal_gyro_bias = _gimbalParams.get_gyro_bias();
 
