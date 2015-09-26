@@ -3,9 +3,15 @@
 
 using namespace Empty;
 
-void EmptyRCOutput::init(void* machtnichts) {}
+bool EmptyRCOutput::init() {
+	return true;
+}
 
-void EmptyRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {}
+uint8_t EmptyRCOutput::get_num_channels() {
+	return 8;
+}
+
+void EmptyRCOutput::set_freq(uint64_t chmask, uint16_t freq_hz) {}
 
 uint16_t EmptyRCOutput::get_freq(uint8_t ch) {
     return 50;
@@ -23,7 +29,3 @@ void EmptyRCOutput::write(uint8_t ch, uint16_t period_us)
 uint16_t EmptyRCOutput::read(uint8_t ch) {
     return 900;
 }
-
-void EmptyRCOutput::read(uint16_t* period_us, uint8_t len)
-{}
-
