@@ -543,63 +543,196 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     //-----------
     // @Group: RC1_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_1,    "RC1_", RC_Channel),
+    GGROUP(rc_1, "RC1_", RC_Channel),
     // @Group: RC2_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_2,    "RC2_", RC_Channel),
+    GGROUP(rc_2, "RC2_", RC_Channel),
     // @Group: RC3_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_3,    "RC3_", RC_Channel),
+    GGROUP(rc_3, "RC3_", RC_Channel),
     // @Group: RC4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
-    GGROUP(rc_4,    "RC4_", RC_Channel),
+    GGROUP(rc_4, "RC4_", RC_Channel),
     // @Group: RC5_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_5,    "RC5_", RC_Channel_aux),
+    GGROUP(rc_5, "RC5_", RC_Channel_aux),
     // @Group: RC6_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_6,    "RC6_", RC_Channel_aux),
+    GGROUP(rc_6, "RC6_", RC_Channel_aux),
     // @Group: RC7_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_7,    "RC7_", RC_Channel_aux),
+    GGROUP(rc_7, "RC7_", RC_Channel_aux),
     // @Group: RC8_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_8,    "RC8_", RC_Channel_aux),
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    GGROUP(rc_8, "RC8_", RC_Channel_aux),
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-#endif
-
+    GGROUP(rc_9, "RC9_", RC_Channel_aux),
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
+    GGROUP(rc_10, "RC10_", RC_Channel_aux),
     // @Group: RC11_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    GGROUP(rc_11, "RC11_", RC_Channel_aux),
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_12,                   "RC12_", RC_Channel_aux),
-
+    GGROUP(rc_12, "RC12_", RC_Channel_aux),
     // @Group: RC13_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_13,                   "RC13_", RC_Channel_aux),
-
+    GGROUP(rc_13, "RC13_", RC_Channel_aux),
     // @Group: RC14_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_14,                   "RC14_", RC_Channel_aux),
-#endif
-
+    GGROUP(rc_14, "RC14_", RC_Channel_aux),
     // @Group: RC15_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_15,                   "RC15_", RC_Channel_aux),
-
+    GGROUP(rc_15, "RC15_", RC_Channel_aux),
+    // @Group: RC16_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_16, "RC16_", RC_Channel_aux),
+    // @Group: RC17_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_17, "RC17_", RC_Channel_aux),
+    // @Group: RC18_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_18, "RC18_", RC_Channel_aux),
+    // @Group: RC19_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_19, "RC19_", RC_Channel_aux),
+    // @Group: RC20_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_20, "RC20_", RC_Channel_aux),
+    // @Group: RC21_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_21, "RC21_", RC_Channel_aux),
+    // @Group: RC22_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_22, "RC22_", RC_Channel_aux),
+    // @Group: RC23_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_23, "RC23_", RC_Channel_aux),
+    // @Group: RC24_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_24, "RC24_", RC_Channel_aux),
+    // @Group: RC25_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_25, "RC25_", RC_Channel_aux),
+    // @Group: RC26_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_26, "RC26_", RC_Channel_aux),
+    // @Group: RC27_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_27, "RC27_", RC_Channel_aux),
+    // @Group: RC28_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_28, "RC28_", RC_Channel_aux),
+    // @Group: RC29_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_29, "RC29_", RC_Channel_aux),
+    // @Group: RC30_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_30, "RC30_", RC_Channel_aux),
     // @Group: RC31_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
-    GGROUP(rc_31,                   "RC31_", RC_Channel_aux),
+    GGROUP(rc_31, "RC31_", RC_Channel_aux),
+    // @Group: RC32_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_32, "RC32_", RC_Channel_aux),
+    // @Group: RC33_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_33, "RC33_", RC_Channel_aux),
+    // @Group: RC34_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_34, "RC34_", RC_Channel_aux),
+    // @Group: RC35_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_35, "RC35_", RC_Channel_aux),
+    // @Group: RC36_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_36, "RC36_", RC_Channel_aux),
+    // @Group: RC37_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_37, "RC37_", RC_Channel_aux),
+    // @Group: RC38_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_38, "RC38_", RC_Channel_aux),
+    // @Group: RC39_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_39, "RC39_", RC_Channel_aux),
+    // @Group: RC40_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_40, "RC40_", RC_Channel_aux),
+    // @Group: RC41_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_41, "RC41_", RC_Channel_aux),
+    // @Group: RC42_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_42, "RC42_", RC_Channel_aux),
+    // @Group: RC43_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_43, "RC43_", RC_Channel_aux),
+    // @Group: RC44_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_44, "RC44_", RC_Channel_aux),
+    // @Group: RC45_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_45, "RC45_", RC_Channel_aux),
+    // @Group: RC46_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_46, "RC46_", RC_Channel_aux),
+    // @Group: RC47_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_47, "RC47_", RC_Channel_aux),
+    // @Group: RC48_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_48, "RC48_", RC_Channel_aux),
+    // @Group: RC49_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_49, "RC49_", RC_Channel_aux),
+    // @Group: RC50_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_50, "RC50_", RC_Channel_aux),
+    // @Group: RC51_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_51, "RC51_", RC_Channel_aux),
+    // @Group: RC52_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_52, "RC52_", RC_Channel_aux),
+    // @Group: RC53_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_53, "RC53_", RC_Channel_aux),
+    // @Group: RC54_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_54, "RC54_", RC_Channel_aux),
+    // @Group: RC55_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_55, "RC55_", RC_Channel_aux),
+    // @Group: RC56_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_56, "RC56_", RC_Channel_aux),
+    // @Group: RC57_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_57, "RC57_", RC_Channel_aux),
+    // @Group: RC58_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_58, "RC58_", RC_Channel_aux),
+    // @Group: RC59_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_59, "RC59_", RC_Channel_aux),
+    // @Group: RC60_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_60, "RC60_", RC_Channel_aux),
+    // @Group: RC61_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_61, "RC61_", RC_Channel_aux),
+    // @Group: RC62_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_62, "RC62_", RC_Channel_aux),
+    // @Group: RC63_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_63, "RC63_", RC_Channel_aux),
+    // @Group: RC64_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
+    GGROUP(rc_64, "RC64_", RC_Channel_aux),
 
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
@@ -1141,13 +1274,6 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
-    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
-    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
-    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
-    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
-    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
-    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
-    { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
