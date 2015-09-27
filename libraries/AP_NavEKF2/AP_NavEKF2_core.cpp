@@ -304,8 +304,16 @@ void NavEKF2_core::SelectVelPosFusion()
     // check for and read new GPS data
     readGpsData();
 
+    // Determine if we need to fuse position and velocity data on this time step
     if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
-        fuseVelData = true;
+        // Don't fuse velocity data if GPS doesn't support it
+        // If no aiding is avaialble, then we use zeroed GPS position and  elocity data to constrain
+        // tilt errors assuming that the vehicle is not accelerating
+        if (frontend._fusionModeGPS <= 1 || PV_AidingMode == AID_NONE) {
+            fuseVelData = true;
+        } else {
+            fuseVelData = false;
+        }
         fusePosData = true;
     } else {
         fuseVelData = false;
