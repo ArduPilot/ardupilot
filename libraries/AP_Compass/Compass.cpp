@@ -635,7 +635,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    const Vector3f &field = get_field_milligauss();
+    const Vector3f &field = get_field();
 
     float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
@@ -676,7 +676,7 @@ bool Compass::configured(uint8_t i)
     }
 
     // exit immediately if all offsets (mG) are zero
-    if (is_zero(get_offsets_milligauss(i).length())) {
+    if (is_zero(get_offsets(i).length())) {
         return false;
     }
 
@@ -784,7 +784,7 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
 
 bool Compass::consistent() const
 {
-    Vector3f primary_mag_field = get_field_milligauss();
+    Vector3f primary_mag_field = get_field();
     Vector3f primary_mag_field_norm;
 
     if (!primary_mag_field.is_zero()) {
@@ -804,7 +804,7 @@ bool Compass::consistent() const
 
     for (uint8_t i=0; i<get_count(); i++) {
         if (use_for_yaw(i)) {
-            Vector3f mag_field = get_field_milligauss(i);
+            Vector3f mag_field = get_field(i);
             Vector3f mag_field_norm;
 
             if (!mag_field.is_zero()) {
