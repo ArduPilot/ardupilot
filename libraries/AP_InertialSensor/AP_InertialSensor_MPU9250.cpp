@@ -288,6 +288,67 @@ bool AP_MPU9250_BusDriver_SPI::has_auxiliary_bus()
     return true;
 }
 
+/* I2C bus driver implementation */
+AP_MPU9250_BusDriver_I2C::AP_MPU9250_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr)
+    : _addr(addr)
+    , _i2c(i2c)
+{
+}
+
+void AP_MPU9250_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
+{
+    _i2c->readRegister(_addr, reg, val);
+}
+
+void AP_MPU9250_BusDriver_I2C::read_block(uint8_t reg, uint8_t *val, uint8_t count)
+{
+    _i2c->readRegisters(_addr, reg, count, val);
+}
+
+void AP_MPU9250_BusDriver_I2C::write8(uint8_t reg, uint8_t val)
+{
+    _i2c->writeRegister(_addr, reg, val);
+}
+
+bool AP_MPU9250_BusDriver_I2C::read_data_transaction(uint8_t *samples,
+                                                     uint8_t &n_samples)
+{
+    uint8_t ret = 0;
+    struct PACKED {
+        uint8_t int_status;
+        uint8_t v[MPU9250_SAMPLE_SIZE];
+    } buffer;
+
+    ret = _i2c->readRegisters(_addr, MPUREG_INT_STATUS, sizeof(buffer), (uint8_t *)&buffer);
+    if (ret != 0) {
+        hal.console->printf("MPU9250: error in I2C read\n");
+        n_samples = 0;
+        return false;
+    }
+
+    if (!(buffer.int_status & BIT_RAW_RDY_INT)) {
+#if MPU9250_DEBUG
+        hal.console->printf("MPU9250: No sample available.\n");
+#endif
+        n_samples = 0;
+        return false;
+    }
+
+    memcpy(samples, buffer.v, MPU9250_SAMPLE_SIZE);
+    n_samples = 1;
+    return true;
+}
+
+AP_HAL::Semaphore* AP_MPU9250_BusDriver_I2C::get_semaphore()
+{
+    return _i2c->get_semaphore();
+}
+
+bool AP_MPU9250_BusDriver_I2C::has_auxiliary_bus()
+{
+    return false;
+}
+
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
 	AP_InertialSensor_Backend(imu),
     _last_accel_filter_hz(-1),
@@ -320,6 +381,16 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &
     AP_MPU9250_BusDriver *bus = new AP_MPU9250_BusDriver_SPI(spi);
     if (!bus)
         return NULL;
+    return _detect(_imu, bus, HAL_INS_MPU9250);
+}
+
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect_i2c(AP_InertialSensor &_imu,
+                                                                 AP_HAL::I2CDriver *i2c,
+                                                                 uint8_t addr)
+{
+    AP_MPU9250_BusDriver *bus = new AP_MPU9250_BusDriver_I2C(i2c, addr);
+    if (!bus)
+        return nullptr;
     return _detect(_imu, bus, HAL_INS_MPU9250);
 }
 

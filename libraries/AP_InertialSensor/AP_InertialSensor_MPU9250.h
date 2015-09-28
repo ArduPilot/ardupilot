@@ -55,6 +55,9 @@ public:
 
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu, AP_HAL::SPIDeviceDriver *spi);
+    static AP_InertialSensor_Backend *detect_i2c(AP_InertialSensor &imu,
+                                                 AP_HAL::I2CDriver *i2c,
+                                                 uint8_t addr);
 
 private:
     static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
@@ -127,6 +130,24 @@ public:
 
 private:
     AP_HAL::SPIDeviceDriver *_spi;
+};
+
+class AP_MPU9250_BusDriver_I2C : public AP_MPU9250_BusDriver
+{
+public:
+    AP_MPU9250_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
+    void init() {};
+    void read8(uint8_t reg, uint8_t *val);
+    void write8(uint8_t reg, uint8_t val);
+    void read_block(uint8_t reg, uint8_t *val, uint8_t count);
+    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) {};
+    bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
+    AP_HAL::Semaphore* get_semaphore();
+    bool has_auxiliary_bus();
+
+private:
+    uint8_t _addr;
+    AP_HAL::I2CDriver *_i2c;
 };
 
 class AP_MPU9250_AuxiliaryBus : public AuxiliaryBus
