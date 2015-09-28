@@ -256,7 +256,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         // check for unreasonable compass offsets
-        Vector3f offsets = _compass.get_offsets_milligauss();
+        Vector3f offsets = _compass.get_offsets();
         if (offsets.length() > 600) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass offsets too high"));
@@ -271,7 +271,7 @@ bool AP_Arming::compass_checks(bool report)
 #endif
 
         // check for unreasonable mag field length
-        float mag_field = _compass.get_field_milligauss().length();
+        float mag_field = _compass.get_field().length();
         if (mag_field > COMPASS_MAGFIELD_EXPECTED*1.65f || mag_field < COMPASS_MAGFIELD_EXPECTED*0.35f) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Check mag field"));
