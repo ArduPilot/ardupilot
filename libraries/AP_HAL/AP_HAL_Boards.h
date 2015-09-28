@@ -61,6 +61,7 @@
 #define HAL_INS_L3GD20   10
 #define HAL_INS_LSM9DS0 11
 #define HAL_INS_RASPILOT 12
+#define HAL_INS_MPU9250_I2C 13
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
