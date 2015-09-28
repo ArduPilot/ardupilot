@@ -78,6 +78,7 @@
 #define HAL_BARO_PX4        5
 #define HAL_BARO_HIL        6
 #define HAL_BARO_VRBRAIN    7
+#define HAL_BARO_MS5637_I2C 8
 
 // compass driver types
 #define HAL_COMPASS_HMC5843   1
