@@ -22,6 +22,8 @@
 #include "AP_InertialSensor_MPU9250.h"
 #include <AP_HAL_Linux/GPIO.h>
 
+#include <assert.h>
+
 extern const AP_HAL::HAL& hal;
 
 // MPU9250 accelerometer scaling for 16g range
@@ -147,6 +149,22 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_WHOAMI_MPU9250                           0x71
 #define MPUREG_WHOAMI_MPU9255                           0x73
 
+/* bit definitions for MPUREG_MST_CTRL */
+#define MPUREG_I2C_MST_CTRL                             0x24
+#        define I2C_MST_P_NSR                           0x10
+#        define I2C_SLV0_EN                             0x80
+#        define I2C_MST_CLOCK_400KHZ                    0x0D
+#        define I2C_MST_CLOCK_258KHZ                    0x08
+#define MPUREG_I2C_SLV4_CTRL                            0x34
+#define MPUREG_I2C_MST_DELAY_CTRL                       0x67
+#        define I2C_SLV0_DLY_EN                         0x01
+#        define I2C_SLV1_DLY_EN                         0x02
+#        define I2C_SLV2_DLY_EN                         0x04
+#        define I2C_SLV3_DLY_EN                         0x08
+#define READ_FLAG                                       0x80
+#define MPUREG_I2C_SLV0_ADDR                            0x25
+#define MPUREG_EXT_SENS_DATA_00                         0x49
+#define MPUREG_I2C_SLV0_DO                              0x63
 
 // Configuration bits MPU 3000, MPU 6000 and MPU9250
 #define BITS_DLPF_CFG_256HZ_NOLPF2              0x00
@@ -206,6 +224,18 @@ void AP_MPU9250_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
     _spi->transaction(tx, rx, 2);
 
     *val = rx[1];
+}
+
+void AP_MPU9250_BusDriver_SPI::read_block(uint8_t reg, uint8_t *val, uint8_t count)
+{
+    assert(count < 32);
+
+    uint8_t addr = reg | 0x80; // Set most significant bit
+    uint8_t tx[32] = { addr, };
+    uint8_t rx[32];
+
+    _spi->transaction(tx, rx, count + 1);
+    memcpy(val, rx + 1, count);
 }
 
 void AP_MPU9250_BusDriver_SPI::write8(uint8_t reg, uint8_t val)
@@ -278,6 +308,11 @@ void AP_MPU9250_BusDriver_SPI::set_driver_state(bool working)
     } else {
         _spi->set_state(AP_HAL::SPIDeviceDriver::State::FAILED);
     }
+}
+
+bool AP_MPU9250_BusDriver_SPI::has_auxiliary_bus()
+{
+    return true;
 }
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
@@ -639,6 +674,17 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     return true;
 }
 
+AuxiliaryBus *AP_InertialSensor_MPU9250::get_auxiliary_bus()
+{
+    if (_auxiliar_bus)
+        return _auxiliar_bus;
+
+    if (_bus->has_auxiliary_bus())
+        _auxiliar_bus = new AP_MPU9250_AuxiliaryBus(*this);
+
+    return _auxiliar_bus;
+}
+
 #if MPU9250_DEBUG
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU9250::_dump_registers(AP_MPU9250_BusDriver *bus)
@@ -655,5 +701,152 @@ void AP_InertialSensor_MPU9250::_dump_registers(AP_MPU9250_BusDriver *bus)
 }
 #endif
 
+AP_MPU9250_AuxiliaryBus::AP_MPU9250_AuxiliaryBus(AP_InertialSensor_MPU9250 &backend)
+    : AuxiliaryBus(backend, 4)
+{
+}
+
+AP_HAL::Semaphore *AP_MPU9250_AuxiliaryBus::get_semaphore()
+{
+    return AP_InertialSensor_MPU9250::from(_ins_backend)._bus_sem;
+}
+
+AuxiliaryBusSlave *AP_MPU9250_AuxiliaryBus::_instantiate_slave(uint8_t addr, uint8_t instance)
+{
+    /* Enable slaves on MPU9250 if this is the first time */
+    if (_ext_sens_data == 0)
+        _configure_slaves();
+
+    return new AP_MPU9250_AuxiliaryBusSlave(*this, addr, instance);
+}
+
+void AP_MPU9250_AuxiliaryBus::_configure_slaves()
+{
+    AP_InertialSensor_MPU9250 &backend = AP_InertialSensor_MPU9250::from(_ins_backend);
+
+    /* Enable the I2C master to slaves on the auxiliary I2C bus*/
+    uint8_t user_ctrl = backend._register_read(MPUREG_USER_CTRL);
+    backend._register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_I2C_MST_EN);
+
+    /* stop condition between reads; clock at 400kHz */
+    backend._register_write(MPUREG_I2C_MST_CTRL, I2C_MST_CLOCK_400KHZ | I2C_MST_P_NSR);
+
+    /* Hard-code divider for internal sample rate, 1 kHz, resulting in a
+     * sample rate of 100Hz */
+    backend._register_write(MPUREG_I2C_SLV4_CTRL, 9);
+
+    /* All slaves are subject to the sample rate */
+    backend._register_write(MPUREG_I2C_MST_DELAY_CTRL, I2C_SLV0_DLY_EN
+                            | I2C_SLV1_DLY_EN | I2C_SLV2_DLY_EN | I2C_SLV3_DLY_EN);
+}
+
+int AP_MPU9250_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,
+                                                      uint8_t reg, uint8_t size)
+{
+    if (_ext_sens_data + size > MAX_EXT_SENS_DATA)
+        return -1;
+
+    AP_MPU9250_AuxiliaryBusSlave *mpu_slave =
+        static_cast<AP_MPU9250_AuxiliaryBusSlave*>(slave);
+    mpu_slave->_set_passthrough(reg, size);
+    mpu_slave->_ext_sens_data = _ext_sens_data;
+    _ext_sens_data += size;
+
+    return 0;
+}
+
+AP_MPU9250_AuxiliaryBusSlave::AP_MPU9250_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr,
+                                                           uint8_t instance)
+    : AuxiliaryBusSlave(bus, addr, instance)
+    , _mpu9250_addr(MPUREG_I2C_SLV0_ADDR + _instance * 3)
+    , _mpu9250_reg(_mpu9250_addr + 1)
+    , _mpu9250_ctrl(_mpu9250_addr + 2)
+    , _mpu9250_do(MPUREG_I2C_SLV0_DO + _instance)
+{
+}
+
+int AP_MPU9250_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t size,
+                                                   uint8_t *out)
+{
+    AP_InertialSensor_MPU9250 &backend = AP_InertialSensor_MPU9250::from(_bus.get_backend());
+    uint8_t addr;
+
+    /* Ensure the slave read/write is disabled before changing the registers */
+    backend._register_write(_mpu9250_ctrl, 0);
+
+    if (out) {
+        backend._register_write(_mpu9250_do, *out);
+        addr = _addr;
+    } else {
+        addr = _addr | READ_FLAG;
+    }
+
+    backend._register_write(_mpu9250_addr, addr);
+    backend._register_write(_mpu9250_reg, reg);
+    backend._register_write(_mpu9250_ctrl, I2C_SLV0_EN | size);
+
+    return 0;
+}
+
+int AP_MPU9250_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
+                                                   uint8_t size)
+{
+    assert(buf);
+
+    if (_registered) {
+        hal.console->println("Error: can't passthrough when slave is already configured");
+        return -1;
+    }
+
+    int r = _set_passthrough(reg, size);
+    if (r < 0)
+        return r;
+
+    /* wait the value to be read from the slave and read it back */
+    hal.scheduler->delay(10);
+
+    AP_InertialSensor_MPU9250 &backend = AP_InertialSensor_MPU9250::from(_bus.get_backend());
+    backend._bus->read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, size);
+
+    /* disable new reads */
+    backend._register_write(_mpu9250_ctrl, 0);
+
+    return size;
+}
+
+int AP_MPU9250_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
+{
+    if (_registered) {
+        hal.console->println("Error: can't passthrough when slave is already configured");
+        return -1;
+    }
+
+    int r = _set_passthrough(reg, 1, &val);
+    if (r < 0)
+        return r;
+
+    /* wait the value to be written to the slave */
+    hal.scheduler->delay(10);
+
+    AP_InertialSensor_MPU9250 &backend = AP_InertialSensor_MPU9250::from(_bus.get_backend());
+
+    /* disable new writes */
+    backend._register_write(_mpu9250_ctrl, 0);
+
+    return 0;
+}
+
+int AP_MPU9250_AuxiliaryBusSlave::read(uint8_t *buf)
+{
+    if (!_registered) {
+        hal.console->println("Error: can't read before configuring slave");
+        return -1;
+    }
+
+    AP_InertialSensor_MPU9250 &backend = AP_InertialSensor_MPU9250::from(_bus.get_backend());
+    backend._bus->read_block(MPUREG_EXT_SENS_DATA_00 + _ext_sens_data, buf, _sample_size);
+
+    return 0;
+}
 
 #endif // CONFIG_HAL_BOARD
