@@ -49,6 +49,7 @@ private:
     char *_device = NULL;
     int _fd = -1;
     uint8_t _addr;
+    bool _print_ioctl_error = true;
 };
 
 #endif // __AP_HAL_LINUX_I2CDRIVER_H__

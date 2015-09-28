@@ -120,10 +120,27 @@ bool I2CDriver::set_address(uint8_t addr)
     if (_fd == -1) {
         return false;
     }
-    if (_addr != addr) {
-        ioctl(_fd, I2C_SLAVE, addr);
+    if (_addr == addr) {
+        goto end;
+    } else {
+        if (ioctl(_fd, I2C_SLAVE, addr) < 0) {
+            if (errno != EBUSY) {
+                return false;
+            }
+            /* Only print this message once per i2c bus */
+            if (_print_ioctl_error) {
+                hal.console->printf("couldn't set i2c slave address: %s\n",
+                                    strerror(errno));
+                hal.console->printf("trying I2C_SLAVE_FORCE\n");
+                _print_ioctl_error = false;
+            }
+            if (ioctl(_fd, I2C_SLAVE_FORCE, addr) < 0) {
+                return false;
+            }
+        }
         _addr = addr;
     }
+end:
     return true;
 }
 
