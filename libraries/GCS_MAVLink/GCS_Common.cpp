@@ -612,6 +612,15 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
     }
 }
 
+void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg, NavEKF &EKF)
+{
+    mavlink_vision_position_estimate_t packet;
+    mavlink_msg_vision_position_estimate_decode(msg, &packet);
+    Vector3f pos = Vector3f(packet.x, packet.y, packet.z);
+    Vector3f orient = Vector3f(packet.roll, packet.pitch, packet.yaw);
+    EKF.writeVisionPositionMeas(pos, orient, packet.usec);
+
+}
 
 void
 GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
@@ -806,6 +815,7 @@ GCS_MAVLINK::handle_gps_inject(const mavlink_message_t *msg, AP_GPS &gps)
     gps.inject_data(packet.data, packet.len);
 
 }
+
 
 // send a message using mavlink, handling message queueing
 void GCS_MAVLINK::send_message(enum ap_message id)

@@ -315,6 +315,7 @@ private:
     void handle_param_set(mavlink_message_t *msg, DataFlash_Class *DataFlash);
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(mavlink_message_t *msg, AP_GPS &gps);
+    void handle_vision_position_estimate(mavlink_message_t *msg, NavEKF &EKF);
     void lock_channel(mavlink_channel_t chan, bool lock);
     FUNCTOR_TYPEDEF(set_mode_fn, bool, uint8_t);
     void handle_set_mode(mavlink_message_t* msg, set_mode_fn set_mode);

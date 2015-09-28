@@ -1135,7 +1135,7 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
 }
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
+void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled, bool visionPosEnabled)
 {
 	// Write first EKF packet
     Vector3f euler;
@@ -1273,6 +1273,39 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             errHAGL : (uint16_t)(100*gndOffsetErr)
          };
         WriteBlock(&pkt5, sizeof(pkt5));
+    }
+
+    // Write sixth EKF packet
+    if (visionPosEnabled) {
+        float posX; // x vision position  from external source
+        float posY; // y vision position  from external source
+        float posZ; // z vision position  from external source
+        float posN, posE, posD; //robot position in NED frame calculated with marker vision position
+        float vpInnovX, vpInnovY, vpInnovZ; // vision position innovations from the main nav filter
+
+        Matrix3f R;
+        float roll, pitch, yaw;
+
+        ahrs.get_NavEKF().getVisionPosDebug(posX, posY, posZ, posN, posE, posD, vpInnovX, vpInnovY, vpInnovZ, R);
+        R.to_euler(&roll, &pitch, &yaw);
+
+        struct log_EKF6 pkt6 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF6_MSG),
+            time_us : hal.scheduler->micros64(),
+			VPX : (float)(posX),
+			VPY : (float)(posY),
+			VPZ : (float)(posZ),
+			VPN : (float)(posN),
+			VPE : (float)(posE),
+			VPD : (float)(posD),
+			VIX : (float)(vpInnovX),
+			VIY : (float)(vpInnovY),
+			VIZ : (float)(vpInnovZ),
+			ROLL: (float)(roll),
+			PITCH: (float)(pitch),
+			YAW: (float)(yaw)
+         };
+        WriteBlock(&pkt6, sizeof(pkt6));
     }
 
     // do EKF2 as well if enabled

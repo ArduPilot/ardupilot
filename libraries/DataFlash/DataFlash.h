@@ -101,7 +101,7 @@ public:
     void Log_Write_AHRS2(AP_AHRS &ahrs);
     void Log_Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
+    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled, bool visionPosEnabled=false);
     void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled);
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
@@ -459,6 +459,23 @@ struct PACKED log_EKF5 {
     int16_t RI;
     uint16_t meaRng;
     uint16_t errHAGL;
+};
+
+struct PACKED log_EKF6 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float VPX;
+    float VPY;
+    float VPZ;
+    float VPN;
+    float VPE;
+    float VPD;
+    float VIX;
+    float VIY;
+    float VIZ;
+    float ROLL;
+    float PITCH;
+    float YAW;
 };
 
 struct PACKED log_Cmd {
@@ -852,6 +869,10 @@ Format characters in the format string for binary log messages
       "ESC7",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
     { LOG_ESC8_MSG, sizeof(log_Esc), \
       "ESC8",  "Qcccc", "TimeUS,RPM,Volt,Curr,Temp" }, \
+    { LOG_EKF5_MSG, sizeof(log_EKF5), \
+      "EKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+	{ LOG_EKF6_MSG, sizeof(log_EKF6), \
+	  "EKF6","Qffffffffffff","TimeUS,VPX,VPY,VPZ,VPN,VPE,VPD,VIX,VIY,VIZ,RL,PT,YAW" },  \
     { LOG_COMPASS2_MSG, sizeof(log_Compass), \
       "MAG2","QhhhhhhhhhB",    "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health" }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
@@ -894,6 +915,8 @@ Format characters in the format string for binary log messages
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2" }
+
+
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
@@ -942,6 +965,7 @@ enum LogMessages {
     LOG_ESC7_MSG,
     LOG_ESC8_MSG,
     LOG_EKF5_MSG,
+	LOG_EKF6_MSG,
     LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
