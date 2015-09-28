@@ -358,7 +358,7 @@ void AP_Baro_MS56XX::update()
     d2count = _d2_count; _d2_count = 0;
     _updated = false;
     hal.scheduler->resume_timer_procs();
-    
+
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;
     }
@@ -382,7 +382,7 @@ void AP_Baro_MS5611::_calculate()
     float SENS;
 
     // Formulas from manufacturer datasheet
-    // sub -20c temperature compensation is not included
+    // sub -15c temperature compensation is not included
 
     // we do the calculations using floating point
     // as this is much faster on an AVR2560, and also allows
@@ -422,7 +422,7 @@ void AP_Baro_MS5607::_calculate()
     float SENS;
 
     // Formulas from manufacturer datasheet
-    // sub -20c temperature compensation is not included
+    // sub -15c temperature compensation is not included
 
     // we do the calculations using floating point
     // as this is much faster on an AVR2560, and also allows
