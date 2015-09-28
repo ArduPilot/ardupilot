@@ -442,6 +442,9 @@ void Compass::_detect_backends(void)
 #elif  HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_I2C && HAL_INS_AK8963_I2C_BUS == 1
     _add_backend(AP_Compass_AK8963::detect_i2c(*this, hal.i2c1,
                                                HAL_COMPASS_AK8963_I2C_ADDR));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250_I2C
+    _add_backend(AP_Compass_AK8963::detect_mpu9250_i2c(*this, HAL_COMPASS_AK8963_I2C_POINTER,
+                                                       HAL_COMPASS_AK8963_I2C_ADDR));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_PX4 || HAL_COMPASS_DEFAULT == HAL_COMPASS_VRBRAIN
     _add_backend(AP_Compass_PX4::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
