@@ -89,6 +89,15 @@ AP_Compass_Backend *AP_Compass_AK8963::detect_i2c(Compass &compass,
     return _detect(compass, bus);
 }
 
+AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250_i2c(Compass &compass,
+                                                          AP_HAL::I2CDriver *i2c,
+                                                          uint8_t addr)
+{
+    AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
+    ins.detect_backends();
+    return detect_i2c(compass, i2c, addr);
+}
+
 AP_Compass_Backend *AP_Compass_AK8963::_detect(Compass &compass,
                                                AP_AK8963_SerialBus *bus)
 {

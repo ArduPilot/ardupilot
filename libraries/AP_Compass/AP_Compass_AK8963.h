@@ -39,6 +39,9 @@ class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *detect_mpu9250(Compass &compass, uint8_t mpu9250_instance);
+    static AP_Compass_Backend *detect_mpu9250_i2c(Compass &compass,
+                                                  AP_HAL::I2CDriver *i2c,
+                                                  uint8_t addr);
     static AP_Compass_Backend *detect_i2c(Compass &compass,
                                           AP_HAL::I2CDriver *i2c,
                                           uint8_t addr);
