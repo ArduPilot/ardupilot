@@ -88,6 +88,8 @@ void loop()
                             barometer.get_climb_rate(),
                             (unsigned)read_time);
         hal.console->println();
+    } else {
+        hal.scheduler->delay(1);
     }
 }
 
