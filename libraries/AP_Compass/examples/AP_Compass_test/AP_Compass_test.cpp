@@ -84,7 +84,7 @@ void loop()
         compass.learn_offsets();
 
         // capture min
-        const Vector3f &mag = compass.get_field_milligauss();
+        const Vector3f &mag = compass.get_field();
         if( mag.x < min[0] )
             min[0] = mag.x;
         if( mag.y < min[1] )
