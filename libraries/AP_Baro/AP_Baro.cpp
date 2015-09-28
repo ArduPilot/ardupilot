@@ -375,7 +375,7 @@ void AP_Baro::update(void)
 }
 
 /*
-  call accululate on all drivers
+  call accumulate on all drivers
  */
 void AP_Baro::accumulate(void)
 {
