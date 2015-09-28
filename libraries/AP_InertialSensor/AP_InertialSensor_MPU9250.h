@@ -9,6 +9,10 @@
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter2p.h>
 #include "AP_InertialSensor.h"
+#include "AuxiliaryBus.h"
+
+class AP_MPU9250_AuxiliaryBus;
+class AP_MPU9250_AuxiliaryBusSlave;
 
 // enable debug to see a register dump on startup
 #define MPU9250_DEBUG 0
@@ -20,16 +24,21 @@ public:
     virtual void init() = 0;
     virtual void read8(uint8_t reg, uint8_t *val) = 0;
     virtual void write8(uint8_t reg, uint8_t val) = 0;
+    virtual void read_block(uint8_t reg, uint8_t *val, uint8_t count) = 0;
     virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
     virtual bool read_data_transaction(uint8_t* samples,
                                        uint8_t &n_samples) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
     virtual void get_driver_state(bool &initialized, bool &working) = 0;
     virtual void set_driver_state(bool working) = 0;
+    virtual bool has_auxiliary_bus() = 0;
 };
 
 class AP_InertialSensor_MPU9250 : public AP_InertialSensor_Backend
 {
+    friend AP_MPU9250_AuxiliaryBus;
+    friend AP_MPU9250_AuxiliaryBusSlave;
+
 public:
 
     AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus);
@@ -39,6 +48,12 @@ public:
 
     bool gyro_sample_available(void) { return _have_sample_available; }
     bool accel_sample_available(void) { return _have_sample_available; }
+
+    AuxiliaryBus *get_auxiliary_bus();
+
+    static AP_InertialSensor_MPU9250 &from(AP_InertialSensor_Backend &backend) {
+        return static_cast<AP_InertialSensor_MPU9250&>(backend);
+    }
 
     /* Put the MPU9250 in a known state so it can be
      * used both for the InertialSensor and as for backend of other drivers.
@@ -77,6 +92,7 @@ private:
 
     AP_MPU9250_BusDriver *_bus;
     AP_HAL::Semaphore *_bus_sem;
+    AP_MPU9250_AuxiliaryBus *_auxiliar_bus = nullptr;
 
     // support for updating filter at runtime
     int16_t _last_gyro_filter_hz;
@@ -123,14 +139,60 @@ public:
     void init();
     void read8(uint8_t reg, uint8_t *val);
     void write8(uint8_t reg, uint8_t val);
+    void read_block(uint8_t reg, uint8_t *val, uint8_t count);
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
     bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
     void get_driver_state(bool &initialized, bool &working);
     void set_driver_state(bool working);
+    bool has_auxiliary_bus();
 
 private:
     AP_HAL::SPIDeviceDriver *_spi;
+};
+
+class AP_MPU9250_AuxiliaryBus : public AuxiliaryBus
+{
+    friend class AP_InertialSensor_MPU9250;
+
+public:
+    AP_HAL::Semaphore *get_semaphore() override;
+
+protected:
+    AP_MPU9250_AuxiliaryBus(AP_InertialSensor_MPU9250 &backend);
+
+    AuxiliaryBusSlave *_instantiate_slave(uint8_t addr, uint8_t instance);
+    int _configure_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
+                                 uint8_t size);
+
+private:
+    void _configure_slaves();
+
+    static const uint8_t MAX_EXT_SENS_DATA = 24;
+    uint8_t _ext_sens_data = 0;
+};
+
+class AP_MPU9250_AuxiliaryBusSlave : public AuxiliaryBusSlave
+{
+    friend class AP_MPU9250_AuxiliaryBus;
+
+public:
+    int passthrough_read(uint8_t reg, uint8_t *buf, uint8_t size) override;
+    int passthrough_write(uint8_t reg, uint8_t val) override;
+
+    int read(uint8_t *buf) override;
+
+protected:
+    AP_MPU9250_AuxiliaryBusSlave(AuxiliaryBus &bus, uint8_t addr, uint8_t instance);
+    int _set_passthrough(uint8_t reg, uint8_t size, uint8_t *out = nullptr);
+
+private:
+    const uint8_t _mpu9250_addr;
+    const uint8_t _mpu9250_reg;
+    const uint8_t _mpu9250_ctrl;
+    const uint8_t _mpu9250_do;
+
+    uint8_t _ext_sens_data = 0;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU9250_H__
