@@ -517,6 +517,10 @@ AP_InertialSensor::_detect_backends(void)
     //_add_backend(AP_InertialSensor_L3GD20::detect);
     //_add_backend(AP_InertialSensor_LSM303D::detect);
     _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
+    _add_backend(AP_InertialSensor_MPU9250::detect_i2c(*this,
+                                                       HAL_INS_MPU9250_I2C_POINTER,
+                                                       HAL_INS_MPU9250_I2C_ADDR));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
