@@ -136,7 +136,7 @@ class AP_MPU9250_BusDriver_I2C : public AP_MPU9250_BusDriver
 {
 public:
     AP_MPU9250_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-    void init() {};
+    void init();
     void read8(uint8_t reg, uint8_t *val);
     void write8(uint8_t reg, uint8_t val);
     void read_block(uint8_t reg, uint8_t *val, uint8_t count);
