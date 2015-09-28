@@ -80,6 +80,7 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_INT_PIN_CFG                              0x37
 #       define BIT_INT_RD_CLEAR                                 0x10    // clear the interrupt when any read occurs
 #       define BIT_LATCH_INT_EN                                 0x20    // latch data ready pin
+#       define BIT_BYPASS_EN                                    0x02    // connect auxiliary I2C bus to the main I2C bus
 #define MPUREG_INT_ENABLE                               0x38
 // bit definitions for MPUREG_INT_ENABLE
 #       define BIT_RAW_RDY_EN                                   0x01
@@ -293,6 +294,16 @@ AP_MPU9250_BusDriver_I2C::AP_MPU9250_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8
     : _addr(addr)
     , _i2c(i2c)
 {
+}
+
+void AP_MPU9250_BusDriver_I2C::init()
+{
+    uint8_t value;
+
+    read8(MPUREG_INT_PIN_CFG, &value);
+    // enable I2C bypass, connecting auxiliary I2C bus to the main one
+    value |= BIT_BYPASS_EN;
+    write8(MPUREG_INT_PIN_CFG, value);
 }
 
 void AP_MPU9250_BusDriver_I2C::read8(uint8_t reg, uint8_t *val)
@@ -585,9 +596,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // initially run the bus at low speed
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
 
-    uint8_t whoami = _register_read(MPUREG_WHOAMI);
-    if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
-        hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
+    uint8_t value = _register_read(MPUREG_WHOAMI);
+    if (value != MPUREG_WHOAMI_MPU9250 && value != MPUREG_WHOAMI_MPU9255) {
+        hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)value);
         goto fail_whoami;
     }
 
@@ -655,7 +666,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 
     // clear interrupt on any read, and hold the data ready pin high
     // until we clear the interrupt
-    _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
+    value = _register_read(MPUREG_INT_PIN_CFG);
+    value |= BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN;
+    _register_write(MPUREG_INT_PIN_CFG, value);
 
     // now that we have initialized, we set the SPI bus speed to high
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
