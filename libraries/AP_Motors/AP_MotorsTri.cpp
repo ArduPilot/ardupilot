@@ -117,10 +117,12 @@ void AP_MotorsTri::output_min()
     limit.throttle_lower = true;
 
     // send minimum value to each motor
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _throttle_radio_min);
     hal.rcout->write(AP_MOTORS_MOT_2, _throttle_radio_min);
     hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min);
     hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+    hal.rcout->push();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -171,6 +173,8 @@ void AP_MotorsTri::output_armed_not_stabilizing()
         motor_out[AP_MOTORS_MOT_4] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_4], out_min, out_max);
     }
 
+    hal.rcout->cork();
+
     // send output to each motor
     hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1]);
     hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2]);
@@ -178,6 +182,8 @@ void AP_MotorsTri::output_armed_not_stabilizing()
 
     // send centering signal to yaw servo
     hal.rcout->write(AP_MOTORS_CH_TRI_YAW, _yaw_servo_trim);
+
+    hal.rcout->push();
 }
 
 // sends commands to the motors
@@ -284,6 +290,8 @@ void AP_MotorsTri::output_armed_stabilizing()
         motor_out[AP_MOTORS_MOT_4] = max(motor_out[AP_MOTORS_MOT_4],    out_min);
     }
 
+    hal.rcout->cork();
+
     // send output to each motor
     hal.rcout->write(AP_MOTORS_MOT_1, motor_out[AP_MOTORS_MOT_1]);
     hal.rcout->write(AP_MOTORS_MOT_2, motor_out[AP_MOTORS_MOT_2]);
@@ -291,6 +299,8 @@ void AP_MotorsTri::output_armed_stabilizing()
 
     // send out to yaw command to tail servo
     hal.rcout->write(AP_MOTORS_CH_TRI_YAW, yaw_radio_output);
+
+    hal.rcout->push();
 }
 
 // output_disarmed - sends commands to the motors
