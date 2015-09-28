@@ -111,10 +111,12 @@ void AP_MotorsCoax::enable()
 void AP_MotorsCoax::output_min()
 {
     // send minimum value to each motor
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_3, _throttle_radio_min);
     hal.rcout->write(AP_MOTORS_MOT_4, _throttle_radio_min);
+    hal.rcout->push();
 }
 
 void AP_MotorsCoax::output_armed_not_stabilizing()
@@ -154,10 +156,12 @@ void AP_MotorsCoax::output_armed_not_stabilizing()
         motor_out = apply_thrust_curve_and_volt_scaling(motor_out, out_min, _throttle_radio_max);
     }
 
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, motor_out);
     hal.rcout->write(AP_MOTORS_MOT_4, motor_out);
+    hal.rcout->push();
 }
 
 // sends commands to the motors
@@ -212,10 +216,12 @@ void AP_MotorsCoax::output_armed_stabilizing()
     motor_out[AP_MOTORS_MOT_4] = max(motor_out[AP_MOTORS_MOT_4],    out_min);
 
     // send output to each motor
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, motor_out[AP_MOTORS_MOT_3]);
     hal.rcout->write(AP_MOTORS_MOT_4, motor_out[AP_MOTORS_MOT_4]);
+    hal.rcout->push();
 }
 
 // output_disarmed - sends commands to the motors

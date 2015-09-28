@@ -445,13 +445,17 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     _swash_servo_2.calc_pwm();
     _swash_servo_3.calc_pwm();
 
+    hal.rcout->cork();
+
     // actually move the servos
     hal.rcout->write(AP_MOTORS_MOT_1, _swash_servo_1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _swash_servo_2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, _swash_servo_3.radio_out);
- 
+
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
+
+    hal.rcout->push();
 }
 
 // move_yaw
