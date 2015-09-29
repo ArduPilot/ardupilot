@@ -61,6 +61,8 @@ public:
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
+    void     cork() override;
+    void     push() override;
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm);
@@ -75,6 +77,7 @@ private:
     uint16_t _min_pwm;
     uint16_t _max_pwm;
     uint8_t  _state;
+    bool     _corking = false;
 
     uint8_t _checksum(uint8_t *data, unsigned int len);
     void _start_prop();
