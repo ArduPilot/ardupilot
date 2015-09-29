@@ -152,6 +152,9 @@ public:
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
+
+    // send a EKF_STATUS_REPORT for current EKF
+    void send_ekf_status_report(mavlink_channel_t chan);
     
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};

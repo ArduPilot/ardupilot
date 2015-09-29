@@ -709,5 +709,18 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
     return false;    
 }
 
+// send a EKF_STATUS_REPORT for current EKF
+void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE1:
+    default:
+        return EKF1.send_status_report(chan);
+
+    case EKF_TYPE2:
+        return EKF2.send_status_report(chan);
+    }    
+}
+
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
