@@ -417,20 +417,9 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
     }
 
     if (good_count >= 5) {
-        /*
-          The use of _gain_multiple below is incorrect, as the gain
-          difference between 2.5Ga mode and 1Ga mode is already taken
-          into account by the expected_x and expected_yz values.  We
-          are not going to fix it however as it would mean all
-          APM1/APM2 users redoing their compass calibration. The
-          impact is that the values we report on APM1/APM2 are lower
-          than they should be (by a multiple of about 0.6). This
-          doesn't have any impact other than the learned compass
-          offsets
-         */
-        _scaling[0] = _scaling[0] * _gain_multiple / good_count;
-        _scaling[1] = _scaling[1] * _gain_multiple / good_count;
-        _scaling[2] = _scaling[2] * _gain_multiple / good_count;
+        _scaling[0] = _scaling[0] / good_count;
+        _scaling[1] = _scaling[1] / good_count;
+        _scaling[2] = _scaling[2] / good_count;
         success = true;
     } else {
         /* best guess */
