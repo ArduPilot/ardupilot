@@ -141,9 +141,3 @@ void AP_Compass_Backend::set_external(uint8_t instance, bool external)
 {
     _compass._state[instance].external.set(external);
 }
-
-// set ratio to convert to milligauss
-void AP_Compass_Backend::set_milligauss_ratio(uint8_t instance, float ratio)
-{
-    _compass._state[instance].milligauss_ratio = ratio;
-}

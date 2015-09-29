@@ -73,9 +73,6 @@ protected:
     // set external state for an instance
     void set_external(uint8_t instance, bool external);
 
-    // set ratio to convert to milligauss
-    void set_milligauss_ratio(uint8_t instance, float ratio);
-    
     // access to frontend
     Compass &_compass;
 

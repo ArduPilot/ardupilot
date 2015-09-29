@@ -180,8 +180,6 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _bus->get_dev_id());
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
-    set_milligauss_ratio(_compass_instance, 1.0f);
-    
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
