@@ -200,6 +200,7 @@ void AP_Compass_HMC5843::accumulate(void)
 	  // accumulate more than 8 before a read
        // get raw_field - sensor frame, uncorrected
        Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z);
+       raw_field *= _gain_multiple;
 
        // rotate raw_field from sensor frame to body frame
        rotate_field(raw_field, _compass_instance);
@@ -269,7 +270,7 @@ AP_Compass_HMC5843::init()
     uint8_t calibration_gain = 0x20;
     uint16_t expected_x = 715;
     uint16_t expected_yz = 715;
-    _gain_multiple = 1.0;
+    _gain_multiple = (1.0f / 1300) * 1000;
 
     _bus_sem = _bus->get_semaphore();
     hal.scheduler->suspend_timer_procs();
@@ -298,7 +299,7 @@ AP_Compass_HMC5843::init()
          */
         expected_x = 766;
         expected_yz  = 713;
-        _gain_multiple = 660.0f / 1090;  // adjustment for runtime vs calibration gain
+        _gain_multiple = (1.0f / 1090) * 1000;
     }
 
     if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
@@ -331,7 +332,7 @@ AP_Compass_HMC5843::init()
     _compass_instance = register_compass();
     set_dev_id(_compass_instance, _product_id);
 
-    set_milligauss_ratio(_compass_instance, 1.0f / _gain_multiple);
+    set_milligauss_ratio(_compass_instance, 1.0f);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
     set_external(_compass_instance, true);
