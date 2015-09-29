@@ -25,7 +25,6 @@ static SITLEEPROMStorage sitlEEPROMStorage;
 static SITL_State sitlState;
 static SITLScheduler sitlScheduler(&sitlState);
 static SITLRCInput  sitlRCInput(&sitlState);
-static SITLRCOutput sitlRCOutput(&sitlState);
 static SITLAnalogIn sitlAnalogIn(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
@@ -58,7 +57,6 @@ HAL_SITL::HAL_SITL() :
         &sitlUart0Driver, /* console */
         &emptyGPIO, /* gpio */
         &sitlRCInput,  /* rcinput */
-        &sitlRCOutput, /* rcoutput */
         &sitlScheduler, /* scheduler */
         &utilInstance), /* util */
     _sitl_state(&sitlState)
@@ -71,7 +69,7 @@ void HAL_SITL::init(int argc, char * const argv[]) const
     uartA->begin(115200);
 
     rcin->init(NULL);
-    rcout->init(NULL);
+    rcout->init_backend(new SITLRCOutput(&sitlState));
 
     //spi->init(NULL);
     //i2c->begin();

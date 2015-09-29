@@ -14,15 +14,15 @@
 #define PWM_CMD_TEST	         6	/* various crap */
 
 
-class Linux::LinuxRCOutput_ZYNQ : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
+class Linux::LinuxRCOutput_ZYNQ : public AP_HAL::RCOutput_Backend {
+    bool     init();
+    uint8_t  get_num_channels();
+    void     set_freq(uint64_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
 
 private:
     static const int TICK_PER_US=100;

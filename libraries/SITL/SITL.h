@@ -26,7 +26,7 @@ struct PACKED sitl_fdm {
 };
 
 // number of rc output channels
-#define SITL_NUM_CHANNELS 14
+#define SITL_NUM_CHANNELS 64
 
 
 class SITL

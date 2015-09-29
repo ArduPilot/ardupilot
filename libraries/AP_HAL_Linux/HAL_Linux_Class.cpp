@@ -93,31 +93,6 @@ static LinuxRCInput_UDP  rcinDriver;
 static LinuxRCInput rcinDriver;
 #endif
 
-/*
-  use the PRU based RCOutput driver on ERLE and PXF
- */
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
-static LinuxRCOutput_PRU rcoutDriver;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxRCOutput_AioPRU rcoutDriver;
-/*
-  use the PCA9685 based RCOutput driver on Navio
- */
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxRCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
-/*
- use the STM32 based RCOutput driver on Raspilot
- */
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxRCOutput_Raspilot rcoutDriver;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
-static LinuxRCOutput_ZYNQ rcoutDriver;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-static LinuxRCOutput_Bebop rcoutDriver;
-#else
-static Empty::EmptyRCOutput rcoutDriver;
-#endif
-
 static LinuxScheduler schedulerInstance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static LinuxUtilRPI utilInstance;
@@ -147,7 +122,6 @@ HAL_Linux::HAL_Linux() :
         &uartADriver,
         &gpioDriver,
         &rcinDriver,
-        &rcoutDriver,
         &schedulerInstance,
         &utilInstance)
 {}
@@ -227,7 +201,35 @@ void HAL_Linux::init(int argc,char* const argv[]) const
 #else
     i2c->begin();
 #endif
-    rcout->init(NULL);
+
+/*
+  add the board specific RCOutput implementations
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
+    rcout->init_backend(new LinuxRCOutput_PRU());
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    rcout->init_backend(new LinuxRCOutput_AioPRU());
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    rcout->init_backend(new LinuxRCOutput_PCA9685(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+    rcout->init_backend(new LinuxRCOutput_Raspilot());
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
+    rcout->init_backend(new LinuxRCOutput_ZYNQ());
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    rcout->init_backend(new LinuxRCOutput_Bebop());
+#else
+    rcout->init_backend(new Empty::EmptyRCOutput());
+#endif
+    
+/*
+  detect and add any additional external RCOutput modules
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    rcout->init_backend(new LinuxRCOutput_PCA9685(PCA9685_PRIMARY_ADDRESS));
+#endif
+    rcout->init_backend(new LinuxRCOutput_PCA9685(PCA9685_SECONDARY_ADDRESS));
+    rcout->init_backend(new LinuxRCOutput_PCA9685(PCA9685_TERTIARY_ADDRESS));
+
     rcin->init(NULL);
     uartA->begin(115200);    
     uartE->begin(115200);    

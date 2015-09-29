@@ -238,7 +238,7 @@ uint16_t LinuxRCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
     return (uint16_t)rpm_fl;
 }
 
-void LinuxRCOutput_Bebop::init(void* dummy)
+bool LinuxRCOutput_Bebop::init()
 {
     int ret=0;
     struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };
@@ -248,15 +248,17 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     _i2c_sem = hal.i2c1->get_semaphore();
     if (_i2c_sem == NULL) {
         hal.scheduler->panic(PSTR("RCOutput_Bebop: can't get i2c sem"));
-        return; /* never reached */
+        return false; /* never reached */
     }
 
     /* Initialize thread, cond, and mutex */
     ret = pthread_mutex_init(&_mutex, NULL);
     if (ret != 0) {
         perror("RCout_Bebop: failed to init mutex\n");
-        return;
+        return false;
     }
+
+    bool initilized = false;
 
     pthread_mutex_lock(&_mutex);
 
@@ -288,12 +290,19 @@ void LinuxRCOutput_Bebop::init(void* dummy)
     /* Set an initial dummy frequency */
     _frequency = 50;
 
+    initialized = true;
+
 exit:
     pthread_mutex_unlock(&_mutex);
-    return;
+    return initilized;
 }
 
-void LinuxRCOutput_Bebop::set_freq(uint32_t chmask, uint16_t freq_hz)
+uint8_t LinuxRCOutput_Bebop::get_num_channels()
+{
+    return BEBOP_BLDC_MOTORS_NUM;
+}
+
+void LinuxRCOutput_Bebop::set_freq(uint64_t chmask, uint16_t freq_hz)
 {
     _frequency = freq_hz;
 }
@@ -336,12 +345,6 @@ uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)
     } else {
         return 0;
     }
-}
-
-void LinuxRCOutput_Bebop::read(uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        period_us[i] = read(0 + i);
 }
 
 void LinuxRCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)

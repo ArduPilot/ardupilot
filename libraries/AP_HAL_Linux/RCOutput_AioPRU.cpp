@@ -33,7 +33,8 @@ static void catch_sigbus(int sig)
 {
     hal.scheduler->panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
-void LinuxRCOutput_AioPRU::init(void* machtnicht)
+
+bool LinuxRCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
    uint32_t *iram;
@@ -62,9 +63,17 @@ void LinuxRCOutput_AioPRU::init(void* machtnicht)
    // all outputs default to 50Hz, the top level vehicle code
    // overrides this when necessary
    set_freq(0xFFFFFFFF, 50);
+
+   return true;
 }
 
-void LinuxRCOutput_AioPRU::set_freq(uint32_t chmask, uint16_t freq_hz)
+
+uint8_t LinuxRCOutput_AioPRU::get_num_channels() 
+{
+   return PWM_CHAN_COUNT;
+}
+
+void LinuxRCOutput_AioPRU::set_freq(uint64_t chmask, uint16_t freq_hz)
 {
    uint8_t i;
    uint32_t tick = TICK_PER_S / freq_hz;
@@ -117,19 +126,6 @@ uint16_t LinuxRCOutput_AioPRU::read(uint8_t ch)
    }
 
    return ret;
-}
-
-void LinuxRCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
-{
-   uint8_t i;
-
-   if(len > PWM_CHAN_COUNT) {
-      len = PWM_CHAN_COUNT;
-   }
-
-   for(i = 0; i < len; i++) {
-      period_us[i] = pwm->channel[i].time_high / TICK_PER_US;
-   }
 }
 
 #endif

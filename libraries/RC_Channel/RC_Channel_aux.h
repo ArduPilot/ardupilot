@@ -10,11 +10,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "RC_Channel.h"
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-#define RC_AUX_MAX_CHANNELS 12
-#else
-#define RC_AUX_MAX_CHANNELS 8
-#endif
+#define RC_AUX_MAX_CHANNELS 64
 
 /// @class	RC_Channel_aux
 /// @brief	Object managing one aux. RC channel (CH5-8), with information about its function
@@ -69,6 +65,13 @@ public:
         k_parachute_release     = 27,            ///< parachute release
         k_epm                   = 28,            ///< epm gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
+        k_heli_swash_servo_1    = 30,
+        k_heli_swash_servo_2    = 31,
+        k_heli_swash_servo_3    = 32,
+        k_heli_swash_servo_4    = 33,
+        k_heli_swash_servo_5    = 34,
+        k_heli_swash_servo_6    = 35,
+        k_heli_rsc              = 36,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -132,7 +135,7 @@ public:
     static void update_aux_servo_function(void);
 
 private:
-    static uint32_t _function_mask;
+    static uint64_t _function_mask;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
 };
 

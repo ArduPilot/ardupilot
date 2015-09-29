@@ -87,16 +87,22 @@ public:
         k_param_precland,   // 19
 
         // Misc
-        //
-        k_param_log_bitmask_old = 20,           // Deprecated
-        k_param_log_last_filenumber,            // *** Deprecated - remove
+        
+        k_param_rc_44 = 20,
+        k_param_rc_45,
+        k_param_rc_46,
+        k_param_rc_47,
+        k_param_rc_48,
+        k_param_rc_49,
+        // k_param_log_bitmask_old = 20,           // Deprecated
+        // k_param_log_last_filenumber,            // *** Deprecated - remove
                                                 // with next eeprom number
                                                 // change
-        k_param_toy_yaw_rate,                   // deprecated - remove
-        k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
-        k_param_rssi_pin,                   // unused, replaced by rssi_ library parameters
-        k_param_throttle_accel_enabled,     // deprecated - remove
-        k_param_wp_yaw_behavior,
+        // k_param_toy_yaw_rate,                   // deprecated - remove
+        // k_param_crosstrack_min_distance,	// deprecated - remove with next eeprom number change
+        // k_param_rssi_pin,                   // unused, replaced by rssi_ library parameters
+        // k_param_throttle_accel_enabled,     // deprecated - remove
+        k_param_wp_yaw_behavior= 26,
         k_param_acro_trainer,
         k_param_pilot_velocity_z_max,
         k_param_circle_rate,                // deprecated - remove
@@ -137,13 +143,21 @@ public:
         k_param_pilot_takeoff_alt, // 64
 
         // 65: AP_Limits Library
-        k_param_limits = 65,            // deprecated - remove
-        k_param_gpslock_limit,          // deprecated - remove
-        k_param_geofence_limit,         // deprecated - remove
-        k_param_altitude_limit,         // deprecated - remove
+        // k_param_limits = 65,            // deprecated - remove
+        // k_param_gpslock_limit,          // deprecated - remove
+        // k_param_geofence_limit,         // deprecated - remove
+        // k_param_altitude_limit,         // deprecated - remove
+        k_param_rc_50 = 65,
+        k_param_rc_51,
+        k_param_rc_52,
+        k_param_rc_53,
         k_param_fence,
         k_param_gps_glitch,             // deprecated
         k_param_baro_glitch,            // 71 - deprecated
+
+        k_param_rc_26,
+        k_param_rc_27,
+        k_param_rc_28,
 
         //
         // 75: Singlecopter, CoaxCopter
@@ -152,6 +166,8 @@ public:
         k_param_single_servo_2,
         k_param_single_servo_3,
         k_param_single_servo_4, // 78
+
+        k_param_rc_29,
 
         //
         // 80: Heli
@@ -174,8 +190,16 @@ public:
         k_param_disarm_delay,
         k_param_fs_crash_check,
 
+        k_param_rc_20,
+        k_param_rc_21,
+        k_param_rc_22,
+        k_param_rc_23,
+
         // 97: RSSI
         k_param_rssi = 97,
+
+        k_param_rc_24,
+        k_param_rc_25,
                 
         //
         // 100: Inertial Nav
@@ -185,6 +209,12 @@ public:
         k_param_attitude_control,
         k_param_pos_control,
         k_param_circle_nav,     // 104
+
+        k_param_rc_15 = 105,
+        k_param_rc_16,
+        k_param_rc_17,
+        k_param_rc_18,
+        k_param_rc_19,
 
         // 110: Telemetry control
         //
@@ -206,21 +236,41 @@ public:
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
+        k_param_rc_30,
+        k_param_rc_31,
+        k_param_rc_32,
+        k_param_rc_33,
+        k_param_rc_34,
+        k_param_rc_35,
+        k_param_rc_36,
+        k_param_rc_37,
+
         //
         // 135 : reserved for Solo until features merged with master
         //
         k_param_rtl_speed_cms = 135,
         k_param_fs_batt_curr_rtl, // 136
 
+        k_param_rc_38,
+        k_param_rc_39,
+        k_param_rc_40,
+
         //
         // 140: Sensor parameters
         //
-        k_param_imu = 140, // deprecated - can be deleted
-        k_param_battery_monitoring = 141,   // deprecated - can be deleted
-        k_param_volt_div_ratio, // deprecated - can be deleted
-        k_param_curr_amp_per_volt,  // deprecated - can be deleted
-        k_param_input_voltage,  // deprecated - can be deleted
-        k_param_pack_capacity,  // deprecated - can be deleted
+        k_param_rc_54 = 140,
+        k_param_rc_55,
+        k_param_rc_56,
+        k_param_rc_57,
+        k_param_rc_58,
+        k_param_rc_59,
+        
+        // k_param_imu = 140, // deprecated - can be deleted
+        // k_param_battery_monitoring = 141,   // deprecated - can be deleted
+        // k_param_volt_div_ratio, // deprecated - can be deleted
+        // k_param_curr_amp_per_volt,  // deprecated - can be deleted
+        // k_param_input_voltage,  // deprecated - can be deleted
+        // k_param_pack_capacity,  // deprecated - can be deleted
         k_param_compass_enabled,
         k_param_compass,
         k_param_sonar_enabled_old, // deprecated
@@ -301,14 +351,24 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
 
+        k_param_rc_41,
+        k_param_rc_42,
+        k_param_rc_43,
+
         //
         // 210: Waypoint data
         //
-        k_param_waypoint_mode = 210, // remove
-        k_param_command_total,       // remove
-        k_param_command_index,       // remove
-        k_param_command_nav_index,   // remove
-        k_param_waypoint_radius,     // remove
+
+        k_param_rc_60 = 210,
+        k_param_rc_61,
+        k_param_rc_62,
+        k_param_rc_63,
+        k_param_rc_64,
+        // k_param_waypoint_mode = 210, // remove
+        // k_param_command_total,       // remove
+        // k_param_command_index,       // remove
+        // k_param_command_nav_index,   // remove
+        // k_param_waypoint_radius,     // remove
         k_param_circle_radius,       // remove
         k_param_waypoint_speed_max,  // remove
         k_param_land_speed,
@@ -466,16 +526,62 @@ public:
     RC_Channel_aux          rc_6;
     RC_Channel_aux          rc_7;
     RC_Channel_aux          rc_8;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_9;
-#endif
     RC_Channel_aux          rc_10;
     RC_Channel_aux          rc_11;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     RC_Channel_aux          rc_12;
     RC_Channel_aux          rc_13;
     RC_Channel_aux          rc_14;
-#endif
+    RC_Channel_aux          rc_15;
+    RC_Channel_aux          rc_16;
+    RC_Channel_aux          rc_17;
+    RC_Channel_aux          rc_18;
+    RC_Channel_aux          rc_19;
+    RC_Channel_aux          rc_20;
+    RC_Channel_aux          rc_21;
+    RC_Channel_aux          rc_22;
+    RC_Channel_aux          rc_23;
+    RC_Channel_aux          rc_24;
+    RC_Channel_aux          rc_25;
+    RC_Channel_aux          rc_26;
+    RC_Channel_aux          rc_27;
+    RC_Channel_aux          rc_28;
+    RC_Channel_aux          rc_29;
+    RC_Channel_aux          rc_30;
+    RC_Channel_aux          rc_31;
+    RC_Channel_aux          rc_32;
+    RC_Channel_aux          rc_33;
+    RC_Channel_aux          rc_34;
+    RC_Channel_aux          rc_35;
+    RC_Channel_aux          rc_36;
+    RC_Channel_aux          rc_37;
+    RC_Channel_aux          rc_38;
+    RC_Channel_aux          rc_39;
+    RC_Channel_aux          rc_40;
+    RC_Channel_aux          rc_41;
+    RC_Channel_aux          rc_42;
+    RC_Channel_aux          rc_43;
+    RC_Channel_aux          rc_44;
+    RC_Channel_aux          rc_45;
+    RC_Channel_aux          rc_46;
+    RC_Channel_aux          rc_47;
+    RC_Channel_aux          rc_48;
+    RC_Channel_aux          rc_49;
+    RC_Channel_aux          rc_50;
+    RC_Channel_aux          rc_51;
+    RC_Channel_aux          rc_52;
+    RC_Channel_aux          rc_53;
+    RC_Channel_aux          rc_54;
+    RC_Channel_aux          rc_55;
+    RC_Channel_aux          rc_56;
+    RC_Channel_aux          rc_57;
+    RC_Channel_aux          rc_58;
+    RC_Channel_aux          rc_59;
+    RC_Channel_aux          rc_60;
+    RC_Channel_aux          rc_61;
+    RC_Channel_aux          rc_62;
+    RC_Channel_aux          rc_63;
+    RC_Channel_aux          rc_64;
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
@@ -548,16 +654,62 @@ public:
         rc_6                (CH_6),
         rc_7                (CH_7),
         rc_8                (CH_8),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_9                (CH_9),
-#endif
         rc_10               (CH_10),
         rc_11               (CH_11),
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         rc_12               (CH_12),
         rc_13               (CH_13),
         rc_14               (CH_14),
-#endif
+        rc_15               (CH_15),
+        rc_16               (CH_16),
+        rc_17               (CH_17),
+        rc_18               (CH_18),
+        rc_19               (CH_19),
+        rc_20               (CH_20),
+        rc_21               (CH_21),
+        rc_22               (CH_22),
+        rc_23               (CH_23),
+        rc_24               (CH_24),
+        rc_25               (CH_25),
+        rc_26               (CH_26),
+        rc_27               (CH_27),
+        rc_28               (CH_28),
+        rc_29               (CH_29),
+        rc_30               (CH_30),
+        rc_31               (CH_31),
+        rc_32               (CH_32),
+        rc_33               (CH_33),
+        rc_34               (CH_34),
+        rc_35               (CH_35),
+        rc_36               (CH_36),
+        rc_37               (CH_37),
+        rc_38               (CH_38),
+        rc_39               (CH_39),
+        rc_40               (CH_40),
+        rc_41               (CH_41),
+        rc_42               (CH_42),
+        rc_43               (CH_43),
+        rc_44               (CH_44),
+        rc_45               (CH_45),
+        rc_46               (CH_46),
+        rc_47               (CH_47),
+        rc_48               (CH_48),
+        rc_49               (CH_49),
+        rc_50               (CH_50),
+        rc_51               (CH_51),
+        rc_52               (CH_52),
+        rc_53               (CH_53),
+        rc_54               (CH_54),
+        rc_55               (CH_55),
+        rc_56               (CH_56),
+        rc_57               (CH_57),
+        rc_58               (CH_58),
+        rc_59               (CH_59),
+        rc_60               (CH_60),
+        rc_61               (CH_61),
+        rc_62               (CH_62),
+        rc_63               (CH_63),
+        rc_64               (CH_64),
 
         // PID controller	    initial P	      initial I         initial D       initial imax        initial filt hz     pid rate
         //---------------------------------------------------------------------------------------------------------------------------------

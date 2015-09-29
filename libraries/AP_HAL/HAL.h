@@ -28,7 +28,6 @@ public:
         AP_HAL::UARTDriver* _console,
         AP_HAL::GPIO*       _gpio,
         AP_HAL::RCInput*    _rcin,
-        AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util)
         :
@@ -46,10 +45,11 @@ public:
         console(_console),
         gpio(_gpio),
         rcin(_rcin),
-        rcout(_rcout),
         scheduler(_scheduler),
         util(_util)
-    {}
+    {
+        rcout = new RCOutput();
+    }
 
     virtual void init(int argc, char * const argv[]) const = 0;
 

@@ -18,6 +18,7 @@
 #include "GPIO.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "RCOutput_Backend.h"
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "Util.h"

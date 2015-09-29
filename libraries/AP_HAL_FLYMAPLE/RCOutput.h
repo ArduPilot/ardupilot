@@ -24,14 +24,14 @@
 #define FLYMAPLE_RC_OUTPUT_NUM_CHANNELS 6
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLERCOutput : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
+    bool     init();
+    uint8_t  get_num_channels();
+    void     set_freq(uint64_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
     uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
 
 private:
     // We map channels to Flymaple pins so AP channels 1 to 6 map to

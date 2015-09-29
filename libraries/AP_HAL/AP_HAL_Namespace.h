@@ -24,6 +24,7 @@ namespace AP_HAL {
     class GPIO;
     class RCInput;
     class RCOutput;
+    class RCOutput_Backend;
     class Scheduler;
     class Semaphore;
     

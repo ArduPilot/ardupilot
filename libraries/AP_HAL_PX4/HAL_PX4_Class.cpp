@@ -38,7 +38,6 @@ static Empty::EmptySPIDeviceManager spiDeviceManager;
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
-static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
@@ -80,7 +79,6 @@ HAL_PX4::HAL_PX4() :
         &uartADriver, /* console */
         &gpioDriver, /* gpio */
         &rcinDriver,  /* rcinput */
-        &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
         &utilInstance) /* util */
 {}
@@ -119,7 +117,6 @@ static int main_loop(int argc, char **argv)
     extern void setup(void);
     extern void loop(void);
 
-
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -127,10 +124,9 @@ static int main_loop(int argc, char **argv)
     hal.uartE->begin(57600);
     hal.scheduler->init(NULL);
     hal.rcin->init(NULL);
-    hal.rcout->init(NULL);
+    hal.rcout->init_backend(new PX4RCOutput());
     hal.analogin->init(NULL);
     hal.gpio->init();
-
 
     /*
       run setup() at low priority to ensure CLI doesn't hang the

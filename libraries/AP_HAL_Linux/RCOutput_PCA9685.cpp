@@ -56,6 +56,12 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 
+LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr)
+    : LinuxRCOutput_PCA9685 (addr, false, 0, -1)
+{
+
+}
+
 LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
                                              bool external_clock,
                                              uint8_t channel_offset,
@@ -80,13 +86,13 @@ LinuxRCOutput_PCA9685::~LinuxRCOutput_PCA9685()
     delete [] _pulses_buffer;
 }
 
-void LinuxRCOutput_PCA9685::init(void* machtnicht)
+bool LinuxRCOutput_PCA9685::init()
 {
     _i2c_sem = hal.i2c->get_semaphore();
     if (_i2c_sem == NULL) {
         hal.scheduler->panic(PSTR("PANIC: RCOutput_PCA9685 did not get "
                                   "valid I2C semaphore!"));
-        return; /* never reached */
+        return false; /* never reached */
     }
 
     reset_all_channels();
@@ -100,6 +106,19 @@ void LinuxRCOutput_PCA9685::init(void* machtnicht)
         _enable_pin->mode(HAL_GPIO_OUTPUT);
         _enable_pin->write(0);
     }
+
+    // Try to read the mode to verify that the init was successful.
+    uint8_t val;
+    if (hal.i2c->readRegister(_addr, PCA9685_RA_MODE1, &val) != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+uint8_t LinuxRCOutput_PCA9685::get_num_channels()
+{
+    return PWM_CHAN_COUNT - _channel_offset;
 }
 
 void LinuxRCOutput_PCA9685::reset_all_channels()
@@ -117,7 +136,7 @@ void LinuxRCOutput_PCA9685::reset_all_channels()
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
+void LinuxRCOutput_PCA9685::set_freq(uint64_t chmask, uint16_t freq_hz)
 {
 
     /* Correctly finish last pulses */
@@ -206,12 +225,6 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 uint16_t LinuxRCOutput_PCA9685::read(uint8_t ch)
 {
     return _pulses_buffer[ch];
-}
-
-void LinuxRCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        period_us[i] = read(0 + i);
 }
 
 #endif

@@ -31,9 +31,15 @@ extern const AP_HAL::HAL& hal;
 
 #define MAX_OVERFLOW    ((1 << 16) - 1)
 
-void FLYMAPLERCOutput::init(void* machtnichts) {}
+bool FLYMAPLERCOutput::init(void* machtnichts) {
+    return true;
+}
 
-void FLYMAPLERCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
+uint8_t FLYMAPLERCoutput::get_num_channels() {
+    return FLYMAPLE_RC_OUTPUT_NUM_CHANNELS;
+}
+
+void FLYMAPLERCOutput::set_freq(uint64_t chmask, uint16_t freq_hz) 
 {
     for (int i = 0; i < 32; i++) {
         if ((chmask >> i) & 1) {
@@ -104,12 +110,6 @@ uint16_t FLYMAPLERCOutput::read(uint8_t ch)
     uint8 timer_channel = PIN_MAP[pin].timer_channel;
     __io uint32 *ccr = &(tdev->regs).gen->CCR1 + (timer_channel - 1);
     return *ccr * 1000 / _clocks_per_msecond[ch];
-}
-
-void FLYMAPLERCOutput::read(uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        period_us[i] = read(i);
 }
 
 uint8_t FLYMAPLERCOutput::_channel_to_flymaple_pin(uint8_t ch)

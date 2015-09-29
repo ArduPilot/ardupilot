@@ -189,8 +189,8 @@ struct LogStructure {
     uint8_t msg_type;
     uint8_t msg_len;
     const char name[5];
-    const char format[16];
-    const char labels[64];
+    const char format[128];
+    const char labels[512];
 };
 
 /*
@@ -304,6 +304,58 @@ struct PACKED log_RCOUT {
     uint16_t chan10;
     uint16_t chan11;
     uint16_t chan12;
+    uint16_t chan13;
+    uint16_t chan14;
+    uint16_t chan15;
+    uint16_t chan16;
+    uint16_t chan17;
+    uint16_t chan18;
+    uint16_t chan19;
+    uint16_t chan20;
+    uint16_t chan21;
+    uint16_t chan22;
+    uint16_t chan23;
+    uint16_t chan24;
+    uint16_t chan25;
+    uint16_t chan26;
+    uint16_t chan27;
+    uint16_t chan28;
+    uint16_t chan29;
+    uint16_t chan30;
+    uint16_t chan31;
+    uint16_t chan32;
+    uint16_t chan33;
+    uint16_t chan34;
+    uint16_t chan35;
+    uint16_t chan36;
+    uint16_t chan37;
+    uint16_t chan38;
+    uint16_t chan39;
+    uint16_t chan40;
+    uint16_t chan41;
+    uint16_t chan42;
+    uint16_t chan43;
+    uint16_t chan44;
+    uint16_t chan45;
+    uint16_t chan46;
+    uint16_t chan47;
+    uint16_t chan48;
+    uint16_t chan49;
+    uint16_t chan50;
+    uint16_t chan51;
+    uint16_t chan52;
+    uint16_t chan53;
+    uint16_t chan54;
+    uint16_t chan55;
+    uint16_t chan56;
+    uint16_t chan57;
+    uint16_t chan58;
+    uint16_t chan59;
+    uint16_t chan60;
+    uint16_t chan61;
+    uint16_t chan62;
+    uint16_t chan63;
+    uint16_t chan64;
 };
 
 struct PACKED log_RSSI {
@@ -760,7 +812,7 @@ Format characters in the format string for binary log messages
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "Qhhhhhhhhhhhhhh",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
-      "RCOU",  "Qhhhhhhhhhhhh",     "TimeUS,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7,Ch8,Ch9,Ch10,Ch11,Ch12" }, \
+      "RCOU", "Qhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh", "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19,C20,C21,C22,C23,C24,C25,C26,C27,C28,C29,C30,C31,C32,C33,C34,C35,C36,C37,C38,C39,C40,C41,C42,C43,C44,C45,C46,C47,C48,C49,C50,C51,C52,C53,C54,C55,C56,C57,C58,C59,C60,C61,C62,C63,C64" }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI" }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \

@@ -16,7 +16,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace VRBRAIN;
 
-void VRBRAINRCOutput::init(void* unused)
+bool VRBRAINRCOutput::init()
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, O_RDWR);
@@ -36,17 +36,23 @@ void VRBRAINRCOutput::init(void* unused)
 
     if (ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count) != 0) {
         hal.console->printf("RCOutput: Unable to get servo count\n");        
-        return;
+        return false;
     }
+
+    return true;
 }
 
+uint8_t VRBRAINRCOutput::get_num_channels()
+{
+    return VRBRAIN_NUM_OUTPUT_CHANNELS;
+}
 
 void VRBRAINRCOutput::_init_alt_channels(void)
 {
 
 }
 
-void VRBRAINRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
+void VRBRAINRCOutput::set_freq(uint64_t chmask, uint16_t freq_hz)
 {
     // we can't set this per channel yet
     if (freq_hz > 50) {
@@ -188,13 +194,6 @@ uint16_t VRBRAINRCOutput::read(uint8_t ch)
         return 0;
     }
     return _period[ch];
-}
-
-void VRBRAINRCOutput::read(uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        period_us[i] = read(i);
-    }
 }
 
 void VRBRAINRCOutput::_timer_tick(void)
