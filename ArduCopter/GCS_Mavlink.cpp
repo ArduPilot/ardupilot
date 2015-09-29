@@ -714,7 +714,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        copter.ahrs.get_NavEKF().send_status_report(chan);
+        copter.ahrs.send_ekf_status_report(chan);
         break;
 
     case MSG_FENCE_STATUS:
