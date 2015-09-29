@@ -16,19 +16,19 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 
     // @Param: OFS_X
-    // @DisplayName: Compass offsets on the X axis
+    // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS_Y
-    // @DisplayName: Compass offsets on the Y axis
+    // @DisplayName: Compass offsets in milligauss on the Y axis
     // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS_Z
-    // @DisplayName: Compass offsets on the Z axis
+    // @DisplayName: Compass offsets in milligauss on the Z axis
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
@@ -108,19 +108,19 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
-    // @DisplayName: Compass2 offsets on the X axis
+    // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS2_Y
-    // @DisplayName: Compass2 offsets on the Y axis
+    // @DisplayName: Compass2 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS2_Z
-    // @DisplayName: Compass2 offsets on the Z axis
+    // @DisplayName: Compass2 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
@@ -158,19 +158,19 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
 #if COMPASS_MAX_INSTANCES > 2
     // @Param: OFS3_X
-    // @DisplayName: Compass3 offsets on the X axis
+    // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS3_Y
-    // @DisplayName: Compass3 offsets on the Y axis
+    // @DisplayName: Compass3 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1
 
     // @Param: OFS3_Z
-    // @DisplayName: Compass3 offsets on the Z axis
+    // @DisplayName: Compass3 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Increment: 1

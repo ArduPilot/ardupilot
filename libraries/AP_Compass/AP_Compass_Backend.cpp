@@ -21,6 +21,8 @@ AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
  * 4. publish_unfiltered_field - this (optionally) provides a corrected
  *      point sample for fusion into the EKF
  * 5. publish_filtered_field - legacy filtered magnetic field
+ *
+ * All those functions expect the mag field to be in milligauss.
  */
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
