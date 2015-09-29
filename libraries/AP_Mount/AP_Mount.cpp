@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _RC_IN_ROLL
     // @DisplayName: roll RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control roll movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("_RC_IN_ROLL",  7, AP_Mount, state[0]._roll_rc_in, 0),
 
@@ -120,7 +120,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _RC_IN_TILT
     // @DisplayName: tilt (pitch) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("_RC_IN_TILT",  10, AP_Mount, state[0]._tilt_rc_in,    0),
 
@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: _RC_IN_PAN
     // @DisplayName: pan (yaw) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("_RC_IN_PAN",  13, AP_Mount, state[0]._pan_rc_in,       0),
 
@@ -359,7 +359,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: 2_RC_IN_ROLL
     // @DisplayName: Mount2's roll RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control roll movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("2_RC_IN_ROLL",    31, AP_Mount, state[1]._roll_rc_in, 0),
 
@@ -384,7 +384,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: 2_RC_IN_TILT
     // @DisplayName: Mount2's tilt (pitch) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("2_RC_IN_TILT",    34, AP_Mount, state[1]._tilt_rc_in,    0),
 
@@ -409,7 +409,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: 2_RC_IN_PAN
     // @DisplayName: Mount2's pan (yaw) RC input channel
     // @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8
+    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
     // @User: Standard
     AP_GROUPINFO("2_RC_IN_PAN",     37, AP_Mount, state[1]._pan_rc_in,       0),
 
