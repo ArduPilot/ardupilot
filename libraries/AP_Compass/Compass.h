@@ -119,7 +119,7 @@ public:
     uint8_t get_count(void) const { return _compass_count; }
 
     /// Return the current field as a Vector3f
-    const Vector3f &get_field(uint8_t i) const { return _state[i].field * _state[i].milligauss_ratio; }
+    const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
 
     // raw/unfiltered measurement interface
@@ -180,7 +180,7 @@ public:
     ///
     /// @returns                    The current compass offsets.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset * _state[i].milligauss_ratio; }
+    const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
 
     /// Sets the initial location used to get declination
@@ -391,7 +391,6 @@ private:
 
         // corrected magnetic field strength
         Vector3f    field;
-        float       milligauss_ratio;
 
         // when we last got data
         uint32_t    last_update_ms;
