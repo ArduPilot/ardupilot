@@ -79,6 +79,8 @@
 #endif
 #endif
 
+#define AK8963_MILLIGAUSS_SCALE 10.0f
+
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus) :
@@ -178,7 +180,7 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _bus->get_dev_id());
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
-    set_milligauss_ratio(_compass_instance, 10.0f);
+    set_milligauss_ratio(_compass_instance, 1.0f);
     
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
@@ -277,7 +279,8 @@ void AP_Compass_AK8963::_update()
     }
 
     raw_field = Vector3f(mag_x, mag_y, mag_z);
-    
+    raw_field *= AK8963_MILLIGAUSS_SCALE;
+
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
