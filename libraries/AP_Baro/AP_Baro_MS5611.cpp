@@ -168,6 +168,11 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
 {
     _instance = _frontend.register_sensor();
     _serial->init();
+
+    // we need to suspend timers to prevent other SPI drivers grabbing
+    // the bus while we do the long initialisation
+    hal.scheduler->suspend_timer_procs();
+
     if (!_serial->sem_take_blocking()){
         hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init"));
     }
@@ -199,6 +204,8 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _d2_count = 0;
 
     _serial->sem_give();
+
+    hal.scheduler->resume_timer_procs();
 
     if (_use_timer) {
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
