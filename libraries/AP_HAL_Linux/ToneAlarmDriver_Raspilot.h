@@ -21,7 +21,6 @@ private:
   volatile uint32_t *pwm;
   volatile uint32_t *clk;
 
-  int getRaspberryPiVersion() const;
   void setPWM0Period(uint32_t time_us);
   void setPWM0Duty(uint8_t percent);
 };

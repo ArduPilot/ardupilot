@@ -16,6 +16,7 @@
 #include <sys/mman.h>
 
 #include "GPIO.h"
+#include "Util_RPI.h"
 
 #define RASPILOT_TONE_PIN     RPI_GPIO_18
 #define RASPILOT_TONE_PIN_ALT 5
@@ -35,8 +36,6 @@
 #define	RPI_PWMCLK_CNTL 40
 #define	RPI_PWMCLK_DIV  41
 
-#define RPI_MAX_SIZE_LINE 50
-
 using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
@@ -51,7 +50,7 @@ bool ToneAlarm_Raspilot::init()
 {
     tune_num = 0;                    //play startup tune
 
-    int rpi_version = getRaspberryPiVersion();
+    int rpi_version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1? RPI1_GPIO_BASE: RPI2_GPIO_BASE;
     uint32_t pwm_address  = rpi_version == 1? RPI1_PWM_BASE: RPI2_PWM_BASE;
     uint32_t clk_address  = rpi_version == 1? RPI1_CLK_BASE: RPI2_CLK_BASE;
@@ -136,39 +135,6 @@ bool ToneAlarm_Raspilot::play()
         return true;
     }
     return false;
-}
-
-int ToneAlarm_Raspilot::getRaspberryPiVersion() const
-{
-    char buffer[RPI_MAX_SIZE_LINE];
-    const char* hardware_description_entry = "Hardware";
-    const char* v1 = "BCM2708";
-    const char* v2 = "BCM2709";
-    char* flag;
-    FILE* fd;
-
-    fd = fopen("/proc/cpuinfo", "r");
-
-    while (fgets(buffer, RPI_MAX_SIZE_LINE, fd) != NULL) {
-        flag = strstr(buffer, hardware_description_entry);
-
-        if (flag != NULL) {
-            if (strstr(buffer, v2) != NULL) {
-                printf("Raspberry Pi 2 with BCM2709!\n");
-                fclose(fd);
-                return 2;
-            } else if (strstr(buffer, v1) != NULL) {
-                printf("Raspberry Pi 1 with BCM2708!\n");
-                fclose(fd);
-                return 1;
-            }
-        }
-    }
-
-    /* defaults to 1 */
-    fprintf(stderr, "Could not detect RPi version, defaulting to 1\n");
-    fclose(fd);
-    return 1;
 }
 
 void ToneAlarm_Raspilot::setPWM0Period(uint32_t time_us)
