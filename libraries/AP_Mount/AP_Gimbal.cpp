@@ -65,8 +65,6 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
             _gimbalParams.update();
             if (_gimbalParams.initialized()) {
                 // parameters done initializing, finalize initialization and transition to aligning
-                _initial_gyro_bias = _gimbalParams.get_gyro_bias();
-                _expected_gyro_bias = _initial_gyro_bias;
                 extract_feedback(report_msg);
                 _ang_vel_mag_filt = 20;
                 filtered_joint_angles = _measurement.joint_angles;
@@ -83,7 +81,6 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
             if (_ekf.getStatus()) {
                 // EKF done aligning, transition to running
                 _state = GIMBAL_STATE_PRESENT_RUNNING;
-                _last_gyro_bias_save_ms = hal.scheduler->millis();
             }
             break;
 
@@ -91,7 +88,6 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
             _gimbalParams.update();
             extract_feedback(report_msg);
             update_estimators();
-            update_gimbal_gyro_bias();
             break;
     }
 
@@ -158,44 +154,6 @@ void AP_Gimbal::send_controls(mavlink_channel_t chan)
     } else {
         _gimbalParams.set_param(GMB_PARAM_GMB_MAX_TORQUE, 0);
     }
-}
-
-void AP_Gimbal::update_gimbal_gyro_bias()
-{
-    // reset the timer if EKF is not aligned
-    if (!_ekf.getStatus()) {
-        _last_gyro_bias_save_ms = hal.scheduler->millis();
-        return;
-    }
-
-    // wait 60 seconds before updating gyro bias. flashing blocks momentarily, so don't do it while armed
-    if (hal.util->get_soft_armed() || hal.scheduler->millis()-_last_gyro_bias_save_ms < 60000) {
-        return;
-    }
-
-    _last_gyro_bias_save_ms = hal.scheduler->millis();
-
-    Vector3f gimbal_gyro_bias = _gimbalParams.get_gyro_bias();
-
-    // if there was an external modification to the gyro bias parameter, don't save
-    if (_expected_gyro_bias != gimbal_gyro_bias) {
-        return;
-    }
-
-    Vector3f total_gyro_bias;
-    _ekf.getGyroBias(total_gyro_bias);
-    total_gyro_bias += gimbal_gyro_bias;
-
-    // allow a maximum of 1 deg/s of change per boot cycle
-    Vector3f output_gyro_bias = total_gyro_bias;
-    output_gyro_bias.x = constrain_float(output_gyro_bias.x, _initial_gyro_bias.x-radians(1.0f), _initial_gyro_bias.x+radians(1.0f));
-    output_gyro_bias.y = constrain_float(output_gyro_bias.y, _initial_gyro_bias.y-radians(1.0f), _initial_gyro_bias.y+radians(1.0f));
-    output_gyro_bias.z = constrain_float(output_gyro_bias.z, _initial_gyro_bias.z-radians(1.0f), _initial_gyro_bias.z+radians(1.0f));
-
-    _expected_gyro_bias = output_gyro_bias;
-    _gimbalParams.set_gyro_bias(output_gyro_bias);
-    _ekf.setGyroBias(total_gyro_bias - output_gyro_bias);
-    _gimbalParams.flash();
 }
 
 void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)

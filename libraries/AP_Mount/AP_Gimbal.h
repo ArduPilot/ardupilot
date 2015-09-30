@@ -107,7 +107,6 @@ private:
     void send_controls(mavlink_channel_t chan);
     void extract_feedback(const mavlink_gimbal_report_t& report_msg);
     void update_joint_angle_est();
-    void update_gimbal_gyro_bias();
 
     gimbal_mode_t get_mode();
 
@@ -137,10 +136,6 @@ private:
     float _max_torque;
 
     float _ang_vel_mag_filt;
-
-    uint32_t _last_gyro_bias_save_ms;
-    Vector3f _initial_gyro_bias;
-    Vector3f _expected_gyro_bias;
 
     AccelCalibrator _calibrator;
     void _acal_save_calibrations();
