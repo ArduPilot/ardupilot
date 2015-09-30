@@ -275,7 +275,6 @@ private:
     const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
     const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
-    const float accelBiasNoiseScaler;   // scale factor applied to accel bias state process noise when on ground
     const uint16_t hgtAvg_ms;           // average number of msec between height measurements
     const uint16_t betaAvg_ms;          // average number of msec between synthetic sideslip measurements
     const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates

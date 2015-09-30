@@ -385,7 +385,6 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     magFailTimeLimit_ms(10000),     // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     magVarRateScale(0.05f),         // scale factor applied to magnetometer variance due to angular rate
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
-    accelBiasNoiseScaler(1.0f),     // scale factor applied to imu accel bias learning before the vehicle is armed
     hgtAvg_ms(100),                 // average number of msec between height measurements
     betaAvg_ms(100),                // average number of msec between synthetic sideslip measurements
     covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
