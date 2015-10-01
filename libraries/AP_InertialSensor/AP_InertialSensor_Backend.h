@@ -30,6 +30,7 @@ class AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_Backend(AP_InertialSensor &imu);
+    AP_InertialSensor_Backend(const AP_InertialSensor_Backend &that) = delete;
 
     // we declare a virtual destructor so that drivers can
     // override with a custom destructor if need be.
