@@ -16,22 +16,12 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 void Copter::heli_init()
 {
-    // Nothing in here for now.  To-Do: Eliminate this function completely?
-}
+    // helicopters are always using motor interlock
+    set_using_interlock(true);
 
-// get_pilot_desired_collective - converts pilot input (from 0 ~ 1000) to a value that can be fed into the channel_throttle->servo_out function
-int16_t Copter::get_pilot_desired_collective(int16_t control_in)
-{
-    // return immediately if reduce collective range for manual flight has not been configured
-    if (g.heli_stab_col_min == 0 && g.heli_stab_col_max == 1000) {
-        return control_in;
-    }
-
-    // scale pilot input to reduced collective range
-    float scalar = ((float)(g.heli_stab_col_max - g.heli_stab_col_min))/1000.0f;
-    int16_t collective_out = g.heli_stab_col_min + control_in * scalar;
-    collective_out = constrain_int16(collective_out, 0, 1000);
-    return collective_out;
+    // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
+    attitude_control.set_use_stab_col(true);
+    attitude_control.set_stab_col_ramp(1.0);
 }
 
 // heli_check_dynamic_flight - updates the dynamic_flight flag based on our horizontal velocity
@@ -140,27 +130,39 @@ void Copter::heli_update_rotor_speed_targets()
 
     rsc_control_deglitched = rotor_speed_deglitch_filter.apply(g.rc_8.control_in);
 
-    if (motors.armed()) {
-        switch (rsc_control_mode) {
-            case AP_MOTORS_HELI_RSC_MODE_NONE:
-                // even though pilot passes rotors speed directly to rotor ESC via receiver, motor lib needs to know if
-                // rotor is spinning in case we are using direct drive tailrotor which must be spun up at same time
-            case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
-                // pass through pilot desired rotor speed
+
+    switch (rsc_control_mode) {
+        case AP_MOTORS_HELI_RSC_MODE_CH8_PASSTHROUGH:
+            // pass through pilot desired rotor speed if control input is higher than 10, creating a deadband at the bottom
+            if (rsc_control_deglitched > 10) {
+                motors.set_interlock(true);
                 motors.set_desired_rotor_speed(rsc_control_deglitched);
-                break;
-            case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
-                // pass setpoint through as desired rotor speed
-                if (rsc_control_deglitched > 0) {
-                    motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
-                }else{
-                    motors.set_desired_rotor_speed(0);
-                }
-                break;
-        }
-    } else {
-        // if disarmed, force desired_rotor_speed to Zero
-        motors.set_desired_rotor_speed(0);
+            } else {
+                motors.set_interlock(false);
+                motors.set_desired_rotor_speed(0);
+            }
+            break;
+        case AP_MOTORS_HELI_RSC_MODE_SETPOINT:
+            // pass setpoint through as desired rotor speed
+            if (rsc_control_deglitched > 0) {
+                motors.set_interlock(true);
+                motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+            }else{
+                motors.set_interlock(false);
+                motors.set_desired_rotor_speed(0);
+            }
+            break;
+        case AP_MOTORS_HELI_RSC_MODE_THROTTLE_CURVE:
+            // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
+            // other than being used to create a crude estimate of rotor speed
+            if (rsc_control_deglitched > 0) {
+                motors.set_interlock(true);
+                motors.set_desired_rotor_speed(motors.get_rsc_setpoint());
+            }else{
+                motors.set_interlock(false);
+                motors.set_desired_rotor_speed(0);
+            }
+            break;
     }
 
     // when rotor_runup_complete changes to true, log event

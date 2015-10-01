@@ -243,6 +243,17 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
         attitude_control.use_flybar_passthrough(false, false);
     }
 
+    // if we are changing from a mode other than Stabilize or Acro,
+    // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
+    // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
+    if (old_control_mode > ACRO){
+        if (new_control_mode == STABILIZE){
+            attitude_control.set_stab_col_ramp(1.0);
+        } else if (new_control_mode == ACRO){
+            attitude_control.set_stab_col_ramp(0.0);
+        }
+    }
+
     // reset RC Passthrough to motors
     motors.reset_radio_passthrough();
 #endif //HELI_FRAME

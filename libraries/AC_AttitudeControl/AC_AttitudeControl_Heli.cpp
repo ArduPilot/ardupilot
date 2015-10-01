@@ -8,6 +8,56 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 
+    // @Param: PIRO_COMP
+    // @DisplayName: Piro Comp Enable
+    // @Description: Pirouette compensation enabled
+    // @Range: 0:Disabled 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("PIRO_COMP",    1, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
+
+    // @Param: STAB_COL_1
+    // @DisplayName: Stabilize Mode Collective Point 1
+    // @Description: Helicopter's minimum collective pitch setting at zero throttle input in Stabilize mode
+    // @Range: 0 500
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_1",    2, AC_AttitudeControl_Heli, _heli_stab_col_min, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MIN_DEFAULT),
+
+    // @Param: STAB_COL_2
+    // @DisplayName: Stabilize Mode Collective Point 2
+    // @Description: Helicopter's collective pitch setting at mid-low throttle input in Stabilize mode
+    // @Range: 0 500
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_2",    3, AC_AttitudeControl_Heli, _heli_stab_col_low, AC_ATTITUDE_HELI_STAB_COLLECTIVE_LOW_DEFAULT),
+
+    // @Param: STAB_COL_3
+    // @DisplayName: Stabilize Mode Collective Point 3
+    // @Description: Helicopter's collective pitch setting at mid-high throttle input in Stabilize mode
+    // @Range: 500 1000
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_3",    4, AC_AttitudeControl_Heli, _heli_stab_col_high, AC_ATTITUDE_HELI_STAB_COLLECTIVE_HIGH_DEFAULT),
+
+    // @Param: STAB_COL_4
+    // @DisplayName: Stabilize Mode Collective Point 4
+    // @Description: Helicopter's maximum collective pitch setting at full throttle input in Stabilize mode
+    // @Range: 500 1000
+    // @Units: Percent*10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("STAB_COL_4",    5, AC_AttitudeControl_Heli, _heli_stab_col_max, AC_ATTITUDE_HELI_STAB_COLLECTIVE_MAX_DEFAULT),
+
+    // @Param: ACRO_COL_EXP
+    // @DisplayName: Acro Mode Collective Expo
+    // @Description: Used to soften collective pitch inputs near center point in Acro mode.
+    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @User: Advanced
+    AP_GROUPINFO("ACRO_COL_EXP",    6, AC_AttitudeControl_Heli, _acro_col_expo, 0),
+
     AP_GROUPEND
 };
 
@@ -186,84 +236,29 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(float rate_roll_target
     _motors.set_roll(roll_out);
     _motors.set_pitch(pitch_out);
 
-/*
-#if HELI_CC_COMP == ENABLED
-static LowPassFilterFloat rate_dynamics_filter;     // Rate Dynamics filter
-#endif
+    // Piro-Comp, or Pirouette Compensation is a pre-compensation calculation, which basically rotates the Roll and Pitch Rate I-terms as the
+    // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
+    // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
+    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
+    if (_piro_comp_enabled){
 
-#if HELI_CC_COMP == ENABLED
-    rate_dynamics_filter.set_cutoff_frequency(0.01f, 4.0f);
-#endif
-
-#if AC_ATTITUDE_HELI_CC_COMP == ENABLED
-// Do cross-coupling compensation for low rpm helis
-// Credit: Jolyon Saunders
-// Note: This is not widely tested at this time.  Will not be used by default yet.
-    float cc_axis_ratio = 2.0f; // Ratio of compensation on pitch vs roll axes. Number >1 means pitch is affected more than roll
-    float cc_kp = 0.0002f;      // Compensation p term. Setting this to zero gives h_phang only, while increasing it will increase the p term of correction
-    float cc_kd = 0.127f;       // Compensation d term, scaled. This accounts for flexing of the blades, dampers etc. Originally was (motors.ext_gyro_gain * 0.0001)
-    float cc_angle, cc_total_output;
-    uint32_t cc_roll_d, cc_pitch_d, cc_sum_d;
-    int32_t cc_scaled_roll;
-    int32_t cc_roll_output;     // Used to temporarily hold output while rotation is being calculated
-    int32_t cc_pitch_output;    // Used to temporarily hold output while rotation is being calculated
-    static int32_t last_roll_output = 0;
-    static int32_t last_pitch_output = 0;
-
-    cc_scaled_roll  = roll_output / cc_axis_ratio; // apply axis ratio to roll
-    cc_total_output = safe_sqrt(cc_scaled_roll * cc_scaled_roll + pitch_output * pitch_output) * cc_kp;
-
-    // find the delta component
-    cc_roll_d  = (roll_output - last_roll_output) / cc_axis_ratio;
-    cc_pitch_d = pitch_output - last_pitch_output;
-    cc_sum_d = safe_sqrt(cc_roll_d * cc_roll_d + cc_pitch_d * cc_pitch_d);
-
-    // do the magic.
-    cc_angle = cc_kd * cc_sum_d * cc_total_output - cc_total_output * motors.get_phase_angle();
-
-    // smooth angle variations, apply constraints
-    cc_angle = rate_dynamics_filter.apply(cc_angle);
-    cc_angle = constrain_float(cc_angle, -90.0f, 0.0f);
-    cc_angle = radians(cc_angle);
-
-    // Make swash rate vector
-    Vector2f swashratevector;
-    swashratevector.x = cosf(cc_angle);
-    swashratevector.y = sinf(cc_angle);
-    swashratevector.normalize();
-
-    // rotate the output
-    cc_roll_output  = roll_output;
-    cc_pitch_output = pitch_output;
-    roll_output     = - (cc_pitch_output * swashratevector.y - cc_roll_output * swashratevector.x);
-    pitch_output    =    cc_pitch_output * swashratevector.x + cc_roll_output * swashratevector.y;
-
-    // make current outputs old, for next iteration
-    last_roll_output  = cc_roll_output;
-    last_pitch_output = cc_pitch_output;
-# endif // HELI_CC_COMP
-
-#if AC_ATTITUDE_HELI_PIRO_COMP == ENABLED
-    if (control_mode <= ACRO){
-
-        int32_t         piro_roll_i, piro_pitch_i;            // used to hold i term while doing prio comp
+        int32_t         piro_roll_i, piro_pitch_i;            // used to hold I-terms while doing piro comp
 
         piro_roll_i  = roll_i;
         piro_pitch_i = pitch_i;
 
         Vector2f yawratevector;
-        yawratevector.x     = cosf(-omega.z/100.0f);
-        yawratevector.y     = sinf(-omega.z/100.0f);
+        yawratevector.x     = cosf(-_ahrs.get_gyro().z * _dt);
+        yawratevector.y     = sinf(-_ahrs.get_gyro().z * _dt);
         yawratevector.normalize();
 
         roll_i      = piro_roll_i * yawratevector.x - piro_pitch_i * yawratevector.y;
         pitch_i     = piro_pitch_i * yawratevector.x + piro_roll_i * yawratevector.y;
 
-        g.pid_rate_pitch.set_integrator(pitch_i);
-        g.pid_rate_roll.set_integrator(roll_i);
+        _pid_rate_pitch.set_integrator(pitch_i);
+        _pid_rate_roll.set_integrator(roll_i);
     }
-#endif //HELI_PIRO_COMP
-*/
+
 }
 
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in centi-degrees / second
@@ -329,3 +324,68 @@ float AC_AttitudeControl_Heli::get_boosted_throttle(float throttle_in)
     _angle_boost = 0;
     return throttle_in;
 }
+
+// get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
+int16_t AC_AttitudeControl_Heli::get_pilot_desired_collective(int16_t control_in)
+{
+    float slope_low, slope_high, slope_range, slope_run, scalar;
+    int16_t stab_col_out, acro_col_out;
+
+    // calculate stabilize collective value which scales pilot input to reduced collective range
+    // code implements a 3-segment curve with knee points at 40% and 60% throttle input
+    if (control_in < 400){
+        slope_low = _heli_stab_col_min;
+        slope_high = _heli_stab_col_low;
+        slope_range = 400;
+        slope_run = control_in;
+    } else if(control_in <600){
+        slope_low = _heli_stab_col_low;
+        slope_high = _heli_stab_col_high;
+        slope_range = 200;
+        slope_run = control_in - 400;
+    } else {
+        slope_low = _heli_stab_col_high;
+        slope_high = _heli_stab_col_max;
+        slope_range = 400;
+        slope_run = control_in - 600;
+    }    
+
+    scalar = (slope_high - slope_low)/slope_range;
+    stab_col_out = slope_low + slope_run * scalar;
+    stab_col_out = constrain_int16(stab_col_out, 0, 1000);
+
+    //
+    // calculate expo-scaled acro collective
+    // range check expo
+    if (_acro_col_expo > 1.0f) {
+        _acro_col_expo = 1.0f;
+    }
+
+    if (_acro_col_expo <= 0) {
+        acro_col_out = control_in;
+    } else {
+        // expo variables
+        float col_in, col_in3, col_out;
+        col_in = (float)(control_in-500)/500.0f;
+        col_in3 = col_in*col_in*col_in;
+        col_out = (_acro_col_expo * col_in3) + ((1-_acro_col_expo)*col_in);
+        acro_col_out = 500 + col_out*500;
+    }
+    acro_col_out = constrain_int16(acro_col_out, 0, 1000);
+
+    // ramp to and from stab col over 1/2 second
+    if (_flags_heli.use_stab_col && (_stab_col_ramp < 1.0)){
+        _stab_col_ramp += 2*_dt;
+    } else if(!_flags_heli.use_stab_col && (_stab_col_ramp > 0.0)){
+        _stab_col_ramp -= 2*_dt;
+    }
+    _stab_col_ramp = constrain_float(_stab_col_ramp, 0.0, 1.0);
+
+    // scale collective output smoothly between acro and stab col
+    int16_t collective_out;
+    collective_out = (float)((1.0-_stab_col_ramp)*acro_col_out + _stab_col_ramp*stab_col_out);
+    collective_out = constrain_int16(collective_out, 0, 1000);
+
+    return collective_out;
+}
+

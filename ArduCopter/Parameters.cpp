@@ -516,24 +516,9 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
     // @Group: HS4_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp
     GGROUP(heli_servo_4,    "HS4_", RC_Channel),
-
-    // @Param: H_STAB_COL_MIN
-    // @DisplayName: Heli Stabilize Throttle Collective Minimum
-    // @Description: Helicopter's minimum collective position while pilot directly controls collective in stabilize mode
-    // @Range: 0 500
-    // @Units: Percent*10
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(heli_stab_col_min, "H_STAB_COL_MIN", HELI_STAB_COLLECTIVE_MIN_DEFAULT),
-
-    // @Param: H_STAB_COL_MAX
-    // @DisplayName: Stabilize Throttle Maximum
-    // @Description: Helicopter's maximum collective position while pilot directly controls collective in stabilize mode
-    // @Range: 500 1000
-    // @Units: Percent*10
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(heli_stab_col_max, "H_STAB_COL_MAX", HELI_STAB_COLLECTIVE_MAX_DEFAULT),
+    // @Group: H_RSC_
+    // @Path: ../libraries/RC_Channel/RC_Channel.cpp
+    GGROUP(heli_servo_rsc,    "H_RSC_", RC_Channel),
 #endif
 
     // RC channel
@@ -979,8 +964,8 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // @Group: H_
-    // @Path: ../libraries/AP_Motors/AP_MotorsHeli.cpp
-    GOBJECT(motors, "H_",           AP_MotorsHeli),
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp
+    GOBJECT(motors, "H_",           AP_MotorsHeli_Single),
 
 #elif FRAME_CONFIG == SINGLE_FRAME
     // @Group: SS1_
