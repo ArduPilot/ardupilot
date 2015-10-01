@@ -227,11 +227,11 @@ void HAL_Linux::init(int argc,char* const argv[]) const
 #else
     i2c->begin();
 #endif
+    spi->init(NULL);
     rcout->init(NULL);
     rcin->init(NULL);
     uartA->begin(115200);    
     uartE->begin(115200);    
-    spi->init(NULL);
     analogin->init(NULL);
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 }
