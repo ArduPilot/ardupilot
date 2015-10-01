@@ -395,9 +395,12 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     int version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
     set_physical_addresses(version);
 
-    //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
+    // Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
     circle_buffer = new Memory_table(RCIN_NAVIO_BUFFER_LENGTH * 2, version);
     con_blocks = new Memory_table(RCIN_NAVIO_BUFFER_LENGTH * 113, version);
+    
+    // Attempt to kill all known conflicting ressources .. 
+    int ret = LinuxUtilRPI::from(hal.util)->terminate_process("pigpiod");
 }
 
 LinuxRCInput_Navio::~LinuxRCInput_Navio()

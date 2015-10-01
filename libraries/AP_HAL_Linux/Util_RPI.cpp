@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#include <istream>
+#include <sys/types.h>
+#include <signal.h>
 
 #include "Util_RPI.h"
 
@@ -59,6 +62,61 @@ int LinuxUtilRPI::_check_rpi_version()
 
     _rpi_version = 1;
     return _rpi_version;
+}
+
+pid_t LinuxUtilRPI::_find_process(const char* name)
+{
+    DIR* dir;
+    struct dirent* ent;
+    char buf[512];
+
+    long  pid;
+    char pname[100] = {0,};
+    char state;
+    FILE *fp=NULL; 
+
+    if (!(dir = opendir("/proc"))) {
+        perror("LinuxUtilRPI: can't open /proc");
+        return -1;
+    }
+
+    while((ent = readdir(dir)) != NULL) {
+        long lpid = atol(ent->d_name);
+        if(lpid < 0)
+            continue;
+        snprintf(buf, sizeof(buf), "/proc/%ld/stat", lpid);
+        fp = fopen(buf, "r");
+
+        if (fp) {
+            if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
+                printf("LinuxUtilRPI: fscanf failed \n");
+                fclose(fp);
+                closedir(dir);
+                return -1; 
+            }
+            if (!strcmp(pname, name)) {
+                fclose(fp);
+                closedir(dir);
+                return (pid_t)lpid;
+            }
+            fclose(fp);
+        }
+    }
+
+    closedir(dir);
+    return -1;
+}
+
+int LinuxUtilRPI::terminate_process(const char* name) 
+{
+    int ret = 0;
+    pid_t pid = _find_process(name);
+    if(pid > 0) {
+        ret = kill(pid, SIGTERM);
+        printf("LinuxUtilRPI: process %s was terminated with return value %d\n", name, ret);
+    }
+    
+    return ret;
 }
 
 int LinuxUtilRPI::get_rpi_version() const
