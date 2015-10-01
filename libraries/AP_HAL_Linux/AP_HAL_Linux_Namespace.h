@@ -19,6 +19,7 @@ namespace Linux {
     class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
+    class PWM_Sysfs;
     class RCInput;
     class RCInput_PRU;
     class RCInput_AioPRU;
