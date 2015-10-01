@@ -38,6 +38,9 @@ public:
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current);
 
+    int write_file(const char *path, const char *fmt, ...);
+    int read_file(const char *path, const char *fmt, ...);
+
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::LinuxHeat *_heat;

@@ -100,4 +100,51 @@ bool LinuxUtil::is_chardev_node(const char *path)
     return S_ISCHR(st.st_mode);
 }
 
+int LinuxUtil::write_file(const char *path, const char *fmt, ...)
+{
+    va_list args;
+
+    FILE *file = fopen(path, "we");
+    if (!file)
+        return -errno;
+
+    va_start(args, fmt);
+
+    errno = 0;
+    int ret = vfprintf(file, fmt, args);
+    int errno_bkp = errno;
+    fflush(file);
+    fclose(file);
+
+    va_end(args);
+
+    if (ret < 1)
+        return -errno_bkp;
+
+    return ret;
+}
+
+int LinuxUtil::read_file(const char *path, const char *fmt, ...)
+{
+    va_list args;
+
+    FILE *file = fopen(path, "re");
+    if (!file)
+        return -errno;
+
+    va_start(args, fmt);
+
+    errno = 0;
+    int ret = vfscanf(file, fmt, args);
+    int errno_bkp = errno;
+    fclose(file);
+
+    va_end(args);
+
+    if (ret < 1)
+        return -errno_bkp;
+
+    return ret;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
