@@ -39,7 +39,10 @@ public:
     void set_imu_temp(float current);
 
     uint32_t available_memory(void) override;
-    
+
+    int write_file(const char *path, const char *fmt, ...);
+    int read_file(const char *path, const char *fmt, ...);
+
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;
