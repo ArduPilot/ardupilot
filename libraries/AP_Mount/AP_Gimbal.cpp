@@ -44,8 +44,8 @@ void AP_Gimbal::receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg)
 {
     mavlink_gimbal_report_t report_msg;
     mavlink_msg_gimbal_report_decode(msg, &report_msg);
-
-    _last_report_msg_ms = hal.scheduler->millis();
+    uint32_t tnow_ms = hal.scheduler->millis();
+    _last_report_msg_ms = tnow_ms;
 
     _gimbalParams.set_channel(chan);
 
@@ -176,9 +176,10 @@ void AP_Gimbal::extract_feedback(const mavlink_gimbal_report_t& report_msg)
     _measurement.delta_angles -= _gimbalParams.get_gyro_bias() * _measurement.delta_time;
     _measurement.joint_angles -= _gimbalParams.get_joint_bias();
     _measurement.delta_velocity -= _gimbalParams.get_accel_bias() * _measurement.delta_time;
-    _measurement.delta_velocity.x *= _gimbalParams.get_accel_gain().x;
-    _measurement.delta_velocity.y *= _gimbalParams.get_accel_gain().y;
-    _measurement.delta_velocity.z *= _gimbalParams.get_accel_gain().z;
+    Vector3f accel_gain = _gimbalParams.get_accel_gain();
+    _measurement.delta_velocity.x *= accel_gain.x == 0.0f ? 1.0f : accel_gain.x;
+    _measurement.delta_velocity.y *= accel_gain.y == 0.0f ? 1.0f : accel_gain.y;
+    _measurement.delta_velocity.z *= accel_gain.z == 0.0f ? 1.0f : accel_gain.z;
 
     // update _ang_vel_mag_filt, used for accel sample readiness
     Vector3f ang_vel = _measurement.delta_angles / _measurement.delta_time;
