@@ -143,13 +143,13 @@ void ToneAlarm_PX4::update()
 
     check_cont_tone();
 
-    if (AP_Notify::flags.powering_off) {
+    /*if (AP_Notify::flags.powering_off) {
         if (!flags.powering_off) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
         }
         flags.powering_off = AP_Notify::flags.powering_off;
         return;
-    }
+    }*/
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if(AP_Notify::flags.compass_cal_running) {
