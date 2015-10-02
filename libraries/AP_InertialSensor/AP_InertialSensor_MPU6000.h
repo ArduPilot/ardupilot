@@ -51,7 +51,7 @@ public:
                             AP_HAL::DigitalSource *_drdy_pin,
                             uint8_t &n_samples) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual bool has_auxiliar_bus() = 0;
+    virtual bool has_auxiliary_bus() = 0;
 };
 
 class AP_InertialSensor_MPU6000 : public AP_InertialSensor_Backend
@@ -79,7 +79,7 @@ public:
     /*
      * Return an AuxiliaryBus if the bus driver allows it
      */
-    AuxiliaryBus *get_auxiliar_bus() override;
+    AuxiliaryBus *get_auxiliary_bus() override;
 
     void start() override;
 
@@ -112,7 +112,7 @@ private:
     AP_MPU6000_BusDriver *_bus;
     AP_HAL::Semaphore    *_bus_sem;
 
-    AP_MPU6000_AuxiliaryBus *_auxiliar_bus = nullptr;
+    AP_MPU6000_AuxiliaryBus *_auxiliary_bus = nullptr;
 
     static const float   _gyro_scale;
 
@@ -161,7 +161,7 @@ public:
                                AP_HAL::DigitalSource *_drdy_pin,
                                uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
-    bool has_auxiliar_bus() override;
+    bool has_auxiliary_bus() override;
 
 private:
     AP_HAL::SPIDeviceDriver *_spi;
@@ -184,7 +184,7 @@ public:
                                AP_HAL::DigitalSource *_drdy_pin,
                                uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
-    bool has_auxiliar_bus() override;
+    bool has_auxiliary_bus() override;
 
 private:
     uint8_t _addr;
