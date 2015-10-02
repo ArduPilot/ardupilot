@@ -192,11 +192,11 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
     else
         length = round((period_us * 4096) / (1000000.f / _frequency)) - 1;
 
-    uint8_t data[2] = {length & 0xFF, length >> 8};
-    uint8_t status = hal.i2c->writeRegisters(_addr,
-                                             PCA9685_RA_LED0_OFF_L + 4 * (ch + _channel_offset),
-                                             2,
-                                             data);
+    length = htole16(length);
+    hal.i2c->writeRegisters(_addr,
+                            PCA9685_RA_LED0_OFF_L + 4 * (ch + _channel_offset),
+                            2,
+                            (uint8_t *)&length);
 
     _pulses_buffer[ch] = period_us;
 
