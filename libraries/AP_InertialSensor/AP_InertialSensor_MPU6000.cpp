@@ -679,6 +679,8 @@ bool AP_InertialSensor_MPU6000::update( void )
     _publish_accel(_accel_instance, accel);
     _publish_gyro(_gyro_instance, gyro);
     _publish_temperature(_accel_instance, temp);
+    /* give the temperature to the control loop in order to keep it constant*/
+    hal.util->set_imu_temp(temp);
 
 #if MPU6000_FAST_SAMPLING
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
