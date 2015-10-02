@@ -126,7 +126,7 @@ private:
     ///
     int8_t                  _call(uint8_t n, uint8_t argc);
 
-    const char *            _prompt;                                                    ///< prompt to display
+    const prog_char *       _prompt;                                                    ///< prompt to display
     const command *         _commands;                                                  ///< array of commands
     const uint8_t           _entries;                                                   ///< size of the menu
     const preprompt         _ppfunc;                                                    ///< optional pre-prompt action

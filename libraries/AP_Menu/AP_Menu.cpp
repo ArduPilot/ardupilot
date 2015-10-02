@@ -84,7 +84,7 @@ Menu::_check_for_input(void)
 void
 Menu::_display_prompt(void)
 {
-    _port->printf_P(PSTR("%S] "), FPSTR(_prompt));    
+    _port->printf_P(PSTR("%S] "), _prompt);
 }
 
 // run the menu
@@ -231,7 +231,7 @@ Menu::_help(void)
     _port->println_P(PSTR("Commands:"));
     for (i = 0; i < _entries; i++) {
 		hal.scheduler->delay(10);
-        _port->printf_P(PSTR("  %S\n"), FPSTR(_commands[i].command));
+        _port->printf_P(PSTR("  %S\n"), _commands[i].command);
 	}
 }
 
