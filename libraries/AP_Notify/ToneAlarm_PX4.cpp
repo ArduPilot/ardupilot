@@ -70,7 +70,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED 16
     { "MBMLT100O3L32dbaP16dP16", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN 17
-    { "MFMST200L16>c<gf#g", false }
+    { "MFMST200O4L16>c<gf#gL64P32df#df#P32df#df#", false }
 };
 
 bool ToneAlarm_PX4::init()
