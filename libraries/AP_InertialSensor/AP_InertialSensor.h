@@ -225,7 +225,8 @@ public:
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
-    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id);
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
 
 private:
 
@@ -233,7 +234,7 @@ private:
     void _add_backend(AP_InertialSensor_Backend *backend);
     void _detect_backends(void);
     void _start_backends();
-    AP_InertialSensor_Backend *_find_backend(int16_t backend_id);
+    AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
     // gyro initialisation
     void _init_gyro();
