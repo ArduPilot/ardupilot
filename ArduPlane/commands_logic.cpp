@@ -862,6 +862,7 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
         ahrs.set_home(cmd.content.location);
         home_is_set = HOME_SET_NOT_LOCKED;
         Log_Write_Home_And_Origin();
+        GCS_MAVLINK::send_home_all(cmd.content.location);
     }
 }
 

@@ -1304,6 +1304,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_GET_HOME_POSITION:
+            send_home(plane.ahrs.get_home());
+            break;
+
         case MAV_CMD_DO_SET_MODE:
             switch ((uint16_t)packet.param1) {
             case MAV_MODE_MANUAL_ARMED:
@@ -1448,6 +1452,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.ahrs.set_home(new_home_loc);
                 plane.home_is_set = HOME_SET_NOT_LOCKED;
                 plane.Log_Write_Home_And_Origin();
+                GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 plane.gcs_send_text_fmt(PSTR("set home to %.6f %.6f at %um"),
                                         (double)(new_home_loc.lat*1.0e-7f),
