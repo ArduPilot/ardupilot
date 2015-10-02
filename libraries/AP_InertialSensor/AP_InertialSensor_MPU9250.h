@@ -29,8 +29,6 @@ public:
     virtual bool read_data_transaction(uint8_t* samples,
                                        uint8_t &n_samples) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
-    virtual void get_driver_state(bool &initialized, bool &working) = 0;
-    virtual void set_driver_state(bool working) = 0;
     virtual bool has_auxiliary_bus() = 0;
 };
 
@@ -55,17 +53,6 @@ public:
         return static_cast<AP_InertialSensor_MPU9250&>(backend);
     }
 
-    /* Put the MPU9250 in a known state so it can be
-     * used both for the InertialSensor and as for backend of other drivers.
-     *
-     * The bus semaphore must be taken and timer_procs suspended.
-     *
-     * This method puts the bus in low speed. If the initialization is
-     * successful the bus is left on low speed so the caller can finish the
-     * initialization of its driver.
-     */
-    static bool initialize_driver_state(AP_HAL::SPIDeviceDriver *spi);
-
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu, AP_HAL::SPIDeviceDriver *spi);
 
@@ -73,13 +60,6 @@ private:
     static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
                                               AP_MPU9250_BusDriver *bus,
                                               int16_t id);
-
-
-    static bool initialize_driver_state(AP_MPU9250_BusDriver *bus);
-
-    static uint8_t _register_read(AP_MPU9250_BusDriver *bus, uint8_t reg);
-    static void _register_write(AP_MPU9250_BusDriver *bus, uint8_t reg,
-                                uint8_t val);
 
     bool                 _init_sensor();
     void                 _read_data_transaction();
@@ -128,7 +108,7 @@ private:
     enum Rotation _default_rotation;
 
 #if MPU9250_DEBUG
-    static void _dump_registers(AP_MPU9250_BusDriver *bus);
+    static void _dump_registers();
 #endif
 };
 
@@ -143,8 +123,6 @@ public:
     void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
     bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
     AP_HAL::Semaphore* get_semaphore();
-    void get_driver_state(bool &initialized, bool &working);
-    void set_driver_state(bool working);
     bool has_auxiliary_bus();
 
 private:
