@@ -89,6 +89,9 @@
 #define HAL_COMPASS_HMC5843_MPU6000 7
 #define HAL_COMPASS_RASPILOT  8
 
+// Heat Types
+#define HAL_LINUX_HEAT_PWM 1
+
 /**
    CPU classes, used to select if CPU intensive algorithms should be used
 
@@ -228,6 +231,12 @@
 #define HAL_BARO_MS5607_I2C_BUS 1
 #define HAL_BARO_MS5607_I2C_ADDR 0x77
 #define HAL_BARO_DEFAULT HAL_BARO_MS5607
+#define HAL_UTILS_HEAT HAL_LINUX_HEAT_PWM
+#define HAL_LINUX_HEAT_PWM_SYSFS_DIR "/sys/class/pwm/pwm_6"
+#define HAL_LINUX_HEAT_KP 20000
+#define HAL_LINUX_HEAT_KI 6
+#define HAL_LINUX_HEAT_PERIOD_NS 125000
+#define HAL_LINUX_HEAT_TARGET_TEMP 50
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
