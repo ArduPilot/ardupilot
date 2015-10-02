@@ -64,7 +64,7 @@ public:
     /*
      * Return an AuxiliaryBus if backend has another bus it is able to export
      */
-    virtual AuxiliaryBus *get_auxiliar_bus() { return nullptr; }
+    virtual AuxiliaryBus *get_auxiliary_bus() { return nullptr; }
 
     /*
       return the product ID
