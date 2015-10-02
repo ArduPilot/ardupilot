@@ -13,11 +13,26 @@
 // enable debug to see a register dump on startup
 #define MPU9250_DEBUG 0
 
+class AP_MPU9250_BusDriver
+{
+public:
+    virtual ~AP_MPU9250_BusDriver() { };
+    virtual void init() = 0;
+    virtual void read8(uint8_t reg, uint8_t *val) = 0;
+    virtual void write8(uint8_t reg, uint8_t val) = 0;
+    virtual void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed) = 0;
+    virtual bool read_data_transaction(uint8_t* samples,
+                                       uint8_t &n_samples) = 0;
+    virtual AP_HAL::Semaphore* get_semaphore() = 0;
+    virtual void get_driver_state(bool &initialized, bool &working) = 0;
+    virtual void set_driver_state(bool working) = 0;
+};
+
 class AP_InertialSensor_MPU9250 : public AP_InertialSensor_Backend
 {
 public:
 
-    AP_InertialSensor_MPU9250(AP_InertialSensor &imu);
+    AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus);
 
     /* update accel and gyro state */
     bool update();
@@ -28,7 +43,7 @@ public:
     /* Put the MPU9250 in a known state so it can be
      * used both for the InertialSensor and as for backend of other drivers.
      *
-     * The SPI semaphore must be taken and timer_procs suspended.
+     * The bus semaphore must be taken and timer_procs suspended.
      *
      * This method puts the bus in low speed. If the initialization is
      * successful the bus is left on low speed so the caller can finish the
@@ -40,12 +55,18 @@ public:
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu, AP_HAL::SPIDeviceDriver *spi);
 
 private:
+    static AP_InertialSensor_Backend *_detect(AP_InertialSensor &_imu,
+                                              AP_MPU9250_BusDriver *bus,
+                                              int16_t id);
 
-    static uint8_t _register_read(AP_HAL::SPIDeviceDriver *spi, uint8_t reg);
-    static void _register_write(AP_HAL::SPIDeviceDriver *spi, uint8_t reg,
+
+    static bool initialize_driver_state(AP_MPU9250_BusDriver *bus);
+
+    static uint8_t _register_read(AP_MPU9250_BusDriver *bus, uint8_t reg);
+    static void _register_write(AP_MPU9250_BusDriver *bus, uint8_t reg,
                                 uint8_t val);
 
-    bool                 _init_sensor(AP_HAL::SPIDeviceDriver *spi);
+    bool                 _init_sensor();
     void                 _read_data_transaction();
     bool                 _data_ready();
     void                 _poll_data(void);
@@ -54,8 +75,8 @@ private:
     bool                 _hardware_init(void);
     bool                 _sample_available();
 
-    AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
+    AP_MPU9250_BusDriver *_bus;
+    AP_HAL::Semaphore *_bus_sem;
 
     // support for updating filter at runtime
     int16_t _last_gyro_filter_hz;
@@ -91,8 +112,25 @@ private:
     enum Rotation _default_rotation;
 
 #if MPU9250_DEBUG
-    static void _dump_registers(AP_HAL::SPIDeviceDriver *spi);
+    static void _dump_registers(AP_MPU9250_BusDriver *bus);
 #endif
+};
+
+class AP_MPU9250_BusDriver_SPI : public AP_MPU9250_BusDriver
+{
+public:
+    AP_MPU9250_BusDriver_SPI(AP_HAL::SPIDeviceDriver *spi);
+    void init();
+    void read8(uint8_t reg, uint8_t *val);
+    void write8(uint8_t reg, uint8_t val);
+    void set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed);
+    bool read_data_transaction(uint8_t* samples, uint8_t &n_samples);
+    AP_HAL::Semaphore* get_semaphore();
+    void get_driver_state(bool &initialized, bool &working);
+    void set_driver_state(bool working);
+
+private:
+    AP_HAL::SPIDeviceDriver *_spi;
 };
 
 #endif // __AP_INERTIAL_SENSOR_MPU9250_H__
