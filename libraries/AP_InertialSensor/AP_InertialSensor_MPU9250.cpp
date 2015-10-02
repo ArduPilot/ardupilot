@@ -283,33 +283,6 @@ AP_HAL::Semaphore* AP_MPU9250_BusDriver_SPI::get_semaphore()
     return _spi->get_semaphore();
 }
 
-void AP_MPU9250_BusDriver_SPI::get_driver_state(bool &initialized, bool &working)
-{
-    AP_HAL::SPIDeviceDriver::State state = _spi->get_state();
-
-    if (state == AP_HAL::SPIDeviceDriver::State::FAILED) {
-        initialized = true;
-        working = false;
-        return;
-    }
-    if (state == AP_HAL::SPIDeviceDriver::State::RUNNING) {
-        initialized = true;
-        working = true;
-        return;
-    }
-
-    initialized = false;
-}
-
-void AP_MPU9250_BusDriver_SPI::set_driver_state(bool working)
-{
-    if (working) {
-        _spi->set_state(AP_HAL::SPIDeviceDriver::State::RUNNING);
-    } else {
-        _spi->set_state(AP_HAL::SPIDeviceDriver::State::FAILED);
-    }
-}
-
 bool AP_MPU9250_BusDriver_SPI::has_auxiliary_bus()
 {
     return true;
@@ -372,96 +345,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::_detect(AP_InertialSensor 
     return sensor;
 }
 
-bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver *spi)
-{
-    if (!spi)
-        return false;
-
-    AP_MPU9250_BusDriver_SPI *bus = new AP_MPU9250_BusDriver_SPI(spi);
-    if (!bus)
-        return false;
-
-    bool initialized = initialize_driver_state(bus);
-    delete bus;
-    return initialized;
-}
-
-bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_MPU9250_BusDriver *bus)
-{
-    bool initialized, working;
-
-    bus->get_driver_state(initialized, working);
-    if (initialized) {
-        return working;
-    }
-
-    bus->set_driver_state(false);
-
-    // initially run the bus at low speed
-    bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-
-    uint8_t whoami = _register_read(bus, MPUREG_WHOAMI);
-    if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
-        hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        goto fail_whoami;
-    }
-
-    // Chip reset
-    uint8_t tries;
-    for (tries = 0; tries < 5; tries++) {
-        uint8_t user_ctrl = _register_read(bus, MPUREG_USER_CTRL);
-
-        /* First disable the master I2C to avoid hanging the slaves on the
-         * auxiliary I2C bus */
-        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(bus, MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
-            hal.scheduler->delay(10);
-        }
-
-        // reset device
-        _register_write(bus, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
-        hal.scheduler->delay(100);
-
-        // bus-dependent initialization
-        bus->init();
-
-        // Wake up device and select GyroZ clock. Note that the
-        // MPU9250 starts up in sleep mode, and it can take some time
-        // for it to come out of sleep
-        _register_write(bus, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
-        hal.scheduler->delay(5);
-
-        // check it has woken up
-        if (_register_read(bus, MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
-            break;
-        }
-
-        hal.scheduler->delay(10);
-        uint8_t status = _register_read(bus, MPUREG_INT_STATUS);
-        if ((status & BIT_RAW_RDY_INT) != 0) {
-            break;
-        }
-#if MPU9250_DEBUG
-        _dump_registers(bus);
-#endif
-    }
-
-    if (tries == 5) {
-        hal.console->println("Failed to boot MPU9250 5 times");
-        goto fail_tries;
-    }
-
-    bus->set_driver_state(true);
-
-    return true;
-
-fail_tries:
-fail_whoami:
-    bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-
-    return false;
-}
-
 /*
   initialise the sensor
  */
@@ -484,7 +367,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor()
     _set_gyro_raw_sample_rate(_gyro_instance, DEFAULT_SAMPLE_RATE);
 
 #if MPU9250_DEBUG
-    _dump_registers(_bus);
+    _dump_registers();
 #endif
     return true;
 }
@@ -582,31 +465,19 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 /*
   read an 8 bit register
  */
-uint8_t AP_InertialSensor_MPU9250::_register_read(AP_MPU9250_BusDriver *bus,
-                                                  uint8_t reg)
+uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
 {
     uint8_t val;
-    bus->read8(reg, &val);
+    _bus->read8(reg, &val);
     return val;
 }
 
 /*
   write an 8 bit register
  */
-void AP_InertialSensor_MPU9250::_register_write(AP_MPU9250_BusDriver *bus,
-                                                uint8_t reg, uint8_t val)
+void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 {
-    bus->write8(reg, val);
-}
-
-inline uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
-{
-    return _register_read(_bus, reg);
-}
-
-inline void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
-{
-    _register_write(_bus, reg, val);
+    _bus->write8(reg, val);
 }
 
 /*
@@ -640,8 +511,59 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
         return false;
     }
 
-    if (!initialize_driver_state(_bus))
-        return false;
+    // initially run the bus at low speed
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+
+    uint8_t whoami = _register_read(MPUREG_WHOAMI);
+    if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
+        hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
+        goto fail_whoami;
+    }
+
+    // Chip reset
+    uint8_t tries;
+    for (tries = 0; tries < 5; tries++) {
+        uint8_t user_ctrl = _register_read(MPUREG_USER_CTRL);
+
+        /* First disable the master I2C to avoid hanging the slaves on the
+         * auxiliary I2C bus */
+        if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
+            _register_write(MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+            hal.scheduler->delay(10);
+        }
+
+        // reset device
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+        hal.scheduler->delay(100);
+
+        // bus-dependent initialization
+        _bus->init();
+
+        // Wake up device and select GyroZ clock. Note that the
+        // MPU9250 starts up in sleep mode, and it can take some time
+        // for it to come out of sleep
+        _register_write(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
+        hal.scheduler->delay(5);
+
+        // check it has woken up
+        if (_register_read(MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
+            break;
+        }
+
+        hal.scheduler->delay(10);
+        uint8_t status = _register_read(MPUREG_INT_STATUS);
+        if ((status & BIT_RAW_RDY_INT) != 0) {
+            break;
+        }
+#if MPU9250_DEBUG
+        _dump_registers();
+#endif
+    }
+
+    if (tries == 5) {
+        hal.console->println("Failed to boot MPU9250 5 times");
+        goto fail_tries;
+    }
 
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
 
@@ -672,6 +594,13 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     hal.scheduler->resume_timer_procs();
 
     return true;
+
+fail_tries:
+fail_whoami:
+    _bus_sem->give();
+    hal.scheduler->resume_timer_procs();
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+    return false;
 }
 
 AuxiliaryBus *AP_InertialSensor_MPU9250::get_auxiliary_bus()
