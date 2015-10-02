@@ -405,10 +405,11 @@ void AP_InertialSensor::_start_backends()
     }
 }
 
-/* Find a backend that has already been succesfully detected */
-AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
+/* Find the N instance of the backend that has already been successfully detected */
+AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, uint8_t instance)
 {
     assert(_backends_detected);
+    uint8_t found = 0;
 
     for (uint8_t i = 0; i < _backend_count; i++) {
         int16_t id = _backends[i]->get_id();
@@ -416,7 +417,11 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
         if (id < 0 || id != backend_id)
             continue;
 
-        return _backends[i];
+        if (instance == found) {
+            return _backends[i];
+        } else {
+            found++;
+        }
     }
 
     return nullptr;
@@ -1539,13 +1544,13 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
 }
 
 /*
- * Get an AuxiliaryBus on the backend identified by @backend_id
+ * Get an AuxiliaryBus of N @instance of backend identified by @backend_id
  */
-AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id)
+AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t instance)
 {
     _detect_backends();
 
-    AP_InertialSensor_Backend *backend = _find_backend(backend_id);
+    AP_InertialSensor_Backend *backend = _find_backend(backend_id, instance);
     if (backend == NULL)
         return NULL;
 
