@@ -176,7 +176,111 @@ extern const AP_HAL::HAL& hal;
  *  variants however
  */
 
-AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
+/*
+ * 2 bytes for each in this order: ACC_X, ACC_Y, ACC_Z, TEMP, GYRO_X, GYRO_Y
+ * and GYRO_Z
+ */
+#define MPU9250_SAMPLE_SIZE 14
+
+/* SPI bus driver implementation */
+AP_MPU9250_BusDriver_SPI::AP_MPU9250_BusDriver_SPI(AP_HAL::SPIDeviceDriver *spi)
+{
+    _spi = spi;
+}
+
+void AP_MPU9250_BusDriver_SPI::init()
+{
+    // disable I2C as recommended by the datasheet
+    write8(MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+}
+
+void AP_MPU9250_BusDriver_SPI::read8(uint8_t reg, uint8_t *val)
+{
+    uint8_t addr = reg | 0x80; // Set most significant bit
+
+    uint8_t tx[2];
+    uint8_t rx[2];
+
+    tx[0] = addr;
+    tx[1] = 0;
+    _spi->transaction(tx, rx, 2);
+
+    *val = rx[1];
+}
+
+void AP_MPU9250_BusDriver_SPI::write8(uint8_t reg, uint8_t val)
+{
+    uint8_t tx[2];
+    uint8_t rx[2];
+
+    tx[0] = reg;
+    tx[1] = val;
+    _spi->transaction(tx, rx, 2);
+}
+
+void AP_MPU9250_BusDriver_SPI::set_bus_speed(AP_HAL::SPIDeviceDriver::bus_speed speed)
+{
+    _spi->set_bus_speed(speed);
+}
+
+bool AP_MPU9250_BusDriver_SPI::read_data_transaction(uint8_t *samples, uint8_t &n_samples)
+{
+    /* one register address followed by seven 2-byte registers */
+    struct PACKED {
+        uint8_t cmd;
+        uint8_t int_status;
+        uint8_t v[MPU9250_SAMPLE_SIZE];
+    } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
+
+    _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
+
+    if (!(rx.int_status & BIT_RAW_RDY_INT)) {
+        n_samples = 0;
+#if MPU9250_DEBUG
+        hal.console->printf("MPU9250: No sample available.\n");
+#endif
+        return false;
+    }
+
+    n_samples = 1;
+    memcpy(&samples[0], &rx.v[0], MPU9250_SAMPLE_SIZE);
+
+    return true;
+}
+
+AP_HAL::Semaphore* AP_MPU9250_BusDriver_SPI::get_semaphore()
+{
+    return _spi->get_semaphore();
+}
+
+void AP_MPU9250_BusDriver_SPI::get_driver_state(bool &initialized, bool &working)
+{
+    AP_HAL::SPIDeviceDriver::State state = _spi->get_state();
+
+    if (state == AP_HAL::SPIDeviceDriver::State::FAILED) {
+        initialized = true;
+        working = false;
+        return;
+    }
+    if (state == AP_HAL::SPIDeviceDriver::State::RUNNING) {
+        initialized = true;
+        working = true;
+        return;
+    }
+
+    initialized = false;
+}
+
+void AP_MPU9250_BusDriver_SPI::set_driver_state(bool working)
+{
+    if (working) {
+        _spi->set_state(AP_HAL::SPIDeviceDriver::State::RUNNING);
+    } else {
+        _spi->set_state(AP_HAL::SPIDeviceDriver::State::FAILED);
+    }
+}
+
+AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
 	AP_InertialSensor_Backend(imu),
     _last_accel_filter_hz(-1),
     _last_gyro_filter_hz(-1),
@@ -184,6 +288,7 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
     _accel_filter(DEFAULT_SAMPLE_RATE, 15),
     _gyro_filter(DEFAULT_SAMPLE_RATE, 15),
     _have_sample_available(false),
+    _bus(bus),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _default_rotation(ROTATION_ROLL_180_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
@@ -199,86 +304,110 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 {
 }
 
-
 /*
   detect the sensor
  */
 AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::detect(AP_InertialSensor &_imu, AP_HAL::SPIDeviceDriver *spi)
 {
-    AP_InertialSensor_MPU9250 *sensor = new AP_InertialSensor_MPU9250(_imu);
+    AP_MPU9250_BusDriver *bus = new AP_MPU9250_BusDriver_SPI(spi);
+    if (!bus)
+        return NULL;
+    return _detect(_imu, bus, HAL_INS_MPU9250);
+}
+
+/* Common detection method - it takes ownership of the bus, freeing it if it's
+ * not possible to return an AP_InertialSensor_Backend */
+AP_InertialSensor_Backend *AP_InertialSensor_MPU9250::_detect(AP_InertialSensor &_imu,
+                                                              AP_MPU9250_BusDriver *bus,
+                                                              int16_t id)
+{
+    AP_InertialSensor_MPU9250 *sensor = new AP_InertialSensor_MPU9250(_imu, bus);
     if (sensor == NULL) {
+        delete bus;
         return NULL;
     }
-    if (!sensor->_init_sensor(spi)) {
+    if (!sensor->_init_sensor()) {
         delete sensor;
+        delete bus;
         return NULL;
     }
+
+    sensor->_id = id;
 
     return sensor;
 }
 
-bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver *spi) {
-
+bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver *spi)
+{
     if (!spi)
         return false;
 
-    AP_HAL::SPIDeviceDriver::State state = spi->get_state();
-    if (state == AP_HAL::SPIDeviceDriver::State::FAILED)
+    AP_MPU9250_BusDriver_SPI *bus = new AP_MPU9250_BusDriver_SPI(spi);
+    if (!bus)
         return false;
-    if (state == AP_HAL::SPIDeviceDriver::State::RUNNING)
-        return true;
 
-    /* First time trying the initialization: if it fails from now on we will
-     * set the device state to State::Failed so we don't try again if another
-     * driver asks it */
-    spi->set_state(AP_HAL::SPIDeviceDriver::State::FAILED);
+    bool initialized = initialize_driver_state(bus);
+    delete bus;
+    return initialized;
+}
 
-    uint8_t whoami = _register_read(spi, MPUREG_WHOAMI);
+bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_MPU9250_BusDriver *bus)
+{
+    bool initialized, working;
+
+    bus->get_driver_state(initialized, working);
+    if (initialized) {
+        return working;
+    }
+
+    bus->set_driver_state(false);
+
+    // initially run the bus at low speed
+    bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
+
+    uint8_t whoami = _register_read(bus, MPUREG_WHOAMI);
     if (whoami != MPUREG_WHOAMI_MPU9250 && whoami != MPUREG_WHOAMI_MPU9255) {
         hal.console->printf("MPU9250: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 
-    // initially run the bus at low speed
-    spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-
     // Chip reset
     uint8_t tries;
     for (tries = 0; tries < 5; tries++) {
-        uint8_t user_ctrl = _register_read(spi, MPUREG_USER_CTRL);
+        uint8_t user_ctrl = _register_read(bus, MPUREG_USER_CTRL);
 
         /* First disable the master I2C to avoid hanging the slaves on the
-         * aulixiliar I2C bus */
+         * auxiliary I2C bus */
         if (user_ctrl & BIT_USER_CTRL_I2C_MST_EN) {
-            _register_write(spi, MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
+            _register_write(bus, MPUREG_USER_CTRL, user_ctrl & ~BIT_USER_CTRL_I2C_MST_EN);
             hal.scheduler->delay(10);
         }
 
         // reset device
-        _register_write(spi, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
+        _register_write(bus, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_DEVICE_RESET);
         hal.scheduler->delay(100);
 
-        // disable I2C as recommended by the datasheet
-        _register_write(spi, MPUREG_USER_CTRL, BIT_USER_CTRL_I2C_IF_DIS);
+        // bus-dependent initialization
+        bus->init();
 
         // Wake up device and select GyroZ clock. Note that the
         // MPU9250 starts up in sleep mode, and it can take some time
         // for it to come out of sleep
-        _register_write(spi, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
+        _register_write(bus, MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_ZGYRO);
         hal.scheduler->delay(5);
 
         // check it has woken up
-        if (_register_read(spi, MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
+        if (_register_read(bus, MPUREG_PWR_MGMT_1) == BIT_PWR_MGMT_1_CLK_ZGYRO) {
             break;
         }
 
         hal.scheduler->delay(10);
-        uint8_t status = _register_read(spi, MPUREG_INT_STATUS);
+        uint8_t status = _register_read(bus, MPUREG_INT_STATUS);
         if ((status & BIT_RAW_RDY_INT) != 0) {
             break;
         }
 #if MPU9250_DEBUG
-        _dump_registers(spi);
+        _dump_registers(bus);
 #endif
     }
 
@@ -287,13 +416,13 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver 
         goto fail_tries;
     }
 
-    spi->set_state(AP_HAL::SPIDeviceDriver::State::RUNNING);
+    bus->set_driver_state(true);
 
     return true;
 
 fail_tries:
 fail_whoami:
-    spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+    bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 
     return false;
 }
@@ -301,10 +430,9 @@ fail_whoami:
 /*
   initialise the sensor
  */
-bool AP_InertialSensor_MPU9250::_init_sensor(AP_HAL::SPIDeviceDriver *spi)
+bool AP_InertialSensor_MPU9250::_init_sensor()
 {
-    _spi = spi;
-    _spi_sem = _spi->get_semaphore();
+    _bus_sem = _bus->get_semaphore();
 
     if (!_hardware_init())
         return false;
@@ -321,7 +449,7 @@ bool AP_InertialSensor_MPU9250::_init_sensor(AP_HAL::SPIDeviceDriver *spi)
     _set_gyro_raw_sample_rate(_gyro_instance, DEFAULT_SAMPLE_RATE);
 
 #if MPU9250_DEBUG
-    _dump_registers(_spi);
+    _dump_registers(_bus);
 #endif
     return true;
 }
@@ -361,7 +489,7 @@ bool AP_InertialSensor_MPU9250::update( void )
  */
 void AP_InertialSensor_MPU9250::_poll_data(void)
 {
-    if (!_spi_sem->take_nonblocking()) {
+    if (!_bus_sem->take_nonblocking()) {
         /*
           the semaphore being busy is an expected condition when the
           mainline code is calling wait_for_sample() which will
@@ -371,39 +499,36 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
         return;
     }
     _read_data_transaction();
-    _spi_sem->give();
+    _bus_sem->give();
 }
-
 
 /*
   read from the data registers and update filtered data
  */
 void AP_InertialSensor_MPU9250::_read_data_transaction() 
 {
-    /* one register address followed by seven 2-byte registers */
-    struct PACKED {
-        uint8_t cmd;
-        uint8_t int_status;
-        uint8_t v[14];
-    } rx, tx = { cmd : MPUREG_INT_STATUS | 0x80, };
+    uint8_t n_samples;
+    uint8_t rx[MPU9250_SAMPLE_SIZE];
 
     Vector3f accel, gyro;
 
-    _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, sizeof(rx));
+    if (!_bus->read_data_transaction(rx, n_samples)) {
+        return;
+    }
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
-    accel = Vector3f(int16_val(rx.v, 1),
-                     int16_val(rx.v, 0),
-                     -int16_val(rx.v, 2));
+    accel = Vector3f(int16_val(rx, 1),
+                     int16_val(rx, 0),
+                     -int16_val(rx, 2));
     accel *= MPU9250_ACCEL_SCALE_1G;
     accel.rotate(_default_rotation);
     _rotate_and_correct_accel(_accel_instance, accel);
     _notify_new_accel_raw_sample(_accel_instance, accel);
 
-    gyro = Vector3f(int16_val(rx.v, 5),
-                    int16_val(rx.v, 4),
-                    -int16_val(rx.v, 6));
+    gyro = Vector3f(int16_val(rx, 5),
+                    int16_val(rx, 4),
+                    -int16_val(rx, 6));
     gyro *= GYRO_SCALE;
     gyro.rotate(_default_rotation);
     _rotate_and_correct_gyro(_gyro_instance, gyro);
@@ -422,42 +547,31 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 /*
   read an 8 bit register
  */
-uint8_t AP_InertialSensor_MPU9250::_register_read(AP_HAL::SPIDeviceDriver *spi,
+uint8_t AP_InertialSensor_MPU9250::_register_read(AP_MPU9250_BusDriver *bus,
                                                   uint8_t reg)
 {
-    uint8_t addr = reg | 0x80; // Set most significant bit
-    uint8_t tx[2];
-    uint8_t rx[2];
-
-    tx[0] = addr;
-    tx[1] = 0;
-    spi->transaction(tx, rx, 2);
-
-    return rx[1];
+    uint8_t val;
+    bus->read8(reg, &val);
+    return val;
 }
 
 /*
   write an 8 bit register
  */
-void AP_InertialSensor_MPU9250::_register_write(AP_HAL::SPIDeviceDriver *spi,
+void AP_InertialSensor_MPU9250::_register_write(AP_MPU9250_BusDriver *bus,
                                                 uint8_t reg, uint8_t val)
 {
-    uint8_t tx[2];
-    uint8_t rx[2];
-
-    tx[0] = reg;
-    tx[1] = val;
-    spi->transaction(tx, rx, 2);
+    bus->write8(reg, val);
 }
 
 inline uint8_t AP_InertialSensor_MPU9250::_register_read(uint8_t reg)
 {
-    return _register_read(_spi, reg);
+    return _register_read(_bus, reg);
 }
 
 inline void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 {
-    _register_write(_spi, reg, val);
+    _register_write(_bus, reg, val);
 }
 
 /*
@@ -486,12 +600,12 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // the bus while we do the long initialisation
     hal.scheduler->suspend_timer_procs();
 
-    if (!_spi_sem->take(100)) {
+    if (!_bus_sem->take(100)) {
         hal.console->printf("MPU9250: Unable to get semaphore");
         return false;
     }
 
-    if (!initialize_driver_state(_spi))
+    if (!initialize_driver_state(_bus))
         return false;
 
     _register_write(MPUREG_PWR_MGMT_2, 0x00);            // only used for wake-up in accelerometer only low power mode
@@ -515,10 +629,10 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // until we clear the interrupt
     _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
-    // now that we have initialised, we set the SPI bus speed to high
-    _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
+    // now that we have initialized, we set the SPI bus speed to high
+    _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 
-    _spi_sem->give();
+    _bus_sem->give();
 
     hal.scheduler->resume_timer_procs();
 
@@ -527,11 +641,11 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 
 #if MPU9250_DEBUG
 // dump all config registers - used for debug
-void AP_InertialSensor_MPU9250::_dump_registers(AP_HAL::SPIDeviceDriver *spi)
+void AP_InertialSensor_MPU9250::_dump_registers(AP_MPU9250_BusDriver *bus)
 {
     hal.console->println("MPU9250 registers");
     for (uint8_t reg=0; reg<=126; reg++) {
-        uint8_t v = _register_read(spi, reg);
+        uint8_t v = _register_read(bus, reg);
         hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
             hal.console->println();
