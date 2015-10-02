@@ -1386,6 +1386,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_GET_HOME_POSITION:
+            send_home(copter.ahrs.get_home());
+            break;
+
         case MAV_CMD_DO_SET_SERVO:
             if (copter.ServoRelayEvents.do_set_servo(packet.param1, packet.param2)) {
                 result = MAV_RESULT_ACCEPTED;
