@@ -145,6 +145,10 @@ private:
     uint32_t imuSampleTime_ms;
     float dtIMU;
 
+    // States used for unwrapping of compass yaw error
+    float innovationIncrement;
+    float lastInnovation;
+
     // state prediction
     void predictStates();
 

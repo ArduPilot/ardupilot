@@ -27,6 +27,9 @@ const AP_Param::GroupInfo SmallEKF::var_info[] PROGMEM = {
     AP_GROUPEND
 };
 
+// Hash define constants
+#define GYRO_BIAS_LIMIT 0.349066f // maximum allowed gyro bias (rad/sec)
+
 // constructor
 SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
     _ahrs(ahrs),
@@ -50,6 +53,8 @@ void SmallEKF::reset()
     FiltInit = false;
     lastMagUpdate = 0;
     dtIMU = 0;
+    innovationIncrement = 0;
+    lastInnovation = 0;
 }
 
 // run a 9-state EKF used to calculate orientation
@@ -174,9 +179,9 @@ void SmallEKF::predictStates()
     // sum delta velocities to get velocity
     state.velocity += delVelNav;
 
-    state.delAngBias.x = constrain_float(state.delAngBias.x, -0.1f*dtIMU,0.1f*dtIMU);
-    state.delAngBias.y = constrain_float(state.delAngBias.y, -0.1f*dtIMU,0.1f*dtIMU);
-    state.delAngBias.z = constrain_float(state.delAngBias.z, -0.1f*dtIMU,0.1f*dtIMU);
+    state.delAngBias.x = constrain_float(state.delAngBias.x, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.y = constrain_float(state.delAngBias.y, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
+    state.delAngBias.z = constrain_float(state.delAngBias.z, -GYRO_BIAS_LIMIT*dtIMU,GYRO_BIAS_LIMIT*dtIMU);
 }
 
 // covariance prediction using optimised algebraic toolbox expressions
@@ -873,7 +878,17 @@ float SmallEKF::calcMagHeadingInnov()
         innovation = innovation + 2*M_PI;
     }
 
-    return innovation;
+    // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
+    if (innovation - lastInnovation > M_PI) {
+        // Angle has wrapped in the positive direction to subtract an additional 2*Pi
+        innovationIncrement -= 2*M_PI;
+    } else if (innovation -innovationIncrement < -M_PI) {
+        // Angle has wrapped in the negative direction so add an additional 2*Pi
+        innovationIncrement += 2*M_PI;
+    }
+    lastInnovation = innovation;
+
+    return innovation + innovationIncrement;
 }
 
 // Force symmmetry and non-negative diagonals on state covarinace matrix
