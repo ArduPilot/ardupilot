@@ -1843,7 +1843,33 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         plane.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
-        
+
+    case MAVLINK_MSG_ID_SET_HOME_POSITION:
+    {
+        mavlink_set_home_position_t packet;
+        mavlink_msg_set_home_position_decode(msg, &packet);
+        if((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
+            // don't allow the 0,0 position
+            break;
+        }
+        // sanity check location
+        if (labs(packet.latitude) > 90*10e7 || labs(packet.longitude) > 180 * 10e7) {
+            break;
+        }
+        Location new_home_loc {};
+        new_home_loc.lat = packet.latitude;
+        new_home_loc.lng = packet.longitude;
+        new_home_loc.alt = packet.altitude * 100;
+        plane.ahrs.set_home(new_home_loc);
+        plane.home_is_set = HOME_SET_NOT_LOCKED;
+        plane.Log_Write_Home_And_Origin();
+        GCS_MAVLINK::send_home_all(new_home_loc);
+        plane.gcs_send_text_fmt(PSTR("set home to %.6f %.6f at %um"),
+                                (double)(new_home_loc.lat*1.0e-7f),
+                                (double)(new_home_loc.lng*1.0e-7f),
+                                (uint32_t)(new_home_loc.alt*0.01f));
+        break;
+    }
     } // end switch
 } // end handle mavlink
 
