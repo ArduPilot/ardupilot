@@ -702,6 +702,10 @@ private:
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
     bool motorsArmed;               // true when the motors have been armed
 
+    // States used for unwrapping of compass yaw error
+    float innovationIncrement;
+    float lastInnovation;
+
     // variables added for optical flow fusion
     of_elements storedOF[OBS_BUFFER_LENGTH];    // OF data buffer
     of_elements ofDataNew;          // OF data at the current time horizon

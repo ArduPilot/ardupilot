@@ -27,6 +27,9 @@ extern const AP_HAL::HAL& hal;
 // initial imu bias uncertainty (deg/sec)
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
+// maximum allowed gyro bias (rad/sec)
+#define GYRO_BIAS_LIMIT 0.349066f
+
 // constructor
 NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     frontend(_frontend),
@@ -3522,8 +3525,8 @@ void NavEKF2_core::ConstrainStates()
     for (uint8_t i=6; i<=7; i++) statesArray[i] = constrain_float(statesArray[i],-1.0e6f,1.0e6f);
     // height limit covers home alt on everest through to home alt at SL and ballon drop
     stateStruct.position.z = constrain_float(stateStruct.position.z,-4.0e4f,1.0e4f);
-    // gyro bias limit ~6 deg/sec (this needs to be set based on manufacturers specs)
-    for (uint8_t i=9; i<=11; i++) statesArray[i] = constrain_float(statesArray[i],-0.1f*dtIMUavg,0.1f*dtIMUavg);
+    // gyro bias limit (this needs to be set based on manufacturers specs)
+    for (uint8_t i=9; i<=11; i++) statesArray[i] = constrain_float(statesArray[i],-GYRO_BIAS_LIMIT*dtIMUavg,GYRO_BIAS_LIMIT*dtIMUavg);
     // gyro scale factor limit of +-5% (this needs to be set based on manufacturers specs)
     for (uint8_t i=12; i<=14; i++) statesArray[i] = constrain_float(statesArray[i],0.95f,1.05f);
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
@@ -4174,6 +4177,8 @@ void NavEKF2_core::InitialiseVariables()
     gpsQualGood = false;
     gpsNotAvailable = true;
     motorsArmed = false;
+    innovationIncrement = 0;
+    lastInnovation = 0;
 }
 
 // return true if we should use the airspeed sensor
@@ -5014,13 +5019,23 @@ float NavEKF2_core::calcMagHeadingInnov()
     float innovation = atan2f(magMeasNED.y,magMeasNED.x) - _ahrs->get_compass()->get_declination();
 
     // wrap the innovation so it sits on the range from +-pi
-    if (innovation > 3.1415927f) {
-        innovation = innovation - 6.2831853f;
-    } else if (innovation < -3.1415927f) {
-        innovation = innovation + 6.2831853f;
+    if (innovation > M_PI) {
+        innovation = innovation - 2*M_PI;
+    } else if (innovation < -M_PI) {
+        innovation = innovation + 2*M_PI;
     }
 
-    return innovation;
+    // Unwrap so that a large yaw gyro bias offset that causes the heading to wrap does not lead to continual uncontrolled heading drift
+    if (innovation - lastInnovation > M_PI) {
+        // Angle has wrapped in the positive direction to subtract an additional 2*Pi
+        innovationIncrement -= 2*M_PI;
+    } else if (innovation -innovationIncrement < -M_PI) {
+        // Angle has wrapped in the negative direction so add an additional 2*Pi
+        innovationIncrement += 2*M_PI;
+    }
+    lastInnovation = innovation;
+
+    return innovation + innovationIncrement;
 }
 
 #endif // HAL_CPU_CLASS
