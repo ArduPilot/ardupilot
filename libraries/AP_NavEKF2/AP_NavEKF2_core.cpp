@@ -72,7 +72,7 @@ bool NavEKF2_core::healthy(void) const
     }
     // barometer and position innovations must be within limits when on-ground
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (!motorsArmed && (fabsf(innovVelPos[5]) > 1.0f || horizErrSq > 1.0f)) {
+    if (onGround && (fabsf(innovVelPos[5]) > 1.0f || horizErrSq > 1.0f)) {
         return false;
     }
 
@@ -235,10 +235,11 @@ void NavEKF2_core::UpdateFilter()
     // Check arm status and perform required checks and mode changes
     controlFilterModes();
 
-    // read IMU data and convert to delta angles and velocities
+    // read IMU data as delta angles and velocities
     readIMUData();
 
-    // run the strapdown INS equations every IMU update
+    // State Prediction Step
+    // Run the strapdown INS equations to predict kinematic states forward to the fusion time horizon using buffered IMU data
     UpdateStrapdownEquationsNED();
 
     // sum delta angles and time used by covariance prediction
@@ -1288,7 +1289,7 @@ void NavEKF2_core::FuseVelPosNED()
         R_OBS[5] = sq(constrain_float(frontend._baroAltNoise, 0.1f, 10.0f));
 
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
-        if ((getTakeoffExpected() || getTouchdownExpected()) && motorsArmed) {
+        if (getTakeoffExpected() || getTouchdownExpected()) {
             R_OBS[5] *= frontend.gndEffectBaroScaler;
         }
 
@@ -4145,6 +4146,9 @@ void NavEKF2_core::InitialiseVariables()
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     onGround = true;
+    prevOnGround = true;
+    inFlight = false;
+    prevInFlight = false;
     manoeuvring = false;
     yawAligned = false;
     inhibitWindStates = true;
@@ -4177,6 +4181,7 @@ void NavEKF2_core::InitialiseVariables()
     gpsQualGood = false;
     gpsNotAvailable = true;
     motorsArmed = false;
+    prevMotorsArmed = false;
     innovationIncrement = 0;
     lastInnovation = 0;
 }
@@ -4399,74 +4404,46 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 // Control filter mode transitions
 void NavEKF2_core::controlFilterModes()
 {
-    // determine if the vehicle is manoevring
-    if (accNavMagHoriz > 0.5f) {
-        manoeuvring = true;
-    } else {
-        manoeuvring = false;
-    }
-
-    // Detect if we are in flight
-    detectFlight();
-
-    // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
-    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE));
-    // request mag calibration for both in-air and manoeuvre threshold options
-    bool magCalRequested = ((frontend._magCal == 0) && !onGround) || ((frontend._magCal == 1) && manoeuvring)  || (frontend._magCal == 3);
-    // deny mag calibration request if we aren't using the compass, are in the pre-arm constant position mode or it has been inhibited by the user
-    bool magCalDenied = !use_compass() || (PV_AidingMode == AID_NONE) || (frontend._magCal == 2);
-    // inhibit the magnetic field calibration if not requested or denied
-    inhibitMagStates = (!magCalRequested || magCalDenied);
-
-    if (inhibitMagStates && inhibitWindStates) {
-        stateIndexLim = 15;
-    } else if (inhibitWindStates) {
-        stateIndexLim = 21;
-    } else {
-        stateIndexLim = 23;
-    }
-
-    // Check for tilt convergence
-    float alpha = 1.0f*dtIMUavg;
-    float temp=tiltErrVec.length();
-    tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
-    if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
-        tiltAlignComplete = true;
-        hal.console->printf("EKF tilt alignment complete\n");
-    }
-
-    // once tilt has converged, align yaw using magnetic field measurements
-    if (tiltAlignComplete && !yawAlignComplete) {
-        Vector3f eulerAngles;
-        getEulerAngles(eulerAngles);
-        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-        StoreQuatReset();
-        yawAlignComplete = true;
-        hal.console->printf("EKF yaw alignment complete\n");
-    }
-
-    // Detect if we are about to fly so that reference readings can be taken
-    // Use change in motor arm status as a surrogate
-    if (hal.util->get_soft_armed() && !motorsArmed) {
-        // store vertical position at start of flight to use as a reference for ground relative checks
-        posDownAtTakeoff = stateStruct.position.z;
-        // store the range finder measurement which will be used as a reference to detect when we have taken off
-        rngAtStartOfFlight = rngMea;
-        // set the time at which we arm to assist with takeoff detection
+    // Determine motor arm status
+    prevMotorsArmed = motorsArmed;
+    motorsArmed = hal.util->get_soft_armed();
+    if (motorsArmed && !prevMotorsArmed) {
+        // set the time at which we arm to assist with checks
         timeAtArming_ms =  imuSampleTime_ms;
     }
-    motorsArmed = hal.util->get_soft_armed();
 
-    // Monitor the gain in height and reetthe magnetic field states and heading when initial altitude has been gained
+    // Detect if we are in flight on or ground
+    detectFlight();
+
+    // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
+    // avoid unnecessary operations
+    setWindMagStateLearningMode();
+
+    // Check the alignmnent status of the tilt and yaw attitude
+    // Used during initial bootstrap alignment of the filter
+    checkAttitudeAlignmentStatus();
+
+    // Control reset of yaw and magnetic field states
+    controlMagYawReset();
+
+    // Set the type of inertial navigation aiding used
+    setAidingMode();
+
+}
+
+// Control reset of yaw and magnetic field states
+void NavEKF2_core::controlMagYawReset()
+{
+    // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
     // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    if (motorsArmed && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -1.5f) {
+    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -1.5f) {
            // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after commencement of flight
            Vector3f eulerAngles;
            getEulerAngles(eulerAngles);
            stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
            StoreQuatReset();
            firstMagYawInit = true;
-       } else if (motorsArmed && !secondMagYawInit && (stateStruct.position.z - posDownAtTakeoff) < -5.0f) {
+       } else if (inFlight && !secondMagYawInit && (stateStruct.position.z - posDownAtTakeoff) < -5.0f) {
            // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after commencement of flight
            // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
            Vector3f eulerAngles;
@@ -4476,18 +4453,87 @@ void NavEKF2_core::controlFilterModes()
            secondMagYawInit = true;
        }
 
-
-    // Set the type of inertial navigation aiding
-    setAidingMode();
-
+    // perform a yaw alignment check against GPS if exiting on-ground mode for fly forward type vehicle (plane)
+    // this is done to protect against unrecoverable heading alignment errors due to compass faults
+    if (!onGround && prevOnGround && assume_zero_sideslip()) {
+        alignYawGPS();
+    }
 }
 
-// Detect if we are in flight
+// Check the alignmnent status of the tilt and yaw attitude
+// Used during initial bootstrap alignment of the filter
+void NavEKF2_core::checkAttitudeAlignmentStatus()
+{
+    // Check for tilt convergence - used during initial alignment
+    float alpha = 1.0f*dtIMUavg;
+    float temp=tiltErrVec.length();
+    tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
+    if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
+        tiltAlignComplete = true;
+        hal.console->printf("EKF tilt alignment complete\n");
+    }
+
+    // Once tilt has converged, align yaw using magnetic field measurements
+    if (tiltAlignComplete && !yawAlignComplete) {
+        Vector3f eulerAngles;
+        getEulerAngles(eulerAngles);
+        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        StoreQuatReset();
+        yawAlignComplete = true;
+        hal.console->printf("EKF yaw alignment complete\n");
+    }
+}
+
+// Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
+// avoid unnecessary operations
+void NavEKF2_core::setWindMagStateLearningMode()
+{
+    // If we are on ground, or in constant position mode, or don't have the right vehicle and sensing to estimate wind, inhibit wind states
+    inhibitWindStates = ((!useAirspeed() && !assume_zero_sideslip()) || onGround || (PV_AidingMode == AID_NONE));
+
+    // determine if the vehicle is manoevring
+    if (accNavMagHoriz > 0.5f) {
+        manoeuvring = true;
+    } else {
+        manoeuvring = false;
+    }
+
+    // Determine if learning of magnetic field states has been requested by the user
+    bool magCalRequested = ((frontend._magCal == 0) && !onGround) || ((frontend._magCal == 1) && manoeuvring)  || (frontend._magCal == 3);
+
+    // Deny mag calibration request if we aren't using the compass, are in the pre-arm constant position mode or it has been inhibited by the user
+    bool magCalDenied = !use_compass() || (PV_AidingMode == AID_NONE) || (frontend._magCal == 2);
+
+    // Inhibit the magnetic field calibration if not requested or denied
+    inhibitMagStates = (!magCalRequested || magCalDenied);
+
+    // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
+    // if we are not using those states
+    if (inhibitMagStates && inhibitWindStates) {
+        stateIndexLim = 15;
+    } else if (inhibitWindStates) {
+        stateIndexLim = 21;
+    } else {
+        stateIndexLim = 23;
+    }
+}
+
+// Detect if we are in flight or on ground
 void NavEKF2_core::detectFlight()
 {
-    // if we are a fly forward type vehicle (eg plane), then in-air mode can be determined through a combination of speed and height criteria
+    /*
+        If we are a fly forward type vehicle (eg plane), then in-air status can be determined through a combination of speed and height criteria.
+        Because of the differing certainty requirements of algorithms that need the in-flight / on-ground status we use two booleans where
+        onGround indicates a high certainty we are not flying and inFlight indicates a high certainty we are flying. It is possible for
+        both onGround and inFlight to be false if the status is uncertain, but they cannot both be true.
+
+        If we are a plane as indicated by the assume_zero_sideslip() status, then different logic is used
+
+        TODO - this logic should be moved out of the EKF and into the flight vehicle code.
+    */
+
     if (assume_zero_sideslip()) {
-        // Evaluate a numerical score that defines the likelihood we are in the air
+        // To be confident we are in the air we use a criteria which combines arm status, ground speed, airspeed and height change
         float gndSpdSq = sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y);
         bool highGndSpd = false;
         bool highAirSpd = false;
@@ -4511,26 +4557,64 @@ void NavEKF2_core::detectFlight()
             largeHgtChange = true;
         }
 
-        // to go to in-air mode we also need enough GPS velocity to be able to calculate a reliable ground track heading and either a lerge height or airspeed change
-        if (onGround && highGndSpd && (highAirSpd || largeHgtChange)) {
+        // Determine to a high certainty we are flying
+        if (motorsArmed && highGndSpd && (highAirSpd || largeHgtChange)) {
+            onGround = false;
+            inFlight = true;
+        }
+
+        // if is possible we are in flight, set the time this condition was last detected
+        if (motorsArmed && (highGndSpd || highAirSpd || largeHgtChange)) {
+            airborneDetectTime_ms = imuSampleTime_ms;
             onGround = false;
         }
-        // if is possible we are in flight, set the time this condition was last detected
+
+        // Determine if is is possible we are on the ground
         if (highGndSpd || highAirSpd || largeHgtChange) {
-            airborneDetectTime_ms = imuSampleTime_ms;
+            inFlight = false;
         }
-        // after 5 seconds of not detecting a possible flight condition, we transition to on-ground mode
-        if(!onGround && ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
+
+        // Determine to a high certainty we are not flying
+        // after 5 seconds of not detecting a possible flight condition or we are disarmed, we transition to on-ground mode
+        if(!motorsArmed || ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
+            onGround = true;
+            inFlight = false;
+        }
+    } else {
+        // Non fly forward vehicle, so can only use height and motor arm status
+
+        // If the motors are armed then we could be flying and if they are not armed then we are definitely not flying
+        if (motorsArmed) {
+            onGround = false;
+        } else {
+            inFlight = false;
             onGround = true;
         }
-        // perform a yaw alignment check against GPS if exiting on-ground mode, bu tonly if we have enough ground speed
-        // this is done to protect against unrecoverable heading alignment errors due to compass faults
-        if (!onGround && prevOnGround) {
-            alignYawGPS();
+
+        // If height has increased since exiting on-ground, then we definitely are flying
+        if (!onGround && ((stateStruct.position.z - posDownAtTakeoff) < -1.5f)) {
+            inFlight = true;
         }
+
+        // If rangefinder has increased since exiting on-ground, then we definitely are flying
+        if (!onGround && ((rngMea - rngAtStartOfFlight) > 0.5f)) {
+            inFlight = true;
+        }
+
     }
-    // store current on-ground status for next time
+
+    // store current on-ground  and in-air status for next time
     prevOnGround = onGround;
+    prevInFlight = inFlight;
+
+    // Store vehicle height and range prior to takeoff for use in post takeoff checks
+    if (!onGround && !prevOnGround) {
+        // store vertical position at start of flight to use as a reference for ground relative checks
+        posDownAtTakeoff = stateStruct.position.z;
+        // store the range finder measurement which will be used as a reference to detect when we have taken off
+        rngAtStartOfFlight = rngMea;
+    }
+
 }
 
 // Set inertial navigation aiding mode
@@ -4820,8 +4904,8 @@ void NavEKF2_core::readRangeFinder(void)
             rngMea = max(storedRngMeas[midIndex],rngOnGnd);
             newDataRng = true;
             rngValidMeaTime_ms = imuSampleTime_ms;
-        } else if (!motorsArmed) {
-            // if not armed and no return, we assume on ground range
+        } else if (onGround) {
+            // if on ground and no return, we assume on ground range
             rngMea = rngOnGnd;
             newDataRng = true;
             rngValidMeaTime_ms = imuSampleTime_ms;
