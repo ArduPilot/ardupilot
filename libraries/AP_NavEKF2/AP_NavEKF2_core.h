@@ -426,9 +426,6 @@ private:
     // calculate the NED earth spin vector in rad/sec
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 
-    // calculate whether the flight vehicle is on the ground or flying from height, airspeed and GPS speed
-    void SetFlightAndFusionModes();
-
     // initialise the covariance matrix
     void CovarianceInit();
 
@@ -513,8 +510,25 @@ private:
     // fuse optical flow measurements into the main filter
     void FuseOptFlow();
 
-    // Check arm status and perform required checks and mode changes
-    void performArmingChecks();
+    // Control filter mode changes
+    void controlFilterModes();
+
+    // Determine if we are flying or on the ground
+    void detectFlight();
+
+    // Set inertial navigaton aiding mode
+    void setAidingMode();
+
+    // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
+    // avoid unnecessary operations
+    void setWindMagStateLearningMode();
+
+    // Check the alignmnent status of the tilt and yaw attitude
+    // Used during initial bootstrap alignment of the filter
+    void checkAttitudeAlignmentStatus();
+
+    // Control reset of yaw and magnetic field states
+    void controlMagYawReset();
 
     // Set the NED origin to be used until the next filter reset
     void setOrigin();
@@ -594,8 +608,10 @@ private:
     ftype dtIMUavg;                 // expected time between IMU measurements (sec)
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
-    bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    bool prevOnGround;              // value of onGround from previous update
+    bool onGround;                  // true when the flight vehicle is definitely on the ground
+    bool prevOnGround;              // value of onGround from previous frame - used to detect transition
+    bool inFlight;                  // true when the vehicle is definitely flying
+    bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     uint32_t airborneDetectTime_ms; // last time flight movement was detected
     Vector6 innovVelPos;            // innovation output for a group of measurements
@@ -646,20 +662,19 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
-    bool firstArmComplete;          // true when first transition out of static mode has been performed after start up
     bool firstMagYawInit;           // true when the first post takeoff initialisation of earth field and yaw angle has been performed
     bool secondMagYawInit;          // true when the second post takeoff initialisation of earth field and yaw angle has been performed
     Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
-    bool filterArmed;               // true when the vehicle is disarmed
-    bool prevFilterArmed;           // vehicleArmed from previous frame
+    bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
+    bool prevIsAiding;              // isAiding from previous frame
     struct Location EKF_origin;     // LLH origin of the NED axis system - do not change unless filter is reset
     bool validOrigin;               // true when the EKF origin is valid
     float gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the UBlox GPS receiver
     uint32_t lastGpsVelFail_ms;     // time of last GPS vertical velocity consistency check fail
     Vector3f lastMagOffsets;        // magnetometer offsets returned by compass object from previous update
     uint32_t lastGpsAidBadTime_ms;  // time in msec gps aiding was last detected to be bad
-    float posDownAtArming;          // flight vehicle vertical position at arming used as a reference point
+    float posDownAtTakeoff;         // flight vehicle vertical position at arming used as a reference point
     bool highYawRate;               // true when the vehicle is doing rapid yaw rotation where gyro scale factor errors could cause loss of heading reference
     float yawRateFilt;              // filtered yaw rate used to determine when the vehicle is doing rapid yaw rotation where gyro scel factor errors could cause loss of heading reference
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
@@ -698,6 +713,12 @@ private:
     bool gpsQualGood;               // true when the GPS quality can be used to initialise the navigation system
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
+    bool motorsArmed;               // true when the motors have been armed
+    bool prevMotorsArmed;           // value of motorsArmed from previous frame
+
+    // States used for unwrapping of compass yaw error
+    float innovationIncrement;
+    float lastInnovation;
 
     // variables added for optical flow fusion
     of_elements storedOF[OBS_BUFFER_LENGTH];    // OF data buffer
@@ -756,7 +777,7 @@ private:
 
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
-    float rangeAtArming;            // range finder measurement when armed
+    float rngAtStartOfFlight;       // range finder measurement at start of flight
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
     // baro ground effect
