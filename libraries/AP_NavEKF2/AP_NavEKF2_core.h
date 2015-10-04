@@ -519,6 +519,17 @@ private:
     // Set inertial navigaton aiding mode
     void setAidingMode();
 
+    // Determine if learning of wind and magnetic field will be enabled and set corresponding indexing limits to
+    // avoid unnecessary operations
+    void setWindMagStateLearningMode();
+
+    // Check the alignmnent status of the tilt and yaw attitude
+    // Used during initial bootstrap alignment of the filter
+    void checkAttitudeAlignmentStatus();
+
+    // Control reset of yaw and magnetic field states
+    void controlMagYawReset();
+
     // Set the NED origin to be used until the next filter reset
     void setOrigin();
 
@@ -597,8 +608,10 @@ private:
     ftype dtIMUavg;                 // expected time between IMU measurements (sec)
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
-    bool onGround;                  // boolean true when the flight vehicle is on the ground (not flying)
-    bool prevOnGround;              // value of onGround from previous update
+    bool onGround;                  // true when the flight vehicle is definitely on the ground
+    bool prevOnGround;              // value of onGround from previous frame - used to detect transition
+    bool inFlight;                  // true when the vehicle is definitely flying
+    bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     uint32_t airborneDetectTime_ms; // last time flight movement was detected
     Vector6 innovVelPos;            // innovation output for a group of measurements
@@ -701,6 +714,7 @@ private:
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
     bool motorsArmed;               // true when the motors have been armed
+    bool prevMotorsArmed;           // value of motorsArmed from previous frame
 
     // States used for unwrapping of compass yaw error
     float innovationIncrement;
