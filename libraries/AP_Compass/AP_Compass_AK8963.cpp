@@ -91,9 +91,9 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _reset_filter();
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
+AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass, AP_HAL::SPIDeviceDriver *spi)
 {
-    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_MPU9250();
+    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_MPU9250(spi);
     if (!bus)
         return nullptr;
     return _detect(compass, bus);
@@ -402,9 +402,9 @@ void AP_Compass_AK8963::_dump_registers()
 }
 
 /* MPU9250 implementation of the AK8963 */
-AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
+AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250(AP_HAL::SPIDeviceDriver *spi)
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
+    _spi = spi;
 
     if (_spi == NULL) {
         hal.console->printf("Cannot get SPIDevice_MPU9250\n");
