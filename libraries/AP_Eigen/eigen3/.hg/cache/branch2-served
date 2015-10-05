@@ -1,0 +1,23 @@
+1ff681424639b187624263f9aa5d8f2f3ae717bd 7632
+43fb25daea0c062230a8540b9e827a7478685d40 c /fix-documentation-typo-1371479301909
+429fa67a258fd3e0c60483f12341be23970c0a77 o 2.0
+0b88199f5b4a7cf10f19855dec234fb321220007 o 3.0
+2524f6185981c6ec1782aeea7f3e2c56211cac13 o 3.1
+2ad60977d70ce6ad18b421f104d7d74d8141af4e o 3.2
+a9f13cec10a3e212a4f73c52ddef9b346f8a77a6 c MattPD/doc-fix-wording-typos-in-templatekeywor-1431363009359
+39e794414bb6a548a33c98e24848eeb21f60c05a c daalpa/removed-documentation-that-did-not-match-1442148941751
+1ff681424639b187624263f9aa5d8f2f3ae717bd o default
+f29ba4d7c0989db058e62a9cecb9ba8d6c206881 c fix-cg-zero-guess
+a825e721e6acc28bc43b4695c86ab584d10434f8 c fix_spline
+feb6f0d7056b3d40e4bd40e7a2694884fb0e39bc c georg_d/fix_warn_minmax
+e869441a9ab4b760ecd41c607445ed8c5f3dc362 c maksqwe/fix-typo-in-evalSolverSugarFunction
+598efae4d24db098dffc0c5f06f5c5048183dc18 c mvdyck/doc-multithreading-fix-old-n-eigennbthr-1430750928880
+0083c6f17cb3ac7b743d85a2c79a6be068db6a6c c mvdyck/doc-topicmultithreadingdox-resolved-comp-1431118452618
+732325de4d5614a4b95a92ad55c2ef7ea14c6cee c nvcc_fixes
+7b082729c656b2d0596e08ddf513c3958c50241c c nvcc_fixes
+c573dc88c5866d370bb383cd62e784e362134c20 c sparse-tutorial-doc-fix
+1b2cb4ad2054bd8a57d6646ac0be2b57421d6bc4 c tensor-for-merge
+c6f97d8563c9ba741b970b28bb30747acd152029 c traversaro/findeigen3cmake-add-reading-hints-of-eig-1407426517521
+660a884a475726a73129691c2afc190ea2fc9dda c unary-array-cwise-functors
+efc774561450be673186bdd57d1f360154ba94ab c vladimir_ch/bug-796-fix-eigen3config.cmake
+a09243e308dd6ad7b2154379e5ca7d41c5f403bf c vladimir_ch/fix-uninitialized-variable-warning-in-sp-1408513228472
