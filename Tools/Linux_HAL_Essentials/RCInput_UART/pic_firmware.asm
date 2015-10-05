@@ -52,6 +52,7 @@
     timer_l
     timer_h
     count
+    tmr1if_count
     endc
 
     cblock 0x0a0
@@ -276,12 +277,32 @@ Main:
     movlw   (1<<GIE|1<<PEIE|1<<RABIE)
     movwf   INTCON
 
+MainLoopNoUpdate:
+    ; toggle status led if idle for more than INPUT_NUM * 2000 usec
+    movf    timer_h, w
+    subwf   TMR1H, w
+    sublw   high(.2000 * INPUT_NUM)
+    btfsc   STATUS, C
+    goto    MainLoop
+    ; toggle status led at each 8 timer1 overflows, i.e., about 0.52 sec
+    btfss   PIR1, TMR1IF
+    goto    MainLoop
+    bcf     PIR1, TMR1IF
+    incf    tmr1if_count, f
+    movlw   H'07'
+    andwf   tmr1if_count, w
+    btfss   STATUS, Z
+    goto    MainLoop
+    ; toggle status led
+    movf    PORTC, w
+    xorlw   (1<<RC1)
+    movwf   PORTC
 MainLoop:
     ; loop if no updates
     movf    sent_update, w
     subwf   input_updated, w
     btfsc   STATUS, Z
-    goto    MainLoop
+    goto    MainLoopNoUpdate
 
     ; prepare for mirroring
     addwf   sent_update, f
