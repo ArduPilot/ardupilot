@@ -348,6 +348,10 @@ SendLoop:
     goto    SendLoop
 
     bcf     STATUS, IRP
+
+    ; set led on
+    bcf     PORTC, RC1
+
     goto    MainLoop
 
 Send:
