@@ -91,14 +91,42 @@ void Copter::auto_run()
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
-void Copter::auto_takeoff_start(float final_alt_above_home)
+void Copter::auto_takeoff_start(const Location& dest_loc)
 {
     auto_mode = Auto_TakeOff;
 
-    // initialise wpnav destination
-    Vector3f target_pos = inertial_nav.get_position();
-    target_pos.z = pv_alt_above_origin(final_alt_above_home);
-    wp_nav.set_wp_destination(target_pos);
+    // convert location to class
+    Location_Class dest(dest_loc);
+
+    // set horizontal target
+    dest.lat = current_loc.lat;
+    dest.lng = current_loc.lng;
+
+    // get altitude target
+    int32_t alt_target;
+    if (!dest.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target)) {
+        // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
+        Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
+        // fall back to altitude above current altitude
+        alt_target = current_loc.alt + dest.alt;
+    }
+
+    // sanity check target
+    if (alt_target < current_loc.alt) {
+        dest.set_alt(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+    }
+    // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
+    if (alt_target < 100) {
+        dest.set_alt(100, Location_Class::ALT_FRAME_ABOVE_HOME);
+    }
+
+    // set waypoint controller target
+    if (!wp_nav.set_wp_destination(dest)) {
+        // this should never fail because the target altitude is specified as an alt-above-home
+        Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+        // To-Do: handle failure
+        return;
+    }
 
     // initialise yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -140,7 +168,9 @@ void Copter::auto_takeoff_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller
-    wp_nav.update_wpnav();
+    if (wp_nav.update_wpnav()) {
+        // To-Do: handle failure to update probably caused by missing terrain data
+    }
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control.update_z_controller();

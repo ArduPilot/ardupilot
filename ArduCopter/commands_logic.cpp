@@ -284,10 +284,7 @@ void Copter::do_RTL(void)
 void Copter::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // Set wp navigation target to safe altitude above current position
-    float takeoff_alt = cmd.content.location.alt;
-    takeoff_alt = MAX(takeoff_alt,current_loc.alt);
-    takeoff_alt = MAX(takeoff_alt,100.0f);
-    auto_takeoff_start(takeoff_alt);
+    auto_takeoff_start(cmd.content.location);
 }
 
 // do_nav_wp - initiate move to next waypoint

@@ -714,7 +714,7 @@ private:
     void althold_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
-    void auto_takeoff_start(float final_alt_above_home);
+    void auto_takeoff_start(const Location& dest_loc);
     void auto_takeoff_run();
     void auto_wp_start(const Vector3f& destination);
     void auto_wp_start(const Location_Class& dest_loc);
