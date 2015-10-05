@@ -203,7 +203,7 @@ Main:
     bsf     STATUS, RP0
 
     movlw   (b'111'<<IRCF0)
-    movwf   OSCCON
+    movwf   OSCCON ; set internal oscillator frequency to 8 MHz
 
     movlw   (0<<NOT_RABPU)
     movwf   OPTION_REG
@@ -215,9 +215,9 @@ Main:
             ;   ||||,-- input 2
             ;   |||||,- input 1
     movlw   b'11111111'
-    movwf   TRISA
-    movwf   WPUA
-    movwf   IOCA
+    movwf   TRISA ; set PORTA as input
+    movwf   WPUA ; enable weak pull-up
+    movwf   IOCA ; enable interrupt-on-change
 
             ; ,-------- tx
             ; |,------- input 6
@@ -236,12 +236,12 @@ Main:
     movwf   TRISC
 
     movlw   (1<<TXEN|1<<BRGH)
-    movwf   TXSTA
+    movwf   TXSTA ; enable async transmitter and select high baud rate
 
     movlw   (1<<BRG16)
-    movwf   BAUDCTL
+    movwf   BAUDCTL ; 16-bit baud rate generator
 
-    movlw   .16
+    movlw   .16 ; use value 16 for SPBRG:SPBRGH to get 115200bps baud rate
     movwf   SPBRG
     clrf    SPBRGH
 
@@ -274,7 +274,7 @@ Main:
     movwf   RCSTA
 
     movlw   (1<<T1CKPS0|1<<TMR1ON)
-    movwf   T1CON
+    movwf   T1CON ; enable timer and set frequency to 1MHz (=8Mhz/4/2)
 
     movlw   (1<<GIE|1<<PEIE|1<<RABIE)
     movwf   INTCON
