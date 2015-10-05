@@ -35,7 +35,7 @@ public:
 class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *detect_mpu9250(Compass &compass);
+    static AP_Compass_Backend *detect_mpu9250(Compass &compass, AP_HAL::SPIDeviceDriver *spi);
     static AP_Compass_Backend *detect_i2c(Compass &compass,
                                           AP_HAL::I2CDriver *i2c,
                                           uint8_t addr);
@@ -85,7 +85,7 @@ private:
 class AP_AK8963_SerialBus_MPU9250: public AP_AK8963_SerialBus
 {
 public:
-    AP_AK8963_SerialBus_MPU9250();
+    AP_AK8963_SerialBus_MPU9250(AP_HAL::SPIDeviceDriver *spi);
     void register_read(uint8_t reg, uint8_t *value, uint8_t count);
     void register_write(uint8_t reg, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
