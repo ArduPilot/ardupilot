@@ -258,9 +258,6 @@ Main:
     movwf   WPUB
     movwf   IOCB
 
-    movlw   (1<<TXEN|1<<BRGH)
-    movwf   TXSTA
-
     ; bank 0
     clrf    STATUS
 
