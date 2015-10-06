@@ -164,10 +164,10 @@ void AP_Baro::update_calibration()
 {
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
-            sensors[i].ground_pressure.set(get_pressure(i));
+            sensors[i].ground_pressure.set_and_notify(get_pressure(i));
         }
         float last_temperature = sensors[i].ground_temperature;
-        sensors[i].ground_temperature.set(get_calibration_temperature(i));
+        sensors[i].ground_temperature.set_and_notify(get_calibration_temperature(i));
         if (fabsf(last_temperature - sensors[i].ground_temperature) > 3) {
             // reset _EAS2TAS to force it to recalculate. This happens
             // when a digital airspeed sensor comes online
