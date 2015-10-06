@@ -237,7 +237,6 @@ public:
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id);
-    AuxiliaryBus *get_auxiliar_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id); }
 
 private:
 
