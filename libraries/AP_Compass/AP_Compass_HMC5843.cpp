@@ -514,7 +514,7 @@ AP_HMC5843_SerialBus_MPU6000::AP_HMC5843_SerialBus_MPU6000(AP_InertialSensor &in
 {
     // Only initialize members. Fails are handled by configure or while
     // getting the semaphore
-    _bus = ins.get_auxiliar_bus(HAL_INS_MPU60XX_SPI);
+    _bus = ins.get_auxiliary_bus(HAL_INS_MPU60XX_SPI);
     if (!_bus)
         return;
     _slave = _bus->request_next_slave(addr);
