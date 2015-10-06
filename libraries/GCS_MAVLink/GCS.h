@@ -160,13 +160,13 @@ public:
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
-    /*
-      send a statustext message to all active MAVLink
-      connections. This function is static so it can be called from
-      any library
-    */
-    static void send_statustext_all(MAV_SEVERITY severity, const prog_char_t *fmt, ...);
+    /* the following functions are all static so they can be called
+     * from any library
+     */
 
+    // send a statustext message to all active MAVLink connections.
+    static void send_statustext_all(MAV_SEVERITY severity, const prog_char_t *fmt, ...);
+    static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
@@ -210,10 +210,10 @@ private:
     ///
     /// @return         The number of reportable parameters.
     ///
-    uint16_t                    _count_parameters(); ///< count reportable
+    static uint16_t             _count_parameters(); ///< count reportable
                                                      // parameters
 
-    uint16_t                    _parameter_count;   ///< cache of reportable
+    static uint16_t             _parameter_count;   ///< cache of reportable
                                                     // parameters
 
     mavlink_channel_t           chan;
