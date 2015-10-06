@@ -371,7 +371,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 // find the info structure for a variable
 const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 group_element,
                                                      const struct GroupInfo **  group_ret,
-                                                     uint8_t *                  idx)
+                                                     uint8_t *                  idx) const
 {
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
@@ -530,6 +530,11 @@ void AP_Param::copy_name_token(const ParamToken &token, char *buffer, size_t buf
         Debug("no info found");
         return;
     }
+    copy_name_info(info, ginfo, idx, buffer, buffer_size, force_scalar);
+}
+
+void AP_Param::copy_name_info(const struct AP_Param::Info *info, const struct GroupInfo *ginfo, uint8_t idx, char *buffer, size_t buffer_size, bool force_scalar) const
+{
     strncpy(buffer, info->name, buffer_size);
     if (ginfo != NULL) {
         uint8_t len = strnlen(buffer, buffer_size);
@@ -670,6 +675,32 @@ AP_Param::find_object(const char *name)
         }
     }
     return NULL;
+}
+
+// notify GCS of current value of parameter
+void AP_Param::notify() const {
+    uint32_t group_element = 0;
+    const struct GroupInfo *ginfo;
+    uint8_t idx;
+
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    if (info == NULL) {
+        // this is probably very bad
+        return;
+    }
+
+    char name[AP_MAX_NAME_SIZE+1];
+    copy_name_info(info, ginfo, idx, name, sizeof(name), true);
+
+    uint32_t param_header_type;
+    if (ginfo != NULL) {
+        param_header_type = PGM_UINT8(&ginfo->type);
+    } else {
+        param_header_type = PGM_UINT8(&info->type);
+    }
+
+    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                          cast_to_float((enum ap_var_type)param_header_type));
 }
 
 

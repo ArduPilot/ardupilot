@@ -141,6 +141,11 @@ public:
     /// @param	buffer			The destination buffer
     /// @param	bufferSize		Total size of the destination buffer.
     ///
+    void copy_name_info(const struct AP_Param::Info *info, const struct GroupInfo *ginfo, uint8_t idx, char *buffer, size_t bufferSize, bool force_scalar=false) const;
+    /// Copy the variable's name, prefixed by any containing group name, to a
+    /// buffer.
+    ///
+    /// Uses token to look up AP_Param::Info for the variable
     void copy_name_token(const ParamToken &token, char *buffer, size_t bufferSize, bool force_scalar=false) const;
 
     /// Find a variable by name.
@@ -169,6 +174,10 @@ public:
     /// @param  name            The full name of the variable to be found.
     ///
     static AP_Param * find_object(const char *name);
+
+    /// Notify GCS of current parameter value
+    ///
+    void notify() const;
 
     /// Save the current value of the variable to EEPROM.
     ///
@@ -319,7 +328,7 @@ private:
     const struct Info *         find_var_info(
                                     uint32_t *                group_element,
                                     const struct GroupInfo ** group_ret,
-                                    uint8_t *                 idx);
+                                    uint8_t *                 idx) const;
     const struct Info *			find_var_info_token(const ParamToken &token,
                                                     uint32_t *                 group_element,
                                                     const struct GroupInfo **  group_ret,
@@ -431,6 +440,13 @@ public:
         if (!configured()) {
             set(v);
         }
+    }
+    
+    /// Value setter - set value, tell GCS
+    ///
+    void set_and_notify(const T &v) {
+        set(v);
+        notify();
     }
 
     /// Combined set and save
