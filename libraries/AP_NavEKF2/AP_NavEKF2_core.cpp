@@ -1107,65 +1107,6 @@ void NavEKF2_core::CovariancePrediction()
 }
 
 
-// update IMU delta angle and delta velocity measurements
-void NavEKF2_core::readIMUData()
-{
-    const AP_InertialSensor &ins = _ahrs->get_ins();
-
-    // average IMU sampling rate
-    dtIMUavg = 1.0f/ins.get_sample_rate();
-
-    // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = hal.scheduler->millis();
-
-    // Get delta velocity data
-    readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
-
-    // Get delta angle data
-    readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
-    imuDataNew.delAngDT = max(ins.get_delta_time(),1.0e-4f);
-
-    // get current time stamp
-    imuDataNew.time_ms = imuSampleTime_ms;
-
-    // save data in the FIFO buffer
-    StoreIMU();
-
-    // extract the oldest available data from the FIFO buffer
-    imuDataDelayed = storedIMU[fifoIndexDelayed];
-
-}
-
-// store imu in the FIFO
-void NavEKF2_core::StoreIMU()
-{
-    fifoIndexDelayed = fifoIndexNow;
-    fifoIndexNow = fifoIndexNow + 1;
-    if (fifoIndexNow >= IMU_BUFFER_LENGTH) {
-        fifoIndexNow = 0;
-    }
-    storedIMU[fifoIndexNow] = imuDataNew;
-}
-
-// reset the stored imu history and store the current value
-void NavEKF2_core::StoreIMU_reset()
-{
-    // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
-        storedIMU[i] = imuDataNew;
-    }
-    imuDataDelayed = imuDataNew;
-    fifoIndexDelayed = fifoIndexNow+1;
-    if (fifoIndexDelayed >= IMU_BUFFER_LENGTH) {
-        fifoIndexDelayed = 0;
-    }
-}
-
-// recall IMU data from the FIFO
-void NavEKF2_core::RecallIMU()
-{
-    imuDataDelayed = storedIMU[fifoIndexDelayed];
-}
 
 // zero specified range of rows in the state covariance matrix
 void NavEKF2_core::zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last)
@@ -1371,28 +1312,6 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
     // return attitude quaternion
     return initQuat;
-}
-
-// return the transformation matrix from XYZ (body) to NED axes
-void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
-{
-    Vector3f trim = _ahrs->get_trim();
-    outputDataNew.quat.rotation_matrix(mat);
-    mat.rotateXYinv(trim);
-}
-
-// return the quaternions defining the rotation from NED to XYZ (body) axes
-void NavEKF2_core::getQuaternion(Quaternion& ret) const
-{
-    ret = outputDataNew.quat;
-}
-
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng)
-{
-    yawAng = yawResetAngle;
-    return lastYawReset_ms;
 }
 
 #endif // HAL_CPU_CLASS
