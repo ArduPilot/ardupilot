@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
 uint8_t GCS_MAVLINK::mavlink_active = 0;
+uint16_t GCS_MAVLINK::_parameter_count;
 
 GCS_MAVLINK::GCS_MAVLINK() :
     waypoint_receive_timeout(5000)
@@ -590,19 +591,6 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg, DataFlash_Class *Data
 
     // save the change
     vp->save(force_save);
-
-    // Report back the new value if we accepted the change
-    // we send the value we actually set, which could be
-    // different from the value sent, in case someone sent
-    // a fractional value to an integer type
-    mavlink_msg_param_value_send_buf(
-        msg,
-        chan,
-        key,
-        vp->cast_to_float(var_type),
-        mav_var_type(var_type),
-        _count_parameters(),
-        -1);     // XXX we don't actually know what its index is...
 
     if (DataFlash != NULL) {
         DataFlash->Log_Write_Parameter(key, vp->cast_to_float(var_type));
@@ -1176,6 +1164,27 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ..
                 mavlink_msg_statustext_send(chan,
                                             severity,
                                             msg2);
+            }
+        }
+    }
+}
+
+/*
+  send a parameter value message to all active MAVLink connections
+ */
+void GCS_MAVLINK::send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PARAM_VALUE_LEN) {
+                mavlink_msg_param_value_send(
+                    chan,
+                    param_name,
+                    param_value,
+                    mav_var_type(param_type),
+                    _count_parameters(),
+                    -1);
             }
         }
     }
