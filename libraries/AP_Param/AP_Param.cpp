@@ -29,6 +29,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Progmem/AP_Progmem.h>
 #include <StorageManager/StorageManager.h>
+#include <GCS_MAVLink/GCS.h> // for send_parameter_value_all
 
 #include <math.h>
 #include <string.h>
@@ -707,11 +708,16 @@ bool AP_Param::save(bool force_save)
         ap = (const AP_Param *)((uintptr_t)ap) - (idx*sizeof(float));
     }
 
+    char name[AP_MAX_NAME_SIZE+1];
+    copy_name_info(info, ginfo, idx, name, sizeof(name), true);
+
     // scan EEPROM to find the right location
     uint16_t ofs;
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+        GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                              cast_to_float((enum ap_var_type)phdr.type));
         return true;
     }
     if (ofs == (uint16_t) ~0) {
@@ -728,12 +734,14 @@ bool AP_Param::save(bool force_save)
             v2 = get_default_value(&info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
+            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
             (fabsf(v1-v2) < 0.0001f*fabsf(v1))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
+            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
             return true;
         }
     }
@@ -748,6 +756,8 @@ bool AP_Param::save(bool force_save)
     write_sentinal(ofs + sizeof(phdr) + type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
+    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                          cast_to_float((enum ap_var_type)phdr.type));
     return true;
 }
 
