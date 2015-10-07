@@ -76,6 +76,41 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
 }
 
 
+// return the Euler roll, pitch and yaw angle in radians
+void NavEKF2_core::getEulerAngles(Vector3f &euler) const
+{
+    outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
+    euler = euler - _ahrs->get_trim();
+}
+
+// return body axis gyro bias estimates in rad/sec
+void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
+{
+    if (dtIMUavg < 1e-6f) {
+        gyroBias.zero();
+        return;
+    }
+    gyroBias = stateStruct.gyro_bias / dtIMUavg;
+}
+
+// return body axis gyro scale factor error as a percentage
+void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
+{
+    if (!statesInitialised) {
+        gyroScale.x = gyroScale.y = gyroScale.z = 0;
+        return;
+    }
+    gyroScale.x = 100.0f/stateStruct.gyro_scale.x - 100.0f;
+    gyroScale.y = 100.0f/stateStruct.gyro_scale.y - 100.0f;
+    gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
+}
+
+// return tilt error convergence metric
+void NavEKF2_core::getTiltError(float &ang) const
+{
+    ang = tiltErrFilt;
+}
+
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
@@ -227,6 +262,31 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
     }
 }
 
+
+// return the horizontal speed limit in m/s set by optical flow sensor limits
+// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
+void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+{
+    if (PV_AidingMode == AID_RELATIVE) {
+        // allow 1.0 rad/sec margin for angular motion
+        ekfGndSpdLimit = max((frontend._maxFlowRate - 1.0f), 0.0f) * max((terrainState - stateStruct.position[2]), rngOnGnd);
+        // use standard gains up to 5.0 metres height and reduce above that
+        ekfNavVelGainScaler = 4.0f / max((terrainState - stateStruct.position[2]),4.0f);
+    } else {
+        ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
+        ekfNavVelGainScaler = 1.0f;
+    }
+}
+
+
+// return the LLH location of the filters NED origin
+bool NavEKF2_core::getOriginLLH(struct Location &loc) const
+{
+    if (validOrigin) {
+        loc = EKF_origin;
+    }
+    return validOrigin;
+}
 
 // return earth magnetic field estimates in measurement units / 1000
 void NavEKF2_core::getMagNED(Vector3f &magNED) const

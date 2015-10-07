@@ -223,4 +223,46 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
     return _ahrs->get_fly_forward() && _ahrs->get_vehicle_class() != AHRS_VEHICLE_GROUND;
 }
 
+// set the LLH location of the filters NED origin
+bool NavEKF2_core::setOriginLLH(struct Location &loc)
+{
+    if (isAiding) {
+        return false;
+    }
+    EKF_origin = loc;
+    validOrigin = true;
+    return true;
+}
+
+// Set the NED origin to be used until the next filter reset
+void NavEKF2_core::setOrigin()
+{
+    // assume origin at current GPS location (no averaging)
+    EKF_origin = _ahrs->get_gps().location();
+    // define Earth rotation vector in the NED navigation frame at the origin
+    calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
+    validOrigin = true;
+    hal.console->printf("EKF Origin Set\n");
+}
+
+// Commands the EKF to not use GPS.
+// This command must be sent prior to arming
+// This command is forgotten by the EKF each time the vehicle disarms
+// Returns 0 if command rejected
+// Returns 1 if attitude, vertical velocity and vertical position will be provided
+// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
+uint8_t NavEKF2_core::setInhibitGPS(void)
+{
+    if(!isAiding) {
+        return 0;
+    }
+    if (optFlowDataPresent()) {
+        frontend._fusionModeGPS = 3;
+//#error writing to a tuning parameter
+        return 2;
+    } else {
+        return 1;
+    }
+}
+
 #endif // HAL_CPU_CLASS
