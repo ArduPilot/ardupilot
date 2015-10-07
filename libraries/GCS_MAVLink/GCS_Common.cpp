@@ -1042,7 +1042,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     const Vector3f &gyro = ins.get_gyro(0);
     Vector3f mag;
     if (compass.get_count() >= 1) {
-        mag = compass.get_field_milligauss(0);
+        mag = compass.get_field(0);
     } else {
         mag.zero();
     }
@@ -1068,7 +1068,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     const Vector3f &accel2 = ins.get_accel(1);
     const Vector3f &gyro2 = ins.get_gyro(1);
     if (compass.get_count() >= 2) {
-        mag = compass.get_field_milligauss(1);
+        mag = compass.get_field(1);
     } else {
         mag.zero();
     }
@@ -1094,7 +1094,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     const Vector3f &accel3 = ins.get_accel(2);
     const Vector3f &gyro3 = ins.get_gyro(2);
     if (compass.get_count() >= 3) {
-        mag = compass.get_field_milligauss(2);
+        mag = compass.get_field(2);
     } else {
         mag.zero();
     }
