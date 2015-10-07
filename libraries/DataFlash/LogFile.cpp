@@ -1537,7 +1537,7 @@ void DataFlash_Class::Log_Write_Current(const AP_BattMonitor &battery, int16_t t
 // Write a Compass packet
 void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 {
-    const Vector3f &mag_field = compass.get_field_milligauss(0);
+    const Vector3f &mag_field = compass.get_field(0);
     const Vector3f &mag_offsets = compass.get_offsets(0);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(0);   
     struct log_Compass pkt = {
@@ -1580,7 +1580,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 #endif
 #if COMPASS_MAX_INSTANCES > 2
     if (compass.get_count() > 2) {
-        const Vector3f &mag_field3 = compass.get_field_milligauss(2);
+        const Vector3f &mag_field3 = compass.get_field(2);
         const Vector3f &mag_offsets3 = compass.get_offsets(2);
         const Vector3f &mag_motor_offsets3 = compass.get_motor_offsets(2);   
         struct log_Compass pkt3 = {
