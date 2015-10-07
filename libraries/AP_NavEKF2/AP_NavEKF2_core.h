@@ -194,7 +194,11 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
-    return filter status flags
+    Return a filter function status that indicates:
+        Which outputs are valid
+        If the filter has detected takeoff
+        If the filter has activated the mode that mitigates against ground effect static pressure errors
+        If GPS data is being used
     */
     void  getFilterStatus(nav_filter_status &status) const;
 
