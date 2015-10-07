@@ -104,84 +104,6 @@ bool NavEKF2_core::resetHeightDatum(void)
     return true;
 }
 
-
-
-
-/********************************************************
-*                 GET PARAMS FUNCTIONS                  *
-********************************************************/
-
-// return the horizontal speed limit in m/s set by optical flow sensor limits
-// return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
-void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    if (PV_AidingMode == AID_RELATIVE) {
-        // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = max((frontend._maxFlowRate - 1.0f), 0.0f) * max((terrainState - stateStruct.position[2]), rngOnGnd);
-        // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / max((terrainState - stateStruct.position[2]),4.0f);
-    } else {
-        ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
-        ekfNavVelGainScaler = 1.0f;
-    }
-}
-
-
-// return the LLH location of the filters NED origin
-bool NavEKF2_core::getOriginLLH(struct Location &loc) const
-{
-    if (validOrigin) {
-        loc = EKF_origin;
-    }
-    return validOrigin;
-}
-
-/********************************************************
-*            SET STATES/PARAMS FUNCTIONS                *
-********************************************************/
-
-// set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
-{
-    if (isAiding) {
-        return false;
-    }
-    EKF_origin = loc;
-    validOrigin = true;
-    return true;
-}
-
-// Set the NED origin to be used until the next filter reset
-void NavEKF2_core::setOrigin()
-{
-    // assume origin at current GPS location (no averaging)
-    EKF_origin = _ahrs->get_gps().location();
-    // define Earth rotation vector in the NED navigation frame at the origin
-    calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
-    validOrigin = true;
-    hal.console->printf("EKF Origin Set\n");
-}
-
-// Commands the EKF to not use GPS.
-// This command must be sent prior to arming
-// This command is forgotten by the EKF each time the vehicle disarms
-// Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
-uint8_t NavEKF2_core::setInhibitGPS(void)
-{
-    if(!isAiding) {
-        return 0;
-    }
-    if (optFlowDataPresent()) {
-        frontend._fusionModeGPS = 3;
-//#error writing to a tuning parameter
-        return 2;
-    } else {
-        return 1;
-    }
-}
-
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -569,33 +491,5 @@ void NavEKF2_core::FuseVelPosNED()
 /********************************************************
 *                   MISC FUNCTIONS                      *
 ********************************************************/
-
-// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
-// limit radius to a maximum of 50m
-void NavEKF2_core::decayGpsOffset()
-{
-    float offsetDecaySpd;
-    if (assume_zero_sideslip()) {
-        offsetDecaySpd = 5.0f;
-    } else {
-        offsetDecaySpd = 1.0f;
-    }
-    float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
-    lastDecayTime_ms = imuSampleTime_ms;
-    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
-    // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
-    if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
-        // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
-        gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
-        // calculate scale factor to be applied to both offset components
-        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 50.0f) / offsetRadius;
-        gpsPosGlitchOffsetNE.x *= scaleFactor;
-        gpsPosGlitchOffsetNE.y *= scaleFactor;
-    } else {
-        gpsVelGlitchOffset.zero();
-        gpsPosGlitchOffsetNE.zero();
-    }
-}
-
 
 #endif // HAL_CPU_CLASS

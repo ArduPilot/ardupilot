@@ -532,41 +532,6 @@ bool NavEKF2_core::RecallGPS()
 }
 
 
-// return the Euler roll, pitch and yaw angle in radians
-void NavEKF2_core::getEulerAngles(Vector3f &euler) const
-{
-    outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - _ahrs->get_trim();
-}
-
-// return body axis gyro bias estimates in rad/sec
-void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
-{
-    if (dtIMUavg < 1e-6f) {
-        gyroBias.zero();
-        return;
-    }
-    gyroBias = stateStruct.gyro_bias / dtIMUavg;
-}
-
-// return body axis gyro scale factor error as a percentage
-void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
-{
-    if (!statesInitialised) {
-        gyroScale.x = gyroScale.y = gyroScale.z = 0;
-        return;
-    }
-    gyroScale.x = 100.0f/stateStruct.gyro_scale.x - 100.0f;
-    gyroScale.y = 100.0f/stateStruct.gyro_scale.y - 100.0f;
-    gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
-}
-
-// return tilt error convergence metric
-void NavEKF2_core::getTiltError(float &ang) const
-{
-    ang = tiltErrFilt;
-}
-
 bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
@@ -575,6 +540,34 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
         return true;
     }
     return false;
+}
+
+
+// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
+// limit radius to a maximum of 50m
+void NavEKF2_core::decayGpsOffset()
+{
+    float offsetDecaySpd;
+    if (assume_zero_sideslip()) {
+        offsetDecaySpd = 5.0f;
+    } else {
+        offsetDecaySpd = 1.0f;
+    }
+    float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
+    lastDecayTime_ms = imuSampleTime_ms;
+    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
+    // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
+    if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
+        // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
+        gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
+        // calculate scale factor to be applied to both offset components
+        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 50.0f) / offsetRadius;
+        gpsPosGlitchOffsetNE.x *= scaleFactor;
+        gpsPosGlitchOffsetNE.y *= scaleFactor;
+    } else {
+        gpsVelGlitchOffset.zero();
+        gpsPosGlitchOffsetNE.zero();
+    }
 }
 
 
