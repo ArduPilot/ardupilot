@@ -377,15 +377,11 @@ void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
 }
 
 /*
-return filter function status as a bitmasked integer
- 0 = attitude estimate valid
- 1 = horizontal velocity estimate valid
- 2 = vertical velocity estimate valid
- 3 = relative horizontal position estimate valid
- 4 = absolute horizontal position estimate valid
- 5 = vertical position estimate valid
- 6 = terrain height estimate valid
- 7 = constant position mode
+Return a filter function status that indicates:
+    Which outputs are valid
+    If the filter has detected takeoff
+    If the filter has activated the mode that mitigates against ground effect static pressure errors
+    If GPS data is being used
 */
 void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
 {
