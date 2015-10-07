@@ -20,6 +20,11 @@ NOTE: For Ubuntu different scripts shall be used. E.g., for precise:
 ----
 
 ###Setting Up PRU Compiler
+You should first check if there is the PRU Compiler available in your Linux-Distribution.
+* `apt-get update`
+* `sudo apt-get install ti-pru-cgt-installer`
+
+If it is not available in your Linux-Distribution you have to download it from the TI website.
 * Download [PRU C Compiler v2.0.0B2 installer](http://software-dl.ti.com/codegen/non-esd/downloads/beta.htm)
 * Please check the path where you install PRU compiler.
 * Setting environment variable
