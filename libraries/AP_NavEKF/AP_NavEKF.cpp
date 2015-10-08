@@ -4234,87 +4234,94 @@ void NavEKF::readIMUData()
 void NavEKF::readGpsData()
 {
     // check for new GPS data
-    if ((_ahrs->get_gps().last_message_time_ms() != lastFixTime_ms) &&
-            (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D))
-    {
-        // store fix time from previous read
-        secondLastFixTime_ms = lastFixTime_ms;
+    if (_ahrs->get_gps().last_message_time_ms() != lastFixTime_ms) {
+         if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+             // report GPS fix status
+             gpsCheckStatus.bad_fix = false;
 
-        // get current fix time
-        lastFixTime_ms = _ahrs->get_gps().last_message_time_ms();
+             // store fix time from previous read
+            secondLastFixTime_ms = lastFixTime_ms;
 
-        // set flag that lets other functions know that new GPS data has arrived
-        newDataGps = true;
+            // get current fix time
+            lastFixTime_ms = _ahrs->get_gps().last_message_time_ms();
 
-        // get state vectors that were stored at the time that is closest to when the the GPS measurement
-        // time after accounting for measurement delays
-        RecallStates(statesAtVelTime, (imuSampleTime_ms - constrain_int16(_msecVelDelay, 0, 500)));
-        RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
+            // set flag that lets other functions know that new GPS data has arrived
+            newDataGps = true;
 
-        // read the NED velocity from the GPS
-        velNED = _ahrs->get_gps().velocity();
+            // get state vectors that were stored at the time that is closest to when the the GPS measurement
+            // time after accounting for measurement delays
+            RecallStates(statesAtVelTime, (imuSampleTime_ms - constrain_int16(_msecVelDelay, 0, 500)));
+            RecallStates(statesAtPosTime, (imuSampleTime_ms - constrain_int16(_msecPosDelay, 0, 500)));
 
-        // Use the speed accuracy from the GPS if available, otherwise set it to zero.
-        // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
-        float alpha = constrain_float(0.0002f * (lastFixTime_ms - secondLastFixTime_ms),0.0f,1.0f);
-        gpsSpdAccuracy *= (1.0f - alpha);
-        float gpsSpdAccRaw;
-        if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
-            gpsSpdAccuracy = 0.0f;
-        } else {
-            gpsSpdAccuracy = max(gpsSpdAccuracy,gpsSpdAccRaw);
-        }
+            // read the NED velocity from the GPS
+            velNED = _ahrs->get_gps().velocity();
 
-        // check if we have enough GPS satellites and increase the gps noise scaler if we don't
-        if (_ahrs->get_gps().num_sats() >= 6 && !constPosMode) {
-            gpsNoiseScaler = 1.0f;
-        } else if (_ahrs->get_gps().num_sats() == 5 && !constPosMode) {
-            gpsNoiseScaler = 1.4f;
-        } else { // <= 4 satellites or in constant position mode
-            gpsNoiseScaler = 2.0f;
-        }
-
-        // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
-        if (_ahrs->get_gps().have_vertical_velocity() && _fusionModeGPS == 0) {
-            useGpsVertVel = true;
-        } else {
-            useGpsVertVel = false;
-        }
-
-        // Monitor quality of the GPS velocity data for alignment
-        gpsGoodToAlign = calcGpsGoodToAlign();
-
-        // Monitor qulaity of GPS data inflight
-        calcGpsGoodForFlight();
-
-        // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
-        // If we don't have an origin, then set it to the current GPS coordinates
-        const struct Location &gpsloc = _ahrs->get_gps().location();
-        if (validOrigin) {
-            gpsPosNE = location_diff(EKF_origin, gpsloc);
-        } else if (gpsGoodToAlign){
-            // Set the NE origin to the current GPS position
-            setOrigin();
-            // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
-            alignMagStateDeclination();
-            // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-            EKF_origin.alt = gpsloc.alt - hgtMea;
-            // We are by definition at the origin at the instant of alignment so set NE position to zero
-            gpsPosNE.zero();
-            // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
-            if (vehicleArmed && _fusionModeGPS != 3) {
-                constPosMode = false;
-                PV_AidingMode = AID_ABSOLUTE;
-                gpsNotAvailable = false;
-                // Initialise EKF position and velocity states
-                ResetPosition();
-                ResetVelocity();
+            // Use the speed accuracy from the GPS if available, otherwise set it to zero.
+            // Apply a decaying envelope filter with a 5 second time constant to the raw speed accuracy data
+            float alpha = constrain_float(0.0002f * (lastFixTime_ms - secondLastFixTime_ms),0.0f,1.0f);
+            gpsSpdAccuracy *= (1.0f - alpha);
+            float gpsSpdAccRaw;
+            if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
+                gpsSpdAccuracy = 0.0f;
+            } else {
+                gpsSpdAccuracy = max(gpsSpdAccuracy,gpsSpdAccRaw);
             }
-        }
 
-        // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
-        decayGpsOffset();
+            // check if we have enough GPS satellites and increase the gps noise scaler if we don't
+            if (_ahrs->get_gps().num_sats() >= 6 && !constPosMode) {
+                gpsNoiseScaler = 1.0f;
+            } else if (_ahrs->get_gps().num_sats() == 5 && !constPosMode) {
+                gpsNoiseScaler = 1.4f;
+            } else { // <= 4 satellites or in constant position mode
+                gpsNoiseScaler = 2.0f;
+            }
+
+            // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
+            if (_ahrs->get_gps().have_vertical_velocity() && _fusionModeGPS == 0) {
+                useGpsVertVel = true;
+            } else {
+                useGpsVertVel = false;
+            }
+
+            // Monitor quality of the GPS velocity data for alignment
+            gpsGoodToAlign = calcGpsGoodToAlign();
+
+            // Monitor qulaity of GPS data inflight
+            calcGpsGoodForFlight();
+
+            // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
+            // If we don't have an origin, then set it to the current GPS coordinates
+            const struct Location &gpsloc = _ahrs->get_gps().location();
+            if (validOrigin) {
+                gpsPosNE = location_diff(EKF_origin, gpsloc);
+            } else if (gpsGoodToAlign){
+                // Set the NE origin to the current GPS position
+                setOrigin();
+                // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
+                alignMagStateDeclination();
+                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                EKF_origin.alt = gpsloc.alt - hgtMea;
+                // We are by definition at the origin at the instant of alignment so set NE position to zero
+                gpsPosNE.zero();
+                // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
+                if (vehicleArmed && _fusionModeGPS != 3) {
+                    constPosMode = false;
+                    PV_AidingMode = AID_ABSOLUTE;
+                    gpsNotAvailable = false;
+                    // Initialise EKF position and velocity states
+                    ResetPosition();
+                    ResetVelocity();
+                }
+            }
+
+            // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
+            decayGpsOffset();
+        } else {
+             // report GPS fix status
+             gpsCheckStatus.bad_fix = true;
+        }
     }
+
 
     // If no previous GPS lock or told not to use it, or EKF origin not set, we declare the  GPS unavailable for use
     if ((_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) || _fusionModeGPS == 3 || !validOrigin) {
@@ -4951,6 +4958,7 @@ void  NavEKF::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_drift = gpsCheckStatus.bad_horiz_drift; // GPS horizontal drift is too large to start using GPS (check assumes vehicle is static)
     faults.flags.bad_hdop   = gpsCheckStatus.bad_hdop; // reported HDoP is too large to start using GPS
     faults.flags.bad_vert_vel = gpsCheckStatus.bad_vert_vel; // GPS vertical speed is too large to start using GPS (check assumes vehicle is static)
+    faults.flags.bad_fix = gpsCheckStatus.bad_fix; // The GPS cannot provide the 3D fix required
 }
 
 /*
