@@ -1488,7 +1488,7 @@ void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, c
         pitch       : (int16_t)ahrs.pitch_sensor,
         yaw         : (uint16_t)ahrs.yaw_sensor
     };
-    WriteBlock(&pkt, sizeof(pkt));
+    WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // Write an attitude packet
