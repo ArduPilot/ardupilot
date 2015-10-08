@@ -1532,6 +1532,33 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
+    {
+        // decode packet
+        mavlink_set_attitude_target_t packet;
+        mavlink_msg_set_attitude_target_decode(msg, &packet);
+
+        // ensure attitude and thrust are provided
+        if (((packet.type_mask & (1<<6)) == 0) || ((packet.type_mask & (1<<7)) == 0)) {
+            break;
+        }
+
+        // convert thrust to climb rate
+        packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
+        float climb_rate_cms = 0.0f;
+        if (is_equal(packet.thrust, 0.5f)) {
+            climb_rate_cms = 0.0f;
+        } else if (packet.thrust > 0.5f) {
+            // climb at up to WPNAV_SPEED_UP
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * copter.wp_nav.get_speed_up();
+        } else {
+            // descend at up to WPNAV_SPEED_DN
+            climb_rate_cms = (0.5f - packet.thrust) * 2.0f * -fabsf(copter.wp_nav.get_speed_down());
+        }
+        copter.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
+        break;
+    }
+
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:     // MAV ID: 84
     {
         // decode packet
