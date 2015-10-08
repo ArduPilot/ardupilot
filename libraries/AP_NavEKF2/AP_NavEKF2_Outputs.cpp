@@ -429,6 +429,7 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_hAcc   = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
     faults.flags.bad_sats   = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
     faults.flags.bad_yaw    = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
+    faults.flags.bad_fix    = gpsCheckStatus.bad_fix; // The GPS cannot provide the 3D fix required
 }
 
 // send an EKF_STATUS message to GCS

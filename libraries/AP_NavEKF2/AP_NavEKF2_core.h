@@ -824,6 +824,7 @@ private:
         bool bad_hAcc:1;
         bool bad_sats:1;
         bool bad_yaw:1;
+        bool bad_fix:1;
     } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
