@@ -4801,6 +4801,7 @@ void NavEKF::InitialiseVariables()
     gpsDriftNE = 0.0f;
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
+    memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
 }
 
 // return true if we should use the airspeed sensor
@@ -4931,6 +4932,25 @@ void  NavEKF::getFilterTimeouts(uint8_t &timeouts) const
                 hgtTimeout<<2 |
                 magTimeout<<3 |
                 tasTimeout<<4);
+}
+
+/*
+return filter gps quality check status
+*/
+void  NavEKF::getFilterGpsStatus(nav_gps_status &faults) const
+{
+    // init return value
+    faults.value = 0;
+
+    // set individual flags
+    faults.flags.bad_sAcc   = gpsCheckStatus.bad_sAcc; // reported speed accuracy is insufficient
+    faults.flags.bad_hAcc   = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
+    faults.flags.bad_yaw    = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
+    faults.flags.bad_sats   = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
+    faults.flags.bad_VZ = gpsCheckStatus.bad_VZ; // GPS vertical velocity is inconsistent with the IMU and Baro measurements
+    faults.flags.bad_horiz_drift = gpsCheckStatus.bad_horiz_drift; // GPS horizontal drift is too large to start using GPS (check assumes vehicle is static)
+    faults.flags.bad_hdop   = gpsCheckStatus.bad_hdop; // reported HDoP is too large to start using GPS
+    faults.flags.bad_vert_vel = gpsCheckStatus.bad_vert_vel; // GPS vertical speed is too large to start using GPS (check assumes vehicle is static)
 }
 
 /*
@@ -5242,11 +5262,17 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
                            "GPS vert vel error %.1f", (double)velDiffAbs);
+        gpsCheckStatus.bad_VZ = true;
+    } else {
+        gpsCheckStatus.bad_VZ = false;
     }
     if (gpsSpdAccuracy > 1.0f) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
                            "GPS speed error %.1f", (double)gpsSpdAccuracy);
+        gpsCheckStatus.bad_sAcc = true;
+    } else {
+        gpsCheckStatus.bad_sAcc = false;
     }
 
     // fail if not enough sats
@@ -5254,6 +5280,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
     if (numSatsFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
                            "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
+        gpsCheckStatus.bad_sats = true;
+    } else {
+        gpsCheckStatus.bad_sats = false;
     }
 
     // fail if satellite geometry is poor
@@ -5261,6 +5290,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
     if (hdopFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
                            "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
+        gpsCheckStatus.bad_hdop = true;
+    } else {
+        gpsCheckStatus.bad_hdop = false;
     }
 
     // fail if horiziontal position accuracy not sufficient
@@ -5275,6 +5307,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
                            "GPS horiz error %.1f", (double)hAcc);
+        gpsCheckStatus.bad_hAcc = true;
+    } else {
+        gpsCheckStatus.bad_hAcc = false;
     }
 
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
@@ -5305,6 +5340,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
                            "Mag yaw error x=%.1f y=%.1f",
                            (double)magTestRatio.x,
                            (double)magTestRatio.y);
+        gpsCheckStatus.bad_yaw = true;
+    } else {
+        gpsCheckStatus.bad_yaw = false;
     }
 
     // Check for significant change in GPS position if disarmed which indicates bad GPS
@@ -5327,6 +5365,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
                            "GPS drift %.1fm (needs 3.0)", (double)gpsDriftNE);
+        gpsCheckStatus.bad_horiz_drift = true;
+    } else {
+        gpsCheckStatus.bad_horiz_drift = false;
     }
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
@@ -5346,6 +5387,9 @@ bool NavEKF::calcGpsGoodToAlign(void)
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
                            "GPS vertical speed %.2fm/s (needs 0.30)", (double)fabsf(gpsVertVelFilt));
+        gpsCheckStatus.bad_vert_vel = true;
+    } else {
+        gpsCheckStatus.bad_vert_vel = false;
     }
 
     // Check that the horizontal GPS vertical velocity is reasonable after noise filtering
