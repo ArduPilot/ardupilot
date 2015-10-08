@@ -753,6 +753,16 @@ void NavEKF2::getFilterStatus(nav_filter_status &status) const
     }
 }
 
+/*
+return filter gps quality check status
+*/
+void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
+{
+    if (core) {
+        core->getFilterGpsStatus(status);
+    }
+}
+
 // send an EKF_STATUS_REPORT message to GCS
 void NavEKF2::send_status_report(mavlink_channel_t chan)
 {

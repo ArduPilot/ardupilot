@@ -28,40 +28,16 @@ extern const AP_HAL::HAL& hal;
 */
 bool NavEKF2_core::calcGpsGoodToAlign(void)
 {
-    // calculate absolute difference between GPS vert vel and inertial vert vel
-    float velDiffAbs;
-    if (_ahrs->get_gps().have_vertical_velocity()) {
-        velDiffAbs = fabsf(gpsDataDelayed.vel.z - stateStruct.velocity.z);
-    } else {
-        velDiffAbs = 0.0f;
-    }
 
-    // fail if velocity difference or reported speed accuracy greater than threshold
-    bool gpsVelFail = (velDiffAbs > 1.0f) || (gpsSpdAccuracy > 1.0f);
-
-    if (velDiffAbs > 1.0f) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "GPS vert vel error %.1f", (double)velDiffAbs);
-    }
-    if (gpsSpdAccuracy > 1.0f) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "GPS speed error %.1f", (double)gpsSpdAccuracy);
-    }
+    // fail if reported speed accuracy greater than threshold
+    gpsCheckStatus.bad_sAcc = (gpsSpdAccuracy > 1.0f);
 
     // fail if horiziontal position accuracy not sufficient
-    float hAcc = 0.0f;
-    bool hAccFail;
+    float hAcc;
     if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = hAcc > 5.0f;
+        gpsCheckStatus.bad_hAcc = (hAcc > 5.0f);
     } else {
-        hAccFail =  false;
-    }
-    if (hAccFail) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "GPS horiz error %.1f", (double)hAcc);
+        gpsCheckStatus.bad_hAcc =  false;
     }
 
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
@@ -80,48 +56,78 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
 
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
-    bool yawFail;
-    if (magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) {
-        yawFail = true;
-    } else {
-        yawFail = false;
-    }
-    if (yawFail) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "Mag yaw error x=%.1f y=%.1f",
-                           (double)magTestRatio.x,
-                           (double)magTestRatio.y);
-    }
+    gpsCheckStatus.bad_yaw = (magTestRatio.x > 1.0f || magTestRatio.y > 1.0f);
 
     // fail if not enough sats
-    bool numSatsFail = _ahrs->get_gps().num_sats() < 6;
-    if (numSatsFail) {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
-    }
+    gpsCheckStatus.bad_sats = (_ahrs->get_gps().num_sats() < 6);
 
     // record time of fail if failing
-    if (gpsVelFail || numSatsFail || hAccFail || yawFail) {
+    if (gpsCheckStatus.bad_sAcc || gpsCheckStatus.bad_sats || gpsCheckStatus.bad_hAcc || gpsCheckStatus.bad_yaw) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
-    if (lastGpsVelFail_ms == 0) {
-        // first time through, start with a failure
-        lastGpsVelFail_ms = imuSampleTime_ms;
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF warmup");
-    }
-
-    // DEBUG PRINT
-    //hal.console->printf("velDiff = %5.2f, nSats = %i, hAcc = %5.2f, sAcc = %5.2f, delTime = %i\n", velDiffAbs, _ahrs->get_gps().num_sats(), hAcc, gpsSpdAccuracy, imuSampleTime_ms - lastGpsVelFail_ms);
-    // continuous period without fail required to return healthy
-
+    // We need 10 seconds of continual good data to start using GPS to reduce the chance of encountering bad data during takeoff
     if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
         // we have not failed in the last 10 seconds
         return true;
     }
 
     return false;
+}
+
+// update inflight calculaton that determines if GPS data is good enough for reliable navigation
+void NavEKF2_core::calcGpsGoodForFlight(void)
+{
+    // use a simple criteria based on the GPS receivers claimed speed accuracy and the EKF innovation consistency checks
+
+    // set up varaibles and constants used by filter that is applied to GPS speed accuracy
+    const float alpha1 = 0.2f; // coefficient for first stage LPF applied to raw speed accuracy data
+    const float tau = 10.0f; // time constant (sec) of peak hold decay
+    if (lastGpsCheckTime_ms == 0) {
+        lastGpsCheckTime_ms =  imuSampleTime_ms;
+    }
+    float dtLPF = (imuSampleTime_ms - lastGpsCheckTime_ms) * 1e-3f;
+    lastGpsCheckTime_ms = imuSampleTime_ms;
+    float alpha2 = constrain_float(dtLPF/tau,0.0f,1.0f);
+
+    // get the receivers reported speed accuracy
+    float gpsSpdAccRaw;
+    if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
+        gpsSpdAccRaw = 0.0f;
+    }
+
+    // filter the raw speed accuracy using a LPF
+    sAccFilterState1 = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
+
+    // apply a peak hold filter to the LPF output
+    sAccFilterState2 = max(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
+
+    // Apply a threshold test with hysteresis to the filtered GPS speed accuracy data
+    if (sAccFilterState2 > 1.5f ) {
+        gpsSpdAccPass = false;
+    } else if(sAccFilterState2 < 1.0f) {
+        gpsSpdAccPass = true;
+    }
+
+    // Apply a threshold test with hysteresis to the normalised position and velocity innovations
+    // Require a fail for one second and a pass for 10 seconds to transition
+    if (lastInnovFailTime_ms == 0) {
+        lastInnovFailTime_ms = imuSampleTime_ms;
+        lastInnovPassTime_ms = imuSampleTime_ms;
+    }
+    if (velTestRatio < 1.0f && posTestRatio < 1.0f) {
+        lastInnovPassTime_ms = imuSampleTime_ms;
+    } else if (velTestRatio > 0.7f || posTestRatio > 0.7f) {
+        lastInnovFailTime_ms = imuSampleTime_ms;
+    }
+    if ((imuSampleTime_ms - lastInnovPassTime_ms) > 1000) {
+        ekfInnovationsPass = false;
+    } else if ((imuSampleTime_ms - lastInnovFailTime_ms) > 10000) {
+        ekfInnovationsPass = true;
+    }
+
+    // both GPS speed accuracy and EKF innovations must pass
+    gpsAccuracyGood = gpsSpdAccPass && ekfInnovationsPass;
 }
 
 // Detect if we are in flight or on ground

@@ -170,6 +170,15 @@ void NavEKF2_core::InitialiseVariables()
     prevMotorsArmed = false;
     innovationIncrement = 0;
     lastInnovation = 0;
+    memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
+    gpsSpdAccPass = false;
+    ekfInnovationsPass = false;
+    sAccFilterState1 = 0.0f;
+    sAccFilterState2 = 0.0f;
+    lastGpsCheckTime_ms = 0;
+    lastInnovPassTime_ms = 0;
+    lastInnovFailTime_ms = 0;
+    gpsAccuracyGood = false;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
