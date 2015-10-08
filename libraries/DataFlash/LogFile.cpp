@@ -1225,10 +1225,12 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector2f offset;
     uint8_t faultStatus, timeoutStatus;
     nav_filter_status solutionStatus;
+    nav_gps_status gpsStatus {};
     ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF().getFilterFaults(faultStatus);
     ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
     ahrs.get_NavEKF().getFilterStatus(solutionStatus);
+    ahrs.get_NavEKF().getFilterGpsStatus(gpsStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1243,7 +1245,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint16_t)(solutionStatus.value)
+        solution : (uint16_t)(solutionStatus.value),
+        gps : (uint16_t)(gpsStatus.value)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
@@ -1375,10 +1378,12 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector2f offset;
     uint8_t faultStatus=0, timeoutStatus=0;
     nav_filter_status solutionStatus {};
+    nav_gps_status gpsStatus {};
     ahrs.get_NavEKF2().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     ahrs.get_NavEKF2().getFilterFaults(faultStatus);
     ahrs.get_NavEKF2().getFilterTimeouts(timeoutStatus);
     ahrs.get_NavEKF2().getFilterStatus(solutionStatus);
+    ahrs.get_NavEKF2().getFilterGpsStatus(gpsStatus);
     struct log_EKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1393,7 +1398,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint16_t)(solutionStatus.value)
+        solution : (uint16_t)(solutionStatus.value),
+        gps : (uint16_t)(gpsStatus.value)
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
