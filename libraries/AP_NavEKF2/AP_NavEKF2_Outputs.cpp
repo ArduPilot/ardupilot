@@ -413,6 +413,22 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     status.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = (imuSampleTime_ms - lastPosPassTime_ms) < 4000;
+    status.flags.gps_glitching = !gpsAccuracyGood; // The GPS is glitching
+}
+
+/*
+return filter gps quality check status
+*/
+void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
+{
+    // init return value
+    faults.value = 0;
+
+    // set individual flags
+    faults.flags.bad_sAcc   = gpsCheckStatus.bad_sAcc; // reported speed accuracy is insufficient
+    faults.flags.bad_hAcc   = gpsCheckStatus.bad_hAcc; // reported horizontal position accuracy is insufficient
+    faults.flags.bad_sats   = gpsCheckStatus.bad_sats; // reported number of satellites is insufficient
+    faults.flags.bad_yaw    = gpsCheckStatus.bad_yaw; // EKF heading accuracy is too large for GPS use
 }
 
 // send an EKF_STATUS message to GCS

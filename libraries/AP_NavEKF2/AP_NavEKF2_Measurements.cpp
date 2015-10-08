@@ -386,9 +386,13 @@ void NavEKF2_core::readGpsData()
             useGpsVertVel = false;
         }
 
-        // Monitor quality of the GPS velocity data for alignment
+        // Monitor quality of the GPS velocity data before and after alignment using separate checks
         if (PV_AidingMode != AID_ABSOLUTE) {
+            // Pre-alignment checks
             gpsQualGood = calcGpsGoodToAlign();
+        } else {
+            // Post-alignment checks
+            calcGpsGoodForFlight();
         }
 
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin

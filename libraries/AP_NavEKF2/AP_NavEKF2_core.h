@@ -194,6 +194,11 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &status) const;
+
+    /*
     Return a filter function status that indicates:
         Which outputs are valid
         If the filter has detected takeoff
@@ -546,6 +551,9 @@ private:
     // Assess GPS data quality and return true if good enough to align the EKF
     bool calcGpsGoodToAlign(void);
 
+    // update inflight calculaton that determines if GPS data is good enough for reliable navigation
+    void calcGpsGoodForFlight(void);
+
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
     void readRangeFinder();
@@ -720,6 +728,16 @@ private:
     bool motorsArmed;               // true when the motors have been armed
     bool prevMotorsArmed;           // value of motorsArmed from previous frame
 
+    // variable used by the in-flight GPS quality check
+    bool gpsSpdAccPass;             // true when reported GPS speed accuracy passes in-flight checks
+    bool ekfInnovationsPass;        // true when GPS innovations pass in-flight checks
+    float sAccFilterState1;         // state variable for LPF applid to reported GPS speed accuracy
+    float sAccFilterState2;         // state variable for peak hold filter applied to reported GPS speed
+    uint32_t lastGpsCheckTime_ms;   // last time in msec the GPS quality was checked
+    uint32_t lastInnovPassTime_ms;  // last time in msec the GPS innovations passed
+    uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
+    bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
+
     // States used for unwrapping of compass yaw error
     float innovationIncrement;
     float lastInnovation;
@@ -791,6 +809,7 @@ private:
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
+    // flags indicating severw numerical errors in innovation variance calculation for different fusion operations
     struct {
         bool bad_xmag:1;
         bool bad_ymag:1;
@@ -798,6 +817,14 @@ private:
         bool bad_airspeed:1;
         bool bad_sideslip:1;
     } faultStatus;
+
+    // flags indicating which GPS quality checks are failing
+    struct {
+        bool bad_sAcc:1;
+        bool bad_hAcc:1;
+        bool bad_sats:1;
+        bool bad_yaw:1;
+    } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
@@ -820,9 +847,6 @@ private:
         Vector9 SH_MAG;
     } mag_state;
 
-
-    // string representing last reason for prearm failure
-    char prearm_fail_string[40];
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
