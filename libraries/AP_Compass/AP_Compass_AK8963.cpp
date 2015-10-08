@@ -211,9 +211,6 @@ void AP_Compass_AK8963::read()
 
     _reset_filter();
     hal.scheduler->resume_timer_procs();
-    _make_factory_sensitivity_adjustment(field);
-    _make_adc_sensitivity_adjustment(field);
-
     publish_filtered_field(field, _compass_instance);
 }
 
@@ -279,6 +276,9 @@ void AP_Compass_AK8963::_update()
     }
 
     raw_field = Vector3f(mag_x, mag_y, mag_z);
+
+    _make_factory_sensitivity_adjustment(raw_field);
+    _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK8963_MILLIGAUSS_SCALE;
 
     // rotate raw_field from sensor frame to body frame
