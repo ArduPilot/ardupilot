@@ -55,10 +55,19 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:Low,1:High
     // @User: Standard
     AP_GROUPINFO("RELAY_ON",    5, AP_Camera, _relay_on, 1),
-    
+
+    // @Param: MIN_INTERVAL
+    // @DisplayName: Minimum time between photos
+    // @Description: Postpone shooting if previous picture was taken less than preset time ago.
+    // @User: Standard
+    // @Units: milliseconds
+    // @Range: 0 10000
+    AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
+
     AP_GROUPEND
 };
 
+extern const AP_HAL::HAL& hal;
 
 /// Servo operated camera
 void
@@ -245,6 +254,13 @@ bool AP_Camera::update_location(const struct Location &loc)
     if (get_distance(loc, _last_location) < _trigg_dist) {
         return false;
     }
-    _last_location = loc;
-    return true;
+
+    uint32_t tnow = hal.scheduler->millis();
+    if (tnow - _last_photo_time < (unsigned) _min_interval) {
+        return false;
+    }  else {
+        _last_location = loc;
+        _last_photo_time = tnow;
+        return true;
+    }
 }

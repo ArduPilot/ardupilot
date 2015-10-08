@@ -77,6 +77,8 @@ private:
     void            relay_pic();        // basic relay activation
 
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
+    AP_Int16        _min_interval;      // Minimum time between shots required by camera
+    uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
