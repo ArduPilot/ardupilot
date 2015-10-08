@@ -64,6 +64,14 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 10000
     AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
 
+    // @Param: MAX_ROLL
+    // @DisplayName: Maximum photo roll angle.
+    // @Description: Postpone shooting if roll is greater than limit.
+    // @User: Standard
+    // @Units: Degrees
+    // @Range: 0 180
+    AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 45),
+
     AP_GROUPEND
 };
 
@@ -237,7 +245,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
     The caller is responsible for taking the picture based on the return value of this function.
     The caller is also responsible for logging the details about the photo
 */
-bool AP_Camera::update_location(const struct Location &loc)
+bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
 {
     if (is_zero(_trigg_dist)) {
         return false;
@@ -251,7 +259,12 @@ bool AP_Camera::update_location(const struct Location &loc)
         // be called without a new GPS fix
         return false;
     }
+
     if (get_distance(loc, _last_location) < _trigg_dist) {
+        return false;
+    }
+
+    if ((unsigned) ahrs.roll_sensor/100.0f > _max_roll) {
         return false;
     }
 
