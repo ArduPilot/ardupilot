@@ -259,6 +259,11 @@ public:
     */
     void  getFilterStatus(nav_filter_status &status) const;
 
+    /*
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &status) const;
+
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
 
@@ -830,6 +835,18 @@ private:
         bool bad_airspeed:1;
         bool bad_sideslip:1;
     } faultStatus;
+
+    // flags indicating which GPS quality checks are failing
+    struct {
+        bool bad_sAcc:1;
+        bool bad_hAcc:1;
+        bool bad_yaw:1;
+        bool bad_sats:1;
+        bool bad_VZ:1;
+        bool bad_horiz_drift:1;
+        bool bad_hdop:1;
+        bool bad_vert_vel:1;
+    } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
     // magnetometer X,Y,Z measurements are fused across three time steps
