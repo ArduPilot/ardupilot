@@ -40,4 +40,18 @@ union nav_filter_status {
     uint16_t value;
 };
 
+union nav_gps_status {
+    struct {
+        uint16_t bad_sAcc           : 1; // 0 - true if reported gps speed accuracy is insufficient to start using GPS
+        uint16_t bad_hAcc           : 1; // 1 - true if reported gps horizontal position accuracy is insufficient to start using GPS
+        uint16_t bad_yaw            : 1; // 2 - true if EKF yaw errors are too large to start using GPS
+        uint16_t bad_sats           : 1; // 3 - true if the number of satellites is insufficient to start using GPS
+        uint16_t bad_VZ             : 1; // 4 - true if the vertical velocity is inconsistent with the inertial/baro
+        uint16_t bad_horiz_drift    : 1; // 5 - true if the GPS horizontal position is drifting (this check assumes vehicle is static)
+        uint16_t bad_hdop           : 1; // 6 - true if the reported HDoP is insufficient to start using GPS
+        uint16_t bad_vert_vel       : 1; // 7 - true if the GPS vertical speed is too large to start using GPS (this check assumes vehicle is static)
+    } flags;
+    uint16_t value;
+};
+
 #endif // AP_Nav_Common
