@@ -29,6 +29,8 @@
 .settings/
 .autotools
 .vagrant
+/.lock-waf*
+/.waf*
 /tmp/*
 /Tools/ArdupilotMegaPlanner/3DRRadio/bin
 /Tools/ArdupilotMegaPlanner/3DRRadio/obj
