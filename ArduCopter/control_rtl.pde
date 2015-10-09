@@ -7,13 +7,20 @@
  * and the lower implementation of the waypoint or landing controllers within those states
  */
 
-float rtl_altitude = 0;
+struct rtl_path_t {
+    // NEU w/ origin-relative altitude
+    Vector3f origin_point;
+    Vector3f climb_target;
+    Vector3f return_target;
+    Vector3f descent_target;
+    bool land;
+} rtl_path;
 
 // rtl_init - initialise rtl controller
 static bool rtl_init(bool ignore_checks)
 {
     if (position_ok() || ignore_checks) {
-        rtl_altitude = get_RTL_alt();
+        rtl_build_path();
         rtl_climb_start();
         return true;
     }else{
@@ -35,10 +42,10 @@ static void rtl_run()
             rtl_loiterathome_start();
             break;
         case LoiterAtHome:
-            if (g.rtl_alt_final > 0 && !failsafe.radio) {
-                rtl_descent_start();
-            }else{
+            if (rtl_path.land || failsafe.radio) {
                 rtl_land_start();
+            } else {
+                rtl_descent_start();
             }
             break;
         case FinalDescent:
@@ -89,22 +96,8 @@ static void rtl_climb_start()
     wp_nav.wp_and_spline_init();
     wp_nav.set_speed_xy(g.rtl_speed_cms);
 
-    // get horizontal stopping point
-    Vector3f destination;
-    wp_nav.get_wp_stopping_point_xy(destination);
-
-#if AC_RALLY == ENABLED
-    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    destination.z = pv_alt_above_origin(rally_point.alt);
-#else
-    destination.z = pv_alt_above_origin(rtl_altitude);
-#endif
-
     // set the destination
-    wp_nav.set_wp_destination(destination);
+    wp_nav.set_wp_destination(rtl_path.climb_target);
     wp_nav.set_fast_waypoint(true);
 
     // hold current yaw during initial climb
@@ -118,18 +111,7 @@ static void rtl_return_start()
     rtl_state_complete = false;
 
     // set target to above home/rally point
-#if AC_RALLY == ENABLED
-    // rally_point will be the nearest rally point or home.  uses absolute altitudes
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude+ahrs.get_home().alt);
-    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
-    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
-    Vector3f destination = pv_location_to_vector(rally_point);
-#else
-    Vector3f destination = pv_location_to_vector(ahrs.get_home());
-    destination.z = pv_alt_above_origin(rtl_altitude);
-#endif
-
-    wp_nav.set_wp_destination(destination);
+    wp_nav.set_wp_destination(rtl_path.return_target);
 
     // initialise yaw to point home (maybe)
     set_auto_yaw_mode(get_default_auto_yaw_mode(true));
@@ -304,14 +286,14 @@ static void rtl_descent_run()
     wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // call z-axis position controller
-    pos_control.set_alt_target_with_slew(pv_alt_above_origin(g.rtl_alt_final), G_Dt);
+    pos_control.set_alt_target_with_slew(rtl_path.descent_target.z, G_Dt);
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
-    rtl_state_complete = fabs(pv_alt_above_origin(g.rtl_alt_final) - inertial_nav.get_altitude()) < 20.0f;
+    rtl_state_complete = fabs(rtl_path.descent_target.z - inertial_nav.get_altitude()) < 20.0f;
 }
 
 // rtl_loiterathome_start - initialise controllers to loiter over home
@@ -409,21 +391,63 @@ static void rtl_land_run()
     rtl_state_complete = ap.land_complete;
 }
 
-// get_RTL_alt - return altitude which vehicle should return home at
+static void rtl_build_path()
+{
+    // origin point is our stopping point
+    pos_control.get_stopping_point_xy(rtl_path.origin_point);
+    pos_control.get_stopping_point_z(rtl_path.origin_point);
+
+    // compute return altitude
+    float return_alt_above_home = rtl_compute_alt();
+
+    // climb target is above our origin point
+    rtl_path.climb_target.x = rtl_path.origin_point.x;
+    rtl_path.climb_target.y = rtl_path.origin_point.y;
+    rtl_path.climb_target.z = pv_alt_above_origin(return_alt_above_home);
+
+    // set return target to nearest rally point or home position
+#if AC_RALLY == ENABLED
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, return_alt_above_home+ahrs.get_home().alt);
+    rtl_path.return_target = pv_location_to_vector(rally_point);
+#else
+    rtl_path.return_target = pv_location_to_vector(ahrs.get_home());
+#endif
+
+    // return target is at same altitude as climb target
+    rtl_path.return_target.z = rtl_path.climb_target.z;
+
+    rtl_path.land = g.rtl_alt_final <= 0;
+
+    // descent target is below return target
+    rtl_path.descent_target.x = rtl_path.return_target.x;
+    rtl_path.descent_target.y = rtl_path.return_target.y;
+    rtl_path.descent_target.z = pv_alt_above_origin(g.rtl_alt_final);
+}
+
+// return altitude which vehicle should return home at
 //      altitude is in cm above home
-static float get_RTL_alt()
+static float rtl_compute_alt()
 {
     // maximum of current altitude + climb_min and rtl altitude
-    float rtl_alt = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
-    rtl_alt = max(rtl_alt, RTL_ALT_MIN);
+    float ret = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
+
+    ret = max(ret, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
     if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        rtl_alt = min(rtl_alt, fence.get_safe_alt()*100.0f);
+        ret = min(ret, fence.get_safe_alt()*100.0f);
     }
 #endif
 
-    return rtl_alt;
+#if AC_RALLY == ENABLED
+    // rally_point.alt will be the altitude of the nearest rally point or the RTL_ALT. uses absolute altitudes
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, ret+ahrs.get_home().alt);
+    rally_point.alt -= ahrs.get_home().alt; // convert to altitude above home
+    rally_point.alt = max(rally_point.alt, current_loc.alt);    // ensure we do not descend before reaching home
+    ret = rally_point.alt;
+#endif
+
+    return ret;
 }
 
