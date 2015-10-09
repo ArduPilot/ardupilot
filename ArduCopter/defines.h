@@ -184,7 +184,8 @@ enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
-    Guided_PosVel
+    Guided_PosVel,
+    Guided_Angle,
 };
 
 // RTL states
