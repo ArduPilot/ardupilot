@@ -34,6 +34,7 @@ namespace Linux {
     class RCOutput_Raspilot;
     class RCOutput_ZYNQ;
     class RCOutput_Bebop;
+    class RCOutput_Sysfs;
     class Semaphore;
     class Scheduler;
     class Util;
