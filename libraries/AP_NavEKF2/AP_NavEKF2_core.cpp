@@ -88,6 +88,7 @@ void NavEKF2_core::InitialiseVariables()
     magMeasTime_ms = imuSampleTime_ms;
     timeTasReceived_ms = 0;
     magYawResetTimer_ms = imuSampleTime_ms;
+    lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -179,6 +180,10 @@ void NavEKF2_core::InitialiseVariables()
     lastInnovPassTime_ms = 0;
     lastInnovFailTime_ms = 0;
     gpsAccuracyGood = false;
+    memset(&gpsloc_prev, 0, sizeof(gpsloc_prev));
+    gpsDriftNE = 0.0f;
+    gpsVertVelFilt = 0.0f;
+    gpsHorizVelFilt = 0.0f;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)

@@ -32,6 +32,16 @@
 #include <systemlib/perf_counter.h>
 #endif
 
+// GPS pre-flight check bit locations
+#define MASK_GPS_NSATS      (1<<0)
+#define MASK_GPS_HDOP       (1<<1)
+#define MASK_GPS_SPD_ERR    (1<<2)
+#define MASK_GPS_POS_ERR    (1<<3)
+#define MASK_GPS_YAW_ERR 	(1<<4)
+#define MASK_GPS_POS_DRIFT  (1<<5)
+#define MASK_GPS_VERT_SPD   (1<<6)
+#define MASK_GPS_HORIZ_SPD  (1<<7)
+
 class AP_AHRS;
 
 class NavEKF2_core
@@ -728,6 +738,13 @@ private:
     bool motorsArmed;               // true when the motors have been armed
     bool prevMotorsArmed;           // value of motorsArmed from previous frame
 
+    // variables used by the pre-initialisation GPS checks
+    struct Location gpsloc_prev;    // LLH location of previous GPS measurement
+    uint32_t lastPreAlignGpsCheckTime_ms;   // last time in msec the GPS quality was checked during pre alignment checks
+    float gpsDriftNE;               // amount of drift detected in the GPS position during pre-flight GPs checks
+    float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
+    float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
+
     // variable used by the in-flight GPS quality check
     bool gpsSpdAccPass;             // true when reported GPS speed accuracy passes in-flight checks
     bool ekfInnovationsPass;        // true when GPS innovations pass in-flight checks
@@ -822,9 +839,14 @@ private:
     struct {
         bool bad_sAcc:1;
         bool bad_hAcc:1;
-        bool bad_sats:1;
         bool bad_yaw:1;
+        bool bad_sats:1;
+        bool bad_VZ:1;
+        bool bad_horiz_drift:1;
+        bool bad_hdop:1;
+        bool bad_vert_vel:1;
         bool bad_fix:1;
+        bool bad_horiz_vel:1;
     } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
@@ -848,6 +870,9 @@ private:
         Vector9 SH_MAG;
     } mag_state;
 
+
+    // string representing last reason for prearm failure
+    char prearm_fail_string[40];
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
