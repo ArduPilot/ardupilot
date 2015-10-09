@@ -397,24 +397,24 @@ static void rtl_build_path()
     pos_control.get_stopping_point_xy(rtl_path.origin_point);
     pos_control.get_stopping_point_z(rtl_path.origin_point);
 
-    // compute return altitude
-    float return_alt_above_home = rtl_compute_alt();
-
-    // climb target is above our origin point
-    rtl_path.climb_target.x = rtl_path.origin_point.x;
-    rtl_path.climb_target.y = rtl_path.origin_point.y;
-    rtl_path.climb_target.z = pv_alt_above_origin(return_alt_above_home);
-
     // set return target to nearest rally point or home position
 #if AC_RALLY == ENABLED
-    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, return_alt_above_home+ahrs.get_home().alt);
+    Location rally_point = rally.calc_best_rally_or_home_location(current_loc, 0);
     rtl_path.return_target = pv_location_to_vector(rally_point);
 #else
     rtl_path.return_target = pv_location_to_vector(ahrs.get_home());
 #endif
 
-    // return target is at same altitude as climb target
-    rtl_path.return_target.z = rtl_path.climb_target.z;
+    float rtl_return_dist = sqrtf(sq(rtl_path.return_target.x-rtl_path.origin_point.x)+sq(rtl_path.return_target.y-rtl_path.origin_point.y));
+
+    // compute return altitude
+    float return_alt_above_home = rtl_compute_alt(rtl_return_dist);
+    rtl_path.return_target.z = pv_alt_above_origin(return_alt_above_home);
+
+    // climb target is above our origin point at the return altitude
+    rtl_path.climb_target.x = rtl_path.origin_point.x;
+    rtl_path.climb_target.y = rtl_path.origin_point.y;
+    rtl_path.climb_target.z = rtl_path.return_target.z;
 
     rtl_path.land = g.rtl_alt_final <= 0;
 
@@ -426,10 +426,14 @@ static void rtl_build_path()
 
 // return altitude which vehicle should return home at
 //      altitude is in cm above home
-static float rtl_compute_alt()
+static float rtl_compute_alt(float rtl_return_dist)
 {
     // maximum of current altitude + climb_min and rtl altitude
     float ret = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
+
+    if (g.rtl_cone_slope >= 0.5f) { // don't allow really shallow slopes
+        ret = max(current_loc.alt, min(ret, rtl_return_dist*g.rtl_cone_slope));
+    }
 
     ret = max(ret, RTL_ALT_MIN);
 
