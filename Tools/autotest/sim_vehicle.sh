@@ -315,6 +315,35 @@ AUTOTEST=$autotest
 export AUTOTEST
 VEHICLEDIR=$(pwd)
 
+# Temporary alternative path to cover waf case.
+if [ "$FRAME" = "quad" -a "$VEHICLE" = "ArduCopter" ]; then
+
+    ARDUPILOT_DIR=$autotest/../..
+    VEHICLE_ELF=ARDUPILOT_DIR/build/ArduCopter.elf
+
+    pushd $ARDUPILOT_DIR
+
+    ./waf configure --board=$BUILD_TARGET || {
+	echo >&2 "$0: Configure failed"
+	exit 1
+    }
+
+    if [ $NO_REBUILD == 0 ]; then
+    if [ $CLEAN_BUILD == 1 ]; then
+        echo "Building clean"
+        ./waf clean
+    fi
+    echo "Building $BUILD_TARGET"
+    ./waf build -j$NUM_PROCS || {
+	echo >&2 "$0: Build failed"
+	exit 1
+    }
+fi
+
+popd
+
+else
+
 if [ $NO_REBUILD == 0 ]; then
 if [ $CLEAN_BUILD == 1 ]; then
     echo "Building clean"
@@ -328,6 +357,8 @@ make $BUILD_TARGET -j$NUM_PROCS || {
 	exit 1
     }
 }
+fi
+
 fi
 popd
 
@@ -370,7 +401,11 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     popd
 fi
 
-cmd="$VEHICLEDIR/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
+if [ -z "$VEHICLE_ELF" ]; then
+    VEHICLE_ELF="$VEHICLE_DIR/$VEHICLE.elf"
+fi
+
+cmd="$VEHICLEDIR/../build/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
 if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
