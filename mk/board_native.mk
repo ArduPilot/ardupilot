@@ -12,7 +12,6 @@ DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-unused-parameter -Wno-missing-field-initializers
 WARNFLAGS      +=   -Wwrite-strings -Wformat=2
 WARNFLAGSCXX    = -Wno-reorder \
-	-Werror=unused-but-set-variable
 	-Werror=format-security \
 	-Werror=array-bounds \
 	-Wfatal-errors \
