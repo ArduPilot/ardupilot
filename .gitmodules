@@ -7,3 +7,6 @@
 [submodule "modules/uavcan"]
 	path = modules/uavcan
 	url = git://github.com/diydrones/uavcan.git
+[submodule "libraries/AP_Eigen"]
+	path = libraries/AP_Eigen
+	url = https://github.com/dgrat/AP_Eigen.git
