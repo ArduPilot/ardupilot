@@ -28,6 +28,7 @@
 #include "RCOutput_ZYNQ.h"
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Raspilot.h"
+#include "RCOutput_Sysfs.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "ToneAlarmDriver.h"
