@@ -244,11 +244,14 @@ AP_GPS_GSOF::process_message(void)
     //http://www.trimble.com/EC_ReceiverHelp/V4.19/en/GSOFmessages_Overview.htm
 
     if (gsof_msg.packettype == 0x40) { // GSOF
+#if gsof_DEBUGGING
         uint8_t trans_number = gsof_msg.data[0];
         uint8_t pageidx = gsof_msg.data[1];
         uint8_t maxpageidx = gsof_msg.data[2];
 
-        //Debug("GSOF page: " + pageidx + " of " + maxpageidx);
+        Debug("GSOF page: %u of %u (trans_number=%u)",
+              pageidx, maxpageidx, trans_number);
+#endif
 
         int valid = 0;
 
