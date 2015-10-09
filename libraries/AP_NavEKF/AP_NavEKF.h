@@ -847,6 +847,7 @@ private:
         bool bad_hdop:1;
         bool bad_vert_vel:1;
         bool bad_fix:1;
+        bool bad_horiz_vel:1;
     } gpsCheckStatus;
 
     // states held by magnetomter fusion across time steps
