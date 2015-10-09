@@ -1380,20 +1380,22 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     ahrs.get_NavEKF2().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    float magLength = magVar.length();
     ahrs.get_NavEKF2().getFilterFaults(faultStatus);
     ahrs.get_NavEKF2().getFilterTimeouts(timeoutStatus);
     ahrs.get_NavEKF2().getFilterStatus(solutionStatus);
     ahrs.get_NavEKF2().getFilterGpsStatus(gpsStatus);
-    struct log_EKF4 pkt4 = {
+    float tiltError;
+    ahrs.get_NavEKF2().getTiltError(tiltError);
+    struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : hal.scheduler->micros64(),
         sqrtvarV : (int16_t)(100*velVar),
         sqrtvarP : (int16_t)(100*posVar),
         sqrtvarH : (int16_t)(100*hgtVar),
-        sqrtvarMX : (int16_t)(100*magVar.x),
-        sqrtvarMY : (int16_t)(100*magVar.y),
-        sqrtvarMZ : (int16_t)(100*magVar.z),
+        sqrtvarM : (int16_t)(100*magLength),
         sqrtvarVT : (int16_t)(100*tasVar),
+        tiltErr : (float)tiltError,
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : (uint8_t)(faultStatus),
