@@ -201,6 +201,11 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &faults) const;
+
+    /*
     return filter status flags
     */
     void  getFilterStatus(nav_filter_status &status) const;
