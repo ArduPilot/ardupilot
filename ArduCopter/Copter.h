@@ -105,6 +105,10 @@
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
+//#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+//#endif
+#include <AP_IRLock/AP_IRLock.h>
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -203,6 +207,15 @@ private:
     AP_SerialManager serial_manager;
     static const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
 
+/*
+// Precision Landing
+///////////////////////////////////////////////////////////////////////////////
+    #if PRECISION_LANDING == ENABLED
+        AC_PrecLand precland;
+    #endif
+////////////////////////////////////////////////////////////////////////////////
+*/
+
     GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
     // User variables
@@ -233,6 +246,7 @@ private:
             enum HomeState home_state   : 2; // 18,19   // home status (unset, set, locked)
             uint8_t using_interlock     : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop: 1; // 21      // motor estop switch, shuts off motors when enabled
+            uint8_t land_repo_active    : 1; // 24  // true if pilot has applied roll or pitch inputs during landing (used to disable automatic precision landing)
         };
         uint32_t value;
     } ap;
@@ -491,6 +505,15 @@ private:
     AP_Terrain terrain;
 #endif
 
+     // Precision Landing
+////////////////////////////////////////////////////////////////////////////////
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
+////////////////////////////////////////////////////////////////////////////////
+
+
+
     // use this to prevent recursion during sensor init
     bool in_mavlink_delay;
 
@@ -599,6 +622,7 @@ private:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
+    void Log_Write_Precland();
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
@@ -864,6 +888,8 @@ private:
     void init_compass();
     void init_optflow();
     void update_optical_flow(void);
+    void init_precland();
+    void update_precland();
     void read_battery(void);
     void read_receiver_rssi(void);
     void epm_update();

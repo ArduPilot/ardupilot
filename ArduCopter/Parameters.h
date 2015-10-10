@@ -82,6 +82,9 @@ public:
         // Landing gear object
         k_param_landinggear,    // 18
 
+        // precision landing object
+        k_param_precland,   // 19
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
@@ -337,6 +340,7 @@ public:
         k_param_pi_vel_xy,
         k_param_fs_ekf_action,
         k_param_rtl_climb_min,
+        k_param_pi_precland,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
 
@@ -496,6 +500,10 @@ public:
     AC_P                    p_stabilize_yaw;
     AC_P                    p_alt_hold;
 
+#if PRECISION_LANDING == ENABLED
+    AC_PI_2D                pi_precland;
+#endif
+
     // Autotune
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
@@ -558,6 +566,10 @@ public:
 
         p_vel_z                 (VEL_Z_P),
         pid_accel_z             (ACCEL_Z_P,       ACCEL_Z_I,        ACCEL_Z_D,      ACCEL_Z_IMAX,       ACCEL_Z_FILT_HZ,    MAIN_LOOP_SECONDS),
+
+#if PRECISION_LANDING == ENABLED
+                pi_precland             (PRECLAND_P,      PRECLAND_I,                       PRECLAND_IMAX,      VEL_XY_FILT_HZ,     PRECLAND_UPDATE_TIME),
+#endif
 
         // P controller	        initial P
         //----------------------------------------------------------------------

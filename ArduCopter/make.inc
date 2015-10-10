@@ -64,3 +64,5 @@ LIBRARIES += AP_Parachute
 LIBRARIES += AP_LandingGear
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_RPM
+LIBRARIES += AC_PrecLand
+LIBRARIES += AP_IRLock

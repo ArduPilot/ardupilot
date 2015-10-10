@@ -100,6 +100,13 @@ void Copter::loiter_run()
         // get takeoff adjusted pilot and takeoff climb rates
         takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
+		#if PRECISION_LANDING == ENABLED
+            // run precision landing
+            if (!ap.land_repo_active) {
+                    wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
+                }
+		#endif
+
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
@@ -127,6 +134,13 @@ void Copter::loiter_run()
         break;
 
     case Loiter_Flying:
+
+		#if PRECISION_LANDING == ENABLED
+        // run precision landing
+        if (!ap.land_repo_active) {
+            wp_nav.shift_loiter_target(precland.get_target_shift(wp_nav.get_loiter_target()));
+        }
+        #endif
 
         // run loiter controller
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
