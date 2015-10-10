@@ -61,10 +61,10 @@ bool AP_IRLock_PX4::update()
 	uint16_t count = 0;
 	while(::read(_fd, &report, sizeof(struct irlock_s)) == sizeof(struct irlock_s) && report.timestamp >_last_timestamp) {
 		_current_frame[count].target_num = report.target_num;
-		_current_frame[count].center_x = report.center_x;
-		_current_frame[count].center_y = report.center_y;
-		_current_frame[count].width = report.width;
-		_current_frame[count].height = report.height;
+		_current_frame[count].angle_x = report.angle_x;
+		_current_frame[count].angle_y = report.angle_y;
+		_current_frame[count].size_x = report.size_x;
+		_current_frame[count].size_y = report.size_y;
 
 		count++;
 		_last_timestamp = report.timestamp;

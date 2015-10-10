@@ -31,7 +31,9 @@ bool IRLock::get_angle_to_target(float &x_angle_rad, float &y_angle_rad) const
     }
 
     // use data from first object
-    x_angle_rad = (((float)(_current_frame[0].center_x-IRLOCK_CENTER_X))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
-    y_angle_rad = (((float)(_current_frame[0].center_y-IRLOCK_CENTER_Y))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    //x_angle_rad = (((float)(_current_frame[0].center_x-IRLOCK_CENTER_X))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    //y_angle_rad = (((float)(_current_frame[0].center_y-IRLOCK_CENTER_Y))/IRLOCK_X_PIXEL_PER_DEGREE) * DEG_TO_RAD;
+    x_angle_rad = _current_frame[0].angle_x;
+    y_angle_rad = _current_frame[0].angle_y;
     return true;
 }
