@@ -11,6 +11,7 @@
 #endif
 
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
+#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
 static Vector3f posvel_pos_target_cm;
 static Vector3f posvel_vel_target_cms;
@@ -470,7 +471,7 @@ void Copter::guided_angle_control_run()
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
-    if (tnow - guided_angle_state.update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+    if (tnow - guided_angle_state.update_time_ms > GUIDED_ATTITUDE_TIMEOUT_MS) {
         roll_in = 0.0f;
         pitch_in = 0.0f;
         climb_rate_cms = 0.0f;
