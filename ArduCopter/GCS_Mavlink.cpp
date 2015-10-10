@@ -1538,8 +1538,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         mavlink_set_attitude_target_t packet;
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
-        // ensure attitude and thrust are provided
-        if (((packet.type_mask & (1<<6)) == 0) || ((packet.type_mask & (1<<7)) == 0)) {
+        // ensure type_mask specifies to use attitude and thrust
+        if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
             break;
         }
 
