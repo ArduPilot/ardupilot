@@ -54,6 +54,11 @@
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 #define AP_MOTORS_HELI_FLYBAR                   1
 
+// manual servo modes (used for setup)
+#define AP_MOTORS_HELI_MANUAL_OFF               0
+#define AP_MOTORS_HELI_MANUAL_PASSTHROUGH       1
+#define AP_MOTORS_HELI_MANUAL_CENTER            2
+
 class AP_HeliControls;
 
 /// @class      AP_MotorsHeli
