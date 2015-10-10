@@ -31,7 +31,7 @@ Copter::Copter(void) :
             FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)),
     control_mode(STABILIZE),
 #if FRAME_CONFIG == HELI_FRAME  // helicopter constructor requires more arguments
-    motors(g.rc_7, g.rc_8, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
+    motors(g.rc_7, g.heli_servo_rsc, g.heli_servo_1, g.heli_servo_2, g.heli_servo_3, g.heli_servo_4, MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == TRI_FRAME  // tri constructor requires additional rc_7 argument to allow tail servo reversing
     motors(MAIN_LOOP_RATE),
 #elif FRAME_CONFIG == SINGLE_FRAME  // single constructor requires extra servos for flaps
