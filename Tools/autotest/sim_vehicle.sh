@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # home location lat, lon, alt, heading
-LOCATION="OSRF0"
-TRACKER_LOCATION="OSRF0_PILOTSBOX"
+LOCATION="CMAC"
+TRACKER_LOCATION="CMAC_PILOTSBOX"
 VEHICLE=""
 BUILD_TARGET="sitl"
 FRAME=""
