@@ -386,10 +386,10 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
 
     // @Param: GPS_CHECK
     // @DisplayName: GPS preflight check
-    // @Description: 1 byte bitmap of GPS preflight checks to perform. Set to 0 to bypass all checks. Set to 255 perform all checks. Set to 1 to check just the number of satellites and HDoP. Set to 10 for the best checking that will still allow checks to pass when the copter is moving, eg launch from a boat.
+    // @Description: 1 byte bitmap of GPS preflight checks to perform. Set to 0 to bypass all checks. Set to 255 perform all checks. Set to 3 to check just the number of satellites and HDoP. Set to 31 for the most rigorous checks that will still allow checks to pass when the copter is moving, eg launch from a boat.
     // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:horiz pos error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed
     // @User: Advanced
-    AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 10),
+    AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
     AP_GROUPEND
 };
 
