@@ -502,6 +502,7 @@ void NavEKF::ResetVelocity(void)
          state.velocity.zero();
          state.vel1.zero();
          state.vel2.zero();
+         posDownDerivative = 0.0f;
     } else if (!gpsNotAvailable) {
         // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
         state.velocity.x  = velNED.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
@@ -532,6 +533,8 @@ void NavEKF::ResetHeight(void)
         storedStates[i].position.z = -hgtMea;
     }
     terrainState = state.position.z + rngOnGnd;
+    // reset the height state for the complementary filter used to provide a vertical position dervative
+    posDown = state.position.z;
 }
 
 // this function is used to initialise the filter whilst moving, using the AHRS DCM solution
@@ -1208,6 +1211,13 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.velocity += delVelNav;
     state.vel1     += delVelNav1;
     state.vel2     += delVelNav2;
+
+    // update vertical velocity and position states used to provide a vertical position derivative output
+    // using a simple complementary filter
+    float lastPosDownDerivative = posDownDerivative;
+    posDownDerivative += delVelNav.z;
+    float posDownDerivativeCorrection = 0.2f * (state.position.z - posDown);
+    posDown += (posDownDerivative + lastPosDownDerivative) * (dtIMUactual*0.5f) + posDownDerivativeCorrection * dtIMUactual;
 
     // apply a trapezoidal integration to velocities to calculate position
     state.position += (state.velocity + lastVelocity) * (dtIMUactual*0.5f);
@@ -3675,6 +3685,13 @@ void NavEKF::getVelNED(Vector3f &vel) const
     vel = state.velocity;
 }
 
+// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+void NavEKF::getPosDownDerivative(float &ret) const
+{
+    // return the value calculated from a complmentary filer applied to the EKF height and vertical acceleration
+    ret = posDownDerivative;
+}
+
 // Return the last calculated NED position relative to the reference point (m).
 // if a calculated solution is not available, use the best available data and return false
 bool NavEKF::getPosNED(Vector3f &pos) const
@@ -4815,6 +4832,8 @@ void NavEKF::InitialiseVariables()
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
     memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
+    posDownDerivative = 0.0f;
+    posDown = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
