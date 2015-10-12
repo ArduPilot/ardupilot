@@ -88,7 +88,7 @@ protected:
 
     void set_enabled_checks(uint16_t);
 
-    bool barometer_checks(bool report);
+    virtual bool barometer_checks(bool report);
 
     bool airspeed_checks(bool report);
 
@@ -98,7 +98,7 @@ protected:
 
     virtual bool parameter_checks(bool report) { return true; }
 
-    bool compass_checks(bool report);
+    virtual bool compass_checks(bool report);
 
     bool gps_checks(bool report);
 
@@ -108,5 +108,5 @@ protected:
 
     bool board_voltage_checks(bool report);
 
-    bool manual_transmitter_checks(bool report);
+    virtual bool manual_transmitter_checks(bool report);
 };
