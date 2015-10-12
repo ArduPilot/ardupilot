@@ -82,11 +82,7 @@ static void failsafe_battery_event(void)
             init_disarm_motors();
         } else {
             if (control_mode == AUTO || g.failsafe_battery_enabled == FS_BATT_RTL) {
-                if (home_distance > wp_nav.get_wp_radius()) {
-                    set_mode_RTL_or_land_with_pause();
-                } else {
-                    set_mode_land_with_pause();
-                }
+                set_mode_RTL_or_land_with_pause();
             }
         }
     }
