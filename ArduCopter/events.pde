@@ -22,13 +22,7 @@ static void failsafe_radio_on_event()
                     set_mode_land_with_pause();
                 } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                     // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
-                    if(home_distance > wp_nav.get_wp_radius()) {
-                        // if far from home then RTL or LAND if that fails
-                        set_mode_RTL_or_land_with_pause();
-                    }else{
-                        // if close to home, LAND
-                        set_mode_land_with_pause();
-                    }
+                    set_mode_RTL_or_land_with_pause();
                 }
                 // failsafe_throttle must be FS_THR_ENABLED_CONTINUE_MISSION so no need to do anything
                 break;
@@ -43,12 +37,9 @@ static void failsafe_radio_on_event()
                 if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
                     // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
                     set_mode_land_with_pause();
-                }else if(home_distance > wp_nav.get_wp_radius()) {
-                    // if far from home then RTL or LAND if that fails
+                } else {
+                    // otherwise RTL or land if that fails
                     set_mode_RTL_or_land_with_pause();
-                }else{
-                    // if close to home, LAND
-                    set_mode_land_with_pause();
                 }
                 break;
         }
