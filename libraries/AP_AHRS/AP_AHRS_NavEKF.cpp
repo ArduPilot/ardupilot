@@ -428,6 +428,41 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
     }
 }
 
+// Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
+// This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        return false;
+
+    case EKF_TYPE1:
+    default:
+        EKF1.getPosDownDerivative(velocity);
+        return true;
+
+    case EKF_TYPE2:
+        EKF2.getPosDownDerivative(velocity);
+        return true;
+    }
+}
+
+// get latest height above ground level estimate in metres and a validity flag
+bool AP_AHRS_NavEKF::get_hagl(float &height) const
+{
+    switch (active_EKF_type()) {
+    case EKF_TYPE_NONE:
+        return false;
+    case EKF_TYPE1:
+    default:
+        return EKF1.getHAGL(height);
+
+    case EKF_TYPE2:
+        return EKF2.getHAGL(height);
+    }
+    return false;
+}
+
 // return a relative ground position in meters/second, North/East/Down
 // order. Must only be called if have_inertial_nav() is true
 bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
@@ -611,6 +646,21 @@ bool AP_AHRS_NavEKF::initialised(void) const
     }
 };
 
+// get_filter_status : returns filter status as a series of flags
+bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
+{
+    switch (ekf_type()) {
+    case EKF_TYPE_NONE:
+        return false;
+    case EKF_TYPE1:
+    default:
+        EKF1.getFilterStatus(status);
+    case EKF_TYPE2:
+        EKF2.getFilterStatus(status);
+    }
+    return true;
+}
+
 // write optical flow data to EKF
 void  AP_AHRS_NavEKF::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
 {
@@ -720,6 +770,62 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
     case EKF_TYPE2:
         return EKF2.send_status_report(chan);
     }    
+}
+
+// returns the inertial navigation origin in lat/lon/alt
+struct Location AP_AHRS_NavEKF::get_origin() const
+{
+    struct Location ret;
+    switch (ekf_type()) {
+    case EKF_TYPE_NONE:
+        // We are not using inertial nav so no origin
+        // initialise location to all zeros
+        memset(&ret, 0, sizeof(ret));
+    case EKF_TYPE1:
+        if (!EKF1.getOriginLLH(ret)) {
+            // initialise location to all zeros if EKF1 origin not yet set
+            memset(&ret, 0, sizeof(ret));
+        }
+    case EKF_TYPE2:
+        if (!EKF2.getOriginLLH(ret)) {
+            // initialise location to all zeros if EKF2 origin not yet set
+            memset(&ret, 0, sizeof(ret));
+        }
+    }
+    return ret;
+}
+
+// get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+// this is used to limit height during optical flow navigation
+// it will return invalid when no limiting is required
+bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
+{
+    switch (ekf_type()) {
+    case EKF_TYPE_NONE:
+        // We are not using an EKF so no limiting applies
+        return false;
+    case EKF_TYPE1:
+        return EKF1.getHeightControlLimit(limit);
+    case EKF_TYPE2:
+        return EKF2.getHeightControlLimit(limit);
+    }
+    return false;
+}
+
+// get_location - updates the provided location with the latest calculated locatoin
+//  returns true on success (i.e. the EKF knows it's latest position), false on failure
+bool AP_AHRS_NavEKF::get_location(struct Location &loc) const
+{
+    switch (ekf_type()) {
+    case EKF_TYPE_NONE:
+        // We are not using an EKF so no limiting applies
+        return false;
+    case EKF_TYPE1:
+        return EKF1.getLLH(loc);
+    case EKF_TYPE2:
+        return EKF2.getLLH(loc);
+    }
+    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
