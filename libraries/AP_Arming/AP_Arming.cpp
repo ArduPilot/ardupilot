@@ -76,7 +76,7 @@ bool AP_Arming::barometer_checks(bool report)
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (!barometer.healthy()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Barometer not healthy!"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Barometer not healthy"));
             }
             return false;
         }
@@ -126,19 +126,19 @@ bool AP_Arming::ins_checks(bool report)
         const AP_InertialSensor &ins = ahrs.get_ins();
         if (!ins.get_gyro_health_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not healthy!"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not healthy"));
             }
             return false;
         }
         if (!ins.gyro_calibrated_ok_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not calibrated!"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not calibrated"));
             }
             return false;
         }
         if (!ins.get_accel_health_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: accels not healthy!"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: accels not healthy"));
             }
             return false;
         }
@@ -148,7 +148,7 @@ bool AP_Arming::ins_checks(bool report)
                 if (reason) {
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: %s"), reason);
                 } else {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy!"));
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy"));
                 }
             }
             return false;
@@ -228,7 +228,7 @@ bool AP_Arming::compass_checks(bool report)
 
         if (!_compass.healthy()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass not healthy!"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass not healthy"));
             }
             return false;
         }
