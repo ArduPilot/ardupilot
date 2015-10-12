@@ -186,6 +186,8 @@ void NavEKF2_core::InitialiseVariables()
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
     memset(&statesArray, 0, sizeof(statesArray));
+    posDownDerivative = 0.0f;
+    posDown = 0.0f;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -607,6 +609,13 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // multiply position error by a gain to calculate the velocity correction required to track the EKF solution
     const float Kpos = 1.0f;
     velCorrection = (stateStruct.position - outputDataDelayed.position) * Kpos;
+
+    // update vertical velocity and position states used to provide a vertical position derivative output
+    // using a simple complementary filter
+    float lastPosDownDerivative = posDownDerivative;
+    posDownDerivative += delVelNav.z;
+    float posDownDerivativeCorrection = 0.2f * (outputDataNew.position.z - posDown);
+    posDown += (posDownDerivative + lastPosDownDerivative) * (imuDataNew.delVelDT*0.5f) + posDownDerivativeCorrection * imuDataNew.delVelDT;
 
 }
 
@@ -1169,6 +1178,9 @@ void NavEKF2_core::StoreOutputReset()
         storedOutput[i] = outputDataNew;
     }
     outputDataDelayed = outputDataNew;
+    // reset the states for the complementary filter used to provide a vertical position dervative output
+    posDown = stateStruct.position.z;
+    posDownDerivative = stateStruct.velocity.z;
 }
 
 // Reset the stored output quaternion history to current EKF state
