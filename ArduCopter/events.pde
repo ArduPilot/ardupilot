@@ -72,7 +72,7 @@ static void failsafe_battery_event(void)
         if (should_disarm_on_failsafe()) {
             init_disarm_motors();
         } else {
-            if (control_mode == AUTO || g.failsafe_battery_enabled == FS_BATT_RTL) {
+            if (control_mode != LAND && (control_mode == AUTO || g.failsafe_battery_enabled == FS_BATT_RTL)) {
                 set_mode_RTL_or_land_with_pause();
             }
         }
