@@ -107,49 +107,16 @@ static void failsafe_battery_event(void)
 
     // failsafe check
     if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
-        switch(control_mode) {
-            case STABILIZE:
-            case ACRO:
-                // if throttle is zero OR vehicle is landed disarm motors
-                if (ap.throttle_zero || ap.land_complete) {
-                    init_disarm_motors();
-                }else{
-                    // set mode to RTL or LAND
-                    if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
-                        // switch to RTL or if that fails, LAND
-                        set_mode_RTL_or_land_with_pause();
-                    }else{
-                        set_mode_land_with_pause();
-                    }
-                }
-                break;
-            case AUTO:
-                // if mission has not started AND vehicle is landed, disarm motors
-                if (!ap.auto_armed && ap.land_complete) {
-                    init_disarm_motors();
-
-                // set mode to RTL or LAND
-                } else if (home_distance > wp_nav.get_wp_radius()) {
-                    // switch to RTL or if that fails, LAND
+        if (should_disarm_on_failsafe()) {
+            init_disarm_motors();
+        } else {
+            if (control_mode == AUTO || g.failsafe_battery_enabled == FS_BATT_RTL) {
+                if (home_distance > wp_nav.get_wp_radius()) {
                     set_mode_RTL_or_land_with_pause();
                 } else {
                     set_mode_land_with_pause();
                 }
-                break;
-            default:
-                // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-                // if landed disarm
-                if (ap.land_complete) {
-                    init_disarm_motors();
-
-                // set mode to RTL or LAND
-                } else if (g.failsafe_battery_enabled == FS_BATT_RTL && home_distance > wp_nav.get_wp_radius()) {
-                    // switch to RTL or if that fails, LAND
-                    set_mode_RTL_or_land_with_pause();
-                } else {
-                    set_mode_land_with_pause();
-                }
-                break;
+            }
         }
     }
 
@@ -263,6 +230,26 @@ static void set_mode_RTL_or_land_with_pause()
         AP_Notify::events.failsafe_mode_change = 1;
     }
 }
+
+static bool should_disarm_on_failsafe() {
+    switch(control_mode) {
+        case STABILIZE:
+        case ACRO:
+            // if throttle is zero OR vehicle is landed disarm motors
+            return ap.throttle_zero || ap.land_complete;
+            break;
+        case AUTO:
+            // if mission has not started AND vehicle is landed, disarm motors
+            return !ap.auto_armed && ap.land_complete;
+            break;
+        default:
+            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+            // if landed disarm
+            return ap.land_complete;
+            break;
+    }
+}
+
 
 static void update_events()
 {
