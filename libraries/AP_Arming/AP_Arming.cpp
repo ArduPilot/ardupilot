@@ -41,39 +41,40 @@ const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
 AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-                     const enum HomeState &home_set)
-    : armed(false)
-   , logging_available(false)
-   , arming_method(NONE)
-   , ahrs(ahrs_ref)
-   , barometer(baro)
-   , _compass(compass)
-   , home_is_set(home_set)
+                     const enum HomeState &home_set) :
+   ahrs(ahrs_ref),
+   barometer(baro),
+   _compass(compass),
+   home_is_set(home_set),
+   armed(false),
+   logging_available(false),
+   arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
     memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
     memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
 }
 
-bool AP_Arming::is_armed() 
+bool AP_Arming::is_armed()
 { 
     return require == NONE || armed; 
 }
 
-uint16_t AP_Arming::get_enabled_checks() 
+uint16_t AP_Arming::get_enabled_checks()
 {
     return checks_to_perform;
 }
 
-void AP_Arming::set_enabled_checks(uint16_t ap) {
+void AP_Arming::set_enabled_checks(uint16_t ap)
+{
     checks_to_perform = ap;
 }
 
-bool AP_Arming::barometer_checks(bool report) 
+bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (! barometer.healthy()) {
+        if (!barometer.healthy()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Barometer not healthy!"));
             }
@@ -84,7 +85,7 @@ bool AP_Arming::barometer_checks(bool report)
     return true;
 }
 
-bool AP_Arming::airspeed_checks(bool report) 
+bool AP_Arming::airspeed_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
@@ -104,7 +105,7 @@ bool AP_Arming::airspeed_checks(bool report)
     return true;
 }
 
-bool AP_Arming::logging_checks(bool report) 
+bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
@@ -118,12 +119,12 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
-bool AP_Arming::ins_checks(bool report) 
+bool AP_Arming::ins_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         const AP_InertialSensor &ins = ahrs.get_ins();
-        if (! ins.get_gyro_health_all()) {
+        if (!ins.get_gyro_health_all()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: gyros not healthy!"));
             }
@@ -135,7 +136,7 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        if (! ins.get_accel_health_all()) {
+        if (!ins.get_accel_health_all()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: accels not healthy!"));
             }
@@ -215,7 +216,7 @@ bool AP_Arming::ins_checks(bool report)
     return true;
 }
 
-bool AP_Arming::compass_checks(bool report) 
+bool AP_Arming::compass_checks(bool report)
 {
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
@@ -240,7 +241,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         //check if compass is calibrating
-        if(_compass.is_calibrating()) {
+        if (_compass.is_calibrating()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("Arm: Compass calibration running"));
             }
@@ -248,7 +249,7 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         //check if compass has calibrated and requires reboot
-        if(_compass.compass_cal_requires_reboot()) {
+        if (_compass.compass_cal_requires_reboot()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass calibrated requires reboot"));
             }
@@ -284,7 +285,7 @@ bool AP_Arming::compass_checks(bool report)
     return true;
 }
 
-bool AP_Arming::gps_checks(bool report) 
+bool AP_Arming::gps_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS)) {
@@ -297,20 +298,20 @@ bool AP_Arming::gps_checks(bool report)
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Bad GPS Position"));
             }
             return false;
-        }      
+        }
     }
 
     return true;
 }
 
-bool AP_Arming::battery_checks(bool report) 
+bool AP_Arming::battery_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BATTERY)) {
 
         if (AP_Notify::flags.failsafe_battery) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Battery failsafe on."));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Battery failsafe on"));
             }
             return false;
         }
@@ -332,7 +333,7 @@ bool AP_Arming::hardware_safety_check(bool report)
     return true;
 }
 
-bool AP_Arming::manual_transmitter_checks(bool report) 
+bool AP_Arming::manual_transmitter_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_RC)) {
@@ -352,7 +353,7 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     return true;
 }
 
-bool AP_Arming::pre_arm_checks(bool report) 
+bool AP_Arming::pre_arm_checks(bool report)
 {
     bool ret = true;
     if (armed || require == NONE) {
@@ -374,7 +375,7 @@ bool AP_Arming::pre_arm_checks(bool report)
 }
 
 //returns true if arming occured successfully
-bool AP_Arming::arm(uint8_t method) 
+bool AP_Arming::arm(uint8_t method)
 {
     if (armed) { //already armed
         return false;
@@ -408,7 +409,7 @@ bool AP_Arming::arm(uint8_t method)
 //returns true if disarming occurred successfully
 bool AP_Arming::disarm() 
 {
-    if (! armed) { // already disarmed
+    if (!armed) { // already disarmed
         return false;
     }
     armed = false;
