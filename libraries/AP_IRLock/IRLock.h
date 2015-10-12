@@ -35,10 +35,14 @@
 
 typedef struct {
 	uint16_t target_num;
-	uint16_t angle_x;
-	uint16_t angle_y;
-	uint16_t size_x;
-	uint16_t size_y;
+//	uint16_t angle_x;
+//	uint16_t angle_y;
+//	uint16_t size_x;
+//	uint16_t size_y;
+	float angle_x;
+	float angle_y;
+	float size_x;
+	float size_y;
 } irlock_block;
 
 class IRLock

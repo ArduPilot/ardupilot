@@ -138,9 +138,17 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
         _have_estimate = false;
     }
 
+	float x_rad = 0;
+	float y_rad = 0;
+
     // subtract vehicle lean angles
-    float x_rad = _bf_angle_to_target.x - _ahrs.roll;
-    float y_rad = -_bf_angle_to_target.y + _ahrs.pitch;
+    if ((_bf_angle_to_target.x<(float)(.000001) && _bf_angle_to_target.x>(float)(-.000001)) && (_bf_angle_to_target.y<(float)(.000001) && _bf_angle_to_target.y>(float)(-.000001))) {
+    	x_rad = 0;
+    	y_rad = 0;
+	} else{
+		x_rad = _bf_angle_to_target.x - _ahrs.roll;
+    	y_rad = -_bf_angle_to_target.y + _ahrs.pitch;
+	}
 
     // rotate to earth-frame angles
     _ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();
