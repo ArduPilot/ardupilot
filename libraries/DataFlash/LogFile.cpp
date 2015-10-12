@@ -1144,10 +1144,12 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f dAngBias;
     Vector3f dVelBias;
     Vector3f gyroBias;
+    float posDownDeriv;
     ahrs.get_NavEKF().getEulerAngles(euler);
     ahrs.get_NavEKF().getVelNED(velNED);
     ahrs.get_NavEKF().getPosNED(posNED);
     ahrs.get_NavEKF().getGyroBias(gyroBias);
+    ahrs.get_NavEKF().getPosDownDerivative(posDownDeriv);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1157,6 +1159,7 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         velN    : (float)(velNED.x), // velocity North (m/s)
         velE    : (float)(velNED.y), // velocity East (m/s)
         velD    : (float)(velNED.z), // velocity Down (m/s)
+        posD_dot : (float)(posDownDeriv), // first derivative of down position
         posN    : (float)(posNED.x), // metres North
         posE    : (float)(posNED.y), // metres East
         posD    : (float)(posNED.z), // metres Down
@@ -1294,10 +1297,12 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f dAngBias;
     Vector3f dVelBias;
     Vector3f gyroBias;
+    float posDownDeriv;
     ahrs.get_NavEKF2().getEulerAngles(euler);
     ahrs.get_NavEKF2().getVelNED(velNED);
     ahrs.get_NavEKF2().getPosNED(posNED);
     ahrs.get_NavEKF2().getGyroBias(gyroBias);
+    ahrs.get_NavEKF2().getPosDownDerivative(posDownDeriv);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1307,6 +1312,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         velN    : (float)(velNED.x), // velocity North (m/s)
         velE    : (float)(velNED.y), // velocity East (m/s)
         velD    : (float)(velNED.z), // velocity Down (m/s)
+        posD_dot : (float)(posDownDeriv), // first derivative of down position
         posN    : (float)(posNED.x), // metres North
         posE    : (float)(posNED.y), // metres East
         posD    : (float)(posNED.z), // metres Down
