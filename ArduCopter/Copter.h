@@ -105,6 +105,8 @@
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
+#include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -489,6 +491,13 @@ private:
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain;
+#endif
+
+    // Pilot Input Management Library
+    // Only used for Helicopter for AC3.3, to be expanded to include Multirotor
+    // child class for AC3.4
+#if FRAME_CONFIG == HELI_FRAME
+    AC_InputManager_Heli input_manager;
 #endif
 
     // use this to prevent recursion during sensor init

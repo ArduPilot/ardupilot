@@ -82,6 +82,9 @@ public:
         // Landing gear object
         k_param_landinggear,    // 18
 
+        // Input Management object
+        k_param_input_manager,  // 19 FULL!
+
         // Misc
         //
         k_param_log_bitmask_old = 20,           // Deprecated
