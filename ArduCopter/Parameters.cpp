@@ -901,6 +901,12 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
 
+#if FRAME_CONFIG == HELI_FRAME
+    // @Group: IM_
+    // @Path: ../libraries/AC_InputManager_Heli.cpp
+    GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
+#endif
+
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/Compass.cpp
     GOBJECT(compass,        "COMPASS_", Compass),

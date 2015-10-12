@@ -105,6 +105,9 @@
 #include <AC_PrecLand/AC_PrecLand.h>
 #include <AP_IRLock/AP_IRLock.h>
 #endif
+#include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
+#include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
+
 
 // AP_HAL to Arduino compatibility layer
 // Configuration
@@ -504,6 +507,13 @@ private:
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
     AC_PrecLand precland;
+#endif
+
+    // Pilot Input Management Library
+    // Only used for Helicopter for AC3.3, to be expanded to include Multirotor
+    // child class for AC3.4
+#if FRAME_CONFIG == HELI_FRAME
+    AC_InputManager_Heli input_manager;
 #endif
 
     // use this to prevent recursion during sensor init
