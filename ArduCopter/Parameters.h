@@ -83,8 +83,8 @@ public:
         // Landing gear object
         k_param_landinggear,    // 18
 
-        // precision landing object
-        k_param_precland,   // 19
+        // Input Management object
+        k_param_input_manager,  // 19
 
         // Misc
         //
@@ -144,6 +144,9 @@ public:
         k_param_fence,
         k_param_gps_glitch,             // deprecated
         k_param_baro_glitch,            // 71 - deprecated
+
+        // 74: precision landing object
+        k_param_precland = 74,
 
         //
         // 75: Singlecopter, CoaxCopter
