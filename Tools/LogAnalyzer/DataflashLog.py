@@ -30,9 +30,9 @@ class Format(object):
         '''using format characters from libraries/DataFlash/DataFlash.h to cast strings to basic python int/float/string types
         tries a cast, if it does not work, well, acceptable as the text logs do not match the format, e.g. MODE is expected to be int'''
         try:
-            if valueType in "fcCeEL":
+            if valueType in "fcCeELd":
                 return float(value)
-            elif valueType in "bBhHiIM":
+            elif valueType in "bBhHiIMQq":
                 return int(value)
             elif valueType in "nNZ":
                 return str(value)
