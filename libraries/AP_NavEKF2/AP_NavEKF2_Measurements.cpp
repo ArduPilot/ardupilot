@@ -599,6 +599,7 @@ void NavEKF2_core::readHgtData()
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
                 baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             } else if (isAiding && takeOffDetected) {
+                // we have lost range finder measurements and are in optical flow flight
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
                 baroDataNew.hgt = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
             } else {
@@ -609,7 +610,7 @@ void NavEKF2_core::readHgtData()
                 baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             }
         } else {
-            // use baro measurement and correct for baro offset
+            // Normal operation is to use baro measurement
             baroDataNew.hgt = _baro.get_altitude();
         }
 
