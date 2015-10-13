@@ -16,7 +16,7 @@ class TestCompass(Test):
         self.result.status = TestResult.StatusType.GOOD
 
         def vec_len(x):
-            return sqrt(x[0]**2+x[1]**2+x[2]**2)
+            return math.sqrt(x[0]**2+x[1]**2+x[2]**2)
 
         def FAIL():
             self.result.status = TestResult.StatusType.FAIL
