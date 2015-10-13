@@ -8,6 +8,10 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#define AP_ARMING_COMPASS_OFFSETS_MAX   600
+#define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
+#define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
+
 class AP_Arming {
 public:
     enum ArmingChecks {
