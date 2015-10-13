@@ -110,6 +110,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
     // sanity check smoothing gain
     smoothing_gain = constrain_float(smoothing_gain,1.0f,50.0f);
 
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
+
     // if accel limiting and feed forward enabled
     if ((_accel_roll_max > 0.0f) && _rate_bf_ff_enabled) {
         rate_change_limit = _accel_roll_max * _dt;
@@ -202,6 +205,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
 {
     Vector3f    angle_ef_error;         // earth frame angle errors
 
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
+
     // set earth-frame angle targets for roll and pitch and calculate angle error
     _angle_ef_target.x = constrain_float(roll_angle_ef, -_aparm.angle_max, _aparm.angle_max);
     angle_ef_error.x = wrap_180_cd_float(_angle_ef_target.x - _ahrs.roll_sensor);
@@ -246,6 +252,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, fl
 void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef, bool slew_yaw)
 {
     Vector3f    angle_ef_error;
+
+    // add roll trim to compensate tail rotor thrust in heli (should return zero for multirotors)
+    roll_angle_ef += get_roll_trim();
 
     // set earth-frame angle targets
     _angle_ef_target.x = constrain_float(roll_angle_ef, -_aparm.angle_max, _aparm.angle_max);
