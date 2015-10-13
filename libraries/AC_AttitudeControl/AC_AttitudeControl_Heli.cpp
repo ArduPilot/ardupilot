@@ -15,6 +15,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PIRO_COMP",    0, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
 
+    // @Param: HOVR_ROL_TRM
+    // @DisplayName: Hover Roll Trim
+    // @Description: Trim the hover roll angle to counter tail rotor thrust in a hover
+    // @Units: Centi-Degrees
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
+
     AP_GROUPEND
 };
 

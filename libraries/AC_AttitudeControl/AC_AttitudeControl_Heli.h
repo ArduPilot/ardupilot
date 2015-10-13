@@ -15,6 +15,7 @@
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_AFF_FILTER          10.0f
+#define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
@@ -106,8 +107,12 @@ private:
     // pass through for yaw if tail_passthrough is set
     int16_t _passthrough_yaw;
 
+    // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
+    int16_t get_roll_trim() { return constrain_int16(_hover_roll_trim, -1000, 1000);}
+
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
+    AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover
     
     // LPF filters to act on Rate Feedforward terms to linearize output.
     // Due to complicated aerodynamic effects, feedforwards acting too fast can lead
