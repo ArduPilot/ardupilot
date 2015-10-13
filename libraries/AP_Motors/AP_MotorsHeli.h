@@ -160,7 +160,9 @@ public:
     enum ServoControlModes {
         SERVO_CONTROL_MODE_AUTOMATED,
         SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH,
+        SERVO_CONTROL_MODE_MANUAL_MAX,
         SERVO_CONTROL_MODE_MANUAL_CENTER,
+        SERVO_CONTROL_MODE_MANUAL_MIN,
     };
 
     // supports_yaw_passthrough
