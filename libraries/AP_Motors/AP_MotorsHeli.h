@@ -182,7 +182,7 @@ protected:
     void        output_disarmed();
 
     // update_motor_controls - sends commands to motor controllers
-    virtual void update_motor_control(uint8_t state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::MotorControlState state) = 0;
 
     // reset_flight_controls - resets all controls and scalars to flight status
     void reset_flight_controls();
