@@ -62,7 +62,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
     // @Description: Manual servo override for swash set-up. Do not set this manually!
-    // @Values: 0:Disabled,1:Passthrough,2:Center
+    // @Values: 0:Disabled,1:Passthrough,2:Max collective,3:Mid collective,4:Min collective
     // @User: Standard
     AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
@@ -247,19 +247,39 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    // if manual override (i.e. when setting up swash)
-    if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH) {
-        // pass pilot commands straight through to swash
-        _roll_control_input = _roll_radio_passthrough;
-        _pitch_control_input = _pitch_radio_passthrough;
-        _throttle_control_input = _throttle_radio_passthrough;
-        _yaw_control_input = _yaw_radio_passthrough;
-    } else if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
-        // center and fixate the swash
-        _roll_control_input = 0;
-        _pitch_control_input = 0;
-        _throttle_control_input = 500;
-        _yaw_control_input = 0;
+    // manual override (i.e. when setting up swash)
+    switch (_servo_mode) {
+        case SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH:
+            // pass pilot commands straight through to swash
+            _roll_control_input = _roll_radio_passthrough;
+            _pitch_control_input = _pitch_radio_passthrough;
+            _throttle_control_input = _throttle_radio_passthrough;
+            _yaw_control_input = _yaw_radio_passthrough;
+            break;
+        case SERVO_CONTROL_MODE_MANUAL_CENTER:
+            // fixate mid collective
+            _roll_control_input = 0;
+            _pitch_control_input = 0;
+            _throttle_control_input = 500;
+            _yaw_control_input = 0;
+            break;
+        case SERVO_CONTROL_MODE_MANUAL_MAX:
+            // fixate max collective
+            _roll_control_input = 0;
+            _pitch_control_input = 0;
+            _throttle_control_input = 1000;
+            _yaw_control_input = 0;
+            break;
+        case SERVO_CONTROL_MODE_MANUAL_MIN:
+            // fixate min collective
+            _roll_control_input = 0;
+            _pitch_control_input = 0;
+            _throttle_control_input = 0;
+            _yaw_control_input = 0;
+            break;
+        default:
+            // no manual override
+            break;
     }
 
     // ensure swash servo endpoints haven't been moved
