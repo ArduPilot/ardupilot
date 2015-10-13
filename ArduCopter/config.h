@@ -117,8 +117,6 @@
   # define RATE_YAW_IMAX                        4500
   # define RATE_YAW_FF                          0.02
   # define RATE_YAW_FILT_HZ                     20.0f
-  # define HELI_STAB_COLLECTIVE_MIN_DEFAULT     0
-  # define HELI_STAB_COLLECTIVE_MAX_DEFAULT     1000
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
 #endif

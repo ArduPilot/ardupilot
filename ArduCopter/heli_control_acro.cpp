@@ -15,6 +15,9 @@ bool Copter::heli_acro_init(bool ignore_checks)
 
     motors.set_acro_tail(true);
     
+    // set stab collective false to use full collective pitch range
+    input_manager.set_use_stab_col(false);
+
     // always successfully enter acro
     return true;
 }
@@ -24,6 +27,7 @@ bool Copter::heli_acro_init(bool ignore_checks)
 void Copter::heli_acro_run()
 {
     float target_roll, target_pitch, target_yaw;
+    int16_t pilot_throttle_scaled;
     
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
     // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
@@ -76,8 +80,11 @@ void Copter::heli_acro_run()
         attitude_control.passthrough_bf_roll_pitch_rate_yaw(roll_in, pitch_in, yaw_in);
     }
 
+    // get pilot's desired throttle
+    pilot_throttle_scaled = input_manager.get_pilot_desired_collective(channel_throttle->control_in);
+
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(channel_throttle->control_in, false, g.throttle_filt);
+    attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
 }
 
 #endif  //HELI_FRAME
