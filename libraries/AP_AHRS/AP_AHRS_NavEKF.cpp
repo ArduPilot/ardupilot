@@ -488,12 +488,9 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
 uint8_t AP_AHRS_NavEKF::ekf_type(void) const
 {
     uint8_t type = _ekf_type;
-#if AHRS_EKF_USE_ALWAYS
-    // on copters always use an EKF
-    if (type == 0) {
+    if (always_use_EKF() && type == 0) {
         type = 1;
     }
-#endif
 
     // check for invalid type
     if (type > 2) {
@@ -515,17 +512,15 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         if (!ekf1_started) {
             return EKF_TYPE_NONE;
         }
-#if AHRS_EKF_USE_ALWAYS
-        uint8_t ekf_faults;
-        EKF1.getFilterFaults(ekf_faults);
-        if (ekf_faults == 0) {
+        if (always_use_EKF()) {
+            uint8_t ekf_faults;
+            EKF1.getFilterFaults(ekf_faults);
+            if (ekf_faults == 0) {
+                ret = EKF_TYPE1;
+            }
+        } else if (EKF1.healthy()) {
             ret = EKF_TYPE1;
         }
-#else
-        if (EKF1.healthy()) {
-            ret = EKF_TYPE1;
-        }
-#endif
         break;
     }
 
@@ -534,17 +529,15 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         if (!ekf2_started) {
             return EKF_TYPE_NONE;
         }
-#if AHRS_EKF_USE_ALWAYS
-        uint8_t ekf2_faults;
-        EKF2.getFilterFaults(ekf2_faults);
-        if (ekf2_faults == 0) {
+        if (always_use_EKF()) {
+            uint8_t ekf2_faults;
+            EKF2.getFilterFaults(ekf2_faults);
+            if (ekf2_faults == 0) {
+                ret = EKF_TYPE2;
+            }
+        } else if (EKF2.healthy()) {
             ret = EKF_TYPE2;
         }
-#else
-        if (EKF2.healthy()) {
-            ret = EKF_TYPE2;
-        }
-#endif
         break;
     }
     }

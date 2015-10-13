@@ -36,12 +36,24 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
+    enum Flags {
+        FLAG_NONE = 0,
+        FLAG_ALWAYS_USE_EKF = 0x1,
+    };
+
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2) :
+                   NavEKF &_EKF1, NavEKF2 &_EKF2,
+#if AHRS_EKF_USE_ALWAYS
+                   Flags flags = FLAG_ALWAYS_USE_EKF
+#else
+                   Flags flags = FLAG_NONE
+#endif
+        ) :
         AP_AHRS_DCM(ins, baro, gps),
         EKF1(_EKF1),
-        EKF2(_EKF2)
+        EKF2(_EKF2),
+        _flags(flags)
     {
     }
 
@@ -189,6 +201,10 @@ private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
     EKF_TYPE active_EKF_type(void) const;
 
+    bool always_use_EKF() const {
+        return _flags & FLAG_ALWAYS_USE_EKF;
+    }
+
     NavEKF &EKF1;
     NavEKF2 &EKF2;
     bool ekf1_started = false;
@@ -201,6 +217,7 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
+    Flags _flags;
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);
