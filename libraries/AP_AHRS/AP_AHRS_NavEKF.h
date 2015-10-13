@@ -43,12 +43,7 @@ public:
 
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2,
-#if AHRS_EKF_USE_ALWAYS
-                   Flags flags = FLAG_ALWAYS_USE_EKF
-#else
-                   Flags flags = FLAG_NONE
-#endif
+                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE
         ) :
         AP_AHRS_DCM(ins, baro, gps),
         EKF1(_EKF1),
