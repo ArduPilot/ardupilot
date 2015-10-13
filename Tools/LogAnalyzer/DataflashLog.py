@@ -482,8 +482,8 @@ class DataflashLog(object):
                 if i in self.channels["GPS"]:
                     timeLabel = i
                     break
-            firstTimeGPS = self.channels["GPS"][timeLabel].listData[0][1]
-            lastTimeGPS  = self.channels["GPS"][timeLabel].listData[-1][1]
+            firstTimeGPS = int(self.channels["GPS"][timeLabel].listData[0][1])
+            lastTimeGPS  = int(self.channels["GPS"][timeLabel].listData[-1][1])
             if timeLabel == 'TimeUS':
                 firstTimeGPS /= 1000
                 lastTimeGPS /= 1000
@@ -536,7 +536,7 @@ class DataflashLog(object):
             elif self.vehicleType in ["ArduPlane", "APM:Plane", "ArduRover", "APM:Rover", "APM:Copter"]:
                 self.modeChanges[lineNumber] = (e.Mode, e.ModeNum)
             else:
-                raise Exception("Unknown log type for MODE line {} {}".format(self.vehicleType, repr(e)))
+                raise Exception("Unknown log type for MODE line vehicletype=({}) linw=({})".format(self.vehicleType, repr(e)))
         # anything else must be the log data
         else:
             groupName = e.NAME
