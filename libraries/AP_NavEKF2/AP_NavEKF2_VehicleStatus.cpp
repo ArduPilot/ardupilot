@@ -401,7 +401,8 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 // Detect takeoff for optical flow navigation
 void NavEKF2_core::detectOptFlowTakeoff(void)
 {
-    if (motorsArmed && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+    if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+        // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
         const AP_InertialSensor &ins = _ahrs->get_ins();
         Vector3f angRateVec;
         Vector3f gyroBias;
@@ -414,6 +415,9 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
         }
 
         takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rngAtStartOfFlight + 0.1f)));
+    } else if (onGround) {
+        // we are confidently on the ground so set the takeoff detected status to false
+        takeOffDetected = false;
     }
 }
 

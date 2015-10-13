@@ -102,8 +102,6 @@ void NavEKF2_core::setAidingMode()
         // We have transitioned either into or out of aiding
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
-        // reset the flag that indicates takeoff for use by optical flow navigation
-        takeOffDetected = false;
         // set various  useage modes based on the condition when we start aiding. These are then held until aiding is stopped.
         if (!isAiding) {
             // We have ceased aiding
