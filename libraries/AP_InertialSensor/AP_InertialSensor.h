@@ -228,11 +228,12 @@ public:
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
 
+    void detect_backends(void);
+
 private:
 
     // load backend drivers
     void _add_backend(AP_InertialSensor_Backend *backend);
-    void _detect_backends(void);
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
