@@ -389,12 +389,12 @@ uint8_t AP_InertialSensor::register_accel(void)
 
 /*
  * Start all backends for gyro and accel measurements. It automatically calls
- * _detect_backends() if it has not been called already.
+ * detect_backends() if it has not been called already.
  */
 void AP_InertialSensor::_start_backends()
 
 {
-    _detect_backends();
+    detect_backends();
 
     for (uint8_t i = 0; i < _backend_count; i++) {
         _backends[i]->start();
@@ -485,8 +485,8 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 /*
   detect available backends for this board
  */
-void 
-AP_InertialSensor::_detect_backends(void)
+void
+AP_InertialSensor::detect_backends(void)
 {
     if (_backends_detected)
         return;
@@ -1552,7 +1552,7 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
  */
 AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t instance)
 {
-    _detect_backends();
+    detect_backends();
 
     AP_InertialSensor_Backend *backend = _find_backend(backend_id, instance);
     if (backend == NULL)
