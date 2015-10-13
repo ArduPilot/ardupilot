@@ -5,12 +5,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
-#include <RC_Channel/RC_Channel.h>      // RC Channel Library
-
-// rotor controller states
-#define ROTOR_CONTROL_STOP                      0
-#define ROTOR_CONTROL_IDLE                      1
-#define ROTOR_CONTROL_ACTIVE                    2
+#include <RC_Channel/RC_Channel.h>      // RC Channel Library    
 
 // rotor control modes
 #define ROTOR_CONTROL_MODE_DISABLED                 0
@@ -74,8 +69,15 @@ public:
     // recalc_scalers
     void        recalc_scalers();
 
+    // motor control states
+    enum MotorControlState {
+        ROTOR_CONTROL_STOP,
+        ROTOR_CONTROL_IDLE,
+        ROTOR_CONTROL_ACTIVE,
+    };
+
     // output - update value to send to ESC/Servo
-    void        output(uint8_t state);
+    void        output(MotorControlState state);
 
 private:
 

@@ -176,7 +176,7 @@ void AP_MotorsHeli::output_min()
     // move swash to mid
     move_actuators(0,0,500,0);
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+    update_motor_control(AP_MotorsHeli_RSC::ROTOR_CONTROL_STOP);
 
     // override limits flags
     limit.roll_pitch = true;
@@ -214,7 +214,7 @@ void AP_MotorsHeli::output_armed_stabilizing()
 
     move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
-    update_motor_control(ROTOR_CONTROL_ACTIVE);
+    update_motor_control(AP_MotorsHeli_RSC::ROTOR_CONTROL_ACTIVE);
 }
 
 void AP_MotorsHeli::output_armed_not_stabilizing()
@@ -227,7 +227,7 @@ void AP_MotorsHeli::output_armed_not_stabilizing()
     // helicopters always run stabilizing flight controls
     move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
-    update_motor_control(ROTOR_CONTROL_ACTIVE);
+    update_motor_control(AP_MotorsHeli_RSC::ROTOR_CONTROL_ACTIVE);
 }
 
 // output_armed_zero_throttle - sends commands to the motors
@@ -240,7 +240,7 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 
     move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
-    update_motor_control(ROTOR_CONTROL_IDLE);
+    update_motor_control(AP_MotorsHeli_RSC::ROTOR_CONTROL_IDLE);
 }
 
 // output_disarmed - sends commands to the motors
@@ -270,7 +270,7 @@ void AP_MotorsHeli::output_disarmed()
     // helicopters always run stabilizing flight controls
     move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+    update_motor_control(AP_MotorsHeli_RSC::ROTOR_CONTROL_STOP);
 }
 
 // parameter_check - check if helicopter specific parameters are sensible

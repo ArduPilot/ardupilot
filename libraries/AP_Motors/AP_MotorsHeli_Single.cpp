@@ -314,7 +314,7 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Single::update_motor_control(uint8_t state)
+void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::MotorControlState state)
 {
     // Send state update to motors
     _tail_rotor.output(state);
