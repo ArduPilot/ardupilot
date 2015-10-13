@@ -183,7 +183,7 @@ private:
     // Inertial Navigation EKF
     NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2};
+    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL sitl;
