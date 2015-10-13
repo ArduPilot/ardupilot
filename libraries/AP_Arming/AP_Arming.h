@@ -92,6 +92,8 @@ protected:
 
     virtual bool ins_checks(bool report);
 
+    virtual bool parameter_checks(bool report) { return true; }
+
     bool compass_checks(bool report);
 
     bool gps_checks(bool report);
