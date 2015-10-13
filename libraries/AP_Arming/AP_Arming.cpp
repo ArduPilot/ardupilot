@@ -448,6 +448,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= hardware_safety_check(report);
     ret &= barometer_checks(report);
     ret &= ins_checks(report);
+    ret &= parameter_checks(report);
     ret &= compass_checks(report);
     ret &= gps_checks(report);
     ret &= battery_checks(report);
