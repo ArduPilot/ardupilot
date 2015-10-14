@@ -155,7 +155,7 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-#if INS_MAX_INSTANCES > 1
+
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
             const Vector3f &prime_accel_vec = ins.get_accel();
@@ -206,7 +206,6 @@ bool AP_Arming::ins_checks(bool report)
                 }
             }
         }
-#endif
     }
 
     return true;
