@@ -142,12 +142,6 @@ bool AP_Arming::ins_checks(bool report)
             }
             return false;
         }
-        if (!ahrs.healthy()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy"));
-            }
-            return false;
-        }
         if (!ins.accel_calibrated_ok_all()) {
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: 3D accel cal needed"));
@@ -206,6 +200,12 @@ bool AP_Arming::ins_checks(bool report)
             }
         }
 #endif
+        if (!ahrs.healthy()) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy"));
+            }
+            return false;
+        }
     }
 
     return true;
