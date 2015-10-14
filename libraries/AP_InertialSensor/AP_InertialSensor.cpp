@@ -85,7 +85,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
     // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
@@ -104,9 +103,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
-#endif
 
-#if INS_MAX_INSTANCES > 2
     // @Param: GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
     // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
@@ -125,7 +122,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
-#endif
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
@@ -168,7 +164,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset[0], 0),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: ACC2SCAL_X
     // @DisplayName: Accelerometer2 scaling of X axis
     // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine
@@ -209,9 +204,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
-#endif
 
-#if INS_MAX_INSTANCES > 2
     // @Param: ACC3SCAL_X
     // @DisplayName: Accelerometer3 scaling of X axis
     // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine
@@ -252,7 +245,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
-#endif
 
     // @Param: GYRO_FILTER
     // @DisplayName: Gyro filter cutoff frequency
@@ -277,22 +269,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("USE", 20, AP_InertialSensor, _use[0],  1),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: USE2
     // @DisplayName: Use second IMU for attitude, velocity and position estimates
     // @Description: Use second IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
-#endif
-#if INS_MAX_INSTANCES > 2
+
     // @Param: USE3
     // @DisplayName: Use third IMU for attitude, velocity and position estimates
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
-#endif
 
 #if INS_VIBRATION_CHECK
     // @Param: STILL_THRESH
