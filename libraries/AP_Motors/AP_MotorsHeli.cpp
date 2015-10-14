@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Description: Manual servo override for swash set-up. Do not set this manually!
     // @Values: 0:Disabled,1:Passthrough,2:Center
     // @User: Standard
-    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_manual, AP_MOTORS_HELI_MANUAL_OFF),
+    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
     // @Param: GOV_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
@@ -162,7 +162,7 @@ void AP_MotorsHeli::Init()
     set_update_rate(_speed_hz);
 
     // ensure inputs are not passed through to servos on start-up
-    _servo_manual = AP_MOTORS_HELI_MANUAL_OFF;
+    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
 
     // initialise Servo/PWM ranges and endpoints
     init_outputs();
@@ -209,7 +209,7 @@ void AP_MotorsHeli::output()
 void AP_MotorsHeli::output_armed_stabilizing()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual != AP_MOTORS_HELI_MANUAL_OFF) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -221,7 +221,7 @@ void AP_MotorsHeli::output_armed_stabilizing()
 void AP_MotorsHeli::output_armed_not_stabilizing()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual != AP_MOTORS_HELI_MANUAL_OFF) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -235,7 +235,7 @@ void AP_MotorsHeli::output_armed_not_stabilizing()
 void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual != AP_MOTORS_HELI_MANUAL_OFF) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -248,13 +248,13 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 void AP_MotorsHeli::output_disarmed()
 {
     // if manual override (i.e. when setting up swash)
-    if (_servo_manual == AP_MOTORS_HELI_MANUAL_PASSTHROUGH) {
+    if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH) {
         // pass pilot commands straight through to swash
         _roll_control_input = _roll_radio_passthrough;
         _pitch_control_input = _pitch_radio_passthrough;
         _throttle_control_input = _throttle_radio_passthrough;
         _yaw_control_input = _yaw_radio_passthrough;
-    } else if (_servo_manual == AP_MOTORS_HELI_MANUAL_CENTER) {
+    } else if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
         // center and fixate the swash
         _roll_control_input = 0;
         _pitch_control_input = 0;
@@ -354,7 +354,7 @@ void AP_MotorsHeli::reset_radio_passthrough()
 void AP_MotorsHeli::reset_flight_controls()
 {
     reset_radio_passthrough();
-    _servo_manual = AP_MOTORS_HELI_MANUAL_OFF;
+    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
     init_outputs();
     calculate_scalars();
 }

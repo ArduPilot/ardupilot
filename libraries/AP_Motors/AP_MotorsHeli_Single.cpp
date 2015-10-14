@@ -398,7 +398,7 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     coll_out_scaled = _collective_out * _collective_scalar + _collective_min - 1000;
 
     // if servo output not in manual mode, process pre-compensation factors
-    if (_servo_manual == 0) {
+    if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED) {
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro

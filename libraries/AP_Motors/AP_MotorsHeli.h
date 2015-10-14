@@ -54,11 +54,6 @@
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 #define AP_MOTORS_HELI_FLYBAR                   1
 
-// manual servo modes (used for setup)
-#define AP_MOTORS_HELI_MANUAL_OFF               0
-#define AP_MOTORS_HELI_MANUAL_PASSTHROUGH       1
-#define AP_MOTORS_HELI_MANUAL_CENTER            2
-
 class AP_HeliControls;
 
 /// @class      AP_MotorsHeli
@@ -161,6 +156,13 @@ public:
     // output - sends commands to the motors
     void    output();
 
+    // manual servo modes (used for setup)
+    enum ServoControlModes {
+        SERVO_CONTROL_MODE_AUTOMATED,
+        SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH,
+        SERVO_CONTROL_MODE_MANUAL_CENTER,
+    };
+
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
@@ -204,7 +206,7 @@ protected:
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
-    AP_Int8         _servo_manual;              // Pass radio inputs directly to servos during set-up through mission planner
+    AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
