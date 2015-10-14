@@ -579,6 +579,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_GPS_ACCURACY:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(GPS_ACCURACY);
+        rover.ahrs.send_gps_accuracy(chan);
+#endif
+        break;
+
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         rover.send_pid_tuning(chan);
