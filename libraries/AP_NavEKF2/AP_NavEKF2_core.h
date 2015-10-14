@@ -882,7 +882,7 @@ private:
     perf_counter_t  _perf_FuseMagnetometer;
     perf_counter_t  _perf_FuseAirspeed;
     perf_counter_t  _perf_FuseSideslip;
-    perf_counter_t  _perf_OpticalFlowEKF;
+    perf_counter_t  _perf_TerrainOffset;
     perf_counter_t  _perf_FuseOptFlow;
 #endif
 

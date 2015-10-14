@@ -49,7 +49,8 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
     _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EKF_FuseMagnetometer")),
     _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed")),
     _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EKF_FuseSideslip")),
-    _perf_OpticalFlowEKF(perf_alloc(PC_ELAPSED, "EKF_FuseOptFlow"))
+    _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EKF_FuseOptFlow")),
+    _perf_TerrainOffset(perf_alloc(PC_ELAPSED, "EKF_TerrainOffset"))
 #endif
 {
 }

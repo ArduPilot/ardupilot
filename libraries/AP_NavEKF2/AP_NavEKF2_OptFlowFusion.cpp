@@ -98,7 +98,7 @@ The filter can fuse motion compensated optiocal flow rates and range finder meas
 void NavEKF2_core::EstimateTerrainOffset()
 {
     // start performance timer
-    perf_begin(_perf_OpticalFlowEKF);
+    perf_begin(_perf_TerrainOffset);
 
     // constrain height above ground to be above range measured on ground
     float heightAboveGndEst = max((terrainState - stateStruct.position.z), rngOnGnd);
@@ -271,7 +271,7 @@ void NavEKF2_core::EstimateTerrainOffset()
     }
 
     // stop the performance timer
-    perf_end(_perf_OpticalFlowEKF);
+    perf_end(_perf_TerrainOffset);
 }
 
 /*
