@@ -156,6 +156,9 @@ public:
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
     
+    // send an GPS_STATUS_REPORT message to GCS
+    void send_gps_accuracy(mavlink_channel_t chan);
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
     EKF_TYPE active_EKF_type(void) const;
