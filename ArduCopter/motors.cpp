@@ -418,7 +418,6 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
-#if INS_MAX_INSTANCES > 1
         // check all accelerometers point in roughly same direction
         if (ins.get_accel_count() > 1) {
             const Vector3f &prime_accel_vec = ins.get_accel();
@@ -443,7 +442,6 @@ bool Copter::pre_arm_checks(bool display_failure)
                 }
             }
         }
-#endif
 
         // check gyros are healthy
         if(!ins.get_gyro_health_all()) {
@@ -453,7 +451,6 @@ bool Copter::pre_arm_checks(bool display_failure)
             return false;
         }
 
-#if INS_MAX_INSTANCES > 1
         // check all gyros are consistent
         if (ins.get_gyro_count() > 1) {
             for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
@@ -467,7 +464,6 @@ bool Copter::pre_arm_checks(bool display_failure)
                 }
             }
         }
-#endif
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
