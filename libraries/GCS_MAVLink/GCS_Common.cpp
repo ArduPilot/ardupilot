@@ -1059,7 +1059,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);
-#if INS_MAX_INSTANCES > 1
+
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
         compass.get_count() <= 1) {
@@ -1084,8 +1084,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
-#endif
-#if INS_MAX_INSTANCES > 2
+
     if (ins.get_gyro_count() <= 2 &&
         ins.get_accel_count() <= 2 &&
         compass.get_count() <= 2) {
@@ -1110,7 +1109,6 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);        
-#endif
 }
 
 void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
