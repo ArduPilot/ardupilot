@@ -831,7 +831,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         climbrate     : baro.get_climb_rate()
     };
     WriteBlock(&pkt, sizeof(pkt));
-#if BARO_MAX_INSTANCES > 1
+
     if (baro.num_instances() > 1 && baro.healthy(1)) {
         struct log_BARO pkt2 = {
             LOG_PACKET_HEADER_INIT(LOG_BAR2_MSG),
@@ -843,8 +843,7 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         };
         WriteBlock(&pkt2, sizeof(pkt2));        
     }
-#endif
-#if BARO_MAX_INSTANCES > 2
+
     if (baro.num_instances() > 2 && baro.healthy(2)) {
         struct log_BARO pkt3 = {
             LOG_PACKET_HEADER_INIT(LOG_BAR3_MSG),
@@ -856,7 +855,6 @@ void DataFlash_Class::Log_Write_Baro(AP_Baro &baro)
         };
         WriteBlock(&pkt3, sizeof(pkt3));        
     }
-#endif
 }
 
 // Write an raw accel/gyro data packet
