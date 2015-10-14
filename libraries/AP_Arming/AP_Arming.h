@@ -59,6 +59,8 @@ public:
     */
     virtual bool pre_arm_checks(bool report);
 
+    virtual bool gps_checks(bool report);
+
     void set_logging_available(bool set) { logging_available = set; }
 
     static const struct AP_Param::GroupInfo        var_info[];
@@ -95,8 +97,6 @@ protected:
     virtual bool parameter_checks(bool report) { return true; }
 
     virtual bool compass_checks(bool report);
-
-    bool gps_checks(bool report);
 
     bool battery_checks(bool report);
 
