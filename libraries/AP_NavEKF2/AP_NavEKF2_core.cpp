@@ -185,6 +185,7 @@ void NavEKF2_core::InitialiseVariables()
     gpsDriftNE = 0.0f;
     gpsVertVelFilt = 0.0f;
     gpsHorizVelFilt = 0.0f;
+    memset(&statesArray, 0, sizeof(statesArray));
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -229,13 +230,20 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // calculate initial roll and pitch orientation
     stateStruct.quat.from_euler(roll, pitch, 0.0f);
 
-    // initialise static process state model states
+    // initialise dynamic states
+    stateStruct.velocity.zero();
+    stateStruct.position.zero();
+    stateStruct.angErr.zero();
+
+    // initialise static process model states
     stateStruct.gyro_bias.zero();
     stateStruct.gyro_scale.x = 1.0f;
     stateStruct.gyro_scale.y = 1.0f;
     stateStruct.gyro_scale.z = 1.0f;
     stateStruct.accel_zbias = 0.0f;
     stateStruct.wind_vel.zero();
+    stateStruct.earth_magfield.zero();
+    stateStruct.body_magfield.zero();
 
     // read the GPS and set the position and velocity states
     readGpsData();
