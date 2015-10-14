@@ -1295,6 +1295,7 @@ void AP_InertialSensor::update(void)
         for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
             _delta_velocity_acc[i].zero();
             _delta_velocity_acc_dt[i] = 0;
+            _delta_angle_acc[i].zero();
         }
 
         // adjust health status if a sensor has a non-zero error count

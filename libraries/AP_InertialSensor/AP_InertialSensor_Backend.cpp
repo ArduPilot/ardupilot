@@ -52,7 +52,6 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     // publish delta angle
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
     _imu._delta_angle_valid[instance] = true;
-    _imu._delta_angle_acc[instance].zero();
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
