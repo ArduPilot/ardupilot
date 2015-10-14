@@ -1555,8 +1555,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         health          : (uint8_t)compass.healthy(0)
     };
     WriteBlock(&pkt, sizeof(pkt));
-    
-#if COMPASS_MAX_INSTANCES > 1
+
     if (compass.get_count() > 1) {
         const Vector3f &mag_field2 = compass.get_field(1);
         const Vector3f &mag_offsets2 = compass.get_offsets(1);
@@ -1577,8 +1576,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         };
         WriteBlock(&pkt2, sizeof(pkt2));
     }
-#endif
-#if COMPASS_MAX_INSTANCES > 2
+
     if (compass.get_count() > 2) {
         const Vector3f &mag_field3 = compass.get_field(2);
         const Vector3f &mag_offsets3 = compass.get_offsets(2);
@@ -1599,7 +1597,6 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
         };
         WriteBlock(&pkt3, sizeof(pkt3));
     }
-#endif
 }
 
 // Write a mode packet.
