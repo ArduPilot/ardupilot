@@ -441,15 +441,9 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _bus_sem(NULL),
     _last_accel_filter_hz(-1),
     _last_gyro_filter_hz(-1),
-#if MPU6000_FAST_SAMPLING
     _accel_filter(1000, 15),
     _gyro_filter(1000, 15),
     _temp_filter(1000, 1),
-#else
-    _sample_count(0),
-    _accel_sum(),
-    _gyro_sum(),
-#endif
     _sum_count(0),
     _samples(NULL)
 {
@@ -548,31 +542,8 @@ void AP_InertialSensor_MPU6000::start()
     _samples = new uint8_t[max_samples * MPU6000_SAMPLE_SIZE];
     hal.scheduler->delay(1);
 
-#if MPU6000_FAST_SAMPLING
     _sample_count = 1;
-#else
-    // sample rate and filtering
-    // to minimise the effects of aliasing we choose a filter
-    // that is less than half of the sample rate
-    switch (_imu.get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
-        // this is used for plane and rover, where noise resistance is
-        // more important than update rate. Tests on an aerobatic plane
-        // show that 10Hz is fine, and makes it very noise resistant
-        _sample_count = 4;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-        _sample_count = 2;
-        break;
-    case AP_InertialSensor::RATE_200HZ:
-        _sample_count = 1;
-        break;
-    default:
-        return;
-    }
-#endif
 
-#if MPU6000_FAST_SAMPLING
     // disable sensor filtering
     _set_filter_register(256);
 
@@ -582,13 +553,7 @@ void AP_InertialSensor_MPU6000::start()
     // So we have to set it to 7 to have a 1kHz sampling
     // rate on the gyro
     _register_write(MPUREG_SMPLRT_DIV, 7);
-#else
-    _set_filter_register(_accel_filter_cutoff());
 
-    // set sample rate to 200Hz, and use _sample_divider to give
-    // the requested rate to the application
-    _register_write(MPUREG_SMPLRT_DIV, MPUREG_SMPLRT_200HZ);
-#endif
     hal.scheduler->delay(1);
 
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
@@ -642,33 +607,16 @@ void AP_InertialSensor_MPU6000::start()
  */
 bool AP_InertialSensor_MPU6000::update( void )
 {    
-#if !MPU6000_FAST_SAMPLING
-    if (_sum_count < _sample_count) {
-        // we don't have enough samples yet
-        return false;
-    }
-#endif
-
     // we have a full set of samples
     uint16_t num_samples;
     Vector3f accel, gyro;
     float temp;
 
     hal.scheduler->suspend_timer_procs();
-#if MPU6000_FAST_SAMPLING
     gyro = _gyro_filtered;
     accel = _accel_filtered;
     temp = _temp_filtered;
     num_samples = 1;
-#else
-    gyro(_gyro_sum.x, _gyro_sum.y, _gyro_sum.z);
-    accel(_accel_sum.x, _accel_sum.y, _accel_sum.z);
-    temp = _temp_sum;
-    num_samples = _sum_count;
-    _accel_sum.zero();
-    _gyro_sum.zero();
-    _temp_sum = 0;
-#endif
     _sum_count = 0;
     hal.scheduler->resume_timer_procs();
 
@@ -682,7 +630,6 @@ bool AP_InertialSensor_MPU6000::update( void )
     /* give the temperature to the control loop in order to keep it constant*/
     hal.util->set_imu_temp(temp);
 
-#if MPU6000_FAST_SAMPLING
     if (_last_accel_filter_hz != _accel_filter_cutoff()) {
         _accel_filter.set_cutoff_frequency(1000, _accel_filter_cutoff());
         _last_accel_filter_hz = _accel_filter_cutoff();
@@ -692,17 +639,6 @@ bool AP_InertialSensor_MPU6000::update( void )
         _gyro_filter.set_cutoff_frequency(1000, _gyro_filter_cutoff());
         _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
-#else
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        if (_bus_sem->take(10)) {
-            _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
-            _set_filter_register(_accel_filter_cutoff());
-            _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
-            _bus_sem->give();
-            _last_accel_filter_hz = _accel_filter_cutoff();
-        }
-    }
-#endif
 
     return true;
 }
@@ -783,25 +719,10 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 
         _notify_new_accel_raw_sample(_accel_instance, accel);
 
-#if MPU6000_FAST_SAMPLING
         _accel_filtered = _accel_filter.apply(accel);
         _gyro_filtered = _gyro_filter.apply(gyro);
         _temp_filtered = _temp_filter.apply(temp);
-#else
-        _accel_sum += accel;
-        _gyro_sum += gyro;
-        _temp_sum += temp;
-#endif
         _sum_count++;
-
-#if !MPU6000_FAST_SAMPLING
-        if (_sum_count == 0) {
-        // rollover - v unlikely
-            _accel_sum.zero();
-            _gyro_sum.zero();
-            _temp_sum = 0;
-        }
-#endif
     }
 }
 

@@ -4,28 +4,19 @@
 #define __AP_INERTIAL_SENSOR_MPU6000_H__
 
 #include <stdint.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Progmem/AP_Progmem.h>
+#include <Filter/Filter.h>
+#include <Filter/LowPassFilter2p.h>
+#include <Filter/LowPassFilter.h>
 
 #include "AP_InertialSensor.h"
 #include "AuxiliaryBus.h"
 
 // enable debug to see a register dump on startup
 #define MPU6000_DEBUG 0
-
-// on fast CPUs we sample at 1kHz and use a software filter
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-#define MPU6000_FAST_SAMPLING 1
-#else
-#define MPU6000_FAST_SAMPLING 0
-#endif
-
-#if MPU6000_FAST_SAMPLING
-#include <Filter/Filter.h>
-#include <Filter/LowPassFilter2p.h>
-#include <Filter/LowPassFilter.h>
-#endif
 
 #define MPU6000_SAMPLE_SIZE 14
 #define MPU6000_MAX_FIFO_SAMPLES 3
@@ -125,7 +116,6 @@ private:
     // how many hardware samples before we report a sample to the caller
     uint8_t _sample_count;
 
-#if MPU6000_FAST_SAMPLING
     Vector3f _accel_filtered;
     Vector3f _gyro_filtered;
     float    _temp_filtered;
@@ -134,14 +124,7 @@ private:
     LowPassFilter2pVector3f _accel_filter;
     LowPassFilter2pVector3f _gyro_filter;
     LowPassFilter2pFloat    _temp_filter;
-#else
-    // accumulation in timer - must be read with timer disabled
-    // the sum of the values since last read
-    Vector3l _accel_sum;
-    Vector3l _gyro_sum;
-    int32_t  _temp_sum;
 
-#endif
     volatile uint16_t _sum_count;
     bool _fifo_mode;
     uint8_t *_samples = nullptr;
