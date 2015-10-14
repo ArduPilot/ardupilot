@@ -17,19 +17,20 @@ public:
 
     void enable(bool enable);
     bool is_enabled();
-    void set_period(uint32_t usec_period);
+    void set_period(uint32_t nsec_period);
     uint32_t get_period();
     void set_freq(uint32_t freq);
     uint32_t get_freq();
-    void set_duty_cycle(uint32_t usec_duty_cycle);
+    void set_duty_cycle(uint32_t nsec_duty_cycle);
     uint32_t get_duty_cycle();
     void set_polarity(LinuxPWM_Sysfs::Polarity polarity);
     LinuxPWM_Sysfs::Polarity get_polarity();
 
 private:
-    uint8_t _chip;
-    uint16_t _channel;
+    uint32_t _nsec_duty_cycle_value;
     int _duty_cycle_fd;
+    const uint16_t _channel;
+    const uint8_t _chip;
 };
 
 

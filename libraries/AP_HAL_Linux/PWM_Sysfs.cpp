@@ -34,6 +34,7 @@ LinuxPWM_Sysfs::LinuxPWM_Sysfs(uint8_t chip, uint8_t channel)
     : _chip(chip)
     , _channel(channel)
     , _duty_cycle_fd(-1)
+    , _nsec_duty_cycle_value(0)
 {
     char path[PATH_MAX];
     LinuxUtil* util = LinuxUtil::from(hal.util);
@@ -89,13 +90,13 @@ bool LinuxPWM_Sysfs::is_enabled()
     return ret;
 }
 
-void LinuxPWM_Sysfs::set_period(uint32_t usec_period)
+void LinuxPWM_Sysfs::set_period(uint32_t nsec_period)
 {
     char path[PATH_MAX];
     LinuxUtil* util = LinuxUtil::from(hal.util);
 
     snprintf(path, sizeof(path), BASE_PWM_PATH "/pwm%d/period", _chip, _channel);
-    if (util->write_file(path, "%u", util->usec_to_nsec(usec_period)) < 0) {
+    if (util->write_file(path, "%u", nsec_period) < 0) {
         hal.console->printf("LinuxPWM_Sysfs: Unable to set period of PWM[%d, %d]\n",
                             _chip, _channel);
     }
@@ -114,52 +115,36 @@ uint32_t LinuxPWM_Sysfs::get_period()
         return 0;
     }
 
-    return util->nsec_to_usec(nsec_period);
+    return nsec_period;
 }
 
 void LinuxPWM_Sysfs::set_freq(uint32_t freq)
 {
     LinuxUtil* util = LinuxUtil::from(hal.util);
 
-    set_period(util->hz_to_usec(freq));
+    set_period(util->hz_to_nsec(freq));
 }
 
 uint32_t LinuxPWM_Sysfs::get_freq()
 {
     LinuxUtil* util = LinuxUtil::from(hal.util);
 
-    return util->usec_to_hz(get_period());
+    return util->nsec_to_hz(get_period());
 }
 
-void LinuxPWM_Sysfs::set_duty_cycle(uint32_t usec_duty_cycle)
+void LinuxPWM_Sysfs::set_duty_cycle(uint32_t nsec_duty_cycle)
 {
-    if (dprintf(_duty_cycle_fd, "%u", hal.util->usec_to_nsec(usec_duty_cycle)) < 0) {
+    if (dprintf(_duty_cycle_fd, "%u", nsec_duty_cycle) < 0) {
         hal.console->printf("LinuxPWM_Sysfs: Unable to set duty cycle of PWM[%d, %d]\n",
                             _chip, _channel);
+    } else {
+        _nsec_duty_cycle_value = nsec_duty_cycle;
     }
 }
 
 uint32_t LinuxPWM_Sysfs::get_duty_cycle()
 {
-    char buffer[UINT32_STR_MAX];
-    uint32_t nsec_duty_cycle;
-    char *endptr;
-
-    if (::pread(_duty_cycle_fd, buffer, sizeof(buffer), 0) < 0) {
-        hal.console->printf("LinuxPWM_Sysfs: Unable to get duty cycle of PWM[%d, %d]\n",
-                            _chip, _channel);
-        return 0;
-    }
-
-    errno = 0;
-    nsec_duty_cycle = strtol(buffer, &endptr, 10);
-    if (errno || buffer == endptr) {
-        hal.console->printf("LinuxPWM_Sysfs: Unable to get duty cycle of PWM[%d, %d]\n",
-                            _chip, _channel);
-        return 0;
-    }
-
-    return hal.util->nsec_to_usec(nsec_duty_cycle);
+    return _nsec_duty_cycle_value;
 }
 
 void LinuxPWM_Sysfs::set_polarity(LinuxPWM_Sysfs::Polarity polarity)
