@@ -793,6 +793,13 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_GPS_ACCURACY:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(GPS_ACCURACY);
+        plane.ahrs.send_gps_accuracy(chan);
+#endif
+        break;
+
     case MSG_GIMBAL_REPORT:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
