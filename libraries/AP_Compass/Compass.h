@@ -41,15 +41,10 @@
 
 /**
    maximum number of compass instances available on this platform. If more
-   than 1 then redundent sensors may be available
+   than 1 then redundant sensors may be available
  */
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define COMPASS_MAX_INSTANCES 3
-#define COMPASS_MAX_BACKEND   3   
-#else
-#define COMPASS_MAX_INSTANCES 1
-#define COMPASS_MAX_BACKEND   1   
-#endif
+#define COMPASS_MAX_BACKEND   3
 
 //MAXIMUM COMPASS REPORTS
 #define MAX_CAL_REPORTS 10
