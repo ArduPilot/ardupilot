@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
+#include <RC_Channel/RC_Channel.h>
 #include "AP_MotorsHeli_Single.h"
 
 extern const AP_HAL::HAL& hal;
@@ -320,6 +321,14 @@ void AP_MotorsHeli_Single::update_motor_control(RotorControlState state)
     // Send state update to motors
     _tail_rotor.output(state);
     _main_rotor.output(state);
+
+    if (state == ROTOR_CONTROL_STOP){
+        // set engine run enable aux output to not run position to kill engine when disarmed
+        RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_engine_run_enable);
+    } else {
+        // else if armed, set engine run enable output to run position
+        RC_Channel_aux::set_radio_to_max(RC_Channel_aux::k_engine_run_enable);
+    }
 
     // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
     _heliflags.rotor_runup_complete = ( _main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete() );
