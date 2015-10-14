@@ -106,7 +106,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state[0].external, 0),
 
-#if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
     // @DisplayName: Compass2 offsets on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
@@ -154,9 +153,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Values: 0:FirstCompass,1:SecondCompass,2:ThirdCompass
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 12, Compass, _primary, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 2
     // @Param: OFS3_X
     // @DisplayName: Compass3 offsets on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
@@ -197,9 +194,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Units: Offset per Amp or at Full Throttle
     // @Increment: 1
     AP_GROUPINFO("MOT3",    14, Compass, _state[2].motor_compensation, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 1
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
@@ -211,17 +206,13 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 2
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 1
     // @Param: USE2
     // @DisplayName: Compass2 used for yaw
     // @Description: Enable or disable the second compass for determining heading.
@@ -241,9 +232,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Values: 0:Internal,1:External
     // @User: Advanced
     AP_GROUPINFO("EXTERN2",20, Compass, _state[1].external, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 2
     // @Param: USE3
     // @DisplayName: Compass3 used for yaw
     // @Description: Enable or disable the third compass for determining heading.
@@ -263,7 +252,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Values: 0:Internal,1:External
     // @User: Advanced
     AP_GROUPINFO("EXTERN3",23, Compass, _state[2].external, 0),
-#endif
 
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
@@ -297,7 +285,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
 
-#if COMPASS_MAX_INSTANCES > 1
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -329,9 +316,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
-#endif
 
-#if COMPASS_MAX_INSTANCES > 2
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
@@ -363,7 +348,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
-#endif
 
     // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
@@ -397,12 +381,10 @@ Compass::Compass(void) :
         _reports_sent[i] = 0;
     }
 
-#if COMPASS_MAX_INSTANCES > 1
     // default device ids to zero.  init() method will overwrite with the actual device ids
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         _state[i].dev_id = 0;
     }
-#endif
 }
 
 // Default init method
@@ -553,9 +535,7 @@ void
 Compass::save_offsets(uint8_t i)
 {
     _state[i].offset.save();  // save offsets
-#if COMPASS_MAX_INSTANCES > 1
     _state[i].dev_id.save();  // save device id corresponding to these offsets
-#endif
 }
 
 void
@@ -680,7 +660,6 @@ bool Compass::configured(uint8_t i)
         return false;
     }
 
-#if COMPASS_MAX_INSTANCES > 1
     // backup detected dev_id
     int32_t dev_id_orig = _state[i].dev_id;
 
@@ -694,7 +673,6 @@ bool Compass::configured(uint8_t i)
         // return failure
         return false;
     }
-#endif
 
     // if we got here then it must be configured
     return true;
