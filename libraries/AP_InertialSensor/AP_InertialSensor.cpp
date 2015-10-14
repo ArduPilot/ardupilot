@@ -283,14 +283,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
 
-#if INS_VIBRATION_CHECK
     // @Param: STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
     // @Description: Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5
     // @Range: 0.05 to 50
     // @User: Advanced
     AP_GROUPINFO("STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
-#endif
 
     // @Param: GYR_CAL
     // @DisplayName: Gyro Calibration scheme
@@ -336,19 +334,15 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
         _gyro_cal_ok[i] = true;
-#if INS_VIBRATION_CHECK
         _accel_clip_count[i] = 0;
-#endif
 
         _accel_max_abs_offsets[i] = 3.5f;
         _accel_sample_rates[i] = 0;
     }
-#if INS_VIBRATION_CHECK
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
         _accel_vibe_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ);
     }
-#endif
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 }
@@ -738,7 +732,6 @@ AP_InertialSensor::init_gyro()
     _save_parameters();
 }
 
-#if INS_VIBRATION_CHECK
 // accelerometer clipping reporting
 uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
 {
@@ -747,7 +740,6 @@ uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
     }
     return _accel_clip_count[instance];
 }
-#endif
 
 // get_gyro_health_all - return true if all gyros are healthy
 bool AP_InertialSensor::get_gyro_health_all(void) const
@@ -1547,7 +1539,6 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id)
     return backend->get_auxiliary_bus();
 }
 
-#if INS_VIBRATION_CHECK
 // calculate vibration levels and check for accelerometer clipping (called by a backends)
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
 {
@@ -1584,17 +1575,12 @@ Vector3f AP_InertialSensor::get_vibration_levels(uint8_t instance) const
     }
     return vibe;
 }
-#endif
 
 // check for vibration movement. Return true if all axis show nearly zero movement
 bool AP_InertialSensor::is_still()
 {
-#if INS_VIBRATION_CHECK
     Vector3f vibe = get_vibration_levels();
     return (vibe.x < _still_threshold) &&
            (vibe.y < _still_threshold) &&
            (vibe.z < _still_threshold);
-#else
-    return false;
-#endif
 }
