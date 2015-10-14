@@ -131,9 +131,7 @@ uint8_t AP_Compass_Backend::register_compass(void) const
 */
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
-#if COMPASS_MAX_INSTANCES > 1
     _compass._state[instance].dev_id.set(dev_id);
-#endif
 }
 
 /*

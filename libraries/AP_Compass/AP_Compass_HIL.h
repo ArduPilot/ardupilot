@@ -4,11 +4,7 @@
 
 #include "Compass.h"
 
-#if COMPASS_MAX_INSTANCES == 1
-# define HIL_NUM_COMPASSES 1
-#else
-# define HIL_NUM_COMPASSES 2
-#endif
+#define HIL_NUM_COMPASSES 2
 
 class AP_Compass_HIL : public AP_Compass_Backend
 {

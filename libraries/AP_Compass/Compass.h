@@ -367,12 +367,11 @@ private:
         AP_Vector3f diagonals;
         AP_Vector3f offdiagonals;
 
-#if COMPASS_MAX_INSTANCES > 1
-        // device id detected at init.  
+        // device id detected at init.
         // saved to eeprom when offsets are saved allowing ram &
         // eeprom values to be compared as consistency check
         AP_Int32    dev_id;
-#endif
+
         AP_Int8     use_for_yaw;
 
         uint8_t     mag_history_index;
