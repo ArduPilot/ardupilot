@@ -717,6 +717,11 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         copter.ahrs.send_ekf_status_report(chan);
         break;
 
+    case MSG_GPS_ACCURACY:
+        CHECK_PAYLOAD_SIZE(GPS_ACCURACY);
+        copter.ahrs.send_gps_accuracy(chan);
+        break;
+
     case MSG_FENCE_STATUS:
     case MSG_WIND:
         // unused
