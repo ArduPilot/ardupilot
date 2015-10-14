@@ -9,19 +9,11 @@
 #include <Filter/DerivativeFilter.h>
 
 // maximum number of sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_INSTANCES 1
-#else
 #define BARO_MAX_INSTANCES 3
-#endif
 
 // maximum number of drivers. Note that a single driver can provide
 // multiple sensor instances
-#if HAL_CPU_CLASS == HAL_CPU_CLASS_16
-#define BARO_MAX_DRIVERS 1
-#else
 #define BARO_MAX_DRIVERS 2
-#endif
 
 class AP_Baro_Backend;
 
