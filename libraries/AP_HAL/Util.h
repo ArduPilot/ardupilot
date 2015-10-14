@@ -27,8 +27,8 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    inline uint32_t hz_to_usec(uint32_t freq) { return 1000000 / freq; }
-    inline uint32_t usec_to_hz(uint32_t usec) { return 1000000 / usec; }
+    inline uint32_t hz_to_nsec(uint32_t freq) { return 1000000000 / freq; }
+    inline uint32_t nsec_to_hz(uint32_t usec) { return 1000000000 / usec; }
 
     inline uint32_t usec_to_nsec(uint32_t usec) { return usec * 1000; }
     inline uint32_t nsec_to_usec(uint32_t nsec) { return nsec / 1000; }
