@@ -455,6 +455,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= logging_checks(report);
     ret &= manual_transmitter_checks(report);
     ret &= board_voltage_checks(report);
+    ret &= rangefinder_optflow_checks(report);
 
     return ret;
 }

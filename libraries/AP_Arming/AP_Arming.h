@@ -24,6 +24,7 @@ public:
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_RANGEFINDER_OPTFLOW = 0x1200,
     };
 
     enum ArmingMethod {
@@ -61,6 +62,8 @@ public:
     virtual bool pre_arm_checks(bool report);
 
     virtual bool gps_checks(bool report);
+
+    virtual bool rangefinder_optflow_checks(bool report) { return true; }
 
     void set_logging_available(bool set) { logging_available = set; }
 
