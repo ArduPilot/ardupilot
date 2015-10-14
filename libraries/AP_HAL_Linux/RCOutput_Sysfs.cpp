@@ -98,7 +98,7 @@ void LinuxRCOutput_Sysfs::write(uint8_t ch, uint16_t period_us)
         return;
     }
 
-    _pwm_channels[ch]->set_duty_cycle(period_us);
+    _pwm_channels[ch]->set_duty_cycle(hal.util->usec_to_nsec(period_us));
 }
 
 uint16_t LinuxRCOutput_Sysfs::read(uint8_t ch)
@@ -107,7 +107,7 @@ uint16_t LinuxRCOutput_Sysfs::read(uint8_t ch)
         return 0;
     }
 
-    return _pwm_channels[ch]->get_duty_cycle();
+    return hal.util->nsec_to_usec(_pwm_channels[ch]->get_duty_cycle());
 }
 
 void LinuxRCOutput_Sysfs::read(uint16_t* period_us, uint8_t len)
