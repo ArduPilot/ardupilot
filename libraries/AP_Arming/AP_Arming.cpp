@@ -349,6 +349,25 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     return true;
 }
 
+bool AP_Arming::board_voltage_checks(bool report)
+{
+#if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
+#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
+    // check board voltage
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
+        if(hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check Board Voltage"));
+            }
+            return false;
+        }
+    }
+#endif
+#endif
+
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
     bool ret = true;
@@ -366,6 +385,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= battery_checks(report);
     ret &= logging_checks(report);
     ret &= manual_transmitter_checks(report);
+    ret &= board_voltage_checks(report);
 
     return ret;
 }
