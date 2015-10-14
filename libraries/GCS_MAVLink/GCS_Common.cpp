@@ -1368,7 +1368,6 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
  */
 void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 {
-#if INS_VIBRATION_CHECK
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -1380,7 +1379,6 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
-#endif
 }
 
 void GCS_MAVLINK::send_home(const Location &home) const
