@@ -1291,6 +1291,12 @@ void AP_InertialSensor::update(void)
             _backends[i]->update();
         }
 
+        // clear accumulators
+        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+            _delta_velocity_acc[i].zero();
+            _delta_velocity_acc_dt[i] = 0;
+        }
+
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't. 
         bool have_zero_accel_error_count = false;

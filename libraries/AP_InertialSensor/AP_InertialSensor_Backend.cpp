@@ -106,8 +106,6 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._delta_velocity[instance] = _imu._delta_velocity_acc[instance];
     _imu._delta_velocity_dt[instance] = _imu._delta_velocity_acc_dt[instance];
     _imu._delta_velocity_valid[instance] = true;
-    _imu._delta_velocity_acc[instance].zero();
-    _imu._delta_velocity_acc_dt[instance] = 0;
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
