@@ -940,6 +940,17 @@
 
     <!-- 219 to 225 RESERVED for more GOPRO-->
 
+    <message name="GPS_ACCURACY" id="225">
+        <description>Accuracy statistics for GPS lock</description>
+        <field type="uint8_t" name="instance">Which instance of GPS we're reporting on</field>
+        <field type="float" name="h_acc">GPS-reported horizontal accuracy</field>
+        <field type="float" name="s_acc">GPS-reported speed accuracy</field>
+        <field type="float" name="h_vel_filt">GPS-reported, filtered horizontal velocity</field>
+        <field type="float" name="v_vel_filt">GPS-reported, filtered vertical velocity</field>
+        <field type="float" name="p_drift">GPS position drift</field>
+        <field type="uint16_t" name="ekf_check_mask">Which fields pass EKF checks</field>
+    </message>
+    
     <message name="RPM" id="226">
       <description>RPM sensor output</description>
       <field name="rpm1" type="float">RPM Sensor1</field>
