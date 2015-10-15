@@ -442,7 +442,7 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
         return true;
 
     case EKF_TYPE2:
-        EKF2.getPosDownDerivative(velocity);
+        velocity = EKF2.getPosDownDerivative();
         return true;
     }
 }
