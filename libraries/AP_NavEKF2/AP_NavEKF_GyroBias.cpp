@@ -16,8 +16,6 @@
 
 #include <stdio.h>
 
-extern const AP_HAL::HAL& hal;
-
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
 void NavEKF2_core::resetGyroBias(void)
 {

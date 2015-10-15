@@ -16,9 +16,6 @@
 
 #include <stdio.h>
 
-extern const AP_HAL::HAL& hal;
-
-
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF2_core::healthy(void) const
 {
