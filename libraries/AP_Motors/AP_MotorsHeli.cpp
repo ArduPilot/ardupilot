@@ -24,8 +24,6 @@
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
 
-extern const AP_HAL::HAL& hal;
-
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] PROGMEM = {
 
     // @Param: ROL_MAX

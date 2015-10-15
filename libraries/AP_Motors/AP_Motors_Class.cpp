@@ -22,7 +22,6 @@
 
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
-extern const AP_HAL::HAL& hal;
 
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
