@@ -1,8 +1,6 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AP_Mount_Alexmos.h"
 
-extern const AP_HAL::HAL& hal;
-
 void AP_Mount_Alexmos::init(const AP_SerialManager& serial_manager)
 {
     // check for alexmos protcol

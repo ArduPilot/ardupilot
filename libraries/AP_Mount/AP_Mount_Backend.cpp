@@ -2,8 +2,6 @@
 
 #include "AP_Mount_Backend.h"
 
-extern const AP_HAL::HAL& hal;
-
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
 {
