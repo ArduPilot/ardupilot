@@ -14,8 +14,6 @@
 #include <drivers/drv_baro.h>
 #include <drivers/drv_hrt.h>
 
-extern const AP_HAL::HAL& hal;
-
 /*
   constructor - opens the PX4 drivers
  */
