@@ -593,6 +593,9 @@ private:
     // using a simple observer
     void calcOutputStatesFast();
 
+    // Round to the nearest multiple of a integer
+    uint32_t roundToNearest(uint32_t dividend, uint32_t divisor );
+
     // measurement buffer sizes
     static const uint32_t IMU_BUFFER_LENGTH = 100;  // number of IMU samples stored in the buffer. Samples*delta_time must be > max sensor delay
     static const uint32_t OBS_BUFFER_LENGTH = 5;    // number of non-IMU sensor samples stored in the buffer.

@@ -118,6 +118,9 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
         ofDataNew.time_ms = imuSampleTime_ms - frontend._flowDelay_ms - frontend.flowTimeDeltaAvg_ms/2;
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        ofDataNew.time_ms = roundToNearest(ofDataNew.time_ms, frontend.fusionTimeStep_ms);
         // Save data to buffer
         StoreOF();
         // Check for data at the fusion time horizon
@@ -192,6 +195,10 @@ void NavEKF2_core::readMagData()
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magMeasTime_ms = imuSampleTime_ms - frontend.magDelay_ms;
+
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        magMeasTime_ms = roundToNearest(magMeasTime_ms, frontend.fusionTimeStep_ms);
 
         // read compass data and scale to improve numerical conditioning
         magDataNew.mag = _ahrs->get_compass()->get_field() * 0.001f;
@@ -358,6 +365,10 @@ void NavEKF2_core::readGpsData()
             // ideally we should be using a timing signal from the GPS receiver to set this time
             gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend._gpsDelay_ms;
 
+            // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+            // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
+
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
@@ -495,6 +506,9 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.pos.x = lastKnownPositionNE.x;
             gpsDataNew.pos.y = lastKnownPositionNE.y;
             gpsDataNew.time_ms = imuSampleTime_ms-frontend._gpsDelay_ms;
+            // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+            // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
             // save measurement to buffer to be fused later
             StoreGPS();
         }
@@ -633,6 +647,10 @@ void NavEKF2_core::readHgtData()
         // estimate of time height measurement was taken, allowing for delays
         hgtMeasTime_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
 
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        hgtMeasTime_ms = roundToNearest(hgtMeasTime_ms, frontend.fusionTimeStep_ms);
+
         // save baro measurement to buffer to be fused later
         baroDataNew.time_ms = hgtMeasTime_ms;
         StoreBaro();
@@ -696,12 +714,21 @@ void NavEKF2_core::readAirSpdData()
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend.tasDelay_ms;
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        tasDataNew.time_ms = roundToNearest(tasDataNew.time_ms, frontend.fusionTimeStep_ms);
         newDataTas = true;
         StoreTAS();
         RecallTAS();
     } else {
         newDataTas = false;
     }
+}
+
+// Round to the nearest multiple of a integer
+uint32_t NavEKF2_core::roundToNearest(uint32_t dividend, uint32_t divisor )
+{
+  return ((uint32_t)round((float)dividend/float(divisor)))*divisor;
 }
 
 #endif // HAL_CPU_CLASS
