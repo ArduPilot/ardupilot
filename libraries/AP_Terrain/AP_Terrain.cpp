@@ -302,7 +302,9 @@ void AP_Terrain::update(void)
 
     // update the cached current location height
     Location loc;
-    if (ahrs.get_position(loc) && height_amsl(loc, height)) {
+    bool pos_valid = ahrs.get_position(loc);
+    bool terrain_valid = height_amsl(loc, height);
+    if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
         have_current_loc_height = true;
     }
@@ -313,33 +315,23 @@ void AP_Terrain::update(void)
     // check for pending rally data
     update_rally_data();
 
-    // update capabilities
+    // update capabilities and status
     if (enable) {
         hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+        if (!pos_valid) {
+            // we don't know where we are
+            system_status = TerrainStatusUnhealthy;
+        } else if (!terrain_valid) {
+            // we don't have terrain data at current location
+            system_status = TerrainStatusUnhealthy;
+        } else {
+            system_status = TerrainStatusOK;
+        }
     } else {
         hal.util->clear_capabilities(MAV_PROTOCOL_CAPABILITY_TERRAIN);
+        system_status = TerrainStatusDisabled;
     }
-}
 
-/*
-  return status enum for health reporting
-*/
-enum AP_Terrain::TerrainStatus AP_Terrain::status(void)
-{
-    if (!enable) {
-        return TerrainStatusDisabled;
-    }
-    Location loc;
-    if (!ahrs.get_position(loc)) {
-        // we don't know where we are
-        return TerrainStatusUnhealthy;
-    }
-    float height;
-    if (!height_amsl(loc, height)) {
-        // we don't have terrain data at current location
-        return TerrainStatusUnhealthy;        
-    }
-    return TerrainStatusOK; 
 }
 
 /*
