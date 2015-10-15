@@ -453,6 +453,7 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
     switch (active_EKF_type()) {
     case EKF_TYPE_NONE:
         return false;
+
     case EKF_TYPE1:
     default:
         return EKF1.getHAGL(height);
@@ -460,7 +461,6 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
     case EKF_TYPE2:
         return EKF2.getHAGL(height);
     }
-    return false;
 }
 
 // return a relative ground position in meters/second, North/East/Down
@@ -652,13 +652,17 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
         return false;
+
     case EKF_TYPE1:
     default:
         EKF1.getFilterStatus(status);
+        return true;
+
     case EKF_TYPE2:
         EKF2.getFilterStatus(status);
+        return true;
     }
-    return true;
+
 }
 
 // write optical flow data to EKF
@@ -756,7 +760,7 @@ bool AP_AHRS_NavEKF::resetHeightDatum(void)
         EKF1.resetHeightDatum();
         return EKF2.resetHeightDatum();
     }
-    return false;    
+    return false;
 }
 
 // send a EKF_STATUS_REPORT for current EKF
@@ -772,27 +776,28 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan)
     }    
 }
 
-// returns the inertial navigation origin in lat/lon/alt
-struct Location AP_AHRS_NavEKF::get_origin() const
+// passes a reference to the location of the inertial navigation origin
+// in WGS-84 coordinates
+// returns a boolean true when the inertial navigation origin has been set
+bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 {
-    struct Location ret;
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
-        // We are not using inertial nav so no origin
-        // initialise location to all zeros
-        memset(&ret, 0, sizeof(ret));
+        return false;
+
     case EKF_TYPE1:
+    default:
         if (!EKF1.getOriginLLH(ret)) {
-            // initialise location to all zeros if EKF1 origin not yet set
-            memset(&ret, 0, sizeof(ret));
+            return false;
         }
+        return true;
+
     case EKF_TYPE2:
         if (!EKF2.getOriginLLH(ret)) {
-            // initialise location to all zeros if EKF2 origin not yet set
-            memset(&ret, 0, sizeof(ret));
+            return false;
         }
+        return true;
     }
-    return ret;
 }
 
 // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
@@ -804,28 +809,34 @@ bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
     case EKF_TYPE_NONE:
         // We are not using an EKF so no limiting applies
         return false;
+
     case EKF_TYPE1:
+    default:
         return EKF1.getHeightControlLimit(limit);
+        return true;
+
     case EKF_TYPE2:
         return EKF2.getHeightControlLimit(limit);
+        return true;
     }
-    return false;
 }
 
-// get_location - updates the provided location with the latest calculated locatoin
+// get_location - updates the provided location with the latest calculated location
 //  returns true on success (i.e. the EKF knows it's latest position), false on failure
 bool AP_AHRS_NavEKF::get_location(struct Location &loc) const
 {
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
-        // We are not using an EKF so no limiting applies
+        // We are not using an EKF so no data
         return false;
+
     case EKF_TYPE1:
+    default:
         return EKF1.getLLH(loc);
+
     case EKF_TYPE2:
         return EKF2.getLLH(loc);
     }
-    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE

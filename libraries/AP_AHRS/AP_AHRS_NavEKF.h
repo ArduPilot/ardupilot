@@ -118,7 +118,7 @@ public:
     void set_home(const Location &loc);
 
     // returns the inertial navigation origin in lat/lon/alt
-    struct Location get_origin() const;
+    bool get_origin(Location &ret) const;
 
     bool have_inertial_nav(void) const;
 
