@@ -253,13 +253,11 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-            if(_sample_buffer != NULL) {
-                initialize_fit();
-                _status = COMPASS_CAL_RUNNING_STEP_ONE;
-                return true;
+            if (_sample_buffer == NULL) {
+                _sample_buffer =
+                        (CompassSample*) malloc(sizeof(CompassSample) *
+                                                COMPASS_CAL_NUM_SAMPLES);
             }
-
-            _sample_buffer = (CompassSample*)malloc(sizeof(CompassSample)*COMPASS_CAL_NUM_SAMPLES);
 
             if(_sample_buffer != NULL) {
                 initialize_fit();
