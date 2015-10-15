@@ -438,7 +438,7 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
 
     case EKF_TYPE1:
     default:
-        EKF1.getPosDownDerivative(velocity);
+        velocity = EKF1.getPosDownDerivative();
         return true;
 
     case EKF_TYPE2:
