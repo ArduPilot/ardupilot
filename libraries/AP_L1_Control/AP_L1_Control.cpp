@@ -3,8 +3,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_L1_Control.h"
 
-extern const AP_HAL::HAL& hal;
-
 // table of user settable parameters
 const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
     // @Param: PERIOD
