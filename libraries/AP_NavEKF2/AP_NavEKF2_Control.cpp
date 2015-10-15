@@ -66,8 +66,8 @@ void NavEKF2_core::setWindMagStateLearningMode()
     // Determine if learning of magnetic field states has been requested by the user
     bool magCalRequested = ((frontend._magCal == 0) && !onGround) || ((frontend._magCal == 1) && manoeuvring)  || (frontend._magCal == 3);
 
-    // Deny mag calibration request if we aren't using the compass, are in the pre-arm constant position mode or it has been inhibited by the user
-    bool magCalDenied = !use_compass() || (PV_AidingMode == AID_NONE) || (frontend._magCal == 2);
+    // Deny mag calibration request if we aren't using the compass, have not perfomred the first in-air calibration are on the ground or it has been inhibited by the user
+    bool magCalDenied = !use_compass() || !firstMagYawInit || (frontend._magCal == 2) || onGround;
 
     // Inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
