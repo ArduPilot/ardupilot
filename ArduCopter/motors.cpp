@@ -120,11 +120,6 @@ void Copter::auto_disarm_check()
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
 bool Copter::init_arm_motors(bool arming_from_gcs)
 {
-	// arming marker
-    // Flag used to track if we have armed the motors the first time.
-    // This is used to decide if we should run the ground_start routine
-    // which calibrates the IMU
-    static bool did_gyro_cal = false;
     static bool in_arm_motors = false;
 
     // exit immediately if already in this function
@@ -172,21 +167,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
         set_home_to_current_location();
     }
     calc_distance_and_bearing();
-
-    // gyro calibration on first arming
-    if ((did_gyro_cal == false) && (ins.gyro_calibration_timing() == AP_InertialSensor::GYRO_CAL_STARTUP_AND_FIRST_BOOT)) {
-        if (!calibrate_gyros()) {
-            // final check that gyros calibrated successfully
-            if (((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS))) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Gyro calibration failed"));
-                AP_Notify::flags.armed = false;
-                failsafe_enable();
-                in_arm_motors = false;
-                return false;
-            }
-        }
-        did_gyro_cal = true;
-    }
 
 #if FRAME_CONFIG == HELI_FRAME
     // helicopters are always using motor interlock
