@@ -297,6 +297,7 @@ private:
     const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
+    const uint8_t fusionTimeStep_ms;    // The nominal time interval between covariance predictions and measurement fusions in msec
 };
 
 #endif //AP_NavEKF2

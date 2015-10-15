@@ -393,7 +393,7 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
     hgtAvg_ms(100),                 // average number of msec between height measurements
     betaAvg_ms(100),                // average number of msec between synthetic sideslip measurements
-    covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
+    covTimeStepMax(0.1f),           // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
@@ -401,7 +401,8 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    gndGradientSigma(2)             // RMS terrain gradient percentage assumed by the terrain height estimation
+    gndGradientSigma(2),            // RMS terrain gradient percentage assumed by the terrain height estimation
+    fusionTimeStep_ms(20)           // The nominal number of msec between covariance prediction and fusion operations
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
