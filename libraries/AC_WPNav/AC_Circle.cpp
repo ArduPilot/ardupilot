@@ -3,8 +3,6 @@
 #include "AC_Circle.h"
 #include <AP_Math/AP_Math.h>
 
-extern const AP_HAL::HAL& hal;
-
 const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
     // @Param: RADIUS
     // @DisplayName: Circle Radius
