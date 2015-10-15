@@ -5,8 +5,6 @@
 #include "AC_PrecLand_Companion.h"
 #include "AC_PrecLand_IRLock.h"
 
-extern const AP_HAL::HAL& hal;
-
 const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
     // @DisplayName: Precision Land enabled/disabled and behaviour
     // @Description: Precision Land enabled/disabled and behaviour

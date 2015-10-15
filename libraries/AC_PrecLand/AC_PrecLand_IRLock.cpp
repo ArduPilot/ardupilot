@@ -2,8 +2,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_IRLock.h"
 
-extern const AP_HAL::HAL& hal;
-
 // this only builds for PX4 so far
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
