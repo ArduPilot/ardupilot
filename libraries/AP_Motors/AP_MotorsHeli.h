@@ -98,9 +98,6 @@ public:
     // heli specific methods
     //
 
-    // allow_arming - returns true if main rotor is spinning and it is ok to arm
-    virtual bool allow_arming() const = 0;
-
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const;
 
