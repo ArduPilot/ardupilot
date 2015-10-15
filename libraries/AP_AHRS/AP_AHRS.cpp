@@ -17,7 +17,6 @@
 */
 #include "AP_AHRS.h"
 #include <AP_HAL/AP_HAL.h>
-extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] PROGMEM = {
