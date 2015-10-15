@@ -152,8 +152,6 @@ uint8_t mavlink_get_message_crc(uint8_t msgid)
 	return pgm_read_byte(&mavlink_message_crc_progmem[msgid]);
 }
 
-extern const AP_HAL::HAL& hal;
-
 /*
   return true if the MAVLink parser is idle, so there is no partly parsed
   MAVLink message being processed
