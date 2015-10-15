@@ -37,7 +37,7 @@ void NavEKF2_core::resetGyroBias(void)
  */
 float NavEKF2_core::InitialGyroBiasUncertainty(void) const
 {
-    return 5.0f;
+    return 2.5f;
 }
 
 
