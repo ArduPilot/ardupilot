@@ -150,10 +150,10 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
 }
 
 // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
-void NavEKF2_core::getPosDownDerivative(float &ret) const
+float NavEKF2_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complmentary filer applied to the EKF height and vertical acceleration
-    ret = posDownDerivative;
+    return posDownDerivative;
 }
 
 // This returns the specific forces in the NED frame
