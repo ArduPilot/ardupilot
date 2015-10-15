@@ -28,8 +28,6 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-extern const AP_HAL::HAL& hal;
-
 // This is the instance of the libmaple I2C device to use
 #define FLYMAPLE_I2C_DEVICE I2C1
 

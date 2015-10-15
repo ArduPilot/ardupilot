@@ -30,8 +30,6 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-extern const AP_HAL::HAL& hal;
-
 FLYMAPLEUARTDriver::FLYMAPLEUARTDriver(HardwareSerial* hws):
     _hws(hws),
     _txBuf(NULL),
