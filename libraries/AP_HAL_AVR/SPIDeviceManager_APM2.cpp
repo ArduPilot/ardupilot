@@ -8,8 +8,6 @@
 #include "utility/pins_arduino_mega.h"
 using namespace AP_HAL_AVR;
 
-extern const AP_HAL::HAL& hal;
-
 void APM2SPIDeviceManager::init(void* machtnichts) {
 
     /* Note that the order of the init() of the MS5611 and MPU6k is

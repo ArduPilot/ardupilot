@@ -11,8 +11,6 @@
 #include "utility/pins_arduino_mega.h"
 using namespace AP_HAL_AVR;
 
-extern const AP_HAL::HAL& hal;
-
 AVRSemaphore AVRSPI2DeviceDriver::_semaphore;
 
 void AVRSPI2DeviceDriver::init() {
