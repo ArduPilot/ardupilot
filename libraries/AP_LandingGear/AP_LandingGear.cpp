@@ -6,8 +6,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
 
-extern const AP_HAL::HAL& hal;
-
 const AP_Param::GroupInfo AP_LandingGear::var_info[] PROGMEM = {
 
     // @Param: SERVO_RTRACT
