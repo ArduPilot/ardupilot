@@ -21,6 +21,48 @@ SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 include $(MAKE_INC)
 LIBTOKENS := $(LIBRARIES)
 
+
+# HAL and board specific libraries are included here.
+LIBTOKENS += \
+	AP_HAL \
+	AP_HAL_Empty
+
+ifeq ($(HAL_BOARD),HAL_BOARD_APM1)
+LIBTOKENS += \
+	AP_HAL_APM
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_APM2)
+LIBTOKENS += \
+	AP_HAL_APM
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_SITL)
+LIBTOKENS += \
+	AP_HAL_SITL \
+	SITL
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_LINUX)
+LIBTOKENS += \
+	AP_HAL_Linux
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_PX4)
+LIBTOKENS += \
+	AP_HAL_PX4
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_VRBRAIN)
+LIBTOKENS += \
+	AP_HAL_VRBRAIN
+endif
+
+ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
+LIBTOKENS += \
+	AP_HAL_FLYMAPLE
+endif
+
 #
 # Find sketchbook libraries referenced by the sketch.
 #
