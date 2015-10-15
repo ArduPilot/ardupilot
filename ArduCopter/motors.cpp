@@ -172,15 +172,12 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     calc_distance_and_bearing();
 
-<<<<<<< 72e790cb7374a331aa9caf5553e8c558bef75e34
-=======
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
     if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
         set_motor_emergency_stop(false);
     }
 
->>>>>>> Copter: integrate arming checks
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
@@ -212,6 +209,51 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = false;
 
     // return success
+    return true;
+}
+
+// perform pre-arm checks and set ap.pre_arm_check flag
+//  return true if the checks pass successfully
+bool Copter::pre_arm_checks(bool display_failure)
+{
+    // exit immediately if already armed
+    if (motors.armed()) {
+        AP_Notify::flags.pre_arm_check = true;
+        return true;
+    }
+
+    // set notify LEDs based on gps checks
+    AP_Notify::flags.pre_arm_gps_check = arming.gps_checks(false);
+
+    // call arming class
+    if (!arming.pre_arm_checks(display_failure)) {
+        AP_Notify::flags.pre_arm_check = false;
+        return false;
+    }
+
+    AP_Notify::flags.pre_arm_check = true;
+    return true;
+}
+
+// arm_checks - perform final checks before arming
+//  always called just before arming.  Return true if ok to arm
+//  has side-effect that logging is started
+bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
+{
+#if LOGGING_ENABLED == ENABLED
+    // start dataflash
+    start_logging();
+#endif
+
+    // always check if the current mode allows arming
+    if (!mode_allows_arming(control_mode, arming_from_gcs)) {
+        if (display_failure) {
+            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Mode not armable"));
+        }
+        return false;
+    }
+
+    // if we've gotten this far all is ok
     return true;
 }
 
