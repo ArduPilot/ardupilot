@@ -381,14 +381,15 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
+    _compass_cal_autoreboot(false),
+    _cal_complete_requires_reboot(false),
+    _cal_has_run(false),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
     _null_init_done(false),
     _thr_or_curr(0.0f),
-    _hil_mode(false),
-    _cal_complete_requires_reboot(false),
-    _cal_has_run(false)
+    _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
