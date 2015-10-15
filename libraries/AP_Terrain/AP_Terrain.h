@@ -94,7 +94,7 @@ public:
     void update(void);
 
     // return status enum for health reporting
-    enum TerrainStatus status(void);
+    enum TerrainStatus status(void) const { return system_status; }
 
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);
@@ -405,6 +405,9 @@ private:
     uint16_t last_rally_spacing;
 
     char *file_path = NULL;    
+
+    // status
+    enum TerrainStatus system_status = TerrainStatusDisabled;
 };
 #endif // AP_TERRAIN_AVAILABLE
 #endif // __AP_TERRAIN_H__
