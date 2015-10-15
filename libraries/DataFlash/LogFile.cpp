@@ -1302,7 +1302,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getVelNED(velNED);
     ahrs.get_NavEKF2().getPosNED(posNED);
     ahrs.get_NavEKF2().getGyroBias(gyroBias);
-    ahrs.get_NavEKF2().getPosDownDerivative(posDownDeriv);
+    posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative();
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : hal.scheduler->micros64(),
