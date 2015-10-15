@@ -71,7 +71,7 @@ public:
     // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
-    void getPosDownDerivative(float &ret) const;
+    float getPosDownDerivative(void) const;
 
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
