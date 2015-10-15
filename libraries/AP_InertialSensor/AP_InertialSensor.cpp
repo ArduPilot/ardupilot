@@ -306,7 +306,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Param: GYR_CAL
     // @DisplayName: Gyro Calibration scheme
     // @Description: Conrols when automatic gyro calibration is performed
-    // @Values: 0:Never, 1:Start-up only, 2:Start-up and first arming (Copter only)
+    // @Values: 0:Never, 1:Start-up only
     // @User: Advanced
     AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 

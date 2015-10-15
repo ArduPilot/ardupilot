@@ -66,8 +66,7 @@ public:
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
-        GYRO_CAL_STARTUP_ONLY = 1,
-        GYRO_CAL_STARTUP_AND_FIRST_BOOT = 2
+        GYRO_CAL_STARTUP_ONLY = 1
     };
 
     /// Perform startup initialisation.
