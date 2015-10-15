@@ -252,16 +252,6 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         return false;
     }
 
-    // heli specific arming check
-#if FRAME_CONFIG == HELI_FRAME
-    // check if rotor is spinning on heli because this could disrupt gyro calibration
-    if (!motors.allow_arming()){
-        if (display_failure) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Rotor is Spinning"));        }
-        return false;
-    }
-#endif  // HELI_FRAME
-
     // if we've gotten this far all is ok
     return true;
 }
