@@ -732,7 +732,7 @@ void Compass::setHIL(float roll, float pitch, float yaw)
 void Compass::setHIL(const Vector3f &mag)
 {
     _hil.field = mag;
-    _last_update_usec = hal.scheduler->micros();
+    _hil.field_buffer.push_back(mag);
 }
 
 const Vector3f& Compass::getHIL() const {

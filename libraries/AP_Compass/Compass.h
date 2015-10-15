@@ -11,6 +11,7 @@
 #include <GCS_MAVLink.h>
 #include "CompassCalibrator.h"
 #include "AP_Compass_Backend.h"
+#include <AP_Buffer.h>
 
 // compass product id
 #define AP_COMPASS_TYPE_UNKNOWN         0x00
@@ -293,6 +294,7 @@ public:
         Vector3f Bearth;
         float last_declination;
         Vector3f field;
+        AP_Buffer<Vector3f,10> field_buffer;
     } _hil;
 
 private:

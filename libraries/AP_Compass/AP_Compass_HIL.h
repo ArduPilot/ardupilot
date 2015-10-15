@@ -10,12 +10,15 @@ public:
     AP_Compass_HIL(Compass &compass);
     void read(void);
     bool init(void);
+    void accumulate(void);
 
     // detect the sensor
     static AP_Compass_Backend *detect(Compass &compass);
 
 private:
-    uint8_t     _compass_instance;    
+	uint8_t     _compass_instance;
+	Vector3f _sum;
+    uint32_t _count;
 };
 
 #endif
