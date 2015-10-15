@@ -28,6 +28,8 @@ using namespace HALSITL;
  */
 void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
 {
+    static uint32_t last_update;
+
     if (_compass == NULL) {
         // no compass in this sketch
         return;
@@ -45,7 +47,13 @@ void SITL_State::_update_compass(float rollDeg, float pitchDeg, float yawDeg)
     Vector3f motor = _sitl->mag_mot.get() * _current;
     Vector3f new_mag_data = _compass->getHIL(0) + noise + motor;
 
+    // 100Hz, to match the real APM2 compass
     uint32_t now = hal.scheduler->millis();
+    if ((now - last_update) < 10) {
+        return;
+    }
+    last_update = now;
+
     // add delay
     uint32_t best_time_delta_mag = 1000; // initialise large time representing buffer entry closest to current time - delay.
     uint8_t best_index_mag = 0; // initialise number representing the index of the entry in buffer closest to delay.
