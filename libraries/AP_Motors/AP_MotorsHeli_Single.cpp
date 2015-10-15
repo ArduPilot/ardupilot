@@ -208,18 +208,6 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// allow_arming - check if it's safe to arm
-bool AP_MotorsHeli_Single::allow_arming() const
-{
-    // returns false if main rotor speed is not zero
-    if (_main_rotor.get_rotor_speed() > 0) {
-        return false;
-    }
-
-    // all other cases it is OK to arm
-    return true;
-}
-
 // set_desired_rotor_speed
 void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 {
