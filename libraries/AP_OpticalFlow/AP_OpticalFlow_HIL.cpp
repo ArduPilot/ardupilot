@@ -22,8 +22,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 
-extern const AP_HAL::HAL& hal;
-
 AP_OpticalFlow_HIL::AP_OpticalFlow_HIL(OpticalFlow &_frontend) : 
     OpticalFlow_backend(_frontend) 
 {}
