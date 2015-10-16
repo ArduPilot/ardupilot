@@ -24,7 +24,7 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
@@ -47,7 +47,7 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
@@ -70,7 +70,7 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        10

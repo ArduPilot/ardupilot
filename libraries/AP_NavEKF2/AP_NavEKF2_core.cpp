@@ -666,8 +666,8 @@ void NavEKF2_core::CovariancePrediction()
     dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 0.0f, 1e-4f);
     dVelBiasSigma = dt * constrain_float(frontend._accelBiasProcessNoise, 1e-6f, 1e-2f);
     dAngScaleSigma = dt * constrain_float(frontend._gyroScaleProcessNoise,1e-6f,1e-2f);
-    magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
-    magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-2f);
+    magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
+    magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
