@@ -15,7 +15,7 @@
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 long radio_in;
 long radio_trim;

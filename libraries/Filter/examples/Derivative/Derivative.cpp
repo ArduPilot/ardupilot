@@ -13,7 +13,7 @@
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 DerivativeFilter<float,11> derivative;
 

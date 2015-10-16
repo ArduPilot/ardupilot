@@ -86,6 +86,9 @@ void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
     PORTJ |= _BV(0);
 };
 
-const HAL_AVR_APM1 AP_HAL_AVR_APM1;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_AVR_APM1 hal;
+    return hal;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_APM1

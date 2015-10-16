@@ -50,7 +50,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static int accel_fd[INS_MAX_INSTANCES];
 static int gyro_fd[INS_MAX_INSTANCES];
@@ -210,7 +210,7 @@ void loop(void)
 }
 
 #else
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 void setup() {}
 void loop() {}
 #endif // CONFIG_HAL_BOARD

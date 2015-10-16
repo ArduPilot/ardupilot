@@ -12,7 +12,7 @@
 #include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <AP_HAL_Linux/AP_HAL_Linux.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
  *  this is the boundary of the 2010 outback challenge

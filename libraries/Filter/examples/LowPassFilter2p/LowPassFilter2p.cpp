@@ -15,7 +15,7 @@
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/LowPassFilter2p.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // craete an instance with 800Hz sample rate and 30Hz cutoff
 static LowPassFilter2pFloat low_pass_filter(800, 30);

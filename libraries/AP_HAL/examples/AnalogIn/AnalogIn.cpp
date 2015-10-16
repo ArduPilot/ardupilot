@@ -11,7 +11,7 @@
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <StorageManager/StorageManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_HAL::AnalogSource* ch;
 

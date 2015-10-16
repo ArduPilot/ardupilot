@@ -307,7 +307,10 @@ void HAL_PX4::init(int argc, char * const argv[]) const
     exit(1);
 }
 
-const HAL_PX4 AP_HAL_PX4;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_PX4 hal_px4;
+    return hal_px4;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
 

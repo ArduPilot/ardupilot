@@ -236,6 +236,9 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 }
 
-const HAL_Linux AP_HAL_Linux;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_Linux hal;
+    return hal;
+}
 
 #endif

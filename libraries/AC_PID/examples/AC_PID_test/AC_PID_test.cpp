@@ -38,7 +38,7 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // default PID values
 #define TEST_P 1.0f

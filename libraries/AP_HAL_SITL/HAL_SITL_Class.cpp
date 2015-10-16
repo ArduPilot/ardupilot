@@ -79,6 +79,9 @@ void HAL_SITL::init(int argc, char * const argv[]) const
     analogin->init(NULL);
 }
 
-const HAL_SITL AP_HAL_SITL;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_SITL hal;
+    return hal;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

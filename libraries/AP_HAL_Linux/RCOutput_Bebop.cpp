@@ -89,7 +89,7 @@ enum {
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 LinuxRCOutput_Bebop::LinuxRCOutput_Bebop():
     _i2c_sem(NULL),

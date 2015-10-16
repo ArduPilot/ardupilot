@@ -85,6 +85,9 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
     storage->init(NULL); // Uses EEPROM.*, flash_stm* copied from AeroQuad_v3.2
 }
 
-const HAL_FLYMAPLE AP_HAL_FLYMAPLE;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_FLYMAPLE hal;
+    return hal;
+}
 
 #endif

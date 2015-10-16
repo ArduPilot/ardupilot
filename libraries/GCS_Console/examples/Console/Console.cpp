@@ -21,7 +21,7 @@
 
 #include "simplegcs.h"
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void flush_console_to_statustext() {
     uint8_t data[50];

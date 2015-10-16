@@ -117,7 +117,7 @@ void Tracker::one_second_loop()
 AP_ADC_ADS7844 apm1_adc;
 #endif
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
 {

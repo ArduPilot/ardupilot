@@ -43,7 +43,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // INS and Baro declaration
 AP_InertialSensor ins;

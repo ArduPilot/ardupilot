@@ -339,7 +339,10 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
     exit(1);
 }
 
-const HAL_VRBRAIN AP_HAL_VRBRAIN;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_VRBRAIN hal_vrbrain;
+    return hal_vrbrain;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
