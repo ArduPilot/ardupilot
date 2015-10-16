@@ -5434,19 +5434,22 @@ bool NavEKF::calcGpsGoodToAlign(void)
         return true;
     }
 
+    if (lastGpsVelFail_ms == 0) {
+        // first time through, start with a failure
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF warmup");
+        lastGpsVelFail_ms = imuSampleTime_ms;
+    }
+
     // record time of fail
-    // assume  fail first time called
-    if (gpsVelFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
+    if (gpsVelFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
     // continuous period without fail required to return healthy
     if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
         return true;
-    } else {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF checking GPS");
-        return false;
     }
+    return false;
 }
 
 // report the reason for why the backend is refusing to initialise
