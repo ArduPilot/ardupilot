@@ -90,7 +90,7 @@ protected:
 
     bool logging_checks(bool report);
 
-    bool ins_checks(bool report);
+    virtual bool ins_checks(bool report);
 
     bool compass_checks(bool report);
 
