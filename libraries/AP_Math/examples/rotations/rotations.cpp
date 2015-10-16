@@ -37,7 +37,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static void print_vector(Vector3f &v)
 {

@@ -36,7 +36,7 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_SerialManager serial_manager;
 static RangeFinder sonar {serial_manager};

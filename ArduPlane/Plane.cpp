@@ -20,7 +20,7 @@
   constructor for main Plane class
  */
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Plane::Plane(void)
 {

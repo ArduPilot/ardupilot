@@ -15,7 +15,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <StorageManager/StorageManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Relay
 AP_Relay relay;

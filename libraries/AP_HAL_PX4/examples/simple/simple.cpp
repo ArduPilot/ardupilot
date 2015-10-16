@@ -39,7 +39,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup() {
 	hal.console->println_P(PSTR("hello world"));

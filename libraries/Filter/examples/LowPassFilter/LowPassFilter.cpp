@@ -13,7 +13,7 @@
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create a global instance of the class
 LowPassFilterFloat low_pass_filter;

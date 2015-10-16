@@ -15,7 +15,7 @@
 #include <AP_Math/AP_Math.h>
 #include <StorageManager/StorageManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void test_high_low_byte(void)
 {

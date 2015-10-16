@@ -16,7 +16,7 @@
 #include <Filter/ModeFilter.h>         // ModeFilter class (inherits from Filter class)
 #include <Filter/AverageFilter.h>      // AverageFilter class (inherits from Filter class)
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 int16_t rangevalue[] = {31000, 31000, 50, 55, 60, 55, 10, 0, 31000};
 

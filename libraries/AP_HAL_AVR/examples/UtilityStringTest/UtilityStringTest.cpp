@@ -11,7 +11,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_AVR/AP_HAL_AVR.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void test_snprintf_P() {
     char test[40];

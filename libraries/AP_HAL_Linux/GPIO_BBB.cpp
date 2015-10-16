@@ -17,7 +17,7 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 LinuxGPIO_BBB::LinuxGPIO_BBB()
 {}
 

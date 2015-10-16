@@ -30,7 +30,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static OpticalFlow optflow;
 

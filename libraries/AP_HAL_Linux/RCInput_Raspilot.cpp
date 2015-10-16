@@ -15,7 +15,7 @@
 
 #include "px4io_protocol.h"
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 using namespace Linux;
 

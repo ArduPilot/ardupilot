@@ -20,7 +20,7 @@ using namespace Linux;
 
 #define PWM_CHAN_COUNT 8
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void LinuxRCOutput_Raspilot::init(void* machtnicht)
 {

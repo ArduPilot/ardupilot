@@ -52,6 +52,9 @@ void HAL_Empty::init(int argc,char* const argv[]) const {
     _member->init();
 }
 
-const HAL_Empty AP_HAL_Empty;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_Empty hal;
+    return hal;
+}
 
 #endif

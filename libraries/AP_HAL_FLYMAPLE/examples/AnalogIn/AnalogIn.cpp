@@ -14,7 +14,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Expects pin 15 to be connected to board VCC 3.3V
 static AP_HAL::AnalogSource *vcc_pin;  // GPIO pin 15
