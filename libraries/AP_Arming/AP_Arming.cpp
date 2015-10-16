@@ -18,6 +18,9 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
+#define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
+#define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
@@ -348,6 +351,22 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     return true;
 }
 
+bool AP_Arming::board_voltage_checks(bool report)
+{
+    // check board voltage
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
+        if(!is_zero(hal.analogin->board_voltage()) &&
+           ((hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN) || (hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX))) {
+            if (report) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check Board Voltage"));
+            }
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
     bool ret = true;
@@ -365,6 +384,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     ret &= battery_checks(report);
     ret &= logging_checks(report);
     ret &= manual_transmitter_checks(report);
+    ret &= board_voltage_checks(report);
 
     return ret;
 }
