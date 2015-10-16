@@ -930,7 +930,7 @@ static void fast_loop()
     // check if we've landed or crashed
     update_land_and_crash_detectors();
 
-    update_motor_fail_detector();
+    //update_motor_fail_detector();
 
     gps_glitch_update();
 
