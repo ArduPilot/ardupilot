@@ -63,3 +63,29 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
 
     return ret;
 }
+
+bool AP_Arming_Plane::ins_checks(bool report)
+{
+    // call parent class checks
+    if (!AP_Arming::ins_checks(report)) {
+        return false;
+    }
+
+    // additional plane specific checks
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_INS)) {
+        if (!ahrs.healthy()) {
+            if (report) {
+                const char *reason = ahrs.prearm_failure_reason();
+                if (reason) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: %s"), reason);
+                } else {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: AHRS not healthy"));
+                }
+            }
+            return false;
+        }
+    }
+
+    return true;
+}
