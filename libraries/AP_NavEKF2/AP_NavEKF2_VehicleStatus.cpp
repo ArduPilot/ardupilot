@@ -312,11 +312,6 @@ void NavEKF2_core::detectFlight()
             onGround = false;
         }
 
-        // Determine if is is possible we are on the ground
-        if (highGndSpd || highAirSpd || largeHgtChange) {
-            inFlight = false;
-        }
-
         // Determine to a high certainty we are not flying
         // after 5 seconds of not detecting a possible flight condition or we are disarmed, we transition to on-ground mode
         if(!motorsArmed || ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
