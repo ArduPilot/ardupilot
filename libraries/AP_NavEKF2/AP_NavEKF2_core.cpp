@@ -393,8 +393,13 @@ void NavEKF2_core::UpdateFilter()
     perf_end(_perf_UpdateFilter);
 }
 
-// update the quaternion, velocity and position states using delayed IMU measurements
-// because the EKF is running on a delayed time horizon
+/*
+ * Update the quaternion, velocity and position states using delayed IMU measurements
+ * because the EKF is running on a delayed time horizon. Note that the quaternion is
+ * not used by the EKF equations, which instead estimate the error in the attitude of
+ * the vehicle when each observtion is fused. This attitude error is then used to correct
+ * the quaternion.
+*/
 void NavEKF2_core::UpdateStrapdownEquationsNED()
 {
     Vector3f delVelNav;  // delta velocity vector
@@ -525,8 +530,18 @@ void  NavEKF2_core::calcOutputStates() {
     while (imuStoreAccessIndex != fifoIndexNow);
 }
 
-// Propagate PVA solution forward from the fusion time horizon to the current time horizon
-// using simple observer. This also applies an LPF to fusion corrections
+/*
+ * Propagate PVA solution forward from the fusion time horizon to the current time horizon
+ * using simple observer which performs two functions:
+ * 1) Corrects for the delayed time horizon used by the EKF.
+ * 2) Applies a LPF to state corrections to prevent 'stepping' in states due to measurement
+ * fusion introducing unwanted noise into the control loops.
+ * The inspiration for using a complementary filter to correct for time delays in the EKF
+ * is based on the work by A Khosravian.
+ *
+ * “Recursive Attitude Estimation in the Presence of Multi-rate and Multi-delay Vector Measurements”
+ * A Khosravian, J Trumpf, R Mahony, T Hamel, Australian National University
+*/
 void  NavEKF2_core::calcOutputStatesFast() {
 
     // Calculate strapdown solution at the current time horizon
@@ -619,7 +634,11 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
 }
 
-// calculate the predicted state covariance matrix
+/*
+ * Calculate the predicted state covariance matrix using algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and otehr equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::CovariancePrediction()
 {
     perf_begin(_perf_CovariancePrediction);

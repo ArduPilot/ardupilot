@@ -148,8 +148,11 @@ void NavEKF2_core::SelectMagFusion()
     perf_end(_perf_FuseMagnetometer);
 }
 
-// fuse magnetometer measurements and apply innovation consistency checks
-// fuse each axis on consecutive time steps to spread computional load
+/*
+ * Fuse magnetometer measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::FuseMagnetometer()
 {
     // declarations
@@ -511,7 +514,11 @@ void NavEKF2_core::FuseMagnetometer()
 }
 
 
-// Fuse compass measurements usinga simple declination observation model that doesn't use magnetic field states
+/*
+ * Fuse compass measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::fuseCompass()
 {
     float q0 = stateStruct.quat[0];
