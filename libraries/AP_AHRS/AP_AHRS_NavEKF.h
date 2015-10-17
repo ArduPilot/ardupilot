@@ -179,6 +179,12 @@ public:
     //  returns true on success (i.e. the EKF knows it's latest position), false on failure
     bool get_location(struct Location &loc) const;
 
+    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accpeted by the filter
+    // boolean false is returned if variances are not available
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
     EKF_TYPE active_EKF_type(void) const;
