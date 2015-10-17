@@ -107,7 +107,7 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold

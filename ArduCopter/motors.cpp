@@ -644,7 +644,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
     Vector2f offset;
-    ahrs.get_NavEKF().getVariances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
+    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
     if (mag_variance.length() >= g.fs_ekf_thresh) {
         if (display_failure) {
             gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: EKF compass variance"));
