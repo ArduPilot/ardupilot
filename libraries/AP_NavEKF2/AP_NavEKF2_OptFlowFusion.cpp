@@ -275,8 +275,10 @@ void NavEKF2_core::EstimateTerrainOffset()
 }
 
 /*
-Fuse angular motion compensated optical flow rates into the main filter.
-Requires a valid terrain height estimate.
+ * Fuse angular motion compensated optical flow rates using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * Requires a valid terrain height estimate.
 */
 void NavEKF2_core::FuseOptFlow()
 {

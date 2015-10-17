@@ -26,7 +26,11 @@ extern const AP_HAL::HAL& hal;
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
 
-// fuse true airspeed measurements
+/*
+ * Fuse true airspeed measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::FuseAirspeed()
 {
     // start performance timer
@@ -273,7 +277,11 @@ void NavEKF2_core::SelectBetaFusion()
     }
 }
 
-// fuse sythetic sideslip measurement of zero
+/*
+ * Fuse sythetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+*/
 void NavEKF2_core::FuseSideslip()
 {
     // start performance timer
