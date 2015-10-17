@@ -146,8 +146,28 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
-        // otherwise make it flat
-        _dcm_matrix.from_euler(0, 0, 0);
+
+        // Use the measured accel due to gravity to calculate an initial
+        // roll and pitch estimate
+
+        // Get body frame accel vector
+        // TODO we should average accel readings over several cycles
+        Vector3f initAccVec;
+        initAccVec = _ins.get_accel();
+
+        // normalise the acceleration vector
+        if (initAccVec.length() > 5.0f) {
+            // calculate initial pitch angle
+            pitch = atan2f(initAccVec.x, pythagorous2(initAccVec.y, initAccVec.z));
+            // calculate initial roll angle
+            roll = atan2f(-initAccVec.y, -initAccVec.z);
+        } else {
+            // If we cant use the accel vector, then align flat
+            roll = 0.0f;
+            pitch = 0.0f;
+        }
+        _dcm_matrix.from_euler(roll, pitch, 0);
+
     }
 
     _last_startup_ms = hal.scheduler->millis();
