@@ -70,8 +70,9 @@ void NavEKF2_core::setWindMagStateLearningMode()
             ((frontend._magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
             (frontend._magCal == 4); // all the time
 
-    // Deny mag calibration request if we aren't using the compass or it has been inhibited by the user
-    bool magCalDenied = !use_compass() || (frontend._magCal == 2);
+    // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user, or we do not have an absolute position reference
+    // If we do nto have absolute position (eg GPS) then the earth field states cannot be learned
+    bool magCalDenied = !use_compass() || (frontend._magCal == 2) || (PV_AidingMode != AID_ABSOLUTE);
 
     // Inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
