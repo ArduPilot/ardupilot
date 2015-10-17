@@ -603,7 +603,7 @@ void Copter::pre_arm_rc_checks()
 bool Copter::pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
-    if(!ahrs.get_NavEKF().healthy()) {
+    if(!ahrs.healthy()) {
         if (display_failure) {
             gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Waiting for Nav Checks"));
         }
