@@ -124,7 +124,7 @@ void NavEKF2_core::setAidingMode()
             stateStruct.position.z = -meaHgtAtTakeOff;
         } else if (frontend._fusionModeGPS == 3) {
             // We have commenced aiding, but GPS useage has been prohibited so use optical flow only
-            hal.console->printf("EKF is using optical flow\n");
+            hal.console->printf("EKF2 is using optical flow\n");
             PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
             posTimeout = true;
             velTimeout = true;
@@ -134,7 +134,7 @@ void NavEKF2_core::setAidingMode()
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else {
             // We have commenced aiding and GPS useage is allowed
-            hal.console->printf("EKF is using GPS\n");
+            hal.console->printf("EKF2 is using GPS\n");
             PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
             posTimeout = false;
             velTimeout = false;
@@ -170,7 +170,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
         tiltAlignComplete = true;
-        hal.console->printf("EKF tilt alignment complete\n");
+        hal.console->printf("EKF2 tilt alignment complete\n");
     }
 
     // Once tilt has converged, align yaw using magnetic field measurements
@@ -180,7 +180,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
         stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         StoreQuatReset();
         yawAlignComplete = true;
-        hal.console->printf("EKF yaw alignment complete\n");
+        hal.console->printf("EKF2 yaw alignment complete\n");
     }
 }
 
@@ -245,7 +245,7 @@ void NavEKF2_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    hal.console->printf("EKF Origin Set\n");
+    hal.console->printf("EKF2 Origin Set\n");
 }
 
 // Commands the EKF to not use GPS.
