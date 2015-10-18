@@ -25,8 +25,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-extern const AP_HAL::HAL& hal;
-
 /*
   constructor
  */

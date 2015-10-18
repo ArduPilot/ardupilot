@@ -3,8 +3,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_HIL.h"
 
-const extern AP_HAL::HAL& hal;
-
 AP_InertialSensor_HIL::AP_InertialSensor_HIL(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu)
 {

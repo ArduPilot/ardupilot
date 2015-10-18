@@ -5,8 +5,6 @@
  * only have access to the average from the ADC driver. Not really a big deal
  * in our application currently. */
 
-extern const AP_HAL::HAL& hal;
-
 float AP_ADC_AnalogSource::read_latest() {
     return read_average();
 }

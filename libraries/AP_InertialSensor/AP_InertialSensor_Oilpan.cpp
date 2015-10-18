@@ -6,8 +6,6 @@
 #include "AP_InertialSensor_Oilpan.h"
 #include <AP_ADC/AP_ADC.h>
 
-const extern AP_HAL::HAL& hal;
-
 // this driver assumes an AP_ADC object has been declared globally
 extern AP_ADC_ADS7844 apm1_adc;
 

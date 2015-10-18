@@ -24,8 +24,6 @@
 #include "GCS.h"
 #include "MAVLink_routing.h"
 
-extern const AP_HAL::HAL& hal;
-
 #define ROUTING_DEBUG 0
 
 // constructor

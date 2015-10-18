@@ -27,8 +27,6 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-extern const AP_HAL::HAL& hal;
-
 #define MAX_OVERFLOW    ((1 << 16) - 1)
 
 void FLYMAPLERCOutput::init(void* machtnichts) {}

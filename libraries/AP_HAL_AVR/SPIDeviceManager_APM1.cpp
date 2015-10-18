@@ -9,8 +9,6 @@
 #include "utility/pins_arduino_mega.h"
 using namespace AP_HAL_AVR;
 
-extern const AP_HAL::HAL& hal;
-
 void APM1SPIDeviceManager::init(void* machtnichts) {
     /* dataflow cs is on arduino pin 53, PORTB0 */
     AVRDigitalSource* df_cs = new AVRDigitalSource(_BV(0), PB);

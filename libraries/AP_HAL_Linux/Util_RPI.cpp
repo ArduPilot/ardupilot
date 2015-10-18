@@ -12,8 +12,6 @@
 
 #include "Util_RPI.h"
 
-extern const AP_HAL::HAL& hal;
-
 using namespace Linux;
 
 LinuxUtilRPI::LinuxUtilRPI()

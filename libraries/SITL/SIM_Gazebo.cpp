@@ -22,8 +22,6 @@
 #include "SIM_Gazebo.h"
 #include <stdio.h>
 
-extern const AP_HAL::HAL& hal;
-
 /*
   constructor
  */
