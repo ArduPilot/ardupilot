@@ -735,8 +735,6 @@ private:
     imu_elements imuDataNew;        // IMU data at the current time horizon
     uint8_t fifoIndexNow;           // Global index for inertial and output solution at current time horizon
     uint8_t fifoIndexDelayed;       // Global index for inertial and output solution at delayed/fusion time horizon
-    uint32_t hgtMeasTime_ms;        // Effective measurement time of last received height measurement
-    uint32_t magMeasTime_ms;        // Effective measurement time of last received magnetometer measurement
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     uint8_t baroStoreIndex;         // Baro data storage index

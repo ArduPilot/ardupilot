@@ -121,6 +121,8 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
         ofDataNew.time_ms = roundToNearest(ofDataNew.time_ms, frontend.fusionTimeStep_ms);
+        // Prevent time delay exceeding age of oldest IMU data in the buffer
+        ofDataNew.time_ms = max(ofDataNew.time_ms,imuDataDelayed.time_ms);
         // Save data to buffer
         StoreOF();
         // Check for data at the fusion time horizon
@@ -194,11 +196,11 @@ void NavEKF2_core::readMagData()
         lastMagUpdate_ms = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
-        magMeasTime_ms = imuSampleTime_ms - frontend.magDelay_ms;
+        magDataNew.time_ms = imuSampleTime_ms - frontend.magDelay_ms;
 
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        magMeasTime_ms = roundToNearest(magMeasTime_ms, frontend.fusionTimeStep_ms);
+        magDataNew.time_ms = roundToNearest(magDataNew.time_ms, frontend.fusionTimeStep_ms);
 
         // read compass data and scale to improve numerical conditioning
         magDataNew.mag = _ahrs->get_compass()->get_field() * 0.001f;
@@ -220,7 +222,6 @@ void NavEKF2_core::readMagData()
         }
 
         // save magnetometer measurement to buffer to be fused later
-        magDataNew.time_ms = magMeasTime_ms;
         StoreMag();
     }
 }
@@ -369,6 +370,9 @@ void NavEKF2_core::readGpsData()
             // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
             gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
 
+            // Prevent time delay exceeding age of oldest IMU data in the buffer
+            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
@@ -509,6 +513,8 @@ void NavEKF2_core::readGpsData()
             // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
             // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
             gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
+            // Prevent time delay exceeding age of oldest IMU data in the buffer
+            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
             // save measurement to buffer to be fused later
             StoreGPS();
         }
@@ -645,14 +651,16 @@ void NavEKF2_core::readHgtData()
         lastHgtReceived_ms = _baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        hgtMeasTime_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
+        baroDataNew.time_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
 
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        hgtMeasTime_ms = roundToNearest(hgtMeasTime_ms, frontend.fusionTimeStep_ms);
+        baroDataNew.time_ms = roundToNearest(baroDataNew.time_ms, frontend.fusionTimeStep_ms);
+
+        // Prevent time delay exceeding age of oldest IMU data in the buffer
+        baroDataNew.time_ms = max(baroDataNew.time_ms,imuDataDelayed.time_ms);
 
         // save baro measurement to buffer to be fused later
-        baroDataNew.time_ms = hgtMeasTime_ms;
         StoreBaro();
     }
 }
