@@ -582,6 +582,9 @@ private:
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
     void fuseCompass();
 
+    // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
+    void FuseDeclination();
+
     // Calculate compass heading innovation
     float calcMagHeadingInnov();
 

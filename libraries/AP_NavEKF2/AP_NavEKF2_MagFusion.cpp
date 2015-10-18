@@ -139,6 +139,11 @@ void NavEKF2_core::SelectMagFusion()
             magHealth = true;
             magTimeout = false;
         } else {
+            // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
+            // maintained by fusing declination as a synthesised observation
+            if (PV_AidingMode != AID_ABSOLUTE) {
+                FuseDeclination();
+            }
             // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) FuseMagnetometer();
         }
@@ -631,6 +636,128 @@ void NavEKF2_core::fuseCompass()
     ConstrainVariances();
 }
 
+/*
+ * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * This is used to prevent the declination of the EKF earth field states from drifting during peraton without GPS
+ * or some other absolute position or velocity reference
+*/
+void NavEKF2_core::FuseDeclination()
+{
+    // declination error variance (rad^2)
+    const float R_DECL = 1e-2f;
+
+    // copy required states to local variables
+    float magN = stateStruct.earth_magfield.x;
+    float magE = stateStruct.earth_magfield.y;
+
+    // prevent bad earth field states from causing numerical errors or exceptions
+    if (magN < 1e-3f) {
+        return;
+    }
+
+    // Calculate observation Jacobian and Kalman gains
+    float t2 = 1.0f/magN;
+    float t4 = magE*t2;
+    float t3 = tanf(t4);
+    float t5 = t3*t3;
+    float t6 = t5+1.0;
+    float t7 = 1.0f/(magN*magN);
+    float t8 = P[17][17]*t2*t6;
+    float t15 = P[16][17]*magE*t6*t7;
+    float t9 = t8-t15;
+    float t10 = t2*t6*t9;
+    float t11 = P[17][16]*t2*t6;
+    float t16 = P[16][16]*magE*t6*t7;
+    float t12 = t11-t16;
+    float t17 = magE*t6*t7*t12;
+    float t13 = R_DECL+t10-t17;
+    float t14 = 1.0/t13;
+    float t18 = magE;
+    float t19 = magN;
+    float t21 = 1.0f/t19;
+    float t22 = t18*t21;
+    float t20 = tanf(t22);
+    float t23 = t20*t20;
+    float t24 = t23+1.0;
+
+    float H_MAG[24];
+    H_MAG[16] = -t18*1.0/(t19*t19)*t24;
+    H_MAG[17] = t21*t24;
+
+    for (uint8_t i=0; i<=15; i++) {
+        Kfusion[i] = t14*(P[i][17]*t2*t6-P[i][16]*magE*t6*t7);
+    }
+    Kfusion[16] = -t14*(t16-P[16][17]*t2*t6);
+    Kfusion[17] = t14*(t8-P[17][16]*magE*t6*t7);
+    for (uint8_t i=17; i<=23; i++) {
+        Kfusion[i] = t14*(P[i][17]*t2*t6-P[i][16]*magE*t6*t7);
+    }
+
+    // get the magnetic declination
+    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+
+    // Calculate the innovation
+    float innovation = atanf(t4) - magDecAng;
+
+    // limit the innovation to protect against data errors
+    if (innovation > 0.5f) {
+        innovation = 0.5f;
+    } else if (innovation < -0.5f) {
+        innovation = -0.5f;
+    }
+
+    // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
+    stateStruct.angErr.zero();
+
+    // correct the state vector
+    for (uint8_t j= 0; j<=stateIndexLim; j++) {
+        statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
+    }
+
+    // the first 3 states represent the angular misalignment vector. This is
+    // is used to correct the estimated quaternion on the current time step
+    stateStruct.quat.rotate(stateStruct.angErr);
+
+    // correct the covariance P = (I - K*H)*P
+    // take advantage of the empty columns in KH to reduce the
+    // number of operations
+    for (uint8_t i = 0; i<=stateIndexLim; i++) {
+        for (uint8_t j = 0; j<=15; j++) {
+            KH[i][j] = 0.0f;
+        }
+        for (uint8_t j = 16; j<=17; j++) {
+            if (!inhibitMagStates) {
+                KH[i][j] = Kfusion[i] * H_MAG[j];
+            } else {
+                KH[i][j] = 0.0f;
+            }
+        }
+        for (uint8_t j = 18; j<=23; j++) {
+            KH[i][j] = 0.0f;
+        }
+    }
+    for (uint8_t i = 0; i<=stateIndexLim; i++) {
+        for (uint8_t j = 0; j<=stateIndexLim; j++) {
+            KHP[i][j] = 0;
+            for (uint8_t k = 16; k<=17; k++) {
+                KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
+            }
+        }
+    }
+    for (uint8_t i = 0; i<=stateIndexLim; i++) {
+        for (uint8_t j = 0; j<=stateIndexLim; j++) {
+            P[i][j] = P[i][j] - KHP[i][j];
+        }
+    }
+
+    // force the covariance matrix to be symmetrical and limit the variances to prevent
+    // ill-condiioning.
+    ForceSymmetry();
+    ConstrainVariances();
+
+}
 
 // Calculate magnetic heading innovation
 float NavEKF2_core::calcMagHeadingInnov()
