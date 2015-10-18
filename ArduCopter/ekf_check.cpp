@@ -141,7 +141,7 @@ void Copter::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (!set_mode(ALT_HOLD)) {
+            if (failsafe.radio || !set_mode(ALT_HOLD)) {
                 set_mode_land_with_pause();
             }
             break;
