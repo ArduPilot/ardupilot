@@ -114,6 +114,10 @@ void NavEKF2_core::SelectMagFusion()
     // start performance timer
     perf_begin(_perf_FuseMagnetometer);
 
+    // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
+    // used for load levelling
+    magFusePerformed = false;
+
     // check for and read new magnetometer measurements
     readMagData();
 

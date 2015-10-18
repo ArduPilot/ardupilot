@@ -29,6 +29,12 @@ extern const AP_HAL::HAL& hal;
 // select fusion of optical flow measurements
 void NavEKF2_core::SelectFlowFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    if (magFusePerformed && dtIMUavg < 0.005f) {
+        return;
+    }
+
     // start performance timer
     perf_begin(_perf_FuseOptFlow);
     // Perform Data Checks
