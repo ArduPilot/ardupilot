@@ -498,6 +498,7 @@ private:
     void calcPosDownDerivative();
 
     // EKF Mavlink Tuneable Parameters
+    AP_Int8  _enable;               // zero to disable EKF1
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m

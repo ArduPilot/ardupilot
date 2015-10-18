@@ -390,6 +390,14 @@ const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
     // @Bitmask: 0:NSats,1:HDoP,2:speed error,3:horiz pos error,4:yaw error,5:pos drift,6:vert speed,7:horiz speed
     // @User: Advanced
     AP_GROUPINFO("GPS_CHECK",    33, NavEKF, _gpsCheck, 31),
+
+    // @Param: ENABLE
+    // @DisplayName: Enable EKF1
+    // @Description: This enables EKF1 to be disabled when using alternative algorithms. When disabling it, the alternate EKF2 estimator must be enabled by setting EK2_ENABLED = 1 and flight control algorithms must be set to use the alternative estimator by setting AHRS_EKF_TYPE = 2.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE", 34, NavEKF, _enable, 1),
+
     AP_GROUPEND
 };
 
@@ -541,6 +549,11 @@ void NavEKF::ResetHeight(void)
 // it should NOT be used to re-initialise after a timeout as DCM will also be corrupted
 bool NavEKF::InitialiseFilterDynamic(void)
 {
+    // Don't start if the user has disabled
+    if (_enable == 0) {
+        return false;
+    }
+
     // this forces healthy() to be false so that when we ask for ahrs
     // attitude we get the DCM attitude regardless of the state of AHRS_EKF_USE
     statesInitialised = false;
