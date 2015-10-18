@@ -402,7 +402,7 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(2),            // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(20)           // The nominal number of msec between covariance prediction and fusion operations
+    fusionTimeStep_ms(10)           // The nominal number of msec between covariance prediction and fusion operations
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
