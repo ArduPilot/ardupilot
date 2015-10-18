@@ -527,6 +527,9 @@ void NavEKF2_core::FuseMagnetometer()
  * Fuse compass measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computatonally cheaper.
+ * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
+ * It is not as robust to magneometer failures.
 */
 void NavEKF2_core::fuseCompass()
 {
@@ -644,7 +647,7 @@ void NavEKF2_core::fuseCompass()
  * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
- * This is used to prevent the declination of the EKF earth field states from drifting during peraton without GPS
+ * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
  * or some other absolute position or velocity reference
 */
 void NavEKF2_core::FuseDeclination()
