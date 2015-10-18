@@ -266,6 +266,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
+    hal.console->printf("EKF2 initialised\n");
+
     return true;
 }
 
