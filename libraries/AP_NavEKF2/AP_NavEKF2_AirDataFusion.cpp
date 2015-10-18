@@ -198,6 +198,12 @@ void NavEKF2_core::FuseAirspeed()
 // select fusion of true airspeed measurements
 void NavEKF2_core::SelectTasFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    if (magFusePerformed && dtIMUavg < 0.005f) {
+        return;
+    }
+
     // get true airspeed measurement
     readAirSpdData();
 
@@ -262,6 +268,12 @@ bool NavEKF2_core::RecallTAS()
 // it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
 void NavEKF2_core::SelectBetaFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    if (magFusePerformed && dtIMUavg < 0.005f) {
+        return;
+    }
+
     // set true when the fusion time interval has triggered
     bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend.betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position

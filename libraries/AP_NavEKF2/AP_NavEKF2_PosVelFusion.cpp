@@ -110,6 +110,12 @@ bool NavEKF2_core::resetHeightDatum(void)
 // select fusion of velocity, position and height measurements
 void NavEKF2_core::SelectVelPosFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    if (magFusePerformed && dtIMUavg < 0.005f) {
+        return;
+    }
+
     // check for and read new GPS data
     readGpsData();
 

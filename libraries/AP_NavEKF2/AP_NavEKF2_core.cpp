@@ -369,14 +369,14 @@ void NavEKF2_core::UpdateFilter()
     // Read range finder data which is used by both position and optical flow fusion
     readRangeFinder();
 
+    // Update states using  magnetometer data
+    SelectMagFusion();
+
     // Update states using GPS and altimeter data
     SelectVelPosFusion();
 
     // Update states using optical flow data
     SelectFlowFusion();
-
-    // Update states using  magnetometer data
-    SelectMagFusion();
 
     // Update states using airspeed data
     SelectTasFusion();
