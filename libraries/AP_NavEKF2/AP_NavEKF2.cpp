@@ -156,7 +156,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: GPS_DELAY
     // @DisplayName: GPS measurement delay (msec)
     // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements.
-    // @Range: 0 500
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: HGT_DELAY
     // @DisplayName: Height measurement delay (msec)
     // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
-    // @Range: 0 500
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -290,7 +290,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 - 500
+    // @Range: 0 - 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
