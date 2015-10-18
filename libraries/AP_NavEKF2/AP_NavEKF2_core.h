@@ -42,6 +42,18 @@
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
 
+/*
+ * IMU FIFO buffer length depends on the IMU update rate being used and the maximum sensor delay
+ * Samples*delta_time must be > max sensor delay
+*/
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define IMU_BUFFER_LENGTH       104 // maximum 260 msec delay at 400 Hz
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
+#else
+#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
+#endif
+
 class AP_AHRS;
 
 class NavEKF2_core
@@ -599,9 +611,10 @@ private:
     // Round to the nearest multiple of a integer
     uint32_t roundToNearest(uint32_t dividend, uint32_t divisor );
 
-    // measurement buffer sizes
-    static const uint32_t IMU_BUFFER_LENGTH = 100;  // number of IMU samples stored in the buffer. Samples*delta_time must be > max sensor delay
-    static const uint32_t OBS_BUFFER_LENGTH = 5;    // number of non-IMU sensor samples stored in the buffer.
+    // Length of FIFO buffers used for non-IMU sensor data.
+    // Must be larger than the maximum number of sensor samples that will arrive during the time period defined by IMU_BUFFER_LENGTH
+    // OBS_BUFFER_LENGTH > IMU_BUFFER_LENGTH * dtIMUavg * 'max sensor rate'
+    static const uint32_t OBS_BUFFER_LENGTH = 5;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
