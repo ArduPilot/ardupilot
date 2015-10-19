@@ -7,7 +7,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "HAL_SITL_Class.h"
-#include "AP_HAL_SITL_Main.h"
 
 #endif // CONFIG_HAL_BOARD
 
