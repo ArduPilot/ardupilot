@@ -436,6 +436,43 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
+// send an GPS_STATUS_REPORT message to GCS
+void NavEKF2_core::send_gps_accuracy(mavlink_channel_t chan)
+{
+    /* send at 1Hz after the GPS shows up */
+    if(_ahrs->get_gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        return;
+    }
+    uint32_t now = hal.scheduler->millis();
+    if(now - lastGpsAccuracySendTime_ms < 1000) {
+        return;
+    }
+    lastGpsAccuracySendTime_ms = now;
+    float hAcc = -1.0f;
+    _ahrs->get_gps().horizontal_accuracy(hAcc);
+
+    uint16_t checkMask = 
+        (gpsCheckStatus.bad_hAcc) |
+        (gpsCheckStatus.bad_sAcc << 1) |
+        (gpsCheckStatus.bad_horiz_vel << 2) |
+        (gpsCheckStatus.bad_vert_vel << 3) |
+        (gpsCheckStatus.bad_horiz_drift << 4) |
+        (gpsCheckStatus.bad_yaw  << 5) |
+        (gpsCheckStatus.bad_sats << 6) |
+        (gpsCheckStatus.bad_VZ   << 7) |
+        (gpsCheckStatus.bad_hdop << 8) |
+        (gpsCheckStatus.bad_fix  << 9);
+
+    mavlink_msg_gps_accuracy_send(chan,
+        _ahrs->get_gps().primary_sensor(),
+        hAcc,
+        gpsSpdAccuracy,
+        gpsHorizVelFilt,
+        gpsVertVelFilt,
+        gpsDriftNE,
+        checkMask);
+}
+
 // send an EKF_STATUS message to GCS
 void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 {

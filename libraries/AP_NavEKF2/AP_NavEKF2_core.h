@@ -220,6 +220,9 @@ public:
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
 
+    // send GPS status report
+    void send_gps_accuracy(mavlink_channel_t chan);
+
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -663,6 +666,7 @@ private:
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint32_t lastTimeGpsReceived_ms;// last time we recieved GPS data
+    uint32_t lastGpsAccuracySendTime_ms; //time of last gps report sent to GCS
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxilliary filter was run to fuse range or optical flow measurements
     uint32_t secondLastGpsTime_ms;  // time of second last GPS fix used to determine how long since last update
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy

@@ -264,6 +264,9 @@ public:
     */
     void  getFilterGpsStatus(nav_gps_status &status) const;
 
+    // send an GPS_STATUS_REPORT message to GCS
+    void send_gps_accuracy(mavlink_channel_t chan);
+
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
 
@@ -662,6 +665,7 @@ private:
     uint32_t secondLastFixTime_ms;  // time of second last GPS fix used to determine how long since last update
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
+    uint32_t lastGpsAccuracySendTime_ms; //time of last gps report sent to GCS
     Vector3f lastAngRate;           // angular rate from previous IMU sample used for trapezoidal integrator
     Vector3f lastAccel1;            // acceleration from previous IMU1 sample used for trapezoidal integrator
     Vector3f lastAccel2;            // acceleration from previous IMU2 sample used for trapezoidal integrator

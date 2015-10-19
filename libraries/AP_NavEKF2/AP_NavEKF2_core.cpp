@@ -76,6 +76,7 @@ void NavEKF2_core::InitialiseVariables()
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
+    lastGpsAccuracySendTime_ms = 0;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;

@@ -777,6 +777,14 @@ void NavEKF2::send_status_report(mavlink_channel_t chan)
     }
 }
 
+// send GPS status report
+void NavEKF2::send_gps_accuracy(mavlink_channel_t chan)
+{
+    if (core) {
+        core->send_gps_accuracy(chan);
+    }
+}
+
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
