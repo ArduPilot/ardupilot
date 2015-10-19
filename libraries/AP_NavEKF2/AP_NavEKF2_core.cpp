@@ -53,6 +53,16 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
     _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EK2_FuseOptFlow"))
 #endif
 {
+    _perf_test[0] = perf_alloc(PC_ELAPSED, "EK2_Test0");
+    _perf_test[1] = perf_alloc(PC_ELAPSED, "EK2_Test1");
+    _perf_test[2] = perf_alloc(PC_ELAPSED, "EK2_Test2");
+    _perf_test[3] = perf_alloc(PC_ELAPSED, "EK2_Test3");
+    _perf_test[4] = perf_alloc(PC_ELAPSED, "EK2_Test4");
+    _perf_test[5] = perf_alloc(PC_ELAPSED, "EK2_Test5");
+    _perf_test[6] = perf_alloc(PC_ELAPSED, "EK2_Test6");
+    _perf_test[7] = perf_alloc(PC_ELAPSED, "EK2_Test7");
+    _perf_test[8] = perf_alloc(PC_ELAPSED, "EK2_Test8");
+    _perf_test[9] = perf_alloc(PC_ELAPSED, "EK2_Test9");
 }
 
 /********************************************************

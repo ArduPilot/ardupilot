@@ -921,6 +921,7 @@ private:
     perf_counter_t  _perf_FuseSideslip;
     perf_counter_t  _perf_TerrainOffset;
     perf_counter_t  _perf_FuseOptFlow;
+    perf_counter_t  _perf_test[10];
 #endif
 
     // should we assume zero sideslip?
