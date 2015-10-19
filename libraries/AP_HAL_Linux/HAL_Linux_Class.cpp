@@ -1,6 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
+#include <assert.h>
+
 #include "HAL_Linux_Class.h"
 #include "AP_HAL_Linux_Private.h"
 
@@ -234,6 +236,23 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     uartE->begin(115200);    
     analogin->init(NULL);
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
+}
+
+void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+
+    init(argc, argv);
+
+    // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
+    // deadlock, and infinite loop in setup()") for details about the
+    // order of scheduler initialize and setup on Linux.
+    scheduler->system_initialized();
+    callbacks->setup();
+
+    for (;;) {
+        callbacks->loop();
+    }
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
