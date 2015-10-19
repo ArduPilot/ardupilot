@@ -908,19 +908,4 @@ void Plane::update_optical_flow(void)
 }
 #endif
 
-/*
-  compatibility with old pde style build
- */
-void setup(void);
-void loop(void);
-
-void setup(void)
-{
-    plane.setup();
-}
-void loop(void)
-{
-    plane.loop();
-}
-
-AP_HAL_MAIN();
+AP_HAL_MAIN_CALLBACKS(&plane);
