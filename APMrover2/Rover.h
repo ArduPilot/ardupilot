@@ -73,13 +73,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include "compat.h"
 
 #include <AP_Notify/AP_Notify.h>      // Notify library
@@ -97,16 +90,16 @@
 
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 
-class Rover {
+class Rover : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
 
     Rover(void);
 
-    // public member functions
-    void setup(void);
-    void loop(void);
+    // HAL::Callbacks implementation.
+    void setup(void) override;
+    void loop(void) override;
 
 private:
     AP_HAL::BetterStream* cliSerial;
