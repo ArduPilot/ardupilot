@@ -236,7 +236,7 @@ static void usage(void)
 }
 
 
-void HAL_VRBRAIN::init(int argc, char * const argv[]) const
+void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     int i;
     const char *deviceA = UARTA_DEFAULT_DEVICE;
@@ -250,6 +250,9 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
         usage();
         exit(1);
     }
+
+    assert(callbacks);
+    g_callbacks = callbacks;
 
     for (i=0; i<argc; i++) {
         if (strcmp(argv[i], "start") == 0) {
@@ -339,13 +342,6 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
  
     usage();
     exit(1);
-}
-
-void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
-{
-    assert(callbacks);
-    g_callbacks = callbacks;
-    init(argc, argv);
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
