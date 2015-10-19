@@ -21,10 +21,6 @@
 #include <fenv.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
@@ -206,14 +202,15 @@ void ReplayVehicle::setup(void)
     ins.set_hil_mode();
 }
 
-class Replay {
+class Replay : public AP_HAL::HAL::Callbacks {
 public:
-    void setup();
-    void loop();
-
     Replay(ReplayVehicle &vehicle) :
         filename("log.bin"),
         _vehicle(vehicle) { }
+
+    // HAL::Callbacks implementation.
+    void setup() override;
+    void loop() override;
 
     void flush_dataflash(void);
 
@@ -1095,19 +1092,4 @@ void Replay::report_checks(void)
     }
 }
 
-/*
-  compatibility with old pde style build
- */
-void setup(void);
-void loop(void);
-
-void setup(void)
-{
-    replay.setup();
-}
-void loop(void)
-{
-    replay.loop();
-}
-
-AP_HAL_MAIN();
+AP_HAL_MAIN_CALLBACKS(&replay);
