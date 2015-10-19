@@ -295,6 +295,7 @@ public:
         float last_declination;
         Vector3f field;
         AP_Buffer<Vector3f,10> field_buffer;
+        AP_Buffer<uint32_t,10> field_time_us;
     } _hil;
 
 private:

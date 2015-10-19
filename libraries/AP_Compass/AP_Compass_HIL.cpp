@@ -74,21 +74,22 @@ void AP_Compass_HIL::accumulate(void)
 {
   while (_compass._hil.field_buffer.is_empty() == false){
     Vector3f raw_field;
+    uint32_t time_us = 0;
 
     _compass._hil.field_buffer.pop_front(raw_field);
+    _compass._hil.field_time_us.pop_front(time_us);
 
-    //uint32_t time_us = (uint32_t)mag_report.timestamp;
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    //publish_raw_field(raw_field, time_us, frontend_instance);
+    publish_raw_field(raw_field, time_us, _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
     // publish raw_field (corrected point sample) for EKF use
-    //publish_unfiltered_field(raw_field, time_us, frontend_instance);
+    publish_unfiltered_field(raw_field, time_us, _compass_instance);
 
     // accumulate into averaging filter
     _sum += raw_field;

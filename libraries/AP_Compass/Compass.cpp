@@ -733,6 +733,7 @@ void Compass::setHIL(const Vector3f &mag)
 {
     _hil.field = mag;
     _hil.field_buffer.push_back(mag);
+    _hil.field_time_us.push_back(hal.scheduler->micros());
 }
 
 const Vector3f& Compass::getHIL() const {
