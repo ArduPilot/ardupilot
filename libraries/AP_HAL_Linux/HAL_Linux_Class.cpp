@@ -171,8 +171,10 @@ void _usage(void)
     printf("\t                   -t /var/APM/terrain\n");
 }
 
-void HAL_Linux::init(int argc,char* const argv[]) const 
+void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
+    assert(callbacks);
+
     int opt;
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
@@ -236,13 +238,6 @@ void HAL_Linux::init(int argc,char* const argv[]) const
     uartE->begin(115200);    
     analogin->init(NULL);
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
-}
-
-void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
-{
-    assert(callbacks);
-
-    init(argc, argv);
 
     // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
     // deadlock, and infinite loop in setup()") for details about the
