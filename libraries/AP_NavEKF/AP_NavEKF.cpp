@@ -6,6 +6,8 @@
 
 #pragma GCC optimize("O3")
 
+// #define EKF_DISABLE_INTERRUPTS 1
+
 /*
   optionally turn down optimisation for debugging
  */
@@ -707,6 +709,9 @@ void NavEKF::UpdateFilter()
     }
 
     // start the timer used for load measurement
+#if EKF_DISABLE_INTERRUPTS
+    irqstate_t istate = irqsave();
+#endif
     perf_begin(_perf_UpdateFilter);
 
     //get starting time for update step
@@ -722,9 +727,8 @@ void NavEKF::UpdateFilter()
     // gyro auto-zero has likely just been done - skip this timestep
     if (!prev_armed && dtIMUactual > dtIMUavg*5.0f) {
         // stop the timer used for load measurement
-        perf_end(_perf_UpdateFilter);
         prev_armed = armed;
-        return;
+        goto end;
     }
     prev_armed = armed;
 
@@ -738,8 +742,7 @@ void NavEKF::UpdateFilter()
         //Initialise IMU pre-processing states
         readIMUData();
         // stop the timer used for load measurement
-        perf_end(_perf_UpdateFilter);
-        return;
+        goto end;
     }
 
     // check if on ground
@@ -777,8 +780,12 @@ void NavEKF::UpdateFilter()
     SelectTasFusion();
     SelectBetaFusion();
 
+end:
     // stop the timer used for load measurement
     perf_end(_perf_UpdateFilter);
+#if EKF_DISABLE_INTERRUPTS
+    irqrestore(istate);
+#endif
 }
 
 // select fusion of velocity, position and height measurements
