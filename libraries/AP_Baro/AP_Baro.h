@@ -7,6 +7,7 @@
 #include <AP_Param.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
+#include <AP_Buffer.h>
 
 // maximum number of sensor instances
 #if HAL_CPU_CLASS == HAL_CPU_CLASS_16
@@ -116,6 +117,12 @@ public:
 
     // HIL (and SITL) interface, setting pressure and temperature
     void setHIL(uint8_t instance, float pressure, float temperature);
+
+    // HIL variables
+    struct {
+        AP_Buffer<float,10> press_buffer;
+        AP_Buffer<float,10> temp_buffer;
+    } _hil;
 
     // register a new sensor, claiming a sensor slot. If we are out of
     // slots it will panic

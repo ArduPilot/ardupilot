@@ -66,7 +66,30 @@ void AP_Baro::setHIL(uint8_t instance, float pressure, float temperature)
         // invalid
         return;
     }
-    sensors[instance].pressure = pressure;
-    sensors[instance].temperature = temperature;
-    sensors[instance].last_update_ms = hal.scheduler->millis();
+    _hil.press_buffer.push_back(pressure);
+    _hil.temp_buffer.push_back(temperature);
+}
+
+// Read the sensor
+void AP_Baro_HIL::update(void)
+{
+    float pressure = 0.0;
+    float temperature = 0.0;
+    float pressure_sum = 0.0;
+    float temperature_sum = 0.0;
+    uint32_t sum_count = 0;
+
+    while (_frontend._hil.press_buffer.is_empty() == false){
+        _frontend._hil.press_buffer.pop_front(pressure);
+        pressure_sum += pressure; // Pressure in Pascals
+        _frontend._hil.temp_buffer.pop_front(temperature);
+        temperature_sum += temperature; // degrees celcius
+        sum_count++;
+    }
+
+    if (sum_count > 0) {
+        pressure_sum /= (float)sum_count;
+        temperature_sum /= (float)sum_count;
+        _copy_to_frontend(0, pressure_sum, temperature_sum);
+    }
 }
