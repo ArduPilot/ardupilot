@@ -9,7 +9,6 @@
 class HAL_Linux : public AP_HAL::HAL {
 public:
     HAL_Linux();
-    void init(int argc, char * const * argv) const;
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 };
 
