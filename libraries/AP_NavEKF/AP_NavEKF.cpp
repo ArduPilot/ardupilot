@@ -109,7 +109,7 @@ extern const AP_HAL::HAL& hal;
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // maximum gyro bias in rad/sec that can be compensated for
-#define MAX_GYRO_BIAS 0.1f
+#define MAX_GYRO_BIAS 0.1745f
 
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
@@ -4124,6 +4124,11 @@ void NavEKF::ConstrainStates()
     state.position.z = constrain_float(state.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit ~6 deg/sec (this needs to be set based on manufacturers specs)
     for (uint8_t i=10; i<=12; i++) states[i] = constrain_float(states[i],-0.1f*dtIMUavg,0.1f*dtIMUavg);
+    // when the vehicle arms we adjust the limits so that in flight the bias can change by the same amount in either direction
+    float delAngBiasLim = MAX_GYRO_BIAS*dtIMUavg;
+    state.gyro_bias.x = constrain_float(state.gyro_bias.x, (delAngBiasAtArming.x - delAngBiasLim), (delAngBiasAtArming.x + delAngBiasLim));
+    state.gyro_bias.y = constrain_float(state.gyro_bias.y, (delAngBiasAtArming.y - delAngBiasLim), (delAngBiasAtArming.y + delAngBiasLim));
+    state.gyro_bias.z = constrain_float(state.gyro_bias.z, (delAngBiasAtArming.z - delAngBiasLim), (delAngBiasAtArming.z + delAngBiasLim));
     // Z accel bias limit 1.0 m/s^2	(this needs to be finalised from test data)
     states[13] = constrain_float(states[13],-1.0f*dtIMUavg,1.0f*dtIMUavg);
     states[22] = constrain_float(states[22],-1.0f*dtIMUavg,1.0f*dtIMUavg);
@@ -4846,6 +4851,7 @@ void NavEKF::InitialiseVariables()
     memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
     posDownDerivative = 0.0f;
     posDown = 0.0f;
+    delAngBiasAtArming.zero();
 }
 
 // return true if we should use the airspeed sensor
@@ -5094,6 +5100,8 @@ void NavEKF::performArmingChecks()
         // store vertical position at arming to use as a reference for ground relative cehcks
         if (vehicleArmed) {
             posDownAtArming = state.position.z;
+            // save the gyro bias so that the in-flight gyro bias state limits can be adjusted to provide the same amount of offset change in either direction
+            delAngBiasAtArming = state.gyro_bias;
         }
         // zero stored velocities used to do dead-reckoning
         heldVelNE.zero();
