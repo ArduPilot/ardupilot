@@ -43,14 +43,14 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
     rngMeasIndex(0)                 // index into ringbuffer of current range measurement
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
-    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
-    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EKF_FuseVelPosNED")),
-    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EKF_FuseMagnetometer")),
-    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed")),
-    _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EKF_FuseSideslip")),
-    _perf_TerrainOffset(perf_alloc(PC_ELAPSED, "EKF_TerrainOffset")),
-    _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EKF_FuseOptFlow"))
+    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EK2_UpdateFilter")),
+    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EK2_CovariancePrediction")),
+    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EK2_FuseVelPosNED")),
+    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EK2_FuseMagnetometer")),
+    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EK2_FuseAirspeed")),
+    _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EK2_FuseSideslip")),
+    _perf_TerrainOffset(perf_alloc(PC_ELAPSED, "EK2_TerrainOffset")),
+    _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EK2_FuseOptFlow"))
 #endif
 {
 }
