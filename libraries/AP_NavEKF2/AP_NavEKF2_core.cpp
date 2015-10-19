@@ -628,10 +628,8 @@ void  NavEKF2_core::calcOutputStatesFast() {
     // update vertical velocity and position states used to provide a vertical position derivative output
     // using a simple complementary filter
     float lastPosDownDerivative = posDownDerivative;
-    posDownDerivative += delVelNav.z;
-    float posDownDerivativeCorrection = 0.2f * (outputDataNew.position.z - posDown);
-    posDown += (posDownDerivative + lastPosDownDerivative) * (imuDataNew.delVelDT*0.5f) + posDownDerivativeCorrection * imuDataNew.delVelDT;
-
+    posDownDerivative = 2.0f * (outputDataNew.position.z - posDown);
+    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (imuDataNew.delVelDT*0.5f);
 }
 
 /*
