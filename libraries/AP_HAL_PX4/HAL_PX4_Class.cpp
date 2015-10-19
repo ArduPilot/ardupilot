@@ -114,12 +114,10 @@ static void loop_overtime(void *)
     px4_ran_overtime = true;
 }
 
+static AP_HAL::HAL::Callbacks* g_callbacks;
+
 static int main_loop(int argc, char **argv)
 {
-    extern void setup(void);
-    extern void loop(void);
-
-
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -140,7 +138,7 @@ static int main_loop(int argc, char **argv)
 
     schedulerInstance.hal_initialized();
 
-    setup();
+    g_callbacks->setup();
     hal.scheduler->system_initialized();
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
@@ -165,7 +163,7 @@ static int main_loop(int argc, char **argv)
          */
         hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
-        loop();
+        g_callbacks->loop();
 
         if (px4_ran_overtime) {
             /*
@@ -305,6 +303,13 @@ void HAL_PX4::init(int argc, char * const argv[]) const
  
     usage();
     exit(1);
+}
+
+void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+    g_callbacks = callbacks;
+    init(argc, argv);
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
