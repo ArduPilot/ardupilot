@@ -186,6 +186,9 @@ void NavEKF2_core::InitialiseVariables()
     memset(&statesArray, 0, sizeof(statesArray));
     posDownDerivative = 0.0f;
     posDown = 0.0f;
+    imuNoiseFiltState0 = 0.0f;
+    imuNoiseFiltState1 = 0.0f;
+    lastImuSwitchState = IMUSWITCH_MIXED;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)

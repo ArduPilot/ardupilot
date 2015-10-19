@@ -781,6 +781,17 @@ private:
     uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
 
+    // monitoring IMU quality
+    float imuNoiseFiltState0;       // peak hold noise estimate for IMU 0
+    float imuNoiseFiltState1;       // peak hold noise estimate for IMU 1
+    Vector3f accelDiffFilt;         // filtered difference between IMU 0 and 1
+    enum ImuSwitchState {
+        IMUSWITCH_MIXED=0,          // IMU 0 & 1 are mixed
+        IMUSWITCH_IMU0,             // only IMU 0 is used
+        IMUSWITCH_IMU1              // only IMU 1 is used
+    };
+    ImuSwitchState lastImuSwitchState;  // last switch state (see imuSwitchState enum)
+
     // States used for unwrapping of compass yaw error
     float innovationIncrement;
     float lastInnovation;

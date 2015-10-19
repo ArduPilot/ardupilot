@@ -281,10 +281,97 @@ void NavEKF2_core::readIMUData()
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    // Get delta velocity data
-    readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+    if (ins.use_accel(0) && ins.use_accel(1)) {
+        // dual accel mode
+        float dtDelVel0, dtDelVel1; // delta time from each IMU
+        Vector3f delVel0, delVel1; // delta velocity vetor from each IMU
 
-    // Get delta angle data
+        // Get delta velocity and time data from each IMU
+        readDeltaVelocity(0, delVel0, dtDelVel0);
+        readDeltaVelocity(1, delVel1, dtDelVel1);
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU1
+        float alpha = 1.0f - 5.0f*dtDelVel0;
+        imuNoiseFiltState0 = maxf(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState0);
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU2
+        alpha = 1.0f - 5.0f*dtDelVel1;
+        imuNoiseFiltState1 = maxf(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState1);
+
+        // calculate the filtered difference between acceleration vectors from IMU1 and 2
+        // apply a LPF filter with a 1.0 second time constant
+        alpha = constrain_float(0.5f*(dtDelVel0 + dtDelVel1),0.0f,1.0f);
+        accelDiffFilt = (ins.get_accel(0) - ins.get_accel(1)) * alpha + accelDiffFilt * (1.0f - alpha);
+        float accelDiffLength = accelDiffFilt.length();
+
+        // Check the difference for excessive error and use the IMU with less noise
+        // Apply hysteresis to prevent rapid switching
+        if (accelDiffLength > 1.8f || (accelDiffLength > 1.2f && lastImuSwitchState != IMUSWITCH_MIXED)) {
+            if (lastImuSwitchState == IMUSWITCH_MIXED) {
+                // no previous fail so switch to the IMU with least noise
+                if (imuNoiseFiltState0 < imuNoiseFiltState1) {
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    // Get data from IMU 0
+                    imuDataNew.delVel = delVel0;
+                    imuDataNew.delVelDT = dtDelVel0;
+                } else {
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    // Get data from IMU 1
+                    imuDataNew.delVel = delVel1;
+                    imuDataNew.delVelDT = dtDelVel1;
+                }
+            } else if (lastImuSwitchState == IMUSWITCH_IMU0) {
+                // IMU1 previously failed so require 5 m/s/s less noise on IMU2 to switch across
+                if (imuNoiseFiltState0 - imuNoiseFiltState1 > 5.0f) {
+                    // IMU 1 is significantly less noisy, so switch
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    // Get data from IMU 1
+                    imuDataNew.delVel = delVel1;
+                    imuDataNew.delVelDT = dtDelVel1;
+                }
+            } else {
+                // IMU2 previously failed so require 5 m/s/s less noise on IMU1 to switch across
+                if (imuNoiseFiltState1 - imuNoiseFiltState0 > 5.0f) {
+                    // IMU1 is significantly less noisy, so switch
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    // Get data from IMU 0
+                    imuDataNew.delVel = delVel0;
+                    imuDataNew.delVelDT = dtDelVel0;
+                }
+            }
+        } else {
+            lastImuSwitchState = IMUSWITCH_MIXED;
+            // Use a blend of both accelerometers
+            imuDataNew.delVel = (delVel0 + delVel1)*0.5f;
+            imuDataNew.delVelDT = (dtDelVel0 + dtDelVel1)*0.5f;
+        }
+    } else {
+        // single accel mode - one of the first two accelerometers are unhealthy, not available or de-selected by the user
+        // set the switch state based on the IMU we are using to make the data source selection visible
+        if (ins.use_accel(0)) {
+            readDeltaVelocity(0, imuDataNew.delVel, imuDataNew.delVelDT);
+            lastImuSwitchState = IMUSWITCH_IMU0;
+        } else if (ins.use_accel(1)) {
+            readDeltaVelocity(1, imuDataNew.delVel, imuDataNew.delVelDT);
+            lastImuSwitchState = IMUSWITCH_IMU1;
+        } else {
+            readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+            switch (ins.get_primary_accel()) {
+                case 0:
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    break;
+                case 1:
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    break;
+                default:
+                    // we must be using IMU 2 which can't be properly represented so we set to "mixed"
+                    lastImuSwitchState = IMUSWITCH_MIXED;
+                    break;
+            }
+        }
+    }
+
+    // Get delta angle data from promary gyro
     readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
     imuDataNew.delAngDT = max(ins.get_delta_time(),1.0e-4f);
 
