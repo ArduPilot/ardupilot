@@ -13,7 +13,6 @@
 
 #include "HAL_AVR_APM1_Class.h"
 #include "HAL_AVR_APM2_Class.h"
-#include "AP_HAL_AVR_Main.h"
 
 #endif // CONFIG_HAL_BOARD
 
