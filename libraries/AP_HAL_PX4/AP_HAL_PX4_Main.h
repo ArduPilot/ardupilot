@@ -6,7 +6,8 @@
 #define AP_HAL_MAIN() \
     extern "C" __EXPORT int SKETCH_MAIN(int argc, char * const argv[]); \
     int SKETCH_MAIN(int argc, char * const argv[]) {	\
-	hal.init(argc, argv); \
+        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+        hal.run(argc, argv, &callbacks); \
 	return OK; \
     }
 
