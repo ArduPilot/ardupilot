@@ -6,6 +6,8 @@
  * wrap the whole HAL_AVR_APM1 class declaration and definition. */
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
+#include <assert.h>
+
 #include "AP_HAL_AVR.h"
 #include "AP_HAL_AVR_private.h"
 #include "HAL_AVR_APM1_Class.h"
@@ -85,6 +87,20 @@ void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
     PORTD |= _BV(2);
     PORTJ |= _BV(0);
 };
+
+void HAL_AVR_APM1::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+
+    init(argc, argv);
+
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
+}
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
     static const HAL_AVR_APM1 hal;
