@@ -27,7 +27,13 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    virtual const char* get_custom_log_directory() { return NULL; } 
+    inline uint32_t hz_to_nsec(uint32_t freq) { return 1000000000 / freq; }
+    inline uint32_t nsec_to_hz(uint32_t usec) { return 1000000000 / usec; }
+
+    inline uint32_t usec_to_nsec(uint32_t usec) { return usec * 1000; }
+    inline uint32_t nsec_to_usec(uint32_t nsec) { return nsec / 1000; }
+
+    virtual const char* get_custom_log_directory() { return NULL; }
     virtual const char* get_custom_terrain_directory() const { return NULL;  }
 
     // run a debug shall on the given stream if possible. This is used

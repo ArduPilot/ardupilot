@@ -22,6 +22,7 @@ namespace Linux {
     class LinuxStorage;
     class LinuxStorage_FRAM;
     class LinuxDigitalSource;
+    class LinuxPWM_Sysfs;
     class LinuxRCInput;
     class LinuxRCInput_PRU;
     class LinuxRCInput_AioPRU;
@@ -35,6 +36,7 @@ namespace Linux {
     class LinuxRCOutput_Raspilot;
     class LinuxRCOutput_ZYNQ;
     class LinuxRCOutput_Bebop;
+    class LinuxRCOutput_Sysfs;
     class LinuxSemaphore;
     class LinuxScheduler;
     class LinuxUtil;
