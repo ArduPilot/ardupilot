@@ -25,12 +25,26 @@
     } \
     }
 
+#define AP_HAL_MAIN_CALLBACKS(CALLBACKS) extern "C" { \
+    int AP_MAIN(void) { \
+        hal.run(0, NULL, CALLBACKS); \
+        return 0; \
+    } \
+    }
+
 #else
 
 #define AP_HAL_MAIN() extern "C" { \
     int AP_MAIN(int argc, char* const argv[]) { \
         AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
         hal.run(argc, argv, &callbacks); \
+        return 0; \
+    } \
+    }
+
+#define AP_HAL_MAIN_CALLBACKS(CALLBACKS) extern "C" { \
+    int AP_MAIN(int argc, char* const argv[]) { \
+        hal.run(argc, argv, CALLBACKS); \
         return 0; \
     } \
     }
