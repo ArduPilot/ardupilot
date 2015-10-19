@@ -6,11 +6,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
 #define AP_HAL_MAIN() extern "C" {\
     int main (void) {\
-	hal.init(0, NULL);			\
-        setup();\
-        hal.scheduler->system_initialized(); \
-        for(;;) loop();\
-        return 0;\
+        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+        hal.run(0, NULL, &callbacks); \
+        return 0; \
     }\
     }
 #endif // HAL_BOARD_EMPTY
