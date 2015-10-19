@@ -32,21 +32,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <AP_HAL/AP_HAL.h>
+
 // Common dependencies
 #include <AP_Common/AP_Common.h>
 #include <AP_Progmem/AP_Progmem.h>
 #include <AP_Menu/AP_Menu.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
-// AP_HAL
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 
 // Application dependencies
 #include <GCS_MAVLink/GCS.h>
@@ -124,14 +117,16 @@
 // Local modules
 #include "Parameters.h"
 
-class Copter {
-    public:
+class Copter : public AP_HAL::HAL::Callbacks {
+public:
     friend class GCS_MAVLINK;
     friend class Parameters;
 
     Copter(void);
-    void setup();
-    void loop();
+
+    // HAL::Callbacks implementation.
+    void setup() override;
+    void loop() override;
 
 private:
     // key aircraft parameters passed to multiple libraries
