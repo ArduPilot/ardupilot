@@ -66,8 +66,10 @@ HAL_SITL::HAL_SITL() :
     _sitl_state(&sitlState)
 {}
 
-void HAL_SITL::init(int argc, char * const argv[]) const
+void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+    assert(callbacks);
+
     _sitl_state->init(argc, argv);
     scheduler->init(NULL);
     uartA->begin(115200);
@@ -79,13 +81,6 @@ void HAL_SITL::init(int argc, char * const argv[]) const
     //i2c->begin();
     //i2c->setTimeout(100);
     analogin->init(NULL);
-}
-
-void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
-{
-    assert(callbacks);
-
-    init(argc, argv);
 
     callbacks->setup();
     scheduler->system_initialized();
