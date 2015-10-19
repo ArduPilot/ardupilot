@@ -4,6 +4,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
+#include <assert.h>
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -77,6 +79,20 @@ void HAL_SITL::init(int argc, char * const argv[]) const
     //i2c->begin();
     //i2c->setTimeout(100);
     analogin->init(NULL);
+}
+
+void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+
+    init(argc, argv);
+
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
