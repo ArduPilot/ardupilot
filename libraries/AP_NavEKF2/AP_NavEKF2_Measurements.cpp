@@ -284,15 +284,15 @@ void NavEKF2_core::readIMUData()
         readDeltaVelocity(0, delVel0, dtDelVel0);
         readDeltaVelocity(1, delVel1, dtDelVel1);
 
-        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU1
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU 0
         float alpha = 1.0f - 5.0f*dtDelVel0;
         imuNoiseFiltState0 = maxf(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState0);
 
-        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU2
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU 1
         alpha = 1.0f - 5.0f*dtDelVel1;
         imuNoiseFiltState1 = maxf(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState1);
 
-        // calculate the filtered difference between acceleration vectors from IMU1 and 2
+        // calculate the filtered difference between acceleration vectors from IMU 0 and 1
         // apply a LPF filter with a 1.0 second time constant
         alpha = constrain_float(0.5f*(dtDelVel0 + dtDelVel1),0.0f,1.0f);
         accelDiffFilt = (ins.get_accel(0) - ins.get_accel(1)) * alpha + accelDiffFilt * (1.0f - alpha);
@@ -315,7 +315,7 @@ void NavEKF2_core::readIMUData()
                     imuDataNew.delVelDT = dtDelVel1;
                 }
             } else if (lastImuSwitchState == IMUSWITCH_IMU0) {
-                // IMU1 previously failed so require 5 m/s/s less noise on IMU2 to switch across
+                // IMU 1 previously failed so require 5 m/s/s less noise on IMU 1 to switch
                 if (imuNoiseFiltState0 - imuNoiseFiltState1 > 5.0f) {
                     // IMU 1 is significantly less noisy, so switch
                     lastImuSwitchState = IMUSWITCH_IMU1;
@@ -324,9 +324,9 @@ void NavEKF2_core::readIMUData()
                     imuDataNew.delVelDT = dtDelVel1;
                 }
             } else {
-                // IMU2 previously failed so require 5 m/s/s less noise on IMU1 to switch across
+                // IMU 0 previously failed so require 5 m/s/s less noise on IMU 0 to switch across
                 if (imuNoiseFiltState1 - imuNoiseFiltState0 > 5.0f) {
-                    // IMU1 is significantly less noisy, so switch
+                    // IMU 0 is significantly less noisy, so switch
                     lastImuSwitchState = IMUSWITCH_IMU0;
                     // Get data from IMU 0
                     imuDataNew.delVel = delVel0;
@@ -358,7 +358,7 @@ void NavEKF2_core::readIMUData()
                     lastImuSwitchState = IMUSWITCH_IMU1;
                     break;
                 default:
-                    // we must be using IMU 2 which can't be properly represented so we set to "mixed"
+                    // we must be using an IMU which can't be properly represented so we set to "mixed"
                     lastImuSwitchState = IMUSWITCH_MIXED;
                     break;
             }
