@@ -1225,13 +1225,6 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.vel1     += delVelNav1;
     state.vel2     += delVelNav2;
 
-    // update vertical velocity and position states used to provide a vertical position derivative output
-    // using a simple complementary filter
-    float lastPosDownDerivative = posDownDerivative;
-    posDownDerivative += delVelNav.z;
-    float posDownDerivativeCorrection = 0.2f * (state.position.z - posDown);
-    posDown += (posDownDerivative + lastPosDownDerivative) * (dtIMUactual*0.5f) + posDownDerivativeCorrection * dtIMUactual;
-
     // apply a trapezoidal integration to velocities to calculate position
     state.position += (state.velocity + lastVelocity) * (dtIMUactual*0.5f);
     state.posD1    += (state.vel1.z + lastVel1.z) * (dtIMUactual*0.5f);
@@ -1252,6 +1245,12 @@ void NavEKF::UpdateStrapdownEquationsNED()
 
     // limit states to protect against divergence
     ConstrainStates();
+
+    // update vertical velocity and position states used to provide a vertical position derivative output
+    // using a simple complementary filter
+    float lastPosDownDerivative = posDownDerivative;
+    posDownDerivative = 2.0f * (state.position.z - posDown);
+    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (dtIMUactual*0.5f);
 }
 
 // calculate the predicted state covariance matrix
