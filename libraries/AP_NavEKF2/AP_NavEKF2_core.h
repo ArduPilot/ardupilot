@@ -21,10 +21,14 @@
 #ifndef AP_NavEKF2_core
 #define AP_NavEKF2_core
 
-#include <AP_Math/AP_Math.h>
-#include "AP_NavEKF2.h"
+#pragma GCC optimize("O3")
 
 // #define MATH_CHECK_INDEXES 1
+// #define EK2_DISABLE_INTERRUPTS 1
+
+
+#include <AP_Math/AP_Math.h>
+#include "AP_NavEKF2.h"
 
 #include <AP_Math/vectorN.h>
 

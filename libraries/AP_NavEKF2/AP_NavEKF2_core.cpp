@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -351,6 +346,9 @@ void NavEKF2_core::UpdateFilter()
     }
 
     // start the timer used for load measurement
+#if EK2_DISABLE_INTERRUPTS
+    irqstate_t istate = irqsave();
+#endif
     perf_begin(_perf_UpdateFilter);
 
     // TODO - in-flight restart method
@@ -404,6 +402,9 @@ void NavEKF2_core::UpdateFilter()
 
     // stop the timer used for load measurement
     perf_end(_perf_UpdateFilter);
+#if EK2_DISABLE_INTERRUPTS
+    irqrestore(istate);
+#endif
 }
 
 /*
