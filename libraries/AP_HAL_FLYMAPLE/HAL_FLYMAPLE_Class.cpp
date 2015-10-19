@@ -66,7 +66,10 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
 	)
 {}
 
-void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
+void HAL_FLYMAPLE::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+
     /* initialize all drivers and private members here.
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
@@ -85,13 +88,6 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
     i2c->setTimeout(100);
     analogin->init(NULL);
     storage->init(NULL); // Uses EEPROM.*, flash_stm* copied from AeroQuad_v3.2
-}
-
-void HAL_FLYMAPLE::run(int argc, char* const argv[], Callbacks* callbacks) const
-{
-    assert(callbacks);
-
-    init(argc, argv);
 
     callbacks->setup();
     scheduler->system_initialized();
