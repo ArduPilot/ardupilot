@@ -67,10 +67,7 @@ public:
         void (*_loop)(void);
     };
 
-    virtual void init(int argc, char * const argv[]) const = 0;
-
-    // TODO: Make it pure virtual once all the boards implement it.
-    virtual void run(int argc, char * const argv[], Callbacks* callbacks) const {};
+    virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;
