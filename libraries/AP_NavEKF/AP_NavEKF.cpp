@@ -4,6 +4,8 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
+#pragma GCC optimize("O3")
+
 /*
   optionally turn down optimisation for debugging
  */
