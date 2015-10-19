@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -150,11 +145,9 @@ void NavEKF2_core::SelectMagFusion()
             }
             // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
-                irqstate_t istate = irqsave();
                 perf_begin(_perf_test[0]);
                 FuseMagnetometer();
                 perf_end(_perf_test[0]);
-                irqrestore(istate);
             }
         }
     }
