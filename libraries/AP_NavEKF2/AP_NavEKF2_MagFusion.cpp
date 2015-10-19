@@ -525,22 +525,21 @@ void NavEKF2_core::FuseMagnetometer()
         perf_begin(_perf_test[9]);
         for (unsigned j = 0; j<=stateIndexLim; j++) {
             for (unsigned i = 0; i<=stateIndexLim; i++) {
-                KHP[i][j] = 0;
-                for (unsigned k=0; k<=2; k++) {
-                    KHP[i][j] += KH[i][k] * P[k][j];
-                }
-                if (!inhibitMagStates) {
-                    KHP[i][j] += KH[i][16] * P[16][j];
-                    KHP[i][j] += KH[i][17] * P[17][j];
-                    KHP[i][j] += KH[i][18] * P[18][j];
-                    KHP[i][j] += KH[i][19] * P[19][j];
-                    KHP[i][j] += KH[i][20] * P[20][j];
-                    KHP[i][j] += KH[i][21] * P[21][j];
-                }
+                ftype res = 0;
+                res += KH[i][0] * P[0][j];
+                res += KH[i][1] * P[1][j];
+                res += KH[i][2] * P[2][j];
+                res += KH[i][16] * P[16][j];
+                res += KH[i][17] * P[17][j];
+                res += KH[i][18] * P[18][j];
+                res += KH[i][19] * P[19][j];
+                res += KH[i][20] * P[20][j];
+                res += KH[i][21] * P[21][j];
+                KHP[i][j] = res;
             }
         }
-        for (unsigned j = 0; j<=stateIndexLim; j++) {
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
