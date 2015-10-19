@@ -4,6 +4,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
+#include <assert.h>
+
 #include "AP_HAL_VRBRAIN.h"
 #include "AP_HAL_VRBRAIN_Namespace.h"
 #include "HAL_VRBRAIN_Class.h"
@@ -337,6 +339,13 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
  
     usage();
     exit(1);
+}
+
+void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+    g_callbacks = callbacks;
+    init(argc, argv);
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
