@@ -724,6 +724,7 @@ private:
     uint32_t lastConstPosFuseTime_ms;   // last time in msec the constant position constraint was applied
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
     float posDown;                  // Down position state used in calculation of posDownRate
+    Vector3f delAngBiasAtArming;      // value of the gyro delta angle bias at arming
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
