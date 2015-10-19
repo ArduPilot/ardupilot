@@ -51,7 +51,26 @@ public:
         util(_util)
     {}
 
+    struct Callbacks {
+        virtual void setup() = 0;
+        virtual void loop() = 0;
+    };
+
+    struct FunCallbacks : public Callbacks {
+        FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void));
+
+        void setup() override { _setup(); }
+        void loop() override { _loop(); }
+
+    private:
+        void (*_setup)(void);
+        void (*_loop)(void);
+    };
+
     virtual void init(int argc, char * const argv[]) const = 0;
+
+    // TODO: Make it pure virtual once all the boards implement it.
+    virtual void run(int argc, char * const argv[], Callbacks* callbacks) const {};
 
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;
