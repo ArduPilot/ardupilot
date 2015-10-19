@@ -58,10 +58,12 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         &avrUtil )
 {}
 
-void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
+void HAL_AVR_APM1::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
 
     scheduler->init((void*)&isrRegistry);
-   
+
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(115200);
@@ -86,13 +88,6 @@ void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
     PORTE |= _BV(0);
     PORTD |= _BV(2);
     PORTJ |= _BV(0);
-};
-
-void HAL_AVR_APM1::run(int argc, char* const argv[], Callbacks* callbacks) const
-{
-    assert(callbacks);
-
-    init(argc, argv);
 
     callbacks->setup();
     scheduler->system_initialized();
