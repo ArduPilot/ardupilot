@@ -433,13 +433,11 @@ static void rtl_build_path()
 static float rtl_compute_alt(float rtl_return_dist)
 {
     // maximum of current altitude + climb_min and rtl altitude
-    float ret = max(current_loc.alt + max(0, g.rtl_climb_min), g.rtl_altitude);
+    float ret = max(current_loc.alt + max(0, g.rtl_climb_min), max(g.rtl_altitude, RTL_ALT_MIN));
 
     if (g.rtl_cone_slope >= 0.5f) { // don't allow really shallow slopes
-        ret = max(current_loc.alt, min(ret, rtl_return_dist*g.rtl_cone_slope));
+        ret = max(current_loc.alt, min(ret, max(rtl_return_dist*g.rtl_cone_slope, current_loc.alt+250)));
     }
-
-    ret = max(ret, RTL_ALT_MIN);
 
 #if AC_FENCE == ENABLED
     // ensure not above fence altitude if alt fence is enabled
