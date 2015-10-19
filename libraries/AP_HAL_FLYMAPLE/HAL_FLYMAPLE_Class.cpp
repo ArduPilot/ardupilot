@@ -19,6 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
+#include <assert.h>
+
 #include "HAL_FLYMAPLE_Class.h"
 #include "AP_HAL_FLYMAPLE_Private.h"
 
@@ -83,6 +85,20 @@ void HAL_FLYMAPLE::init(int argc,char* const argv[]) const {
     i2c->setTimeout(100);
     analogin->init(NULL);
     storage->init(NULL); // Uses EEPROM.*, flash_stm* copied from AeroQuad_v3.2
+}
+
+void HAL_FLYMAPLE::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
+
+    init(argc, argv);
+
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
