@@ -277,8 +277,11 @@ void NavEKF2_core::readIMUData()
 
     if (ins.use_accel(0) && ins.use_accel(1)) {
         // dual accel mode
-        float dtDelVel0, dtDelVel1; // delta time from each IMU
-        Vector3f delVel0, delVel1; // delta velocity vetor from each IMU
+        // delta time from each IMU
+        float dtDelVel0 = dtIMUavg;
+        float dtDelVel1 = dtIMUavg;
+        // delta velocity vector from each IMU
+        Vector3f delVel0, delVel1;
 
         // Get delta velocity and time data from each IMU
         readDeltaVelocity(0, delVel0, dtDelVel0);
