@@ -5,6 +5,7 @@
   Andrew Tridgell September 2011
 */
 
+#include <AP_HAL_Linux/AP_HAL_Linux.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
