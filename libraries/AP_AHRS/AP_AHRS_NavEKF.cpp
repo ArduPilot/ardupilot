@@ -241,6 +241,7 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     AP_AHRS_DCM::reset(recover_eulers);
+    _dcm_attitude(roll, pitch, yaw);
     if (ekf1_started) {
         ekf1_started = EKF1.InitialiseFilterBootstrap();
     }
@@ -253,6 +254,7 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
 {
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
+    _dcm_attitude(roll, pitch, yaw);
     if (ekf1_started) {
         ekf1_started = EKF1.InitialiseFilterBootstrap();
     }
