@@ -386,12 +386,17 @@ void NavEKF2_core::readIMUData()
 // store imu in the FIFO
 void NavEKF2_core::StoreIMU()
 {
-    fifoIndexDelayed = fifoIndexNow;
+    // increment the index and write new data
     fifoIndexNow = fifoIndexNow + 1;
     if (fifoIndexNow >= IMU_BUFFER_LENGTH) {
         fifoIndexNow = 0;
     }
     storedIMU[fifoIndexNow] = imuDataNew;
+    // set the index required to access the oldest data
+    fifoIndexDelayed = fifoIndexNow + 1;
+    if (fifoIndexDelayed >= IMU_BUFFER_LENGTH) {
+        fifoIndexDelayed = 0;
+    }
 }
 
 // reset the stored imu history and store the current value
