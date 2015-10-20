@@ -496,21 +496,17 @@ void NavEKF2_core::FuseMagnetometer()
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in KH to reduce the
         // number of operations
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=2; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=2; j++) {
                 KH[i][j] = Kfusion[i] * H_MAG[j];
             }
-            for (uint8_t j = 3; j<=15; j++) {
+            for (unsigned j = 3; j<=15; j++) {
                 KH[i][j] = 0.0f;
             }
-            for (uint8_t j = 16; j<=21; j++) {
-                if (!inhibitMagStates) {
-                    KH[i][j] = Kfusion[i] * H_MAG[j];
-                } else {
-                    KH[i][j] = 0.0f;
-                }
+            for (unsigned j = 16; j<=21; j++) {
+                KH[i][j] = Kfusion[i] * H_MAG[j];
             }
-            for (uint8_t j = 22; j<=23; j++) {
+            for (unsigned j = 22; j<=23; j++) {
                 KH[i][j] = 0.0f;
             }
         }
