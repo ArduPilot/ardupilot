@@ -3,13 +3,7 @@
  *       Code by Randy Mackay. DIYDrones.com
  */
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/LowPassFilter.h>      // LowPassFilter class (inherits from Filter class)
 
