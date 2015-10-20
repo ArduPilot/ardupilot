@@ -9,6 +9,9 @@
 // circle_init - initialise circle controller flight mode
 bool Copter::circle_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
     if (position_ok() || ignore_checks) {
         circle_pilot_yaw_override = false;
 
