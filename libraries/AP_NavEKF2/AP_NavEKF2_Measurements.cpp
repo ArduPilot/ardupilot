@@ -185,9 +185,9 @@ bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate_ms) {
+    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate_us) {
         // store time of last measurement update
-        lastMagUpdate_ms = _ahrs->get_compass()->last_update_usec();
+        lastMagUpdate_us = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magDataNew.time_ms = imuSampleTime_ms - frontend.magDelay_ms;

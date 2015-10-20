@@ -674,7 +674,7 @@ private:
     bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
-    uint32_t lastMagUpdate_ms;      // last time compass was updated
+    uint32_t lastMagUpdate_us;      // last time compass was updated in usec
     Vector3f velDotNED;             // rate of change of velocity in NED frame
     Vector3f velDotNEDfilt;         // low pass filtered velDotNED
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
