@@ -31,15 +31,15 @@ public:
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface
-    uint16_t find_last_log(void);
+    uint16_t find_last_log() override;
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data_raw(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
-    uint16_t get_num_logs(void);
+    uint16_t get_num_logs() override;
     uint16_t start_new_log(void);
 #ifndef DATAFLASH_NO_CLI
-    void LogReadProcess(uint16_t log_num,
+    void LogReadProcess(const uint16_t list_entry,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
                         AP_HAL::BetterStream *port);

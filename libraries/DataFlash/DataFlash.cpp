@@ -49,7 +49,7 @@ uint16_t DataFlash_Class::bufferspace_available(void) {
     return backend->bufferspace_available();
 }
 
-uint16_t DataFlash_Class::find_last_log(void) {
+uint16_t DataFlash_Class::find_last_log() const {
     return backend->find_last_log();
 }
 void DataFlash_Class::get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) {
