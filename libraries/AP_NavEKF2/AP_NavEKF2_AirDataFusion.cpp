@@ -434,30 +434,33 @@ void NavEKF2_core::FuseSideslip()
         // correct the covariance P = (I - K*H)*P
         // take advantage of the empty columns in KH to reduce the
         // number of operations
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=5; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=5; j++) {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
-            for (uint8_t j = 6; j<=21; j++) {
+            for (unsigned j = 6; j<=21; j++) {
                 KH[i][j] = 0.0f;
             }
-            for (uint8_t j = 22; j<=23; j++) {
+            for (unsigned j = 22; j<=23; j++) {
                 KH[i][j] = Kfusion[i] * H_BETA[j];
             }
         }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                KHP[i][j] = 0;
-                for (uint8_t k = 0; k<=5; k++) {
-                    KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                }
-                for (uint8_t k = 22; k<=23; k++) {
-                    KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                }
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                ftype res = 0;
+                res += KH[i][0] * P[0][j];
+                res += KH[i][1] * P[1][j];
+                res += KH[i][2] * P[2][j];
+                res += KH[i][3] * P[3][j];
+                res += KH[i][4] * P[4][j];
+                res += KH[i][5] * P[5][j];
+                res += KH[i][22] * P[22][j];
+                res += KH[i][23] * P[23][j];
+                KHP[i][j] = res;
             }
         }
-        for (uint8_t i = 0; i<=stateIndexLim; i++) {
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
