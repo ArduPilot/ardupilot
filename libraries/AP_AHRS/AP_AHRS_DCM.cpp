@@ -151,9 +151,16 @@ AP_AHRS_DCM::reset(bool recover_eulers)
         // roll and pitch estimate
 
         // Get body frame accel vector
-        // TODO we should average accel readings over several cycles
         Vector3f initAccVec;
+        uint8_t counter = 0;
         initAccVec = _ins.get_accel();
+
+        // the first vector may be invalid as the filter starts up
+        while (initAccVec.length() <= 5.0f && counter++ < 10) {
+            _ins.wait_for_sample();
+            _ins.update();
+            initAccVec = _ins.get_accel();
+        }
 
         // normalise the acceleration vector
         if (initAccVec.length() > 5.0f) {
