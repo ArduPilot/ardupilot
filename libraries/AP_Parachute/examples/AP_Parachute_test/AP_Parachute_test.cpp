@@ -8,7 +8,6 @@
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Parachute/AP_Parachute.h>
