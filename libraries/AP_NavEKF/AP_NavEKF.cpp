@@ -443,19 +443,8 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTimeout_ms(1000),          // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f)      // scaler applied to the barometer observation variance when operating in ground effect
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EKF_UpdateFilter")),
-    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EKF_CovariancePrediction")),
-    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EKF_FuseVelPosNED")),
-    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EKF_FuseMagnetometer")),
-    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EKF_FuseAirspeed")),
-    _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EKF_FuseSideslip")),
-    _perf_OpticalFlowEKF(perf_alloc(PC_ELAPSED, "EKF_FuseOptFlow"))
-#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
-
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -728,7 +717,7 @@ void NavEKF::UpdateFilter()
 #if EKF_DISABLE_INTERRUPTS
     irqstate_t istate = irqsave();
 #endif
-    perf_begin(_perf_UpdateFilter);
+    hal.util->perf_begin(_perf_UpdateFilter);
 
     //get starting time for update step
     imuSampleTime_ms = hal.scheduler->millis();
@@ -798,7 +787,7 @@ void NavEKF::UpdateFilter()
 
 end:
     // stop the timer used for load measurement
-    perf_end(_perf_UpdateFilter);
+    hal.util->perf_end(_perf_UpdateFilter);
 #if EKF_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
@@ -985,7 +974,7 @@ void NavEKF::SelectVelPosFusion()
 void NavEKF::SelectMagFusion()
 {
     // start performance timer
-    perf_begin(_perf_FuseMagnetometer);
+    hal.util->perf_begin(_perf_FuseMagnetometer);
 
     // check for and read new magnetometer measurements
     readMagData();
@@ -1019,14 +1008,14 @@ void NavEKF::SelectMagFusion()
     }
 
     // stop performance timer
-    perf_end(_perf_FuseMagnetometer);
+    hal.util->perf_end(_perf_FuseMagnetometer);
 }
 
 // select fusion of optical flow measurements
 void NavEKF::SelectFlowFusion()
 {
     // start performance timer
-    perf_begin(_perf_FuseOptFlow);
+    hal.util->perf_begin(_perf_FuseOptFlow);
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
@@ -1107,7 +1096,7 @@ void NavEKF::SelectFlowFusion()
         }
     }
     // stop the performance timer
-    perf_end(_perf_FuseOptFlow);
+    hal.util->perf_end(_perf_FuseOptFlow);
 }
 
 // select fusion of true airspeed measurements
@@ -1265,7 +1254,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
 // calculate the predicted state covariance matrix
 void NavEKF::CovariancePrediction()
 {
-    perf_begin(_perf_CovariancePrediction);
+    hal.util->perf_begin(_perf_CovariancePrediction);
     float windVelSigma; // wind velocity 1-sigma process noise - m/s
     float dAngBiasSigma;// delta angle bias 1-sigma process noise - rad/s
     float dVelBiasSigma;// delta velocity bias 1-sigma process noise - m/s
@@ -1934,14 +1923,14 @@ void NavEKF::CovariancePrediction()
     summedDelVel.zero();
     dt = 0.0f;
 
-    perf_end(_perf_CovariancePrediction);
+    hal.util->perf_end(_perf_CovariancePrediction);
 }
 
 // fuse selected position, velocity and height measurements
 void NavEKF::FuseVelPosNED()
 {
     // start performance timer
-    perf_begin(_perf_FuseVelPosNED);
+    hal.util->perf_begin(_perf_FuseVelPosNED);
 
     // health is set bad until test passed
     velHealth = false;
@@ -2375,7 +2364,7 @@ void NavEKF::FuseVelPosNED()
     ConstrainVariances();
 
     // stop performance timer
-    perf_end(_perf_FuseVelPosNED);
+    hal.util->perf_end(_perf_FuseVelPosNED);
 }
 
 // fuse magnetometer measurements and apply innovation consistency checks
@@ -2770,7 +2759,7 @@ The filter can fuse motion compensated optiocal flow rates and range finder meas
 void NavEKF::EstimateTerrainOffset()
 {
     // start performance timer
-    perf_begin(_perf_OpticalFlowEKF);
+    hal.util->perf_begin(_perf_OpticalFlowEKF);
 
     // constrain height above ground to be above range measured on ground
     float heightAboveGndEst = max((terrainState - state.position.z), rngOnGnd);
@@ -2943,7 +2932,7 @@ void NavEKF::EstimateTerrainOffset()
     }
 
     // stop the performance timer
-    perf_end(_perf_OpticalFlowEKF);
+    hal.util->perf_end(_perf_OpticalFlowEKF);
 }
 
 void NavEKF::FuseOptFlow()
@@ -3229,7 +3218,7 @@ void NavEKF::FuseOptFlow()
 void NavEKF::FuseAirspeed()
 {
     // start performance timer
-    perf_begin(_perf_FuseAirspeed);
+    hal.util->perf_begin(_perf_FuseAirspeed);
 
     // declarations
     float vn;
@@ -3388,14 +3377,14 @@ void NavEKF::FuseAirspeed()
     ConstrainVariances();
 
     // stop performance timer
-    perf_end(_perf_FuseAirspeed);
+    hal.util->perf_end(_perf_FuseAirspeed);
 }
 
 // fuse sythetic sideslip measurement of zero
 void NavEKF::FuseSideslip()
 {
     // start performance timer
-    perf_begin(_perf_FuseSideslip);
+    hal.util->perf_begin(_perf_FuseSideslip);
 
     // declarations
     float q0;
@@ -3578,7 +3567,7 @@ void NavEKF::FuseSideslip()
     ConstrainVariances();
 
     // stop the performance timer
-    perf_end(_perf_FuseSideslip);
+    hal.util->perf_end(_perf_FuseSideslip);
 }
 
 // zero specified range of rows in the state covariance matrix
@@ -4736,6 +4725,17 @@ void  NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
 void NavEKF::InitialiseVariables()
 {
+    if (_perf_UpdateFilter == nullptr) {
+        // only allocate perf variables once
+        _perf_UpdateFilter = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_UpdateFilter");
+        _perf_CovariancePrediction = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_CovariancePrediction");
+        _perf_FuseVelPosNED = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseVelPosNED");
+        _perf_FuseMagnetometer = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseMagnetometer");
+        _perf_FuseAirspeed = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseAirspeed");
+        _perf_FuseSideslip = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseSideslip");
+        _perf_OpticalFlowEKF = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseOptFlow");
+    }
+
     // initialise time stamps
     imuSampleTime_ms = hal.scheduler->millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
