@@ -65,6 +65,11 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
+    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
+    // but will always be kinematically consistent with the z component of the EKF position state
+    float getPosDownDerivative(void) const;
+
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
 
@@ -292,6 +297,7 @@ private:
     const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
+    const uint8_t fusionTimeStep_ms;    // The nominal time interval between covariance predictions and measurement fusions in msec
 };
 
 #endif //AP_NavEKF2

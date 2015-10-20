@@ -35,10 +35,6 @@
 
 #include <AP_Math/vectorN.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <systemlib/perf_counter.h>
-#endif
-
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
 #define MASK_GPS_HDOP       (1<<1)
@@ -121,6 +117,11 @@ public:
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
+
+    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
+    // but will always be kinematically consistent with the z component of the EKF position state
+    float getPosDownDerivative(void) const;
 
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
@@ -489,7 +490,11 @@ private:
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
 
+    // calculate the derivative of the down position using a complementary filter applied to vertical acceleration and EKF height
+    void calcPosDownDerivative();
+
     // EKF Mavlink Tuneable Parameters
+    AP_Int8  _enable;               // zero to disable EKF1
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
@@ -712,6 +717,10 @@ private:
     float gpsVertVelFilt;           // amount of filterred vertical GPS velocity detected durng pre-flight GPS checks
     float gpsHorizVelFilt;          // amount of filtered horizontal GPS velocity detected during pre-flight GPS checks
     bool gpsGoodToAlign;            // true when GPS quality is good enough to set an EKF origin and commence GPS navigation
+    uint32_t lastConstPosFuseTime_ms;   // last time in msec the constant position constraint was applied
+    float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
+    float posDown;                  // Down position state used in calculation of posDownRate
+    Vector3f delAngBiasAtArming;      // value of the gyro delta angle bias at arming
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
@@ -874,17 +883,15 @@ private:
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
-    perf_counter_t  _perf_UpdateFilter;
-    perf_counter_t  _perf_CovariancePrediction;
-    perf_counter_t  _perf_FuseVelPosNED;
-    perf_counter_t  _perf_FuseMagnetometer;
-    perf_counter_t  _perf_FuseAirspeed;
-    perf_counter_t  _perf_FuseSideslip;
-    perf_counter_t  _perf_OpticalFlowEKF;
-    perf_counter_t  _perf_FuseOptFlow;
-#endif
+    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
+    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
+    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
+    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
+    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
+    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
+    AP_HAL::Util::perf_counter_t  _perf_OpticalFlowEKF;
+    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
     
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
@@ -892,10 +899,5 @@ private:
     // vehicle specific initial gyro bias uncertainty
     float InitialGyroBiasUncertainty(void) const;
 };
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4 && CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
-#define perf_begin(x)
-#define perf_end(x)
-#endif
 
 #endif // AP_NavEKF

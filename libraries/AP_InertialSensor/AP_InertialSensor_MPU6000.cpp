@@ -306,7 +306,7 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_SPI::get_semaphore()
     return _spi->get_semaphore();
 }
 
-bool AP_MPU6000_BusDriver_SPI::has_auxiliar_bus()
+bool AP_MPU6000_BusDriver_SPI::has_auxiliary_bus()
 {
     return true;
 }
@@ -415,7 +415,7 @@ AP_HAL::Semaphore* AP_MPU6000_BusDriver_I2C::get_semaphore()
     return _i2c->get_semaphore();
 }
 
-bool AP_MPU6000_BusDriver_I2C::has_auxiliar_bus()
+bool AP_MPU6000_BusDriver_I2C::has_auxiliary_bus()
 {
     return false;
 }
@@ -459,7 +459,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
 {
     delete _bus;
-    delete _auxiliar_bus;
+    delete _auxiliary_bus;
     delete _samples;
 }
 
@@ -707,15 +707,15 @@ bool AP_InertialSensor_MPU6000::update( void )
     return true;
 }
 
-AuxiliaryBus *AP_InertialSensor_MPU6000::get_auxiliar_bus()
+AuxiliaryBus *AP_InertialSensor_MPU6000::get_auxiliary_bus()
 {
-    if (_auxiliar_bus)
-        return _auxiliar_bus;
+    if (_auxiliary_bus)
+        return _auxiliary_bus;
 
-    if (_bus->has_auxiliar_bus())
-        _auxiliar_bus = new AP_MPU6000_AuxiliaryBus(*this);
+    if (_bus->has_auxiliary_bus())
+        _auxiliary_bus = new AP_MPU6000_AuxiliaryBus(*this);
 
-    return _auxiliar_bus;
+    return _auxiliary_bus;
 }
 
 /*================ HARDWARE FUNCTIONS ==================== */

@@ -47,6 +47,7 @@ PX4_V2_CONFIG_FILE=$(MK_DIR)/PX4/config_px4fmu-v2_APM.mk
 SKETCHFLAGS=$(SKETCHLIBINCLUDES) -DARDUPILOT_BUILD -DTESTS_MATHLIB_DISABLE -DCONFIG_HAL_BOARD=HAL_BOARD_PX4 -DSKETCHNAME="\\\"$(SKETCH)\\\"" -DSKETCH_MAIN=ArduPilot_main -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 
 WARNFLAGS = -Werror -Wno-psabi -Wno-packed -Wno-error=double-promotion -Wno-error=unused-variable -Wno-error=reorder -Wno-error=float-equal -Wno-error=pmf-conversions -Wno-error=missing-declarations -Wno-error=unused-function
+OPTFLAGS = -fsingle-precision-constant
 
 # avoid PX4 submodules
 export GIT_SUBMODULES_ARE_EVIL = 1
@@ -54,7 +55,7 @@ export GIT_SUBMODULES_ARE_EVIL = 1
 PYTHONPATH=$(SKETCHBOOK)/mk/PX4/Tools/genmsg/src:$(SKETCHBOOK)/mk/PX4/Tools/gencpp/src
 export PYTHONPATH
 
-PX4_MAKE = $(v)+ GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 $(MAKE) -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
+PX4_MAKE = $(v)+ GIT_SUBMODULES_ARE_EVIL=1 ARDUPILOT_BUILD=1 $(MAKE) -C $(SKETCHBOOK) -f $(PX4_ROOT)/Makefile EXTRADEFINES="$(SKETCHFLAGS) $(WARNFLAGS) $(OPTFLAGS) "'$(EXTRAFLAGS)' APM_MODULE_DIR=$(SKETCHBOOK) SKETCHBOOK=$(SKETCHBOOK) CCACHE=$(CCACHE) PX4_ROOT=$(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) MAXOPTIMIZATION="-Os" UAVCAN_DIR=$(UAVCAN_DIR)
 PX4_MAKE_ARCHIVES = $(MAKE) -C $(PX4_ROOT) NUTTX_SRC=$(NUTTX_SRC) CCACHE=$(CCACHE) archives MAXOPTIMIZATION="-Os"
 
 HASHADDER_FLAGS += --ardupilot "$(SKETCHBOOK)"
@@ -75,7 +76,7 @@ module_mk:
 	$(v) echo "MODULE_COMMAND = ArduPilot" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "SRCS = $(wildcard $(SRCROOT)/*.cpp) $(SKETCHLIBSRCSRELATIVE)" >> $(SKETCHBOOK)/module.mk.new
 	$(v) echo "MODULE_STACKSIZE = 4096" >> $(SKETCHBOOK)/module.mk.new
-	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1200" >> $(SKETCHBOOK)/module.mk.new
+	$(v) echo "EXTRACXXFLAGS = -Wframe-larger-than=1300" >> $(SKETCHBOOK)/module.mk.new
 	$(v) cmp $(SKETCHBOOK)/module.mk $(SKETCHBOOK)/module.mk.new 2>/dev/null || mv $(SKETCHBOOK)/module.mk.new $(SKETCHBOOK)/module.mk
 	$(v) rm -f $(SKETCHBOOK)/module.mk.new
 
@@ -106,6 +107,7 @@ px4-clean: clean CHECK_MODULES px4-archives-clean px4-cleandep
 
 px4-cleandep: clean
 	$(v) find $(PX4_ROOT)/Build -type f -name '*.d' | xargs rm -f
+	$(v) find $(UAVCAN_DIRECTORY) -type f -name '*.d' | xargs rm -f
 	$(v) find $(SKETCHBOOK)/$(SKETCH) -type f -name '*.d' | xargs rm -f
 
 px4-v1-upload: px4-v1

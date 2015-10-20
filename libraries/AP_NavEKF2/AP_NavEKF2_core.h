@@ -21,16 +21,16 @@
 #ifndef AP_NavEKF2_core
 #define AP_NavEKF2_core
 
+#pragma GCC optimize("O3")
+
+// #define MATH_CHECK_INDEXES 1
+// #define EK2_DISABLE_INTERRUPTS 1
+
+
 #include <AP_Math/AP_Math.h>
 #include "AP_NavEKF2.h"
 
-// #define MATH_CHECK_INDEXES 1
-
 #include <AP_Math/vectorN.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <systemlib/perf_counter.h>
-#endif
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -41,6 +41,18 @@
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
+
+/*
+ * IMU FIFO buffer length depends on the IMU update rate being used and the maximum sensor delay
+ * Samples*delta_time must be > max sensor delay
+*/
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define IMU_BUFFER_LENGTH       104 // maximum 260 msec delay at 400 Hz
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
+#else
+#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
+#endif
 
 class AP_AHRS;
 
@@ -67,6 +79,11 @@ public:
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
+
+    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
+    // but will always be kinematically consistent with the z component of the EKF position state
+    float getPosDownDerivative(void) const;
 
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
@@ -577,6 +594,9 @@ private:
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
     void fuseCompass();
 
+    // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
+    void FuseDeclination();
+
     // Calculate compass heading innovation
     float calcMagHeadingInnov();
 
@@ -588,9 +608,13 @@ private:
     // using a simple observer
     void calcOutputStatesFast();
 
-    // measurement buffer sizes
-    static const uint32_t IMU_BUFFER_LENGTH = 100;  // number of IMU samples stored in the buffer. Samples*delta_time must be > max sensor delay
-    static const uint32_t OBS_BUFFER_LENGTH = 5;    // number of non-IMU sensor samples stored in the buffer.
+    // Round to the nearest multiple of a integer
+    uint32_t roundToNearest(uint32_t dividend, uint32_t divisor );
+
+    // Length of FIFO buffers used for non-IMU sensor data.
+    // Must be larger than the maximum number of sensor samples that will arrive during the time period defined by IMU_BUFFER_LENGTH
+    // OBS_BUFFER_LENGTH > IMU_BUFFER_LENGTH * dtIMUavg * 'max sensor rate'
+    static const uint32_t OBS_BUFFER_LENGTH = 5;
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
@@ -711,8 +735,6 @@ private:
     imu_elements imuDataNew;        // IMU data at the current time horizon
     uint8_t fifoIndexNow;           // Global index for inertial and output solution at current time horizon
     uint8_t fifoIndexDelayed;       // Global index for inertial and output solution at delayed/fusion time horizon
-    uint32_t hgtMeasTime_ms;        // Effective measurement time of last received height measurement
-    uint32_t magMeasTime_ms;        // Effective measurement time of last received magnetometer measurement
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     uint8_t baroStoreIndex;         // Baro data storage index
@@ -731,12 +753,20 @@ private:
     Vector3f delVelCorrection;      // correction applied to earth frame delta velocities used by output observer to track the EKF
     Vector3f velCorrection;         // correction applied to velocities used by the output observer to track the EKF
     float innovYaw;                 // compass yaw angle innovation (rad)
-    uint32_t timeTasReceived_ms;    // tie last TAS data was received (msec)
-    bool gpsQualGood;               // true when the GPS quality can be used to initialise the navigation system
+    uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
+    bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
     bool motorsArmed;               // true when the motors have been armed
     bool prevMotorsArmed;           // value of motorsArmed from previous frame
+    bool posVelFusionDelayed;       // true when the position and velocity fusion has been delayed
+    bool optFlowFusionDelayed;      // true when the optical flow fusion has been delayed
+    bool airSpdFusionDelayed;       // true when the air speed fusion has been delayed
+    bool sideSlipFusionDelayed;     // true when the sideslip fusion has been delayed
+
+    // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
+    float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
+    float posDown;                  // Down position state used in calculation of posDownRate
 
     // variables used by the pre-initialisation GPS checks
     struct Location gpsloc_prev;    // LLH location of previous GPS measurement
@@ -754,6 +784,17 @@ private:
     uint32_t lastInnovPassTime_ms;  // last time in msec the GPS innovations passed
     uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
+
+    // monitoring IMU quality
+    float imuNoiseFiltState0;       // peak hold noise estimate for IMU 0
+    float imuNoiseFiltState1;       // peak hold noise estimate for IMU 1
+    Vector3f accelDiffFilt;         // filtered difference between IMU 0 and 1
+    enum ImuSwitchState {
+        IMUSWITCH_MIXED=0,          // IMU 0 & 1 are mixed
+        IMUSWITCH_IMU0,             // only IMU 0 is used
+        IMUSWITCH_IMU1              // only IMU 1 is used
+    };
+    ImuSwitchState lastImuSwitchState;  // last switch state (see imuSwitchState enum)
 
     // States used for unwrapping of compass yaw error
     float innovationIncrement;
@@ -874,17 +915,16 @@ private:
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
-    perf_counter_t  _perf_UpdateFilter;
-    perf_counter_t  _perf_CovariancePrediction;
-    perf_counter_t  _perf_FuseVelPosNED;
-    perf_counter_t  _perf_FuseMagnetometer;
-    perf_counter_t  _perf_FuseAirspeed;
-    perf_counter_t  _perf_FuseSideslip;
-    perf_counter_t  _perf_OpticalFlowEKF;
-    perf_counter_t  _perf_FuseOptFlow;
-#endif
+    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
+    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
+    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
+    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
+    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
+    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
+    AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
+    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
+    AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
@@ -892,10 +932,5 @@ private:
     // vehicle specific initial gyro bias uncertainty
     float InitialGyroBiasUncertainty(void) const;
 };
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4 && CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
-#define perf_begin(x)
-#define perf_end(x)
-#endif
 
 #endif // AP_NavEKF2_core

@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -29,8 +24,18 @@ extern const AP_HAL::HAL& hal;
 // select fusion of optical flow measurements
 void NavEKF2_core::SelectFlowFusion()
 {
+    // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
+    // If so, don't fuse measurements on this time step to reduce frame over-runs
+    // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
+    if (magFusePerformed && dtIMUavg < 0.005f && !optFlowFusionDelayed) {
+        optFlowFusionDelayed = true;
+        return;
+    } else {
+        optFlowFusionDelayed = false;
+    }
+
     // start performance timer
-    perf_begin(_perf_FuseOptFlow);
+    hal.util->perf_begin(_perf_FuseOptFlow);
     // Perform Data Checks
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
@@ -88,7 +93,7 @@ void NavEKF2_core::SelectFlowFusion()
     }
 
     // stop the performance timer
-    perf_end(_perf_FuseOptFlow);
+    hal.util->perf_end(_perf_FuseOptFlow);
 }
 
 /*
@@ -98,7 +103,7 @@ The filter can fuse motion compensated optiocal flow rates and range finder meas
 void NavEKF2_core::EstimateTerrainOffset()
 {
     // start performance timer
-    perf_begin(_perf_OpticalFlowEKF);
+    hal.util->perf_begin(_perf_TerrainOffset);
 
     // constrain height above ground to be above range measured on ground
     float heightAboveGndEst = max((terrainState - stateStruct.position.z), rngOnGnd);
@@ -271,12 +276,14 @@ void NavEKF2_core::EstimateTerrainOffset()
     }
 
     // stop the performance timer
-    perf_end(_perf_OpticalFlowEKF);
+    hal.util->perf_end(_perf_TerrainOffset);
 }
 
 /*
-Fuse angular motion compensated optical flow rates into the main filter.
-Requires a valid terrain height estimate.
+ * Fuse angular motion compensated optical flow rates using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * The script file used to generate these and other equations in this filter can be found here:
+ * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * Requires a valid terrain height estimate.
 */
 void NavEKF2_core::FuseOptFlow()
 {
@@ -660,29 +667,33 @@ void NavEKF2_core::FuseOptFlow()
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=5; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=5; j++) {
                     KH[i][j] = Kfusion[i] * H_LOS[j];
                 }
-                for (uint8_t j = 6; j<=7; j++) {
+                for (unsigned j = 6; j<=7; j++) {
                     KH[i][j] = 0.0f;
                 }
                 KH[i][8] = Kfusion[i] * H_LOS[8];
-                for (uint8_t j = 9; j<=23; j++) {
+                for (unsigned j = 9; j<=23; j++) {
                     KH[i][j] = 0.0f;
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                    KHP[i][j] = 0;
-                    for (uint8_t k = 0; k<=5; k++) {
-                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                    }
-                    KHP[i][j] = KHP[i][j] + KH[i][8] * P[8][j];
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
+                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                    ftype res = 0;
+                    res += KH[i][0] * P[0][j];
+                    res += KH[i][1] * P[1][j];
+                    res += KH[i][2] * P[2][j];
+                    res += KH[i][3] * P[3][j];
+                    res += KH[i][4] * P[4][j];
+                    res += KH[i][5] * P[5][j];
+                    res += KH[i][8] * P[8][j];
+                    KHP[i][j] = res;
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
             }

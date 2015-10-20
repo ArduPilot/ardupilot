@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -312,11 +307,6 @@ void NavEKF2_core::detectFlight()
             onGround = false;
         }
 
-        // Determine if is is possible we are on the ground
-        if (highGndSpd || highAirSpd || largeHgtChange) {
-            inFlight = false;
-        }
-
         // Determine to a high certainty we are not flying
         // after 5 seconds of not detecting a possible flight condition or we are disarmed, we transition to on-ground mode
         if(!motorsArmed || ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
@@ -351,7 +341,7 @@ void NavEKF2_core::detectFlight()
     prevInFlight = inFlight;
 
     // Store vehicle height and range prior to takeoff for use in post takeoff checks
-    if (!onGround && !prevOnGround) {
+    if (onGround && prevOnGround) {
         // store vertical position at start of flight to use as a reference for ground relative checks
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
@@ -401,7 +391,8 @@ void NavEKF2_core::setTouchdownExpected(bool val)
 // Detect takeoff for optical flow navigation
 void NavEKF2_core::detectOptFlowTakeoff(void)
 {
-    if (motorsArmed && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+    if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+        // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
         const AP_InertialSensor &ins = _ahrs->get_ins();
         Vector3f angRateVec;
         Vector3f gyroBias;
@@ -414,6 +405,9 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
         }
 
         takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rngAtStartOfFlight + 0.1f)));
+    } else if (onGround) {
+        // we are confidently on the ground so set the takeoff detected status to false
+        takeOffDetected = false;
     }
 }
 

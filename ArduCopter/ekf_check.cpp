@@ -32,7 +32,7 @@ void Copter::ekf_check()
 {
     // exit immediately if ekf has no origin yet - this assumes the origin can never become unset
     Location temp_loc;
-    if (!ahrs.get_NavEKF_const().getOriginLLH(temp_loc)) {
+    if (!ahrs.get_origin(temp_loc)) {
         return;
     }
 
@@ -107,7 +107,7 @@ bool Copter::ekf_over_threshold()
     Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_NavEKF().getVariances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
     compass_variance = magVar.length();
 
     // return true if compass and velocity variance over the threshold
@@ -141,7 +141,7 @@ void Copter::failsafe_ekf_event()
     switch (g.fs_ekf_action) {
         case FS_EKF_ACTION_ALTHOLD:
             // AltHold
-            if (!set_mode(ALT_HOLD)) {
+            if (failsafe.radio || !set_mode(ALT_HOLD)) {
                 set_mode_land_with_pause();
             }
             break;

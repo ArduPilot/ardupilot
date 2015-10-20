@@ -4,11 +4,6 @@
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -149,6 +144,13 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
     vel = outputDataNew.velocity;
 }
 
+// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+float NavEKF2_core::getPosDownDerivative(void) const
+{
+    // return the value calculated from a complmentary filer applied to the EKF height and vertical acceleration
+    return posDownDerivative;
+}
+
 // This returns the specific forces in the NED frame
 void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
     accelNED = velDotNED;
@@ -173,7 +175,7 @@ bool NavEKF2_core::getPosNED(Vector3f &pos) const
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     nav_filter_status status;
     getFilterStatus(status);
-    if (status.flags.horiz_pos_abs || status.flags.horiz_pos_rel) {
+    if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         pos.x = outputDataNew.position.x;
         pos.y = outputDataNew.position.y;
@@ -391,19 +393,18 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool notDeadReckoning = (PV_AidingMode == AID_ABSOLUTE);
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (frontend._fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && (frontend._fusionModeGPS <= 2);
+    bool gpsNavPossible = !gpsNotAvailable && (PV_AidingMode == AID_ABSOLUTE) && gpsGoodToAlign;
     bool filterHealthy = healthy() && tiltAlignComplete && yawAlignComplete;
 
     // set individual flags
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
-    status.flags.horiz_vel = someHorizRefData && notDeadReckoning && filterHealthy;      // horizontal velocity estimate valid
+    status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && notDeadReckoning && filterHealthy;   // relative horizontal position estimate valid
-    status.flags.horiz_pos_abs = doingNormalGpsNav && notDeadReckoning && filterHealthy; // absolute horizontal position estimate valid
+    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && filterHealthy;   // relative horizontal position estimate valid
+    status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode

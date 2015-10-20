@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "RCInput_UDP.h"
 #include <stdio.h>
 
@@ -39,7 +39,7 @@ void LinuxRCInput_UDP::_timer_tick(void)
         }
         if (_last_buf_ts != 0 &&
             (delay = _buf.timestamp_us - _last_buf_ts) > 100000) {
-            hal.console->printf("no rc cmds received for %llu\n", delay);
+            hal.console->printf("no rc cmds received for %llu\n", (unsigned long long)delay);
         }
         _last_buf_ts = _buf.timestamp_us;
 

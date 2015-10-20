@@ -3,12 +3,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-
-/*
-  optionally turn down optimisation for debugging
- */
-// #pragma GCC optimize("O0")
-
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
@@ -118,6 +112,11 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
         ofDataNew.time_ms = imuSampleTime_ms - frontend._flowDelay_ms - frontend.flowTimeDeltaAvg_ms/2;
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        ofDataNew.time_ms = roundToNearest(ofDataNew.time_ms, frontend.fusionTimeStep_ms);
+        // Prevent time delay exceeding age of oldest IMU data in the buffer
+        ofDataNew.time_ms = max(ofDataNew.time_ms,imuDataDelayed.time_ms);
         // Save data to buffer
         StoreOF();
         // Check for data at the fusion time horizon
@@ -191,7 +190,11 @@ void NavEKF2_core::readMagData()
         lastMagUpdate_ms = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
-        magMeasTime_ms = imuSampleTime_ms - frontend.magDelay_ms;
+        magDataNew.time_ms = imuSampleTime_ms - frontend.magDelay_ms;
+
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        magDataNew.time_ms = roundToNearest(magDataNew.time_ms, frontend.fusionTimeStep_ms);
 
         // read compass data and scale to improve numerical conditioning
         magDataNew.mag = _ahrs->get_compass()->get_field() * 0.001f;
@@ -213,7 +216,6 @@ void NavEKF2_core::readMagData()
         }
 
         // save magnetometer measurement to buffer to be fused later
-        magDataNew.time_ms = magMeasTime_ms;
         StoreMag();
     }
 }
@@ -273,10 +275,100 @@ void NavEKF2_core::readIMUData()
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    // Get delta velocity data
-    readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+    if (ins.use_accel(0) && ins.use_accel(1)) {
+        // dual accel mode
+        // delta time from each IMU
+        float dtDelVel0 = dtIMUavg;
+        float dtDelVel1 = dtIMUavg;
+        // delta velocity vector from each IMU
+        Vector3f delVel0, delVel1;
 
-    // Get delta angle data
+        // Get delta velocity and time data from each IMU
+        readDeltaVelocity(0, delVel0, dtDelVel0);
+        readDeltaVelocity(1, delVel1, dtDelVel1);
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU 0
+        float alpha = 1.0f - 5.0f*dtDelVel0;
+        imuNoiseFiltState0 = maxf(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState0);
+
+        // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU 1
+        alpha = 1.0f - 5.0f*dtDelVel1;
+        imuNoiseFiltState1 = maxf(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState1);
+
+        // calculate the filtered difference between acceleration vectors from IMU 0 and 1
+        // apply a LPF filter with a 1.0 second time constant
+        alpha = constrain_float(0.5f*(dtDelVel0 + dtDelVel1),0.0f,1.0f);
+        accelDiffFilt = (ins.get_accel(0) - ins.get_accel(1)) * alpha + accelDiffFilt * (1.0f - alpha);
+        float accelDiffLength = accelDiffFilt.length();
+
+        // Check the difference for excessive error and use the IMU with less noise
+        // Apply hysteresis to prevent rapid switching
+        if (accelDiffLength > 1.8f || (accelDiffLength > 1.2f && lastImuSwitchState != IMUSWITCH_MIXED)) {
+            if (lastImuSwitchState == IMUSWITCH_MIXED) {
+                // no previous fail so switch to the IMU with least noise
+                if (imuNoiseFiltState0 < imuNoiseFiltState1) {
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    // Get data from IMU 0
+                    imuDataNew.delVel = delVel0;
+                    imuDataNew.delVelDT = dtDelVel0;
+                } else {
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    // Get data from IMU 1
+                    imuDataNew.delVel = delVel1;
+                    imuDataNew.delVelDT = dtDelVel1;
+                }
+            } else if (lastImuSwitchState == IMUSWITCH_IMU0) {
+                // IMU 1 previously failed so require 5 m/s/s less noise on IMU 1 to switch
+                if (imuNoiseFiltState0 - imuNoiseFiltState1 > 5.0f) {
+                    // IMU 1 is significantly less noisy, so switch
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    // Get data from IMU 1
+                    imuDataNew.delVel = delVel1;
+                    imuDataNew.delVelDT = dtDelVel1;
+                }
+            } else {
+                // IMU 0 previously failed so require 5 m/s/s less noise on IMU 0 to switch across
+                if (imuNoiseFiltState1 - imuNoiseFiltState0 > 5.0f) {
+                    // IMU 0 is significantly less noisy, so switch
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    // Get data from IMU 0
+                    imuDataNew.delVel = delVel0;
+                    imuDataNew.delVelDT = dtDelVel0;
+                }
+            }
+        } else {
+            lastImuSwitchState = IMUSWITCH_MIXED;
+            // Use a blend of both accelerometers
+            imuDataNew.delVel = (delVel0 + delVel1)*0.5f;
+            imuDataNew.delVelDT = (dtDelVel0 + dtDelVel1)*0.5f;
+        }
+    } else {
+        // single accel mode - one of the first two accelerometers are unhealthy, not available or de-selected by the user
+        // set the switch state based on the IMU we are using to make the data source selection visible
+        if (ins.use_accel(0)) {
+            readDeltaVelocity(0, imuDataNew.delVel, imuDataNew.delVelDT);
+            lastImuSwitchState = IMUSWITCH_IMU0;
+        } else if (ins.use_accel(1)) {
+            readDeltaVelocity(1, imuDataNew.delVel, imuDataNew.delVelDT);
+            lastImuSwitchState = IMUSWITCH_IMU1;
+        } else {
+            readDeltaVelocity(ins.get_primary_accel(), imuDataNew.delVel, imuDataNew.delVelDT);
+            switch (ins.get_primary_accel()) {
+                case 0:
+                    lastImuSwitchState = IMUSWITCH_IMU0;
+                    break;
+                case 1:
+                    lastImuSwitchState = IMUSWITCH_IMU1;
+                    break;
+                default:
+                    // we must be using an IMU which can't be properly represented so we set to "mixed"
+                    lastImuSwitchState = IMUSWITCH_MIXED;
+                    break;
+            }
+        }
+    }
+
+    // Get delta angle data from promary gyro
     readDeltaAngle(ins.get_primary_gyro(), imuDataNew.delAng);
     imuDataNew.delAngDT = max(ins.get_delta_time(),1.0e-4f);
 
@@ -358,6 +450,13 @@ void NavEKF2_core::readGpsData()
             // ideally we should be using a timing signal from the GPS receiver to set this time
             gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend._gpsDelay_ms;
 
+            // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+            // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
+
+            // Prevent time delay exceeding age of oldest IMU data in the buffer
+            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
+
             // read the NED velocity from the GPS
             gpsDataNew.vel = _ahrs->get_gps().velocity();
 
@@ -391,7 +490,7 @@ void NavEKF2_core::readGpsData()
             // Monitor quality of the GPS velocity data before and after alignment using separate checks
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
-                gpsQualGood = calcGpsGoodToAlign();
+                gpsGoodToAlign = calcGpsGoodToAlign();
             } else {
                 // Post-alignment checks
                 calcGpsGoodForFlight();
@@ -402,7 +501,7 @@ void NavEKF2_core::readGpsData()
             const struct Location &gpsloc = _ahrs->get_gps().location();
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-            } else if (gpsQualGood) {
+            } else if (gpsGoodToAlign) {
                 // Set the NE origin to the current GPS position
                 setOrigin();
                 // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
@@ -495,6 +594,11 @@ void NavEKF2_core::readGpsData()
             gpsDataNew.pos.x = lastKnownPositionNE.x;
             gpsDataNew.pos.y = lastKnownPositionNE.y;
             gpsDataNew.time_ms = imuSampleTime_ms-frontend._gpsDelay_ms;
+            // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+            // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
+            // Prevent time delay exceeding age of oldest IMU data in the buffer
+            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
             // save measurement to buffer to be fused later
             StoreGPS();
         }
@@ -599,6 +703,7 @@ void NavEKF2_core::readHgtData()
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
                 baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             } else if (isAiding && takeOffDetected) {
+                // we have lost range finder measurements and are in optical flow flight
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
                 baroDataNew.hgt = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
             } else {
@@ -609,7 +714,7 @@ void NavEKF2_core::readHgtData()
                 baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             }
         } else {
-            // use baro measurement and correct for baro offset
+            // Normal operation is to use baro measurement
             baroDataNew.hgt = _baro.get_altitude();
         }
 
@@ -630,10 +735,16 @@ void NavEKF2_core::readHgtData()
         lastHgtReceived_ms = _baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        hgtMeasTime_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
+        baroDataNew.time_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
+
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        baroDataNew.time_ms = roundToNearest(baroDataNew.time_ms, frontend.fusionTimeStep_ms);
+
+        // Prevent time delay exceeding age of oldest IMU data in the buffer
+        baroDataNew.time_ms = max(baroDataNew.time_ms,imuDataDelayed.time_ms);
 
         // save baro measurement to buffer to be fused later
-        baroDataNew.time_ms = hgtMeasTime_ms;
         StoreBaro();
     }
 }
@@ -695,12 +806,21 @@ void NavEKF2_core::readAirSpdData()
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend.tasDelay_ms;
+        // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
+        // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
+        tasDataNew.time_ms = roundToNearest(tasDataNew.time_ms, frontend.fusionTimeStep_ms);
         newDataTas = true;
         StoreTAS();
         RecallTAS();
     } else {
         newDataTas = false;
     }
+}
+
+// Round to the nearest multiple of a integer
+uint32_t NavEKF2_core::roundToNearest(uint32_t dividend, uint32_t divisor )
+{
+  return ((uint32_t)round((float)dividend/float(divisor)))*divisor;
 }
 
 #endif // HAL_CPU_CLASS

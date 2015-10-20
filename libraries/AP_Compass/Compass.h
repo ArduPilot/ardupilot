@@ -92,14 +92,14 @@ public:
     /// Sets offset x/y/z values.
     ///
     /// @param  i                   compass instance
-    /// @param  offsets             Offsets to the raw mag_ values.
+    /// @param  offsets             Offsets to the raw mag_ values in milligauss.
     ///
     void set_offsets(uint8_t i, const Vector3f &offsets);
 
     /// Sets and saves the compass offset x/y/z values.
     ///
     /// @param  i                   compass instance
-    /// @param  offsets             Offsets to the raw mag_ values.
+    /// @param  offsets             Offsets to the raw mag_ values in milligauss.
     ///
     void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
     void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
@@ -118,11 +118,9 @@ public:
     // return the number of compass instances
     uint8_t get_count(void) const { return _compass_count; }
 
-    /// Return the current field as a Vector3f
+    /// Return the current field as a Vector3f in milligauss
     const Vector3f &get_field(uint8_t i) const { return _state[i].field; }
     const Vector3f &get_field(void) const { return get_field(get_primary()); }
-    const Vector3f get_field_milligauss(uint8_t i) const { return get_field(i) * _state[i].milligauss_ratio; }
-    const Vector3f get_field_milligauss(void) const { return get_field_milligauss(get_primary()); }
 
     // raw/unfiltered measurement interface
     uint32_t raw_meas_time_us(uint8_t i) const { return _state[i].raw_meas_time_us; }
@@ -180,12 +178,10 @@ public:
 
     /// Returns the current offset values
     ///
-    /// @returns                    The current compass offsets.
+    /// @returns                    The current compass offsets in milligauss.
     ///
     const Vector3f &get_offsets(uint8_t i) const { return _state[i].offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(get_primary()); }
-    const Vector3f get_offsets_milligauss(uint8_t i) const { return get_offsets(i) * _state[i].milligauss_ratio; }
-    const Vector3f get_offsets_milligauss(void) const { return get_offsets_milligauss(get_primary()); }
 
     /// Sets the initial location used to get declination
     ///
@@ -197,9 +193,9 @@ public:
     /// Program new offset values.
     ///
     /// @param  i                   compass instance
-    /// @param  x                   Offset to the raw mag_x value.
-    /// @param  y                   Offset to the raw mag_y value.
-    /// @param  z                   Offset to the raw mag_z value.
+    /// @param  x                   Offset to the raw mag_x value in milligauss.
+    /// @param  y                   Offset to the raw mag_y value in milligauss.
+    /// @param  z                   Offset to the raw mag_z value in milligauss.
     ///
     void set_and_save_offsets(uint8_t i, int x, int y, int z) {
         set_and_save_offsets(i, Vector3f(x, y, z));
@@ -259,7 +255,7 @@ public:
 
     /// Returns the current motor compensation offset values
     ///
-    /// @returns                    The current compass offsets.
+    /// @returns                    The current compass offsets in milligauss.
     ///
     const Vector3f &get_motor_offsets(uint8_t i) const { return _state[i].motor_offset; }
     const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(get_primary()); }
@@ -395,7 +391,6 @@ private:
 
         // corrected magnetic field strength
         Vector3f    field;
-        float       milligauss_ratio;
 
         // when we last got data
         uint32_t    last_update_ms;

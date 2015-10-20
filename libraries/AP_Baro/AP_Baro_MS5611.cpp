@@ -358,7 +358,7 @@ void AP_Baro_MS56XX::update()
     d2count = _d2_count; _d2_count = 0;
     _updated = false;
     hal.scheduler->resume_timer_procs();
-    
+
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;
     }
@@ -382,7 +382,7 @@ void AP_Baro_MS5611::_calculate()
     float SENS;
 
     // Formulas from manufacturer datasheet
-    // sub -20c temperature compensation is not included
+    // sub -15c temperature compensation is not included
 
     // we do the calculations using floating point
     // as this is much faster on an AVR2560, and also allows
@@ -422,7 +422,7 @@ void AP_Baro_MS5607::_calculate()
     float SENS;
 
     // Formulas from manufacturer datasheet
-    // sub -20c temperature compensation is not included
+    // sub -15c temperature compensation is not included
 
     // we do the calculations using floating point
     // as this is much faster on an AVR2560, and also allows
@@ -447,6 +447,45 @@ void AP_Baro_MS5607::_calculate()
     float pressure = (_D1*SENS/2097152 - OFF)/32768;
     float temperature = (TEMP + 2000) * 0.01f;
     _copy_to_frontend(_instance, pressure, temperature);
+}
+
+/* MS563 Class */
+AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
+    : AP_Baro_MS56XX(baro, serial, use_timer)
+{
+}
+
+// Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
+void AP_Baro_MS5637::_calculate()
+{
+    int32_t dT, TEMP;
+    int64_t OFF, SENS;
+    int32_t raw_pressure = _D1;
+    int32_t raw_temperature = _D2;
+
+    // Formulas from manufacturer datasheet
+    // sub -15c temperature compensation is not included
+
+    dT = raw_temperature - (((uint32_t)_C5) << 8);
+    TEMP = 2000 + ((int64_t)dT * (int64_t)_C6) / 8388608;
+    OFF = (int64_t)_C2 * (int64_t)131072 + ((int64_t)_C4 * (int64_t)dT) / (int64_t)64;
+    SENS = (int64_t)_C1 * (int64_t)65536 + ((int64_t)_C3 * (int64_t)dT) / (int64_t)128;
+
+    if (TEMP < 2000) {
+        // second order temperature compensation when under 20 degrees C
+        int32_t T2 = ((int64_t)3 * ((int64_t)dT * (int64_t)dT) / (int64_t)8589934592);
+        int64_t aux = (TEMP - 2000) * (TEMP - 2000);
+        int64_t OFF2 = 61 * aux / 16;
+        int64_t SENS2 = 29 * aux / 16;
+
+        TEMP = TEMP - T2;
+        OFF = OFF - OFF2;
+        SENS = SENS - SENS2;
+    }
+
+    int32_t pressure = ((int64_t)raw_pressure * SENS / (int64_t)2097152 - OFF) / (int64_t)32768;
+    float temperature = TEMP * 0.01f;
+    _copy_to_frontend(_instance, (float)pressure, temperature);
 }
 
 /*

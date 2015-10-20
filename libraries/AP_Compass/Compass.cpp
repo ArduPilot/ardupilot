@@ -16,21 +16,24 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // index 0 was used for the old orientation matrix
 
     // @Param: OFS_X
-    // @DisplayName: Compass offsets on the X axis
+    // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS_Y
-    // @DisplayName: Compass offsets on the Y axis
+    // @DisplayName: Compass offsets in milligauss on the Y axis
     // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS_Z
-    // @DisplayName: Compass offsets on the Z axis
+    // @DisplayName: Compass offsets in milligauss on the Z axis
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
     AP_GROUPINFO("OFS",    1, Compass, _state[0].offset, 0),
 
@@ -68,7 +71,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Motor interference compensation type
     // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
-    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
 
     // @Param: MOT_X
@@ -97,6 +100,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass orientation
     // @Description: The orientation of the compass relative to the autopilot board. This will default to the right value for each board type, but can be changed if you have an external compass. See the documentation for your external compass for the right value. The correct orientation should give the X axis forward, the Y axis to the right and the Z axis down. So if your aircraft is pointing west it should show a positive value for the Y axis, and a value close to zero for the X axis. On a PX4 or Pixhawk with an external compass the correct value is zero if the compass is correctly oriented. NOTE: This orientation is combined with any AHRS_ORIENTATION setting.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
+    // @User: Advanced
     AP_GROUPINFO("ORIENT", 8, Compass, _state[0].orientation, ROTATION_NONE),
 
     // @Param: EXTERNAL
@@ -108,21 +112,24 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
-    // @DisplayName: Compass2 offsets on the X axis
+    // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS2_Y
-    // @DisplayName: Compass2 offsets on the Y axis
+    // @DisplayName: Compass2 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS2_Z
-    // @DisplayName: Compass2 offsets on the Z axis
+    // @DisplayName: Compass2 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
     AP_GROUPINFO("OFS2",    10, Compass, _state[1].offset, 0),
 
@@ -158,21 +165,24 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 
 #if COMPASS_MAX_INSTANCES > 2
     // @Param: OFS3_X
-    // @DisplayName: Compass3 offsets on the X axis
+    // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS3_Y
-    // @DisplayName: Compass3 offsets on the Y axis
+    // @DisplayName: Compass3 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
 
     // @Param: OFS3_Z
-    // @DisplayName: Compass3 offsets on the Z axis
+    // @DisplayName: Compass3 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
     // @Range: -400 400
+    // @Units: milligauss
     // @Increment: 1
     AP_GROUPINFO("OFS3",    13, Compass, _state[2].offset, 0),
 
@@ -203,13 +213,11 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
-    // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
-    // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 #endif
 
@@ -217,7 +225,6 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
-    // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 #endif
 
@@ -233,6 +240,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass2 orientation
     // @Description: The orientation of the second compass relative to the frame (if external) or autopilot board (if internal).
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
+    // @User: Advanced
     AP_GROUPINFO("ORIENT2", 19, Compass, _state[1].orientation, ROTATION_NONE),
 
     // @Param: EXTERN2
@@ -255,6 +263,7 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @DisplayName: Compass3 orientation
     // @Description: The orientation of the third compass relative to the frame (if external) or autopilot board (if internal).
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw136,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll90
+    // @User: Advanced
     AP_GROUPINFO("ORIENT3", 22, Compass, _state[2].orientation, ROTATION_NONE),
 
     // @Param: EXTERN3
@@ -268,66 +277,54 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
     // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA_Y
     // @DisplayName: Compass soft-iron diagonal Y component
     // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA_Z
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("DIA",    24, Compass, _state[0].diagonals, 0),
 
     // @Param: ODI_X
     // @DisplayName: Compass soft-iron off-diagonal X component
     // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI_Y
     // @DisplayName: Compass soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI_Z
     // @DisplayName: Compass soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("ODI",    25, Compass, _state[0].offdiagonals, 0),
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA2_Y
     // @DisplayName: Compass2 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA2_Z
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("DIA2",    26, Compass, _state[1].diagonals, 0),
 
     // @Param: ODI2_X
     // @DisplayName: Compass2 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI2_Y
     // @DisplayName: Compass2 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI2_Z
     // @DisplayName: Compass2 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("ODI2",    27, Compass, _state[1].offdiagonals, 0),
 #endif
 
@@ -335,33 +332,27 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
     // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA3_Y
     // @DisplayName: Compass3 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: DIA3_Z
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("DIA3",    28, Compass, _state[2].diagonals, 0),
 
     // @Param: ODI3_X
     // @DisplayName: Compass3 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI3_Y
     // @DisplayName: Compass3 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
 
     // @Param: ODI3_Z
     // @DisplayName: Compass3 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
-    // @User: Advanced
     AP_GROUPINFO("ODI3",    29, Compass, _state[2].offdiagonals, 0),
 #endif
 
@@ -381,14 +372,15 @@ const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
 // their values.
 //
 Compass::Compass(void) :
+    _compass_cal_autoreboot(false),
+    _cal_complete_requires_reboot(false),
+    _cal_has_run(false),
     _backend_count(0),
     _compass_count(0),
     _board_orientation(ROTATION_NONE),
     _null_init_done(false),
     _thr_or_curr(0.0f),
-    _hil_mode(false),
-    _cal_complete_requires_reboot(false),
-    _cal_has_run(false)
+    _hil_mode(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
@@ -635,7 +627,7 @@ Compass::calculate_heading(const Matrix3f &dcm_matrix) const
     float cos_pitch_sq = 1.0f-(dcm_matrix.c.x*dcm_matrix.c.x);
 
     // Tilt compensated magnetic field Y component:
-    const Vector3f &field = get_field_milligauss();
+    const Vector3f &field = get_field();
 
     float headY = field.y * dcm_matrix.c.z - field.z * dcm_matrix.c.y;
 
@@ -676,7 +668,7 @@ bool Compass::configured(uint8_t i)
     }
 
     // exit immediately if all offsets (mG) are zero
-    if (is_zero(get_offsets_milligauss(i).length())) {
+    if (is_zero(get_offsets(i).length())) {
         return false;
     }
 
@@ -784,7 +776,7 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
 
 bool Compass::consistent() const
 {
-    Vector3f primary_mag_field = get_field_milligauss();
+    Vector3f primary_mag_field = get_field();
     Vector3f primary_mag_field_norm;
 
     if (!primary_mag_field.is_zero()) {
@@ -804,7 +796,7 @@ bool Compass::consistent() const
 
     for (uint8_t i=0; i<get_count(); i++) {
         if (use_for_yaw(i)) {
-            Vector3f mag_field = get_field_milligauss(i);
+            Vector3f mag_field = get_field(i);
             Vector3f mag_field_norm;
 
             if (!mag_field.is_zero()) {

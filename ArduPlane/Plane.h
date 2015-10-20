@@ -127,6 +127,8 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+protected:
+    bool ins_checks(bool report);
 };
 
 /*

@@ -24,7 +24,7 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
@@ -47,12 +47,12 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        5
 #define MAG_GATE_DEFAULT        3
-#define MAG_CAL_DEFAULT         3
+#define MAG_CAL_DEFAULT         2
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
@@ -70,12 +70,12 @@
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
-#define MAG_PNOISE_DEFAULT      2.0E-03f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        5
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
-#define MAG_CAL_DEFAULT         3
+#define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: GPS_DELAY
     // @DisplayName: GPS measurement delay (msec)
     // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements.
-    // @Range: 0 500
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: HGT_DELAY
     // @DisplayName: Height measurement delay (msec)
     // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
-    // @Range: 0 500
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -209,8 +209,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
 
     // @Param: MAG_CAL
     // @DisplayName: Magnetometer calibration mode
-    // @Description: EKF_MAG_CAL = 0 enables calibration based on flying speed and altitude and is the default setting for Plane users. EKF_MAG_CAL = 1 enables calibration based on manoeuvre level and is the default setting for Copter and Rover users. EKF_MAG_CAL = 2 prevents magnetometer calibration regardless of flight condition and is recommended if in-flight magnetometer calibration is unreliable.
-    // @Values: 0:Speed and Height,1:Acceleration,2:Never,3:Always
+    // @Description: EKF_MAG_CAL = 0 enables calibration when airborne and is the default setting for Plane users. EKF_MAG_CAL = 1 enables calibration when manoeuvreing. EKF_MAG_CAL = 2 prevents magnetometer calibration regardless of flight condition, is recommended if the external magnetic field is varying and is the default for rovers. EKF_MAG_CAL = 3 enables calibration when the first in-air field and yaw reset has completed and is the default for copters. EKF_MAG_CAL = 4 enables calibration all the time.
+    // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always
     // @User: Advanced
     AP_GROUPINFO("MAG_CAL", 14, NavEKF2, _magCal, MAG_CAL_DEFAULT),
 
@@ -290,7 +290,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 - 500
+    // @Range: 0 - 250
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -393,7 +393,7 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gyroBiasNoiseScaler(2.0f),      // scale factor applied to imu gyro bias learning before the vehicle is armed
     hgtAvg_ms(100),                 // average number of msec between height measurements
     betaAvg_ms(100),                // average number of msec between synthetic sideslip measurements
-    covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
+    covTimeStepMax(0.1f),           // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
     fScaleFactorPnoise(1e-10f),     // Process noise added to focal length scale factor state variance at each time step
@@ -401,7 +401,8 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     flowIntervalMax_ms(100),        // maximum allowable time between flow fusion events
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
-    gndGradientSigma(2)             // RMS terrain gradient percentage assumed by the terrain height estimation
+    gndGradientSigma(2),            // RMS terrain gradient percentage assumed by the terrain height estimation
+    fusionTimeStep_ms(10)           // The nominal number of msec between covariance prediction and fusion operations
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -458,6 +459,16 @@ void NavEKF2::getVelNED(Vector3f &vel) const
     if (core) {
         core->getVelNED(vel);
     }
+}
+
+// Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+float NavEKF2::getPosDownDerivative(void) const
+{
+    // return the value calculated from a complmentary filer applied to the EKF height and vertical acceleration
+    if (core) {
+        return core->getPosDownDerivative();
+    }
+    return 0.0f;
 }
 
 // This returns the specific forces in the NED frame
