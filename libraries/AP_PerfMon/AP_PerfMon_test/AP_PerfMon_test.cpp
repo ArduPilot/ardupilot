@@ -8,7 +8,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_PerfMon/AP_PerfMon.h>        // PerfMonitor library
 
