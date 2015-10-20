@@ -11,10 +11,6 @@
 #include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
 #include <AP_GPS/AP_GPS.h>
 #include <DataFlash/DataFlash.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
