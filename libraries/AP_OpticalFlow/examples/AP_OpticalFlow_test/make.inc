@@ -15,6 +15,7 @@ LIBRARIES += AP_Notify
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_Param
 LIBRARIES += AP_Progmem
+LIBRARIES += AP_Scheduler
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_Vehicle
 LIBRARIES += DataFlash
