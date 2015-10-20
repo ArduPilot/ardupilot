@@ -663,29 +663,33 @@ void NavEKF2_core::FuseOptFlow()
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
             // number of operations
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=5; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=5; j++) {
                     KH[i][j] = Kfusion[i] * H_LOS[j];
                 }
-                for (uint8_t j = 6; j<=7; j++) {
+                for (unsigned j = 6; j<=7; j++) {
                     KH[i][j] = 0.0f;
                 }
                 KH[i][8] = Kfusion[i] * H_LOS[8];
-                for (uint8_t j = 9; j<=23; j++) {
+                for (unsigned j = 9; j<=23; j++) {
                     KH[i][j] = 0.0f;
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                    KHP[i][j] = 0;
-                    for (uint8_t k = 0; k<=5; k++) {
-                        KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-                    }
-                    KHP[i][j] = KHP[i][j] + KH[i][8] * P[8][j];
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
+                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                    ftype res = 0;
+                    res += KH[i][0] * P[0][j];
+                    res += KH[i][1] * P[1][j];
+                    res += KH[i][2] * P[2][j];
+                    res += KH[i][3] * P[3][j];
+                    res += KH[i][4] * P[4][j];
+                    res += KH[i][5] * P[5][j];
+                    res += KH[i][8] * P[8][j];
+                    KHP[i][j] = res;
                 }
             }
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
             }
