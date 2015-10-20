@@ -2,14 +2,7 @@
  *       Example sketch to demonstrate use of DerivativeFilter library.
  */
 
-#include <stdlib.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
 
