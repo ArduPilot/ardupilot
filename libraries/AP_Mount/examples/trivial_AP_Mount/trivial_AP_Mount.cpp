@@ -29,7 +29,6 @@
 
 #include <AP_Mount/AP_Mount.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup () {
