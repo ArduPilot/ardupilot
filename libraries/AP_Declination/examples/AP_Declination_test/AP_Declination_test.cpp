@@ -10,8 +10,6 @@
 #include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static const int16_t dec_tbl[37][73] = \
