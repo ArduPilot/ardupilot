@@ -19,14 +19,17 @@ namespace Linux {
     class LinuxStorage;
     class LinuxGPIO_BBB;
     class LinuxGPIO_RPI;
+    class LinuxGPIO_Sysfs;
     class LinuxStorage;
     class LinuxStorage_FRAM;
     class LinuxDigitalSource;
+    class LinuxDigitalSource_Sysfs;
     class LinuxRCInput;
     class LinuxRCInput_PRU;
     class LinuxRCInput_AioPRU;
     class LinuxRCInput_Navio;
     class LinuxRCInput_Raspilot;
+    class LinuxRCInput_UART;
     class LinuxRCInput_ZYNQ;
     class LinuxRCInput_UDP;
     class LinuxRCOutput_PRU;
