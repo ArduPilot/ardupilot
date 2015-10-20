@@ -23,8 +23,8 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxSPIUARTDriver::LinuxSPIUARTDriver() :
-    LinuxUARTDriver(false),
+SPIUARTDriver::SPIUARTDriver() :
+    UARTDriver(false),
     _spi(NULL),
     _spi_sem(NULL),
     _last_update_timestamp(0),
@@ -35,20 +35,20 @@ LinuxSPIUARTDriver::LinuxSPIUARTDriver() :
     _writebuf = NULL;
 }
 
-bool LinuxSPIUARTDriver::sem_take_nonblocking()
+bool SPIUARTDriver::sem_take_nonblocking()
 {
     return _spi_sem->take_nonblocking();
 }
 
-void LinuxSPIUARTDriver::sem_give()
+void SPIUARTDriver::sem_give()
 {
     _spi_sem->give();
 }
 
-void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (device_path != NULL) {
-        LinuxUARTDriver::begin(b,rxS,txS);
+        UARTDriver::begin(b,rxS,txS);
         if ( is_initialized()) {
             _external = true;
             return;
@@ -129,10 +129,10 @@ void LinuxSPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
    _initialised = true;
 }
 
-int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
+int SPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 {
     if (_external) {
-        return LinuxUARTDriver::_write_fd(buf,size);
+        return UARTDriver::_write_fd(buf,size);
     } 
 
     if (!sem_take_nonblocking()) {
@@ -150,7 +150,7 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
     /* Since all SPI-transactions are transfers we need update
      * the _readbuf. I do believe there is a way to encapsulate 
      * this operation since it's the same as in the
-     * LinuxUARTDriver::write().  
+     * UARTDriver::write().  
      */
 
     uint8_t *buffer = _buffer;
@@ -194,10 +194,10 @@ int LinuxSPIUARTDriver::_write_fd(const uint8_t *buf, uint16_t size)
 }
 
 static const uint8_t ff_stub[300] = {0xff};
-int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
+int SPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
-        return LinuxUARTDriver::_read_fd(buf, n);
+        return UARTDriver::_read_fd(buf, n);
     }
 
     if (!sem_take_nonblocking()) {
@@ -223,10 +223,10 @@ int LinuxSPIUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
     return n;
 }
 
-void LinuxSPIUARTDriver::_timer_tick(void)
+void SPIUARTDriver::_timer_tick(void)
 {
     if (_external) {
-        LinuxUARTDriver::_timer_tick();
+        UARTDriver::_timer_tick();
         return;
     }
     /* lower the update rate */
@@ -234,7 +234,7 @@ void LinuxSPIUARTDriver::_timer_tick(void)
         return;
     }
 
-    LinuxUARTDriver::_timer_tick();
+    UARTDriver::_timer_tick();
 
     _last_update_timestamp = hal.scheduler->micros();
 }

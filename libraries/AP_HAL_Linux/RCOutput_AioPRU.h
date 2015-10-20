@@ -19,7 +19,7 @@
 #define RCOUT_PRUSS_IRAM_BASE 0x4a338000
 #define PWM_CHAN_COUNT 12
 
-class Linux::LinuxRCOutput_AioPRU : public AP_HAL::RCOutput {
+class Linux::RCOutput_AioPRU : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);

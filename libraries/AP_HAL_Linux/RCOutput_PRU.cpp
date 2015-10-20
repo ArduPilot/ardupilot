@@ -29,7 +29,7 @@ static void catch_sigbus(int sig)
 {
     hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void LinuxRCOutput_PRU::init(void* machtnicht)
+void RCOutput_PRU::init(void* machtnicht)
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);
@@ -43,7 +43,7 @@ void LinuxRCOutput_PRU::init(void* machtnicht)
     set_freq(0xFFFFFFFF, 50);
 }
 
-void LinuxRCOutput_PRU::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
+void RCOutput_PRU::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB corresponds to CHAN_1
 {
     uint8_t i;
     unsigned long tick=TICK_PER_S/(unsigned long)freq_hz;
@@ -55,32 +55,32 @@ void LinuxRCOutput_PRU::set_freq(uint32_t chmask, uint16_t freq_hz)            /
     }
 }
 
-uint16_t LinuxRCOutput_PRU::get_freq(uint8_t ch)
+uint16_t RCOutput_PRU::get_freq(uint8_t ch)
 {
     return TICK_PER_S/sharedMem_cmd->periodhi[chan_pru_map[ch]][0];
 }
 
-void LinuxRCOutput_PRU::enable_ch(uint8_t ch)
+void RCOutput_PRU::enable_ch(uint8_t ch)
 {
     sharedMem_cmd->enmask |= 1U<<chan_pru_map[ch];
 }
 
-void LinuxRCOutput_PRU::disable_ch(uint8_t ch)
+void RCOutput_PRU::disable_ch(uint8_t ch)
 {
     sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
 }
 
-void LinuxRCOutput_PRU::write(uint8_t ch, uint16_t period_us)
+void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 {
     sharedMem_cmd->periodhi[chan_pru_map[ch]][1] = TICK_PER_US*period_us;
 }
 
-uint16_t LinuxRCOutput_PRU::read(uint8_t ch)
+uint16_t RCOutput_PRU::read(uint8_t ch)
 {
     return (sharedMem_cmd->hilo_read[chan_pru_map[ch]][1]/TICK_PER_US);
 }
 
-void LinuxRCOutput_PRU::read(uint16_t* period_us, uint8_t len)
+void RCOutput_PRU::read(uint16_t* period_us, uint8_t len)
 {
     uint8_t i;
     if(len>PWM_CHAN_COUNT){

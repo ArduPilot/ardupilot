@@ -29,7 +29,7 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-void LinuxStorage::_storage_create(void)
+void Storage::_storage_create(void)
 {
     mkdir(STORAGE_DIR, 0777);
     unlink(STORAGE_FILE);
@@ -48,7 +48,7 @@ void LinuxStorage::_storage_create(void)
     close(fd);
 }
 
-void LinuxStorage::_storage_open(void)
+void Storage::_storage_open(void)
 {
     if (_initialised) {
         return;
@@ -97,7 +97,7 @@ void LinuxStorage::_storage_open(void)
   result is that a line is written more than once, but it won't result
   in a line not being written.
  */
-void LinuxStorage::_mark_dirty(uint16_t loc, uint16_t length)
+void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
     uint16_t end = loc + length;
     for (uint8_t line=loc>>LINUX_STORAGE_LINE_SHIFT;
@@ -107,7 +107,7 @@ void LinuxStorage::_mark_dirty(uint16_t loc, uint16_t length)
     }
 }
 
-void LinuxStorage::read_block(void *dst, uint16_t loc, size_t n) 
+void Storage::read_block(void *dst, uint16_t loc, size_t n) 
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -116,7 +116,7 @@ void LinuxStorage::read_block(void *dst, uint16_t loc, size_t n)
     memcpy(dst, &_buffer[loc], n);
 }
 
-void LinuxStorage::write_block(uint16_t loc, const void *src, size_t n) 
+void Storage::write_block(uint16_t loc, const void *src, size_t n) 
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
@@ -128,7 +128,7 @@ void LinuxStorage::write_block(uint16_t loc, const void *src, size_t n)
     }
 }
 
-void LinuxStorage::_timer_tick(void)
+void Storage::_timer_tick(void)
 {
     if (!_initialised || _dirty_mask == 0) {
         return;

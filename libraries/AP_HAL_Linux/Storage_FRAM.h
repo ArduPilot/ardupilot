@@ -12,10 +12,10 @@
 #define OPCODE_WRITE  0b0010        /* Write Memory */
 #define OPCODE_RDID   0b10011111    /* Read Device ID */
 
-class Linux::LinuxStorage_FRAM : public Linux::LinuxStorage 
+class Linux::Storage_FRAM : public Linux::Storage
 {
 public:
-    LinuxStorage_FRAM();
+    Storage_FRAM();
     void _timer_tick(void);
 
 private:

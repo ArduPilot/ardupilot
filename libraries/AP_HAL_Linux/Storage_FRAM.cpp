@@ -21,12 +21,12 @@ using namespace Linux;
 // card for ArduCopter and ArduPlane
 
 extern const AP_HAL::HAL& hal;
-LinuxStorage_FRAM::LinuxStorage_FRAM():
+Storage_FRAM::Storage_FRAM():
 _spi(NULL),
 _spi_sem(NULL)
 {}
 
-void LinuxStorage_FRAM::_storage_create(void)
+void Storage_FRAM::_storage_create(void)
 {
 
     int fd = open();
@@ -47,7 +47,7 @@ void LinuxStorage_FRAM::_storage_create(void)
     close(fd);
 }
 
-void LinuxStorage_FRAM::_storage_open(void)
+void Storage_FRAM::_storage_open(void)
 {
     if (_initialised) {
         return;
@@ -76,7 +76,7 @@ void LinuxStorage_FRAM::_storage_open(void)
     _initialised = true;
 }
 
-void LinuxStorage_FRAM::_timer_tick(void)
+void Storage_FRAM::_timer_tick(void)
 {
     if (!_initialised || _dirty_mask == 0) {
         return;
@@ -130,7 +130,7 @@ void LinuxStorage_FRAM::_timer_tick(void)
 
 //File control function overloads
 
-int8_t LinuxStorage_FRAM::open()
+int8_t Storage_FRAM::open()
 {
     if(_initialised){
         return 0;
@@ -170,13 +170,13 @@ int8_t LinuxStorage_FRAM::open()
     return 0;
 }
 
-int32_t LinuxStorage_FRAM::write(uint16_t fd,uint8_t *Buff, uint16_t NumBytes){
+int32_t Storage_FRAM::write(uint16_t fd,uint8_t *Buff, uint16_t NumBytes){
     if( _register_write(Buff,fptr,NumBytes) == -1){
         return -1;
     }
     return NumBytes;
 }
-int32_t LinuxStorage_FRAM::read(uint16_t fd, uint8_t *Buff, uint16_t NumBytes){
+int32_t Storage_FRAM::read(uint16_t fd, uint8_t *Buff, uint16_t NumBytes){
     for(uint16_t i=fptr;i<(fptr+NumBytes);i++){
         Buff[i-fptr]= _register_read(i,OPCODE_READ);
 
@@ -187,14 +187,14 @@ int32_t LinuxStorage_FRAM::read(uint16_t fd, uint8_t *Buff, uint16_t NumBytes){
     fptr+=NumBytes; 
     return NumBytes; 
 }
-uint32_t LinuxStorage_FRAM::lseek(uint16_t fd,uint32_t offset,uint16_t whence){
+uint32_t Storage_FRAM::lseek(uint16_t fd,uint32_t offset,uint16_t whence){
     fptr = offset;
     return offset; 
 }
 
 //FRAM I/O functions
 
-int8_t LinuxStorage_FRAM::_register_write( uint8_t* src, uint16_t addr, uint16_t len ){
+int8_t Storage_FRAM::_register_write( uint8_t* src, uint16_t addr, uint16_t len ){
 
     uint8_t *tx;
     uint8_t *rx;
@@ -219,7 +219,7 @@ int8_t LinuxStorage_FRAM::_register_write( uint8_t* src, uint16_t addr, uint16_t
     return len;
 }
 
-int8_t LinuxStorage_FRAM::_write_enable(bool enable)
+int8_t Storage_FRAM::_write_enable(bool enable)
 {
     uint8_t tx[2];
     uint8_t rx[2];
@@ -236,7 +236,7 @@ int8_t LinuxStorage_FRAM::_write_enable(bool enable)
     
 }
 
-int8_t LinuxStorage_FRAM::_register_read( uint16_t addr, uint8_t opcode )
+int8_t Storage_FRAM::_register_read( uint16_t addr, uint8_t opcode )
 {
     uint8_t tx[4] = {opcode, (uint8_t)((addr >> 8U)), (uint8_t)(addr & 0xFF), 0};
     uint8_t rx[4];
@@ -247,7 +247,7 @@ int8_t LinuxStorage_FRAM::_register_read( uint16_t addr, uint8_t opcode )
     return rx[3];
 }
 
-int8_t LinuxStorage_FRAM::transaction(uint8_t* tx, uint8_t* rx, uint16_t len){
+int8_t Storage_FRAM::transaction(uint8_t* tx, uint8_t* rx, uint16_t len){
     _spi_sem = _spi->get_semaphore();
     if (!_spi_sem->take(100)) {
        // FRAM: Unable to get semaphore

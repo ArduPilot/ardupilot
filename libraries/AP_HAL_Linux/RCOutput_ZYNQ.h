@@ -14,7 +14,7 @@
 #define PWM_CMD_TEST	         6	/* various crap */
 
 
-class Linux::LinuxRCOutput_ZYNQ : public AP_HAL::RCOutput {
+class Linux::RCOutput_ZYNQ : public AP_HAL::RCOutput {
     void     init(void* machtnichts);
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);

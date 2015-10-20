@@ -41,7 +41,7 @@ using namespace Linux;
  * argument : pwm_sysfs_path is the path to the pwm directory,
  * i.e /sys/class/pwm/pwm_6 on the bebop
  */
-LinuxHeatPwm::LinuxHeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint32_t period_ns, float target) :
+HeatPwm::HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint32_t period_ns, float target) :
     _Kp(Kp),
     _Ki(Ki),
     _period_ns(period_ns),
@@ -86,7 +86,7 @@ LinuxHeatPwm::LinuxHeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint3
     _set_run();
 }
 
-void LinuxHeatPwm::set_imu_temp(float current)
+void HeatPwm::set_imu_temp(float current)
 {
     float error, output;
 
@@ -115,21 +115,21 @@ void LinuxHeatPwm::set_imu_temp(float current)
     _last_temp_update = hal.scheduler->millis();
 }
 
-void LinuxHeatPwm::_set_duty(uint32_t duty)
+void HeatPwm::_set_duty(uint32_t duty)
 {
     if (dprintf(_duty_fd, "0x%x", duty) < 0) {
         perror("pwm set_duty");
     }
 }
 
-void LinuxHeatPwm::_set_period(uint32_t period)
+void HeatPwm::_set_period(uint32_t period)
 {
     if (dprintf(_period_fd, "0x%x", period) < 0) {
         perror("pwm set_period");
     }
 }
 
-void LinuxHeatPwm::_set_run()
+void HeatPwm::_set_run()
 {
     if (dprintf(_run_fd, "1") < 0) {
         perror("pwm set_run");

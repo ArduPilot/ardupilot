@@ -45,8 +45,8 @@ typedef struct {
 } dma_cb_t;
 
 class Memory_table {
-// Allow LinuxRCInput_Navio access to private members of Memory_table
-friend class Linux::LinuxRCInput_Navio;
+// Allow RCInput_Navio access to private members of Memory_table
+friend class Linux::RCInput_Navio;
   
 private:
     void** _virt_pages;
@@ -74,13 +74,13 @@ public:
 };
 
 
-class Linux::LinuxRCInput_Navio : public Linux::LinuxRCInput 
+class Linux::RCInput_Navio : public Linux::RCInput
 { 
 public:
     void init(void*);
     void _timer_tick(void);
-    LinuxRCInput_Navio();
-    ~LinuxRCInput_Navio();
+    RCInput_Navio();
+    ~RCInput_Navio();
     
 private:
 

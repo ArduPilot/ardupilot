@@ -6,10 +6,10 @@
 #include "AP_HAL_Linux_Namespace.h"
 #include "ToneAlarmDriver.h"
 
-class Linux::LinuxUtil : public AP_HAL::Util {
+class Linux::Util : public AP_HAL::Util {
 public:
-    static LinuxUtil *from(AP_HAL::Util *util) {
-        return static_cast<LinuxUtil*>(util);
+    static Util *from(AP_HAL::Util *util) {
+        return static_cast<Util*>(util);
     }
 
     void init(int argc, char * const *argv);
@@ -40,7 +40,7 @@ public:
 
 private:
     static Linux::ToneAlarm _toneAlarm;
-    Linux::LinuxHeat *_heat;
+    Linux::Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;

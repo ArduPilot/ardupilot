@@ -20,9 +20,9 @@
 #include "AP_HAL_Linux.h"
 #include "Heat.h"
 
-class Linux::LinuxHeatPwm : public Linux::LinuxHeat {
+class Linux::HeatPwm : public Linux::Heat {
 public:
-    LinuxHeatPwm(const char* pwm_sysfs_path, float Kp, float Ki,uint32_t period_ns, float target);
+    HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki,uint32_t period_ns, float target);
     void set_imu_temp(float current)override;
 
 private:
