@@ -51,7 +51,11 @@ public:
       return a stream for access to nsh shell
      */
     AP_HAL::Stream *get_shell_stream() { return &_shell_stream; }
-
+    perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
+    void perf_begin(perf_counter_t ) override;
+    void perf_end(perf_counter_t) override;
+    void perf_count(perf_counter_t) override;
+    
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;
