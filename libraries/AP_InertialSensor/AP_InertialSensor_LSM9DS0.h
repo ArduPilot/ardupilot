@@ -78,6 +78,9 @@ private:
     uint8_t                         _gyro_instance;
     uint8_t                         _accel_instance;
 
+    void                            _gyro_disable_i2c();
+    void                            _accel_disable_i2c();
+
     void                            _gyro_init();
     void                            _accel_init();
 
