@@ -107,7 +107,7 @@ void NavEKF2_core::alignYawGPS()
 void NavEKF2_core::SelectMagFusion()
 {
     // start performance timer
-    perf_begin(_perf_FuseMagnetometer);
+    hal.util->perf_begin(_perf_FuseMagnetometer);
 
     // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been perfomred on that time step
     // used for load levelling
@@ -145,15 +145,15 @@ void NavEKF2_core::SelectMagFusion()
             }
             // fuse the three magnetometer componenents sequentially
             for (mag_state.obsIndex = 0; mag_state.obsIndex <= 2; mag_state.obsIndex++) {
-                perf_begin(_perf_test[0]);
+                hal.util->perf_begin(_perf_test[0]);
                 FuseMagnetometer();
-                perf_end(_perf_test[0]);
+                hal.util->perf_end(_perf_test[0]);
             }
         }
     }
 
     // stop performance timer
-    perf_end(_perf_FuseMagnetometer);
+    hal.util->perf_end(_perf_FuseMagnetometer);
 }
 
 /*
@@ -163,7 +163,7 @@ void NavEKF2_core::SelectMagFusion()
 */
 void NavEKF2_core::FuseMagnetometer()
 {
-    perf_begin(_perf_test[1]);
+    hal.util->perf_begin(_perf_test[1]);
     
     // declarations
     ftype &q0 = mag_state.q0;
@@ -186,7 +186,7 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
 
-    perf_end(_perf_test[1]);
+    hal.util->perf_end(_perf_test[1]);
     
     // perform sequential fusion of magnetometer measurements.
     // this assumes that the errors in the different components are
@@ -197,7 +197,7 @@ void NavEKF2_core::FuseMagnetometer()
     // calculate observation jacobians and Kalman gains
     if (obsIndex == 0)
     {
-        perf_begin(_perf_test[2]);
+        hal.util->perf_begin(_perf_test[2]);
         // copy required states to local variable names
         q0       = stateStruct.quat[0];
         q1       = stateStruct.quat[1];
@@ -257,7 +257,7 @@ void NavEKF2_core::FuseMagnetometer()
             CovarianceInit();
             obsIndex = 1;
             faultStatus.bad_xmag = true;
-            perf_end(_perf_test[2]);
+            hal.util->perf_end(_perf_test[2]);
             return;
         }
         SK_MX[1] = magE*SH_MAG[0] + magD*SH_MAG[3] - magN*(SH_MAG[8] - 2.0f*q1*q2);
@@ -310,11 +310,11 @@ void NavEKF2_core::FuseMagnetometer()
         // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
         magFusePerformed = true;
         magFuseRequired = true;
-        perf_end(_perf_test[2]);
+        hal.util->perf_end(_perf_test[2]);
     }
     else if (obsIndex == 1) // we are now fusing the Y measurement
     {
-        perf_begin(_perf_test[3]);
+        hal.util->perf_begin(_perf_test[3]);
         // calculate observation jacobians
         for (uint8_t i = 0; i<=stateIndexLim; i++) H_MAG[i] = 0.0f;
         H_MAG[0] = magD*SH_MAG[2] - SH_MAG[6] + magN*SH_MAG[5];
@@ -335,7 +335,7 @@ void NavEKF2_core::FuseMagnetometer()
             CovarianceInit();
             obsIndex = 2;
             faultStatus.bad_ymag = true;
-            perf_end(_perf_test[3]);
+            hal.util->perf_end(_perf_test[3]);
             return;
         }
         SK_MY[1] = magE*SH_MAG[4] + magD*SH_MAG[7] + magN*SH_MAG[1];
@@ -383,11 +383,11 @@ void NavEKF2_core::FuseMagnetometer()
         // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
         magFusePerformed = true;
         magFuseRequired = true;
-        perf_end(_perf_test[3]);
+        hal.util->perf_end(_perf_test[3]);
     }
     else if (obsIndex == 2) // we are now fusing the Z measurement
     {
-        perf_begin(_perf_test[4]);
+        hal.util->perf_begin(_perf_test[4]);
         // calculate observation jacobians
         for (uint8_t i = 0; i<=stateIndexLim; i++) H_MAG[i] = 0.0f;
         H_MAG[0] = magN*(SH_MAG[8] - 2.0f*q1*q2) - magD*SH_MAG[3] - magE*SH_MAG[0];
@@ -408,7 +408,7 @@ void NavEKF2_core::FuseMagnetometer()
             CovarianceInit();
             obsIndex = 3;
             faultStatus.bad_zmag = true;
-            perf_end(_perf_test[4]);
+            hal.util->perf_end(_perf_test[4]);
             return;
         }
         SK_MZ[1] = magE*SH_MAG[0] + magD*SH_MAG[3] - magN*(SH_MAG[8] - 2.0f*q1*q2);
@@ -456,10 +456,10 @@ void NavEKF2_core::FuseMagnetometer()
         // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
         magFusePerformed = true;
         magFuseRequired = false;
-        perf_end(_perf_test[4]);
+        hal.util->perf_end(_perf_test[4]);
     }
 
-    perf_begin(_perf_test[5]);
+    hal.util->perf_begin(_perf_test[5]);
     // calculate the measurement innovation
     innovMag[obsIndex] = MagPred[obsIndex] - magDataDelayed.mag[obsIndex];
     // calculate the innovation test ratio
@@ -470,7 +470,7 @@ void NavEKF2_core::FuseMagnetometer()
     // In this case we might as well try using the magnetometer, but with a reduced weighting
     if (magHealth || ((magTestRatio[obsIndex] < 1.0f) && !assume_zero_sideslip() && magTimeout)) {
 
-        perf_begin(_perf_test[8]);
+        hal.util->perf_begin(_perf_test[8]);
         
         // zero the attitude error state - by definition it is assumed to be zero before each observaton fusion
         stateStruct.angErr.zero();
@@ -510,8 +510,8 @@ void NavEKF2_core::FuseMagnetometer()
                 KH[i][j] = 0.0f;
             }
         }
-        perf_end(_perf_test[8]);
-        perf_begin(_perf_test[9]);
+        hal.util->perf_end(_perf_test[8]);
+        hal.util->perf_begin(_perf_test[9]);
         for (unsigned j = 0; j<=stateIndexLim; j++) {
             for (unsigned i = 0; i<=stateIndexLim; i++) {
                 ftype res = 0;
@@ -532,18 +532,18 @@ void NavEKF2_core::FuseMagnetometer()
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
-        perf_end(_perf_test[9]);
+        hal.util->perf_end(_perf_test[9]);
     }
 
-    perf_end(_perf_test[5]);
+    hal.util->perf_end(_perf_test[5]);
     // force the covariance matrix to be symmetrical and limit the variances to prevent
     // ill-condiioning.
-    perf_begin(_perf_test[6]);
+    hal.util->perf_begin(_perf_test[6]);
     ForceSymmetry();
-    perf_end(_perf_test[6]);
-    perf_begin(_perf_test[7]);
+    hal.util->perf_end(_perf_test[6]);
+    hal.util->perf_begin(_perf_test[7]);
     ConstrainVariances();
-    perf_end(_perf_test[7]);
+    hal.util->perf_end(_perf_test[7]);
 }
 
 

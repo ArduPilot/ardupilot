@@ -35,29 +35,27 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
 
     //variables
     lastRngMeasTime_ms(0),          // time in msec that the last range measurement was taken
-    rngMeasIndex(0)                 // index into ringbuffer of current range measurement
+    rngMeasIndex(0),                // index into ringbuffer of current range measurement
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_UpdateFilter(perf_alloc(PC_ELAPSED, "EK2_UpdateFilter")),
-    _perf_CovariancePrediction(perf_alloc(PC_ELAPSED, "EK2_CovariancePrediction")),
-    _perf_FuseVelPosNED(perf_alloc(PC_ELAPSED, "EK2_FuseVelPosNED")),
-    _perf_FuseMagnetometer(perf_alloc(PC_ELAPSED, "EK2_FuseMagnetometer")),
-    _perf_FuseAirspeed(perf_alloc(PC_ELAPSED, "EK2_FuseAirspeed")),
-    _perf_FuseSideslip(perf_alloc(PC_ELAPSED, "EK2_FuseSideslip")),
-    _perf_TerrainOffset(perf_alloc(PC_ELAPSED, "EK2_TerrainOffset")),
-    _perf_FuseOptFlow(perf_alloc(PC_ELAPSED, "EK2_FuseOptFlow"))
-#endif
+    _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_UpdateFilter")),
+    _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_CovariancePrediction")),
+    _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseVelPosNED")),
+    _perf_FuseMagnetometer(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseMagnetometer")),
+    _perf_FuseAirspeed(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseAirspeed")),
+    _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseSideslip")),
+    _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_TerrainOffset")),
+    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_FuseOptFlow"))
 {
-    _perf_test[0] = perf_alloc(PC_ELAPSED, "EK2_Test0");
-    _perf_test[1] = perf_alloc(PC_ELAPSED, "EK2_Test1");
-    _perf_test[2] = perf_alloc(PC_ELAPSED, "EK2_Test2");
-    _perf_test[3] = perf_alloc(PC_ELAPSED, "EK2_Test3");
-    _perf_test[4] = perf_alloc(PC_ELAPSED, "EK2_Test4");
-    _perf_test[5] = perf_alloc(PC_ELAPSED, "EK2_Test5");
-    _perf_test[6] = perf_alloc(PC_ELAPSED, "EK2_Test6");
-    _perf_test[7] = perf_alloc(PC_ELAPSED, "EK2_Test7");
-    _perf_test[8] = perf_alloc(PC_ELAPSED, "EK2_Test8");
-    _perf_test[9] = perf_alloc(PC_ELAPSED, "EK2_Test9");
+    _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test0");
+    _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test1");
+    _perf_test[2] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test2");
+    _perf_test[3] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test3");
+    _perf_test[4] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test4");
+    _perf_test[5] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test5");
+    _perf_test[6] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test6");
+    _perf_test[7] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test7");
+    _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
+    _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
 }
 
 /********************************************************
@@ -349,7 +347,7 @@ void NavEKF2_core::UpdateFilter()
 #if EK2_DISABLE_INTERRUPTS
     irqstate_t istate = irqsave();
 #endif
-    perf_begin(_perf_UpdateFilter);
+    hal.util->perf_begin(_perf_UpdateFilter);
 
     // TODO - in-flight restart method
 
@@ -401,7 +399,7 @@ void NavEKF2_core::UpdateFilter()
     calcOutputStatesFast();
 
     // stop the timer used for load measurement
-    perf_end(_perf_UpdateFilter);
+    hal.util->perf_end(_perf_UpdateFilter);
 #if EK2_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
@@ -653,7 +651,7 @@ void  NavEKF2_core::calcOutputStatesFast() {
 */
 void NavEKF2_core::CovariancePrediction()
 {
-    perf_begin(_perf_CovariancePrediction);
+    hal.util->perf_begin(_perf_CovariancePrediction);
     float windVelSigma; // wind velocity 1-sigma process noise - m/s
     float dAngBiasSigma;// delta angle bias 1-sigma process noise - rad/s
     float dVelBiasSigma;// delta velocity bias 1-sigma process noise - m/s
@@ -1167,7 +1165,7 @@ void NavEKF2_core::CovariancePrediction()
     summedDelVel.zero();
     dt = 0.0f;
 
-    perf_end(_perf_CovariancePrediction);
+    hal.util->perf_end(_perf_CovariancePrediction);
 }
 
 
