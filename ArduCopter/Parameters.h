@@ -375,6 +375,7 @@ public:
     AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
+    AP_Int16        rtl_speed_cms;
     AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled

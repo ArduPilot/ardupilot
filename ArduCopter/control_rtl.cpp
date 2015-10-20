@@ -72,6 +72,11 @@ void Copter::rtl_run()
         rtl_land_run();
         break;
     }
+
+    // update speed from RTL_SPEED
+    if (!is_zero(g.rtl_speed_cms)) {
+        wp_nav.set_speed_xy(g.rtl_speed_cms);
+    }
 }
 
 // rtl_climb_start - initialise climb to RTL altitude
@@ -83,6 +88,11 @@ void Copter::rtl_climb_start()
 
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
+
+    // RTL_SPEED == 0 means use WPNAV_SPEED
+    if (!is_zero(g.rtl_speed_cms)) {
+        wp_nav.set_speed_xy(g.rtl_speed_cms);
+    }
 
     // get horizontal stopping point
     Vector3f destination;
