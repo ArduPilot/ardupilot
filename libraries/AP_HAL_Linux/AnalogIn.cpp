@@ -5,43 +5,43 @@
 
 using namespace Linux;
 
-LinuxAnalogSource::LinuxAnalogSource(float v) :
+AnalogSource::AnalogSource(float v) :
     _v(v)
 {}
 
-float LinuxAnalogSource::read_average() {
+float AnalogSource::read_average() {
     return _v;
 }
 
-float LinuxAnalogSource::voltage_average() {
+float AnalogSource::voltage_average() {
     return 5.0 * _v / 1024.0;
 }
 
-float LinuxAnalogSource::voltage_latest() {
+float AnalogSource::voltage_latest() {
     return 5.0 * _v / 1024.0;
 }
 
-float LinuxAnalogSource::read_latest() {
+float AnalogSource::read_latest() {
     return _v;
 }
 
-void LinuxAnalogSource::set_pin(uint8_t p)
+void AnalogSource::set_pin(uint8_t p)
 {}
 
-void LinuxAnalogSource::set_stop_pin(uint8_t p)
+void AnalogSource::set_stop_pin(uint8_t p)
 {}
 
-void LinuxAnalogSource::set_settle_time(uint16_t settle_time_ms)
+void AnalogSource::set_settle_time(uint16_t settle_time_ms)
 {}
 
-LinuxAnalogIn::LinuxAnalogIn()
+AnalogIn::AnalogIn()
 {}
 
-void LinuxAnalogIn::init(void* machtnichts)
+void AnalogIn::init(void* machtnichts)
 {}
 
-AP_HAL::AnalogSource* LinuxAnalogIn::channel(int16_t n) {
-    return new LinuxAnalogSource(1.11);
+AP_HAL::AnalogSource* AnalogIn::channel(int16_t n) {
+    return new AnalogSource(1.11);
 }
 
 #endif // CONFIG_HAL_BOARD

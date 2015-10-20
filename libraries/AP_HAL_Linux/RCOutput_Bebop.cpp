@@ -91,7 +91,7 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-LinuxRCOutput_Bebop::LinuxRCOutput_Bebop():
+RCOutput_Bebop::RCOutput_Bebop():
     _i2c_sem(NULL),
     _min_pwm(BEBOP_BLDC_MIN_PERIOD_US),
     _max_pwm(BEBOP_BLDC_MAX_PERIOD_US),
@@ -102,7 +102,7 @@ LinuxRCOutput_Bebop::LinuxRCOutput_Bebop():
     memset(_rpm, 0, sizeof(_rpm));
 }
 
-uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
+uint8_t RCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
 {
     uint8_t checksum = data[0];
     unsigned int i;
@@ -113,7 +113,7 @@ uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
     return checksum;
 }
 
-void LinuxRCOutput_Bebop::_start_prop()
+void RCOutput_Bebop::_start_prop()
 {
     uint8_t data = BEBOP_BLDC_STARTPROP;
 
@@ -126,7 +126,7 @@ void LinuxRCOutput_Bebop::_start_prop()
     _state = BEBOP_BLDC_STARTED;
 }
 
-void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
+void RCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
 {
     struct bldc_ref_speed_data data;
     int i;
@@ -147,7 +147,7 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     _i2c_sem->give();
 }
 
-int LinuxRCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
+int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 {
     struct bldc_obs_data data;
     int i;
@@ -183,7 +183,7 @@ int LinuxRCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
     return 0;
 }
 
-void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
+void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
 {
     if (!_i2c_sem->take(0))
         return;
@@ -193,7 +193,7 @@ void LinuxRCOutput_Bebop::_toggle_gpio(uint8_t mask)
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_Bebop::_stop_prop()
+void RCOutput_Bebop::_stop_prop()
 {
     uint8_t data = BEBOP_BLDC_STOP_PROP;
     _state = BEBOP_BLDC_STOPPED;
@@ -206,7 +206,7 @@ void LinuxRCOutput_Bebop::_stop_prop()
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_Bebop::_clear_error()
+void RCOutput_Bebop::_clear_error()
 {
     uint8_t data = BEBOP_BLDC_CLEAR_ERROR;
 
@@ -218,7 +218,7 @@ void LinuxRCOutput_Bebop::_clear_error()
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_Bebop::_play_sound(uint8_t sound)
+void RCOutput_Bebop::_play_sound(uint8_t sound)
 {
     if (!_i2c_sem->take(0))
         return;
@@ -228,7 +228,7 @@ void LinuxRCOutput_Bebop::_play_sound(uint8_t sound)
     _i2c_sem->give();
 }
 
-uint16_t LinuxRCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
+uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
 {
     float period_us_fl = period_us;
 
@@ -238,7 +238,7 @@ uint16_t LinuxRCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
     return (uint16_t)rpm_fl;
 }
 
-void LinuxRCOutput_Bebop::init(void* dummy)
+void RCOutput_Bebop::init(void* dummy)
 {
     int ret=0;
     struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };
@@ -293,26 +293,26 @@ exit:
     return;
 }
 
-void LinuxRCOutput_Bebop::set_freq(uint32_t chmask, uint16_t freq_hz)
+void RCOutput_Bebop::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
     _frequency = freq_hz;
 }
 
-uint16_t LinuxRCOutput_Bebop::get_freq(uint8_t ch)
+uint16_t RCOutput_Bebop::get_freq(uint8_t ch)
 {
     return _frequency;
 }
 
-void LinuxRCOutput_Bebop::enable_ch(uint8_t ch)
+void RCOutput_Bebop::enable_ch(uint8_t ch)
 {
 }
 
-void LinuxRCOutput_Bebop::disable_ch(uint8_t ch)
+void RCOutput_Bebop::disable_ch(uint8_t ch)
 {
     _stop_prop();
 }
 
-void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
+void RCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= BEBOP_BLDC_MOTORS_NUM)
         return;
@@ -323,12 +323,12 @@ void LinuxRCOutput_Bebop::write(uint8_t ch, uint16_t period_us)
         push();
 }
 
-void LinuxRCOutput_Bebop::cork()
+void RCOutput_Bebop::cork()
 {
     _corking = true;
 }
 
-void LinuxRCOutput_Bebop::push()
+void RCOutput_Bebop::push()
 {
     _corking = false;
     pthread_mutex_lock(&_mutex);
@@ -338,7 +338,7 @@ void LinuxRCOutput_Bebop::push()
     memset(_request_period_us, 0 ,sizeof(_request_period_us));
 }
 
-uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)
+uint16_t RCOutput_Bebop::read(uint8_t ch)
 {
     if (ch < BEBOP_BLDC_MOTORS_NUM) {
         return _period_us[ch];
@@ -347,27 +347,27 @@ uint16_t LinuxRCOutput_Bebop::read(uint8_t ch)
     }
 }
 
-void LinuxRCOutput_Bebop::read(uint16_t* period_us, uint8_t len)
+void RCOutput_Bebop::read(uint16_t* period_us, uint8_t len)
 {
     for (int i = 0; i < len; i++)
         period_us[i] = read(0 + i);
 }
 
-void LinuxRCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
+void RCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
 {
     _min_pwm = min_pwm;
     _max_pwm = max_pwm;
 }
 
 /* Separate thread to handle the Bebop motors controller */
-void* LinuxRCOutput_Bebop::_control_thread(void *arg) {
-    LinuxRCOutput_Bebop* rcout = (LinuxRCOutput_Bebop *) arg;
+void* RCOutput_Bebop::_control_thread(void *arg) {
+    RCOutput_Bebop* rcout = (RCOutput_Bebop *) arg;
 
     rcout->_run_rcout();
     return NULL;
 }
 
-void LinuxRCOutput_Bebop::_run_rcout()
+void RCOutput_Bebop::_run_rcout()
 {
     uint16_t current_period_us[BEBOP_BLDC_MOTORS_NUM];
     uint8_t i;

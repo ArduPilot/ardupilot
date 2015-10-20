@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::LinuxAnalogSource : public AP_HAL::AnalogSource {
+class Linux::AnalogSource : public AP_HAL::AnalogSource {
 public:
-    LinuxAnalogSource(float v);
+    AnalogSource(float v);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -19,9 +19,9 @@ private:
     float _v;
 };
 
-class Linux::LinuxAnalogIn : public AP_HAL::AnalogIn {
+class Linux::AnalogIn : public AP_HAL::AnalogIn {
 public:
-    LinuxAnalogIn();
+    AnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t n);
 

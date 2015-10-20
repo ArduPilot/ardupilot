@@ -64,7 +64,7 @@
 #define RPI_GPIO_30   30   // Pin 5
 #define RPI_GPIO_31   31   // Pin 6
 
-class Linux::LinuxGPIO_RPI : public AP_HAL::GPIO {
+class Linux::GPIO_RPI : public AP_HAL::GPIO {
 private:
     int  mem_fd;
     void *gpio_map;
@@ -77,7 +77,7 @@ private:
     void setPWM0Duty(uint8_t percent);
 
 public:
-    LinuxGPIO_RPI();
+    GPIO_RPI();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     void    pinMode(uint8_t pin, uint8_t output, uint8_t alt);

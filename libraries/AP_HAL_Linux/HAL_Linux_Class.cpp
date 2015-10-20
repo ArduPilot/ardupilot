@@ -17,61 +17,61 @@
 using namespace Linux;
 
 // 3 serial ports on Linux for now
-static LinuxUARTDriver uartADriver(true);
+static UARTDriver uartADriver(true);
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxSPIUARTDriver uartBDriver;
+static SPIUARTDriver uartBDriver;
 #else
-static LinuxUARTDriver uartBDriver(false);
+static UARTDriver uartBDriver(false);
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxRPIOUARTDriver uartCDriver;
+static RPIOUARTDriver uartCDriver;
 #else
-static LinuxUARTDriver uartCDriver(false);
+static UARTDriver uartCDriver(false);
 #endif
-static LinuxUARTDriver uartEDriver(false);
+static UARTDriver uartEDriver(false);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-static LinuxSemaphore  i2cSemaphore0;
-static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-0");
-static LinuxSemaphore  i2cSemaphore1;
-static LinuxI2CDriver  i2cDriver1(&i2cSemaphore1, "/dev/i2c-1");
-static LinuxSemaphore  i2cSemaphore2;
-static LinuxI2CDriver  i2cDriver2(&i2cSemaphore2, "/dev/i2c-2");
+static Semaphore  i2cSemaphore0;
+static I2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-0");
+static Semaphore  i2cSemaphore1;
+static I2CDriver  i2cDriver1(&i2cSemaphore1, "/dev/i2c-1");
+static Semaphore  i2cSemaphore2;
+static I2CDriver  i2cDriver2(&i2cSemaphore2, "/dev/i2c-2");
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxSemaphore  i2cSemaphore0;
-static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-2");
+static Semaphore  i2cSemaphore0;
+static I2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-2");
 #else
-static LinuxSemaphore  i2cSemaphore0;
-static LinuxI2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-1");
+static Semaphore  i2cSemaphore0;
+static I2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-1");
 #endif
-static LinuxSPIDeviceManager spiDeviceManager;
+static SPIDeviceManager spiDeviceManager;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 static NavioAnalogIn analogIn;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 static RaspilotAnalogIn analogIn;
 #else
-static LinuxAnalogIn analogIn;
+static AnalogIn analogIn;
 #endif
 
 /*
   select between FRAM and FS
  */
 #if LINUX_STORAGE_USE_FRAM == 1
-static LinuxStorage_FRAM storageDriver;
+static Storage_FRAM storageDriver;
 #else
-static LinuxStorage storageDriver;
+static Storage storageDriver;
 #endif
 
 /*
   use the BBB gpio driver on ERLE, PXF and BBBMINI
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxGPIO_BBB gpioDriver;
+static GPIO_BBB gpioDriver;
 /*
   use the RPI gpio driver on Navio
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxGPIO_RPI gpioDriver;
+static GPIO_RPI gpioDriver;
 #else
 static Empty::EmptyGPIO gpioDriver;
 #endif
@@ -80,51 +80,51 @@ static Empty::EmptyGPIO gpioDriver;
   use the PRU based RCInput driver on ERLE and PXF
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
-static LinuxRCInput_PRU rcinDriver;
+static RCInput_PRU rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxRCInput_AioPRU rcinDriver;
+static RCInput_AioPRU rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxRCInput_Navio rcinDriver;
+static RCInput_Navio rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxRCInput_Raspilot rcinDriver;
+static RCInput_Raspilot rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
-static LinuxRCInput_ZYNQ rcinDriver;
+static RCInput_ZYNQ rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-static LinuxRCInput_UDP  rcinDriver;
+static RCInput_UDP  rcinDriver;
 #else
-static LinuxRCInput rcinDriver;
+static RCInput rcinDriver;
 #endif
 
 /*
   use the PRU based RCOutput driver on ERLE and PXF
  */
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
-static LinuxRCOutput_PRU rcoutDriver;
+static RCOutput_PRU rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-static LinuxRCOutput_AioPRU rcoutDriver;
+static RCOutput_AioPRU rcoutDriver;
 /*
   use the PCA9685 based RCOutput driver on Navio
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-static LinuxRCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
+static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, true, 3, RPI_GPIO_27);
 /*
  use the STM32 based RCOutput driver on Raspilot
  */
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxRCOutput_Raspilot rcoutDriver;
+static RCOutput_Raspilot rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ZYNQ
-static LinuxRCOutput_ZYNQ rcoutDriver;
+static RCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-static LinuxRCOutput_Bebop rcoutDriver;
+static RCOutput_Bebop rcoutDriver;
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
 
-static LinuxScheduler schedulerInstance;
+static Scheduler schedulerInstance;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-static LinuxUtilRPI utilInstance;
+static UtilRPI utilInstance;
 #else
-static LinuxUtil utilInstance;
+static Util utilInstance;
 #endif
 
 HAL_Linux::HAL_Linux() :

@@ -10,9 +10,9 @@
 #include "GPIO_RPI.h"
 #endif
 
-class Linux::LinuxDigitalSource : public AP_HAL::DigitalSource {
+class Linux::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    LinuxDigitalSource(uint8_t v);
+    DigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 

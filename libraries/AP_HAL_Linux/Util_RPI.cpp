@@ -16,13 +16,13 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxUtilRPI::LinuxUtilRPI()
+UtilRPI::UtilRPI()
 {
     _check_rpi_version();
 }
 
 #define MAX_SIZE_LINE 50
-int LinuxUtilRPI::_check_rpi_version()
+int UtilRPI::_check_rpi_version()
 {
     char buffer[MAX_SIZE_LINE];
     const char* hardware_description_entry = "Hardware";
@@ -61,7 +61,7 @@ int LinuxUtilRPI::_check_rpi_version()
     return _rpi_version;
 }
 
-int LinuxUtilRPI::get_rpi_version() const
+int UtilRPI::get_rpi_version() const
 {
     return _rpi_version;
 }

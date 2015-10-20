@@ -5,7 +5,7 @@
 #include "AP_HAL_Linux.h"
 #include "RCInput.h"
 
-class Linux::LinuxRCInput_Raspilot : public Linux::LinuxRCInput
+class Linux::RCInput_Raspilot : public Linux::RCInput
 {
 public:
     void init(void*);

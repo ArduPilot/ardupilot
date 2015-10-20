@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void LinuxRCInput_ZYNQ::init(void*)
+void RCInput_ZYNQ::init(void*)
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {
@@ -37,7 +37,7 @@ void LinuxRCInput_ZYNQ::init(void*)
 /*
   called at 1kHz to check for new pulse capture data from the PL pulse timer
  */
-void LinuxRCInput_ZYNQ::_timer_tick()
+void RCInput_ZYNQ::_timer_tick()
 {
     uint32_t v;
 

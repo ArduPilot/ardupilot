@@ -17,7 +17,7 @@
 #ifndef __HEAT_H__
 #define __HEAT_H__
 
-class Linux::LinuxHeat {
+class Linux::Heat {
 public:
     virtual void set_imu_temp(float current) { }
 };

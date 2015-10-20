@@ -27,8 +27,8 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxRPIOUARTDriver::LinuxRPIOUARTDriver() :
-    LinuxUARTDriver(false),
+RPIOUARTDriver::RPIOUARTDriver() :
+    UARTDriver(false),
     _spi(NULL),
     _spi_sem(NULL),
     _last_update_timestamp(0),
@@ -40,27 +40,27 @@ LinuxRPIOUARTDriver::LinuxRPIOUARTDriver() :
     _writebuf = NULL;
 }
 
-bool LinuxRPIOUARTDriver::sem_take_nonblocking()
+bool RPIOUARTDriver::sem_take_nonblocking()
 {
     return _spi_sem->take_nonblocking();
 }
 
-void LinuxRPIOUARTDriver::sem_give()
+void RPIOUARTDriver::sem_give()
 {
     _spi_sem->give();
 }
 
-bool LinuxRPIOUARTDriver::isExternal()
+bool RPIOUARTDriver::isExternal()
 {
     return _external;
 }
 
-void LinuxRPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void RPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     //hal.console->printf("[RPIOUARTDriver]: begin \n");
     
     if (device_path != NULL) {
-        LinuxUARTDriver::begin(b,rxS,txS);
+        UARTDriver::begin(b,rxS,txS);
         if ( is_initialized()) {
             _external = true;
             return;
@@ -130,28 +130,28 @@ void LinuxRPIOUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 }
 
-int LinuxRPIOUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
+int RPIOUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
     if (_external) {
-        return LinuxUARTDriver::_write_fd(buf, n);
+        return UARTDriver::_write_fd(buf, n);
     } 
 
     return -1;
 }
 
-int LinuxRPIOUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
+int RPIOUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     if (_external) {
-        return LinuxUARTDriver::_read_fd(buf, n);
+        return UARTDriver::_read_fd(buf, n);
     }
     
     return -1;
 }
 
-void LinuxRPIOUARTDriver::_timer_tick(void)
+void RPIOUARTDriver::_timer_tick(void)
 {
     if (_external) {
-        LinuxUARTDriver::_timer_tick();
+        UARTDriver::_timer_tick();
         return;
     }
     

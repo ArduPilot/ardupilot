@@ -56,7 +56,7 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
+RCOutput_PCA9685::RCOutput_PCA9685(uint8_t addr,
                                              bool external_clock,
                                              uint8_t channel_offset,
                                              int16_t oe_pin_number) :
@@ -75,12 +75,12 @@ LinuxRCOutput_PCA9685::LinuxRCOutput_PCA9685(uint8_t addr,
         _osc_clock = PCA9685_INTERNAL_CLOCK;
 }
 
-LinuxRCOutput_PCA9685::~LinuxRCOutput_PCA9685()
+RCOutput_PCA9685::~RCOutput_PCA9685()
 {
     delete [] _pulses_buffer;
 }
 
-void LinuxRCOutput_PCA9685::init(void* machtnicht)
+void RCOutput_PCA9685::init(void* machtnicht)
 {
     _i2c_sem = hal.i2c->get_semaphore();
     if (_i2c_sem == NULL) {
@@ -102,7 +102,7 @@ void LinuxRCOutput_PCA9685::init(void* machtnicht)
     }
 }
 
-void LinuxRCOutput_PCA9685::reset_all_channels()
+void RCOutput_PCA9685::reset_all_channels()
 {
     if (!_i2c_sem->take(10)) {
         return;
@@ -117,7 +117,7 @@ void LinuxRCOutput_PCA9685::reset_all_channels()
     _i2c_sem->give();
 }
 
-void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
+void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
 
     /* Correctly finish last pulses */
@@ -160,22 +160,22 @@ void LinuxRCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
     _i2c_sem->give();
 }
 
-uint16_t LinuxRCOutput_PCA9685::get_freq(uint8_t ch)
+uint16_t RCOutput_PCA9685::get_freq(uint8_t ch)
 {
     return _frequency;
 }
 
-void LinuxRCOutput_PCA9685::enable_ch(uint8_t ch)
+void RCOutput_PCA9685::enable_ch(uint8_t ch)
 {
 
 }
 
-void LinuxRCOutput_PCA9685::disable_ch(uint8_t ch)
+void RCOutput_PCA9685::disable_ch(uint8_t ch)
 {
     write(ch, 0);
 }
 
-void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
+void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= (PWM_CHAN_COUNT - _channel_offset)) {
         return;
@@ -188,12 +188,12 @@ void LinuxRCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
         push();
 }
 
-void LinuxRCOutput_PCA9685::cork()
+void RCOutput_PCA9685::cork()
 {
     _corking = true;
 }
 
-void LinuxRCOutput_PCA9685::push()
+void RCOutput_PCA9685::push()
 {
     _corking = false;
 
@@ -239,12 +239,12 @@ void LinuxRCOutput_PCA9685::push()
     _pending_write_mask = 0;
 }
 
-uint16_t LinuxRCOutput_PCA9685::read(uint8_t ch)
+uint16_t RCOutput_PCA9685::read(uint8_t ch)
 {
     return _pulses_buffer[ch];
 }
 
-void LinuxRCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
+void RCOutput_PCA9685::read(uint16_t* period_us, uint8_t len)
 {
     for (int i = 0; i < len; i++)
         period_us[i] = read(0 + i);

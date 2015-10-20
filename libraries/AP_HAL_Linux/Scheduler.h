@@ -12,12 +12,12 @@
 #define LINUX_SCHEDULER_MAX_TIMER_PROCS 10
 #define LINUX_SCHEDULER_MAX_IO_PROCS 10
 
-class Linux::LinuxScheduler : public AP_HAL::Scheduler {
+class Linux::Scheduler : public AP_HAL::Scheduler {
 
 typedef void *(*pthread_startroutine_t)(void *);
 
 public:
-    LinuxScheduler();
+    Scheduler();
     void     init(void* machtnichts);
     void     delay(uint16_t ms);
     uint32_t millis();
@@ -90,8 +90,8 @@ private:
 
     uint64_t stopped_clock_usec;
 
-    LinuxSemaphore _timer_semaphore;
-    LinuxSemaphore _io_semaphore;
+    Semaphore _timer_semaphore;
+    Semaphore _io_semaphore;
 };
 
 #endif // CONFIG_HAL_BOARD

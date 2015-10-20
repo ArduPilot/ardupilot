@@ -79,9 +79,9 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 
-volatile uint32_t *LinuxRCInput_Navio::pcm_reg;
-volatile uint32_t *LinuxRCInput_Navio::clk_reg;
-volatile uint32_t *LinuxRCInput_Navio::dma_reg;
+volatile uint32_t *RCInput_Navio::pcm_reg;
+volatile uint32_t *RCInput_Navio::clk_reg;
+volatile uint32_t *RCInput_Navio::dma_reg;
 
 Memory_table::Memory_table()
 {
@@ -192,7 +192,7 @@ uint32_t Memory_table::get_page_count() const
 }
 
 //Physical addresses of peripheral depends on Raspberry Pi's version
-void LinuxRCInput_Navio::set_physical_addresses(int version)
+void RCInput_Navio::set_physical_addresses(int version)
 {
     if (version == 1) {
         dma_base = RCIN_NAVIO_RPI1_DMA_BASE;
@@ -207,7 +207,7 @@ void LinuxRCInput_Navio::set_physical_addresses(int version)
 }
 
 //Map peripheral to virtual memory
-void* LinuxRCInput_Navio::map_peripheral(uint32_t base, uint32_t len)
+void* RCInput_Navio::map_peripheral(uint32_t base, uint32_t len)
 {
     int fd = open("/dev/mem", O_RDWR);
     void * vaddr;
@@ -226,7 +226,7 @@ void* LinuxRCInput_Navio::map_peripheral(uint32_t base, uint32_t len)
 }
 
 //Method to init DMA control block
-void LinuxRCInput_Navio::init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb)
+void RCInput_Navio::init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb)
 {
     (*cbp)->info = mode;
     (*cbp)->src = source;
@@ -236,13 +236,13 @@ void LinuxRCInput_Navio::init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t sou
     (*cbp)->stride = stride;
 }
 
-void LinuxRCInput_Navio::stop_dma()
+void RCInput_Navio::stop_dma()
 {
     dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = 0;
 }
 
 /* We need to be sure that the DMA is stopped upon termination */
-void LinuxRCInput_Navio::termination_handler(int signum)
+void RCInput_Navio::termination_handler(int signum)
 {
     stop_dma();
     hal.scheduler->panic("Interrupted");
@@ -250,7 +250,7 @@ void LinuxRCInput_Navio::termination_handler(int signum)
 
 
 //This function is used to init DMA control blocks (setting sampling GPIO register, destination adresses, synchronization)
-void LinuxRCInput_Navio::init_ctrl_data()
+void RCInput_Navio::init_ctrl_data()
 {
     uint32_t phys_fifo_addr;
     uint32_t dest = 0;
@@ -329,7 +329,7 @@ void LinuxRCInput_Navio::init_ctrl_data()
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 */  
-void LinuxRCInput_Navio::init_PCM()
+void RCInput_Navio::init_PCM()
 {
     pcm_reg[RCIN_NAVIO_PCM_CS_A] = 1;                                          // Disable Rx+Tx, Enable PCM block
     hal.scheduler->delay_microseconds(100);
@@ -357,7 +357,7 @@ void LinuxRCInput_Navio::init_PCM()
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 */  
-void LinuxRCInput_Navio::init_DMA()
+void RCInput_Navio::init_DMA()
 {
     dma_reg[RCIN_NAVIO_DMA_CS | RCIN_NAVIO_DMA_CHANNEL << 8] = RCIN_NAVIO_DMA_RESET;                 //Reset DMA
     hal.scheduler->delay_microseconds(100);
@@ -369,19 +369,19 @@ void LinuxRCInput_Navio::init_DMA()
 
 
 //We must stop DMA when the process is killed
-void LinuxRCInput_Navio::set_sigaction()
+void RCInput_Navio::set_sigaction()
 {
     for (int i = 0; i < 64; i++) { 
         //catch all signals (like ctrl+c, ctrl+z, ...) to ensure DMA is disabled
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
-        sa.sa_handler = LinuxRCInput_Navio::termination_handler;
+        sa.sa_handler = RCInput_Navio::termination_handler;
         sigaction(i, &sa, NULL);
     }
 }
 
 //Initial setup of variables
-LinuxRCInput_Navio::LinuxRCInput_Navio():
+RCInput_Navio::RCInput_Navio():
     prev_tick(0),
     delta_time(0),
     curr_tick_inc(1000/RCIN_NAVIO_SAMPLE_FREQ),
@@ -392,7 +392,7 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     last_signal(228),
     state(RCIN_NAVIO_INITIAL_STATE)
 {
-    int version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
+    int version = UtilRPI::from(hal.util)->get_rpi_version();
     set_physical_addresses(version);
 
     //Init memory for buffer and for DMA control blocks. See comments in "init_ctrl_data()" to understand values "2" and "113"
@@ -400,26 +400,26 @@ LinuxRCInput_Navio::LinuxRCInput_Navio():
     con_blocks = new Memory_table(RCIN_NAVIO_BUFFER_LENGTH * 113, version);
 }
 
-LinuxRCInput_Navio::~LinuxRCInput_Navio()
+RCInput_Navio::~RCInput_Navio()
 {
     delete circle_buffer;
     delete con_blocks;
 }
 
-void LinuxRCInput_Navio::deinit()
+void RCInput_Navio::deinit()
 {
     stop_dma();
 }
 
 //Initializing necessary registers
-void LinuxRCInput_Navio::init_registers()
+void RCInput_Navio::init_registers()
 {
     dma_reg = (uint32_t*)map_peripheral(dma_base, RCIN_NAVIO_DMA_LEN);    
     pcm_reg = (uint32_t*)map_peripheral(pcm_base, RCIN_NAVIO_PCM_LEN);
     clk_reg = (uint32_t*)map_peripheral(clk_base, RCIN_NAVIO_CLK_LEN);
 }
 
-void LinuxRCInput_Navio::init(void*)
+void RCInput_Navio::init(void*)
 {
     
     init_registers();
@@ -448,7 +448,7 @@ void LinuxRCInput_Navio::init(void*)
 
 
 //Processing signal
-void LinuxRCInput_Navio::_timer_tick()
+void RCInput_Navio::_timer_tick()
 {
     int j;
     void* x;
