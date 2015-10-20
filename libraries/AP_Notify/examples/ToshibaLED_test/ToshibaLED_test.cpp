@@ -42,9 +42,6 @@ static ToshibaLED_PX4 toshiba_led;
 static ToshibaLED_I2C toshiba_led;
 #endif
 
-static uint8_t led_state;
-static uint8_t red, green, blue;
-
 void setup(void)
 {
     // display welcome message
