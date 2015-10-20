@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void LinuxRCInput_PRU::init(void*)
+void RCInput_PRU::init(void*)
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {
@@ -44,7 +44,7 @@ void LinuxRCInput_PRU::init(void*)
 /*
   called at 1kHz to check for new pulse capture data from the PRU
  */
-void LinuxRCInput_PRU::_timer_tick()
+void RCInput_PRU::_timer_tick()
 {
     while (ring_buffer->ring_head != ring_buffer->ring_tail) {
         if (ring_buffer->ring_tail >= NUM_RING_ENTRIES) {

@@ -6,12 +6,12 @@
 
 #include "SerialDevice.h"
 
-class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
+class Linux::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    LinuxUARTDriver(bool default_console);
+    UARTDriver(bool default_console);
 
-    static LinuxUARTDriver *from(AP_HAL::UARTDriver *uart) {
-        return static_cast<LinuxUARTDriver*>(uart);
+    static UARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<UARTDriver*>(uart);
     }
 
     /* Linux implementations of UARTDriver virtual methods */

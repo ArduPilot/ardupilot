@@ -143,7 +143,7 @@ void AP_BattMonitor_Bebop::read(void)
     BebopBLDC_ObsData data;
     float remaining, vbat, vbat_raw;
 
-    auto rcout = Linux::LinuxRCOutput_Bebop::from(hal.rcout);
+    auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
     tnow = hal.scheduler->micros();
 
     ret = rcout->read_obs_data(data);

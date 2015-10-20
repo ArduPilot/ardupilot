@@ -6,12 +6,12 @@
 
 #define LINUX_RC_INPUT_NUM_CHANNELS 16
 
-class Linux::LinuxRCInput : public AP_HAL::RCInput {
+class Linux::RCInput : public AP_HAL::RCInput {
 public:
-    LinuxRCInput();
+    RCInput();
 
-    static LinuxRCInput *from(AP_HAL::RCInput *rcinput) {
-        return static_cast<LinuxRCInput*>(rcinput);
+    static RCInput *from(AP_HAL::RCInput *rcinput) {
+        return static_cast<RCInput*>(rcinput);
     }
 
     virtual void init(void* machtnichts);

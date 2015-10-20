@@ -8,11 +8,11 @@
 #define PCA9685_SECONDARY_ADDRESS           0x41
 #define PCA9685_TERTIARY_ADDRESS            0x42
 
-class Linux::LinuxRCOutput_PCA9685 : public AP_HAL::RCOutput {
+class Linux::RCOutput_PCA9685 : public AP_HAL::RCOutput {
     public:
-    LinuxRCOutput_PCA9685(uint8_t addr, bool external_clock, uint8_t channel_offset,
+    RCOutput_PCA9685(uint8_t addr, bool external_clock, uint8_t channel_offset,
                           int16_t oe_pin_number);
-    ~LinuxRCOutput_PCA9685();
+    ~RCOutput_PCA9685();
     void     init(void* machtnichts);
     void     reset_all_channels();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);

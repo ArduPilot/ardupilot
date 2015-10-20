@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
+UARTDriver::UARTDriver(bool default_console) :
     device_path(NULL),
     _packetise(false),
     _flow_control(FLOW_CONTROL_DISABLE)
@@ -48,7 +48,7 @@ LinuxUARTDriver::LinuxUARTDriver(bool default_console) :
 /*
   set the tty device to use for this UART
  */
-void LinuxUARTDriver::set_device_path(const char *path)
+void UARTDriver::set_device_path(const char *path)
 {
     device_path = path;
 }
@@ -56,12 +56,12 @@ void LinuxUARTDriver::set_device_path(const char *path)
 /*
   open the tty
  */
-void LinuxUARTDriver::begin(uint32_t b) 
+void UARTDriver::begin(uint32_t b) 
 {
     begin(b, 0, 0);
 }
 
-void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
+void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS) 
 {
     if (device_path == NULL && _console) {
         _device = new ConsoleDevice();
@@ -116,7 +116,7 @@ void LinuxUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _allocate_buffers(rxS, txS);
 }
 
-void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
+void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
 {
     /* we have enough memory to have a larger transmit buffer for
      * all ports. This means we don't get delays while waiting to
@@ -161,7 +161,7 @@ void LinuxUARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
     }
 }
 
-void LinuxUARTDriver::_deallocate_buffers()
+void UARTDriver::_deallocate_buffers()
 {
     if (_readbuf) {
         free(_readbuf);
@@ -186,7 +186,7 @@ void LinuxUARTDriver::_deallocate_buffers()
         - tcp:*:1243:wait
         - udp:192.168.2.15:1243
 */
-LinuxUARTDriver::device_type LinuxUARTDriver::_parseDevicePath(const char *arg)
+UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
 
@@ -249,7 +249,7 @@ errout:
 }
 
 
-bool LinuxUARTDriver::_serial_start_connection()
+bool UARTDriver::_serial_start_connection()
 {
     _device = new UARTDevice(device_path);
     _connected = _device->open();
@@ -262,7 +262,7 @@ bool LinuxUARTDriver::_serial_start_connection()
 /*
   start a UDP connection for the serial port
  */
-void LinuxUARTDriver::_udp_start_connection(void)
+void UARTDriver::_udp_start_connection(void)
 {
     bool bcast = (_flag && strcmp(_flag, "bcast") == 0);
     _device = new UDPDevice(_ip, _base_port, bcast);
@@ -273,7 +273,7 @@ void LinuxUARTDriver::_udp_start_connection(void)
     _packetise = true;
 }
 
-void LinuxUARTDriver::_tcp_start_connection(void)
+void UARTDriver::_tcp_start_connection(void)
 {
     bool wait = (_flag && strcmp(_flag, "wait") == 0);
     _device = new TCPServerDevice(_ip, _base_port, wait);
@@ -284,7 +284,7 @@ void LinuxUARTDriver::_tcp_start_connection(void)
 /*
   shutdown a UART
  */
-void LinuxUARTDriver::end() 
+void UARTDriver::end() 
 {
     _initialised = false;
     _connected = false;
@@ -298,7 +298,7 @@ void LinuxUARTDriver::end()
 }
 
 
-void LinuxUARTDriver::flush() 
+void UARTDriver::flush() 
 {
     // we are not doing any buffering, so flush is a no-op
 }
@@ -307,7 +307,7 @@ void LinuxUARTDriver::flush()
 /*
   return true if the UART is initialised
  */
-bool LinuxUARTDriver::is_initialized() 
+bool UARTDriver::is_initialized() 
 {
     return _initialised;
 }
@@ -316,7 +316,7 @@ bool LinuxUARTDriver::is_initialized()
 /*
   enable or disable blocking writes
  */
-void LinuxUARTDriver::set_blocking_writes(bool blocking) 
+void UARTDriver::set_blocking_writes(bool blocking) 
 {
     _nonblocking_writes = !blocking;
 }
@@ -325,7 +325,7 @@ void LinuxUARTDriver::set_blocking_writes(bool blocking)
 /*
   do we have any bytes pending transmission?
  */
-bool LinuxUARTDriver::tx_pending() 
+bool UARTDriver::tx_pending() 
 { 
     return !BUF_EMPTY(_writebuf);
 }
@@ -333,7 +333,7 @@ bool LinuxUARTDriver::tx_pending()
 /*
   return the number of bytes available to be read
  */
-int16_t LinuxUARTDriver::available() 
+int16_t UARTDriver::available() 
 { 
     if (!_initialised) {
         return 0;
@@ -345,7 +345,7 @@ int16_t LinuxUARTDriver::available()
 /*
   how many bytes are available in the output buffer?
  */
-int16_t LinuxUARTDriver::txspace() 
+int16_t UARTDriver::txspace() 
 { 
     if (!_initialised) {
         return 0;
@@ -354,7 +354,7 @@ int16_t LinuxUARTDriver::txspace()
     return BUF_SPACE(_writebuf);
 }
 
-int16_t LinuxUARTDriver::read() 
+int16_t UARTDriver::read() 
 { 
     uint8_t c;
     if (!_initialised || _readbuf == NULL) {
@@ -369,7 +369,7 @@ int16_t LinuxUARTDriver::read()
 }
 
 /* Linux implementations of Print virtual methods */
-size_t LinuxUARTDriver::write(uint8_t c) 
+size_t UARTDriver::write(uint8_t c) 
 { 
     if (!_initialised) {
         return 0;
@@ -390,7 +390,7 @@ size_t LinuxUARTDriver::write(uint8_t c)
 /*
   write size bytes to the write buffer
  */
-size_t LinuxUARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised) {
         return 0;
@@ -442,7 +442,7 @@ size_t LinuxUARTDriver::write(const uint8_t *buffer, size_t size)
 /*
   try writing n bytes, handling an unresponsive port
  */
-int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
+int UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 {
     int ret = 0;
 
@@ -470,7 +470,7 @@ int LinuxUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 /*
   try reading n bytes, handling an unresponsive port
  */
-int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
+int UARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 {
     int ret;
 
@@ -488,7 +488,7 @@ int LinuxUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
   try to push out one lump of pending bytes
   return true if progress is made
  */
-bool LinuxUARTDriver::_write_pending_bytes(void)
+bool UARTDriver::_write_pending_bytes(void)
 {
     uint16_t n;
 
@@ -550,7 +550,7 @@ bool LinuxUARTDriver::_write_pending_bytes(void)
   1kHz in the timer thread. Doing it this way reduces the system call
   overhead in the main task enormously. 
  */
-void LinuxUARTDriver::_timer_tick(void)
+void UARTDriver::_timer_tick(void)
 {
     uint16_t n;
 
