@@ -41,9 +41,9 @@ public:
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
-    uint16_t get_num_logs(void);
+    uint16_t get_num_logs();
     uint16_t start_new_log(void);
-    void LogReadProcess(uint16_t log_num,
+    void LogReadProcess(const uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                         AP_HAL::BetterStream *port);
@@ -69,10 +69,15 @@ private:
     */
     void ReadBlock(void *pkt, uint16_t size);
 
-    uint16_t find_first_log(void);
+    uint16_t _log_num_from_list_entry(const uint16_t list_entry);
+
+    uint16_t find_oldest_log();
     int64_t disk_space_avail();
     int64_t disk_space();
     float avail_space_percent();
+
+    bool file_exists(const char *filename) const;
+    bool log_exists(const uint16_t lognum) const;
 
     const float min_avail_space_percent;
 
@@ -85,10 +90,10 @@ private:
     uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
-    char *_log_file_name(uint16_t log_num);
-    char *_lastlog_file_name(void);
-    uint32_t _get_log_size(uint16_t log_num);
-    uint32_t _get_log_time(uint16_t log_num);
+    char *_log_file_name(const uint16_t log_num) const;
+    char *_lastlog_file_name() const;
+    uint32_t _get_log_size(const uint16_t log_num) const;
+    uint32_t _get_log_time(const uint16_t log_num) const;
 
     void stop_logging(void);
 
