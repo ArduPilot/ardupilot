@@ -84,6 +84,11 @@ void Copter::rtl_climb_start()
     // initialise waypoint and spline controller
     wp_nav.wp_and_spline_init();
 
+    // RTL_SPEED == 0 means use WPNAV_SPEED
+    if (!is_zero(g.rtl_speed_cms)) {
+        wp_nav.set_speed_xy(g.rtl_speed_cms);
+    }
+
     // get horizontal stopping point
     Vector3f destination;
     wp_nav.get_wp_stopping_point_xy(destination);
