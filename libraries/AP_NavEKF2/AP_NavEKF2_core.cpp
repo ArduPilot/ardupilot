@@ -192,6 +192,10 @@ void NavEKF2_core::InitialiseVariables()
     imuNoiseFiltState0 = 0.0f;
     imuNoiseFiltState1 = 0.0f;
     lastImuSwitchState = IMUSWITCH_MIXED;
+    posVelFusionDelayed = false;
+    optFlowFusionDelayed = false;
+    airSpdFusionDelayed = false;
+    sideSlipFusionDelayed = false;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
