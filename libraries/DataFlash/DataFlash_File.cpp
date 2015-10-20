@@ -73,13 +73,11 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
 #endif
     _writebuf_head(0),
     _writebuf_tail(0),
-    _last_write_time(0)
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ,_perf_write(perf_alloc(PC_ELAPSED, "DF_write")),
-    _perf_fsync(perf_alloc(PC_ELAPSED, "DF_fsync")),
-    _perf_errors(perf_alloc(PC_COUNT, "DF_errors")),
-    _perf_overruns(perf_alloc(PC_COUNT, "DF_overruns"))
-#endif
+    _last_write_time(0),
+    _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
+    _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
+    _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
+    _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
 {}
 
 
@@ -374,7 +372,7 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
 
     // if no room for entire message - drop it:
     if (space < size) {
-        perf_count(_perf_overruns);
+        hal.util->perf_count(_perf_overruns);
         _dropped++;
         return false;
     }
@@ -827,7 +825,7 @@ void DataFlash_File::_io_timer(void)
         return;
     }
 
-    perf_begin(_perf_write);
+    hal.util->perf_begin(_perf_write);
 
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
@@ -851,7 +849,7 @@ void DataFlash_File::_io_timer(void)
     assert(_writebuf_head+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
-        perf_count(_perf_errors);
+        hal.util->perf_count(_perf_errors);
         close(_write_fd);
         _write_fd = -1;
         _initialised = false;
@@ -868,7 +866,7 @@ void DataFlash_File::_io_timer(void)
         ::fsync(_write_fd);
 #endif
     }
-    perf_end(_perf_write);
+    hal.util->perf_end(_perf_write);
 }
 
 #endif // HAL_OS_POSIX_IO

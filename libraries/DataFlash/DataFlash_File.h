@@ -12,15 +12,6 @@
 
 #if HAL_OS_POSIX_IO
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <systemlib/perf_counter.h>
-#else
-#define perf_begin(x)
-#define perf_end(x)
-#define perf_count(x)
-#endif
-
-
 #include "DataFlash_Backend.h"
 
 class DataFlash_File : public DataFlash_Backend
@@ -120,13 +111,11 @@ private:
         return 1024;
     };
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters
-    perf_counter_t  _perf_write;
-    perf_counter_t  _perf_fsync;
-    perf_counter_t  _perf_errors;
-    perf_counter_t  _perf_overruns;
-#endif
+    AP_HAL::Util::perf_counter_t  _perf_write;
+    AP_HAL::Util::perf_counter_t  _perf_fsync;
+    AP_HAL::Util::perf_counter_t  _perf_errors;
+    AP_HAL::Util::perf_counter_t  _perf_overruns;
 };
 
 #endif // HAL_OS_POSIX_IO
