@@ -17,14 +17,14 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
       offsets and scaling.
      */
 
+    // apply offsets
+    accel -= _imu._accel_offset[instance];
+
     // apply scaling
     const Vector3f &accel_scale = _imu._accel_scale[instance].get();
     accel.x *= accel_scale.x;
     accel.y *= accel_scale.y;
     accel.z *= accel_scale.z;
-
-    // apply offsets
-    accel -= _imu._accel_offset[instance];
 
     // rotate to body frame
     accel.rotate(_imu._board_orientation);
