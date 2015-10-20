@@ -181,6 +181,17 @@ void Copter::compass_cal_update()
     }
 }
 
+void Copter::accel_cal_update() {
+    accelcal.update();
+    if (motors.armed() && accelcal.get_status() != ACCEL_CAL_NOT_STARTED) {
+        accelcal.clear();
+    }
+    float trim_roll, trim_pitch;
+    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+    }
+}
+
 #if EPM_ENABLED == ENABLED
 // epm update - moves epm pwm output back to neutral after grab or release is completed
 void Copter::epm_update()

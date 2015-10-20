@@ -995,6 +995,7 @@ private:
     void run_cli(AP_HAL::UARTDriver *port);
     void init_capabilities(void);
     void dataflash_periodic(void);
+    void accel_cal_update(void);
 
 public:
     void mavlink_delay_cb();
