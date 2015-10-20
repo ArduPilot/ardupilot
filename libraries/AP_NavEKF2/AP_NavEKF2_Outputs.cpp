@@ -396,7 +396,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (frontend._fusionModeGPS == 3);
-    bool gpsNavPossible = !gpsNotAvailable && (frontend._fusionModeGPS <= 2);
+    bool gpsNavPossible = !gpsNotAvailable && (PV_AidingMode == AID_ABSOLUTE) && gpsGoodToAlign;
     bool filterHealthy = healthy() && tiltAlignComplete && yawAlignComplete;
 
     // set individual flags

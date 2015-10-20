@@ -167,7 +167,7 @@ void NavEKF2_core::InitialiseVariables()
     delAngCorrection.zero();
     delVelCorrection.zero();
     velCorrection.zero();
-    gpsQualGood = false;
+    gpsGoodToAlign = false;
     gpsNotAvailable = true;
     motorsArmed = false;
     prevMotorsArmed = false;

@@ -753,8 +753,8 @@ private:
     Vector3f delVelCorrection;      // correction applied to earth frame delta velocities used by output observer to track the EKF
     Vector3f velCorrection;         // correction applied to velocities used by the output observer to track the EKF
     float innovYaw;                 // compass yaw angle innovation (rad)
-    uint32_t timeTasReceived_ms;    // tie last TAS data was received (msec)
-    bool gpsQualGood;               // true when the GPS quality can be used to initialise the navigation system
+    uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
+    bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
     bool motorsArmed;               // true when the motors have been armed

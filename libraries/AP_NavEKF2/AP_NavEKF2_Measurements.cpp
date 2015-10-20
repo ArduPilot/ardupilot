@@ -490,7 +490,7 @@ void NavEKF2_core::readGpsData()
             // Monitor quality of the GPS velocity data before and after alignment using separate checks
             if (PV_AidingMode != AID_ABSOLUTE) {
                 // Pre-alignment checks
-                gpsQualGood = calcGpsGoodToAlign();
+                gpsGoodToAlign = calcGpsGoodToAlign();
             } else {
                 // Post-alignment checks
                 calcGpsGoodForFlight();
@@ -501,7 +501,7 @@ void NavEKF2_core::readGpsData()
             const struct Location &gpsloc = _ahrs->get_gps().location();
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-            } else if (gpsQualGood) {
+            } else if (gpsGoodToAlign) {
                 // Set the NE origin to the current GPS position
                 setOrigin();
                 // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
