@@ -7,7 +7,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
 
 #include <AP_HAL.h>
-#include "DataFlash.h"
+#include "DataFlash_Block.h"
 
 class DataFlash_SITL : public DataFlash_Block
 {
@@ -42,6 +42,8 @@ private:
 public:
 
     DataFlash_SITL() {}
+    void		Prep_MinSpace() { }
+
     void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();

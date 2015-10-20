@@ -767,6 +767,7 @@ Format characters in the format string for binary log messages
 
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
+#include "DataFlash_SITL.h"
 #include "DataFlash_MAVLink.h"
 
 #endif
