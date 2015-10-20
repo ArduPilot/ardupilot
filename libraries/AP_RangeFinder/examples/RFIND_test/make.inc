@@ -24,3 +24,5 @@ LIBRARIES += DataFlash
 LIBRARIES += Filter
 LIBRARIES += GCS_MAVLink
 LIBRARIES += StorageManager
+LIBRARIES += AP_SerialManager
+LIBRARIES += AP_OpticalFlow
