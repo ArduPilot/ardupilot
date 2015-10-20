@@ -754,31 +754,23 @@ void NavEKF2_core::FuseDeclination()
     // correct the covariance P = (I - K*H)*P
     // take advantage of the empty columns in KH to reduce the
     // number of operations
-    for (uint8_t i = 0; i<=stateIndexLim; i++) {
-        for (uint8_t j = 0; j<=15; j++) {
+    for (unsigned i = 0; i<=stateIndexLim; i++) {
+        for (unsigned j = 0; j<=15; j++) {
             KH[i][j] = 0.0f;
         }
-        for (uint8_t j = 16; j<=17; j++) {
-            if (!inhibitMagStates) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            } else {
-                KH[i][j] = 0.0f;
-            }
-        }
-        for (uint8_t j = 18; j<=23; j++) {
+        KH[i][16] = Kfusion[i] * H_MAG[16];
+        KH[i][17] = Kfusion[i] * H_MAG[17];
+        for (unsigned j = 18; j<=23; j++) {
             KH[i][j] = 0.0f;
         }
     }
-    for (uint8_t i = 0; i<=stateIndexLim; i++) {
-        for (uint8_t j = 0; j<=stateIndexLim; j++) {
-            KHP[i][j] = 0;
-            for (uint8_t k = 16; k<=17; k++) {
-                KHP[i][j] = KHP[i][j] + KH[i][k] * P[k][j];
-            }
+    for (unsigned j = 0; j<=stateIndexLim; j++) {
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            KHP[i][j] = KH[i][16] * P[16][j] + KH[i][17] * P[17][j];
         }
     }
-    for (uint8_t i = 0; i<=stateIndexLim; i++) {
-        for (uint8_t j = 0; j<=stateIndexLim; j++) {
+    for (unsigned i = 0; i<=stateIndexLim; i++) {
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
             P[i][j] = P[i][j] - KHP[i][j];
         }
     }
