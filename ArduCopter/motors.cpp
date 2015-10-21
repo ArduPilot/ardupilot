@@ -168,14 +168,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     calc_distance_and_bearing();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // helicopters are always using motor interlock
-    set_using_interlock(true);
-#else
-    // check if we are using motor interlock control on an aux switch
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
-#endif
-
     // if we are using motor interlock switch and it's enabled, fail to arm
     if (ap.using_interlock && motors.get_interlock()){
         gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("Arm: Motor Interlock Enabled"));
@@ -255,7 +247,6 @@ bool Copter::pre_arm_checks(bool display_failure)
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated, 
     // as state can change at any time.
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
     if (ap.using_interlock && motors.get_interlock()){
         if (display_failure) {
             gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Motor Interlock Enabled"));

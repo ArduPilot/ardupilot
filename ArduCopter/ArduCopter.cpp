@@ -496,6 +496,14 @@ void Copter::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     RC_Channel_aux::enable_aux_servos();
 
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters are always using motor interlock
+    set_using_interlock(true);
+#else
+    // check if we are using motor interlock control on an aux switch
+    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
+#endif
+
     check_usb_mux();
 
 #if AP_TERRAIN_AVAILABLE
