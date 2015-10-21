@@ -6,6 +6,9 @@
 #include "AP_HAL_Namespace.h"
 #include <AP_Progmem/AP_Progmem.h>
 
+#define NSEC_PER_SEC 1000000000ULL
+#define NSEC_PER_USEC 1000ULL
+
 class AP_HAL::Util {
 public:
     int snprintf(char* str, size_t size,
@@ -27,7 +30,13 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    virtual const char* get_custom_log_directory() { return NULL; } 
+    inline uint32_t hz_to_nsec(uint32_t freq) { return NSEC_PER_SEC / freq; }
+    inline uint32_t nsec_to_hz(uint32_t usec) { return NSEC_PER_SEC / usec; }
+
+    inline uint32_t usec_to_nsec(uint32_t usec) { return usec * NSEC_PER_USEC; }
+    inline uint32_t nsec_to_usec(uint32_t nsec) { return nsec / NSEC_PER_USEC; }
+
+    virtual const char* get_custom_log_directory() { return NULL; }
     virtual const char* get_custom_terrain_directory() const { return NULL;  }
 
     // run a debug shall on the given stream if possible. This is used
@@ -104,6 +113,9 @@ protected:
     bool soft_armed = false;
     uint64_t capabilities = 0;
 };
+
+#undef NSEC_PER_SEC
+#undef NSEC_PER_USEC
 
 #endif // __AP_HAL_UTIL_H__
 
