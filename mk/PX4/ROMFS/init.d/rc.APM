@@ -222,13 +222,17 @@ fi
 if [ $BOARD == FMUv1 ]
 then
     echo "Starting FMUv1 sensors"
-    if hmc5883 -C -T start
+    if hmc5883 -C -T -X start
     then
-        echo "hmc5883 started OK"
+        echo "Have external hmc5883"
     else
-        echo "hmc5883 start failed"
-        echo "hmc5883 start failed" >> $logfile
-        sh /etc/init.d/rc.error
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -T -I  start
+    then
+        echo "Have internal hmc5883"
+    else
+        echo "No internal hmc5883"
     fi
     if mpu6000 start
     then
