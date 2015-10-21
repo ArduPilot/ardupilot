@@ -151,8 +151,6 @@ void AP_AccelCal::success()
 {
     _printf("Calibration successful");
     clear();
-    hal.scheduler->delay(1000);
-    hal.scheduler->reboot(false);
 }
 
 void AP_AccelCal::fail()
