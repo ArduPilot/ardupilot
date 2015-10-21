@@ -62,7 +62,7 @@ static const struct {
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
-    { "rover",              Rover::create },
+    { "rover",              SimRover::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
     { "gazebo",             Gazebo::create },
