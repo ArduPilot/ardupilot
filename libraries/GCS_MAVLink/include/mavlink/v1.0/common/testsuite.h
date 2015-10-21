@@ -5614,6 +5614,95 @@ static void mavlink_test_set_home_position(uint8_t system_id, uint8_t component_
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
 
+static void mavlink_test_prearm_check_report(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_prearm_check_report_t packet_in = {
+		93372036854775807ULL,93372036854776311ULL
+    };
+	mavlink_prearm_check_report_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.enabled_checks = packet_in.enabled_checks;
+        	packet1.passed_checks = packet_in.passed_checks;
+        
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_report_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_prearm_check_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_report_pack(system_id, component_id, &msg , packet1.enabled_checks , packet1.passed_checks );
+	mavlink_msg_prearm_check_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_report_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.enabled_checks , packet1.passed_checks );
+	mavlink_msg_prearm_check_report_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_prearm_check_report_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_report_send(MAVLINK_COMM_1 , packet1.enabled_checks , packet1.passed_checks );
+	mavlink_msg_prearm_check_report_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
+static void mavlink_test_prearm_check_failure_description(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+	mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+	mavlink_prearm_check_failure_description_t packet_in = {
+		963497464,17,"FGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZAB"
+    };
+	mavlink_prearm_check_failure_description_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        	packet1.code = packet_in.code;
+        	packet1.subsystem = packet_in.subsystem;
+        
+        	mav_array_memcpy(packet1.description, packet_in.description, sizeof(char)*50);
+        
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_failure_description_encode(system_id, component_id, &msg, &packet1);
+	mavlink_msg_prearm_check_failure_description_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_failure_description_pack(system_id, component_id, &msg , packet1.subsystem , packet1.code , packet1.description );
+	mavlink_msg_prearm_check_failure_description_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_failure_description_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.subsystem , packet1.code , packet1.description );
+	mavlink_msg_prearm_check_failure_description_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+        	comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+	mavlink_msg_prearm_check_failure_description_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+	mavlink_msg_prearm_check_failure_description_send(MAVLINK_COMM_1 , packet1.subsystem , packet1.code , packet1.description );
+	mavlink_msg_prearm_check_failure_description_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+}
+
 static void mavlink_test_v2_extension(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 	mavlink_message_t msg;
@@ -6048,6 +6137,8 @@ static void mavlink_test_common(uint8_t system_id, uint8_t component_id, mavlink
 	mavlink_test_vibration(system_id, component_id, last_msg);
 	mavlink_test_home_position(system_id, component_id, last_msg);
 	mavlink_test_set_home_position(system_id, component_id, last_msg);
+	mavlink_test_prearm_check_report(system_id, component_id, last_msg);
+	mavlink_test_prearm_check_failure_description(system_id, component_id, last_msg);
 	mavlink_test_v2_extension(system_id, component_id, last_msg);
 	mavlink_test_memory_vect(system_id, component_id, last_msg);
 	mavlink_test_debug_vect(system_id, component_id, last_msg);
