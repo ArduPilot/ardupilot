@@ -50,8 +50,10 @@
 #define IMU_BUFFER_LENGTH       104 // maximum 260 msec delay at 400 Hz
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
-#else
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
+#else
+#define IMU_BUFFER_LENGTH       104 // unknown so use max buffer length
 #endif
 
 class AP_AHRS;
