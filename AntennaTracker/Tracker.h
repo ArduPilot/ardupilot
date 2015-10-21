@@ -40,6 +40,7 @@
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
@@ -221,6 +222,7 @@ private:
     void update_ahrs();
     void update_compass(void);
     void compass_accumulate(void);
+    void accel_cal_update(void);
     void barometer_accumulate(void);
     void update_GPS(void);
     void init_servos();
