@@ -599,23 +599,6 @@ void NavEKF2_core::readGpsData()
             }
         }
     }
-
-    // If not aiding we synthesise the GPS measurements at the last known position
-    if (PV_AidingMode == AID_NONE) {
-        if (imuSampleTime_ms - gpsDataNew.time_ms > 200) {
-            gpsDataNew.pos.x = lastKnownPositionNE.x;
-            gpsDataNew.pos.y = lastKnownPositionNE.y;
-            gpsDataNew.time_ms = imuSampleTime_ms-frontend._gpsDelay_ms;
-            // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
-            // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
-            // Prevent time delay exceeding age of oldest IMU data in the buffer
-            gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
-            // save measurement to buffer to be fused later
-            StoreGPS();
-        }
-    }
-
 }
 
 

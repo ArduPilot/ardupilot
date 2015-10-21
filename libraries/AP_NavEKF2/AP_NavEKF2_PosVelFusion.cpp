@@ -119,11 +119,9 @@ void NavEKF2_core::SelectVelPosFusion()
     readGpsData();
 
     // Determine if we need to fuse position and velocity data on this time step
-    if (RecallGPS() && PV_AidingMode != AID_RELATIVE) {
+    if (RecallGPS() && PV_AidingMode == AID_ABSOLUTE) {
         // Don't fuse velocity data if GPS doesn't support it
-        // If no aiding is avaialble, then we use zeroed GPS position and  elocity data to constrain
-        // tilt errors assuming that the vehicle is not accelerating
-        if (frontend._fusionModeGPS <= 1 || PV_AidingMode == AID_NONE) {
+        if (frontend._fusionModeGPS <= 1) {
             fuseVelData = true;
         } else {
             fuseVelData = false;
@@ -151,11 +149,26 @@ void NavEKF2_core::SelectVelPosFusion()
         fuseHgtData = true;
     }
 
+    // If we are operating without any aiding, fuse in the last known position and zero velocity
+    // to constrain tilt drift. This assumes a non-manoeuvring vehicle
+    // Do this to coincide with the height fusion
+    if (fuseHgtData && PV_AidingMode == AID_NONE) {
+        gpsDataDelayed.vel.zero();
+        gpsDataDelayed.pos.x = lastKnownPositionNE.x;
+        gpsDataDelayed.pos.y = lastKnownPositionNE.y;
+        fuseVelData = true;
+        fusePosData = true;
+    }
+
     // perform fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         FuseVelPosNED();
+        // clear the flags to prevent repeated fusion of the same data
+        fuseVelData = false;
+        fuseHgtData = false;
+        fusePosData = false;
     }
 }
 
@@ -198,17 +211,12 @@ void NavEKF2_core::FuseVelPosNED()
         if (useAirspeed()) gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
         else gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
 
-        // form the observation vector and zero velocity and horizontal position observations if in constant position mode
-        // If in constant velocity mode, hold the last known horizontal velocity vector
-        if (PV_AidingMode == AID_ABSOLUTE) {
-            observation[0] = gpsDataDelayed.vel.x + gpsVelGlitchOffset.x;
-            observation[1] = gpsDataDelayed.vel.y + gpsVelGlitchOffset.y;
-            observation[2] = gpsDataDelayed.vel.z;
-            observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
-            observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
-        } else if (PV_AidingMode == AID_NONE) {
-            for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
-        }
+        // form the observation vector
+        observation[0] = gpsDataDelayed.vel.x + gpsVelGlitchOffset.x;
+        observation[1] = gpsDataDelayed.vel.y + gpsVelGlitchOffset.y;
+        observation[2] = gpsDataDelayed.vel.z;
+        observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
+        observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
         observation[5] = -baroDataDelayed.hgt;
 
         // calculate additional error in GPS position caused by manoeuvring
