@@ -268,14 +268,14 @@ void AP_MotorsHeli::output_disarmed()
             _roll_control_input = 0;
             _pitch_control_input = 0;
             _throttle_control_input = 1000;
-            _yaw_control_input = 0;
+            _yaw_control_input = 4500;
             break;
         case SERVO_CONTROL_MODE_MANUAL_MIN:
             // fixate min collective
             _roll_control_input = 0;
             _pitch_control_input = 0;
             _throttle_control_input = 0;
-            _yaw_control_input = 0;
+            _yaw_control_input = -4500;
             break;
         default:
             // no manual override
