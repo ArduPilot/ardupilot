@@ -223,6 +223,7 @@ protected:
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
     AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
     AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
+    AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -240,6 +241,7 @@ protected:
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
     int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
     int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
+    uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
 
 #endif  // AP_MOTORSHELI

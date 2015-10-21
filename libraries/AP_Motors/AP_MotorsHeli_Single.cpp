@@ -522,6 +522,10 @@ void AP_MotorsHeli_Single::servo_test()
         roll_test = 0.0f;
         pitch_test = 0.0f;
         yaw_test = 0.0f;
+        // decrement servo test cycle counter at the end of the cycle
+        if (_servo_test_cycle_counter > 0){
+            _servo_test_cycle_counter--;
+        }
     }
 
     // over-ride servo commands to move servos through defined ranges

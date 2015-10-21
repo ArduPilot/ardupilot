@@ -148,6 +148,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
 
+    // @Param: SV_TEST
+    // @DisplayName: Boot-up Servo Test Cycles
+    // @Description: Number of cycles to run servo test on boot-up
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
+
     AP_GROUPEND
 };
 
@@ -160,6 +168,9 @@ void AP_MotorsHeli::Init()
 {
     // set update rate
     set_update_rate(_speed_hz);
+
+    // load boot-up servo test cycles into counter to be consumed
+    _servo_test_cycle_counter = _servo_test;
 
     // ensure inputs are not passed through to servos on start-up
     _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
@@ -247,43 +258,48 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    // manual override (i.e. when setting up swash)
-    switch (_servo_mode) {
-        case SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH:
-            // pass pilot commands straight through to swash
-            _roll_control_input = _roll_radio_passthrough;
-            _pitch_control_input = _pitch_radio_passthrough;
-            _throttle_control_input = _throttle_radio_passthrough;
-            _yaw_control_input = _yaw_radio_passthrough;
-            break;
-        case SERVO_CONTROL_MODE_MANUAL_CENTER:
-            // fixate mid collective
-            _roll_control_input = 0;
-            _pitch_control_input = 0;
-            _throttle_control_input = _collective_mid_pwm;
-            _yaw_control_input = 0;
-            break;
-        case SERVO_CONTROL_MODE_MANUAL_MAX:
-            // fixate max collective
-            _roll_control_input = 0;
-            _pitch_control_input = 0;
-            _throttle_control_input = 1000;
-            _yaw_control_input = 4500;
-            break;
-        case SERVO_CONTROL_MODE_MANUAL_MIN:
-            // fixate min collective
-            _roll_control_input = 0;
-            _pitch_control_input = 0;
-            _throttle_control_input = 0;
-            _yaw_control_input = -4500;
-            break;
-        case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
-            // use servo_test function from child classes
-            servo_test();
-            break;
-        default:
-            // no manual override
-            break;
+    if (_servo_test_cycle_counter > 0){
+        // perform boot-up servo test cycle if enabled
+        servo_test();
+    } else {
+        // manual override (i.e. when setting up swash)
+        switch (_servo_mode) {
+            case SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH:
+                // pass pilot commands straight through to swash
+                _roll_control_input = _roll_radio_passthrough;
+                _pitch_control_input = _pitch_radio_passthrough;
+                _throttle_control_input = _throttle_radio_passthrough;
+                _yaw_control_input = _yaw_radio_passthrough;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_CENTER:
+                // fixate mid collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = _collective_mid_pwm;
+                _yaw_control_input = 0;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_MAX:
+                // fixate max collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = 1000;
+                _yaw_control_input = 4500;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_MIN:
+                // fixate min collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = 0;
+                _yaw_control_input = -4500;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
+                // use servo_test function from child classes
+                servo_test();
+                break;
+            default:
+                // no manual override
+                break;
+        }
     }
 
     // ensure swash servo endpoints haven't been moved
