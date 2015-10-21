@@ -20,6 +20,7 @@
 #include <fenv.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_ADC/AP_ADC.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
@@ -77,6 +78,7 @@ public:
     void setup();
     void load_parameters(void);
 
+    AP_AccelCal acal;
     AP_InertialSensor ins;
     AP_Baro barometer;
     AP_GPS gps;
@@ -632,16 +634,16 @@ void Replay::setup()
 void Replay::set_ins_update_rate(uint16_t _update_rate) {
     switch (_update_rate) {
     case 50:
-        _vehicle.ins.init(AP_InertialSensor::RATE_50HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_50HZ, &_vehicle.acal);
         break;
     case 100:
-        _vehicle.ins.init(AP_InertialSensor::RATE_100HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_100HZ, &_vehicle.acal);
         break;
     case 200:
-        _vehicle.ins.init(AP_InertialSensor::RATE_200HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_200HZ, &_vehicle.acal);
         break;
     case 400:
-        _vehicle.ins.init(AP_InertialSensor::RATE_400HZ);
+        _vehicle.ins.init(AP_InertialSensor::RATE_400HZ, &_vehicle.acal);
         break;
     default:
         printf("Invalid update rate (%d); use 50, 100, 200 or 400\n", _update_rate);
