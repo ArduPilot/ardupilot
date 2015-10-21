@@ -2,10 +2,12 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
+#include "RPIOUARTDriver.h"
+
 #include <stdlib.h>
 #include <cstdio>
-#include "RPIOUARTDriver.h"
-#include "../AP_HAL/utility/RingBuffer.h"
+
+#include <AP_HAL/utility/RingBuffer.h>
 
 #include "px4io_protocol.h"
 
