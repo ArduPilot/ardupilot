@@ -1246,12 +1246,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (plane.ins.gyro_calibrated_ok_all()) {
                     plane.ahrs.reset_gyro_drift();
                 }
-                if(plane.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-                    // reset ahrs's trim to suggested values from calibration routine
-                    plane.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
+                if(!hal.util->get_soft_armed()) {
+                    plane.accelcal.start(this);
                 }
             } else if (is_equal(packet.param5,2.0f)) {
                 // start with gyro calibration
@@ -1517,7 +1513,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         break;
     }
-
 
     case MAVLINK_MSG_ID_SET_MODE:
     {
