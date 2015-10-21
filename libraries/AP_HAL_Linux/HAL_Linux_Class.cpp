@@ -133,6 +133,8 @@ static RCOutput_Raspilot rcoutDriver;
 static RCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCOutput_Bebop rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, false, 0, MINNOW_GPIO_S5_1);
 #else
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
