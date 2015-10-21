@@ -153,6 +153,10 @@ public:
     // reset_radio_passthrough used to reset all radio inputs to center
     void reset_radio_passthrough();
 
+    // servo_test - move servos through full range of movement
+    // to be overloaded by child classes, different vehicle types would have different movement patterns
+    virtual void servo_test() = 0;
+
     // output - sends commands to the motors
     void    output();
 
@@ -163,6 +167,7 @@ public:
         SERVO_CONTROL_MODE_MANUAL_MAX,
         SERVO_CONTROL_MODE_MANUAL_CENTER,
         SERVO_CONTROL_MODE_MANUAL_MIN,
+        SERVO_CONTROL_MODE_MANUAL_OSCILLATE,
     };
 
     // supports_yaw_passthrough

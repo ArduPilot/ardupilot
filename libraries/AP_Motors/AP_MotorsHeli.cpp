@@ -277,6 +277,10 @@ void AP_MotorsHeli::output_disarmed()
             _throttle_control_input = 0;
             _yaw_control_input = -4500;
             break;
+        case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
+            // use servo_test function from child classes
+            servo_test();
+            break;
         default:
             // no manual override
             break;
