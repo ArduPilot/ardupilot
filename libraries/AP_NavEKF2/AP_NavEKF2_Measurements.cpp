@@ -187,7 +187,9 @@ bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() != lastMagUpdate_us) {
+    // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
+    // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
+    if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
         // store time of last measurement update
         lastMagUpdate_us = _ahrs->get_compass()->last_update_usec();
 
@@ -444,7 +446,8 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
 void NavEKF2_core::readGpsData()
 {
     // check for new GPS data
-    if (_ahrs->get_gps().last_message_time_ms() != lastTimeGpsReceived_ms) {
+    // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
+    if (_ahrs->get_gps().last_message_time_ms() - lastTimeGpsReceived_ms > 70) {
         if (_ahrs->get_gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // report GPS fix status
             gpsCheckStatus.bad_fix = false;
@@ -704,7 +707,8 @@ void NavEKF2_core::decayGpsOffset()
 void NavEKF2_core::readHgtData()
 {
     // check to see if baro measurement has changed so we know if a new measurement has arrived
-    if (_baro.get_last_update() != lastHgtReceived_ms) {
+    // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
+    if (_baro.get_last_update() - lastHgtReceived_ms > 70) {
         // Don't use Baro height if operating in optical flow mode as we use range finder instead
         if (frontend._fusionModeGPS == 3 && frontend._altSource == 1) {
             if ((imuSampleTime_ms - rngValidMeaTime_ms) < 2000) {
