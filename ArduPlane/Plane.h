@@ -47,6 +47,7 @@
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
+#include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
@@ -702,6 +703,7 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
+
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
@@ -982,11 +984,11 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     uint16_t throttle_min(void) const;
-    
     void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_check();
     void parachute_release();
     bool parachute_manual_release();
+    void accel_cal_update(void);
 
 public:
     void mavlink_delay_cb();
