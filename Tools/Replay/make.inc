@@ -2,6 +2,7 @@ LIBRARIES += AP_Common
 LIBRARIES += AP_Param
 LIBRARIES += StorageManager
 LIBRARIES += AP_Math
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_ADC
 LIBRARIES += AP_Declination
 LIBRARIES += Filter
