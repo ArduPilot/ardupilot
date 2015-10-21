@@ -172,6 +172,15 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
     calc_distance_and_bearing();
 
+<<<<<<< 72e790cb7374a331aa9caf5553e8c558bef75e34
+=======
+    // if we are not using Emergency Stop switch option, force Estop false to ensure motors
+    // can run normally
+    if (!check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+        set_motor_emergency_stop(false);
+    }
+
+>>>>>>> Copter: integrate arming checks
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);

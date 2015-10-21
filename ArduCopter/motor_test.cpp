@@ -76,9 +76,8 @@ void Copter::motor_test_output()
 bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 {
     // check rc has been calibrated
-    pre_arm_rc_checks();
-    if(check_rc && !ap.pre_arm_rc_check) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
+    if(!arming.manual_transmitter_checks(false)) {
+        gcs[chan-MAVLINK_COMM_0].send_text_P(MAV_SEVERITY_CRITICAL,"Motor Test: RC not calibrated");
         return false;
     }
 
