@@ -396,8 +396,7 @@ void Rover::startup_INS_ground(void)
 	ahrs.set_fly_forward(true);
     ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
 
-	ins.init(scheduler.get_loop_rate_hz());
-
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 }
 
