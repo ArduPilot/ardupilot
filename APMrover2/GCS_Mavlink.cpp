@@ -972,20 +972,14 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     rover.trim_radio();
                     result = MAV_RESULT_ACCEPTED;
                 } else if (is_equal(packet.param5,1.0f)) {
-                    float trim_roll, trim_pitch;
-                    AP_InertialSensor_UserInteract_MAVLink interact(this);
                     // start with gyro calibration
                     rover.ins.init_gyro();
                     // reset ahrs gyro bias
                     if (rover.ins.gyro_calibrated_ok_all()) {
                         rover.ahrs.reset_gyro_drift();
                     }
-                    if(rover.ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
-                        // reset ahrs's trim to suggested values from calibration routine
-                        rover.ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_FAILED;
+                    if(!hal.util->get_soft_armed()) {
+                        rover.accelcal.start(this);
                     }
                 } else if (is_equal(packet.param5,2.0f)) {
                     // start with gyro calibration
@@ -1124,7 +1118,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             break;
         }
-
 
     case MAVLINK_MSG_ID_SET_MODE:
 		{
