@@ -60,6 +60,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(read_rangefinder,       50,    500),
     SCHED_TASK(compass_cal_update,     50,    100),
+    SCHED_TASK(accel_cal_update,       10,    100),
 #if OPTFLOW == ENABLED
     SCHED_TASK(update_optical_flow,    50,    500),
 #endif
