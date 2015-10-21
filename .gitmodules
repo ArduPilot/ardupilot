@@ -7,3 +7,7 @@
 [submodule "modules/uavcan"]
 	path = modules/uavcan
 	url = git://github.com/diydrones/uavcan.git
+[submodule "libraries/AP_Eigen/eigen"]
+	path = libraries/AP_Eigen/eigen
+	url = https://github.com/PX4/eigen
+	branch = 3.2

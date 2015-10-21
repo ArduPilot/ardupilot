@@ -13,6 +13,7 @@ LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += AP_Baro
 LIBRARIES += AP_Compass
 LIBRARIES += AP_Math
+LIBRARIES += AP_Eigen
 LIBRARIES += AP_Curve
 LIBRARIES += AP_InertialSensor
 LIBRARIES += AP_AHRS

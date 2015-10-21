@@ -9,10 +9,12 @@ DEFINES         =   -DF_CPU=$(F_CPU)
 DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\"" -DSKETCHBOOK="\"$(SKETCHBOOK)\"" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
 DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE)
-WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-unused-parameter -Wno-missing-field-initializers
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2
+WARNFLAGS       =   -Wformat -Wpointer-arith -Wcast-align -Wno-unused-parameter -Wno-missing-field-initializers
+WARNFLAGS      +=   -Wno-logical-op -Wno-shadow -Wwrite-strings -Wformat=2
 WARNFLAGSCXX    = -Wno-reorder \
 	-Werror=format-security \
+	-Wno-logical-op \
+	-Wno-shadow \
 	-Werror=array-bounds \
 	-Wfatal-errors \
 	-Werror=unused-but-set-variable \

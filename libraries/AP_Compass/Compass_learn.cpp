@@ -1,3 +1,5 @@
+#ifndef EIGEN_MATH
+
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Compass.h"
 #include <math.h>
@@ -127,3 +129,5 @@ Compass::learn_offsets(void)
         _state[k].offset.set(new_offsets);
     }
 }
+
+#endif
