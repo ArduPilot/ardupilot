@@ -142,20 +142,22 @@ bool NavEKF2_core::RecallOF()
     of_elements dataTempZero;
     dataTempZero.time_ms = 0;
     uint32_t temp_ms = 0;
+    uint8_t bestIndex = 0;
     for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
         dataTemp = storedOF[i];
         // find a measurement older than the fusion time horizon that we haven't checked before
         if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedOF[i]=dataTempZero;
             // Find the most recent non-stale measurement that meets the time horizon criteria
             if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
                 ofDataDelayed = dataTemp;
                 temp_ms = dataTemp.time_ms;
+                bestIndex = i;
             }
         }
     }
     if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedOF[bestIndex]=dataTempZero;
         return true;
     } else {
         return false;
@@ -237,20 +239,22 @@ bool NavEKF2_core::RecallMag()
     mag_elements dataTempZero;
     dataTempZero.time_ms = 0;
     uint32_t temp_ms = 0;
+    uint8_t bestIndex = 0;
     for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
         dataTemp = storedMag[i];
         // find a measurement older than the fusion time horizon that we haven't checked before
         if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedMag[i]=dataTempZero;
             // Find the most recent non-stale measurement that meets the time horizon criteria
             if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
                 magDataDelayed = dataTemp;
                 temp_ms = dataTemp.time_ms;
+                bestIndex = i;
             }
         }
     }
     if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedMag[bestIndex]=dataTempZero;
         return true;
     } else {
         return false;
@@ -630,20 +634,22 @@ bool NavEKF2_core::RecallGPS()
     gps_elements dataTempZero;
     dataTempZero.time_ms = 0;
     uint32_t temp_ms = 0;
+    uint8_t bestIndex;
     for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
         dataTemp = storedGPS[i];
         // find a measurement older than the fusion time horizon that we haven't checked before
         if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedGPS[i]=dataTempZero;
             // Find the most recent non-stale measurement that meets the time horizon criteria
             if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
                 gpsDataDelayed = dataTemp;
                 temp_ms = dataTemp.time_ms;
+                bestIndex = i;
             }
         }
     }
     if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedGPS[bestIndex]=dataTempZero;
         return true;
     } else {
         return false;
@@ -772,20 +778,22 @@ bool NavEKF2_core::RecallBaro()
     baro_elements dataTempZero;
     dataTempZero.time_ms = 0;
     uint32_t temp_ms = 0;
+    uint8_t bestIndex = 0;
     for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
         dataTemp = storedBaro[i];
         // find a measurement older than the fusion time horizon that we haven't checked before
         if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedBaro[i]=dataTempZero;
             // Find the most recent non-stale measurement that meets the time horizon criteria
             if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
                 baroDataDelayed = dataTemp;
                 temp_ms = dataTemp.time_ms;
+                bestIndex = i;
             }
         }
     }
     if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedBaro[bestIndex]=dataTempZero;
         return true;
     } else {
         return false;
