@@ -106,6 +106,8 @@ static RCInput_Raspilot rcinDriver;
 static RCInput_ZYNQ rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCInput_UDP  rcinDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+static RCInput_UART rcinDriver("/dev/ttyS2");
 #else
 static RCInput rcinDriver;
 #endif
