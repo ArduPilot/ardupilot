@@ -120,6 +120,9 @@ public:
     void set_delta_phase_angle(int16_t angle);
 
     void set_acro_tail(bool set) { _acro_tail = set; }
+
+    // servo_test - move servos through full range of movement
+    void servo_test();
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];

@@ -478,3 +478,55 @@ void AP_MotorsHeli_Single::write_aux(int16_t servo_out)
     _servo_aux.calc_pwm();
     hal.rcout->write(AP_MOTORS_HELI_SINGLE_AUX, _servo_aux.radio_out);
 }
+
+// servo_test - move servos through full range of movement
+void AP_MotorsHeli_Single::servo_test()
+{
+    static float oscillate_angle = 0.0f;
+    static float servo_test_cycle_time = 0.0f;
+    static float collective_test = 0.0f;
+    static float roll_test = 0.0f;
+    static float pitch_test = 0.0f;
+    static float yaw_test = 0.0f;
+
+    servo_test_cycle_time += 1.0f / _loop_rate;
+
+    if ((servo_test_cycle_time >= 0.0f && servo_test_cycle_time < 0.5f)||                                   // Tilt swash back
+        (servo_test_cycle_time >= 6.0f && servo_test_cycle_time < 6.5f)){
+        pitch_test += (4500 / (_loop_rate/2));
+        oscillate_angle += 8 * M_PI_F / _loop_rate;
+        yaw_test = 2250 * sinf(oscillate_angle);
+    } else if ((servo_test_cycle_time >= 0.5f && servo_test_cycle_time < 4.5f)||                            // Roll swash around
+               (servo_test_cycle_time >= 6.5f && servo_test_cycle_time < 10.5f)){
+        oscillate_angle += M_PI_F / (2 * _loop_rate);
+        roll_test = 4500 * sinf(oscillate_angle);
+        pitch_test = 4500 * cosf(oscillate_angle);
+        yaw_test = 4500 * sinf(oscillate_angle);
+    } else if ((servo_test_cycle_time >= 4.5f && servo_test_cycle_time < 5.0f)||                            // Return swash to level
+               (servo_test_cycle_time >= 10.5f && servo_test_cycle_time < 11.0f)){
+        pitch_test -= (4500 / (_loop_rate/2));
+        oscillate_angle += 8 * M_PI_F / _loop_rate;
+        yaw_test = 2250 * sinf(oscillate_angle);
+    } else if (servo_test_cycle_time >= 5.0f && servo_test_cycle_time < 6.0f){                              // Raise swash to top
+        collective_test += (1000 / _loop_rate);
+        oscillate_angle += 2 * M_PI_F / _loop_rate;
+        yaw_test = 4500 * sinf(oscillate_angle);
+    } else if (servo_test_cycle_time >= 11.0f && servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
+        collective_test -= (1000 / _loop_rate);
+        oscillate_angle += 2 * M_PI_F / _loop_rate;
+        yaw_test = 4500 * sinf(oscillate_angle);
+    } else {                                                                                                // reset cycle
+        servo_test_cycle_time = 0.0f;
+        oscillate_angle = 0.0f;
+        collective_test = 0.0f;
+        roll_test = 0.0f;
+        pitch_test = 0.0f;
+        yaw_test = 0.0f;
+    }
+
+    // over-ride servo commands to move servos through defined ranges
+    _throttle_control_input = collective_test;
+    _roll_control_input = roll_test;
+    _pitch_control_input = pitch_test;
+    _yaw_control_input = yaw_test;
+}
