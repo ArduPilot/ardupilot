@@ -121,6 +121,9 @@ public:
     // set_delta_phase_angle for setting variable phase angle compensation and force
     // recalculation of collective factors
     void set_delta_phase_angle(int16_t angle);
+
+    // servo_test - move servos through full range of movement
+    void servo_test();
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
