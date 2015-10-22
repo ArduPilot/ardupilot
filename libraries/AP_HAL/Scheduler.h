@@ -2,11 +2,13 @@
 #ifndef __AP_HAL_SCHEDULER_H__
 #define __AP_HAL_SCHEDULER_H__
 
-#include "AP_HAL_Namespace.h"
-#include "AP_HAL_Boards.h"
-
 #include <stdint.h>
+
 #include <AP_Progmem/AP_Progmem.h>
+
+#include "AP_HAL_Boards.h"
+#include "AP_HAL_Namespace.h"
+
 
 class AP_HAL::Scheduler {
 public:
