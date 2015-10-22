@@ -259,6 +259,15 @@ public:
     // check var table for consistency
     static bool             check_var_info(void);
 
+    // return true if the parameter is configured in the defaults file
+    bool configured_in_defaults_file(void);
+
+    // return true if the parameter is configured in EEPROM/FRAM
+    bool configured_in_storage(void);
+
+    // return true if the parameter is configured
+    bool configured(void) { return configured_in_defaults_file() || configured_in_storage(); }
+
 private:
     /// EEPROM header
     ///
@@ -415,6 +424,14 @@ public:
     ///
     void set(const T &v) {
         _value = v;
+    }
+
+    /// Sets if the parameter is unconfigured
+    ///
+    void set_default(const T &v) {
+        if (!configured()) {
+            set(v);
+        }
     }
 
     /// Combined set and save
