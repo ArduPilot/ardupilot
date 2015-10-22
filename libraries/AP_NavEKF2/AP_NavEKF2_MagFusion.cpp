@@ -25,18 +25,20 @@ void NavEKF2_core::controlMagYawReset()
     if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -1.5f) {
            // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after commencement of flight
            Vector3f eulerAngles;
-           getEulerAngles(eulerAngles);
+           stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
            stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
            StoreQuatReset();
            firstMagYawInit = true;
+           magFuseTiltInhibit_ms =  imuSampleTime_ms;
        } else if (inFlight && !secondMagYawInit && (stateStruct.position.z - posDownAtTakeoff) < -5.0f) {
            // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after commencement of flight
            // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
            Vector3f eulerAngles;
-           getEulerAngles(eulerAngles);
+           stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
            stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
            StoreQuatReset();
            secondMagYawInit = true;
+           magFuseTiltInhibit_ms =  imuSampleTime_ms;
        }
 
     // perform a yaw alignment check against GPS if exiting on-ground mode for fly forward type vehicle (plane)
@@ -44,6 +46,15 @@ void NavEKF2_core::controlMagYawReset()
     if (!onGround && prevOnGround && assume_zero_sideslip()) {
         alignYawGPS();
     }
+
+    // inhibit the 3-axis mag fusion from modifying the tilt states for the first few seconds after a mag field reset
+    // to allow the mag states to converge and prevent disturbances in roll and pitch.
+    if (imuSampleTime_ms - magFuseTiltInhibit_ms < 5000) {
+        magFuseTiltInhibit = true;
+    } else {
+        magFuseTiltInhibit = false;
+    }
+
 }
 
 // this function is used to do a forced alignment of the yaw angle to align with the horizontal velocity
@@ -487,6 +498,12 @@ void NavEKF2_core::FuseMagnetometer()
                 Kfusion[j] *= 4.0f;
             }
             statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
+        }
+
+        // Inhibit corrections to tilt if requested. This enables mag states to settle after a reset without causing sudden changes in roll and pitch
+        if (magFuseTiltInhibit) {
+            stateStruct.angErr.x = 0.0f;
+            stateStruct.angErr.y = 0.0f;
         }
 
         // the first 3 states represent the angular misalignment vector. This is
