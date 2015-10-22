@@ -28,8 +28,7 @@ namespace SITL {
 /*
   a CRRCSim simulator
  */
-class CRRCSim : public Aircraft
-{
+class CRRCSim : public Aircraft {
 public:
     CRRCSim(const char *home_str, const char *frame_str);
 

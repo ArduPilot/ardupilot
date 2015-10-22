@@ -27,8 +27,7 @@ namespace SITL {
 /*
   a helicopter simulator
  */
-class Helicopter : public Aircraft
-{
+class Helicopter : public Aircraft {
 public:
     Helicopter(const char *home_str, const char *frame_str);
 

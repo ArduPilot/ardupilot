@@ -27,8 +27,7 @@ namespace SITL {
 /*
   a antenna tracker simulator
  */
-class Tracker : public Aircraft
-{
+class Tracker : public Aircraft {
 public:
     Tracker(const char *home_str, const char *frame_str);
     void update(const struct sitl_input &input);

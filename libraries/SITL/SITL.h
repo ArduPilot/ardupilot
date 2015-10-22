@@ -31,8 +31,7 @@ struct PACKED sitl_fdm {
 #define SITL_NUM_CHANNELS 14
 
 
-class SITL
-{
+class SITL {
 public:
 
     SITL() {

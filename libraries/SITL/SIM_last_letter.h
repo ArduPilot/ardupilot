@@ -28,8 +28,7 @@ namespace SITL {
 /*
   a last_letter simulator
  */
-class last_letter : public Aircraft
-{
+class last_letter : public Aircraft {
 public:
     last_letter(const char *home_str, const char *frame_str);
 

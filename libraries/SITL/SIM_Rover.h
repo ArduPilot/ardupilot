@@ -27,8 +27,7 @@ namespace SITL {
 /*
   a rover simulator
  */
-class SimRover : public Aircraft
-{
+class SimRover : public Aircraft {
 public:
     SimRover(const char *home_str, const char *frame_str);
 

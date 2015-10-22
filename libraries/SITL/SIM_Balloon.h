@@ -27,8 +27,7 @@ namespace SITL {
 /*
   a balloon simulator
  */
-class Balloon : public Aircraft
-{
+class Balloon : public Aircraft {
 public:
     Balloon(const char *home_str, const char *frame_str);
 

@@ -26,8 +26,7 @@
 
 namespace SITL {
 
-class Gimbal
-{
+class Gimbal {
 public:
     Gimbal(const struct sitl_fdm &_fdm);
     void update(void);

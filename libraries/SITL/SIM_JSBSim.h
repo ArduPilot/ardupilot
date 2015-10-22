@@ -28,8 +28,7 @@ namespace SITL {
 /*
   a Jsbsim simulator
  */
-class JSBSim : public Aircraft
-{
+class JSBSim : public Aircraft {
 public:
     JSBSim(const char *home_str, const char *frame_str);
 

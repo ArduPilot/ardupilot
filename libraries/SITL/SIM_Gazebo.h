@@ -28,8 +28,7 @@ namespace SITL {
 /*
   Gazebo simulator
  */
-class Gazebo : public Aircraft
-{
+class Gazebo : public Aircraft {
 public:
     Gazebo(const char *home_str, const char *frame_str);
 

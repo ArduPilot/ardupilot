@@ -60,8 +60,7 @@ public:
 /*
   a multicopter simulator
  */
-class MultiCopter : public Aircraft
-{
+class MultiCopter : public Aircraft {
 public:
     MultiCopter(const char *home_str, const char *frame_str);
 
