@@ -374,7 +374,7 @@ void *PX4Scheduler::_storage_thread(void)
     return NULL;
 }
 
-void PX4Scheduler::panic(const prog_char_t *errormsg) 
+void PX4Scheduler::panic(const prog_char_t *errormsg, ...)
 {
     write(1, errormsg, strlen(errormsg));
     write(1, "\n", 1);

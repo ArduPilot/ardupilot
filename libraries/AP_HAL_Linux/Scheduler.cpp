@@ -407,7 +407,7 @@ void *Scheduler::_io_thread(void* arg)
     return NULL;
 }
 
-void Scheduler::panic(const prog_char_t *errormsg)
+void Scheduler::panic(const prog_char_t *errormsg, ...)
 {
     write(1, errormsg, strlen(errormsg));
     write(1, "\n", 1);
