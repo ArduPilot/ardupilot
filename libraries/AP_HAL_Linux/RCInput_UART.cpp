@@ -21,13 +21,10 @@ using namespace Linux;
 
 RCInput_UART::RCInput_UART(const char *path)
 {
-    char s[256];
-
     _fd = open(path, O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NDELAY);
     if (_fd < 0) {
-        snprintf(s, sizeof(s), "Error opening '%s': %s",
-                 path, strerror(errno));
-        hal.scheduler->panic(s);
+        hal.scheduler->panic("RCInput_UART: Error opening '%s': %s",
+                             path, strerror(errno));
     }
 }
 
@@ -38,8 +35,6 @@ RCInput_UART::~RCInput_UART()
 
 void RCInput_UART::init(void*)
 {
-    char s[256];
-
     struct termios options;
 
     tcgetattr(_fd, &options);
@@ -55,9 +50,8 @@ void RCInput_UART::init(void*)
     options.c_oflag &= ~OPOST;
 
     if (tcsetattr(_fd, TCSANOW, &options) != 0) {
-        snprintf(s, sizeof(s), "RCInput_UART: error configuring device: %s",
-                 strerror(errno));
-        hal.scheduler->panic(s);
+        hal.scheduler->panic("RCInput_UART: error configuring device: %s",
+                             strerror(errno));
     }
 
     tcflush(_fd, TCIOFLUSH);
