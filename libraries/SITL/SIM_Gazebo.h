@@ -23,6 +23,8 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
+
 /*
   Gazebo simulator
  */
@@ -68,5 +70,6 @@ private:
     SocketAPM sock;
 };
 
+} // namespace SITL
 
 #endif // _SIM_GAZEBO_H

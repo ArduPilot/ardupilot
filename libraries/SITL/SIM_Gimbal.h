@@ -24,6 +24,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
+
 class Gimbal
 {
 public:
@@ -105,6 +107,9 @@ private:
 
     void send_report(void);
 };
+
+}  // namespace SITL
+
 #endif // CONFIG_HAL_BOARD
 
 #endif // _SIM_GIMBAL_H

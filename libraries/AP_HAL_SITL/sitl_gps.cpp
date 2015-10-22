@@ -801,36 +801,36 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         return;
     }
 
-    switch ((SITL::GPSType)_sitl->gps_type.get()) {
-    case SITL::GPS_TYPE_NONE:
+    switch ((SITL::SITL::GPSType)_sitl->gps_type.get()) {
+    case SITL::SITL::GPS_TYPE_NONE:
         // no GPS attached
         break;
 
-    case SITL::GPS_TYPE_UBLOX:
+    case SITL::SITL::GPS_TYPE_UBLOX:
         _update_gps_ubx(&d);
         break;
 
-    case SITL::GPS_TYPE_MTK:
+    case SITL::SITL::GPS_TYPE_MTK:
         _update_gps_mtk(&d);
         break;
 
-    case SITL::GPS_TYPE_MTK16:
+    case SITL::SITL::GPS_TYPE_MTK16:
         _update_gps_mtk16(&d);
         break;
 
-    case SITL::GPS_TYPE_MTK19:
+    case SITL::SITL::GPS_TYPE_MTK19:
         _update_gps_mtk19(&d);
         break;
 
-    case SITL::GPS_TYPE_NMEA:
+    case SITL::SITL::GPS_TYPE_NMEA:
         _update_gps_nmea(&d);
         break;
 
-    case SITL::GPS_TYPE_SBP:
+    case SITL::SITL::GPS_TYPE_SBP:
         _update_gps_sbp(&d);
         break;
 
-    case SITL::GPS_TYPE_FILE:
+    case SITL::SITL::GPS_TYPE_FILE:
         _update_gps_file(&d);
         break;
 

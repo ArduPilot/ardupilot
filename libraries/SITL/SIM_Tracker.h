@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+namespace SITL {
+
 /*
   a antenna tracker simulator
  */
@@ -56,5 +58,7 @@ private:
     void update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate);
     void update_onoff_servos(float &yaw_rate, float &pitch_rate);
 };
+
+} // namespace SITL
 
 #endif

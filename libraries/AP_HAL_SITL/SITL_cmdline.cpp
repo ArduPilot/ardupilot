@@ -26,6 +26,7 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
+using namespace SITL;
 
 // catch floating point exceptions
 static void _sig_fpe(int signum)

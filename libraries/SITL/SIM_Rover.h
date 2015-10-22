@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+namespace SITL {
+
 /*
   a rover simulator
  */
@@ -53,5 +55,6 @@ private:
     float calc_lat_accel(float steering_angle, float speed);
 };
 
+} // namespace SITL
 
 #endif // _SIM_ROVER_H

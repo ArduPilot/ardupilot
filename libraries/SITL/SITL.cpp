@@ -25,6 +25,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
     AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  0.2f),
@@ -170,3 +172,4 @@ Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
     return Vector3f(phiDot, thetaDot, psiDot);
 }
 
+} // namespace SITL

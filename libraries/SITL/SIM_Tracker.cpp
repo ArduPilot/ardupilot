@@ -21,6 +21,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
 
+namespace SITL {
+
 Tracker::Tracker(const char *home_str, const char *frame_str) :
 Aircraft(home_str, frame_str)
 {}
@@ -134,5 +136,7 @@ void Tracker::update(const struct sitl_input &input)
     velocity_ef.zero();
     update_position();
 }
+
+} // namespace SITL
 
 #endif

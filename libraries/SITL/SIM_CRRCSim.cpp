@@ -24,6 +24,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 /*
   constructor
  */
@@ -152,4 +154,7 @@ void CRRCSim::update(const struct sitl_input &input)
     recv_fdm(input);
     update_position();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

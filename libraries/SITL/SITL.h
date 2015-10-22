@@ -9,6 +9,8 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <DataFlash/DataFlash.h>
 
+namespace SITL {
+
 struct PACKED sitl_fdm {
     // this is the packet sent by the simulator
     // to the APM executable to update the simulator state
@@ -118,5 +120,7 @@ public:
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 };
+
+} // namespace SITL
 
 #endif // __SITL_H__

@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+namespace SITL {
+
 /*
   a balloon simulator
  */
@@ -47,5 +49,6 @@ private:
     bool released = false;
 };
 
+} // namespace SITL
 
 #endif // _SIM_BALLOON_H

@@ -30,6 +30,8 @@
 #include <Mmsystem.h>
 #endif
 
+namespace SITL {
+
 /*
   parent class for all simulator types
  */
@@ -290,4 +292,7 @@ void Aircraft::set_speedup(float speedup)
 {
     setup_frame_time(rate_hz, speedup);
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

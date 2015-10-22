@@ -27,6 +27,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 /*
   constructor
  */
@@ -143,4 +145,7 @@ void last_letter::update(const struct sitl_input &input)
     recv_fdm(input);
     sync_frame_time();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

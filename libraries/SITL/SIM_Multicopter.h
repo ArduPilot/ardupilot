@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+namespace SITL {
+
 /*
   class to describe a motor position
  */
@@ -80,5 +82,6 @@ private:
     float thrust_scale;
 };
 
+} // namespace SITL
 
 #endif // _SIM_MULTICOPTER_H

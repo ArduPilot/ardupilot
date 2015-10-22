@@ -30,6 +30,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -456,4 +458,7 @@ void JSBSim::update(const struct sitl_input &input)
     sync_frame_time();
     drain_control_socket();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

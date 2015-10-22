@@ -22,6 +22,8 @@
 #include "SIM_Balloon.h"
 #include <stdio.h>
 
+namespace SITL {
+
 /*
   constructor
  */
@@ -119,4 +121,7 @@ void Balloon::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

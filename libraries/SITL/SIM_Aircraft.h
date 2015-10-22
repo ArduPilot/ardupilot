@@ -24,6 +24,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 
+namespace SITL {
+
 /*
   parent class for all simulator types
  */
@@ -135,6 +137,8 @@ private:
     uint32_t frame_counter = 0;
     const uint32_t min_sleep_time;
 };
+
+} // namespace SITL
 
 #endif // _SIM_AIRCRAFT_H
 

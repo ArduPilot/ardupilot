@@ -23,6 +23,8 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
+
 /*
   a Jsbsim simulator
  */
@@ -174,5 +176,7 @@ public:
 
     void ByteSwap(void);
 };
+
+} // namespace SITL
 
 #endif // _SIM_JSBSIM_H

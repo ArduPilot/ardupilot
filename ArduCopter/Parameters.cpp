@@ -974,7 +974,7 @@ const AP_Param::Info Copter::var_info[] PROGMEM = {
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    GOBJECT(sitl, "SIM_", SITL),
+    GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
     // @Group: GND_

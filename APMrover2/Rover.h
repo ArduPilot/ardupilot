@@ -169,7 +169,7 @@ private:
     AP_RSSI rssi;          
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
 
     // GCS handling

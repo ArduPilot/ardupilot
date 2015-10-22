@@ -22,6 +22,8 @@
 
 #include "SIM_Aircraft.h"
 
+namespace SITL {
+
 /*
   a helicopter simulator
  */
@@ -59,5 +61,6 @@ private:
     bool gas_heli = false;
 };
 
+} // namespace SITL
 
 #endif // _SIM_HELICOPTER_H

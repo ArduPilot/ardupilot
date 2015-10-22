@@ -24,6 +24,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+namespace SITL {
+
 Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
     fdm(_fdm),
     target_address("127.0.0.1"),
@@ -291,4 +293,7 @@ void Gimbal::send_report(void)
         delta_angle.zero();
     }
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

@@ -23,6 +23,8 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
+
 /*
   a last_letter simulator
  */
@@ -74,5 +76,6 @@ private:
     const char *frame_str;
 };
 
+} // namespace SITL
 
 #endif // _SIM_LAST_LETTER_H

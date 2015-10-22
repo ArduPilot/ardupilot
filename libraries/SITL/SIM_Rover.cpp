@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace SITL {
+
 /*
   constructor
  */
@@ -157,4 +159,7 @@ void SimRover::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

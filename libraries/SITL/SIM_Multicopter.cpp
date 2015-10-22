@@ -22,6 +22,8 @@
 #include "SIM_Multicopter.h"
 #include <stdio.h>
 
+namespace SITL {
+
 Motor m(90,  false,  1);
 
 static const Motor quad_plus_motors[4] =
@@ -226,4 +228,7 @@ void MultiCopter::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
+
+} // namespace SITL
+
 #endif // CONFIG_HAL_BOARD

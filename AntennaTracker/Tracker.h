@@ -122,7 +122,7 @@ private:
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
     
     /**
