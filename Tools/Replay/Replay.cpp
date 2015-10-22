@@ -33,7 +33,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <SITL/SITL.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -65,6 +64,10 @@
 
 #include "LogReader.h"
 #include "DataFlashFileReader.h"
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 #define streq(x, y) (!strcmp(x, y))
 
