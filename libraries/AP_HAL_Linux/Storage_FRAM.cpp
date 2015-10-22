@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
@@ -180,7 +181,7 @@ int32_t Storage_FRAM::read(uint16_t fd, uint8_t *Buff, uint16_t NumBytes){
     for(uint16_t i=fptr;i<(fptr+NumBytes);i++){
         Buff[i-fptr]= _register_read(i,OPCODE_READ);
 
-        if(Buff[i-fptr]==-1){
+        if(Buff[i-fptr]==UINT8_MAX){
             return -1;
         }
     }
