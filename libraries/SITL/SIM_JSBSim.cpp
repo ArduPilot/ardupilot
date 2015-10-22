@@ -17,15 +17,16 @@
   simulator connector for ardupilot version of JSBSim
 */
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "SIM_JSBSim.h"
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

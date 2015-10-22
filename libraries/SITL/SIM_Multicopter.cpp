@@ -17,8 +17,8 @@
   multicopter simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include "SIM_Multicopter.h"
+
 #include <stdio.h>
 
 namespace SITL {

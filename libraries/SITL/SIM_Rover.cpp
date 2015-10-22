@@ -17,9 +17,8 @@
   rover simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include "SIM_Rover.h"
-#include <stdio.h>
+
 #include <string.h>
 
 namespace SITL {

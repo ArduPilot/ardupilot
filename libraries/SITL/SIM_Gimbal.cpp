@@ -17,9 +17,11 @@
   gimbal simulator class for MAVLink gimbal
 */
 
-#include "SIM_Aircraft.h"
 #include "SIM_Gimbal.h"
+
 #include <stdio.h>
+
+#include "SIM_Aircraft.h"
 
 extern const AP_HAL::HAL& hal;
 

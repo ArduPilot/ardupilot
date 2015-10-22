@@ -17,9 +17,11 @@
   simulator connector for ardupilot version of CRRCSim
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include "SIM_CRRCSim.h"
+
 #include <stdio.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

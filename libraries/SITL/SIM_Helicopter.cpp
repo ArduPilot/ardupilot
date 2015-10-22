@@ -17,8 +17,8 @@
   helicopter simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include "SIM_Helicopter.h"
+
 #include <stdio.h>
 
 namespace SITL {

@@ -17,12 +17,14 @@
   simulator connector for ardupilot version of last_letter
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include "SIM_last_letter.h"
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+
 #include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 

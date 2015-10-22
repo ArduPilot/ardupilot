@@ -17,12 +17,12 @@
   parent class for aircraft simulators
 */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
 #include "SIM_Aircraft.h"
-#include <unistd.h>
-#include <sys/time.h>
+
 #include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 #ifdef __CYGWIN__
 #include <windows.h>
 #include <time.h>

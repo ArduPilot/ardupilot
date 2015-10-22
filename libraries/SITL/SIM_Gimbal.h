@@ -20,8 +20,9 @@
 #ifndef _SIM_GIMBAL_H
 #define _SIM_GIMBAL_H
 
-#include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
+
+#include "SIM_Aircraft.h"
 
 namespace SITL {
 
