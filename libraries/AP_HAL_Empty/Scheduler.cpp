@@ -69,7 +69,7 @@ bool EmptyScheduler::system_initializing() {
 void EmptyScheduler::system_initialized()
 {}
 
-void EmptyScheduler::panic(const prog_char_t *errormsg) {
+void EmptyScheduler::panic(const prog_char_t *errormsg, ...) {
     hal.console->println_P(errormsg);
     for(;;);
 }
