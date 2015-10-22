@@ -52,7 +52,7 @@ private:
         float yaw_rate;
         float col_pitch;
     };
-    
+
     /*
       reply packet sent from CRRCSim to ArduPilot
      */

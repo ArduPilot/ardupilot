@@ -87,14 +87,14 @@ void Helicopter::update(const struct sitl_input &input)
         // simulate a traditional helicopter
 
         float tail_rotor = (input.servos[3]-1000) / 1000.0f;
-    
+
         thrust = (rsc/rsc_setpoint) * (swash1+swash2+swash3) / 3.0f;
         torque_effect_accel = (rsc_scale+thrust) * rotor_rot_accel;
 
         roll_rate = swash1 - swash2;
         pitch_rate = (swash1+swash2) / 2.0f - swash3;
         yaw_rate = tail_rotor - 0.5f;
-  
+
         lateral_y_thrust = yaw_rate * rsc_scale * tail_thrust_scale;
         break;
     }
@@ -105,7 +105,7 @@ void Helicopter::update(const struct sitl_input &input)
         float swash4 = (input.servos[3]-1000) / 1000.0f;
         float swash5 = (input.servos[4]-1000) / 1000.0f;
         float swash6 = (input.servos[5]-1000) / 1000.0f;
-        
+
         thrust = (rsc / rsc_setpoint) * (swash1+swash2+swash3+swash4+swash5+swash6) / 6.0f;
         torque_effect_accel = (rsc_scale + rsc / rsc_setpoint) * rotor_rot_accel * ((swash1+swash2+swash3) - (swash4+swash5+swash6));
 
@@ -120,7 +120,7 @@ void Helicopter::update(const struct sitl_input &input)
 
         float right_rotor = (input.servos[3]-1000) / 1000.0f;
         float left_rotor = (input.servos[4]-1000) / 1000.0f;
-    
+
         thrust = (rsc/rsc_setpoint) * (swash1+swash2+swash3) / 3.0f;
         torque_effect_accel = (rsc_scale+thrust) * rotor_rot_accel;
 

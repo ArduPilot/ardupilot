@@ -71,7 +71,7 @@ private:
 
     // reporting period in ms
     const float reporting_period_ms;
-        
+
     // integral of gyro vector over last time interval. In radians
     Vector3f delta_angle;
 

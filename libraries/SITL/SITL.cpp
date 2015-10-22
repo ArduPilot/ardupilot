@@ -95,9 +95,9 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
-                              radians(state.rollRate), 
-                              radians(state.pitchRate), 
-                              radians(state.yawRate), 
+                              radians(state.rollRate),
+                              radians(state.pitchRate),
+                              radians(state.yawRate),
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
 }

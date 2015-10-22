@@ -122,7 +122,7 @@ bool JSBSim::create_templates(void)
     if (f == NULL) {
         hal.scheduler->panic("Unable to create jsbsim fgout script");
     }
-    fprintf(f, "<?xml version=\"1.0\"?>\n" 
+    fprintf(f, "<?xml version=\"1.0\"?>\n"
             "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
             fdm_port);
     fclose(f);
@@ -135,7 +135,7 @@ bool JSBSim::create_templates(void)
     }
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
-    fprintf(f, 
+    fprintf(f,
             "<?xml version=\"1.0\"?>\n"
             "<initialize name=\"Start up location\">\n"
             "  <latitude unit=\"DEG\"> %f </latitude>\n"
@@ -172,7 +172,7 @@ bool JSBSim::start_JSBSim(void)
     int p[2];
     int devnull = open("/dev/null", O_RDWR);
     if (pipe(p) != 0) {
-        hal.scheduler->panic("Unable to create pipe");        
+        hal.scheduler->panic("Unable to create pipe");
     }
     pid_t child_pid = fork();
     if (child_pid == 0) {
@@ -194,8 +194,8 @@ bool JSBSim::start_JSBSim(void)
             exit(1);
         }
 
-        int ret = execlp("JSBSim", 
-                         "JSBSim", 
+        int ret = execlp("JSBSim",
+                         "JSBSim",
                          "--realtime",
                          "--suspend",
                          "--nice",
@@ -218,7 +218,7 @@ bool JSBSim::start_JSBSim(void)
     }
 
     if (!expect("JSBSim Execution beginning")) {
-        hal.scheduler->panic("Failed to start JSBSim");        
+        hal.scheduler->panic("Failed to start JSBSim");
     }
     if (!open_control_socket()) {
         hal.scheduler->panic("Failed to open JSBSim control socket");
@@ -252,7 +252,7 @@ bool JSBSim::expect(const char *str)
 {
     const char *basestr = str;
     while (*str) {
-        char c;        
+        char c;
         if (read(jsbsim_stdout, &c, 1) != 1) {
             return false;
         }
@@ -283,7 +283,7 @@ bool JSBSim::open_control_socket(void)
     sock_control.set_blocking(false);
     opened_control_socket = true;
 
-    char startup[] = 
+    char startup[] =
         "info\n"
         "resume\n"
         "step\n"
@@ -337,7 +337,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
         rudder   = (ch2+ch1)/2.0f;
     }
     float wind_speed_fps = input.wind.speed / FEET_TO_METERS;
-    asprintf(&buf, 
+    asprintf(&buf,
              "set fcs/aileron-cmd-norm %f\n"
              "set fcs/elevator-cmd-norm %f\n"
              "set fcs/rudder-cmd-norm %f\n"
@@ -370,7 +370,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
 /* nasty hack ....
    JSBSim sends in little-endian
  */
-void FGNetFDM::ByteSwap(void) 
+void FGNetFDM::ByteSwap(void)
 {
     uint32_t *buf = (uint32_t *)this;
     for (uint16_t i=0; i<sizeof(*this)/4; i++) {

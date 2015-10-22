@@ -48,7 +48,7 @@ private:
     struct servo_packet {
       float motor_speed[4];
     };
-    
+
     /*
       reply packet sent from Gazebo to ArduPilot
      */

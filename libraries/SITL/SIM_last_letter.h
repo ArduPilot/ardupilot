@@ -50,7 +50,7 @@ private:
     struct servo_packet {
         uint16_t servos[16];
     };
-    
+
     /*
       reply packet sent from last_letter to ArduPilot
      */
