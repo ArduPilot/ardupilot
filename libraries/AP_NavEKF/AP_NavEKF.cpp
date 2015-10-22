@@ -4032,9 +4032,9 @@ void NavEKF::CovarianceInit()
     }
     // quaternions - TODO better maths for initial quaternion covariances that uses roll, pitch and yaw
     P[0][0]   = 1.0e-9f;
-    P[1][1]   = 0.25f*sq(radians(1.0f));
-    P[2][2]   = 0.25f*sq(radians(1.0f));
-    P[3][3]   = 0.25f*sq(radians(1.0f));
+    P[1][1]   = 0.25f*sq(radians(10.0f));
+    P[2][2]   = 0.25f*sq(radians(10.0f));
+    P[3][3]   = 0.25f*sq(radians(10.0f));
     // velocities
     P[4][4]   = sq(0.7f);
     P[5][5]   = P[4][4];
@@ -4942,12 +4942,8 @@ bool NavEKF::assume_zero_sideslip(void) const
  */
 float NavEKF::InitialGyroBiasUncertainty(void) const
 {
-    switch (_ahrs->get_ins().get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
-        return 1.0f;
-    default:
-        return 0.1f;
-    }
+    // this is the assumed uncertainty in gyro bias in rad/sec used to initialise the covariance matrix.
+    return 0.035f;
 }
 
 /*
