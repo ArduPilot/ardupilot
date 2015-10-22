@@ -409,8 +409,13 @@ void *Scheduler::_io_thread(void* arg)
 
 void Scheduler::panic(const prog_char_t *errormsg, ...)
 {
-    write(1, errormsg, strlen(errormsg));
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.rcin->deinit();
     hal.scheduler->delay_microseconds(10000);
     exit(1);
