@@ -17,8 +17,7 @@
   multicopter simulator class
 */
 
-#ifndef _SIM_MULTICOPTER_H
-#define _SIM_MULTICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 
@@ -82,5 +81,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_MULTICOPTER_H

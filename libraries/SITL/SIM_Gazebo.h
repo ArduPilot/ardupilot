@@ -17,8 +17,7 @@
   simulator connection for ardupilot version of Gazebo
 */
 
-#ifndef _SIM_GAZEBO_H
-#define _SIM_GAZEBO_H
+#pragma once
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -71,5 +70,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_GAZEBO_H

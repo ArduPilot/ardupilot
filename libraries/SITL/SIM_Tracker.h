@@ -17,8 +17,7 @@
   antenna-tracker simulator class
 */
 
-#ifndef _SIM_TRACKER_H
-#define _SIM_TRACKER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 
@@ -59,5 +58,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif

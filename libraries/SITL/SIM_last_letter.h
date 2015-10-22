@@ -17,8 +17,7 @@
   simulator connection for ardupilot version of last_letter
 */
 
-#ifndef _SIM_LAST_LETTER_H
-#define _SIM_LAST_LETTER_H
+#pragma once
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -77,5 +76,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_LAST_LETTER_H

@@ -17,8 +17,7 @@
   rover simulator class
 */
 
-#ifndef _SIM_ROVER_H
-#define _SIM_ROVER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 
@@ -55,5 +54,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_ROVER_H

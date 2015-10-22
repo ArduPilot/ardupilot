@@ -1,7 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __SITL_H__
-#define __SITL_H__
+#pragma once
 
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -118,5 +117,3 @@ public:
 };
 
 } // namespace SITL
-
-#endif // __SITL_H__

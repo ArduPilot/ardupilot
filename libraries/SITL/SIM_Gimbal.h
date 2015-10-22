@@ -17,8 +17,7 @@
   gimbal simulator class
 */
 
-#ifndef _SIM_GIMBAL_H
-#define _SIM_GIMBAL_H
+#pragma once
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -108,5 +107,3 @@ private:
 };
 
 }  // namespace SITL
-
-#endif // _SIM_GIMBAL_H

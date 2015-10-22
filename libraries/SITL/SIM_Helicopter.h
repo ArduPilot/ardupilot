@@ -17,8 +17,7 @@
   helicopter simulator class
 */
 
-#ifndef _SIM_HELICOPTER_H
-#define _SIM_HELICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 
@@ -61,5 +60,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_HELICOPTER_H

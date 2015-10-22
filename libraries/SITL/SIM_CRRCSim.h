@@ -17,8 +17,7 @@
   simulator connection for ardupilot version of CRRCSim
 */
 
-#ifndef _SIM_CRRCSIM_H
-#define _SIM_CRRCSIM_H
+#pragma once
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -79,5 +78,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_CRRCSIM_H

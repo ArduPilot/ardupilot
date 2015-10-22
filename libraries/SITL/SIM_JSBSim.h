@@ -17,8 +17,7 @@
   simulator connection for ardupilot version of JSBSim
 */
 
-#ifndef _SIM_JSBSIM_H
-#define _SIM_JSBSIM_H
+#pragma once
 
 #include <AP_HAL/utility/Socket.h>
 
@@ -178,5 +177,3 @@ public:
 };
 
 } // namespace SITL
-
-#endif // _SIM_JSBSIM_H

@@ -17,8 +17,7 @@
   balloon simulator class
 */
 
-#ifndef _SIM_BALLOON_H
-#define _SIM_BALLOON_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 
@@ -49,5 +48,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_BALLOON_H

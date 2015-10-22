@@ -17,8 +17,7 @@
   parent class for aircraft simulators
 */
 
-#ifndef _SIM_AIRCRAFT_H
-#define _SIM_AIRCRAFT_H
+#pragma once
 
 #include <AP_Math/AP_Math.h>
 
@@ -138,6 +137,3 @@ private:
 };
 
 } // namespace SITL
-
-#endif // _SIM_AIRCRAFT_H
-
