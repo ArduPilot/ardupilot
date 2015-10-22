@@ -53,9 +53,7 @@ public:
 
     // set the default NAVL1_PERIOD
     void set_default_period(float period) {
-        if (!_L1_period.load()) {
-            _L1_period.set(period);
-        }
+        _L1_period.set_default(period);
     }
 
 	// this supports the NAVl1_* user settable parameters
