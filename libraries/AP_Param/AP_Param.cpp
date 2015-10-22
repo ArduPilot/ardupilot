@@ -816,6 +816,63 @@ bool AP_Param::load(void)
     return true;
 }
 
+bool AP_Param::configured_in_storage(void)
+{
+    uint32_t group_element = 0;
+    const struct GroupInfo *ginfo;
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    if (info == NULL) {
+        // we don't have any info on how to load it
+        return false;
+    }
+
+    struct Param_header phdr;
+
+    // create the header we will use to match the variable
+    if (ginfo != NULL) {
+        phdr.type = PGM_UINT8(&ginfo->type);
+    } else {
+        phdr.type = PGM_UINT8(&info->type);
+    }
+    phdr.key  = PGM_UINT8(&info->key);
+    phdr.group_element = group_element;
+
+    // scan EEPROM to find the right location
+    uint16_t ofs;
+
+    // only vector3f can have non-zero idx for now
+    return scan(&phdr, &ofs) && (phdr.type == AP_PARAM_VECTOR3F || idx == 0);
+}
+
+bool AP_Param::configured_in_defaults_file(void)
+{
+    uint32_t group_element = 0;
+    const struct GroupInfo *ginfo;
+    uint8_t idx;
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    if (info == NULL) {
+        // we don't have any info on how to load it
+        return false;
+    }
+
+    const float* def_value_ptr;
+
+    if (ginfo != NULL) {
+        def_value_ptr = &ginfo->def_value;
+    } else {
+        def_value_ptr = &info->def_value;
+    }
+
+    for (uint16_t i=0; i<num_param_overrides; i++) {
+        if (def_value_ptr == param_overrides[i].def_value_ptr) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // set a AP_Param variable to a specified value
 void AP_Param::set_value(enum ap_var_type type, void *ptr, float value)
 {
