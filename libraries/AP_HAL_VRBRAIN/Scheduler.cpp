@@ -325,7 +325,7 @@ void *VRBRAINScheduler::_io_thread(void)
     return NULL;
 }
 
-void VRBRAINScheduler::panic(const prog_char_t *errormsg)
+void VRBRAINScheduler::panic(const prog_char_t *errormsg, ...)
 {
     write(1, errormsg, strlen(errormsg));
     write(1, "\n", 1);
