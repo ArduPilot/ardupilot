@@ -25,9 +25,6 @@
 
 namespace SITL {
 
-/*
-  constructor
- */
 SimRover::SimRover(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     max_speed(20),

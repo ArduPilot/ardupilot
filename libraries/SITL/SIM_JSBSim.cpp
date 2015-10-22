@@ -38,9 +38,6 @@ namespace SITL {
 #define DEBUG_JSBSIM 1
 #define FEET_TO_METERS 0.3048f
 
-/*
-  constructor
- */
 JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     sock_control(false),

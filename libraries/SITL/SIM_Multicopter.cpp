@@ -101,9 +101,6 @@ static const Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors)
 };
 
-/*
-  constructor
- */
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     frame(NULL),

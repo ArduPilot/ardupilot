@@ -24,9 +24,6 @@
 
 namespace SITL {
 
-/*
-  constructor
- */
 Helicopter::Helicopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
