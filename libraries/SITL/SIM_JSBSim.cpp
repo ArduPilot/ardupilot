@@ -18,7 +18,6 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "SIM_JSBSim.h"
 #include <stdio.h>
@@ -457,5 +456,3 @@ void JSBSim::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
-
-#endif // CONFIG_HAL_BOARD

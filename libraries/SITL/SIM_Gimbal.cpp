@@ -18,7 +18,6 @@
 */
 
 #include "SIM_Aircraft.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Gimbal.h"
 #include <stdio.h>
 
@@ -295,5 +294,3 @@ void Gimbal::send_report(void)
 }
 
 } // namespace SITL
-
-#endif // CONFIG_HAL_BOARD

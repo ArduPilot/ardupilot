@@ -18,7 +18,6 @@
 */
 
 #include "SIM_Tracker.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
 
 namespace SITL {
@@ -138,5 +137,3 @@ void Tracker::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
-
-#endif

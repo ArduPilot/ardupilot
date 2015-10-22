@@ -18,7 +18,6 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_Common/AP_Common.h>
 #include "SIM_Aircraft.h"
 #include <unistd.h>
@@ -291,5 +290,3 @@ void Aircraft::set_speedup(float speedup)
 }
 
 } // namespace SITL
-
-#endif // CONFIG_HAL_BOARD

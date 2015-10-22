@@ -18,7 +18,6 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_last_letter.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -144,5 +143,3 @@ void last_letter::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
-
-#endif // CONFIG_HAL_BOARD

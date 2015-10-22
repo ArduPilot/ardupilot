@@ -21,7 +21,6 @@
 #define _SIM_GIMBAL_H
 
 #include "SIM_Aircraft.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL/utility/Socket.h>
 
 namespace SITL {
@@ -108,7 +107,5 @@ private:
 };
 
 }  // namespace SITL
-
-#endif // CONFIG_HAL_BOARD
 
 #endif // _SIM_GIMBAL_H
