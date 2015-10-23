@@ -155,6 +155,8 @@ public:
     void send_vibration(const AP_InertialSensor &ins) const;
     void send_home(const Location &home) const;
     static void send_home_all(const Location &home);
+    static void send_prearm_check_report_all(uint64_t enabled_bitmask, uint64_t passed_bitmask);
+    static void send_prearm_check_failure_description_all(MAV_PREARM_CHECK_SUBSYSTEM subsystem, uint32_t code, const prog_char_t *description);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
