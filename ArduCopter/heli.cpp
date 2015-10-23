@@ -91,10 +91,22 @@ void Copter::check_dynamic_flight(void)
 // should be run between the rate controller and the servo updates.
 void Copter::update_heli_control_dynamics(void)
 {
+    static int16_t hover_roll_trim_scalar_slew = 0;
+
     // Use Leaky_I if we are not moving fast
     attitude_control.use_leaky_i(!heli_flags.dynamic_flight);
-    
-    // To-Do: Update dynamic phase angle of swashplate
+
+    if (ap.land_complete || (motors.get_desired_rotor_speed() == 0)){
+        // if we are landed or there is no rotor power demanded, decrement slew scalar
+        hover_roll_trim_scalar_slew--;        
+    } else {
+        // if we are not landed and motor power is demanded, increment slew scalar
+        hover_roll_trim_scalar_slew++;
+    }
+    hover_roll_trim_scalar_slew = constrain_int16(hover_roll_trim_scalar_slew, 0, MAIN_LOOP_RATE);
+
+    // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
+    attitude_control.set_hover_roll_trim_scalar((float)(hover_roll_trim_scalar_slew/MAIN_LOOP_RATE));
 }
 
 // heli_update_landing_swash - sets swash plate flag so higher minimum is used when landed or landing
