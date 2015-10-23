@@ -135,7 +135,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
         return;
     }
 
-    // get body-frame angles to target from backend
+    // get angles to target from backend
     if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
         _have_estimate = false;
         return;
