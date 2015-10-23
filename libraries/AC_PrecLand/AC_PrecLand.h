@@ -72,7 +72,7 @@ public:
 private:
 
     // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-    //  body-frame angles stored in _bf_angle_to_target
+    //  angles stored in _angle_to_target
     //  earth-frame angles stored in _ef_angle_to_target
     //  position estimate is stored in _target_pos
     void calc_angles_and_pos(float alt_above_terrain_cm);

@@ -32,10 +32,10 @@ MAV_FRAME AC_PrecLand_Companion::get_frame_of_reference()
     return _frame;
 }
 
-// get_angle_to_target - returns body frame angles (in radians) to target
+// get_angle_to_target - returns angles (in radians) to target
 //  returns true if angles are available, false if not (i.e. no target)
-//  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
-//  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
+//  x_angle_rad : roll direction, positive = target is to right (looking down)
+//  y_angle_rad : pitch direction, postiive = target is forward (looking down)
 bool AC_PrecLand_Companion::get_angle_to_target(float &x_angle_rad, float &y_angle_rad)
 {
     if (_new_estimate){
