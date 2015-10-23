@@ -1666,4 +1666,26 @@ bool GCS_MAVLINK::telemetry_delayed(mavlink_channel_t _chan)
     return true;
 }
 
+void GCS_MAVLINK::send_prearm_check_report_all(uint64_t enabled_bitmask, uint64_t passed_bitmask)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PREARM_CHECK_REPORT_LEN) {
+                mavlink_msg_prearm_check_report_send(chan, enabled_bitmask, passed_bitmask);
+            }
+        }
+    }
+}
 
+void GCS_MAVLINK::send_prearm_check_failure_description_all(MAV_PREARM_CHECK_SUBSYSTEM subsystem, uint32_t code, const prog_char_t *description)
+{
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        if ((1U<<i) & mavlink_active) {
+            mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0+i);
+            if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_PREARM_CHECK_FAILURE_DESCRIPTION_LEN) {
+                mavlink_msg_prearm_check_failure_description_send(chan, subsystem, code, description);
+            }
+        }
+    }
+}
