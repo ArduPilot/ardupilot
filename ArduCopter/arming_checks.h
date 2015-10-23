@@ -27,21 +27,21 @@ public:
 
     bool pre_arm_checks(bool report);
 
-    bool barometer_checks(bool report);
+    ArmingCheckResult barometer_checks(bool report);
 
-    bool ins_checks(bool report);
+    ArmingCheckResult ins_checks(bool report);
 
-    bool parameter_checks(bool report);
+    ArmingCheckResult parameter_checks(bool report);
 
-    bool compass_checks(bool report);
+    ArmingCheckResult compass_checks(bool report);
 
-    bool gps_checks(bool report);
+    ArmingCheckResult gps_checks(bool report);
 
-    bool manual_transmitter_checks(bool report);
+    ArmingCheckResult manual_transmitter_checks(bool report);
 
-    bool battery_checks(bool report);
+    ArmingCheckResult battery_checks(bool report);
 
-    bool rangefinder_optflow_checks(bool report);
+    ArmingCheckResult rangefinder_optflow_checks(bool report);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
