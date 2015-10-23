@@ -26,6 +26,8 @@ public:
     // update - give chance to driver to get updates from sensor
     //  returns true if new data available
     virtual bool update() = 0;
+    // what frame of reference is our sensor reporting in?
+    virtual MAV_FRAME get_frame_of_reference();
 
     // get_angle_to_target - returns body frame angles (in radians) to target
     //  returns true if angles are available, false if not (i.e. no target)

@@ -24,6 +24,8 @@ public:
     // update - give chance to driver to get updates from sensor
     //  returns true if new data available
     bool update();
+    // what frame of reference is our sensor reporting in?
+    MAV_FRAME get_frame_of_reference();
 
     // get_angle_to_target - returns body frame angles (in radians) to target
     //  returns true if angles are available, false if not (i.e. no target)
@@ -37,6 +39,7 @@ public:
 private:
 
     // output from camera
+    MAV_FRAME           _frame;                 // what frame of reference is our sensor reporting in?
     Vector2f            _angle_to_target;       // last body-frame angle to target
     float               _distance_to_target;    // distance from the camera to target in meters
     uint64_t            _timestamp_us;          // timestamp when the image was captured(synced via UAVCAN)
