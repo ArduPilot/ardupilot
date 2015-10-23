@@ -225,7 +225,7 @@ void AVRScheduler::system_initialized() {
     _initialized = true;
 }
 
-void AVRScheduler::panic(const prog_char_t* errormsg) {
+void AVRScheduler::panic(const prog_char_t* errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     _timer_suspended = true;

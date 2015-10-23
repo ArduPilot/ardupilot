@@ -47,6 +47,8 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
+#define FORMAT(a,b) __attribute__((format(printf, a, b)))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let

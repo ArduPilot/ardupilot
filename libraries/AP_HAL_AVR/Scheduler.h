@@ -45,7 +45,7 @@ public:
     bool     system_initializing();
     void     system_initialized();
 
-    void     panic(const prog_char_t *errormsg) NORETURN;
+    void     panic(const prog_char_t *errormsg, ...) FORMAT(2, 3) NORETURN;
     void     reboot(bool hold_in_bootloader);
 
     void     set_timer_speed(uint16_t timer_hz);
