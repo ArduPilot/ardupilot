@@ -78,11 +78,12 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
     return ret;
 }
 
-bool AP_Arming_Plane::ins_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Plane::ins_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::ins_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::ins_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
     // additional plane specific checks
@@ -97,9 +98,9 @@ bool AP_Arming_Plane::ins_checks(bool report)
                     GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
                 }
             }
-            return false;
+            return ARMING_CHECK_FAILED;
         }
     }
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
