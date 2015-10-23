@@ -124,7 +124,7 @@ Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
 }
 
 // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-//  body-frame angles stored in _bf_angle_to_target
+//  raw sensor angles stored in _angle_to_target (might be in earth frame, or maybe body frame)
 //  earth-frame angles stored in _ef_angle_to_target
 //  position estimate is stored in _target_pos
 void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
@@ -136,7 +136,7 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
     }
 
     // get body-frame angles to target from backend
-    if (!_backend->get_angle_to_target(_bf_angle_to_target.x, _bf_angle_to_target.y)) {
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
         _have_estimate = false;
         return;
     }

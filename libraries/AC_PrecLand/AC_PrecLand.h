@@ -62,7 +62,7 @@ public:
 
     // accessors for logging
     bool enabled() const { return _enabled; }
-    const Vector2f& last_bf_angle_to_target() const { return _bf_angle_to_target; }
+    const Vector2f& last_bf_angle_to_target() const { return _angle_to_target; }
     const Vector2f& last_ef_angle_to_target() const { return _ef_angle_to_target; }
     const Vector3f& last_target_pos_offset() const { return _target_pos_offset; }
 
@@ -94,7 +94,7 @@ private:
     float                       _dt;                // time difference (in seconds) between calls from the main program
 
     // output from sensor (stored for logging)
-    Vector2f                    _bf_angle_to_target;// last body-frame angle to target
+    Vector2f                    _angle_to_target;   // last raw sensor angle to target
     Vector2f                    _ef_angle_to_target;// last earth-frame angle to target
 
     // output from controller
