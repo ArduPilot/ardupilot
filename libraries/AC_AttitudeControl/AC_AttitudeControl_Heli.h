@@ -69,6 +69,9 @@ public:
     // do_piro_comp - controls whether piro-comp is active or not
     void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
 
+    // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
+    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -108,7 +111,10 @@ private:
     int16_t _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    int16_t get_roll_trim() { return constrain_int16(_hover_roll_trim, -1000, 1000);}
+    int16_t get_roll_trim() { return constrain_int16(_hover_roll_trim_scalar * _hover_roll_trim, -1000, 1000);}
+
+    // internal variables
+    float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
 
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
