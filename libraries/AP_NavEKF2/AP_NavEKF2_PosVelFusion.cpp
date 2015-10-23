@@ -305,7 +305,7 @@ void NavEKF2_core::FuseVelPosNED()
                 if (PV_AidingMode == AID_ABSOLUTE) {
                     lastPosPassTime_ms = imuSampleTime_ms;
                     // if timed out or outside the specified uncertainty radius, increment the offset applied to GPS data to compensate for large GPS position jumps
-                    if (posTimeout || ((varInnovVelPos[3] + varInnovVelPos[4]) > sq(float(frontend._gpsGlitchRadiusMax)))) {
+                    if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend._gpsGlitchRadiusMax)))) {
                         gpsPosGlitchOffsetNE.x += innovVelPos[3];
                         gpsPosGlitchOffsetNE.y += innovVelPos[4];
                         // limit the radius of the offset and decay the offset to zero radially
@@ -316,6 +316,11 @@ void NavEKF2_core::FuseVelPosNED()
                         ResetVelocity();
                         // don't fuse data on this time step
                         fusePosData = false;
+                        // Reset the position variances and corresponding covariances to a value that will pass the checks
+                        zeroRows(P,6,7);
+                        zeroCols(P,6,7);
+                        P[6][6] = sq(float(0.5f*frontend._gpsGlitchRadiusMax));
+                        P[7][7] = P[6][6];
                         // Reset the normalised innovation to avoid false failing the bad position fusion test
                         posTestRatio = 0.0f;
                         velTestRatio = 0.0f;
