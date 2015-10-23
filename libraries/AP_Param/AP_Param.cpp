@@ -28,6 +28,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <StorageManager/StorageManager.h>
+#include <GCS_MAVLink/GCS.h> // for send_parameter_value_all
 
 #include <math.h>
 #include <string.h>
@@ -369,7 +370,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
 // find the info structure for a variable
 const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 group_element,
                                                      const struct GroupInfo **  group_ret,
-                                                     uint8_t *                  idx)
+                                                     uint8_t *                  idx) const
 {
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
@@ -528,6 +529,11 @@ void AP_Param::copy_name_token(const ParamToken &token, char *buffer, size_t buf
         Debug("no info found");
         return;
     }
+    copy_name_info(info, ginfo, idx, buffer, buffer_size, force_scalar);
+}
+
+void AP_Param::copy_name_info(const struct AP_Param::Info *info, const struct GroupInfo *ginfo, uint8_t idx, char *buffer, size_t buffer_size, bool force_scalar) const
+{
     strncpy_P(buffer, info->name, buffer_size);
     if (ginfo != NULL) {
         uint8_t len = strnlen(buffer, buffer_size);
@@ -681,6 +687,32 @@ AP_Param::find_object(const char *name)
     return NULL;
 }
 
+// notify GCS of current value of parameter
+void AP_Param::notify() const {
+    uint32_t group_element = 0;
+    const struct GroupInfo *ginfo;
+    uint8_t idx;
+
+    const struct AP_Param::Info *info = find_var_info(&group_element, &ginfo, &idx);
+    if (info == NULL) {
+        // this is probably very bad
+        return;
+    }
+
+    char name[AP_MAX_NAME_SIZE+1];
+    copy_name_info(info, ginfo, idx, name, sizeof(name), true);
+
+    uint32_t param_header_type;
+    if (ginfo != NULL) {
+        param_header_type = PGM_UINT8(&ginfo->type);
+    } else {
+        param_header_type = PGM_UINT8(&info->type);
+    }
+
+    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                          cast_to_float((enum ap_var_type)param_header_type));
+}
+
 
 // Save the variable to EEPROM, if supported
 //
@@ -717,11 +749,16 @@ bool AP_Param::save(bool force_save)
         ap = (const AP_Param *)((uintptr_t)ap) - (idx*sizeof(float));
     }
 
+    char name[AP_MAX_NAME_SIZE+1];
+    copy_name_info(info, ginfo, idx, name, sizeof(name), true);
+
     // scan EEPROM to find the right location
     uint16_t ofs;
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+        GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                              cast_to_float((enum ap_var_type)phdr.type));
         return true;
     }
     if (ofs == (uint16_t) ~0) {
@@ -738,12 +775,14 @@ bool AP_Param::save(bool force_save)
             v2 = get_default_value(&info->def_value);
         }
         if (is_equal(v1,v2) && !force_save) {
+            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
             return true;
         }
         if (phdr.type != AP_PARAM_INT32 &&
             (fabsf(v1-v2) < 0.0001f*fabsf(v1))) {
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
+            GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type, v2);
             return true;
         }
     }
@@ -758,6 +797,8 @@ bool AP_Param::save(bool force_save)
     write_sentinal(ofs + sizeof(phdr) + type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
+    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
+                                          cast_to_float((enum ap_var_type)phdr.type));
     return true;
 }
 
