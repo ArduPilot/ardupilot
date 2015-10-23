@@ -25,11 +25,12 @@ bool AP_Arming_Copter::pre_arm_checks(bool report)
     return ret;
 }
 
-bool AP_Arming_Copter::barometer_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::barometer_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::barometer_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::barometer_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
     // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
@@ -43,112 +44,110 @@ bool AP_Arming_Copter::barometer_checks(bool report)
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Altitude disparity"));
             }
-            return false;
+            return ARMING_CHECK_FAILED;
         }
     }
 
     // if we got here checks have passed
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::ins_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::ins_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::ins_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::ins_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
-        // check ekf attitude, if bad it's usually the gyro biases have not settled
-        if (!copter.inertial_nav.get_filter_status().flags.attitude) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: gyros still settling"));
-            }
-            return false;
+    // check ekf attitude, if bad it's usually the gyro biases have not settled
+    if (!copter.inertial_nav.get_filter_status().flags.attitude) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: gyros still settling"));
         }
-
-        // check lean angle
-        if (degrees(acosf(copter.ahrs.cos_roll()*copter.ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Leaning"));
-            }
-            return false;
-        }
+        return ARMING_CHECK_FAILED;
     }
 
-    return true;
+    // check lean angle
+    if (degrees(acosf(copter.ahrs.cos_roll()*copter.ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Leaning"));
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::parameter_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::parameter_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::parameter_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::parameter_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
-        // radio failsafe parameter checks
-        if (copter.g.failsafe_throttle) {
-            // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
-            if (copter.channel_throttle->radio_min <= copter.g.failsafe_throttle_value+10 || copter.g.failsafe_throttle_value < 910) {
-                if (report) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check FS_THR_VALUE"));
-                }
-                return false;
-            }
-        }
-
-        // lean angle parameter check
-        if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
+    // radio failsafe parameter checks
+    if (copter.g.failsafe_throttle) {
+        // check throttle min is above throttle failsafe trigger and that the trigger is above ppm encoder's loss-of-signal value of 900
+        if (copter.channel_throttle->radio_min <= copter.g.failsafe_throttle_value+10 || copter.g.failsafe_throttle_value < 910) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check ANGLE_MAX"));
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check FS_THR_VALUE"));
             }
-            return false;
+            return ARMING_CHECK_FAILED;
         }
+    }
 
-        // acro balance parameter check
-        if ((copter.g.acro_balance_roll > copter.g.p_stabilize_roll.kP()) || (copter.g.acro_balance_pitch > copter.g.p_stabilize_pitch.kP())) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check ACRO_BAL_ROLL/PITCH"));
-            }
-            return false;
+    // lean angle parameter check
+    if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check ANGLE_MAX"));
         }
+        return ARMING_CHECK_FAILED;
+    }
+
+    // acro balance parameter check
+    if ((copter.g.acro_balance_roll > copter.g.p_stabilize_roll.kP()) || (copter.g.acro_balance_pitch > copter.g.p_stabilize_pitch.kP())) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Check ACRO_BAL_ROLL/PITCH"));
+        }
+        return ARMING_CHECK_FAILED;
+    }
 #if FRAME_CONFIG == HELI_FRAME
-        // check helicopter parameters
-        if (!copter.motors.parameter_check(report)) {
-            return false;
-        }
+    // check helicopter parameters
+    if (!copter.motors.parameter_check(report)) {
+        return ARMING_CHECK_FAILED;
+    }
 #endif // HELI_FRAME
-    }
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::compass_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::compass_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::compass_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::compass_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
-        // compass is required for copter
-        if (!copter.compass.use_for_yaw()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass disabled"));
-            }
-            return false;
+    // compass is required for copter
+    if (!copter.compass.use_for_yaw()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("PreArm: Compass disabled"));
         }
+        return ARMING_CHECK_FAILED;
     }
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::gps_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::gps_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::gps_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::gps_checks(report);
+    if (ret == ARMING_CHECK_FAILED) {
+        return ret;
     }
 
     // check if flight mode requires GPS
@@ -163,7 +162,7 @@ bool AP_Arming_Copter::gps_checks(bool report)
 
     // return true if GPS is not required
     if (!gps_required) {
-        return true;
+        return ARMING_CHECK_PASSED;
     }
 
     // ensure position is ok
@@ -176,7 +175,7 @@ bool AP_Arming_Copter::gps_checks(bool report)
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Need 3D Fix"));
             }
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // check EKF compass variance is below failsafe threshold
@@ -188,7 +187,7 @@ bool AP_Arming_Copter::gps_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: EKF compass variance"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // check home and EKF origin are not too far
@@ -196,7 +195,7 @@ bool AP_Arming_Copter::gps_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: EKF-home variance"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // warn about hdop separately - to prevent user confusion with no gps lock
@@ -204,7 +203,7 @@ bool AP_Arming_Copter::gps_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: High GPS HDOP"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
 #if AC_FENCE == ENABLED
@@ -213,18 +212,19 @@ bool AP_Arming_Copter::gps_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: check fence"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 #endif
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::manual_transmitter_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::manual_transmitter_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::manual_transmitter_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::manual_transmitter_checks(report);
+    if (ret == ARMING_CHECK_FAILED) {
+        return ret;
     }
 
     // vehicle specific checks
@@ -235,7 +235,7 @@ bool AP_Arming_Copter::manual_transmitter_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Interlock/E-Stop Conflict"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // if motor interlock aux switch is in use, switch needs to be in disabled position to arm
@@ -243,7 +243,7 @@ bool AP_Arming_Copter::manual_transmitter_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Motor Interlock Enabled"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // if we are using Motor Emergency Stop aux switch, check it is not enabled
@@ -251,8 +251,10 @@ bool AP_Arming_Copter::manual_transmitter_checks(bool report)
         if (report) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Motor Emergency Stopped"));
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
+
+    // To-Do: allow checks below this point to be disabled
 
     // check throttle is above failsafe throttle
     if ((copter.g.failsafe_throttle != FS_THR_DISABLED) && (copter.channel_throttle->radio_in < copter.g.failsafe_throttle_value)) {
@@ -263,7 +265,7 @@ bool AP_Arming_Copter::manual_transmitter_checks(bool report)
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: Throttle below Failsafe"));
 #endif
         }
-        return false;
+        return ARMING_CHECK_FAILED;
     }
 
     // check throttle is not too high - skips checks if arming from GCS in Guided
@@ -282,78 +284,79 @@ bool AP_Arming_Copter::manual_transmitter_checks(bool report)
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("Arm: Throttle too high"));
 #endif
             }
-            return false;
+            return ARMING_CHECK_FAILED;
         }
     }
 
-    bool ret = true;
+    ret = ARMING_CHECK_PASSED;
 
     // check if radio has been calibrated
     if (!copter.channel_throttle->radio_min.load() && !copter.channel_throttle->radio_max.load()) {
-        ret = false;
+        ret = ARMING_CHECK_FAILED;
     }
 
     // check channels 1 & 2 have min <= 1300 and max >= 1700
     if (copter.channel_roll->radio_min > 1300 || copter.channel_roll->radio_max < 1700 || copter.channel_pitch->radio_min > 1300 || copter.channel_pitch->radio_max < 1700) {
-        ret = false;
+        ret = ARMING_CHECK_FAILED;
     }
 
     // check channels 3 & 4 have min <= 1300 and max >= 1700
     if (copter.channel_throttle->radio_min > 1300 || copter.channel_throttle->radio_max < 1700 || copter.channel_yaw->radio_min > 1300 || copter.channel_yaw->radio_max < 1700) {
-        ret = false;
+        ret = ARMING_CHECK_FAILED;
     }
 
     // check channels 1 & 2 have trim >= 1300 and <= 1700
     if (copter.channel_roll->radio_trim < 1300 || copter.channel_roll->radio_trim > 1700 || copter.channel_pitch->radio_trim < 1300 || copter.channel_pitch->radio_trim > 1700) {
-        ret = false;
+        ret = ARMING_CHECK_FAILED;
     }
 
     // check channel 4 has trim >= 1300 and <= 1700
     if (copter.channel_yaw->radio_trim < 1300 || copter.channel_yaw->radio_trim > 1700) {
-        ret = false;
+        ret = ARMING_CHECK_FAILED;
     }
 
     // display failure
-    if (!ret && report) {
+    if ((ret == ARMING_CHECK_FAILED) && report) {
         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: RC not calibrated"));
     }
 
     return ret;
 }
 
-bool AP_Arming_Copter::battery_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::battery_checks(bool report)
 {
     // call parent class checks
-    if (!AP_Arming::battery_checks(report)) {
-        return false;
+    ArmingCheckResult ret = AP_Arming::battery_checks(report);
+    if (ret != ARMING_CHECK_PASSED) {
+        return ret;
     }
 
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_BATTERY)) {
-        // check battery voltage
-        if (copter.failsafe.battery || (!copter.ap.usb_connected && copter.battery.exhausted(copter.g.fs_batt_voltage, copter.g.fs_batt_mah))) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("Arm: Check Battery"));
-            }
-            return false;
+    // check battery voltage
+    if (copter.failsafe.battery || (!copter.ap.usb_connected && copter.battery.exhausted(copter.g.fs_batt_voltage, copter.g.fs_batt_mah))) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("Arm: Check Battery"));
         }
+        return ARMING_CHECK_FAILED;
     }
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming_Copter::rangefinder_optflow_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming_Copter::rangefinder_optflow_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RANGEFINDER_OPTFLOW)) {
-#if CONFIG_SONAR == ENABLED && OPTFLOW == ENABLED
-        // check range finder if optflow enabled
-        if (copter.optflow.enabled() && !copter.sonar.pre_arm_check()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: check range finder"));
-            }
-            return false;
-        }
-#endif
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RANGEFINDER_OPTFLOW)) {
+        return ARMING_CHECK_DISABLED;
     }
 
-    return true;
+#if CONFIG_SONAR == ENABLED && OPTFLOW == ENABLED
+    // check range finder if optflow enabled
+    if (copter.optflow.enabled() && !copter.sonar.pre_arm_check()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,PSTR("PreArm: check range finder"));
+        }
+        return ARMING_CHECK_FAILED;
+    }
+#endif
+
+    return ARMING_CHECK_PASSED;
 }
