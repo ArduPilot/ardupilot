@@ -16,6 +16,7 @@ void AC_PrecLand_Companion::init()
     // set healthy
     _state.healthy = true;
     _new_estimate = false;
+    _frame = MAV_FRAME_BODY_NED; // assume body until we get our first message that says otherwise
 }
 
 // update - give chance to driver to get updates from sensor
@@ -24,6 +25,11 @@ bool AC_PrecLand_Companion::update()
 {
     // Mavlink commands are received asynchronous so all new data is processed by handle_msg()
     return _new_estimate;
+}
+
+MAV_FRAME AC_PrecLand_Companion::get_frame_of_reference()
+{
+    return _frame;
 }
 
 // get_angle_to_target - returns body frame angles (in radians) to target
@@ -51,6 +57,7 @@ void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
     mavlink_msg_landing_target_decode(msg, &packet);
 
     _timestamp_us = packet.time_usec;
+    _frame = (MAV_FRAME) packet.frame;
     _angle_to_target.x = packet.angle_x;
     _angle_to_target.y = packet.angle_y;
     _distance_to_target = packet.distance;
