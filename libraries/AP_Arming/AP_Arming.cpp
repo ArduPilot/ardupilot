@@ -103,324 +103,301 @@ void AP_Arming::set_enabled_checks(uint16_t ap)
     checks_to_perform = ap;
 }
 
-bool AP_Arming::barometer_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming::barometer_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (!barometer.all_healthy()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Barometer not healthy");
-            }
-            return false;
-        }
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_BARO)) {
+        return ARMING_CHECK_DISABLED;
     }
 
-    return true;
+    if (!barometer.all_healthy()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Barometer not healthy");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming::airspeed_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming::airspeed_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
-        const AP_Airspeed *airspeed = ahrs.get_airspeed();
-        if (airspeed == NULL) {
-            // not an airspeed capable vehicle
-            return true;
-        }
-        if (airspeed->enabled() && airspeed->use() && !airspeed->healthy()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Airspeed not healthy");
-            }
-            return false;
-        }
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_AIRSPEED)) {
+        return ARMING_CHECK_DISABLED;
     }
 
-    return true;
+    const AP_Airspeed *airspeed = ahrs.get_airspeed();
+    if (airspeed == NULL) {
+        // not an airspeed capable vehicle
+        return ARMING_CHECK_PASSED;
+    }
+    if (airspeed->enabled() && airspeed->use() && !airspeed->healthy()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: airspeed not healthy");
+        }
+        return ARMING_CHECK_FAILED;;
+    }
+
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming::logging_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming::logging_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (!logging_available) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging not available");
-            }
-            return false;
-        }
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_LOGGING)) {
+        return ARMING_CHECK_DISABLED;
     }
-    return true;
+    if (!logging_available) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: logging not available");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming::ins_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming::ins_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_INS)) {
-        const AP_InertialSensor &ins = ahrs.get_ins();
-        if (!ins.get_gyro_health_all()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not healthy");
-            }
-            return false;
-        }
-        if (!ins.gyro_calibrated_ok_all()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not calibrated");
-            }
-            return false;
-        }
-        if (!ins.get_accel_health_all()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers not healthy");
-            }
-            return false;
-        }
-        if (!ins.accel_calibrated_ok_all()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D accelerometers calibration needed");
-            }
-            return false;
-        }
-        
-        //check if accelerometers have calibrated and require reboot
-        if (ins.accel_cal_requires_reboot()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers calibrated requires reboot");
-            }
-            return false;
-        }
-
-        // check all accelerometers point in roughly same direction
-        if (ins.get_accel_count() > 1) {
-            const Vector3f &prime_accel_vec = ins.get_accel();
-            for(uint8_t i=0; i<ins.get_accel_count(); i++) {
-                if (!ins.use_accel(i)) {
-                    continue;
-                }
-                // get next accel vector
-                const Vector3f &accel_vec = ins.get_accel(i);
-                Vector3f vec_diff = accel_vec - prime_accel_vec;
-                // allow for user-defined difference, typically 0.75 m/s/s. Has to pass in last 10 seconds
-                float threshold = accel_error_threshold;
-                if (i >= 2) {
-                    /*
-                      we allow for a higher threshold for IMU3 as it
-                      runs at a different temperature to IMU1/IMU2,
-                      and is not used for accel data in the EKF
-                     */
-                    threshold *= 3;
-                }
-
-                // EKF is less sensitive to Z-axis error
-                vec_diff.z *= 0.5f;
-
-                if (vec_diff.length() <= threshold) {
-                    last_accel_pass_ms[i] = AP_HAL::millis();
-                }
-                if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
-                    if (report) {
-                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers inconsistent");
-                    }
-                    return false;
-                }
-            }
-        }
-
-        // check all gyros are giving consistent readings
-        if (ins.get_gyro_count() > 1) {
-            const Vector3f &prime_gyro_vec = ins.get_gyro();
-            for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
-                if (!ins.use_gyro(i)) {
-                    continue;
-                }
-                // get next gyro vector
-                const Vector3f &gyro_vec = ins.get_gyro(i);
-                Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-                // allow for up to 5 degrees/s difference. Pass if its
-                // been OK in last 10 seconds
-                if (vec_diff.length() <= radians(5)) {
-                    last_gyro_pass_ms[i] = AP_HAL::millis();
-                }
-                if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
-                    if (report) {
-                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros inconsistent");
-                    }
-                    return false;
-                }
-            }
-        }
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && ! (checks_to_perform & ARMING_CHECK_INS)) {
+        return ARMING_CHECK_DISABLED;
     }
 
-    return true;
-}
-
-bool AP_Arming::compass_checks(bool report)
-{
-    if ((checks_to_perform) & ARMING_CHECK_ALL ||
-        (checks_to_perform) & ARMING_CHECK_COMPASS) {
-
-        if (!_compass.use_for_yaw()) {
-            // compass use is disabled
-            return true;
+    const AP_InertialSensor &ins = ahrs.get_ins();
+    if (!ins.get_gyro_health_all()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: gyros not healthy");
         }
-
-        if (!_compass.healthy()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass not healthy");
-            }
-            return false;
-        }
-        // check compass learning is on or offsets have been set
-        if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass not calibrated");
-            }
-            return false;
-        }
-
-        //check if compass is calibrating
-        if (_compass.is_calibrating()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: Compass calibration running");
-            }
-            return false;
-        }
-
-        //check if compass has calibrated and requires reboot
-        if (_compass.compass_cal_requires_reboot()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibrated requires reboot");
-            }
-            return false;
-        }
-
-        // check for unreasonable compass offsets
-        Vector3f offsets = _compass.get_offsets();
-        if (offsets.length() > AP_ARMING_COMPASS_OFFSETS_MAX) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass offsets too high");
-            }
-            return false;
-        }
-
-        // check for unreasonable mag field length
-        float mag_field = _compass.get_field().length();
-        if (mag_field > AP_ARMING_COMPASS_MAGFIELD_MAX || mag_field < AP_ARMING_COMPASS_MAGFIELD_MIN) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Check mag field");
-            }
-            return false;
-        }
-
-        // check all compasses point in roughly same direction
-        if (!_compass.consistent()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Compasses inconsistent");
+        return ARMING_CHECK_FAILED;
     }
-            return false;
+    if (!ins.gyro_calibrated_ok_all()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: gyros not calibrated");
         }
+        return ARMING_CHECK_FAILED;
+    }
+    if (!ins.get_accel_health_all()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: accels not healthy");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+    if (!ins.accel_calibrated_ok_all()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D accel cal needed");
+        }
+        return ARMING_CHECK_FAILED;
     }
 
-    return true;
-}
-
-bool AP_Arming::gps_checks(bool report)
-{
-    const AP_GPS &gps = ahrs.get_gps();
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
-
-        //GPS OK?
-        if (home_is_set == HOME_UNSET || 
-            gps.status() < AP_GPS::GPS_OK_FIX_3D) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
+    // check all accelerometers point in roughly same direction
+    if (ins.get_accel_count() > 1) {
+        const Vector3f &prime_accel_vec = ins.get_accel();
+        for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+            // get next accel vector
+            const Vector3f &accel_vec = ins.get_accel(i);
+            Vector3f vec_diff = accel_vec - prime_accel_vec;
+            // allow for up to 0.75 m/s/s difference. Has to pass
+            // in last 10 seconds
+            float threshold = 0.75f;
+            if (i >= 2) {
+                /*
+                  we allow for a higher threshold for IMU3 as it
+                  runs at a different temperature to IMU1/IMU2,
+                  and is not used for accel data in the EKF
+                 */
+                threshold *= 3;
             }
-            return false;
-        }
-    }
-
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        uint8_t first_unconfigured = gps.first_unconfigured_gps();
-        if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,
-                                                 "PreArm: GPS %d failing configuration checks",
-                                                  first_unconfigured + 1);
-                gps.broadcast_first_configuration_failure_reason();
+            if (vec_diff.length() <= threshold) {
+                last_accel_pass_ms[i] = hal.scheduler->millis();
             }
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-            return false;
-#endif
-        }
-    }
-    return true;
-}
-
-bool AP_Arming::battery_checks(bool report)
-{
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_BATTERY)) {
-
-        if (AP_Notify::flags.failsafe_battery) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery failsafe on");
-            }
-            return false;
-        }
-
-        for (int i = 0; i < _battery.num_instances(); i++) {
-            if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
+            if (hal.scheduler->millis() - last_accel_pass_ms[i] > 10000) {
                 if (report) {
-                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
-                            i+1,
-                            (double)_battery.voltage(i),
-                            (double)_min_voltage[i]);
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent Accelerometers");
                 }
-                return false;
+                return ARMING_CHECK_FAILED;
             }
         }
-     }
-    return true;
-}
-
-bool AP_Arming::hardware_safety_check(bool report) 
-{
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_SWITCH)) {
-
-      // check if safety switch has been pushed
-      if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-          if (report) {
-              GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Hardware safety switch");
-          }
-          return false;
-      }
     }
 
-    return true;
-}
-
-bool AP_Arming::manual_transmitter_checks(bool report)
-{
-    if ((checks_to_perform & ARMING_CHECK_ALL) ||
-        (checks_to_perform & ARMING_CHECK_RC)) {
-
-        if (AP_Notify::flags.failsafe_radio) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Radio failsafe on");
+    // check all gyros are giving consistent readings
+    if (ins.get_gyro_count() > 1) {
+        const Vector3f &prime_gyro_vec = ins.get_gyro();
+        for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+            // get next gyro vector
+            const Vector3f &gyro_vec = ins.get_gyro(i);
+            Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+            // allow for up to 5 degrees/s difference. Pass if its
+            // been OK in last 10 seconds
+            if (vec_diff.length() <= radians(5)) {
+                last_gyro_pass_ms[i] = hal.scheduler->millis();
             }
-            return false;
+            if (hal.scheduler->millis() - last_gyro_pass_ms[i] > 10000) {
+                if (report) {
+                    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent gyros");
+                }
+                return ARMING_CHECK_FAILED;
+            }
         }
-
-        //TODO verify radio calibration
-        //Requires access to Parameters ... which are implemented a little
-        //differently for Rover, Plane, and Copter.
     }
 
-    return true;
+    return ARMING_CHECK_PASSED;
 }
 
-bool AP_Arming::board_voltage_checks(bool report)
+AP_Arming::ArmingCheckResult AP_Arming::parameter_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_PARAMETERS)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::compass_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_COMPASS)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    if (!_compass.use_for_yaw()) {
+        // compass use is disabled
+        return ARMING_CHECK_PASSED;
+    }
+
+    if (!_compass.healthy()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass not healthy");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+    // check compass learning is on or offsets have been set
+    if (!_compass.learn_offsets_enabled() && !_compass.configured()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass not calibrated");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    //check if compass is calibrating
+    if (_compass.is_calibrating()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Arm: Compass calibration running");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    //check if compass has calibrated and requires reboot
+    if (_compass.compass_cal_requires_reboot()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass calibrated requires reboot");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    // check for unreasonable compass offsets
+    Vector3f offsets = _compass.get_offsets();
+    if (offsets.length() > AP_ARMING_COMPASS_OFFSETS_MAX) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Compass offsets too high");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    // check for unreasonable mag field length
+    float mag_field = _compass.get_field().length();
+    if (mag_field > AP_ARMING_COMPASS_MAGFIELD_MAX || mag_field < AP_ARMING_COMPASS_MAGFIELD_MIN) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Check mag field");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    // check all compasses point in roughly same direction
+    if (!_compass.consistent()) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent compasses");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::gps_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_GPS)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    const AP_GPS &gps = ahrs.get_gps();
+
+    //GPS OK?
+    if (home_is_set == HOME_UNSET ||
+        gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Bad GPS Position");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::rangefinder_optflow_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RANGEFINDER_OPTFLOW)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::battery_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_BATTERY)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    if (AP_Notify::flags.failsafe_battery) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Battery failsafe on");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::hardware_safety_check(bool report)
+{
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::manual_transmitter_checks(bool report)
+{
+    if (!(checks_to_perform & ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
+        return ARMING_CHECK_DISABLED;
+    }
+
+    if (AP_Notify::flags.failsafe_radio) {
+        if (report) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Radio failsafe on");
+        }
+        return ARMING_CHECK_FAILED;
+    }
+
+    //TODO verify radio calibration
+    //Requires access to Parameters ... which are implemented a little
+    //differently for Rover, Plane, and Copter.
+
+    return ARMING_CHECK_PASSED;
+}
+
+AP_Arming::ArmingCheckResult AP_Arming::board_voltage_checks(bool report)
 {
     // check board voltage
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
@@ -429,35 +406,61 @@ bool AP_Arming::board_voltage_checks(bool report)
             if (report) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Check board voltage");
             }
-            return false;
+            return ARMING_CHECK_FAILED;
         }
     }
 
-    return true;
+    return ARMING_CHECK_PASSED;
+}
+
+void AP_Arming::update_enabled_passed_state(enum MAV_PREARM_CHECK_SUBSYSTEM subsystem, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask)
+{
+    switch (res) {
+        case ARMING_CHECK_DISABLED:
+            enabled_bitmask &= ~(1UL<<subsystem);
+            passed_bitmask &= ~(1UL<<subsystem);
+            break;
+        case ARMING_CHECK_FAILED:
+            enabled_bitmask |= (1UL<<subsystem);
+            passed_bitmask &= ~(1UL<<subsystem);
+            break;
+        case ARMING_CHECK_PASSED:
+            enabled_bitmask |= (1UL<<subsystem);
+            passed_bitmask |= (1UL<<subsystem);
+            break;
+    }
 }
 
 bool AP_Arming::pre_arm_checks(bool report)
 {
-    bool ret = true;
     if (armed || require == NONE) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
     }
 
-    ret &= hardware_safety_check(report);
-    ret &= barometer_checks(report);
-    ret &= ins_checks(report);
-    ret &= parameter_checks(report);
-    ret &= compass_checks(report);
-    ret &= gps_checks(report);
-    ret &= battery_checks(report);
-    ret &= logging_checks(report);
-    ret &= manual_transmitter_checks(report);
-    ret &= board_voltage_checks(report);
-    ret &= rangefinder_optflow_checks(report);
+    uint64_t enabled_checks = 0;
+    uint64_t passed_checks = 0;
 
-    return ret;
+    update_enabled_passed_state(MAV_PREARM_CHECK_SAFETYSWITCH, hardware_safety_check(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_BARO, barometer_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_INS, ins_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_PARAMETERS, parameter_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_COMPASS, compass_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_GPS, gps_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_BATTERY, battery_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_LOGGING, logging_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_RC, manual_transmitter_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_BOARD_VOLTAGE, board_voltage_checks(report), enabled_checks, passed_checks);
+    update_enabled_passed_state(MAV_PREARM_CHECK_RANGEFINDER, rangefinder_optflow_checks(report), enabled_checks, passed_checks);
+
+    if (report) {
+        GCS_MAVLINK::send_prearm_check_report_all(enabled_checks, passed_checks);
+    }
+
+    // total results
+    bool success = (enabled_checks == (enabled_checks & passed_checks));
+    return success;
 }
 
 //returns true if arming occurred successfully

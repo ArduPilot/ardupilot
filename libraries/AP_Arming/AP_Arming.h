@@ -45,6 +45,12 @@ public:
         ARMING_RUDDER_ARMDISARM = 2
     };
 
+    enum ArmingCheckResult {
+        ARMING_CHECK_DISABLED = 0,
+        ARMING_CHECK_FAILED = 1,
+        ARMING_CHECK_PASSED = 2
+    };
+
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const AP_BattMonitor &battery, const enum HomeState &home_set);
 
@@ -61,9 +67,9 @@ public:
     */
     virtual bool pre_arm_checks(bool report);
 
-    virtual bool gps_checks(bool report);
+    virtual ArmingCheckResult gps_checks(bool report);
 
-    virtual bool rangefinder_optflow_checks(bool report) { return true; }
+    virtual ArmingCheckResult rangefinder_optflow_checks(bool report);
 
     void set_logging_available(bool set) { logging_available = set; }
 
@@ -93,23 +99,25 @@ protected:
 
     void set_enabled_checks(uint16_t);
 
-    virtual bool barometer_checks(bool report);
+    virtual ArmingCheckResult barometer_checks(bool report);
 
-    bool airspeed_checks(bool report);
+    ArmingCheckResult airspeed_checks(bool report);
 
-    bool logging_checks(bool report);
+    ArmingCheckResult logging_checks(bool report);
 
-    virtual bool ins_checks(bool report);
+    virtual ArmingCheckResult ins_checks(bool report);
 
-    virtual bool parameter_checks(bool report) { return true; }
+    virtual ArmingCheckResult parameter_checks(bool report);
 
-    virtual bool compass_checks(bool report);
+    virtual ArmingCheckResult compass_checks(bool report);
 
-    bool battery_checks(bool report);
+    ArmingCheckResult battery_checks(bool report);
 
-    bool hardware_safety_check(bool report);
+    ArmingCheckResult hardware_safety_check(bool report);
 
-    bool board_voltage_checks(bool report);
+    ArmingCheckResult board_voltage_checks(bool report);
 
-    virtual bool manual_transmitter_checks(bool report);
+    virtual ArmingCheckResult manual_transmitter_checks(bool report);
+
+    void update_enabled_passed_state(enum MAV_PREARM_CHECK_SUBSYSTEM subsystem, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask);
 };
