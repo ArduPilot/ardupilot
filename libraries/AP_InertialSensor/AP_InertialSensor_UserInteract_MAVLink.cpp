@@ -44,7 +44,7 @@ void AP_InertialSensor_UserInteract_MAVLink::_printf_P(const prog_char* fmt, ...
     char msg[50];
     va_list ap;
     va_start(ap, fmt);
-    hal.util->vsnprintf_P(msg, sizeof(msg), (const prog_char_t *)fmt, ap);
+    hal.util->vsnprintf(msg, sizeof(msg), (const prog_char_t *)fmt, ap);
     va_end(ap);
     if (msg[strlen(msg)-1] == '\n') {
         // STATUSTEXT messages should not add linefeed

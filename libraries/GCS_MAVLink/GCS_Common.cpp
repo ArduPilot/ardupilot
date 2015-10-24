@@ -1198,7 +1198,7 @@ void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const prog_char_t *
                 char msg2[50];
                 va_list arg_list;
                 va_start(arg_list, fmt);
-                hal.util->vsnprintf_P((char *)msg2, sizeof(msg2), fmt, arg_list);
+                hal.util->vsnprintf((char *)msg2, sizeof(msg2), fmt, arg_list);
                 va_end(arg_list);
                 mavlink_msg_statustext_send(chan,
                                             severity,
