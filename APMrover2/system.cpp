@@ -11,17 +11,15 @@ The init_ardupilot function processes everything we need for an in - air restart
 #if CLI_ENABLED == ENABLED
 
 // This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
 int8_t Rover::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->printf_P(PSTR("Commands:\n"
+	cliSerial->printf_P("Commands:\n"
 						 "  logs        log readback/setup mode\n"
 						 "  setup       setup mode\n"
 						 "  test        test mode\n"
 						 "\n"
 						 "Move the slide switch and reset to FLY.\n"
-						 "\n"));
+						 "\n");
 	return(0);
 }
 
@@ -85,8 +83,8 @@ void Rover::init_ardupilot()
     // initialise console serial port
     serial_manager.init_console();
 
-	cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
-						 "\n\nFree RAM: %u\n"),
+	cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+						 "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
                     
 	//
@@ -155,7 +153,7 @@ void Rover::init_ardupilot()
 
 	if (g.compass_enabled==true) {
 		if (!compass.init()|| !compass.read()) {
-            cliSerial->println_P(PSTR("Compass initialisation failed!"));
+            cliSerial->println_P("Compass initialisation failed!");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -199,7 +197,7 @@ void Rover::init_ardupilot()
 	// menu; they must reset in order to fly.
 	//
     if (g.cli_enabled == 1) {
-        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println_P(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
             gcs[1].get_uart()->println_P(msg);
@@ -228,10 +226,10 @@ void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-	gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> GROUND START"));
+	gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> GROUND START");
 
 	#if(GROUND_START_DELAY > 0)
-		gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> With Delay"));
+		gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> With Delay");
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -255,7 +253,7 @@ void Rover::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-	gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\n\n Ready to drive."));
+	gcs_send_text_P(MAV_SEVERITY_WARNING,"\n\n Ready to drive.");
 }
 
 /*
@@ -366,7 +364,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
     }
     if (failsafe.triggered != 0 && failsafe.bits == 0) {
         // a failsafe event has ended
-        gcs_send_text_fmt(PSTR("Failsafe ended"));
+        gcs_send_text_fmt("Failsafe ended");
     }
 
     failsafe.triggered &= failsafe.bits;
@@ -377,7 +375,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         control_mode != RTL &&
         control_mode != HOLD) {
         failsafe.triggered = failsafe.bits;
-        gcs_send_text_fmt(PSTR("Failsafe trigger 0x%x"), (unsigned)failsafe.triggered);
+        gcs_send_text_fmt("Failsafe trigger 0x%x", (unsigned)failsafe.triggered);
         switch (g.fs_action) {
         case 0:
             break;
@@ -393,12 +391,12 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 
 void Rover::startup_INS_ground(void)
 {
-    gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Warming up ADC..."));
+    gcs_send_text_P(MAV_SEVERITY_ALERT, "Warming up ADC...");
  	mavlink_delay(500);
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-    gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Beginning INS calibration; do not move vehicle"));
+    gcs_send_text_P(MAV_SEVERITY_ALERT, "Beginning INS calibration; do not move vehicle");
 	mavlink_delay(1000);
 
     ahrs.init();
@@ -452,25 +450,25 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print_P(PSTR("Manual"));
+        port->print_P("Manual");
         break;
     case HOLD:
-        port->print_P(PSTR("HOLD"));
+        port->print_P("HOLD");
         break;
     case LEARNING:
-        port->print_P(PSTR("Learning"));
+        port->print_P("Learning");
         break;
     case STEERING:
-        port->print_P(PSTR("Steering"));
+        port->print_P("Steering");
         break;
     case AUTO:
-        port->print_P(PSTR("AUTO"));
+        port->print_P("AUTO");
         break;
     case RTL:
-        port->print_P(PSTR("RTL"));
+        port->print_P("RTL");
         break;
     default:
-        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+        port->printf_P("Mode(%u)", (unsigned)mode);
         break;
     }
 }

@@ -274,10 +274,10 @@ void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
     }
     char key[AP_MAX_NAME_SIZE+1];
     if (type == AUTOTUNE_ROLL) {
-        strncpy_P(key, PSTR("RLL2SRV_"), 8);
+        strncpy_P(key, "RLL2SRV_", 8);
         strncpy_P(&key[8], suffix, AP_MAX_NAME_SIZE-8);
     } else {
-        strncpy_P(key, PSTR("PTCH2SRV_"), 9);
+        strncpy_P(key, "PTCH2SRV_", 9);
         strncpy_P(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
     key[AP_MAX_NAME_SIZE] = 0;
@@ -318,12 +318,12 @@ void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_c
 void AP_AutoTune::save_gains(const ATGains &v)
 {
     current = last_save;
-    save_float_if_changed(current.tau, v.tau, PSTR("TCONST"));
-    save_float_if_changed(current.P, v.P, PSTR("P"));
-    save_float_if_changed(current.I, v.I, PSTR("I"));
-    save_float_if_changed(current.D, v.D, PSTR("D"));
-    save_int16_if_changed(current.rmax, v.rmax, PSTR("RMAX"));
-    save_int16_if_changed(current.imax, v.imax, PSTR("IMAX"));
+    save_float_if_changed(current.tau, v.tau, "TCONST");
+    save_float_if_changed(current.P, v.P, "P");
+    save_float_if_changed(current.I, v.I, "I");
+    save_float_if_changed(current.D, v.D, "D");
+    save_int16_if_changed(current.rmax, v.rmax, "RMAX");
+    save_int16_if_changed(current.imax, v.imax, "IMAX");
     last_save = current;
 }
 

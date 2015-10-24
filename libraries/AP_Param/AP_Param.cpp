@@ -750,7 +750,7 @@ bool AP_Param::save(bool force_save)
 
     if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _storage.size()) {
         // we are out of room for saving variables
-        hal.console->println_P(PSTR("EEPROM full"));
+        hal.console->println_P("EEPROM full");
         return false;
     }
 
@@ -1144,16 +1144,16 @@ void AP_Param::show(const AP_Param *ap, const char *s,
 {
     switch (type) {
     case AP_PARAM_INT8:
-        port->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int8 *)ap)->get());
+        port->printf_P("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
         break;
     case AP_PARAM_INT16:
-        port->printf_P(PSTR("%s: %d\n"), s, (int)((AP_Int16 *)ap)->get());
+        port->printf_P("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
         break;
     case AP_PARAM_INT32:
-        port->printf_P(PSTR("%s: %ld\n"), s, (long)((AP_Int32 *)ap)->get());
+        port->printf_P("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
         break;
     case AP_PARAM_FLOAT:
-        port->printf_P(PSTR("%s: %f\n"), s, (double)((AP_Float *)ap)->get());
+        port->printf_P("%s: %f\n", s, (double)((AP_Float *)ap)->get());
         break;
     default:
         break;
@@ -1181,7 +1181,7 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
         if (showKeyValues) {
-            port->printf_P(PSTR("Key %i: Index %i: GroupElement %i  :  "), token.key, token.idx, token.group_element);
+            port->printf_P("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
         }
         show(ap, token, type, port);
     }
@@ -1216,7 +1216,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     AP_Param *ap2;
     ap2 = find_P((const prog_char_t *)&info->new_name[0], &ptype);
     if (ap2 == NULL) {
-        hal.console->printf_P(PSTR("Unknown conversion '%s'\n"), info->new_name);
+        hal.console->printf_P("Unknown conversion '%s'\n", info->new_name);
         return;
     }
 
@@ -1246,7 +1246,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         }
     } else {
         // can't do vector<->scalar conversion, or different vector types
-        hal.console->printf_P(PSTR("Bad conversion type '%s'\n"), info->new_name);
+        hal.console->printf_P("Bad conversion type '%s'\n", info->new_name);
     }
 }
 #pragma GCC diagnostic pop

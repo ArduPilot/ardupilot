@@ -195,7 +195,7 @@ void AP_Airspeed::calibrate(bool in_startup)
     }
     if (count == 0) {
         // unhealthy sensor
-        hal.console->println_P(PSTR("Airspeed sensor unhealthy"));
+        hal.console->println_P("Airspeed sensor unhealthy");
         _offset.set(0);
         return;
     }

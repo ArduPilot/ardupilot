@@ -28,8 +28,8 @@ void RCOutput_Raspilot::init(void* machtnicht)
     _spi_sem = _spi->get_semaphore();
     
     if (_spi_sem == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: RCOutput_Raspilot did not get "
-                                  "valid SPI semaphore!"));
+        hal.scheduler->panic("PANIC: RCOutput_Raspilot did not get "
+                                  "valid SPI semaphore!");
         return; // never reached
     }
     

@@ -401,7 +401,7 @@ Compass::init()
 uint8_t Compass::register_compass(void)
 {
     if (_compass_count == COMPASS_MAX_INSTANCES) {
-        hal.scheduler->panic(PSTR("Too many compass instances"));
+        hal.scheduler->panic("Too many compass instances");
     }
     return _compass_count++;
 }
@@ -411,7 +411,7 @@ void Compass::_add_backend(AP_Compass_Backend *backend)
     if (!backend)
         return;
     if (_backend_count == COMPASS_MAX_BACKEND)
-        hal.scheduler->panic(PSTR("Too many compass backends"));
+        hal.scheduler->panic("Too many compass backends");
     _backends[_backend_count++] = backend;
 }
 
@@ -451,7 +451,7 @@ void Compass::_detect_backends(void)
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
-        hal.console->println_P(PSTR("No Compass backends available"));
+        hal.console->println_P("No Compass backends available");
     }
 }
 

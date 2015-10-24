@@ -414,11 +414,11 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
     //         ;
     //     }
     //     else {
-    //         hal.scheduler->panic(PSTR("AP_InertialSensor_MPU9150: Unsupported software product rev.\n"));
+    //         hal.scheduler->panic("AP_InertialSensor_MPU9150: Unsupported software product rev.\n");
     //         goto failed;
     //     }
     // } else {
-    //         hal.scheduler->panic(PSTR("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n"));
+    //         hal.scheduler->panic("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n");
     //         goto failed;            
     // }
 

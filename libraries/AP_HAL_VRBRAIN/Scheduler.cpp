@@ -350,8 +350,8 @@ bool VRBRAINScheduler::system_initializing() {
 
 void VRBRAINScheduler::system_initialized() {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }

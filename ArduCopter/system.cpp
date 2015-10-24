@@ -14,12 +14,12 @@
 // This is the help function
 int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf_P(PSTR("Commands:\n"
+    cliSerial->printf_P("Commands:\n"
                          "  logs\n"
                          "  setup\n"
                          "  test\n"
                          "  reboot\n"
-                         "\n"));
+                         "\n");
     return(0);
 }
 
@@ -94,8 +94,8 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
-                         "\n\nFree RAM: %u\n"),
+    cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+                         "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
 
     //
@@ -219,7 +219,7 @@ void Copter::init_ardupilot()
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled) {
-        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println_P(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
             gcs[1].get_uart()->println_P(msg);
@@ -234,7 +234,7 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Waiting for first HIL_STATE message"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
         delay(1000);
     }
 
@@ -282,7 +282,7 @@ void Copter::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
-    cliSerial->print_P(PSTR("\nReady to FLY "));
+    cliSerial->print_P("\nReady to FLY ");
 
     // flag that initialisation has completed
     ap.initialised = true;

@@ -224,8 +224,8 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }
@@ -247,7 +247,7 @@ void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
-    hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
+    hal.uartA->println_P("GOING DOWN FOR A REBOOT\r\n");
     hal.scheduler->delay(100);
     nvic_sys_reset();
 }

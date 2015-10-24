@@ -242,9 +242,9 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
     // print output including the minus sign
     if( lat_or_lon < 0 ) {
-        s->printf_P(PSTR("-"));
+        s->printf_P("-");
     }
-    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+    s->printf_P("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
 
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_75

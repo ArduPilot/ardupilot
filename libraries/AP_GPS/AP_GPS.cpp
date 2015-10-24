@@ -200,7 +200,7 @@ AP_GPS::detect_instance(uint8_t instance)
     if (_type[instance] == GPS_TYPE_PX4) {
         // check for explicitely chosen PX4 GPS beforehand
         // it is not possible to autodetect it, nor does it require a real UART
-        hal.console->print_P(PSTR(" PX4 "));
+        hal.console->print_P(" PX4 ");
         new_gps = new AP_GPS_PX4(*this, state[instance], _port[instance]);
         goto found_gps;
     }
@@ -218,10 +218,10 @@ AP_GPS::detect_instance(uint8_t instance)
 	#if GPS_RTK_AVAILABLE
 	// by default the sbf/trimble gps outputs no data on its port, until configured.
 	if (_type[instance] == GPS_TYPE_SBF) {
-		hal.console->print_P(PSTR(" SBF "));
+		hal.console->print_P(" SBF ");
 		new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
 	} else if ((_type[instance] == GPS_TYPE_GSOF)) {
-		hal.console->print_P(PSTR(" GSOF "));
+		hal.console->print_P(" GSOF ");
 		new_gps = new AP_GPS_GSOF(*this, state[instance], _port[instance]);
 	}
 	#endif // GPS_RTK_AVAILABLE
@@ -265,23 +265,23 @@ AP_GPS::detect_instance(uint8_t instance)
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
             pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            hal.console->print_P(PSTR(" ublox "));
+            hal.console->print_P(" ublox ");
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
-			hal.console->print_P(PSTR(" MTK19 "));
+			hal.console->print_P(" MTK19 ");
 			new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
 		} 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                  AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
-			hal.console->print_P(PSTR(" MTK "));
+			hal.console->print_P(" MTK ");
 			new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
 		}
 #if GPS_RTK_AVAILABLE
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            hal.console->print_P(PSTR(" SBP "));
+            hal.console->print_P(" SBP ");
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif // HAL_CPU_CLASS
@@ -289,7 +289,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-			hal.console->print_P(PSTR(" SIRF "));
+			hal.console->print_P(" SIRF ");
 			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
 		}
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
@@ -297,7 +297,7 @@ AP_GPS::detect_instance(uint8_t instance)
 			// a MTK or UBLOX which has booted in NMEA mode
 			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-				hal.console->print_P(PSTR(" NMEA "));
+				hal.console->print_P(" NMEA ");
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
 			}
 		}

@@ -43,9 +43,9 @@ void loop(void)
     int16_t user_input;
 
     hal.console->println();
-    hal.console->println_P(PSTR(
+    hal.console->println_P(
     "Menu:\r\n"
-    "    c) calibrate accelerometers\r\n"
+    "    c calibrate accelerometers\r\n"
     "    d) display offsets and scaling\r\n"
     "    l) level (capture offsets from level)\r\n"
     "    t) test\r\n"
@@ -100,17 +100,17 @@ static void display_offsets_and_scaling()
 
     // display results
     hal.console->printf_P(
-            PSTR("\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+            "\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_offsets.x,
                     accel_offsets.y,
                     accel_offsets.z);
     hal.console->printf_P(
-            PSTR("Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+            "Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_scale.x,
                     accel_scale.y,
                     accel_scale.z);
     hal.console->printf_P(
-            PSTR("Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+            "Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     gyro_offsets.x,
                     gyro_offsets.y,
                     gyro_offsets.z);
@@ -146,7 +146,7 @@ static void run_test()
 
 		if (counter++ % 50 == 0) {
 			// display results
-			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n"), 
+			hal.console->printf_P("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
 								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
 		}
     }

@@ -15,7 +15,7 @@ void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
     valid = in->new_input();
     in->read(channels, 8);
     hal.console->printf_P(
-            PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
+            "multi      read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -29,7 +29,7 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
         channels[i] = in->read(i);
     }
     hal.console->printf_P(
-            PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
+            "individual read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);

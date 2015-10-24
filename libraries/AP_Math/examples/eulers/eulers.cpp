@@ -50,7 +50,7 @@ static void check_result(const char *msg,
             // we expect breakdown at these poles
 #if SHOW_POLES_BREAKDOWN
             hal.console->printf_P(
-                PSTR("%s breakdown eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n"),
+                "%s breakdown eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
                 ToDeg(roll), ToDeg(roll2),
                 ToDeg(pitch), ToDeg(pitch2),
@@ -58,7 +58,7 @@ static void check_result(const char *msg,
 #endif
         } else {
             hal.console->printf_P(
-                PSTR("%s incorrect eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n"),
+                "%s incorrect eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
                 ToDeg(roll), ToDeg(roll2),
                 ToDeg(pitch), ToDeg(pitch2),

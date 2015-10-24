@@ -12,16 +12,14 @@
 #if CLI_ENABLED == ENABLED
 
 // This is the help function
-// PSTR is an AVR macro to read strings from flash memory
-// printf_P is a version of print_f that reads from flash memory
 int8_t Plane::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf_P(PSTR("Commands:\n"
+    cliSerial->printf_P("Commands:\n"
                          "  logs        log readback/setup mode\n"
                          "  setup       setup mode\n"
                          "  test        test mode\n"
                          "  reboot      reboot to flight mode\n"
-                         "\n"));
+                         "\n");
     return(0);
 }
 
@@ -85,8 +83,8 @@ void Plane::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf_P(PSTR("\n\nInit " FIRMWARE_STRING
-                         "\n\nFree RAM: %u\n"),
+    cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+                         "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
 
 
@@ -185,7 +183,7 @@ void Plane::init_ardupilot()
         compass_ok = true;
 #endif
         if (!compass_ok) {
-            cliSerial->println_P(PSTR("Compass initialisation failed!"));
+            cliSerial->println_P("Compass initialisation failed!");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -230,7 +228,7 @@ void Plane::init_ardupilot()
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled == 1) {
-        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println_P(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
             gcs[1].get_uart()->println_P(msg);
@@ -268,10 +266,10 @@ void Plane::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> GROUND START"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> GROUND START");
 
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("<startup_ground> With Delay"));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> With Delay");
     delay(GROUND_START_DELAY * 1000);
 #endif
 
@@ -318,7 +316,7 @@ void Plane::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);    
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\n\n Ready to FLY."));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,"\n\n Ready to FLY.");
 }
 
 enum FlightMode Plane::get_previous_mode() {
@@ -562,14 +560,14 @@ void Plane::startup_INS_ground(void)
         while (barometer.get_last_update() == 0) {
             // the barometer begins updating when we get the first
             // HIL_STATE message
-            gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Waiting for first HIL_STATE message"));
+            gcs_send_text_P(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
             hal.scheduler->delay(1000);
         }
     }
 #endif
 
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        gcs_send_text_P(MAV_SEVERITY_ALERT, PSTR("Beginning INS calibration; do not move plane"));
+        gcs_send_text_P(MAV_SEVERITY_ALERT, "Beginning INS calibration; do not move plane");
         hal.scheduler->delay(100);
     }
 
@@ -590,7 +588,7 @@ void Plane::startup_INS_ground(void)
         // --------------------------
         zero_airspeed(true);
     } else {
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("NO airspeed"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING,"NO airspeed");
     }
 }
 
@@ -638,46 +636,46 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print_P(PSTR("Manual"));
+        port->print_P("Manual");
         break;
     case CIRCLE:
-        port->print_P(PSTR("Circle"));
+        port->print_P("Circle");
         break;
     case STABILIZE:
-        port->print_P(PSTR("Stabilize"));
+        port->print_P("Stabilize");
         break;
     case TRAINING:
-        port->print_P(PSTR("Training"));
+        port->print_P("Training");
         break;
     case ACRO:
-        port->print_P(PSTR("ACRO"));
+        port->print_P("ACRO");
         break;
     case FLY_BY_WIRE_A:
-        port->print_P(PSTR("FBW_A"));
+        port->print_P("FBW_A");
         break;
     case AUTOTUNE:
-        port->print_P(PSTR("AUTOTUNE"));
+        port->print_P("AUTOTUNE");
         break;
     case FLY_BY_WIRE_B:
-        port->print_P(PSTR("FBW_B"));
+        port->print_P("FBW_B");
         break;
     case CRUISE:
-        port->print_P(PSTR("CRUISE"));
+        port->print_P("CRUISE");
         break;
     case AUTO:
-        port->print_P(PSTR("AUTO"));
+        port->print_P("AUTO");
         break;
     case RTL:
-        port->print_P(PSTR("RTL"));
+        port->print_P("RTL");
         break;
     case LOITER:
-        port->print_P(PSTR("Loiter"));
+        port->print_P("Loiter");
         break;
     case GUIDED:
-        port->print_P(PSTR("Guided"));
+        port->print_P("Guided");
         break;
     default:
-        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+        port->printf_P("Mode(%u)", (unsigned)mode);
         break;
     }
 }
@@ -685,7 +683,7 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 #if CLI_ENABLED == ENABLED
 void Plane::print_comma(void)
 {
-    cliSerial->print_P(PSTR(","));
+    cliSerial->print_P(",");
 }
 #endif
 

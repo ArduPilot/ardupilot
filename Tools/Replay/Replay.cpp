@@ -90,7 +90,7 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed{aparm};
-    DataFlash_Class dataflash{PSTR("Replay v0.1")};
+    DataFlash_Class dataflash{"Replay v0.1"};
 
 private:
     Parameters g;
@@ -147,7 +147,7 @@ const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
 void ReplayVehicle::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        hal.scheduler->panic(PSTR("Bad parameter table"));
+        hal.scheduler->panic("Bad parameter table");
     }
 }
 

@@ -44,8 +44,8 @@ bool FLYMAPLESemaphore::give() {
 
 bool FLYMAPLESemaphore::take(uint32_t timeout_ms) {
     if (hal.scheduler->in_timerprocess()) {
-        hal.scheduler->panic(PSTR("PANIC: FLYMAPLESemaphore::take used from "
-                    "inside timer process"));
+        hal.scheduler->panic("PANIC: FLYMAPLESemaphore::take used from "
+                    "inside timer process");
         return false; /* Never reached - panic does not return */
     }
     return _take_from_mainloop(timeout_ms);

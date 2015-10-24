@@ -69,7 +69,7 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     if (r != 0) {
         hal.console->printf("Error creating thread '%s': %s\n",
                             name, strerror(r));
-        panic(PSTR("Failed to create thread"));
+        panic("Failed to create thread");
     }
     pthread_attr_destroy(&attr);
 

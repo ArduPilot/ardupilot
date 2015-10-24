@@ -15,8 +15,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 void test_snprintf_P() {
     char test[40];
     memset(test,0,40);
-    hal.util->snprintf_P(test, 40, PSTR("hello %d from prog %f %S\r\n"),
-            10, 1.2345, PSTR("progmem"));
+    hal.util->snprintf_P(test, 40, "hello %d from prog %f %S\r\n",
+            10, 1.2345, "progmem");
     hal.console->write((const uint8_t*)test, strlen(test));
 
 }

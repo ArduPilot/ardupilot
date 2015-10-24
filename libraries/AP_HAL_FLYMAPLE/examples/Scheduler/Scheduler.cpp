@@ -53,7 +53,7 @@ void schedule_toggle_hang(void) {
 }
 
 void setup_pin(int pin_num) {
-    hal.console->printf_P(PSTR("Setup pin %d\r\n"), pin_num);
+    hal.console->printf_P("Setup pin %d\r\n", pin_num);
     hal.gpio->pinMode(pin_num,HAL_GPIO_OUTPUT);
     /* Blink so we can see setup on the logic analyzer.*/
     hal.gpio->write(pin_num,1);
@@ -62,32 +62,32 @@ void setup_pin(int pin_num) {
 
 void setup (void) {
 //    hal.scheduler->delay(5000);
-    hal.console->printf_P(PSTR("Starting AP_HAL_AVR::Scheduler test\r\n"));
+    hal.console->printf_P("Starting AP_HAL_AVR::Scheduler test\r\n");
 
     setup_pin(DELAY_TOGGLE_PIN);
     setup_pin(FAILSAFE_TOGGLE_PIN);
     setup_pin(SCHEDULED_TOGGLE_PIN_1);
     setup_pin(SCHEDULED_TOGGLE_PIN_2);
 
-    hal.console->printf_P(PSTR("Testing delay callback. "
-                "Pin %d should toggle at 1khz:\r\n"),
+    hal.console->printf_P("Testing delay callback. "
+                "Pin %d should toggle at 1khz:\r\n",
             (int) DELAY_TOGGLE_PIN);
 
 //    hal.scheduler->register_delay_callback(delay_toggle,0);
 
     hal.scheduler->delay(2000);
-    hal.console->printf_P(PSTR("Testing failsafe callback. "
-                "Pin %d should toggle at 1khz:\r\n"),
+    hal.console->printf_P("Testing failsafe callback. "
+                "Pin %d should toggle at 1khz:\r\n",
             (int) FAILSAFE_TOGGLE_PIN);
 
     hal.scheduler->register_timer_failsafe(failsafe_toggle, 1000);
 
     hal.scheduler->delay(2000);
 
-    hal.console->printf_P(PSTR("Testing running timer processes.\r\n"));
-    hal.console->printf_P(PSTR("Pin %d should toggle at 1khz.\r\n"),
+    hal.console->printf_P("Testing running timer processes.\r\n");
+    hal.console->printf_P("Pin %d should toggle at 1khz.\r\n",
             (int) SCHEDULED_TOGGLE_PIN_1);
-    hal.console->printf_P(PSTR("Pin %d should toggle at 1khz.\r\n"),
+    hal.console->printf_P("Pin %d should toggle at 1khz.\r\n",
             (int) SCHEDULED_TOGGLE_PIN_2);
 
     hal.scheduler->register_timer_process(schedule_toggle_1);
@@ -97,10 +97,10 @@ void setup (void) {
 
     // not yet working on flymaple: see FLYMAPLEScheduler::_timer_procs_timer_event()
 #if 1
-    hal.console->printf_P(PSTR("Test running a pathological timer process.\r\n"
+    hal.console->printf_P("Test running a pathological timer process.\r\n"
                 "Failsafe should continue even as pathological process "
-                "dominates the processor."));
-    hal.console->printf_P(PSTR("Pin %d should toggle then go high forever.\r\n"),
+                "dominates the processor.");
+    hal.console->printf_P("Pin %d should toggle then go high forever.\r\n",
             (int) SCHEDULED_TOGGLE_PIN_2);
     hal.scheduler->delay(200);
     hal.scheduler->register_timer_process(schedule_toggle_hang);

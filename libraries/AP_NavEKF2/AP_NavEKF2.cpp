@@ -418,7 +418,7 @@ bool NavEKF2::InitialiseFilter(void)
         core = new NavEKF2_core(*this, _ahrs, _baro, _rng);
         if (core == nullptr) {
             _enable.set(0);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, PSTR("NavEKF2: allocation failed"));
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: allocation failed");
             return false;
         }
     }

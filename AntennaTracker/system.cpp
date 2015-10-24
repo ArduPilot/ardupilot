@@ -20,8 +20,8 @@ void Tracker::init_tracker()
     // initialise console serial port
     serial_manager.init_console();
 
-    hal.console->printf_P(PSTR("\n\nInit " THISFIRMWARE
-                               "\n\nFree RAM: %u\n"),
+    hal.console->printf_P("\n\nInit " THISFIRMWARE
+                               "\n\nFree RAM: %u\n",
                           hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
@@ -68,7 +68,7 @@ void Tracker::init_tracker()
 
     if (g.compass_enabled==true) {
         if (!compass.init() || !compass.read()) {
-            hal.console->println_P(PSTR("Compass initialisation failed!"));
+            hal.console->println_P("Compass initialisation failed!");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -98,7 +98,7 @@ void Tracker::init_tracker()
     if (fabsf(g.start_latitude) <= 90.0f && fabsf(g.start_longitude) <= 180.0f) {
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
+        gcs_send_text_P(MAV_SEVERITY_WARNING, "ignoring invalid START_LATITUDE or START_LONGITUDE parameter");
     }
 
     // see if EEPROM has a default location as well
@@ -108,7 +108,7 @@ void Tracker::init_tracker()
 
     init_capabilities();
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("\nReady to track."));
+    gcs_send_text_P(MAV_SEVERITY_WARNING,"\nReady to track.");
     hal.scheduler->delay(1000); // Why????
 
     set_mode(AUTO); // tracking

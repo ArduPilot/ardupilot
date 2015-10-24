@@ -188,7 +188,7 @@ void AP_OpticalFlow_Linux::update(void)
     _update_frontend(state);
 
 #if PX4FLOW_DEBUG
-    hal.console->printf_P(PSTR("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n"),
+    hal.console->printf_P("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n",
             (unsigned)state.device_id,
             (unsigned)state.surface_quality,
             (double)state.flowRate.x,

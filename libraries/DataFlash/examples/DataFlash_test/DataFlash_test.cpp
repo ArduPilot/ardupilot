@@ -34,7 +34,7 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{PSTR("DF Test 0.1")};
+    DataFlash_Class dataflash{"DF Test 0.1"};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
@@ -110,7 +110,7 @@ void DataFlashTest::loop(void)
 
 void DataFlashTest::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
-    port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+    port->printf_P("Mode(%u)", (unsigned)mode);
 }
 
 /*
