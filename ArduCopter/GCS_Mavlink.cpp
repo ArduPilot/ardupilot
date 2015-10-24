@@ -2049,7 +2049,7 @@ void Copter::gcs_send_text_fmt(const prog_char_t *fmt, ...)
     va_list arg_list;
     gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
+    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
     gcs[0].send_message(MSG_STATUSTEXT);
