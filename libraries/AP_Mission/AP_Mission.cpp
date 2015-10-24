@@ -43,7 +43,7 @@ void AP_Mission::init()
 
     // prevent an easy programming error, this will be optimised out
     if (sizeof(union Content) != 12) {
-        hal.scheduler->panic(PSTR("AP_Mission Content must be 12 bytes"));
+        hal.scheduler->panic("AP_Mission Content must be 12 bytes");
     }
 
     _last_change_time_ms = hal.scheduler->millis();

@@ -247,7 +247,7 @@ void RCOutput_Bebop::init(void* dummy)
 
     _i2c_sem = hal.i2c1->get_semaphore();
     if (_i2c_sem == NULL) {
-        hal.scheduler->panic(PSTR("RCOutput_Bebop: can't get i2c sem"));
+        hal.scheduler->panic("RCOutput_Bebop: can't get i2c sem");
         return; /* never reached */
     }
 

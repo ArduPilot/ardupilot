@@ -42,7 +42,7 @@ extern const AP_HAL::HAL& hal;
 
 //#define ENABLE_FASTSERIAL_DEBUG
 #ifdef ENABLE_FASTSERIAL_DEBUG
- #define serialDebug(fmt, args...)  do {hal.console->printf_P(PSTR( __FUNCTION__ ":%d:" fmt "\n"), __LINE__, ##args); } while(0)
+ #define serialDebug(fmt, args...)  do {hal.console->printf_P( __FUNCTION__ ":%d:" fmt "\n", __LINE__, ##args); } while(0)
 #else
  # define serialDebug(fmt, args...)
 #endif
@@ -102,14 +102,14 @@ void DataFlash_APM1::Init(const struct LogStructure *structure, uint8_t num_type
     _spi = hal.spi->device(AP_HAL::SPIDevice_Dataflash);
     if (_spi == NULL) {
         hal.scheduler->panic(
-                PSTR("PANIC: DataFlash SPIDeviceDriver not found"));
+                "PANIC: DataFlash SPIDeviceDriver not found");
         return; /* never reached */
     }
 
     _spi_sem = _spi->get_semaphore();
     if (_spi_sem == NULL) {
         hal.scheduler->panic(
-                PSTR("PANIC: DataFlash SPIDeviceDriver semaphore is null"));
+                "PANIC: DataFlash SPIDeviceDriver semaphore is null");
         return; /* never reached */
     }
 

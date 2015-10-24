@@ -150,7 +150,7 @@ int8_t Storage_FRAM::open()
             hal.scheduler->delay(1000);
         }
         if(i==4){
-            hal.scheduler->panic(PSTR("FRAM: Failed to receive Manufacturer ID 5 times"));
+            hal.scheduler->panic("FRAM: Failed to receive Manufacturer ID 5 times");
         }
     }
     

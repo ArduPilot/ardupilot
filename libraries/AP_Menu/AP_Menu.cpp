@@ -84,7 +84,7 @@ Menu::_check_for_input(void)
 void
 Menu::_display_prompt(void)
 {
-    _port->printf_P(PSTR("%S] "), _prompt);
+    _port->printf_P("%S] ", _prompt);
 }
 
 // run the menu
@@ -146,10 +146,10 @@ Menu::_run_command(bool prompt_on_enter)
     
     // implicit commands
     if (i == _entries) {
-        if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, PSTR("help")))) {
+        if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, "help"))) {
             _help();
             cmd_found=true;
-        } else if (!strcasecmp_P(_argv[0].str, PSTR("exit"))) {
+        } else if (!strcasecmp_P(_argv[0].str, "exit")) {
             // exit the menu
             return true;
         }
@@ -157,7 +157,7 @@ Menu::_run_command(bool prompt_on_enter)
 
     if (cmd_found==false)
     {
-        _port->println_P(PSTR("Invalid command, type 'help'"));
+        _port->println_P("Invalid command, type 'help'");
     }
 
     return false;
@@ -228,10 +228,10 @@ Menu::_help(void)
 {
     int i;
 
-    _port->println_P(PSTR("Commands:"));
+    _port->println_P("Commands:");
     for (i = 0; i < _entries; i++) {
 		hal.scheduler->delay(10);
-        _port->printf_P(PSTR("  %S\n"), _commands[i].command);
+        _port->printf_P("  %S\n", _commands[i].command);
 	}
 }
 

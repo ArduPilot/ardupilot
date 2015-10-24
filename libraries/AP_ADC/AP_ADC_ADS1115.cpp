@@ -188,7 +188,7 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
         default:
             pga = 0.0f;
             hal.console->printf("Wrong gain");
-            hal.scheduler->panic(PSTR("ADS1115: wrong gain selected"));
+            hal.scheduler->panic("ADS1115: wrong gain selected");
             break;
     }
 

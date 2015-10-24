@@ -53,7 +53,7 @@ void blink_a3() {
 }
 
 void setup_pin(int pin_num) {
-    hal.console->printf_P(PSTR("Setup pin %d\r\n"), pin_num);
+    hal.console->printf_P("Setup pin %d\r\n", pin_num);
     hal.gpio->pinMode(pin_num,HAL_GPIO_OUTPUT);
     /* Blink so we can see setup on the logic analyzer.*/
     hal.gpio->write(pin_num,1);
@@ -61,24 +61,24 @@ void setup_pin(int pin_num) {
 }
 
 void setup (void) {
-    hal.console->printf_P(PSTR("Starting Semaphore test\r\n"));
+    hal.console->printf_P("Starting Semaphore test\r\n");
 
     setup_pin(PIN_A0);
     setup_pin(PIN_A1);
     setup_pin(PIN_A2);
     setup_pin(PIN_A3);
     
-    hal.console->printf_P(PSTR("Using SPIDeviceManager builtin Semaphore\r\n"));
+    hal.console->printf_P("Using SPIDeviceManager builtin Semaphore\r\n");
 
     AP_HAL::SPIDeviceDriver *dataflash = hal.spi->device(AP_HAL::SPIDevice_Dataflash); // not really
 
     if (dataflash == NULL) {
-        hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver!"));
+        hal.scheduler->panic("Error: No SPIDeviceDriver!");
     }
    
     sem = dataflash->get_semaphore();
     if (sem == NULL) {
-        hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver semaphore!"));
+        hal.scheduler->panic("Error: No SPIDeviceDriver semaphore!");
     }
 
     hal.scheduler->register_timer_process(async_blinker);

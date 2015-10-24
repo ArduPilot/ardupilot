@@ -68,7 +68,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.scheduler->panic(PSTR("BMP085: unable to get semaphore"));
+        hal.scheduler->panic("BMP085: unable to get semaphore");
     }
 
     // End Of Conversion (PC7) input
@@ -76,7 +76,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
-        hal.scheduler->panic(PSTR("BMP085: bad calibration registers"));
+        hal.scheduler->panic("BMP085: bad calibration registers");
     }
 
     ac1 = ((int16_t)buff[0] << 8) | buff[1];

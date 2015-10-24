@@ -399,8 +399,8 @@ bool PX4Scheduler::system_initializing() {
 
 void PX4Scheduler::system_initialized() {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }

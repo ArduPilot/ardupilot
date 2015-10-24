@@ -1148,8 +1148,8 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf_P(PSTR("Bad var table\n"));
-        hal.scheduler->panic(PSTR("Bad var table"));
+        cliSerial->printf_P("Bad var table\n");
+        hal.scheduler->panic("Bad var table");
     }
 
     // disable centrifugal force correction, it will be enabled as part of the arming process
@@ -1160,17 +1160,17 @@ void Copter::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+        cliSerial->printf_P("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        cliSerial->println_P(PSTR("done."));
+        cliSerial->println_P("done.");
     } else {
         uint32_t before = micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
+        cliSerial->printf_P("load_all took %luus\n", micros() - before);
     }
 }

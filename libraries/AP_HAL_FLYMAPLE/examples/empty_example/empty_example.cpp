@@ -10,11 +10,11 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup() {
      hal.scheduler->delay(5000);
-     hal.console->println_P(PSTR("Empty setup"));
+     hal.console->println_P("Empty setup");
 }
 void loop() 
 {
-     hal.console->println_P(PSTR("loop"));
+     hal.console->println_P("loop");
      hal.console->printf("hello %d\n", 1234);
      hal.scheduler->delay(1000);
 }

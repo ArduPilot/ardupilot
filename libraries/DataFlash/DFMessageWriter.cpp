@@ -124,7 +124,7 @@ void DFMessageWriter_WriteSysInfo::process() {
 
     case ws_blockwriter_stage_git_versions:
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        if (! _DataFlash.Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION))) {
+        if (! _DataFlash.Log_Write_Message_P("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
             return; // call me again
         }
 #endif
@@ -163,7 +163,7 @@ void DFMessageWriter_WriteEntireMission::process() {
         // fall through
 
     case em_blockwriter_stage_write_new_mission_message:
-        if (! _DataFlash.Log_Write_Message_P(PSTR("New mission"))) {
+        if (! _DataFlash.Log_Write_Message_P("New mission")) {
             return; // call me again
         }
         stage = em_blockwriter_stage_write_mission_items;

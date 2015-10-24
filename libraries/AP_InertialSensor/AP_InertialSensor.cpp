@@ -323,7 +323,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _dataflash(NULL)
 {
     if (_s_instance) {
-        hal.scheduler->panic(PSTR("Too many inertial sensors"));
+        hal.scheduler->panic("Too many inertial sensors");
     }
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);        
@@ -372,7 +372,7 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 uint8_t AP_InertialSensor::register_gyro(void)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic(PSTR("Too many gyros"));
+        hal.scheduler->panic("Too many gyros");
     }
     return _gyro_count++;
 }
@@ -383,7 +383,7 @@ uint8_t AP_InertialSensor::register_gyro(void)
 uint8_t AP_InertialSensor::register_accel(void)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic(PSTR("Too many accels"));
+        hal.scheduler->panic("Too many accels");
     }
     return _accel_count++;
 }
@@ -402,7 +402,7 @@ void AP_InertialSensor::_start_backends()
     }
 
     if (_gyro_count == 0 || _accel_count == 0) {
-        hal.scheduler->panic(PSTR("INS needs at least 1 gyro and 1 accel"));
+        hal.scheduler->panic("INS needs at least 1 gyro and 1 accel");
     }
 }
 
@@ -474,7 +474,7 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
     if (!backend)
         return;
     if (_backend_count == INS_MAX_BACKENDS)
-        hal.scheduler->panic(PSTR("Too many INS backends"));
+        hal.scheduler->panic("Too many INS backends");
     _backends[_backend_count++] = backend;
 }
 
@@ -520,7 +520,7 @@ AP_InertialSensor::_detect_backends(void)
 #endif
 
     if (_backend_count == 0) {
-        hal.scheduler->panic(PSTR("No INS backends available"));
+        hal.scheduler->panic("No INS backends available");
     }
 
     // set the product ID to the ID of the first backend
@@ -538,10 +538,10 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
     trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
     if (fabsf(trim_roll) > radians(10) || 
         fabsf(trim_pitch) > radians(10)) {
-        hal.console->println_P(PSTR("trim over maximum of 10 degrees"));
+        hal.console->println_P("trim over maximum of 10 degrees");
         return false;
     }
-    hal.console->printf_P(PSTR("Trim OK: roll=%.2f pitch=%.2f\n"),
+    hal.console->printf_P("Trim OK: roll=%.2f pitch=%.2f\n",
                           (double)degrees(trim_roll),
                           (double)degrees(trim_pitch));
     return true;
@@ -598,27 +598,27 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
         // display message to user
         switch ( i ) {
             case 0:
-                msg = PSTR("level");
+                msg = "level";
                 break;
             case 1:
-                msg = PSTR("on its LEFT side");
+                msg = "on its LEFT side";
                 break;
             case 2:
-                msg = PSTR("on its RIGHT side");
+                msg = "on its RIGHT side";
                 break;
             case 3:
-                msg = PSTR("nose DOWN");
+                msg = "nose DOWN";
                 break;
             case 4:
-                msg = PSTR("nose UP");
+                msg = "nose UP";
                 break;
             default:    // default added to avoid compiler warning
             case 5:
-                msg = PSTR("on its BACK");
+                msg = "on its BACK";
                 break;
         }
         interact->printf_P(
-                PSTR("Place vehicle %S and press any key.\n"), msg);
+                "Place vehicle %S and press any key.\n", msg);
 
         // wait for user input
         if (!interact->blocking_read()) {
@@ -650,7 +650,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 }
                 samples[k][i] += samp;
                 if (!get_accel_health(k)) {
-                    interact->printf_P(PSTR("accel[%u] not healthy"), (unsigned)k);
+                    interact->printf_P("accel[%u] not healthy", (unsigned)k);
                     goto failed;
                 }
             }
@@ -665,7 +665,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     // run the calibration routine
     for (uint8_t k=0; k<num_accels; k++) {
         if (!_check_sample_range(samples[k], saved_orientation, interact)) {
-            interact->printf_P(PSTR("Insufficient accel range"));
+            interact->printf_P("Insufficient accel range");
             continue;
         }
 
@@ -675,17 +675,17 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                                         _accel_max_abs_offsets[k],
                                         saved_orientation);
 
-        interact->printf_P(PSTR("Offsets[%u]: %.2f %.2f %.2f\n"),
+        interact->printf_P("Offsets[%u]: %.2f %.2f %.2f\n",
                             (unsigned)k,
                            (double)new_offsets[k].x, (double)new_offsets[k].y, (double)new_offsets[k].z);
-        interact->printf_P(PSTR("Scaling[%u]: %.2f %.2f %.2f\n"),
+        interact->printf_P("Scaling[%u]: %.2f %.2f %.2f\n",
                            (unsigned)k,
                            (double)new_scaling[k].x, (double)new_scaling[k].y, (double)new_scaling[k].z);
         if (success) num_ok++;
     }
 
     if (num_ok == num_accels) {
-        interact->printf_P(PSTR("Calibration successful\n"));
+        interact->printf_P("Calibration successful\n");
 
         for (uint8_t k=0; k<num_accels; k++) {
             // set and save calibration
@@ -721,7 +721,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     }
 
 failed:
-    interact->printf_P(PSTR("Calibration FAILED\n"));
+    interact->printf_P("Calibration FAILED\n");
     // restore original scaling and offsets
     for (uint8_t k=0; k<num_accels; k++) {
         _accel_offset[k].set(orig_offset[k]);
@@ -922,7 +922,7 @@ AP_InertialSensor::_init_gyro()
     AP_Notify::flags.initialising = true;
 
     // cold start
-    hal.console->print_P(PSTR("Init Gyro"));
+    hal.console->print_P("Init Gyro");
 
     /*
       we do the gyro calibration with no board rotation. This avoids
@@ -961,7 +961,7 @@ AP_InertialSensor::_init_gyro()
 
         memset(diff_norm, 0, sizeof(diff_norm));
 
-        hal.console->print_P(PSTR("*"));
+        hal.console->print_P("*");
 
         for (uint8_t k=0; k<num_gyros; k++) {
             gyro_sum[k].zero();
@@ -1017,7 +1017,7 @@ AP_InertialSensor::_init_gyro()
     hal.console->println();
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
-            hal.console->printf_P(PSTR("gyro[%u] did not converge: diff=%f dps\n"),
+            hal.console->printf_P("gyro[%u] did not converge: diff=%f dps\n",
                                   (unsigned)k, (double)ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro
@@ -1076,7 +1076,7 @@ bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum
         }
     }
     Vector3f range = max_sample - min_sample;
-    interact->printf_P(PSTR("AccelRange: %.1f %.1f %.1f"),
+    interact->printf_P("AccelRange: %.1f %.1f %.1f",
             (double)range.x, (double)range.y, (double)range.z);
     bool ok = (range.x >= min_range && 
                range.y >= min_range && 

@@ -104,13 +104,13 @@ void DataFlash_APM2::Init(const struct LogStructure *structure, uint8_t num_type
     _spi = hal.spi->device(AP_HAL::SPIDevice_Dataflash);
     if (_spi == NULL) {
         hal.scheduler->panic(
-                PSTR("PANIC: DataFlash SPIDeviceDriver not found"));
+                "PANIC: DataFlash SPIDeviceDriver not found");
         return;
     }
     _spi_sem = _spi->get_semaphore();
     if (_spi_sem == NULL) {
         hal.scheduler->panic(
-                PSTR("PANIC: DataFlash SPIDeviceDriver semaphore is null"));
+                "PANIC: DataFlash SPIDeviceDriver semaphore is null");
         return; /* never reached */
     }
 
