@@ -179,7 +179,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, "FBWA tdrag off");
+        gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

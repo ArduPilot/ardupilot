@@ -635,7 +635,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text_P(MAV_SEVERITY_WARNING, "FBWA tdrag mode\n");
+                    gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode\n");
                 }
             }
         }
@@ -781,15 +781,15 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, "Disable fence failed (autodisable)");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Disable fence failed (autodisable)");
             } else {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, "Fence disabled (autodisable)");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Fence disabled (autodisable)");
             }
         } else if (g.fence_autoenable == 2) {
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, "Disable fence floor failed (autodisable)");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Disable fence floor failed (autodisable)");
             } else {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, "Fence floor disabled (auto disable)");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Fence floor disabled (auto disable)");
             }
         }
 #endif

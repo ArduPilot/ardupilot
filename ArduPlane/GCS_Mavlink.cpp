@@ -1386,9 +1386,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text_P(MAV_SEVERITY_CRITICAL,"Go around command accepted.");           
+                plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Go around command accepted.");           
             } else {
-                plane.gcs_send_text_P(MAV_SEVERITY_CRITICAL,"Rejected go around command.");
+                plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Rejected go around command.");
             }
             break;
 
@@ -1412,7 +1412,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (! plane.geofence_set_floor_enabled(false)) {
                         result = MAV_RESULT_FAILED;
                     } else {
-                        plane.gcs_send_text_P(MAV_SEVERITY_CRITICAL,"Fence floor disabled.");
+                        plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Fence floor disabled.");
                     }
                     break;
                 default:
@@ -1932,7 +1932,7 @@ void Plane::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(MAV_SEVERITY_WARNING, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_WARNING, "Initialising APM...");
     }
     check_usb_mux();
 
@@ -1992,7 +1992,7 @@ void Plane::gcs_update(void)
     }
 }
 
-void Plane::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
+void Plane::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {

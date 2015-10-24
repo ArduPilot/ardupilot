@@ -4,9 +4,9 @@
 
 void Rover::init_barometer(void)
 {
-    gcs_send_text_P(MAV_SEVERITY_WARNING, "Calibrating barometer");    
+    gcs_send_text(MAV_SEVERITY_WARNING, "Calibrating barometer");    
     barometer.calibrate();
-    gcs_send_text_P(MAV_SEVERITY_WARNING, "barometer calibration complete");
+    gcs_send_text(MAV_SEVERITY_WARNING, "barometer calibration complete");
 }
 
 void Rover::init_sonar(void)

@@ -266,10 +266,10 @@ void Plane::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> GROUND START");
+    gcs_send_text(MAV_SEVERITY_WARNING,"<startup_ground> GROUND START");
 
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text_P(MAV_SEVERITY_WARNING,"<startup_ground> With Delay");
+    gcs_send_text(MAV_SEVERITY_WARNING,"<startup_ground> With Delay");
     delay(GROUND_START_DELAY * 1000);
 #endif
 
@@ -316,7 +316,7 @@ void Plane::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);    
 
-    gcs_send_text_P(MAV_SEVERITY_WARNING,"\n\n Ready to FLY.");
+    gcs_send_text(MAV_SEVERITY_WARNING,"\n\n Ready to FLY.");
 }
 
 enum FlightMode Plane::get_previous_mode() {
@@ -560,14 +560,14 @@ void Plane::startup_INS_ground(void)
         while (barometer.get_last_update() == 0) {
             // the barometer begins updating when we get the first
             // HIL_STATE message
-            gcs_send_text_P(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+            gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
             hal.scheduler->delay(1000);
         }
     }
 #endif
 
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
-        gcs_send_text_P(MAV_SEVERITY_ALERT, "Beginning INS calibration; do not move plane");
+        gcs_send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration; do not move plane");
         hal.scheduler->delay(100);
     }
 
@@ -588,7 +588,7 @@ void Plane::startup_INS_ground(void)
         // --------------------------
         zero_airspeed(true);
     } else {
-        gcs_send_text_P(MAV_SEVERITY_WARNING,"NO airspeed");
+        gcs_send_text(MAV_SEVERITY_WARNING,"NO airspeed");
     }
 }
 
