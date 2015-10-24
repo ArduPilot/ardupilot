@@ -856,7 +856,7 @@ void Plane::update_flight_stage(void)
                     float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
                     bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
-                    if ((path_progress > 0.3f && lined_up && below_prev_WP) || path_progress > 0.8f) {
+                    if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
                     }
                 }
