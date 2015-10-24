@@ -858,6 +858,8 @@ void Plane::update_flight_stage(void)
                     bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
                     if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
                         set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                    } else {
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
                     }
                 }
 
