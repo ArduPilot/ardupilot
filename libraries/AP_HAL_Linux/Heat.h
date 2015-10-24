@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,24 +13,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
-  Flymaple port by Mike McCauley
- */
 
+#ifndef __HEAT_H__
+#define __HEAT_H__
 
-#ifndef __AP_HAL_FLYMAPLE_MAIN_H__
-#define __AP_HAL_FLYMAPLE_MAIN_H__
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-#define AP_HAL_MAIN() extern "C" {\
-    int main (void) {\
-	hal.init(0, NULL);			\
-        setup();\
-        hal.scheduler->system_initialized(); \
-        for(;;) loop();\
-        return 0;\
-    }\
-    }
-#endif // HAL_BOARD_FLYMAPLE
-
-#endif // __AP_HAL_FLYMAPLE_MAIN_H__
+class Linux::Heat {
+public:
+    virtual void set_imu_temp(float current) { }
+};
+#endif

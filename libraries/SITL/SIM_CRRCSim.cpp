@@ -17,16 +17,16 @@
   simulator connector for ardupilot version of CRRCSim
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_CRRCSim.h"
+
 #include <stdio.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
-/*
-  constructor
- */
+namespace SITL {
+
 CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     last_timestamp(0),
@@ -57,7 +57,7 @@ void CRRCSim::send_servos_heli(const struct sitl_input &input)
     float roll_rate = (swash1 - swash2)/2;
     float pitch_rate = -((swash1 + swash2)/2.0 - swash3)/2;
     float yaw_rate = -(tail_rotor - 0.5);
-    
+
     servo_packet pkt;
     pkt.roll_rate  = constrain_float(roll_rate, -0.5, 0.5);
     pkt.pitch_rate = constrain_float(pitch_rate, -0.5, 0.5);
@@ -152,4 +152,5 @@ void CRRCSim::update(const struct sitl_input &input)
     recv_fdm(input);
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

@@ -1,13 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#ifndef __SITL_H__
-#define __SITL_H__
+#pragma once
 
-#include <AP_Param/AP_Param.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+namespace SITL {
 
 struct PACKED sitl_fdm {
     // this is the packet sent by the simulator
@@ -29,8 +27,7 @@ struct PACKED sitl_fdm {
 #define SITL_NUM_CHANNELS 14
 
 
-class SITL
-{
+class SITL {
 public:
 
     SITL() {
@@ -119,4 +116,4 @@ public:
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 };
 
-#endif // __SITL_H__
+} // namespace SITL

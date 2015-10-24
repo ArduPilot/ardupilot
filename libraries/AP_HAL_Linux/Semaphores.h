@@ -8,9 +8,9 @@
 #include "AP_HAL_Linux.h"
 #include <pthread.h>
 
-class Linux::LinuxSemaphore : public AP_HAL::Semaphore {
+class Linux::Semaphore : public AP_HAL::Semaphore {
 public:
-    LinuxSemaphore() {
+    Semaphore() {
         pthread_mutex_init(&_lock, NULL);
     }
     bool give();

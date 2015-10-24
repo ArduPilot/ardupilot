@@ -10,7 +10,7 @@
 class HAL_Empty : public AP_HAL::HAL {
 public:
     HAL_Empty();
-    void init(int argc, char * const * argv) const;
+    void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 private:
     Empty::EmptyPrivateMember *_member;
 };

@@ -723,6 +723,9 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
                 return false;
             }
         }
+        if (fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
+            return false;
+        }
 
         switch (packet.frame) {
 

@@ -104,6 +104,9 @@ bool Copter::set_home(const Location& loc)
     // log ahrs home and ekf origin dataflash
     Log_Write_Home_And_Origin();
 
+    // send new home location to GCS
+    GCS_MAVLINK::send_home_all(loc);
+
     // return success
     return true;
 }

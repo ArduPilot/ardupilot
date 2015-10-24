@@ -325,10 +325,15 @@ void *VRBRAINScheduler::_io_thread(void)
     return NULL;
 }
 
-void VRBRAINScheduler::panic(const prog_char_t *errormsg)
+void VRBRAINScheduler::panic(const prog_char_t *errormsg, ...)
 {
-    write(1, errormsg, strlen(errormsg));
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.scheduler->delay_microseconds(10000);
     _vrbrain_thread_should_exit = true;
     exit(1);

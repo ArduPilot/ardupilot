@@ -6,9 +6,9 @@
 #include "UARTDriver.h"
 
 
-class Linux::LinuxSPIUARTDriver : public Linux::LinuxUARTDriver {
+class Linux::SPIUARTDriver : public Linux::UARTDriver {
 public:
-    LinuxSPIUARTDriver();
+    SPIUARTDriver();
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
     void _timer_tick(void);
 

@@ -15,6 +15,8 @@
 
 #include "Scheduler.h"
 
+#include <stdarg.h>
+
 #define millis libmaple_millis
 #define micros libmaple_micros
 #include "FlymapleWirish.h"
@@ -228,12 +230,19 @@ void FLYMAPLEScheduler::system_initialized()
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
+void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     // REVISIT: not tested on FLYMAPLE
+    va_list ap;
+
     _timer_suspended = true;
-    hal.console->println_P(errormsg);
+
+    va_start(ap, errormsg);
+    hal.console->vprintf_P(errormsg, ap);
+    va_end(ap);
+    hal.console->printf_P("\n");
+
     for(;;);
 }
 

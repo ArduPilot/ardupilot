@@ -17,12 +17,15 @@
   gimbal simulator class for MAVLink gimbal
 */
 
-#include "SIM_Aircraft.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Gimbal.h"
+
 #include <stdio.h>
 
+#include "SIM_Aircraft.h"
+
 extern const AP_HAL::HAL& hal;
+
+namespace SITL {
 
 Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
     fdm(_fdm),
@@ -55,8 +58,8 @@ void Gimbal::update(void)
     Matrix3f vehicle_dcm;
     vehicle_dcm.from_euler(radians(fdm.rollDeg), radians(fdm.pitchDeg), radians(fdm.yawDeg));
 
-    Vector3f vehicle_gyro = Vector3f(radians(fdm.rollRate), 
-                                     radians(fdm.pitchRate), 
+    Vector3f vehicle_gyro = Vector3f(radians(fdm.rollRate),
+                                     radians(fdm.pitchRate),
                                      radians(fdm.yawRate));
     Vector3f vehicle_accel_body = Vector3f(fdm.xAccel, fdm.yAccel, fdm.zAccel);
 
@@ -77,7 +80,7 @@ void Gimbal::update(void)
     Matrix3f rotmat_copter_gimbal = dcm.transposed() * vehicle_dcm;
 
     joint_angles = rotmat_copter_gimbal.transposed().to_euler312();
-        
+
     /* 4)  For each of the three joints, calculate upper and lower rate limits
        from the corresponding angle limits and current joint angles
 
@@ -143,7 +146,7 @@ void Gimbal::update(void)
     //    in an inertial frame of reference
     // demandedGimbalRatesInertial(X,Y,Z)  = relativeGimbalRate(X,Y,Z) + copterAngRate_G
     // Vector3f demandedGimbalRatesInertial = relativeGimbalRate + copterAngRate_G;
-            
+
     // for the moment we will set gyros equal to demanded_angular_rate
     gimbal_angular_rate = demRateRaw; // demandedGimbalRatesInertial + true_gyro_bias - supplied_gyro_bias
 
@@ -196,7 +199,7 @@ void Gimbal::send_report(void)
             mavlink_message_t msg;
             mavlink_status_t status;
             if (mavlink_frame_char_buffer(&mavlink.rxmsg, &mavlink.status,
-                                          buf[i], 
+                                          buf[i],
                                           &msg, &status) == MAVLINK_FRAMING_OK) {
                 switch (msg.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT: {
@@ -247,8 +250,8 @@ void Gimbal::send_report(void)
         mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
         uint8_t saved_seq = chan0_status->current_tx_seq;
         chan0_status->current_tx_seq = mavlink.seq;
-        len = mavlink_msg_heartbeat_encode(vehicle_system_id, 
-                                           vehicle_component_id, 
+        len = mavlink_msg_heartbeat_encode(vehicle_system_id,
+                                           vehicle_component_id,
                                            &msg, &heartbeat);
         chan0_status->current_tx_seq = saved_seq;
 
@@ -280,15 +283,16 @@ void Gimbal::send_report(void)
         mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
         uint8_t saved_seq = chan0_status->current_tx_seq;
         chan0_status->current_tx_seq = mavlink.seq;
-        len = mavlink_msg_gimbal_report_encode(vehicle_system_id, 
-                                               vehicle_component_id, 
+        len = mavlink_msg_gimbal_report_encode(vehicle_system_id,
+                                               vehicle_component_id,
                                                &msg, &gimbal_report);
         chan0_status->current_tx_seq = saved_seq;
 
         mav_socket.send(&msg.magic, len);
-        
+
         delta_velocity.zero();
         delta_angle.zero();
     }
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

@@ -4,6 +4,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
+#include <assert.h>
+
 #include "AP_HAL_VRBRAIN.h"
 #include "AP_HAL_VRBRAIN_Namespace.h"
 #include "HAL_VRBRAIN_Class.h"
@@ -234,7 +236,7 @@ static void usage(void)
 }
 
 
-void HAL_VRBRAIN::init(int argc, char * const argv[]) const
+void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     int i;
     const char *deviceA = UARTA_DEFAULT_DEVICE;
@@ -248,6 +250,9 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
         usage();
         exit(1);
     }
+
+    assert(callbacks);
+    g_callbacks = callbacks;
 
     for (i=0; i<argc; i++) {
         if (strcmp(argv[i], "start") == 0) {
@@ -339,7 +344,10 @@ void HAL_VRBRAIN::init(int argc, char * const argv[]) const
     exit(1);
 }
 
-const HAL_VRBRAIN AP_HAL_VRBRAIN;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_VRBRAIN hal_vrbrain;
+    return hal_vrbrain;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 

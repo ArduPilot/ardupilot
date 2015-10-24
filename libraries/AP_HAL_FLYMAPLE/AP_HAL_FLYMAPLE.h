@@ -47,7 +47,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "HAL_FLYMAPLE_Class.h"
-#include "AP_HAL_FLYMAPLE_Main.h"
 
 #endif // CONFIG_HAL_BOARD
 

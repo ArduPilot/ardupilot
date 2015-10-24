@@ -12,7 +12,7 @@
 // FIXME A puppie dies when you hard code an address
 #define RCIN_ZYNQ_PULSE_INPUT_BASE  0x43c10000
 
-class Linux::LinuxRCInput_ZYNQ : public Linux::LinuxRCInput 
+class Linux::RCInput_ZYNQ : public Linux::RCInput
 {
 public:
     void init(void*);

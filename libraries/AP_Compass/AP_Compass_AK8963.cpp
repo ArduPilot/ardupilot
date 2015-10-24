@@ -79,6 +79,8 @@
 #endif
 #endif
 
+#define AK8963_MILLIGAUSS_SCALE 10.0f
+
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus) :
@@ -91,9 +93,9 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _reset_filter();
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass)
+AP_Compass_Backend *AP_Compass_AK8963::detect_mpu9250(Compass &compass, AP_HAL::SPIDeviceDriver *spi)
 {
-    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_MPU9250();
+    AP_AK8963_SerialBus *bus = new AP_AK8963_SerialBus_MPU9250(spi);
     if (!bus)
         return nullptr;
     return _detect(compass, bus);
@@ -167,7 +169,7 @@ bool AP_Compass_AK8963::init()
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("AK8963: Could not start measurments\n");
+        hal.console->printf("AK8963: Could not start measurements\n");
         goto fail;
     }
 
@@ -178,8 +180,6 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _bus->get_dev_id());
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
-    set_milligauss_ratio(_compass_instance, 10.0f);
-    
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
 
@@ -209,9 +209,6 @@ void AP_Compass_AK8963::read()
 
     _reset_filter();
     hal.scheduler->resume_timer_procs();
-    _make_factory_sensitivity_adjustment(field);
-    _make_adc_sensitivity_adjustment(field);
-
     publish_filtered_field(field, _compass_instance);
 }
 
@@ -277,7 +274,11 @@ void AP_Compass_AK8963::_update()
     }
 
     raw_field = Vector3f(mag_x, mag_y, mag_z);
-    
+
+    _make_factory_sensitivity_adjustment(raw_field);
+    _make_adc_sensitivity_adjustment(raw_field);
+    raw_field *= AK8963_MILLIGAUSS_SCALE;
+
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
 
@@ -402,9 +403,9 @@ void AP_Compass_AK8963::_dump_registers()
 }
 
 /* MPU9250 implementation of the AK8963 */
-AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
+AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250(AP_HAL::SPIDeviceDriver *spi)
 {
-    _spi = hal.spi->device(AP_HAL::SPIDevice_MPU9250);
+    _spi = spi;
 
     if (_spi == NULL) {
         hal.console->printf("Cannot get SPIDevice_MPU9250\n");
@@ -412,41 +413,41 @@ AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250()
     }
 }
 
-void AP_AK8963_SerialBus_MPU9250::register_write(uint8_t address, uint8_t value)
+void AP_AK8963_SerialBus_MPU9250::register_write(uint8_t reg, uint8_t value)
 {
     const uint8_t count = 1;
     _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
-    _write(MPUREG_I2C_SLV0_REG, address);
+    _write(MPUREG_I2C_SLV0_REG, reg);
     _write(MPUREG_I2C_SLV0_DO, value);
     _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 }
 
-void AP_AK8963_SerialBus_MPU9250::register_read(uint8_t address, uint8_t *value, uint8_t count)
+void AP_AK8963_SerialBus_MPU9250::register_read(uint8_t reg, uint8_t *value, uint8_t count)
 {
     _write(MPUREG_I2C_SLV0_ADDR, AK8963_I2C_ADDR | READ_FLAG);
-    _write(MPUREG_I2C_SLV0_REG, address);
+    _write(MPUREG_I2C_SLV0_REG, reg);
     _write(MPUREG_I2C_SLV0_CTRL, I2C_SLV0_EN | count);
 
     hal.scheduler->delay(10);
     _read(MPUREG_EXT_SENS_DATA_00, value, count);
 }
 
-void AP_AK8963_SerialBus_MPU9250::_read(uint8_t address, uint8_t *buf, uint32_t count)
+void AP_AK8963_SerialBus_MPU9250::_read(uint8_t reg, uint8_t *buf, uint32_t count)
 {
     ASSERT(count < 32);
 
-    address |= READ_FLAG;
-    uint8_t tx[32] = { address, };
+    reg |= READ_FLAG;
+    uint8_t tx[32] = { reg, };
     uint8_t rx[32] = { };
 
     _spi->transaction(tx, rx, count + 1);
     memcpy(buf, rx + 1, count);
 }
 
-void AP_AK8963_SerialBus_MPU9250::_write(uint8_t address, const uint8_t *buf, uint32_t count)
+void AP_AK8963_SerialBus_MPU9250::_write(uint8_t reg, const uint8_t *buf, uint32_t count)
 {
     ASSERT(count < 2);
-    uint8_t tx[2] = { address, };
+    uint8_t tx[2] = { reg, };
 
     memcpy(tx+1, buf, count);
     _spi->transaction(tx, NULL, count + 1);
@@ -506,14 +507,14 @@ AP_AK8963_SerialBus_I2C::AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t
 {
 }
 
-void AP_AK8963_SerialBus_I2C::register_write(uint8_t address, uint8_t value)
+void AP_AK8963_SerialBus_I2C::register_write(uint8_t reg, uint8_t value)
 {
-    _i2c->writeRegister(_addr, address, value);
+    _i2c->writeRegister(_addr, reg, value);
 }
 
-void AP_AK8963_SerialBus_I2C::register_read(uint8_t address, uint8_t *value, uint8_t count)
+void AP_AK8963_SerialBus_I2C::register_read(uint8_t reg, uint8_t *value, uint8_t count)
 {
-    _i2c->readRegisters(_addr, address, count, value);
+    _i2c->readRegisters(_addr, reg, count, value);
 }
 
 void AP_AK8963_SerialBus_I2C::read_raw(struct raw_value *rv)

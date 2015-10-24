@@ -14,7 +14,7 @@
 class HAL_VRBRAIN : public AP_HAL::HAL {
 public:
     HAL_VRBRAIN();
-    void init(int argc, char * const argv[]) const;
+    void run(int argc, char* const argv[], Callbacks* callbacks) const override;
 };
 
 extern const HAL_VRBRAIN AP_HAL_VRBRAIN;

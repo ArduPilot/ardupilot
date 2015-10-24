@@ -259,8 +259,15 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
     _in_io_proc = false;
 }
 
-void SITLScheduler::panic(const prog_char_t *errormsg) {
-    hal.console->println_P(errormsg);
+void SITLScheduler::panic(const prog_char_t *errormsg, ...)
+{
+    va_list ap;
+
+    va_start(ap, errormsg);
+    hal.console->vprintf_P(errormsg, ap);
+    va_end(ap);
+    hal.console->printf_P("\n");
+
     for(;;);
 }
 

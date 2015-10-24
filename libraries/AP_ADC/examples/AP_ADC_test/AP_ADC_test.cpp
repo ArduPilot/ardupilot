@@ -13,8 +13,6 @@
 #include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
 
 #include <AP_ADC/AP_ADC.h>
 
@@ -22,7 +20,7 @@ uint32_t timer;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 /* Only build this sketch for APM1 and Linux */
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_ADC_ADS7844 adc;
 

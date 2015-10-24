@@ -30,9 +30,9 @@ enum autopilot_yaw_mode {
 #define CH6_PWM_TRIGGER_LOW     1200
 
 // values used by the ap.ch7_opt and ap.ch8_opt flags
-#define AUX_SWITCH_LOW              0       // indicates auxiliar switch is in the low position (pwm <1200)
-#define AUX_SWITCH_MIDDLE           1       // indicates auxiliar switch is in the middle position (pwm >1200, <1800)
-#define AUX_SWITCH_HIGH             2       // indicates auxiliar switch is in the high position (pwm >1800)
+#define AUX_SWITCH_LOW              0       // indicates auxiliary switch is in the low position (pwm <1200)
+#define AUX_SWITCH_MIDDLE           1       // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
+#define AUX_SWITCH_HIGH             2       // indicates auxiliary switch is in the high position (pwm >1800)
 
 // Aux Switch enumeration
 enum aux_sw_func {
@@ -184,7 +184,8 @@ enum GuidedMode {
     Guided_TakeOff,
     Guided_WP,
     Guided_Velocity,
-    Guided_PosVel
+    Guided_PosVel,
+    Guided_Angle,
 };
 
 // RTL states

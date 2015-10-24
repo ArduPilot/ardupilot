@@ -85,7 +85,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
     // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
@@ -104,9 +103,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
-#endif
 
-#if INS_MAX_INSTANCES > 2
     // @Param: GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
     // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
@@ -125,7 +122,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
-#endif
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
@@ -168,7 +164,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset[0], 0),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: ACC2SCAL_X
     // @DisplayName: Accelerometer2 scaling of X axis
     // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine
@@ -209,9 +204,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
-#endif
 
-#if INS_MAX_INSTANCES > 2
     // @Param: ACC3SCAL_X
     // @DisplayName: Accelerometer3 scaling of X axis
     // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine
@@ -252,7 +245,6 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @Range: -3.5 3.5
     // @User: Advanced
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
-#endif
 
     // @Param: GYRO_FILTER
     // @DisplayName: Gyro filter cutoff frequency
@@ -277,36 +269,31 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("USE", 20, AP_InertialSensor, _use[0],  1),
 
-#if INS_MAX_INSTANCES > 1
     // @Param: USE2
     // @DisplayName: Use second IMU for attitude, velocity and position estimates
     // @Description: Use second IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
-#endif
-#if INS_MAX_INSTANCES > 2
+
     // @Param: USE3
     // @DisplayName: Use third IMU for attitude, velocity and position estimates
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  0),
-#endif
 
-#if INS_VIBRATION_CHECK
     // @Param: STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
     // @Description: Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5
     // @Range: 0.05 to 50
     // @User: Advanced
     AP_GROUPINFO("STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
-#endif
 
     // @Param: GYR_CAL
     // @DisplayName: Gyro Calibration scheme
     // @Description: Conrols when automatic gyro calibration is performed
-    // @Values: 0:Never, 1:Start-up only, 2:Start-up and first arming (Copter only)
+    // @Values: 0:Never, 1:Start-up only
     // @User: Advanced
     AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
@@ -347,19 +334,24 @@ AP_InertialSensor::AP_InertialSensor() :
         _accel_error_count[i] = 0;
         _gyro_error_count[i] = 0;
         _gyro_cal_ok[i] = true;
-#if INS_VIBRATION_CHECK
         _accel_clip_count[i] = 0;
-#endif
 
         _accel_max_abs_offsets[i] = 3.5f;
-        _accel_sample_rates[i] = 0;
+
+        _accel_raw_sample_rates[i] = 0;
+        _gyro_raw_sample_rates[i] = 0;
+
+        _delta_velocity_acc[i].zero();
+        _delta_velocity_acc_dt[i] = 0;
+
+        _delta_angle_acc[i].zero();
+        _last_delta_angle[i].zero();
+        _last_raw_gyro[i].zero();
     }
-#if INS_VIBRATION_CHECK
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
         _accel_vibe_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ);
     }
-#endif
     memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
     memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 }
@@ -749,7 +741,6 @@ AP_InertialSensor::init_gyro()
     _save_parameters();
 }
 
-#if INS_VIBRATION_CHECK
 // accelerometer clipping reporting
 uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
 {
@@ -758,7 +749,6 @@ uint32_t AP_InertialSensor::get_accel_clip_count(uint8_t instance) const
     }
     return _accel_clip_count[instance];
 }
-#endif
 
 // get_gyro_health_all - return true if all gyros are healthy
 bool AP_InertialSensor::get_gyro_health_all(void) const
@@ -1282,6 +1272,13 @@ void AP_InertialSensor::update(void)
             _backends[i]->update();
         }
 
+        // clear accumulators
+        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+            _delta_velocity_acc[i].zero();
+            _delta_velocity_acc_dt[i] = 0;
+            _delta_angle_acc[i].zero();
+        }
+
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't. 
         bool have_zero_accel_error_count = false;
@@ -1547,7 +1544,7 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
 /*
  * Get an AuxiliaryBus on the backend identified by @backend_id
  */
-AuxiliaryBus *AP_InertialSensor::get_auxiliar_bus(int16_t backend_id)
+AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id)
 {
     _detect_backends();
 
@@ -1555,10 +1552,9 @@ AuxiliaryBus *AP_InertialSensor::get_auxiliar_bus(int16_t backend_id)
     if (backend == NULL)
         return NULL;
 
-    return backend->get_auxiliar_bus();
+    return backend->get_auxiliary_bus();
 }
 
-#if INS_VIBRATION_CHECK
 // calculate vibration levels and check for accelerometer clipping (called by a backends)
 void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt)
 {
@@ -1595,17 +1591,12 @@ Vector3f AP_InertialSensor::get_vibration_levels(uint8_t instance) const
     }
     return vibe;
 }
-#endif
 
 // check for vibration movement. Return true if all axis show nearly zero movement
 bool AP_InertialSensor::is_still()
 {
-#if INS_VIBRATION_CHECK
     Vector3f vibe = get_vibration_levels();
     return (vibe.x < _still_threshold) &&
            (vibe.y < _still_threshold) &&
            (vibe.z < _still_threshold);
-#else
-    return false;
-#endif
 }

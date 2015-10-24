@@ -65,6 +65,11 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
+    // Return the rate of change of vertical position in the down diection (dPosD/dt) in m/s
+    // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
+    // but will always be kinematically consistent with the z component of the EKF position state
+    float getPosDownDerivative(void) const;
+
     // This returns the specific forces in the NED frame
     void getAccelNED(Vector3f &accelNED) const;
 
@@ -201,6 +206,11 @@ public:
     void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
+    return filter gps quality check status
+    */
+    void  getFilterGpsStatus(nav_gps_status &faults) const;
+
+    /*
     return filter status flags
     */
     void  getFilterStatus(nav_filter_status &status) const;
@@ -259,6 +269,7 @@ private:
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
+    AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -275,7 +286,6 @@ private:
     const uint32_t magFailTimeLimit_ms; // number of msec before a magnetometer failing innovation consistency checks is declared failed (msec)
     const float magVarRateScale;        // scale factor applied to magnetometer variance due to angular rate
     const float gyroBiasNoiseScaler;    // scale factor applied to gyro bias state process noise when on ground
-    const float accelBiasNoiseScaler;   // scale factor applied to accel bias state process noise when on ground
     const uint16_t hgtAvg_ms;           // average number of msec between height measurements
     const uint16_t betaAvg_ms;          // average number of msec between synthetic sideslip measurements
     const float covTimeStepMax;         // maximum time (sec) between covariance prediction updates
@@ -287,6 +297,7 @@ private:
     const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
+    const uint8_t fusionTimeStep_ms;    // The nominal time interval between covariance predictions and measurement fusions in msec
 };
 
 #endif //AP_NavEKF2

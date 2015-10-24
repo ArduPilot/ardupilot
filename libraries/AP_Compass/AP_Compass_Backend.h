@@ -56,6 +56,8 @@ protected:
      * 4. publish_unfiltered_field - this (optionally) provides a corrected
      *      point sample for fusion into the EKF
      * 5. publish_filtered_field - legacy filtered magnetic field
+     *
+     * All those functions expect the mag field to be in milligauss.
      */
 
     void rotate_field(Vector3f &mag, uint8_t instance);
@@ -73,9 +75,6 @@ protected:
     // set external state for an instance
     void set_external(uint8_t instance, bool external);
 
-    // set ratio to convert to milligauss
-    void set_milligauss_ratio(uint8_t instance, float ratio);
-    
     // access to frontend
     Compass &_compass;
 

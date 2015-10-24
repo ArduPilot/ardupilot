@@ -17,26 +17,24 @@
   parent class for aircraft simulators
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Common/AP_Common.h>
 #include "SIM_Aircraft.h"
-#include <unistd.h>
-#include <sys/time.h>
+
 #include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
+
 #ifdef __CYGWIN__
 #include <windows.h>
 #include <time.h>
 #include <Mmsystem.h>
 #endif
 
+namespace SITL {
+
 /*
   parent class for all simulator types
  */
 
-/*
-  constructor
- */
 Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     ground_level(0),
     frame_height(0),
@@ -150,9 +148,9 @@ void Aircraft::adjust_frame_time(float new_rate)
     }
 }
 
-/* 
+/*
    try to synchronise simulation time with wall clock time, taking
-   into account desired speedup 
+   into account desired speedup
    This tries to take account of possible granularity of
    get_wall_time_us() so it works reasonably well on windows
 */
@@ -171,7 +169,7 @@ void Aircraft::sync_frame_time(void)
         }
 #if 0
         ::printf("achieved_rate_hz=%.3f rate=%.2f rate_hz=%.3f sft=%.1f\n",
-                 (double)achieved_rate_hz, 
+                 (double)achieved_rate_hz,
                  (double)rate,
                  (double)rate_hz,
                  (double)scaled_frame_time_us);
@@ -290,4 +288,5 @@ void Aircraft::set_speedup(float speedup)
 {
     setup_frame_time(rate_hz, speedup);
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

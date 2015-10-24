@@ -17,10 +17,11 @@
   multicopter simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Multicopter.h"
+
 #include <stdio.h>
+
+namespace SITL {
 
 Motor m(90,  false,  1);
 
@@ -99,9 +100,6 @@ static const Frame supported_frames[] =
     Frame("octa-quad", 8, octa_quad_motors)
 };
 
-/*
-  constructor
- */
 MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     frame(NULL),
@@ -226,4 +224,5 @@ void MultiCopter::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

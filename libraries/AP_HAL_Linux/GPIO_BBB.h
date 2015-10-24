@@ -105,7 +105,7 @@
 #define BBB_P9_41 20
 #define BBB_P9_42 7
 
-class Linux::LinuxGPIO_BBB : public AP_HAL::GPIO {
+class Linux::GPIO_BBB : public AP_HAL::GPIO {
 private:
     struct GPIO {
         volatile uint32_t *base;
@@ -115,7 +115,7 @@ private:
      } gpio_bank[LINUX_GPIO_NUM_BANKS];
 
 public:
-    LinuxGPIO_BBB();
+    GPIO_BBB();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);

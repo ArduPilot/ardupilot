@@ -12,19 +12,11 @@
 
 /**
    maximum number of INS instances available on this platform. If more
-   than 1 then redundent sensors may be available
+   than 1 then redundant sensors may be available
  */
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
-#define INS_VIBRATION_CHECK 1
 #define INS_VIBRATION_CHECK_INSTANCES 2
-#else
-#define INS_MAX_INSTANCES 1
-#define INS_MAX_BACKENDS  1
-#define INS_VIBRATION_CHECK 0
-#endif
-
 
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
@@ -66,8 +58,7 @@ public:
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
-        GYRO_CAL_STARTUP_ONLY = 1,
-        GYRO_CAL_STARTUP_AND_FIRST_BOOT = 2
+        GYRO_CAL_STARTUP_ONLY = 1
     };
 
     /// Perform startup initialisation.
@@ -210,7 +201,6 @@ public:
     // enable/disable raw gyro/accel logging
     void set_raw_logging(bool enable) { _log_raw_data = enable; }
 
-#if INS_VIBRATION_CHECK
     // calculate vibration levels and check for accelerometer clipping (called by a backends)
     void calc_vibration_and_clipping(uint8_t instance, const Vector3f &accel, float dt);
 
@@ -220,7 +210,6 @@ public:
 
     // retrieve and clear accelerometer clipping count
     uint32_t get_accel_clip_count(uint8_t instance) const;
-#endif
 
     // check for vibration movement. True when all axis show nearly zero movement
     bool is_still();
@@ -236,7 +225,7 @@ public:
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
-    AuxiliaryBus *get_auxiliar_bus(int16_t backend_id);
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id);
 
 private:
 
@@ -287,11 +276,18 @@ private:
     Vector3f _delta_velocity[INS_MAX_INSTANCES];
     float _delta_velocity_dt[INS_MAX_INSTANCES];
     bool _delta_velocity_valid[INS_MAX_INSTANCES];
+    // delta velocity accumulator
+    Vector3f _delta_velocity_acc[INS_MAX_INSTANCES];
+    // time accumulator for delta velocity accumulator
+    float _delta_velocity_acc_dt[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
     bool _delta_angle_valid[INS_MAX_INSTANCES];
+    Vector3f _delta_angle_acc[INS_MAX_INSTANCES];
+    Vector3f _last_delta_angle[INS_MAX_INSTANCES];
+    Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
@@ -304,8 +300,9 @@ private:
     // accelerometer max absolute offsets to be used for calibration
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
-    // accelerometer sample rate in units of Hz
-    uint32_t _accel_sample_rates[INS_MAX_INSTANCES];
+    // accelerometer and gyro raw sample rate in units of Hz
+    uint32_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    uint32_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
@@ -361,7 +358,6 @@ private:
     uint32_t _accel_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_error_count[INS_MAX_INSTANCES];
 
-#if INS_VIBRATION_CHECK
     // vibration and clipping
     uint32_t _accel_clip_count[INS_MAX_INSTANCES];
     LowPassFilterVector3f _accel_vibe_floor_filter[INS_VIBRATION_CHECK_INSTANCES];
@@ -369,7 +365,6 @@ private:
 
     // threshold for detecting stillness
     AP_Float _still_threshold;
-#endif
 
     /*
       state for HIL support

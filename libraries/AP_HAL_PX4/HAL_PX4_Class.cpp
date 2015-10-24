@@ -114,12 +114,10 @@ static void loop_overtime(void *)
     px4_ran_overtime = true;
 }
 
+static AP_HAL::HAL::Callbacks* g_callbacks;
+
 static int main_loop(int argc, char **argv)
 {
-    extern void setup(void);
-    extern void loop(void);
-
-
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
@@ -140,7 +138,7 @@ static int main_loop(int argc, char **argv)
 
     schedulerInstance.hal_initialized();
 
-    setup();
+    g_callbacks->setup();
     hal.scheduler->system_initialized();
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
@@ -165,7 +163,7 @@ static int main_loop(int argc, char **argv)
          */
         hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
-        loop();
+        g_callbacks->loop();
 
         if (px4_ran_overtime) {
             /*
@@ -202,7 +200,7 @@ static void usage(void)
 }
 
 
-void HAL_PX4::init(int argc, char * const argv[]) const 
+void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     int i;
     const char *deviceA = UARTA_DEFAULT_DEVICE;
@@ -216,6 +214,9 @@ void HAL_PX4::init(int argc, char * const argv[]) const
         usage();
         exit(1);
     }
+
+    assert(callbacks);
+    g_callbacks = callbacks;
 
     for (i=0; i<argc; i++) {
         if (strcmp(argv[i], "start") == 0) {
@@ -307,7 +308,10 @@ void HAL_PX4::init(int argc, char * const argv[]) const
     exit(1);
 }
 
-const HAL_PX4 AP_HAL_PX4;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_PX4 hal_px4;
+    return hal_px4;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
 

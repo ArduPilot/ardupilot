@@ -24,7 +24,7 @@
 
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_Baro_BMP085 bmp085;
 

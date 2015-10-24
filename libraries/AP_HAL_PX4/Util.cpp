@@ -134,4 +134,41 @@ uint16_t PX4Util::available_memory(void)
     return mem.fordblks;
 }
 
+/*
+  AP_HAL wrapper around PX4 perf counters
+ */
+PX4Util::perf_counter_t PX4Util::perf_alloc(PX4Util::perf_counter_type t, const char *name)
+{
+    ::perf_counter_type px4_t;
+    switch (t) {
+    case PX4Util::PC_COUNT:
+        px4_t = ::PC_COUNT;
+        break;
+    case PX4Util::PC_ELAPSED:
+        px4_t = ::PC_ELAPSED;
+        break;
+    case PX4Util::PC_INTERVAL:
+        px4_t = ::PC_INTERVAL;
+        break;
+    default:
+        return NULL;
+    }
+    return (perf_counter_t)::perf_alloc(px4_t, name);
+}
+
+void PX4Util::perf_begin(perf_counter_t h)
+{
+    ::perf_begin((::perf_counter_t)h);
+}
+
+void PX4Util::perf_end(perf_counter_t h)
+{
+    ::perf_end((::perf_counter_t)h);
+}
+
+void PX4Util::perf_count(perf_counter_t h)
+{
+    ::perf_count((::perf_counter_t)h);
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

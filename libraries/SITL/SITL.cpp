@@ -18,12 +18,15 @@
     SITL.cpp - software in the loop state
 */
 
+#include "SITL.h"
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include "SITL.h"
 
 extern const AP_HAL::HAL& hal;
+
+namespace SITL {
 
 // table of user settable parameters
 const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
@@ -93,9 +96,9 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.xAccel,
                               state.yAccel,
                               state.zAccel,
-                              radians(state.rollRate), 
-                              radians(state.pitchRate), 
-                              radians(state.yawRate), 
+                              radians(state.rollRate),
+                              radians(state.pitchRate),
+                              radians(state.yawRate),
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
 }
@@ -170,3 +173,4 @@ Vector3f SITL::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
     return Vector3f(phiDot, thetaDot, psiDot);
 }
 
+} // namespace SITL

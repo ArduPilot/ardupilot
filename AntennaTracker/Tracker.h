@@ -51,7 +51,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <SITL/SITL.h>
 #include <PID/PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF/AP_NavEKF.h>
@@ -76,21 +75,20 @@
 #include "Parameters.h"
 #include <GCS_MAVLink/GCS.h>
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
-class Tracker {
+class Tracker : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
 
     Tracker(void);
-    void setup();
-    void loop();
+
+    // HAL::Callbacks implementation.
+    void setup() override;
+    void loop() override;
 
 private:
     const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
@@ -127,7 +125,7 @@ private:
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
     
     /**

@@ -5,30 +5,30 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-LinuxDigitalSource::LinuxDigitalSource(uint8_t v) :
+DigitalSource::DigitalSource(uint8_t v) :
     _v(v)
 {
 
 }
 
-void LinuxDigitalSource::mode(uint8_t output)
+void DigitalSource::mode(uint8_t output)
 {
     hal.gpio->pinMode(_v, output);
 }
 
-uint8_t LinuxDigitalSource::read()
+uint8_t DigitalSource::read()
 {
     return hal.gpio->read(_v);
 }
 
-void LinuxDigitalSource::write(uint8_t value)
+void DigitalSource::write(uint8_t value)
 {
     return hal.gpio->write(_v,value);
 }
 
-void LinuxDigitalSource::toggle()
+void DigitalSource::toggle()
 {
     write(!read());
 }

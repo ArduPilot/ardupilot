@@ -12,7 +12,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define HMC5883L  0x1E
 

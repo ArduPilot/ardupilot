@@ -16,17 +16,26 @@
 */
 void AP_InertialNav_NavEKF::update(float dt)
 {
-    _ahrs_ekf.get_NavEKF().getPosNED(_relpos_cm);
+    // get the position relative to the local earth frame origin
+    _ahrs_ekf.get_relative_position_NED(_relpos_cm);
     _relpos_cm *= 100; // convert to cm
 
+    // get the absolute WGS-84 position
     _haveabspos = _ahrs_ekf.get_position(_abspos);
 
-    _ahrs_ekf.get_NavEKF().getVelNED(_velocity_cm);
+    // get the velocity relative to the local earth frame
+    _ahrs_ekf.get_velocity_NED(_velocity_cm);
     _velocity_cm *= 100; // convert to cm/s
+
+    // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    _ahrs_ekf.get_vert_pos_rate(_pos_z_rate);
+    _pos_z_rate *= 100; // convert to cm/s
 
     // InertialNav is NEU
     _relpos_cm.z = - _relpos_cm.z;
     _velocity_cm.z = -_velocity_cm.z;
+    _pos_z_rate = - _pos_z_rate;
 }
 
 /**
@@ -34,9 +43,9 @@ void AP_InertialNav_NavEKF::update(float dt)
  */
 nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 {
-    nav_filter_status ret;
-    _ahrs_ekf.get_NavEKF().getFilterStatus(ret);
-    return ret;
+    nav_filter_status status;
+    _ahrs_ekf.get_filter_status(status);
+    return status;
 }
 
 /**
@@ -45,10 +54,10 @@ nav_filter_status AP_InertialNav_NavEKF::get_filter_status() const
 struct Location AP_InertialNav_NavEKF::get_origin() const
 {
     struct Location ret;
-    if (!_ahrs_ekf.get_NavEKF().getOriginLLH(ret)) {
-        // initialise location to all zeros if origin not yet set
-        memset(&ret, 0, sizeof(ret));
-    }
+     if (!_ahrs_ekf.get_origin(ret)) {
+         // initialise location to all zeros if EKF1 origin not yet set
+         memset(&ret, 0, sizeof(ret));
+     }
     return ret;
 }
 
@@ -68,7 +77,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
  */
 bool AP_InertialNav_NavEKF::get_location(struct Location &loc) const
 {
-    return _ahrs_ekf.get_NavEKF().getLLH(loc);
+    return _ahrs_ekf.get_location(loc);
 }
 
 /**
@@ -112,6 +121,14 @@ float AP_InertialNav_NavEKF::get_velocity_xy() const
 }
 
 /**
+ * get_pos_z_derivative - returns the derivative of the z position in cm/s
+*/
+float AP_InertialNav_NavEKF::get_pos_z_derivative() const
+{
+    return _pos_z_rate;
+}
+
+/**
  * get_altitude - get latest altitude estimate in cm
  * @return
  */
@@ -128,7 +145,7 @@ float AP_InertialNav_NavEKF::get_altitude() const
 bool AP_InertialNav_NavEKF::get_hagl(float &height) const
 {
     // true when estimate is valid
-    bool valid = _ahrs_ekf.get_NavEKF().getHAGL(height);
+    bool valid = _ahrs_ekf.get_hagl(height);
     // convert height from m to cm
     height *= 100.0f;
     return valid;
@@ -143,7 +160,7 @@ bool AP_InertialNav_NavEKF::get_hagl(float &height) const
 bool AP_InertialNav_NavEKF::get_hgt_ctrl_limit(float& limit) const
 {
     // true when estimate is valid
-    if (_ahrs_ekf.get_NavEKF().getHeightControlLimit(limit)) {
+    if (_ahrs_ekf.get_hgt_ctrl_limit(limit)) {
         // convert height from m to cm
         limit *= 100.0f;
         return true;

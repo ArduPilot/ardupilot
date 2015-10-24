@@ -9,11 +9,6 @@
 #include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_GPS/AP_GPS.h>
 #include <DataFlash/DataFlash.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -40,7 +35,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // create board led object
 AP_BoardLED board_led;

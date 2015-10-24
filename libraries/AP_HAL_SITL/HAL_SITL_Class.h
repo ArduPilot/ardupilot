@@ -13,7 +13,7 @@
 class HAL_SITL : public AP_HAL::HAL {
 public:
     HAL_SITL();
-    void init(int argc, char * const argv[]) const;
+    void run(int argc, char * const argv[], Callbacks* callbacks) const override;
 
 private:
     HALSITL::SITL_State *_sitl_state;

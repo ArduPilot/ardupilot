@@ -33,7 +33,7 @@
 
 #include "Rover.h"
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Rover rover;
 
@@ -505,16 +505,4 @@ void Rover::update_navigation()
     }
 }
 
-void setup(void);
-void loop(void);
-
-void setup(void)
-{
-    rover.setup();
-}
-void loop(void)
-{
-    rover.loop();
-}
-
-AP_HAL_MAIN();
+AP_HAL_MAIN_CALLBACKS(&rover);

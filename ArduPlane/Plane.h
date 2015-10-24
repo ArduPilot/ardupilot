@@ -69,7 +69,6 @@
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <SITL/SITL.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 
 #include <AP_Navigation/AP_Navigation.h>
@@ -104,13 +103,9 @@
 
 #include "Parameters.h"
 
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
-#include <AP_HAL_SITL/AP_HAL_SITL.h>
-#include <AP_HAL_PX4/AP_HAL_PX4.h>
-#include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_VRBRAIN/AP_HAL_VRBRAIN.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 /*
   a plane specific arming class
@@ -127,20 +122,24 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+protected:
+    bool ins_checks(bool report);
 };
 
 /*
   main APM:Plane class
  */
-class Plane {
+class Plane : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK;
     friend class Parameters;
     friend class AP_Arming_Plane;
 
     Plane(void);
-    void setup();
-    void loop();
+
+    // HAL::Callbacks implementation.
+    void setup() override;
+    void loop() override;
 
 private:
     // key aircraft parameters passed to multiple libraries
@@ -228,7 +227,7 @@ private:
     AP_SteerController steerController {ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
 
     // Training mode

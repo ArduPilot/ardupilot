@@ -18,13 +18,13 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
-LinuxGPIO_RPI::LinuxGPIO_RPI()
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+GPIO_RPI::GPIO_RPI()
 {}
 
-void LinuxGPIO_RPI::init()
+void GPIO_RPI::init()
 {
-    int rpi_version = LinuxUtilRPI::from(hal.util)->get_rpi_version();
+    int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
     uint32_t gpio_address = rpi_version == 1 ? GPIO_BASE(BCM2708_PERI_BASE)   : GPIO_BASE(BCM2709_PERI_BASE);
     uint32_t pwm_address  = rpi_version == 1 ? PWM_BASE(BCM2708_PERI_BASE)    : PWM_BASE(BCM2709_PERI_BASE);
     uint32_t clk_address  = rpi_version == 1 ? CLOCK_BASE(BCM2708_PERI_BASE)  : CLOCK_BASE(BCM2709_PERI_BASE);
@@ -72,7 +72,7 @@ void LinuxGPIO_RPI::init()
     clk  = (volatile uint32_t *)clk_map;
 }
 
-void LinuxGPIO_RPI::pinMode(uint8_t pin, uint8_t output)
+void GPIO_RPI::pinMode(uint8_t pin, uint8_t output)
 {
     if (output == HAL_GPIO_INPUT) {
         GPIO_MODE_IN(pin);
@@ -82,7 +82,7 @@ void LinuxGPIO_RPI::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-void LinuxGPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
+void GPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
 {
     if (output == HAL_GPIO_INPUT) {
         GPIO_MODE_IN(pin);
@@ -95,18 +95,18 @@ void LinuxGPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
     }
 }
 
-int8_t LinuxGPIO_RPI::analogPinToDigitalPin(uint8_t pin)
+int8_t GPIO_RPI::analogPinToDigitalPin(uint8_t pin)
 {
     return -1;
 }
 
-uint8_t LinuxGPIO_RPI::read(uint8_t pin)
+uint8_t GPIO_RPI::read(uint8_t pin)
 {
     uint32_t value = GPIO_GET(pin);
     return value ? 1: 0;
 }
 
-void LinuxGPIO_RPI::write(uint8_t pin, uint8_t value)
+void GPIO_RPI::write(uint8_t pin, uint8_t value)
 {
     if (value == LOW) {
         GPIO_SET_LOW = 1 << pin;
@@ -115,22 +115,22 @@ void LinuxGPIO_RPI::write(uint8_t pin, uint8_t value)
     }
 }
 
-void LinuxGPIO_RPI::toggle(uint8_t pin)
+void GPIO_RPI::toggle(uint8_t pin)
 {
     write(pin, !read(pin));
 }
 
-void LinuxGPIO_RPI::setPWMPeriod(uint8_t pin, uint32_t time_us)
+void GPIO_RPI::setPWMPeriod(uint8_t pin, uint32_t time_us)
 {
     setPWM0Period(time_us);
 }
 
-void LinuxGPIO_RPI::setPWMDuty(uint8_t pin, uint8_t percent)
+void GPIO_RPI::setPWMDuty(uint8_t pin, uint8_t percent)
 {
     setPWM0Duty(percent);
 }
 
-void LinuxGPIO_RPI::setPWM0Period(uint32_t time_us)
+void GPIO_RPI::setPWM0Period(uint32_t time_us)
 {
     // stop clock and waiting for busy flag doesn't work, so kill clock
     *(clk + PWMCLK_CNTL) = 0x5A000000 | (1 << 5);
@@ -165,7 +165,7 @@ void LinuxGPIO_RPI::setPWM0Period(uint32_t time_us)
     *(pwm + PWM_CTL) = 3;
 }
 
-void LinuxGPIO_RPI::setPWM0Duty(uint8_t percent)
+void GPIO_RPI::setPWM0Duty(uint8_t percent)
 {
     int bitCount;
     unsigned int bits = 0;
@@ -183,17 +183,17 @@ void LinuxGPIO_RPI::setPWM0Duty(uint8_t percent)
 }
 
 /* Alternative interface: */
-AP_HAL::DigitalSource* LinuxGPIO_RPI::channel(uint16_t n) {
-    return new LinuxDigitalSource(n);
+AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n) {
+    return new DigitalSource(n);
 }
 
 /* Interrupt interface: */
-bool LinuxGPIO_RPI::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+bool GPIO_RPI::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
 {
     return true;
 }
 
-bool LinuxGPIO_RPI::usb_connected(void)
+bool GPIO_RPI::usb_connected(void)
 {
     return false;
 }

@@ -17,17 +17,18 @@
   simulator connection for ardupilot version of JSBSim
 */
 
-#ifndef _SIM_JSBSIM_H
-#define _SIM_JSBSIM_H
+#pragma once
+
+#include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+
+namespace SITL {
 
 /*
   a Jsbsim simulator
  */
-class JSBSim : public Aircraft
-{
+class JSBSim : public Aircraft {
 public:
     JSBSim(const char *home_str, const char *frame_str);
 
@@ -107,7 +108,7 @@ public:
     float phidot;		// roll rate (radians/sec)
     float thetadot;		// pitch rate (radians/sec)
     float psidot;		// yaw rate (radians/sec)
-    float vcas;		        // calibrated airspeed
+    float vcas;             // calibrated airspeed
     float climb_rate;		// feet per second
     float v_north;              // north velocity in local/body frame, fps
     float v_east;               // east velocity in local/body frame, fps
@@ -129,17 +130,17 @@ public:
     float slip_deg;		// slip ball deflection
 
     // Pressure
-    
+
     // Engine status
-    uint32_t num_engines;	     // Number of valid engines
+    uint32_t num_engines;        // Number of valid engines
     uint32_t eng_state[FG_MAX_ENGINES];// Engine state (off, cranking, running)
-    float rpm[FG_MAX_ENGINES];	     // Engine RPM rev/min
+    float rpm[FG_MAX_ENGINES];       // Engine RPM rev/min
     float fuel_flow[FG_MAX_ENGINES]; // Fuel flow gallons/hr
     float fuel_px[FG_MAX_ENGINES];   // Fuel pressure psi
-    float egt[FG_MAX_ENGINES];	     // Exhuast gas temp deg F
-    float cht[FG_MAX_ENGINES];	     // Cylinder head temp deg F
+    float egt[FG_MAX_ENGINES];       // Exhuast gas temp deg F
+    float cht[FG_MAX_ENGINES];       // Cylinder head temp deg F
     float mp_osi[FG_MAX_ENGINES];    // Manifold pressure
-    float tit[FG_MAX_ENGINES];	     // Turbine Inlet Temperature
+    float tit[FG_MAX_ENGINES];       // Turbine Inlet Temperature
     float oil_temp[FG_MAX_ENGINES];  // Oil temp deg F
     float oil_px[FG_MAX_ENGINES];    // Oil pressure psi
 
@@ -175,4 +176,4 @@ public:
     void ByteSwap(void);
 };
 
-#endif // _SIM_JSBSIM_H
+} // namespace SITL

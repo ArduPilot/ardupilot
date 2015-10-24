@@ -17,18 +17,18 @@
   parent class for aircraft simulators
 */
 
-#ifndef _SIM_AIRCRAFT_H
-#define _SIM_AIRCRAFT_H
+#pragma once
+
+#include <AP_Math/AP_Math.h>
 
 #include "SITL.h"
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
+
+namespace SITL {
 
 /*
   parent class for all simulator types
  */
-class Aircraft
-{
+class Aircraft {
 public:
     Aircraft(const char *home_str, const char *frame_str);
 
@@ -136,5 +136,4 @@ private:
     const uint32_t min_sleep_time;
 };
 
-#endif // _SIM_AIRCRAFT_H
-
+} // namespace SITL

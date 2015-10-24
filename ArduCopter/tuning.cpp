@@ -142,18 +142,31 @@ void Copter::tuning() {
 #if 0
         // disabled for now - we need accessor functions
     case TUNING_EKF_VERTICAL_POS:
+        // Tune the EKF that is being used
         // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
-        ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
+        if (!ahrs.get_NavEKF2().enabled()) {
+            ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
+        } else {
+            ahrs.get_NavEKF2()._gpsVertPosNoise = tuning_value;
+        }
         break;
 
     case TUNING_EKF_HORIZONTAL_POS:
         // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
-        ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
+        if (!ahrs.get_NavEKF2().enabled()) {
+            ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
+        } else {
+            ahrs.get_NavEKF2()._gpsHorizPosNoise = tuning_value;
+        }
         break;
 
     case TUNING_EKF_ACCEL_NOISE:
         // EKF's accel noise (lower means trust accels more, gps & baro less)
-        ahrs.get_NavEKF()._accNoise = tuning_value;
+        if (!ahrs.get_NavEKF2().enabled()) {
+            ahrs.get_NavEKF()._accNoise = tuning_value;
+        } else {
+            ahrs.get_NavEKF2()._accNoise = tuning_value;
+        }
         break;
 #endif
 

@@ -608,7 +608,7 @@ void SmallEKF::readMagData()
         lastMagUpdate = _ahrs.get_compass()->last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
-        magData = _ahrs.get_compass()->get_field_milligauss();
+        magData = _ahrs.get_compass()->get_field();
 
         // let other processes know that new compass data has arrived
         newDataMag = true;

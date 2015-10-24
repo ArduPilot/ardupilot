@@ -9,7 +9,7 @@ extern AP_HAL::HAL& hal;
 void
 Compass::compass_cal_update()
 {
-    AP_Notify::flags.compass_cal_running = 0;
+    bool running = false;
 
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         bool failure;
@@ -24,9 +24,12 @@ Compass::compass_cal_update()
         }
 
         if (_calibrator[i].running()) {
-            AP_Notify::flags.compass_cal_running = 1;
+            running = true;
         }
     }
+
+    AP_Notify::flags.compass_cal_running = running;
+
     if (is_calibrating()) {
         _cal_has_run = true;
         return;
@@ -91,9 +94,12 @@ Compass::start_calibration_all(bool retry, bool autosave, float delay, bool auto
 void
 Compass::cancel_calibration(uint8_t i)
 {
-    _calibrator[i].clear();
-    AP_Notify::events.compass_cal_canceled = 1;
     AP_Notify::events.initiated_compass_cal = 0;
+
+    if (_calibrator[i].running() || _calibrator[i].get_status() == COMPASS_CAL_WAITING_TO_START) {
+        AP_Notify::events.compass_cal_canceled = 1;
+    }
+    _calibrator[i].clear();
 }
 
 void

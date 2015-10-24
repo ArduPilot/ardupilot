@@ -26,6 +26,7 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
+using namespace SITL;
 
 // catch floating point exceptions
 static void _sig_fpe(int signum)
@@ -62,7 +63,7 @@ static const struct {
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
-    { "rover",              Rover::create },
+    { "rover",              SimRover::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
     { "gazebo",             Gazebo::create },

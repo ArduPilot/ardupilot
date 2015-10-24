@@ -6,7 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /** 
  * You'll want to use a logic analyzer to watch the effects of this test.

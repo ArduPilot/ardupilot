@@ -47,6 +47,8 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
+#define FORMAT(a,b) __attribute__((format(printf, a, b)))
+
 // Make some dire warnings into errors
 //
 // Some warnings indicate questionable code; rather than let
@@ -69,6 +71,8 @@
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
+
+#define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
 /*
   check if bit bitnumber is set in value, returned as a

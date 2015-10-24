@@ -146,8 +146,35 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     if (recover_eulers && !isnan(roll) && !isnan(pitch) && !isnan(yaw)) {
         _dcm_matrix.from_euler(roll, pitch, yaw);
     } else {
-        // otherwise make it flat
-        _dcm_matrix.from_euler(0, 0, 0);
+
+        // Use the measured accel due to gravity to calculate an initial
+        // roll and pitch estimate
+
+        // Get body frame accel vector
+        Vector3f initAccVec;
+        uint8_t counter = 0;
+        initAccVec = _ins.get_accel();
+
+        // the first vector may be invalid as the filter starts up
+        while (initAccVec.length() <= 5.0f && counter++ < 10) {
+            _ins.wait_for_sample();
+            _ins.update();
+            initAccVec = _ins.get_accel();
+        }
+
+        // normalise the acceleration vector
+        if (initAccVec.length() > 5.0f) {
+            // calculate initial pitch angle
+            pitch = atan2f(initAccVec.x, pythagorous2(initAccVec.y, initAccVec.z));
+            // calculate initial roll angle
+            roll = atan2f(-initAccVec.y, -initAccVec.z);
+        } else {
+            // If we cant use the accel vector, then align flat
+            roll = 0.0f;
+            pitch = 0.0f;
+        }
+        _dcm_matrix.from_euler(roll, pitch, 0);
+
     }
 
     _last_startup_ms = hal.scheduler->millis();
@@ -276,7 +303,7 @@ AP_AHRS_DCM::normalize(void)
 float
 AP_AHRS_DCM::yaw_error_compass(void)
 {
-    const Vector3f &mag = _compass->get_field_milligauss();
+    const Vector3f &mag = _compass->get_field();
     // get the mag vector in the earth frame
     Vector2f rb = _dcm_matrix.mulXY(mag);
 

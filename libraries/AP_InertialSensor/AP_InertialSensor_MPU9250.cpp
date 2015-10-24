@@ -315,7 +315,8 @@ bool AP_InertialSensor_MPU9250::_init_sensor(AP_HAL::SPIDeviceDriver *spi)
     // start the timer process to read samples
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
 
-    _set_accel_sample_rate(_accel_instance, DEFAULT_SAMPLE_RATE);
+    _set_accel_raw_sample_rate(_accel_instance, DEFAULT_SAMPLE_RATE);
+    _set_gyro_raw_sample_rate(_gyro_instance, DEFAULT_SAMPLE_RATE);
 
 #if MPU9250_DEBUG
     _dump_registers(_spi);
@@ -404,6 +405,7 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     gyro *= GYRO_SCALE;
     gyro.rotate(_default_rotation);
     _rotate_and_correct_gyro(_gyro_instance, gyro);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
 
     // update the shared buffer

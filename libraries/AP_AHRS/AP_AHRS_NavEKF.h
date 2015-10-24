@@ -28,6 +28,7 @@
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #define AP_AHRS_NAVEKF_AVAILABLE 1
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
@@ -35,12 +36,19 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM
 {
 public:
+    enum Flags {
+        FLAG_NONE = 0,
+        FLAG_ALWAYS_USE_EKF = 0x1,
+    };
+
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2) :
+                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE
+        ) :
         AP_AHRS_DCM(ins, baro, gps),
         EKF1(_EKF1),
-        EKF2(_EKF2)
+        EKF2(_EKF2),
+        _flags(flags)
     {
     }
 
@@ -63,6 +71,9 @@ public:
 
     // dead-reckoning support
     bool get_position(struct Location &loc) const;
+
+    // get latest altitude estimate above ground level in metres and validity flag
+    bool get_hagl(float &hagl) const;
 
     // status reporting of estimated error
     float           get_error_rp(void) const;
@@ -113,10 +124,17 @@ public:
     // set home location
     void set_home(const Location &loc);
 
+    // returns the inertial navigation origin in lat/lon/alt
+    bool get_origin(Location &ret) const;
+
     bool have_inertial_nav(void) const;
 
     bool get_velocity_NED(Vector3f &vec) const;
     bool get_relative_position_NED(Vector3f &vec) const;
+
+    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
+    bool get_vert_pos_rate(float &velocity);
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas);
@@ -134,6 +152,9 @@ public:
 
     // true if the AHRS has completed initialisation
     bool initialised(void) const;
+
+    // get_filter_status - returns filter status as a series of flags
+    bool get_filter_status(nav_filter_status &status) const;
 
     // get compass offset estimates
     // true if offsets are valid
@@ -156,9 +177,28 @@ public:
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(mavlink_channel_t chan);
     
+    // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+    // this is used to limit height during optical flow navigation
+    // it will return invalid when no limiting is required
+    bool get_hgt_ctrl_limit(float &limit) const;
+
+    // get_llh - updates the provided location with the latest calculated location including absolute altitude
+    //  returns true on success (i.e. the EKF knows it's latest position), false on failure
+    bool get_location(struct Location &loc) const;
+
+    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
+    // inconsistency that will be accpeted by the filter
+    // boolean false is returned if variances are not available
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
     EKF_TYPE active_EKF_type(void) const;
+
+    bool always_use_EKF() const {
+        return _flags & FLAG_ALWAYS_USE_EKF;
+    }
 
     NavEKF &EKF1;
     NavEKF2 &EKF2;
@@ -172,6 +212,7 @@ private:
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms = 0;
+    Flags _flags;
 
     uint8_t ekf_type(void) const;
     void update_DCM(void);

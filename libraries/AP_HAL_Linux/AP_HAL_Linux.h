@@ -18,19 +18,11 @@
  * All declaration and compilation should be guarded by CONFIG_HAL_BOARD macros.
  * In this case, we're using CONFIG_HAL_BOARD == HAL_BOARD_LINUX.
  * When creating a new HAL, declare a new HAL_BOARD_ in AP_HAL/AP_HAL_Boards.h
- *
- * The module should also export an appropriate AP_HAL_MAIN() macro iff the
- * appropriate CONFIG_HAL_BOARD value is set.
- * The AP_HAL_MAIN macro expands to a main function (either an `int main (void)`
- * or `int main (int argc, const char * argv[]), depending on platform) of an
- * ArduPilot application, whose entry points are the c++ functions
- * `void setup()` and `void loop()`, ala Arduino.
  */
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #include "HAL_Linux_Class.h"
-#include "AP_HAL_Linux_Main.h"
 
 #endif // CONFIG_HAL_BOARD
 #endif //__AP_HAL_LINUX_H__

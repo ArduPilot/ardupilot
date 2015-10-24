@@ -116,11 +116,13 @@ void AP_MotorsSingle::enable()
 void AP_MotorsSingle::output_min()
 {
     // send minimum value to each motor
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_3, _servo3.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_4, _servo4.radio_trim);
     hal.rcout->write(AP_MOTORS_MOT_7, _throttle_radio_min);
+    hal.rcout->push();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -172,11 +174,13 @@ void AP_MotorsSingle::output_armed_not_stabilizing()
         throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
     }
 
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, _servo3.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_4, _servo4.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_7, throttle_radio_output);
+    hal.rcout->push();
 }
 
 // sends commands to the motors
@@ -229,11 +233,13 @@ void AP_MotorsSingle::output_armed_stabilizing()
     _servo4.calc_pwm();
 
     // send output to each motor
+    hal.rcout->cork();
     hal.rcout->write(AP_MOTORS_MOT_1, _servo1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _servo2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, _servo3.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_4, _servo4.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_7, throttle_radio_output);
+    hal.rcout->push();
 }
 
 // output_disarmed - sends commands to the motors

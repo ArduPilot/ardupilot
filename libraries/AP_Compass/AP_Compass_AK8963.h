@@ -18,13 +18,13 @@ public:
     };
 
     virtual ~AP_AK8963_SerialBus() { }
-    virtual void register_read(uint8_t address, uint8_t *value, uint8_t count) = 0;
-    uint8_t register_read(uint8_t address) {
-        uint8_t reg;
-        register_read(address, &reg, 1);
-        return reg;
+    virtual void register_read(uint8_t reg, uint8_t *value, uint8_t count) = 0;
+    uint8_t register_read(uint8_t reg) {
+        uint8_t value;
+        register_read(reg, &value, 1);
+        return value;
     }
-    virtual void register_write(uint8_t address, uint8_t value) = 0;
+    virtual void register_write(uint8_t reg, uint8_t value) = 0;
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
     virtual bool configure() = 0;
     virtual bool start_measurements() = 0;
@@ -35,7 +35,7 @@ public:
 class AP_Compass_AK8963 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *detect_mpu9250(Compass &compass);
+    static AP_Compass_Backend *detect_mpu9250(Compass &compass, AP_HAL::SPIDeviceDriver *spi);
     static AP_Compass_Backend *detect_i2c(Compass &compass,
                                           AP_HAL::I2CDriver *i2c,
                                           uint8_t addr);
@@ -85,43 +85,41 @@ private:
 class AP_AK8963_SerialBus_MPU9250: public AP_AK8963_SerialBus
 {
 public:
-    AP_AK8963_SerialBus_MPU9250();
-    void register_read(uint8_t address, uint8_t *value, uint8_t count);
-    void register_write(uint8_t address, uint8_t value);
+    AP_AK8963_SerialBus_MPU9250(AP_HAL::SPIDeviceDriver *spi);
+    void register_read(uint8_t reg, uint8_t *value, uint8_t count);
+    void register_write(uint8_t reg, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
     bool configure();
     bool start_measurements();
     void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
-    void _read(uint8_t address, uint8_t *value, uint32_t count);
-    void _write(uint8_t address, const uint8_t *value,  uint32_t count);
-    void _write(uint8_t address, const uint8_t value) {
-        _write(address, &value, 1);
+    void _read(uint8_t reg, uint8_t *value, uint32_t count);
+    void _write(uint8_t reg, const uint8_t *value,  uint32_t count);
+    void _write(uint8_t reg, const uint8_t value) {
+        _write(reg, &value, 1);
     }
     AP_HAL::SPIDeviceDriver *_spi;
-    AP_HAL::Semaphore *_spi_sem;
 };
 
 class AP_AK8963_SerialBus_I2C: public AP_AK8963_SerialBus
 {
 public:
     AP_AK8963_SerialBus_I2C(AP_HAL::I2CDriver *i2c, uint8_t addr);
-    void register_read(uint8_t address, uint8_t *value, uint8_t count);
-    void register_write(uint8_t address, uint8_t value);
+    void register_read(uint8_t reg, uint8_t *value, uint8_t count);
+    void register_write(uint8_t reg, uint8_t value);
     AP_HAL::Semaphore* get_semaphore();
     bool configure(){ return true; }
     bool start_measurements() { return true; }
     void read_raw(struct raw_value *rv);
     uint32_t get_dev_id();
 private:
-    void _read(uint8_t address, uint8_t *value, uint32_t count);
-    void _write(uint8_t address, const uint8_t *value,  uint32_t count);
-    void _write(uint8_t address, const uint8_t value) {
-        _write(address, &value, 1);
+    void _read(uint8_t reg, uint8_t *value, uint32_t count);
+    void _write(uint8_t reg, const uint8_t *value,  uint32_t count);
+    void _write(uint8_t reg, const uint8_t value) {
+        _write(reg, &value, 1);
     }
     AP_HAL::I2CDriver *_i2c;
-    AP_HAL::Semaphore *_i2c_sem;
     uint8_t _addr;
 };
 #endif

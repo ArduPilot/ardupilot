@@ -245,6 +245,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         // Adjust for chip scaling to get radians/sec
         gyro *= FLYMAPLE_GYRO_SCALE_R_S;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
         _gyro_filtered = _gyro_filter.apply(gyro);
         _have_gyro_sample = true;
         _last_gyro_timestamp = now;

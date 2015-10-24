@@ -9,7 +9,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -21,7 +20,7 @@
 
 #include "simplegcs.h"
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void flush_console_to_statustext() {
     uint8_t data[50];

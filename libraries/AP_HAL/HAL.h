@@ -4,13 +4,13 @@
 
 #include "AP_HAL_Namespace.h"
 
-#include "../AP_HAL/UARTDriver.h"
-#include "../AP_HAL/SPIDriver.h"
-#include "../AP_HAL/AnalogIn.h"
-#include "../AP_HAL/Storage.h"
-#include "../AP_HAL/GPIO.h"
-#include "../AP_HAL/RCInput.h"
-#include "../AP_HAL/RCOutput.h"
+#include "AnalogIn.h"
+#include "GPIO.h"
+#include "RCInput.h"
+#include "RCOutput.h"
+#include "SPIDriver.h"
+#include "Storage.h"
+#include "UARTDriver.h"
 
 class AP_HAL::HAL {
 public:
@@ -51,7 +51,23 @@ public:
         util(_util)
     {}
 
-    virtual void init(int argc, char * const argv[]) const = 0;
+    struct Callbacks {
+        virtual void setup() = 0;
+        virtual void loop() = 0;
+    };
+
+    struct FunCallbacks : public Callbacks {
+        FunCallbacks(void (*setup_fun)(void), void (*loop_fun)(void));
+
+        void setup() override { _setup(); }
+        void loop() override { _loop(); }
+
+    private:
+        void (*_setup)(void);
+        void (*_loop)(void);
+    };
+
+    virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;

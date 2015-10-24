@@ -90,6 +90,7 @@ public:
         GPS_TYPE_SBP   = 8,
         GPS_TYPE_PX4   = 9,
         GPS_TYPE_SBF   = 10,
+		GPS_TYPE_GSOF  = 11,
     };
 
     /// GPS status codes
@@ -435,5 +436,6 @@ private:
 #include "AP_GPS_SBP.h"
 #include "AP_GPS_PX4.h"
 #include "AP_GPS_SBF.h"
+#include "AP_GPS_GSOF.h"
 
 #endif // __AP_GPS_H__

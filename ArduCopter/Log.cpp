@@ -60,11 +60,9 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
     int16_t dump_log_num;
     uint16_t dump_log_start;
     uint16_t dump_log_end;
-    uint16_t last_log_num;
 
     // check that the requested log number can be read
     dump_log_num = argv[1].i;
-    last_log_num = DataFlash.find_last_log();
 
     if (dump_log_num == -2) {
         DataFlash.DumpPageInfo(cliSerial);
@@ -73,7 +71,7 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
         cliSerial->printf_P(PSTR("dumping all\n"));
         Log_Read(0, 1, 0);
         return(-1);
-    } else if ((argc != 2) || ((uint16_t)dump_log_num <= (last_log_num - DataFlash.get_num_logs())) || (static_cast<uint16_t>(dump_log_num) > last_log_num)) {
+    } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
         cliSerial->printf_P(PSTR("bad log number\n"));
         return(-1);
     }
@@ -767,7 +765,7 @@ const struct LogStructure Copter::log_structure[] PROGMEM = {
 
 #if CLI_ENABLED == ENABLED
 // Read the DataFlash log memory
-void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
+void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
     cliSerial->printf_P(PSTR("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"
@@ -776,7 +774,7 @@ void Copter::Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page)
 
     cliSerial->println_P(PSTR(HAL_BOARD_NAME));
 
-    DataFlash.LogReadProcess(log_num, start_page, end_page, 
+    DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Copter::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),
                              cliSerial);
 }

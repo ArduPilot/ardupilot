@@ -6,6 +6,8 @@
  * wrap the whole HAL_AVR_APM1 class declaration and definition. */
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
+#include <assert.h>
+
 #include "AP_HAL_AVR.h"
 #include "AP_HAL_AVR_private.h"
 #include "HAL_AVR_APM1_Class.h"
@@ -56,10 +58,12 @@ HAL_AVR_APM1::HAL_AVR_APM1() :
         &avrUtil )
 {}
 
-void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
+void HAL_AVR_APM1::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
 
     scheduler->init((void*)&isrRegistry);
-   
+
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(115200);
@@ -84,8 +88,18 @@ void HAL_AVR_APM1::init(int argc, char * const argv[]) const {
     PORTE |= _BV(0);
     PORTD |= _BV(2);
     PORTJ |= _BV(0);
-};
 
-const HAL_AVR_APM1 AP_HAL_AVR_APM1;
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
+}
+
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_AVR_APM1 hal;
+    return hal;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_APM1

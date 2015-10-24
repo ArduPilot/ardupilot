@@ -374,10 +374,15 @@ void *PX4Scheduler::_storage_thread(void)
     return NULL;
 }
 
-void PX4Scheduler::panic(const prog_char_t *errormsg) 
+void PX4Scheduler::panic(const prog_char_t *errormsg, ...)
 {
-    write(1, errormsg, strlen(errormsg));
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.scheduler->delay_microseconds(10000);
     _px4_thread_should_exit = true;
     exit(1);

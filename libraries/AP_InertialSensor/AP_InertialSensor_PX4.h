@@ -78,12 +78,6 @@ private:
     LowPassFilter2pVector3f _accel_filter[INS_MAX_INSTANCES];
     LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
 
-    Vector3f _delta_angle_accumulator[INS_MAX_INSTANCES];
-    Vector3f _delta_velocity_accumulator[INS_MAX_INSTANCES];
-    float _delta_velocity_dt[INS_MAX_INSTANCES];
-    Vector3f _last_delAng[INS_MAX_INSTANCES];
-    Vector3f _last_gyro[INS_MAX_INSTANCES];
-
 #ifdef AP_INERTIALSENSOR_PX4_DEBUG
     uint32_t _gyro_meas_count[INS_MAX_INSTANCES];
     uint32_t _accel_meas_count[INS_MAX_INSTANCES];

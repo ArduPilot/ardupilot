@@ -8,11 +8,10 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_AVR/AP_HAL_AVR.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_PerfMon/AP_PerfMon.h>        // PerfMonitor library
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_PERFMON_REGISTER_FN(setup)
 AP_PERFMON_REGISTER_FN(loop)

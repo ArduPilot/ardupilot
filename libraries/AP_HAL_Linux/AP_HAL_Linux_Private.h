@@ -19,6 +19,7 @@
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
 #include "RCInput_Navio.h"
+#include "RCInput_UART.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Raspilot.h"
 #include "RCOutput_PRU.h"
@@ -32,6 +33,8 @@
 #include "ToneAlarmDriver.h"
 #include "Util.h"
 #include "Util_RPI.h"
+#include "Heat.h"
+#include "Heat_Pwm.h"
 
 #endif // __AP_HAL_LINUX_PRIVATE_H__
 

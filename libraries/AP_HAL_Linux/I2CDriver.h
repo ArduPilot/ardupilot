@@ -4,11 +4,11 @@
 
 #include "AP_HAL_Linux.h"
 
-class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
+class Linux::I2CDriver : public AP_HAL::I2CDriver {
 public:
-    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
-    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
-    ~LinuxI2CDriver();
+    I2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    I2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
+    ~I2CDriver();
 
     void begin();
     void end();

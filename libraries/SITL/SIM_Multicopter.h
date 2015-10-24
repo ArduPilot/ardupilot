@@ -17,10 +17,11 @@
   multicopter simulator class
 */
 
-#ifndef _SIM_MULTICOPTER_H
-#define _SIM_MULTICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   class to describe a motor position
@@ -58,8 +59,7 @@ public:
 /*
   a multicopter simulator
  */
-class MultiCopter : public Aircraft
-{
+class MultiCopter : public Aircraft {
 public:
     MultiCopter(const char *home_str, const char *frame_str);
 
@@ -80,5 +80,4 @@ private:
     float thrust_scale;
 };
 
-
-#endif // _SIM_MULTICOPTER_H
+} // namespace SITL

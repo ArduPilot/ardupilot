@@ -5,15 +5,9 @@
 //
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup(void)
 {

@@ -493,7 +493,7 @@ void Copter::one_hz_loop()
 #endif
     }
 
-    // update assigned functions and enable auxiliar servos
+    // update assigned functions and enable auxiliary servos
     RC_Channel_aux::enable_aux_servos();
 
     check_usb_mux();
@@ -644,20 +644,4 @@ void Copter::update_altitude()
     }
 }
 
-/*
-  compatibility with old pde style build
- */
-void setup(void);
-void loop(void);
-
-void setup(void)
-{
-    copter.setup();
-}
-void loop(void)
-{
-    copter.loop();
-}
-
-AP_HAL_MAIN();
-
+AP_HAL_MAIN_CALLBACKS(&copter);

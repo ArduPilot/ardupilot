@@ -15,11 +15,11 @@
 
 #include "px4io_protocol.h"
 
-static const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 using namespace Linux;
 
-void LinuxRCInput_Raspilot::init(void*)
+void RCInput_Raspilot::init(void*)
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
     _spi_sem = _spi->get_semaphore();
@@ -31,10 +31,10 @@ void LinuxRCInput_Raspilot::init(void*)
     }
 
     // start the timer process to read samples
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&LinuxRCInput_Raspilot::_poll_data, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&RCInput_Raspilot::_poll_data, void));
 }
 
-void LinuxRCInput_Raspilot::_poll_data(void)
+void RCInput_Raspilot::_poll_data(void)
 {
     // Throttle read rate to 100hz maximum.
     if (hal.scheduler->micros() - _last_timer < 10000) {

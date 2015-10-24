@@ -19,7 +19,7 @@
   constructor for main Copter class
  */
 
-const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Copter::Copter(void) :
     ins_sample_rate(AP_InertialSensor::RATE_400HZ),

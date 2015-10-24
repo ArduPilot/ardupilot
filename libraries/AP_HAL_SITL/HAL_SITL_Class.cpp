@@ -4,6 +4,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
+#include <assert.h>
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -64,8 +66,10 @@ HAL_SITL::HAL_SITL() :
     _sitl_state(&sitlState)
 {}
 
-void HAL_SITL::init(int argc, char * const argv[]) const
+void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+    assert(callbacks);
+
     _sitl_state->init(argc, argv);
     scheduler->init(NULL);
     uartA->begin(115200);
@@ -77,8 +81,18 @@ void HAL_SITL::init(int argc, char * const argv[]) const
     //i2c->begin();
     //i2c->setTimeout(100);
     analogin->init(NULL);
+
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
 }
 
-const HAL_SITL AP_HAL_SITL;
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_SITL hal;
+    return hal;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

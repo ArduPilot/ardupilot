@@ -59,11 +59,14 @@ ArduCopter/mav.parm
 ArduCopter/terrain/*.DAT
 ArduCopter/test.ArduCopter/
 ArduCopter/test/*
+ArduCopter/way.txt
 ArduPlane/logs/
 ArduPlane/mav.parm
 ArduPlane/test/*
 ArduPlane/terrain/*.DAT
 ArduPlane/test.ArduPlane/
+ArduPlane/way.txt
+APMrover2/way.txt
 APMrover2/logs/
 APMrover2/mav.parm
 APMrover2/test.APMrover2/

@@ -56,14 +56,6 @@
  *
  * The fitting algorithm used is Levenberg-Marquardt. See also:
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
- *
- * The sample acceptance distance is determined as follows:
- * for any regular polyhedron with Triangular faces
- * angle subtended by two closest point = arccos(cos(A)/(1-cos(A)))
- *                                      : where A = (4pi/F + pi)/3
- *                                      : and F is the number of faces
- *          for polyhedron in consideration F = 2V-4 (where V is vertices or points in our case)
- * above equation was proved after solving for spherical triangular excess and related equations
  */
 
 #include "CompassCalibrator.h"
@@ -253,13 +245,11 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-            if(_sample_buffer != NULL) {
-                initialize_fit();
-                _status = COMPASS_CAL_RUNNING_STEP_ONE;
-                return true;
+            if (_sample_buffer == NULL) {
+                _sample_buffer =
+                        (CompassSample*) malloc(sizeof(CompassSample) *
+                                                COMPASS_CAL_NUM_SAMPLES);
             }
-
-            _sample_buffer = (CompassSample*)malloc(sizeof(CompassSample)*COMPASS_CAL_NUM_SAMPLES);
 
             if(_sample_buffer != NULL) {
                 initialize_fit();
@@ -356,15 +346,32 @@ void CompassCalibrator::thin_samples() {
     }
 }
 
+/*
+ * The sample acceptance distance is determined as follows:
+ * For any regular polyhedron with triangular faces, the angle theta subtended
+ * by two closest points is defined as
+ *
+ *      theta = arccos(cos(A)/(1-cos(A)))
+ *
+ * Where:
+ *      A = (4pi/F + pi)/3
+ * and
+ *      F = 2V - 4 is the number of faces for the polyhedron in consideration,
+ *      which depends on the number of vertices V
+ *
+ * The above equation was proved after solving for spherical triangular excess
+ * and related equations.
+ */
 bool CompassCalibrator::accept_sample(const Vector3f& sample)
 {
+    static const uint16_t faces = (2 * COMPASS_CAL_NUM_SAMPLES - 4);
+    static const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
+    static const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
+
     if(_sample_buffer == NULL) {
         return false;
     }
 
-    float faces = 2*COMPASS_CAL_NUM_SAMPLES-4;
-    float theta = acosf(cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)/(1.0f-cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)));
-    theta *= 0.5f;
     float min_distance = _params.radius * 2*sinf(theta/2);
 
     for (uint16_t i = 0; i<_samples_collected; i++){

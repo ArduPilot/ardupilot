@@ -33,19 +33,6 @@
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 
-// Copter defaults to EKF on by default, all others off
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-# define AHRS_EKF_USE_ALWAYS     1
-#else
-# define AHRS_EKF_USE_ALWAYS     0
-#endif
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AHRS_EKF_USE_DEFAULT    1
-#else
-#define AHRS_EKF_USE_DEFAULT    0
-#endif
-
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter

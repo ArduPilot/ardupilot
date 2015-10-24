@@ -295,6 +295,11 @@ void AP_Baro::init(void)
         drivers[0] = new AP_Baro_MS5611(*this, new AP_SerialBus_I2C(hal.i2c, HAL_BARO_MS5611_I2C_ADDR), false);
         _num_drivers = 1;
     }
+#elif HAL_BARO_DEFAULT == HAL_BARO_MS5611 && HAL_BARO_MS5611_I2C_BUS == 1
+    {
+        drivers[0] = new AP_Baro_MS5611(*this, new AP_SerialBus_I2C(hal.i2c1, HAL_BARO_MS5611_I2C_ADDR), false);
+        _num_drivers = 1;
+    }
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611_SPI
     {
         drivers[0] = new AP_Baro_MS5611(*this, 
@@ -308,7 +313,14 @@ void AP_Baro::init(void)
         drivers[0] = new AP_Baro_MS5607(*this, new AP_SerialBus_I2C(hal.i2c1, HAL_BARO_MS5607_I2C_ADDR), true);
         _num_drivers = 1;
     }
-#endif    
+#elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
+    {
+        AP_SerialBus *bus = new AP_SerialBus_I2C(HAL_BARO_MS5611_I2C_POINTER,
+                                                 HAL_BARO_MS5611_I2C_ADDR);
+        drivers[0] = new AP_Baro_MS5637(*this, bus, true);
+        _num_drivers = 1;
+    }
+#endif
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
         hal.scheduler->panic(PSTR("Baro: unable to initialise driver"));
     }
@@ -368,7 +380,7 @@ void AP_Baro::update(void)
 }
 
 /*
-  call accululate on all drivers
+  call accumulate on all drivers
  */
 void AP_Baro::accumulate(void)
 {
