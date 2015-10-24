@@ -492,11 +492,6 @@ void NavEKF2_core::FuseMagnetometer()
             if (!magHealth && (PV_AidingMode == AID_ABSOLUTE)) {
                 Kfusion[j] *= 0.25f;
             }
-            // If in the air and there is no other form of heading reference or we are yawing rapidly which creates larger inertial yaw errors,
-            // we strengthen the magnetometer attitude correction
-            if (motorsArmed && ((PV_AidingMode == AID_NONE) || highYawRate) && j <= 3) {
-                Kfusion[j] *= 4.0f;
-            }
             statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
         }
 

@@ -150,8 +150,6 @@ void NavEKF2_core::InitialiseVariables()
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
-    highYawRate = false;
-    yawRateFilt = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
     tiltErrFilt = 1.0f;
@@ -736,14 +734,9 @@ void NavEKF2_core::CovariancePrediction()
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
     float _gyrNoise = constrain_float(frontend._gyrNoise, 1e-3f, 5e-2f);
-    daxNoise = dt*_gyrNoise;
-    dayNoise = dt*_gyrNoise;
-    // Account for 3% scale factor error on Z angular rate. This reduces chance of continuous fast rotations causing loss of yaw reference.
-    dazNoise = dt*(pythagorous2(_gyrNoise,0.03f*yawRateFilt));
+    daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
     float _accNoise = constrain_float(frontend._accNoise, 5e-2f, 1.0f);
-    dvxNoise = dt*_accNoise;
-    dvyNoise = dt*_accNoise;
-    dvzNoise = dt*_accNoise;
+    dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the upper diagonal and copy to take advantage of symmetry
