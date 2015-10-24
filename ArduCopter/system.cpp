@@ -234,7 +234,7 @@ void Copter::init_ardupilot()
     while (barometer.get_last_update() == 0) {
         // the barometer begins updating when we get the first
         // HIL_STATE message
-        gcs_send_text_P(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
+        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
         delay(1000);
     }
 

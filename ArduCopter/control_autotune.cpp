@@ -1007,19 +1007,19 @@ void Copter::autotune_update_gcs(uint8_t message_id)
 {
     switch (message_id) {
         case AUTOTUNE_MESSAGE_STARTED:
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,"AutoTune: Started");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"AutoTune: Started");
             break;
         case AUTOTUNE_MESSAGE_STOPPED:
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,"AutoTune: Stopped");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"AutoTune: Stopped");
             break;
         case AUTOTUNE_MESSAGE_SUCCESS:
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,"AutoTune: Success");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"AutoTune: Success");
             break;
         case AUTOTUNE_MESSAGE_FAILED:
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,"AutoTune: Failed");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"AutoTune: Failed");
             break;
         case AUTOTUNE_MESSAGE_SAVED_GAINS:
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,"AutoTune: Saved Gains");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"AutoTune: Saved Gains");
             break;
     }
 }

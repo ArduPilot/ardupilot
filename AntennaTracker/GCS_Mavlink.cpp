@@ -919,7 +919,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(MAV_SEVERITY_WARNING, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_WARNING, "Initialising APM...");
     }
     in_mavlink_delay = false;
 }
@@ -960,7 +960,7 @@ void Tracker::gcs_update(void)
     }
 }
 
-void Tracker::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
+void Tracker::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
