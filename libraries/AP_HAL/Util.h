@@ -4,21 +4,14 @@
 
 #include <stdarg.h>
 #include "AP_HAL_Namespace.h"
-#include <AP_Progmem/AP_Progmem.h>
 
 class AP_HAL::Util {
 public:
     int snprintf(char* str, size_t size,
                  const char *format, ...);
 
-    int snprintf_P(char* str, size_t size,
-                   const prog_char_t *format, ...);
-
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
-
-    int vsnprintf_P(char* str, size_t size,
-                    const prog_char_t *format, va_list ap);
 
     void set_soft_armed(const bool b) { soft_armed = b; }
     bool get_soft_armed() const { return soft_armed; }
