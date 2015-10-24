@@ -422,6 +422,55 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_
     _rate_bf_target += _rate_bf_desired;
 }
 
+void AC_AttitudeControl::reset_angle_error_integrator()
+{
+    _angle_err_quat.initialise();
+}
+
+void AC_AttitudeControl::rate_bf_roll_pitch_yaw_integrated(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf)
+{
+    // update the rate feed forward with angular acceleration limits
+    if (_accel_roll_max > 0.0f) {
+        _rate_bf_desired.x += constrain_float(roll_rate_bf - _rate_bf_desired.x, -_accel_roll_max * _dt, _accel_roll_max * _dt);
+    } else {
+        _rate_bf_desired.x = roll_rate_bf;
+    }
+
+    // update the rate feed forward with angular acceleration limits
+    if (_accel_pitch_max > 0.0f) {
+        _rate_bf_desired.y += constrain_float(pitch_rate_bf - _rate_bf_desired.y, -_accel_pitch_max * _dt, _accel_pitch_max * _dt);
+    } else {
+        _rate_bf_desired.y = pitch_rate_bf;
+    }
+
+    if (_accel_yaw_max > 0.0f) {
+        _rate_bf_desired.z += constrain_float(yaw_rate_bf - _rate_bf_desired.z, -_accel_yaw_max * _dt, _accel_yaw_max * _dt);
+    } else {
+        _rate_bf_desired.z = yaw_rate_bf;
+    }
+
+    // integrate error
+    // NOTE: this should use delta angles from the ins, corrected using the gyro bias from the EKF
+    // but the API is too deficient to do this cleanly
+    _angle_err_quat.rotate(_rate_bf_desired*radians(1.0f)/100.0f*_dt - _ahrs.get_gyro()*_dt);
+
+    // compute angle_bf_error
+    _angle_err_quat.to_axis_angle(_angle_bf_error);
+
+    // convert to centidegrees (kill it with fire)
+    _angle_bf_error *= degrees(1.0f)*100.0f;
+
+    // update rate targets
+    update_rate_bf_targets();
+
+    // just for logging:
+    Quaternion angle_target_quat;
+    angle_target_quat.from_rotation_matrix(_ahrs.get_dcm_matrix());
+    angle_target_quat *= _angle_err_quat;
+    angle_target_quat.to_axis_angle(_angle_ef_target);
+    _angle_ef_target *= degrees(1.0f)*100.0f;
+}
+
 //
 // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 //      should be called at 100hz or more

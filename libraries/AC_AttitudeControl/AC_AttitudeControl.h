@@ -138,6 +138,9 @@ public:
     // rate_bf_roll_pitch_yaw - attempts to maintain a roll, pitch and yaw rate (all body frame)
     virtual void rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
 
+    void rate_bf_roll_pitch_yaw_integrated(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
+    void reset_angle_error_integrator();
+
     //
     // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
     //      should be called at 100hz or more
@@ -306,6 +309,10 @@ protected:
 
     // throttle based angle limits
     LowPassFilterFloat  _throttle_in_filt;      // throttle input from pilot or alt hold controller
+
+
+    // quaternion controller
+    Quaternion          _angle_err_quat;
 };
 
 #define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
