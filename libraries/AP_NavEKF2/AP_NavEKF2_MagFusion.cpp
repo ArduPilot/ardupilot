@@ -236,7 +236,7 @@ void NavEKF2_core::FuseMagnetometer()
         MagPred[1] = DCM[1][0]*magN + DCM[1][1]*magE  + DCM[1][2]*magD + magYbias;
         MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
-        // scale magnetometer observation error with total angular rate
+        // scale magnetometer observation error with total angular rate to allow for timing errors
         R_MAG = sq(constrain_float(frontend._magNoise, 0.01f, 0.5f)) + sq(frontend.magVarRateScale*imuDataDelayed.delAng.length() / dtIMUavg);
 
         // calculate observation jacobians
