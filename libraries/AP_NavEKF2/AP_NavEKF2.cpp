@@ -160,7 +160,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
-    AP_GROUPINFO("VEL_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
+    AP_GROUPINFO("GPS_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
 
     // Height measurement parameters
 
