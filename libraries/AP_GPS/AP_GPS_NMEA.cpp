@@ -336,13 +336,13 @@ bool AP_GPS_NMEA::_term_complete()
 
     // the first term determines the sentence type
     if (_term_number == 0) {
-        if (!strcmp_P(_term, _gprmc_string)) {
+        if (!strcmp(_term, _gprmc_string)) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
             _last_GPRMC_ms = hal.scheduler->millis();
-        } else if (!strcmp_P(_term, _gpgga_string)) {
+        } else if (!strcmp(_term, _gpgga_string)) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
             _last_GPGGA_ms = hal.scheduler->millis();
-        } else if (!strcmp_P(_term, _gpvtg_string)) {
+        } else if (!strcmp(_term, _gpvtg_string)) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
