@@ -274,11 +274,11 @@ void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
     }
     char key[AP_MAX_NAME_SIZE+1];
     if (type == AUTOTUNE_ROLL) {
-        strncpy_P(key, "RLL2SRV_", 8);
-        strncpy_P(&key[8], suffix, AP_MAX_NAME_SIZE-8);
+        strncpy(key, "RLL2SRV_", 8);
+        strncpy(&key[8], suffix, AP_MAX_NAME_SIZE-8);
     } else {
-        strncpy_P(key, "PTCH2SRV_", 9);
-        strncpy_P(&key[9], suffix, AP_MAX_NAME_SIZE-9);
+        strncpy(key, "PTCH2SRV_", 9);
+        strncpy(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
     key[AP_MAX_NAME_SIZE] = 0;
     dataflash.Log_Write_Parameter(key, v);
