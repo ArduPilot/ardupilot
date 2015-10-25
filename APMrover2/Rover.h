@@ -468,7 +468,6 @@ private:
     void report_throttle();
     void report_compass();
     void report_modes();
-    void print_PID(PID * pid);
     void print_radio_values();
     void print_switch(uint8_t p, uint8_t m);
     void print_done();
