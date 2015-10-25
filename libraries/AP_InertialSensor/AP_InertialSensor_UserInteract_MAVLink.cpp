@@ -34,7 +34,7 @@ bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void)
             return true;    
         }
     }
-    hal.console->println_P("Timed out waiting for user response");
+    hal.console->println("Timed out waiting for user response");
     _gcs->set_snoop(NULL);
     return false;
 }

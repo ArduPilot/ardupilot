@@ -247,7 +247,7 @@ void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
-    hal.uartA->println_P("GOING DOWN FOR A REBOOT\r\n");
+    hal.uartA->println("GOING DOWN FOR A REBOOT\r\n");
     hal.scheduler->delay(100);
     nvic_sys_reset();
 }

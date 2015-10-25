@@ -451,7 +451,7 @@ void Compass::_detect_backends(void)
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
-        hal.console->println_P("No Compass backends available");
+        hal.console->println("No Compass backends available");
     }
 }
 

@@ -579,7 +579,7 @@ void Rover::load_parameters(void)
 
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
-		cliSerial->println_P("done.");
+		cliSerial->println("done.");
     } else {
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables

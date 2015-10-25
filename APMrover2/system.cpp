@@ -153,7 +153,7 @@ void Rover::init_ardupilot()
 
 	if (g.compass_enabled==true) {
 		if (!compass.init()|| !compass.read()) {
-            cliSerial->println_P("Compass initialisation failed!");
+            cliSerial->println("Compass initialisation failed!");
             g.compass_enabled = false;
         } else {
             ahrs.set_compass(&compass);
@@ -198,12 +198,12 @@ void Rover::init_ardupilot()
 	//
     if (g.cli_enabled == 1) {
         const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println_P(msg);
+        cliSerial->println(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
-            gcs[1].get_uart()->println_P(msg);
+            gcs[1].get_uart()->println(msg);
         }
         if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
-            gcs[2].get_uart()->println_P(msg);
+            gcs[2].get_uart()->println(msg);
         }
     }
 #endif

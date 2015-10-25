@@ -24,10 +24,10 @@ MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&plane, &Plane::print_log
 
 bool Plane::print_log_menu(void)
 {
-    cliSerial->println_P("logs enabled: ");
+    cliSerial->println("logs enabled: ");
 
     if (0 == g.log_bitmask) {
-        cliSerial->println_P("none");
+        cliSerial->println("none");
     }else{
         // Macro to make the following code a bit easier on the eye.
         // Pass it the capitalised name of the log option, as defined
@@ -508,7 +508,7 @@ void Plane::Log_Read(uint16_t list_entry, int16_t start_page, int16_t end_page)
                              "\nFree RAM: %u\n",
                         (unsigned)hal.util->available_memory());
 
-    cliSerial->println_P(HAL_BOARD_NAME);
+    cliSerial->println(HAL_BOARD_NAME);
 
 	DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Plane::print_flight_mode, void, AP_HAL::BetterStream *, uint8_t),

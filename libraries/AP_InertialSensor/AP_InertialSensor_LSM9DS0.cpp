@@ -803,8 +803,8 @@ void AP_InertialSensor_LSM9DS0::_set_gyro_filter(uint8_t filter_hz)
 /* dump all config registers - used for debug */
 void AP_InertialSensor_LSM9DS0::_dump_registers(void)
 {
-    hal.console->println_P("LSM9DS0 registers:");
-    hal.console->println_P("Gyroscope registers:");
+    hal.console->println("LSM9DS0 registers:");
+    hal.console->println("Gyroscope registers:");
     const uint8_t first = OUT_TEMP_L_XM;
     const uint8_t last = ACT_DUR;
     for (uint8_t reg=first; reg<=last; reg++) {
@@ -816,7 +816,7 @@ void AP_InertialSensor_LSM9DS0::_dump_registers(void)
     }
     hal.console->println();
 
-    hal.console->println_P("Accelerometer and Magnetometers registers:");
+    hal.console->println("Accelerometer and Magnetometers registers:");
     for (uint8_t reg=first; reg<=last; reg++) {
         uint8_t v = _register_read_xm(reg);
         hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);

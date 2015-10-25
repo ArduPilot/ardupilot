@@ -239,7 +239,7 @@ bool AP_Compass_LSM303D::_data_ready()
 bool AP_Compass_LSM303D::_read_raw()
 {
     if (_register_read(ADDR_CTRL_REG7) != _reg7_expected) {
-        hal.console->println_P(
+        hal.console->println(
                                "LSM303D _read_data_transaction_accel: _reg7_expected unexpected");
         // reset();
         return false;
@@ -318,7 +318,7 @@ AP_Compass_LSM303D::init()
                 _spi_sem->give();
                 break;
             } else {
-                hal.console->println_P(
+                hal.console->println(
                                        "LSM303D startup failed: no data ready");
             }
             _spi_sem->give();

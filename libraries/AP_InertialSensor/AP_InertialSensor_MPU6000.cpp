@@ -848,7 +848,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 #endif
     }
     if (tries == 5) {
-        hal.console->println_P("Failed to boot MPU6000 5 times");
+        hal.console->println("Failed to boot MPU6000 5 times");
         goto fail_tries;
     }
 
@@ -867,7 +867,7 @@ fail_tries:
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
-    hal.console->println_P("MPU6000 registers");
+    hal.console->println("MPU6000 registers");
     if (_bus_sem->take(100)) {
         for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
             uint8_t v = _register_read(reg);
@@ -921,7 +921,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     assert(buf);
 
     if (_registered) {
-        hal.console->println_P("Error: can't passthrough when slave is already configured");
+        hal.console->println("Error: can't passthrough when slave is already configured");
         return -1;
     }
 
@@ -944,7 +944,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
 int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->println_P("Error: can't passthrough when slave is already configured");
+        hal.console->println("Error: can't passthrough when slave is already configured");
         return -1;
     }
 
@@ -966,7 +966,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 int AP_MPU6000_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->println_P("Error: can't read before configuring slave");
+        hal.console->println("Error: can't read before configuring slave");
         return -1;
     }
 

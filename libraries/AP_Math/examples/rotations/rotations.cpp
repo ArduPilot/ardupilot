@@ -23,7 +23,7 @@ static void test_rotation_accuracy(void)
     int16_t i;
     float rot_angle;
 
-    hal.console->println_P("\nRotation method accuracy:");
+    hal.console->println("\nRotation method accuracy:");
 
     for( i=0; i<90; i++ ) {
 

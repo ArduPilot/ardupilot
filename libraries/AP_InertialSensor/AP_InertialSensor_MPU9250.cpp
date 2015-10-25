@@ -281,7 +281,7 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver 
     }
 
     if (tries == 5) {
-        hal.console->println_P("Failed to boot MPU9250 5 times");
+        hal.console->println("Failed to boot MPU9250 5 times");
         goto fail_tries;
     }
 
@@ -528,7 +528,7 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU9250::_dump_registers(AP_HAL::SPIDeviceDriver *spi)
 {
-    hal.console->println_P("MPU9250 registers");
+    hal.console->println("MPU9250 registers");
     for (uint8_t reg=0; reg<=126; reg++) {
         uint8_t v = _register_read(spi, reg);
         hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);
