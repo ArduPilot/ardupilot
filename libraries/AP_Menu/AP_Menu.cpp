@@ -135,7 +135,7 @@ Menu::_run_command(bool prompt_on_enter)
     bool cmd_found = false;
     // look for a command matching the first word (note that it may be empty)
     for (i = 0; i < _entries; i++) {
-        if (!strcasecmp_P(_argv[0].str, _commands[i].command)) {
+        if (!strcasecmp(_argv[0].str, _commands[i].command)) {
             ret = _call(i, argc);
             cmd_found=true;
             if (-2 == ret)
@@ -146,10 +146,10 @@ Menu::_run_command(bool prompt_on_enter)
     
     // implicit commands
     if (i == _entries) {
-        if (!strcmp(_argv[0].str, "?") || (!strcasecmp_P(_argv[0].str, "help"))) {
+        if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
             _help();
             cmd_found=true;
-        } else if (!strcasecmp_P(_argv[0].str, "exit")) {
+        } else if (!strcasecmp(_argv[0].str, "exit")) {
             // exit the menu
             return true;
         }
