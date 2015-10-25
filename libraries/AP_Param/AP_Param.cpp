@@ -137,7 +137,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
                 return false;
             }
             if (ginfo == NULL ||
-                !check_group_info(ginfo, total_size, group_shift + _group_level_shift, prefix_length + strlen_P(group_info[i].name))) {
+                !check_group_info(ginfo, total_size, group_shift + _group_level_shift, prefix_length + strlen(group_info[i].name))) {
                 return false;
             }
             continue;
@@ -158,7 +158,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             Debug("invalid type in %S", group_info[i].name);
             return false;
         }
-        if (prefix_length + strlen_P(group_info[i].name) > 16) {
+        if (prefix_length + strlen(group_info[i].name) > 16) {
             Debug("suffix is too long in %S", group_info[i].name);
             return false;
         }
@@ -195,7 +195,7 @@ bool AP_Param::check_var_info(void)
             }
             const struct GroupInfo *group_info = (const struct GroupInfo *)PGM_POINTER(&_var_info[i].group_info);
             if (group_info == NULL ||
-                !check_group_info(group_info, &total_size, 0, strlen_P(_var_info[i].name))) {
+                !check_group_info(group_info, &total_size, 0, strlen(_var_info[i].name))) {
                 return false;
             }
         } else {
