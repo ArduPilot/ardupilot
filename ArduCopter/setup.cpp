@@ -460,15 +460,15 @@ void Copter::report_compass()
     }
 
     // motor compensation
-    cliSerial->print_P("Motor Comp: ");
+    cliSerial->print("Motor Comp: ");
     if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_DISABLED ) {
-        cliSerial->print_P("Off\n");
+        cliSerial->print("Off\n");
     }else{
         if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_THROTTLE ) {
-            cliSerial->print_P("Throttle");
+            cliSerial->print("Throttle");
         }
         if( compass.get_motor_compensation_type() == AP_COMPASS_MOT_COMP_CURRENT ) {
-            cliSerial->print_P("Current");
+            cliSerial->print("Current");
         }
         Vector3f motor_compensation;
         for (uint8_t i=0; i<compass.get_count(); i++) {
@@ -494,7 +494,7 @@ void Copter::print_blanks(int16_t num)
 void Copter::print_divider(void)
 {
     for (int i = 0; i < 40; i++) {
-        cliSerial->print_P("-");
+        cliSerial->print("-");
     }
     cliSerial->println();
 }
@@ -502,10 +502,10 @@ void Copter::print_divider(void)
 void Copter::print_enabled(bool b)
 {
     if(b)
-        cliSerial->print_P("en");
+        cliSerial->print("en");
     else
-        cliSerial->print_P("dis");
-    cliSerial->print_P("abled\n");
+        cliSerial->print("dis");
+    cliSerial->print("abled\n");
 }
 
 void Copter::report_version()

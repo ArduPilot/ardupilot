@@ -89,7 +89,7 @@ int8_t Plane::test_passthru(uint8_t argc, const Menu::arg *argv)
 
         // New radio frame? (we could use also if((millis()- timer) > 20)
         if (hal.rcin->new_input()) {
-            cliSerial->print_P("CH:");
+            cliSerial->print("CH:");
             for(int16_t i = 0; i < 8; i++) {
                 cliSerial->print(hal.rcin->read(i));        // Print channel values
                 print_comma();

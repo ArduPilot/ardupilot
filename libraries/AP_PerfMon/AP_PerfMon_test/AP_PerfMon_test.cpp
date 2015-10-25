@@ -22,7 +22,7 @@ void setup()
 {
   AP_PERFMON_FUNCTION(setup)
 
-  hal.console->print_P("Performance Monitor test v1.1\n");
+  hal.console->print("Performance Monitor test v1.1\n");
 }
 
 void loop()

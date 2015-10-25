@@ -450,22 +450,22 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print_P("Manual");
+        port->print("Manual");
         break;
     case HOLD:
-        port->print_P("HOLD");
+        port->print("HOLD");
         break;
     case LEARNING:
-        port->print_P("Learning");
+        port->print("Learning");
         break;
     case STEERING:
-        port->print_P("Steering");
+        port->print("Steering");
         break;
     case AUTO:
-        port->print_P("AUTO");
+        port->print("AUTO");
         break;
     case RTL:
-        port->print_P("RTL");
+        port->print("RTL");
         break;
     default:
         port->printf_P("Mode(%u)", (unsigned)mode);

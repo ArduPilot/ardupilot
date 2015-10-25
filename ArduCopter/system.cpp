@@ -282,7 +282,7 @@ void Copter::init_ardupilot()
     // init vehicle capabilties
     init_capabilities();
 
-    cliSerial->print_P("\nReady to FLY ");
+    cliSerial->print("\nReady to FLY ");
 
     // flag that initialisation has completed
     ap.initialised = true;
