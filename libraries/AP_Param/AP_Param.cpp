@@ -1133,16 +1133,16 @@ void AP_Param::show(const AP_Param *ap, const char *s,
 {
     switch (type) {
     case AP_PARAM_INT8:
-        port->printf_P("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
+        port->printf("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
         break;
     case AP_PARAM_INT16:
-        port->printf_P("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
+        port->printf("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
         break;
     case AP_PARAM_INT32:
-        port->printf_P("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
+        port->printf("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
         break;
     case AP_PARAM_FLOAT:
-        port->printf_P("%s: %f\n", s, (double)((AP_Float *)ap)->get());
+        port->printf("%s: %f\n", s, (double)((AP_Float *)ap)->get());
         break;
     default:
         break;
@@ -1170,7 +1170,7 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
         if (showKeyValues) {
-            port->printf_P("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
+            port->printf("Key %i: Index %i: GroupElement %i  :  ", token.key, token.idx, token.group_element);
         }
         show(ap, token, type, port);
     }
@@ -1205,7 +1205,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     AP_Param *ap2;
     ap2 = find(&info->new_name[0], &ptype);
     if (ap2 == NULL) {
-        hal.console->printf_P("Unknown conversion '%s'\n", info->new_name);
+        hal.console->printf("Unknown conversion '%s'\n", info->new_name);
         return;
     }
 
@@ -1235,7 +1235,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
         }
     } else {
         // can't do vector<->scalar conversion, or different vector types
-        hal.console->printf_P("Bad conversion type '%s'\n", info->new_name);
+        hal.console->printf("Bad conversion type '%s'\n", info->new_name);
     }
 }
 #pragma GCC diagnostic pop

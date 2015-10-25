@@ -16,7 +16,7 @@ AP_HAL::SPIDeviceDriver* spidev;
 
 void setup (void) {
     hal.scheduler->delay(5000);
-    hal.console->printf_P("Starting AP_HAL_FLYMAPLE::SPIDriver test\r\n");
+    hal.console->printf("Starting AP_HAL_FLYMAPLE::SPIDriver test\r\n");
 
     spidev = hal.spi->device(AP_HAL::SPIDevice_MPU6000); // Not really MPU6000, just a generic SPU driver
     if (!spidev)

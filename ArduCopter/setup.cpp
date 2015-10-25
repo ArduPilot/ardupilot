@@ -25,7 +25,7 @@ MENU(setup_menu, "setup", setup_menu_commands);
 int8_t Copter::setup_mode(uint8_t argc, const Menu::arg *argv)
 {
     // Give the user some guidance
-    cliSerial->printf_P("Setup Mode\n\n\n");
+    cliSerial->printf("Setup Mode\n\n\n");
 
     // Run the setup menu.  When the menu exits, we will return to the main menu.
     setup_menu.run();
@@ -38,7 +38,7 @@ int8_t Copter::setup_factory(uint8_t argc, const Menu::arg *argv)
 {
     int16_t c;
 
-    cliSerial->printf_P("\n'Y' = factory reset, any other key to abort:\n");
+    cliSerial->printf("\n'Y' = factory reset, any other key to abort:\n");
 
     do {
         c = cliSerial->read();
@@ -48,7 +48,7 @@ int8_t Copter::setup_factory(uint8_t argc, const Menu::arg *argv)
         return(-1);
 
     AP_Param::erase_all();
-    cliSerial->printf_P("\nReboot board");
+    cliSerial->printf("\nReboot board");
 
     delay(1000);
 
@@ -70,14 +70,14 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
 
     if(argc!=3)
     {
-        cliSerial->printf_P("Invalid command. Usage: set <name> <value>\n");
+        cliSerial->printf("Invalid command. Usage: set <name> <value>\n");
         return 0;
     }
 
     param = AP_Param::find(argv[1].str, &p_type);
     if(!param)
     {
-        cliSerial->printf_P("Param not found: %s\n", argv[1].str);
+        cliSerial->printf("Param not found: %s\n", argv[1].str);
         return 0;
     }
 
@@ -87,7 +87,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
             value_int8 = (int8_t)(argv[2].i);
             if(argv[2].i!=value_int8)
             {
-                cliSerial->printf_P("Value out of range for type INT8\n");
+                cliSerial->printf("Value out of range for type INT8\n");
                 return 0;
             }
             ((AP_Int8*)param)->set_and_save(value_int8);
@@ -96,7 +96,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
             value_int16 = (int16_t)(argv[2].i);
             if(argv[2].i!=value_int16)
             {
-                cliSerial->printf_P("Value out of range for type INT16\n");
+                cliSerial->printf("Value out of range for type INT16\n");
                 return 0;
             }
             ((AP_Int16*)param)->set_and_save(value_int16);
@@ -110,7 +110,7 @@ int8_t Copter::setup_set(uint8_t argc, const Menu::arg *argv)
             ((AP_Float*)param)->set_and_save(argv[2].f);
             break;
         default:
-            cliSerial->printf_P("Cannot set parameter of type %d.\n", p_type);
+            cliSerial->printf("Cannot set parameter of type %d.\n", p_type);
             break;
     }
 
@@ -132,7 +132,7 @@ int8_t Copter::setup_show(uint8_t argc, const Menu::arg *argv)
 
         if(!param)
         {
-            cliSerial->printf_P("Parameter not found: '%s'\n", argv[1]);
+            cliSerial->printf("Parameter not found: '%s'\n", argv[1]);
             return 0;
         }
         AP_Param::show(param, argv[1].str, type, cliSerial);
@@ -177,7 +177,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 
 
 	if (argc < 2) {
-		cliSerial->printf_P("Pls provide Channel Mask\n"
+		cliSerial->printf("Pls provide Channel Mask\n"
                                     "\tusage: esc_calib 1010 - enables calibration for 2nd and 4th Motor\n");
         return(0);
 	}
@@ -186,14 +186,14 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	
     set_mask = strtol (argv[1].str, NULL, 2);
 	if (set_mask == 0)
-		cliSerial->printf_P("no channels chosen");
-    //cliSerial->printf_P("\n%d\n",set_mask);
+		cliSerial->printf("no channels chosen");
+    //cliSerial->printf("\n%d\n",set_mask);
     set_mask<<=1;
 	/* wait 50 ms */
 	hal.scheduler->delay(50);
 
 
-	cliSerial->printf_P("\nATTENTION, please remove or fix propellers before starting calibration!\n"
+	cliSerial->printf("\nATTENTION, please remove or fix propellers before starting calibration!\n"
 	       "\n"
 	       "Make sure\n"
 	       "\t - that the ESCs are not powered\n"
@@ -210,11 +210,11 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 				break;
 
 			} else if (c == 0x03 || c == 0x63 || c == 'q') {
-				cliSerial->printf_P("ESC calibration exited\n");
+				cliSerial->printf("ESC calibration exited\n");
 				return(0);
 
 			} else if (c == 'n' || c == 'N') {
-				cliSerial->printf_P("ESC calibration aborted\n");
+				cliSerial->printf("ESC calibration aborted\n");
 				return(0);
 
 			} 
@@ -231,11 +231,11 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	motors.armed(true);
 
 
-	cliSerial->printf_P("Outputs armed\n");
+	cliSerial->printf("Outputs armed\n");
 
 
 	/* wait for user confirmation */
-	cliSerial->printf_P("\nHigh PWM set: %d\n"
+	cliSerial->printf("\nHigh PWM set: %d\n"
 	       "\n"
 	       "Connect battery now and hit c+ENTER after the ESCs confirm the first calibration step\n"
 	       "\n", pwm_high);
@@ -254,7 +254,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
             break;
 
 		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf_P("ESC calibration exited\n");
+			cliSerial->printf("ESC calibration exited\n");
 			return(0);
 		}
         
@@ -262,7 +262,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 		hal.scheduler->delay(50);
 	}
 
-	cliSerial->printf_P("Low PWM set: %d\n"
+	cliSerial->printf("Low PWM set: %d\n"
 	       "\n"
 	       "Hit c+Enter when finished\n"
 	       "\n", pwm_low);
@@ -282,7 +282,7 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 			break;
 
 		} else if (c == 0x03 || c == 0x63 || c == 'q') {
-			cliSerial->printf_P("ESC calibration exited\n");
+			cliSerial->printf("ESC calibration exited\n");
 			return(0);
 		}
 		
@@ -293,9 +293,9 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	/* disarm */
 	motors.armed(false);
     
-	cliSerial->printf_P("Outputs disarmed\n");
+	cliSerial->printf("Outputs disarmed\n");
 
-	cliSerial->printf_P("ESC calibration finished\n");
+	cliSerial->printf("ESC calibration finished\n");
 
 	return(0);
 }
@@ -308,35 +308,35 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 
 void Copter::report_batt_monitor()
 {
-    cliSerial->printf_P("\nBatt Mon:\n");
+    cliSerial->printf("\nBatt Mon:\n");
     print_divider();
     if (battery.num_instances() == 0) {
         print_enabled(false);
     } else if (!battery.has_current()) {
-        cliSerial->printf_P("volts");
+        cliSerial->printf("volts");
     } else {
-        cliSerial->printf_P("volts and cur");
+        cliSerial->printf("volts and cur");
     }
     print_blanks(2);
 }
 
 void Copter::report_frame()
 {
-    cliSerial->printf_P("Frame\n");
+    cliSerial->printf("Frame\n");
     print_divider();
 
  #if FRAME_CONFIG == QUAD_FRAME
-    cliSerial->printf_P("Quad frame\n");
+    cliSerial->printf("Quad frame\n");
  #elif FRAME_CONFIG == TRI_FRAME
-    cliSerial->printf_P("TRI frame\n");
+    cliSerial->printf("TRI frame\n");
  #elif FRAME_CONFIG == HEXA_FRAME
-    cliSerial->printf_P("Hexa frame\n");
+    cliSerial->printf("Hexa frame\n");
  #elif FRAME_CONFIG == Y6_FRAME
-    cliSerial->printf_P("Y6 frame\n");
+    cliSerial->printf("Y6 frame\n");
  #elif FRAME_CONFIG == OCTA_FRAME
-    cliSerial->printf_P("Octa frame\n");
+    cliSerial->printf("Octa frame\n");
  #elif FRAME_CONFIG == HELI_FRAME
-    cliSerial->printf_P("Heli frame\n");
+    cliSerial->printf("Heli frame\n");
  #endif
 
     print_blanks(2);
@@ -344,7 +344,7 @@ void Copter::report_frame()
 
 void Copter::report_radio()
 {
-    cliSerial->printf_P("Radio\n");
+    cliSerial->printf("Radio\n");
     print_divider();
     // radio
     print_radio_values();
@@ -353,7 +353,7 @@ void Copter::report_radio()
 
 void Copter::report_ins()
 {
-    cliSerial->printf_P("INS\n");
+    cliSerial->printf("INS\n");
     print_divider();
 
     print_gyro_offsets();
@@ -363,7 +363,7 @@ void Copter::report_ins()
 
 void Copter::report_flight_modes()
 {
-    cliSerial->printf_P("Flight modes\n");
+    cliSerial->printf("Flight modes\n");
     print_divider();
 
     for(int16_t i = 0; i < 6; i++ ) {
@@ -375,7 +375,7 @@ void Copter::report_flight_modes()
 void Copter::report_optflow()
 {
  #if OPTFLOW == ENABLED
-    cliSerial->printf_P("OptFlow\n");
+    cliSerial->printf("OptFlow\n");
     print_divider();
 
     print_enabled(optflow.enabled());
@@ -390,32 +390,32 @@ void Copter::report_optflow()
 
 void Copter::print_radio_values()
 {
-    cliSerial->printf_P("CH1: %d | %d\n", (int)channel_roll->radio_min, (int)channel_roll->radio_max);
-    cliSerial->printf_P("CH2: %d | %d\n", (int)channel_pitch->radio_min, (int)channel_pitch->radio_max);
-    cliSerial->printf_P("CH3: %d | %d\n", (int)channel_throttle->radio_min, (int)channel_throttle->radio_max);
-    cliSerial->printf_P("CH4: %d | %d\n", (int)channel_yaw->radio_min, (int)channel_yaw->radio_max);
-    cliSerial->printf_P("CH5: %d | %d\n", (int)g.rc_5.radio_min, (int)g.rc_5.radio_max);
-    cliSerial->printf_P("CH6: %d | %d\n", (int)g.rc_6.radio_min, (int)g.rc_6.radio_max);
-    cliSerial->printf_P("CH7: %d | %d\n", (int)g.rc_7.radio_min, (int)g.rc_7.radio_max);
-    cliSerial->printf_P("CH8: %d | %d\n", (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
+    cliSerial->printf("CH1: %d | %d\n", (int)channel_roll->radio_min, (int)channel_roll->radio_max);
+    cliSerial->printf("CH2: %d | %d\n", (int)channel_pitch->radio_min, (int)channel_pitch->radio_max);
+    cliSerial->printf("CH3: %d | %d\n", (int)channel_throttle->radio_min, (int)channel_throttle->radio_max);
+    cliSerial->printf("CH4: %d | %d\n", (int)channel_yaw->radio_min, (int)channel_yaw->radio_max);
+    cliSerial->printf("CH5: %d | %d\n", (int)g.rc_5.radio_min, (int)g.rc_5.radio_max);
+    cliSerial->printf("CH6: %d | %d\n", (int)g.rc_6.radio_min, (int)g.rc_6.radio_max);
+    cliSerial->printf("CH7: %d | %d\n", (int)g.rc_7.radio_min, (int)g.rc_7.radio_max);
+    cliSerial->printf("CH8: %d | %d\n", (int)g.rc_8.radio_min, (int)g.rc_8.radio_max);
 }
 
 void Copter::print_switch(uint8_t p, uint8_t m, bool b)
 {
-    cliSerial->printf_P("Pos %d:\t",p);
+    cliSerial->printf("Pos %d:\t",p);
     print_flight_mode(cliSerial, m);
-    cliSerial->printf_P(",\t\tSimple: ");
+    cliSerial->printf(",\t\tSimple: ");
     if(b)
-        cliSerial->printf_P("ON\n");
+        cliSerial->printf("ON\n");
     else
-        cliSerial->printf_P("OFF\n");
+        cliSerial->printf("OFF\n");
 }
 
 void Copter::print_accel_offsets_and_scaling(void)
 {
     const Vector3f &accel_offsets = ins.get_accel_offsets();
     const Vector3f &accel_scale = ins.get_accel_scale();
-    cliSerial->printf_P("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n",
+    cliSerial->printf("A_off: %4.2f, %4.2f, %4.2f\nA_scale: %4.2f, %4.2f, %4.2f\n",
                     (double)accel_offsets.x,                           // Pitch
                     (double)accel_offsets.y,                           // Roll
                     (double)accel_offsets.z,                           // YAW
@@ -427,7 +427,7 @@ void Copter::print_accel_offsets_and_scaling(void)
 void Copter::print_gyro_offsets(void)
 {
     const Vector3f &gyro_offsets = ins.get_gyro_offsets();
-    cliSerial->printf_P("G_off: %4.2f, %4.2f, %4.2f\n",
+    cliSerial->printf("G_off: %4.2f, %4.2f, %4.2f\n",
                     (double)gyro_offsets.x,
                     (double)gyro_offsets.y,
                     (double)gyro_offsets.z);
@@ -438,13 +438,13 @@ void Copter::print_gyro_offsets(void)
 // report_compass - displays compass information.  Also called by compassmot.pde
 void Copter::report_compass()
 {
-    cliSerial->printf_P("Compass\n");
+    cliSerial->printf("Compass\n");
     print_divider();
 
     print_enabled(g.compass_enabled);
 
     // mag declination
-    cliSerial->printf_P("Mag Dec: %4.4f\n",
+    cliSerial->printf("Mag Dec: %4.4f\n",
             (double)degrees(compass.get_declination()));
 
     // mag offsets
@@ -452,7 +452,7 @@ void Copter::report_compass()
     for (uint8_t i=0; i<compass.get_count(); i++) {
         offsets = compass.get_offsets(i);
         // mag offsets
-        cliSerial->printf_P("Mag%d off: %4.4f, %4.4f, %4.4f\n",
+        cliSerial->printf("Mag%d off: %4.4f, %4.4f, %4.4f\n",
                         (int)i,
                         (double)offsets.x,
                         (double)offsets.y,
@@ -473,7 +473,7 @@ void Copter::report_compass()
         Vector3f motor_compensation;
         for (uint8_t i=0; i<compass.get_count(); i++) {
             motor_compensation = compass.get_motor_compensation(i);
-            cliSerial->printf_P("\nComMot%d: %4.2f, %4.2f, %4.2f\n",
+            cliSerial->printf("\nComMot%d: %4.2f, %4.2f, %4.2f\n",
                         (int)i,
                         (double)motor_compensation.x,
                         (double)motor_compensation.y,
@@ -510,7 +510,7 @@ void Copter::print_enabled(bool b)
 
 void Copter::report_version()
 {
-    cliSerial->printf_P("FW Ver: %d\n",(int)g.k_format_version);
+    cliSerial->printf("FW Ver: %d\n",(int)g.k_format_version);
     print_divider();
     print_blanks(2);
 }

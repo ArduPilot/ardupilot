@@ -1259,14 +1259,14 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf_P("Bad parameter table\n");        
+        cliSerial->printf("Bad parameter table\n");
         hal.scheduler->panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        cliSerial->printf_P("Firmware change: erasing EEPROM...\n");
+        cliSerial->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
@@ -1277,6 +1277,6 @@ void Plane::load_parameters(void)
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf_P("load_all took %luus\n", micros() - before);
+        cliSerial->printf("load_all took %luus\n", micros() - before);
     }
 }

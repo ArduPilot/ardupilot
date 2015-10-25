@@ -33,7 +33,7 @@ bool Plane::print_log_menu(void)
         // Pass it the capitalised name of the log option, as defined
         // in defines.h but without the LOG_ prefix.  It will check for
         // the bit being set and print the name of the log option to suit.
- #define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf_P(" %S", # _s)
+ #define PLOG(_s) if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %S", # _s)
         PLOG(ATTITUDE_FAST);
         PLOG(ATTITUDE_MED);
         PLOG(GPS);
@@ -71,11 +71,11 @@ int8_t Plane::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->printf_P("dumping all\n");
+        cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf_P("bad log number\n");
+        cliSerial->printf("bad log number\n");
         return(-1);
     }
 
@@ -97,7 +97,7 @@ int8_t Plane::select_logs(uint8_t argc, const Menu::arg *argv)
     uint32_t bits;
 
     if (argc != 2) {
-        cliSerial->printf_P("missing log type\n");
+        cliSerial->printf("missing log type\n");
         return(-1);
     }
 
@@ -504,7 +504,7 @@ static const struct LogStructure log_structure[] = {
 // Read the DataFlash.log memory : Packet Parser
 void Plane::Log_Read(uint16_t list_entry, int16_t start_page, int16_t end_page)
 {
-    cliSerial->printf_P("\n" FIRMWARE_STRING
+    cliSerial->printf("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n",
                         (unsigned)hal.util->available_memory());
 

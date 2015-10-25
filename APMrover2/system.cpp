@@ -13,7 +13,7 @@ The init_ardupilot function processes everything we need for an in - air restart
 // This is the help function
 int8_t Rover::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->printf_P("Commands:\n"
+	cliSerial->printf("Commands:\n"
 						 "  logs        log readback/setup mode\n"
 						 "  setup       setup mode\n"
 						 "  test        test mode\n"
@@ -83,7 +83,7 @@ void Rover::init_ardupilot()
     // initialise console serial port
     serial_manager.init_console();
 
-	cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+	cliSerial->printf("\n\nInit " FIRMWARE_STRING
 						 "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
                     
@@ -468,7 +468,7 @@ void Rover::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print("RTL");
         break;
     default:
-        port->printf_P("Mode(%u)", (unsigned)mode);
+        port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }

@@ -809,7 +809,7 @@ void AP_InertialSensor_LSM9DS0::_dump_registers(void)
     const uint8_t last = ACT_DUR;
     for (uint8_t reg=first; reg<=last; reg++) {
         uint8_t v = _register_read_g(reg);
-        hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);
+        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (first-1)) % 16 == 0) {
             hal.console->println();
         }
@@ -819,7 +819,7 @@ void AP_InertialSensor_LSM9DS0::_dump_registers(void)
     hal.console->println("Accelerometer and Magnetometers registers:");
     for (uint8_t reg=first; reg<=last; reg++) {
         uint8_t v = _register_read_xm(reg);
-        hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);
+        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (first-1)) % 16 == 0) {
             hal.console->println();
         }

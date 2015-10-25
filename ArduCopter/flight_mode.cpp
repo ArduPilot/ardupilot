@@ -363,7 +363,7 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print("BRAKE");
         break;
     default:
-        port->printf_P("Mode(%u)", (unsigned)mode);
+        port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }

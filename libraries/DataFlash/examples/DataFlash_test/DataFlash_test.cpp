@@ -110,7 +110,7 @@ void DataFlashTest::loop(void)
 
 void DataFlashTest::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
-    port->printf_P("Mode(%u)", (unsigned)mode);
+    port->printf("Mode(%u)", (unsigned)mode);
 }
 
 /*

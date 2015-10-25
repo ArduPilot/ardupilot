@@ -13,7 +13,7 @@ void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
     /* Multi-channel read method: */
     uint8_t valid;
     valid = in->read(channels, 8);
-    hal.console->printf_P(
+    hal.console->printf(
             "multi      read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
@@ -27,7 +27,7 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }
-    hal.console->printf_P(
+    hal.console->printf(
             "individual read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
@@ -76,7 +76,7 @@ void setup (void) {
     /* Bottom 4 channels at 400hz (like on a quad) */
     hal.rcout->set_freq(0x0000000F, 400);
     for(int i = 0; i < 12; i++) {
-        hal.console->printf_P("rcout ch %d has frequency %d\r\n",
+        hal.console->printf("rcout ch %d has frequency %d\r\n",
                 i, hal.rcout->get_freq(i));
     }
     /* Delay to let the user see the above printouts on the terminal */

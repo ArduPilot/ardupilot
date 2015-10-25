@@ -57,13 +57,13 @@
 //
 //#pragma GCC diagnostic error "-Wfloat-equal"
 
-// The following is strictly for type-checking arguments to printf_P calls
+// The following is strictly for type-checking arguments to printf calls
 // in conjunction with a suitably modified Arduino IDE; never define for
 // production as it generates bad code.
 //
 #if defined(PRINTF_FORMAT_WARNING_DEBUG)
  # undef PSTR
- # define PSTR(_x)               _x             // help the compiler with printf_P
+ # define PSTR(_x)               _x             // help the compiler with printf
  # define float double                  // silence spurious format warnings for %f
 #endif
 

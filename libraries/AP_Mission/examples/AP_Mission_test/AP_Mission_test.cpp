@@ -59,10 +59,10 @@ bool MissionTest::start_cmd(const AP_Mission::Mission_Command& cmd)
     // reset tracking of number of iterations of this command (we simulate all nav commands taking 3 iterations to complete, all do command 1 iteration)
     if (AP_Mission::is_nav_cmd(cmd)) {
         num_nav_cmd_runs = 0;
-        hal.console->printf_P("started cmd #%d id:%d Nav\n",(int)cmd.index,(int)cmd.id);
+        hal.console->printf("started cmd #%d id:%d Nav\n",(int)cmd.index,(int)cmd.id);
     }else{
         num_do_cmd_runs = 0;
-        hal.console->printf_P("started cmd #%d id:%d Do\n",(int)cmd.index,(int)cmd.id);
+        hal.console->printf("started cmd #%d id:%d Do\n",(int)cmd.index,(int)cmd.id);
     }
 
     return true;
@@ -75,19 +75,19 @@ bool MissionTest::verify_cmd(const AP_Mission::Mission_Command& cmd)
     if (AP_Mission::is_nav_cmd(cmd)) {
         num_nav_cmd_runs++;
         if (num_nav_cmd_runs < verify_nav_cmd_iterations_to_complete) {
-            hal.console->printf_P("verified cmd #%d id:%d Nav iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_nav_cmd_runs);
+            hal.console->printf("verified cmd #%d id:%d Nav iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_nav_cmd_runs);
             return false;
         }else{
-            hal.console->printf_P("verified cmd #%d id:%d Nav complete!\n",(int)cmd.index,(int)cmd.id);
+            hal.console->printf("verified cmd #%d id:%d Nav complete!\n",(int)cmd.index,(int)cmd.id);
             return true;
         }
     }else{
         num_do_cmd_runs++;
         if (num_do_cmd_runs < verify_do_cmd_iterations_to_complete) {
-            hal.console->printf_P("verified cmd #%d id:%d Do iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_do_cmd_runs);
+            hal.console->printf("verified cmd #%d id:%d Do iteration:%d\n",(int)cmd.index,(int)cmd.id,(int)num_do_cmd_runs);
             return false;
         }else{
-            hal.console->printf_P("verified cmd #%d id:%d Do complete!\n",(int)cmd.index,(int)cmd.id);
+            hal.console->printf("verified cmd #%d id:%d Do complete!\n",(int)cmd.index,(int)cmd.id);
             return true;
         }
     }
@@ -645,11 +645,11 @@ void MissionTest::print_mission()
 
     // check for empty mission
     if (mission.num_commands() == 0) {
-        hal.console->printf_P("No Mission!\n");
+        hal.console->printf("No Mission!\n");
         return;
     }
 
-    hal.console->printf_P("Mission: %d commands\n",(int)mission.num_commands());
+    hal.console->printf("Mission: %d commands\n",(int)mission.num_commands());
 
     // print each command
     for(uint16_t i=0; i<mission.num_commands(); i++) {
@@ -657,23 +657,23 @@ void MissionTest::print_mission()
         mission.read_cmd_from_storage(i,cmd);
 
         // print command position in list and mavlink id
-        hal.console->printf_P("Cmd#%d mav-id:%d ", (int)cmd.index, (int)cmd.id);
+        hal.console->printf("Cmd#%d mav-id:%d ", (int)cmd.index, (int)cmd.id);
 
         // print whether nav or do command
         if (AP_Mission::is_nav_cmd(cmd)) {
-            hal.console->printf_P("Nav ");
+            hal.console->printf("Nav ");
         }else{
-            hal.console->printf_P("Do ");
+            hal.console->printf("Do ");
         }
 
         // print command contents
         if (cmd.id == MAV_CMD_DO_JUMP) {
-            hal.console->printf_P("jump-to:%d num_times:%d\n", (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
+            hal.console->printf("jump-to:%d num_times:%d\n", (int)cmd.content.jump.target, (int)cmd.content.jump.num_times);
         }else{
-            hal.console->printf_P("p1:%d lat:%ld lng:%ld alt:%ld\n",(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
+            hal.console->printf("p1:%d lat:%ld lng:%ld alt:%ld\n",(int)cmd.p1, (long)cmd.content.location.lat, (long)cmd.content.location.lng, (long)cmd.content.location.alt);
         }
     }
-    hal.console->printf_P("--------\n");
+    hal.console->printf("--------\n");
 }
 
 // run_resume_test - tests the stop and resume feature
@@ -752,7 +752,7 @@ void MissionTest::run_resume_test()
     print_mission();
 
     // start mission
-    hal.console->printf_P("\nRunning missions\n");
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations
@@ -764,7 +764,7 @@ void MissionTest::run_resume_test()
     }
 
     // simulate user pausing the mission
-    hal.console->printf_P("Stopping mission\n");
+    hal.console->printf("Stopping mission\n");
     mission.stop();
 
     // update the mission for 5 seconds (nothing should happen)
@@ -774,7 +774,7 @@ void MissionTest::run_resume_test()
     }
 
     // simulate user resuming mission
-    hal.console->printf_P("Resume mission\n");
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // update the mission forever
@@ -869,7 +869,7 @@ void MissionTest::run_set_current_cmd_test()
     print_mission();
 
     // start mission
-    hal.console->printf_P("\nRunning missions\n");
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations to let it go to about command 3 or 4
@@ -878,7 +878,7 @@ void MissionTest::run_set_current_cmd_test()
     }
 
     // simulate user setting current command to 2
-    hal.console->printf_P("Setting current command to 2\n");
+    hal.console->printf("Setting current command to 2\n");
     mission.set_current_cmd(2);
 
     // update the mission forever
@@ -974,7 +974,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     print_mission();
 
     // start mission
-    hal.console->printf_P("\nRunning missions\n");
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations
@@ -983,11 +983,11 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // simulate user pausing the mission
-    hal.console->printf_P("Stopping mission\n");
+    hal.console->printf("Stopping mission\n");
     mission.stop();
 
     // simulate user setting current command to 2
-    hal.console->printf_P("Setting current command to 2\n");
+    hal.console->printf("Setting current command to 2\n");
     mission.set_current_cmd(2);
 
     // update the mission for 2 seconds (nothing should happen)
@@ -997,7 +997,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // simulate user resuming mission
-    hal.console->printf_P("Resume mission\n");
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // wait for the mission to complete
@@ -1012,11 +1012,11 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // simulate user setting current command to 2 now that the mission has completed
-    hal.console->printf_P("Setting current command to 5\n");
+    hal.console->printf("Setting current command to 5\n");
     mission.set_current_cmd(5);
 
     // simulate user resuming mission
-    hal.console->printf_P("Resume mission\n");
+    hal.console->printf("Resume mission\n");
     mission.resume();
 
     // keep running the mission forever
@@ -1100,7 +1100,7 @@ void MissionTest::run_replace_cmd_test()
     print_mission();
 
     // start mission
-    hal.console->printf_P("\nRunning missions\n");
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update the mission for X iterations to let it go to about command 3 or 4
@@ -1117,9 +1117,9 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.replace_cmd(4, cmd)) {
-        hal.console->printf_P("failed to replace command 4\n");
+        hal.console->printf("failed to replace command 4\n");
     }else{
-        hal.console->printf_P("replaced command #4 -------------\n");
+        hal.console->printf("replaced command #4 -------------\n");
         // print current mission
         print_mission();
     }
@@ -1150,7 +1150,7 @@ void MissionTest::run_max_cmd_test()
         cmd.content.location.lat = 12345678;
         cmd.content.location.lng = 23456789;
         if (!mission.add_cmd(cmd)) {
-            hal.console->printf_P("failed to add command #%u, library says max is %u\n",(unsigned int)num_commands, (unsigned int)mission.num_commands_max());
+            hal.console->printf("failed to add command #%u, library says max is %u\n",(unsigned int)num_commands, (unsigned int)mission.num_commands_max());
             failed_to_add = true;
         }else{
             num_commands++;
@@ -1160,14 +1160,14 @@ void MissionTest::run_max_cmd_test()
     // test retrieving commands
     for (i=0; i<num_commands; i++) {
         if (!mission.read_cmd_from_storage(i,cmd)) {
-            hal.console->printf_P("failed to retrieve command #%u\n",(unsigned int)i);
+            hal.console->printf("failed to retrieve command #%u\n",(unsigned int)i);
             failed_to_read = true;
             break;
         }else{
             if (cmd.content.location.alt == i) {
-                hal.console->printf_P("successfully read command #%u\n",(unsigned int)i);
+                hal.console->printf("successfully read command #%u\n",(unsigned int)i);
             }else{
-                hal.console->printf_P("cmd %u's alt does not match, expected %u but read %u\n",
+                hal.console->printf("cmd %u's alt does not match, expected %u but read %u\n",
                                       (unsigned int)i,(unsigned int)i,(unsigned int)cmd.content.location.alt);
             }
         }
@@ -1175,15 +1175,15 @@ void MissionTest::run_max_cmd_test()
 
     // final success/fail message
     if (num_commands != mission.num_commands()) {
-        hal.console->printf_P("\nTest failed!  Only wrote %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest failed!  Only wrote %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
         success = false;
     }
     if (failed_to_read) {
-        hal.console->printf_P("\nTest failed!  Only read %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest failed!  Only read %u instead of %u commands",(unsigned int)i,(unsigned int)mission.num_commands_max());
         success = false;
     }
     if (success) {
-        hal.console->printf_P("\nTest Passed!  wrote and read back %u commands\n\n",(unsigned int)mission.num_commands_max());
+        hal.console->printf("\nTest Passed!  wrote and read back %u commands\n\n",(unsigned int)mission.num_commands_max());
     }
 }
 
@@ -1193,8 +1193,8 @@ void MissionTest::setup(void)
     hal.console->println("AP_Mission library test\n");
 
     // display basic info about command sizes
-    hal.console->printf_P("Max Num Commands: %d\n",(int)mission.num_commands_max());
-    hal.console->printf_P("Command size: %d bytes\n",(int)AP_MISSION_EEPROM_COMMAND_SIZE);
+    hal.console->printf("Max Num Commands: %d\n",(int)mission.num_commands_max());
+    hal.console->printf("Command size: %d bytes\n",(int)AP_MISSION_EEPROM_COMMAND_SIZE);
 }
 
 // loop

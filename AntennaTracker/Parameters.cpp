@@ -288,7 +288,7 @@ void Tracker::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        hal.console->printf_P("Firmware change: erasing EEPROM...\n");
+        hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
 
         // save the current format version
@@ -298,6 +298,6 @@ void Tracker::load_parameters(void)
         uint32_t before = hal.scheduler->micros();
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
-        hal.console->printf_P("load_all took %luus\n", (unsigned long)(hal.scheduler->micros() - before));
+        hal.console->printf("load_all took %luus\n", (unsigned long)(hal.scheduler->micros() - before));
     }
 }

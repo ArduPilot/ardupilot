@@ -41,7 +41,7 @@ static void test_rotation_accuracy(void)
         attitude.to_euler(&roll, &pitch, &yaw);
 
         // display results
-        hal.console->printf_P(
+        hal.console->printf(
                 "actual angle: %d\tcalculated angle:%4.2f\n",
                 (int)i,ToDeg(yaw));
     }

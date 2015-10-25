@@ -49,7 +49,7 @@ static void check_result(const char *msg,
             ToDeg(rad_diff(pitch, -PI/2)) < 1) {
             // we expect breakdown at these poles
 #if SHOW_POLES_BREAKDOWN
-            hal.console->printf_P(
+            hal.console->printf(
                 "%s breakdown eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
                 ToDeg(roll), ToDeg(roll2),
@@ -57,7 +57,7 @@ static void check_result(const char *msg,
                 ToDeg(yaw), ToDeg(yaw2));
 #endif
         } else {
-            hal.console->printf_P(
+            hal.console->printf(
                 "%s incorrect eulers roll=%f/%f pitch=%f/%f yaw=%f/%f\n",
                 msg,
                 ToDeg(roll), ToDeg(roll2),
