@@ -21,7 +21,7 @@ void AP_InertialSensor_UserInteractStream::_printf_P(
         const prog_char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    _s->vprintf_P(fmt, ap);
+    _s->vprintf(fmt, ap);
     va_end(ap);
 }
 
