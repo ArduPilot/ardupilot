@@ -14,7 +14,7 @@
 // This is the help function
 int8_t Plane::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf_P("Commands:\n"
+    cliSerial->printf("Commands:\n"
                          "  logs        log readback/setup mode\n"
                          "  setup       setup mode\n"
                          "  test        test mode\n"
@@ -83,7 +83,7 @@ void Plane::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+    cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
 
@@ -675,7 +675,7 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         port->print("Guided");
         break;
     default:
-        port->printf_P("Mode(%u)", (unsigned)mode);
+        port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }

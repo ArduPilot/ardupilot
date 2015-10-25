@@ -974,7 +974,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
     if (fifo_count < packet_size){
         return 0;
     }
-    // hal.console->printf_P(PTR("FIFO count: %hd\n", fifo_count));
+    // hal.console->printf(PTR("FIFO count: %hd\n", fifo_count));
     if (fifo_count > (st.hw->max_fifo >> 1)) {
         /* FIFO is 50% full, better check overflow bit. */        
         hal.i2c->readRegister(st.hw->addr, st.reg->int_status, data);
@@ -1046,7 +1046,7 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
         return;
     }
 
-    // hal.console->printf_P(PTR("FIFO count: %hd\n", fifo_count));
+    // hal.console->printf(PTR("FIFO count: %hd\n", fifo_count));
     if (fifo_count > (st.hw->max_fifo >> 1)) {
         /* FIFO is 50% full, better check overflow bit. */        
         hal.i2c->readRegister(st.hw->addr, st.reg->int_status, data);

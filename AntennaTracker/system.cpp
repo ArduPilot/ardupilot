@@ -20,7 +20,7 @@ void Tracker::init_tracker()
     // initialise console serial port
     serial_manager.init_console();
 
-    hal.console->printf_P("\n\nInit " THISFIRMWARE
+    hal.console->printf("\n\nInit " THISFIRMWARE
                                "\n\nFree RAM: %u\n",
                           hal.util->available_memory());
 

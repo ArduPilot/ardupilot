@@ -370,7 +370,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
 
     ret = _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, _rx);
     if(ret != 0) {
-        hal.console->printf_P("MPU6000: error in i2c read\n");
+        hal.console->printf("MPU6000: error in i2c read\n");
         n_samples = 0;
         return;
     }
@@ -380,7 +380,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
     if(n_samples > 3) {
-        hal.console->printf_P("bytes_read = %d, n_samples %d > 3, dropping samples\n",
+        hal.console->printf("bytes_read = %d, n_samples %d > 3, dropping samples\n",
                                    bytes_read, n_samples);
 
         /* Too many samples, do a FIFO RESET */
@@ -399,7 +399,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
     }
 
     if(ret != 0) {
-        hal.console->printf_P("MPU6000: error in i2c read %d bytes\n",
+        hal.console->printf("MPU6000: error in i2c read %d bytes\n",
                                    n_samples * MPU6000_SAMPLE_SIZE);
         n_samples = 0;
         return;
@@ -767,10 +767,10 @@ void AP_InertialSensor_MPU6000::_register_write_check(uint8_t reg, uint8_t val)
     _register_write(reg, val);
     readed = _register_read(reg);
     if (readed != val){
-        hal.console->printf_P("Values doesn't match; written: %02x; read: %02x ", val, readed);
+        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
     }
 #if MPU6000_DEBUG
-    hal.console->printf_P("Values written: %02x; readed: %02x ", val, readed);
+    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
 #endif
 }
 
@@ -871,7 +871,7 @@ void AP_InertialSensor_MPU6000::_dump_registers(void)
     if (_bus_sem->take(100)) {
         for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
             uint8_t v = _register_read(reg);
-            hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);
+            hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
             if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
                 hal.console->println();
             }

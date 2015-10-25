@@ -34,14 +34,14 @@ MENU(test_menu, "test", test_menu_commands);
 
 int8_t Rover::test_mode(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->printf_P("Test Mode\n\n");
+	cliSerial->printf("Test Mode\n\n");
 	test_menu.run();
     return 0;
 }
 
 void Rover::print_hit_enter()
 {
-	cliSerial->printf_P("Hit Enter to exit.\n\n");
+	cliSerial->printf("Hit Enter to exit.\n\n");
 }
 
 int8_t Rover::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
@@ -56,7 +56,7 @@ int8_t Rover::test_radio_pwm(uint8_t argc, const Menu::arg *argv)
 		// ----------------------------------------------------------
 		read_radio();
 
-		cliSerial->printf_P("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
+		cliSerial->printf("IN:\t1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
 							channel_steer->radio_in,
 							g.rc_2.radio_in,
 							channel_throttle->radio_in,
@@ -118,7 +118,7 @@ int8_t Rover::test_radio(uint8_t argc, const Menu::arg *argv)
 		// ------------------------------
 		set_servos();
 
-		cliSerial->printf_P("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
+		cliSerial->printf("IN 1: %d\t2: %d\t3: %d\t4: %d\t5: %d\t6: %d\t7: %d\t8: %d\n",
 							channel_steer->control_in,
 							g.rc_2.control_in,
 							channel_throttle->control_in,
@@ -149,7 +149,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 
 	oldSwitchPosition = readSwitch();
 
-	cliSerial->printf_P("Unplug battery, throttle in neutral, turn off radio.\n");
+	cliSerial->printf("Unplug battery, throttle in neutral, turn off radio.\n");
 	while(channel_throttle->control_in > 0){
 		delay(20);
 		read_radio();
@@ -160,19 +160,19 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 		read_radio();
 
 		if(channel_throttle->control_in > 0){
-			cliSerial->printf_P("THROTTLE CHANGED %d \n", channel_throttle->control_in);
+			cliSerial->printf("THROTTLE CHANGED %d \n", channel_throttle->control_in);
 			fail_test++;
 		}
 
 		if (oldSwitchPosition != readSwitch()){
-			cliSerial->printf_P("CONTROL MODE CHANGED: ");
+			cliSerial->printf("CONTROL MODE CHANGED: ");
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
 			fail_test++;
 		}
 
         if(throttle_failsafe_active()) {
-			cliSerial->printf_P("THROTTLE FAILSAFE ACTIVATED: %d, ", channel_throttle->radio_in);
+			cliSerial->printf("THROTTLE FAILSAFE ACTIVATED: %d, ", channel_throttle->radio_in);
             print_mode(cliSerial, readSwitch());
             cliSerial->println();
 			fail_test++;
@@ -182,7 +182,7 @@ int8_t Rover::test_failsafe(uint8_t argc, const Menu::arg *argv)
 			return (0);
 		}
 		if(cliSerial->available() > 0){
-			cliSerial->printf_P("LOS caused no change in APM.\n");
+			cliSerial->printf("LOS caused no change in APM.\n");
 			return (0);
 		}
 	}
@@ -194,14 +194,14 @@ int8_t Rover::test_relay(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	while(1){
-		cliSerial->printf_P("Relay on\n");
+		cliSerial->printf("Relay on\n");
 		relay.on(0);
 		delay(3000);
 		if(cliSerial->available() > 0){
 			return (0);
 		}
 
-		cliSerial->printf_P("Relay off\n");
+		cliSerial->printf("Relay off\n");
 		relay.off(0);
 		delay(3000);
 		if(cliSerial->available() > 0){
@@ -214,8 +214,8 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 {
 	delay(1000);
 
-	cliSerial->printf_P("%u waypoints\n", (unsigned)mission.num_commands());
-	cliSerial->printf_P("Hit radius: %f\n", g.waypoint_radius);
+	cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
+	cliSerial->printf("Hit radius: %f\n", g.waypoint_radius);
 
 	for(uint8_t i = 0; i < mission.num_commands(); i++){
         AP_Mission::Mission_Command temp_cmd;
@@ -229,7 +229,7 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 
 void Rover::test_wp_print(const AP_Mission::Mission_Command& cmd)
 {
-    cliSerial->printf_P("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n",
+    cliSerial->printf("command #: %d id:%d options:%d p1:%d p2:%ld p3:%ld p4:%ld \n",
                     (int)cmd.index,
                     (int)cmd.id,
                     (int)cmd.content.location.options,
@@ -244,7 +244,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 	print_hit_enter();
 	delay(1000);
 
-	cliSerial->printf_P("Control CH ");
+	cliSerial->printf("Control CH ");
 
 	cliSerial->println(MODE_CHANNEL, BASE_DEC);
 
@@ -252,7 +252,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
 		delay(20);
 		uint8_t switchPosition = readSwitch();
 		if (oldSwitchPosition != switchPosition){
-			cliSerial->printf_P("Position %d\n",  switchPosition);
+			cliSerial->printf("Position %d\n",  switchPosition);
 			oldSwitchPosition = switchPosition;
 		}
 		if(cliSerial->available() > 0){
@@ -289,13 +289,13 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
         if (gps.last_message_time_ms() != last_message_time_ms) {
             last_message_time_ms = gps.last_message_time_ms();
             const Location &loc = gps.location();
-            cliSerial->printf_P("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n",
+            cliSerial->printf("Lat: %ld, Lon %ld, Alt: %ldm, #sats: %d\n",
                                 (long)loc.lat,
                                 (long)loc.lng,
                                 (long)loc.alt/100,
                                 (int)gps.num_sats());
         } else {
-            cliSerial->printf_P(".");
+            cliSerial->printf(".");
         }
         if(cliSerial->available() > 0) {
             return (0);
@@ -305,7 +305,7 @@ int8_t Rover::test_gps(uint8_t argc, const Menu::arg *argv)
 
 int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 {
-	//cliSerial->printf_P("Calibrating.");
+	//cliSerial->printf("Calibrating.");
 	ahrs.init();
     ahrs.set_fly_forward(true);
 	ins.init(ins_sample_rate);
@@ -333,7 +333,7 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
         // ---------------------
         Vector3f gyros 	= ins.get_gyro();
         Vector3f accels = ins.get_accel();
-        cliSerial->printf_P("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n",
+        cliSerial->printf("r:%4d  p:%4d  y:%3d  g=(%5.1f %5.1f %5.1f)  a=(%5.1f %5.1f %5.1f)\n",
                             (int)ahrs.roll_sensor / 100,
                             (int)ahrs.pitch_sensor / 100,
                             (uint16_t)ahrs.yaw_sensor / 100,
@@ -348,16 +348,16 @@ int8_t Rover::test_ins(uint8_t argc, const Menu::arg *argv)
 void Rover::print_enabled(bool b)
 {
        if(b)
-               cliSerial->printf_P("en");
+               cliSerial->printf("en");
        else
-               cliSerial->printf_P("dis");
-       cliSerial->printf_P("abled\n");
+               cliSerial->printf("dis");
+       cliSerial->printf("abled\n");
 }
 
 int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 {
 	if (!g.compass_enabled) {
-        cliSerial->printf_P("Compass: ");
+        cliSerial->printf("Compass: ");
 		print_enabled(false);
 		return (0);
     }
@@ -401,7 +401,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
             if (compass.healthy()) {
                 const Vector3f mag_ofs = compass.get_offsets();
                 const Vector3f mag = compass.get_field();
-                cliSerial->printf_P("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
+                cliSerial->printf("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
                                     (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                     (double)mag.x, (double)mag.y, (double)mag.z,
                                     (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
@@ -473,7 +473,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
         voltage2_max = max(voltage2_max, voltage);
 
         if (now - last_print >= 200) {
-            cliSerial->printf_P("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n", 
+            cliSerial->printf("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",
                                 (double)sonar_dist_cm_min,
                                 (double)sonar_dist_cm_max,
                                 (double)voltage_min,

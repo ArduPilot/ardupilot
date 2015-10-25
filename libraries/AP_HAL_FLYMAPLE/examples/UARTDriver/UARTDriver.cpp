@@ -34,7 +34,7 @@ void setup(void)
     int x = 3;
     int *ptr = &x;
     hal.uartA->printf("printf %d %u %#x %p %f %s\n", -1000, 1000, 1000, ptr, 1.2345, "progmem");
-    hal.uartA->printf_P("printf_P %d %u %#x %p %f %s\n", -1000, 1000, 1000, ptr, 1.2345, "progmem");
+    hal.uartA->printf("printf %d %u %#x %p %f %s\n", -1000, 1000, 1000, ptr, 1.2345, "progmem");
     hal.uartA->println("done");
 }
 

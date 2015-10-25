@@ -95,13 +95,13 @@ void motor_order_test()
 
     motors.armed(true);
     for (int8_t i=1; i <= 4; i++) {
-		hal.console->printf_P("Motor %d\n",(int)i);
+		hal.console->printf("Motor %d\n",(int)i);
         int elapsed =0,stop;
 		int start = hal.scheduler->micros();                                                   //Time Test
         motors.output_test(i, 1150);
         stop = hal.scheduler->micros();
         elapsed = stop - start;
-        hal.console->printf_P("  Elapsed Time: %dus\n",elapsed);
+        hal.console->printf("  Elapsed Time: %dus\n",elapsed);
         hal.scheduler->delay(300);
         motors.output_test(i, 1000);
         hal.scheduler->delay(2000);

@@ -14,7 +14,7 @@
 // This is the help function
 int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
 {
-    cliSerial->printf_P("Commands:\n"
+    cliSerial->printf("Commands:\n"
                          "  logs\n"
                          "  setup\n"
                          "  test\n"
@@ -94,7 +94,7 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf_P("\n\nInit " FIRMWARE_STRING
+    cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
                         hal.util->available_memory());
 

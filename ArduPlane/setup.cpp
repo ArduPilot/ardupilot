@@ -19,7 +19,7 @@ MENU(setup_menu, "setup", setup_menu_commands);
 int8_t Plane::setup_mode(uint8_t argc, const Menu::arg *argv)
 {
     // Give the user some guidance
-    cliSerial->printf_P("Setup Mode\n"
+    cliSerial->printf("Setup Mode\n"
                          "\n"
                          "IMPORTANT: if you have not previously set this system up, use the\n"
                          "'reset' command to initialize the EEPROM to sensible default values\n"
@@ -37,7 +37,7 @@ int8_t Plane::setup_factory(uint8_t argc, const Menu::arg *argv)
 {
     int c;
 
-    cliSerial->printf_P("\nType 'Y' and hit Enter to perform factory reset, any other key to abort: ");
+    cliSerial->printf("\nType 'Y' and hit Enter to perform factory reset, any other key to abort: ");
 
     do {
         c = cliSerial->read();
@@ -46,7 +46,7 @@ int8_t Plane::setup_factory(uint8_t argc, const Menu::arg *argv)
     if (('y' != c) && ('Y' != c))
         return(-1);
     AP_Param::erase_all();
-    cliSerial->printf_P("\nFACTORY RESET complete - please reset board to continue");
+    cliSerial->printf("\nFACTORY RESET complete - please reset board to continue");
 
     for (;; ) {
     }
@@ -59,7 +59,7 @@ int8_t Plane::setup_erase(uint8_t argc, const Menu::arg *argv)
 {
     int c;
 
-    cliSerial->printf_P("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: ");
+    cliSerial->printf("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: ");
 
     do {
         c = cliSerial->read();
@@ -73,9 +73,9 @@ int8_t Plane::setup_erase(uint8_t argc, const Menu::arg *argv)
 
 void Plane::zero_eeprom(void)
 {
-    cliSerial->printf_P("\nErasing EEPROM\n");
+    cliSerial->printf("\nErasing EEPROM\n");
     StorageManager::erase();
-    cliSerial->printf_P("done\n");
+    cliSerial->printf("done\n");
 }
 
 #endif // CLI_ENABLED

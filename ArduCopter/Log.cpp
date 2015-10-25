@@ -25,26 +25,26 @@ MENU2(log_menu, "Log", log_menu_commands, FUNCTOR_BIND(&copter, &Copter::print_l
 
 bool Copter::print_log_menu(void)
 {
-    cliSerial->printf_P("logs enabled: ");
+    cliSerial->printf("logs enabled: ");
 
     if (0 == g.log_bitmask) {
-        cliSerial->printf_P("none");
+        cliSerial->printf("none");
     }else{
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) cliSerial->printf_P(" ATTITUDE_FAST");
-        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) cliSerial->printf_P(" ATTITUDE_MED");
-        if (g.log_bitmask & MASK_LOG_GPS) cliSerial->printf_P(" GPS");
-        if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf_P(" PM");
-        if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf_P(" CTUN");
-        if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf_P(" NTUN");
-        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf_P(" RCIN");
-        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf_P(" IMU");
-        if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf_P(" CMD");
-        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf_P(" CURRENT");
-        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf_P(" RCOUT");
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf_P(" OPTFLOW");
-        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf_P(" COMPASS");
-        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf_P(" CAMERA");
-        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf_P(" PID");
+        if (g.log_bitmask & MASK_LOG_ATTITUDE_FAST) cliSerial->printf(" ATTITUDE_FAST");
+        if (g.log_bitmask & MASK_LOG_ATTITUDE_MED) cliSerial->printf(" ATTITUDE_MED");
+        if (g.log_bitmask & MASK_LOG_GPS) cliSerial->printf(" GPS");
+        if (g.log_bitmask & MASK_LOG_PM) cliSerial->printf(" PM");
+        if (g.log_bitmask & MASK_LOG_CTUN) cliSerial->printf(" CTUN");
+        if (g.log_bitmask & MASK_LOG_NTUN) cliSerial->printf(" NTUN");
+        if (g.log_bitmask & MASK_LOG_RCIN) cliSerial->printf(" RCIN");
+        if (g.log_bitmask & MASK_LOG_IMU) cliSerial->printf(" IMU");
+        if (g.log_bitmask & MASK_LOG_CMD) cliSerial->printf(" CMD");
+        if (g.log_bitmask & MASK_LOG_CURRENT) cliSerial->printf(" CURRENT");
+        if (g.log_bitmask & MASK_LOG_RCOUT) cliSerial->printf(" RCOUT");
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) cliSerial->printf(" OPTFLOW");
+        if (g.log_bitmask & MASK_LOG_COMPASS) cliSerial->printf(" COMPASS");
+        if (g.log_bitmask & MASK_LOG_CAMERA) cliSerial->printf(" CAMERA");
+        if (g.log_bitmask & MASK_LOG_PID) cliSerial->printf(" PID");
     }
 
     cliSerial->println();
@@ -68,11 +68,11 @@ int8_t Copter::dump_log(uint8_t argc, const Menu::arg *argv)
         DataFlash.DumpPageInfo(cliSerial);
         return(-1);
     } else if (dump_log_num <= 0) {
-        cliSerial->printf_P("dumping all\n");
+        cliSerial->printf("dumping all\n");
         Log_Read(0, 1, 0);
         return(-1);
     } else if ((argc != 2) || ((uint16_t)dump_log_num > DataFlash.get_num_logs())) {
-        cliSerial->printf_P("bad log number\n");
+        cliSerial->printf("bad log number\n");
         return(-1);
     }
 
@@ -95,7 +95,7 @@ int8_t Copter::select_logs(uint8_t argc, const Menu::arg *argv)
     uint16_t bits;
 
     if (argc != 2) {
-        cliSerial->printf_P("missing log type\n");
+        cliSerial->printf("missing log type\n");
         return(-1);
     }
 
@@ -767,7 +767,7 @@ const struct LogStructure Copter::log_structure[] = {
 // Read the DataFlash log memory
 void Copter::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page)
 {
-    cliSerial->printf_P("\n" FIRMWARE_STRING
+    cliSerial->printf("\n" FIRMWARE_STRING
                              "\nFree RAM: %u\n"
                              "\nFrame: " FRAME_CONFIG_STRING "\n",
                         (unsigned) hal.util->available_memory());

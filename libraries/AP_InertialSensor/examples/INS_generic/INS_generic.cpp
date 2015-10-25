@@ -99,17 +99,17 @@ static void display_offsets_and_scaling()
     Vector3f gyro_offsets = ins.get_gyro_offsets();
 
     // display results
-    hal.console->printf_P(
+    hal.console->printf(
             "\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_offsets.x,
                     accel_offsets.y,
                     accel_offsets.z);
-    hal.console->printf_P(
+    hal.console->printf(
             "Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_scale.x,
                     accel_scale.y,
                     accel_scale.z);
-    hal.console->printf_P(
+    hal.console->printf(
             "Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     gyro_offsets.x,
                     gyro_offsets.y,
@@ -146,7 +146,7 @@ static void run_test()
 
 		if (counter++ % 50 == 0) {
 			// display results
-			hal.console->printf_P("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
+			hal.console->printf("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
 								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
 		}
     }

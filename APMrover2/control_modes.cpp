@@ -105,7 +105,7 @@ void Rover::read_trim_switch()
 
 				    // save command
 				    if(mission.add_cmd(cmd)) {
-                        hal.console->printf_P("Learning waypoint %u", (unsigned)mission.num_commands());
+                        hal.console->printf("Learning waypoint %u", (unsigned)mission.num_commands());
 				    }
                 } else if (control_mode == AUTO) {    
                     // if SW7 is ON in AUTO = set to RTL  

@@ -541,7 +541,7 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
         hal.console->println("trim over maximum of 10 degrees");
         return false;
     }
-    hal.console->printf_P("Trim OK: roll=%.2f pitch=%.2f\n",
+    hal.console->printf("Trim OK: roll=%.2f pitch=%.2f\n",
                           (double)degrees(trim_roll),
                           (double)degrees(trim_pitch));
     return true;
@@ -1017,7 +1017,7 @@ AP_InertialSensor::_init_gyro()
     hal.console->println();
     for (uint8_t k=0; k<num_gyros; k++) {
         if (!converged[k]) {
-            hal.console->printf_P("gyro[%u] did not converge: diff=%f dps\n",
+            hal.console->printf("gyro[%u] did not converge: diff=%f dps\n",
                                   (unsigned)k, (double)ToDeg(best_diff[k]));
             _gyro_offset[k] = best_avg[k];
             // flag calibration as failed for this gyro

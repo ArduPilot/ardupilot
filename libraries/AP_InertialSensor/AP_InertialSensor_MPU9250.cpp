@@ -531,7 +531,7 @@ void AP_InertialSensor_MPU9250::_dump_registers(AP_HAL::SPIDeviceDriver *spi)
     hal.console->println("MPU9250 registers");
     for (uint8_t reg=0; reg<=126; reg++) {
         uint8_t v = _register_read(spi, reg);
-        hal.console->printf_P("%02x:%02x ", (unsigned)reg, (unsigned)v);
+        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
             hal.console->println();
         }
