@@ -357,7 +357,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         case 'S':
                         // pgmstring: // not yet used
                                 pnt = va_arg (ap, char *);
-                                size = strnlen_P (pnt, (flags & FL_PREC) ? prec : ~0);
+                                size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
                                 flags |= FL_PGMSTRING;
 
                         str_lpad:

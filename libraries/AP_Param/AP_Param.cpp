@@ -566,7 +566,7 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             return (AP_Param *)(p + PGM_POINTER(&group_info[i].offset));
         } else if (type == AP_PARAM_VECTOR3F) {
             // special case for finding Vector3f elements
-            uint8_t suffix_len = strnlen_P(group_info[i].name, AP_MAX_NAME_SIZE);
+            uint8_t suffix_len = strnlen(group_info[i].name, AP_MAX_NAME_SIZE);
             if (strncmp_P(name, group_info[i].name, suffix_len) == 0 &&
                 name[suffix_len] == '_' &&
                 (name[suffix_len+1] == 'X' ||
@@ -598,7 +598,7 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
     for (uint8_t i=0; i<_num_vars; i++) {
         uint8_t type = PGM_UINT8(&_var_info[i].type);
         if (type == AP_PARAM_GROUP) {
-            uint8_t len = strnlen_P(_var_info[i].name, AP_MAX_NAME_SIZE);
+            uint8_t len = strnlen(_var_info[i].name, AP_MAX_NAME_SIZE);
             if (strncmp_P(name, _var_info[i].name, len) != 0) {
                 continue;
             }
