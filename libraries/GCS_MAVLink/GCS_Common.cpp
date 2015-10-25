@@ -393,7 +393,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
     if ((unsigned)packet.start_index > mission.num_commands() ||
         (unsigned)packet.end_index > mission.num_commands() ||
         packet.end_index < packet.start_index) {
-        send_text_P(MAV_SEVERITY_WARNING,"flight plan update rejected");
+        send_text(MAV_SEVERITY_WARNING,"flight plan update rejected");
         return;
     }
 
@@ -630,23 +630,6 @@ GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *str)
     }
 }
 
-void
-GCS_MAVLINK::send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
-{
-    mavlink_statustext_t m;
-    uint8_t i;
-    memset(m.text, 0, sizeof(m.text));
-    for (i=0; i<sizeof(m.text); i++) {
-        m.text[i] = pgm_read_byte((const prog_char *)(str++));
-        if (m.text[i] == '\0') {
-            break;
-        }
-    }
-    if (i < sizeof(m.text)) m.text[i] = 0;
-    send_text(severity, (const char *)m.text);
-}
-
-
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
 {
     mavlink_radio_t packet;
@@ -767,7 +750,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
             msg->compid,
             MAV_MISSION_ACCEPTED);
         
-        send_text_P(MAV_SEVERITY_WARNING,"flight plan received");
+        send_text(MAV_SEVERITY_WARNING,"flight plan received");
         waypoint_receiving = false;
         mission_is_complete = true;
         // XXX ignores waypoint radius for individual waypoints, can
