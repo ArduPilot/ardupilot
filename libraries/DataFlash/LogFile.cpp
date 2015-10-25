@@ -646,9 +646,9 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
     pkt.msgid = LOG_FORMAT_MSG;
     pkt.type = PGM_UINT8(&s->msg_type);
     pkt.length = PGM_UINT8(&s->msg_len);
-    strncpy_P(pkt.name, s->name, sizeof(pkt.name));
-    strncpy_P(pkt.format, s->format, sizeof(pkt.format));
-    strncpy_P(pkt.labels, s->labels, sizeof(pkt.labels));
+    strncpy(pkt.name, s->name, sizeof(pkt.name));
+    strncpy(pkt.format, s->format, sizeof(pkt.format));
+    strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
 }
 
 /*
@@ -1068,7 +1068,7 @@ bool DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
         time_us : hal.scheduler->micros64(),
         msg  : {}
     };
-    strncpy_P(pkt.msg, message, sizeof(pkt.msg));
+    strncpy(pkt.msg, message, sizeof(pkt.msg));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 

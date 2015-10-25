@@ -528,11 +528,11 @@ void AP_Param::copy_name_token(const ParamToken &token, char *buffer, size_t buf
         Debug("no info found");
         return;
     }
-    strncpy_P(buffer, info->name, buffer_size);
+    strncpy(buffer, info->name, buffer_size);
     if (ginfo != NULL) {
         uint8_t len = strnlen(buffer, buffer_size);
         if (len < buffer_size) {
-            strncpy_P(&buffer[len], ginfo->name, buffer_size-len);
+            strncpy(&buffer[len], ginfo->name, buffer_size-len);
         }
         if ((force_scalar || idx != 0) && AP_PARAM_VECTOR3F == PGM_UINT8(&ginfo->type)) {
             // the caller wants a specific element in a Vector3f
@@ -648,7 +648,7 @@ AP_Param *
 AP_Param::find_P(const prog_char_t *name, enum ap_var_type *ptype)
 {
     char param_name[AP_MAX_NAME_SIZE+1];
-    strncpy_P(param_name, name, AP_MAX_NAME_SIZE);
+    strncpy(param_name, name, AP_MAX_NAME_SIZE);
     param_name[AP_MAX_NAME_SIZE] = 0;
     return find(param_name, ptype);
 }
