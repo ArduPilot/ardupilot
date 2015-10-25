@@ -563,7 +563,7 @@ void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
 void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
 {
     if (!CardInserted()) {
-        port->println_P("No dataflash inserted");
+        port->println("No dataflash inserted");
         return;
     }
     ReadManufacturerID();

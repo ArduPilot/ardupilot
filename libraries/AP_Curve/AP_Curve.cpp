@@ -83,7 +83,7 @@ T AP_Curve<T,SIZE>::get_y( T x )
 template <class T, uint8_t SIZE>
 void AP_Curve<T,SIZE>::dump_curve(AP_HAL::BetterStream* s)
 {
-	s->println_P("Curve:");
+	s->println("Curve:");
 	for( uint8_t i = 0; i<_num_points; i++ ){
 		s->print("x:");
 		s->print(_x[i]);

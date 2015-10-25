@@ -189,14 +189,14 @@ void SITLScheduler::system_initialized() {
 
 void SITLScheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0)
-        hal.uartA->println_P("NESTED ATOMIC ERROR");
+        hal.uartA->println("NESTED ATOMIC ERROR");
     else
         _nested_atomic_ctr--;
 }
 
 void SITLScheduler::reboot(bool hold_in_bootloader)
 {
-    hal.uartA->println_P("REBOOT NOT IMPLEMENTED\r\n");
+    hal.uartA->println("REBOOT NOT IMPLEMENTED\r\n");
 }
 
 void SITLScheduler::_run_timer_procs(bool called_from_isr)

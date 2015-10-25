@@ -538,7 +538,7 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, float& tri
     trim_roll = atan2f(-accel_sample.y, -accel_sample.z);
     if (fabsf(trim_roll) > radians(10) || 
         fabsf(trim_pitch) > radians(10)) {
-        hal.console->println_P("trim over maximum of 10 degrees");
+        hal.console->println("trim over maximum of 10 degrees");
         return false;
     }
     hal.console->printf_P("Trim OK: roll=%.2f pitch=%.2f\n",

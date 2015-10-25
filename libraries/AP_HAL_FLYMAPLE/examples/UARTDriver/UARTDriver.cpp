@@ -30,7 +30,7 @@ void setup(void)
     hal.uartA->println(1000, 8);
     hal.uartA->println(1000, 10);
     hal.uartA->println(1000, 16);
-    hal.uartA->println_P("progmem");
+    hal.uartA->println("progmem");
     int x = 3;
     int *ptr = &x;
     hal.uartA->printf("printf %d %u %#x %p %f %s\n", -1000, 1000, 1000, ptr, 1.2345, "progmem");

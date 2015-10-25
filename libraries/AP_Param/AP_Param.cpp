@@ -739,7 +739,7 @@ bool AP_Param::save(bool force_save)
 
     if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _storage.size()) {
         // we are out of room for saving variables
-        hal.console->println_P("EEPROM full");
+        hal.console->println("EEPROM full");
         return false;
     }
 

@@ -32,7 +32,7 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup () {
-    hal.console->println_P("Unit test for AP_Mount. This sketch"
+    hal.console->println("Unit test for AP_Mount. This sketch"
                 "has no functionality, it only tests build.");
 }
 void loop () {}

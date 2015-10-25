@@ -29,7 +29,7 @@ void setup(void)
     hal.console->println(1000, 8);
     hal.console->println(1000, 10);
     hal.console->println(1000, 16);
-    hal.console->println_P("progmem");
+    hal.console->println("progmem");
     hal.console->printf("printf %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, "progmem");
     hal.console->printf_P("printf_P %d %u %#x %p %f %S\n", -1000, 1000, 1000, 1000, 1.2345, "progmem");
 

@@ -415,7 +415,7 @@ void Rover::Log_Read(uint16_t list_entry, uint16_t start_page, uint16_t end_page
                              "\nFree RAM: %u\n",
                         (unsigned)hal.util->available_memory());
 
-    cliSerial->println_P(HAL_BOARD_NAME);
+    cliSerial->println(HAL_BOARD_NAME);
 
 	DataFlash.LogReadProcess(list_entry, start_page, end_page,
                              FUNCTOR_BIND_MEMBER(&Rover::print_mode, void, AP_HAL::BetterStream *, uint8_t),

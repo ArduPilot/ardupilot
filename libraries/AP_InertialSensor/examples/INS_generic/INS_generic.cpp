@@ -43,7 +43,7 @@ void loop(void)
     int16_t user_input;
 
     hal.console->println();
-    hal.console->println_P(
+    hal.console->println(
     "Menu:\r\n"
     "    c calibrate accelerometers\r\n"
     "    d) display offsets and scaling\r\n"

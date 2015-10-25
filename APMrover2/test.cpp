@@ -266,7 +266,7 @@ int8_t Rover::test_modeswitch(uint8_t argc, const Menu::arg *argv)
  */
 int8_t Rover::test_logging(uint8_t argc, const Menu::arg *argv)
 {
-	cliSerial->println_P("Testing dataflash logging");
+	cliSerial->println("Testing dataflash logging");
     DataFlash.ShowDeviceInfo(cliSerial);
     return 0;
 }
@@ -363,7 +363,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
     }
 
     if (!compass.init()) {
-        cliSerial->println_P("Compass initialisation failed!");
+        cliSerial->println("Compass initialisation failed!");
         return 0;
     }
     ahrs.init();
@@ -406,7 +406,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
                                     (double)mag.x, (double)mag.y, (double)mag.z,
                                     (double)mag_ofs.x, (double)mag_ofs.y, (double)mag_ofs.z);
             } else {
-                cliSerial->println_P("compass not healthy");
+                cliSerial->println("compass not healthy");
             }
             counter=0;
         }
@@ -417,7 +417,7 @@ int8_t Rover::test_mag(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.    
-    cliSerial->println_P("saving offsets");
+    cliSerial->println("saving offsets");
     compass.save_offsets();
     return (0);
 }
@@ -432,7 +432,7 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
     sonar.update();
 
     if (sonar.status() == RangeFinder::RangeFinder_NotConnected) {
-        cliSerial->println_P("WARNING: Sonar is not enabled");
+        cliSerial->println("WARNING: Sonar is not enabled");
     }
 
     print_hit_enter();

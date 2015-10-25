@@ -293,7 +293,7 @@ void Tracker::load_parameters(void)
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->println_P("done.");
+        hal.console->println("done.");
     } else {
         uint32_t before = hal.scheduler->micros();
         // Load all auto-loaded EEPROM variables
