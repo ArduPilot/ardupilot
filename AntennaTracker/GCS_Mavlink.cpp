@@ -599,7 +599,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
         
         // do command
-        send_text_P(MAV_SEVERITY_WARNING,"command received: ");
+        send_text(MAV_SEVERITY_WARNING,"command received: ");
         
         switch(packet.command) {
             
@@ -827,7 +827,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // check if this is the HOME wp
         if (packet.seq == 0) {
             tracker.set_home(tell_command); // New home in EEPROM
-            send_text_P(MAV_SEVERITY_WARNING,"new HOME received");
+            send_text(MAV_SEVERITY_WARNING,"new HOME received");
             waypoint_receiving = false;
         }
 
@@ -964,7 +964,7 @@ void Tracker::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].send_text_P(severity, str);
+            gcs[i].send_text(severity, str);
         }
     }
 #if LOGGING_ENABLED == ENABLED
