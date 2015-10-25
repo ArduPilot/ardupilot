@@ -560,7 +560,7 @@ AP_Param::find_group(const char *name, uint8_t vindex, const struct GroupInfo *g
             }
         } else
 #endif // AP_NESTED_GROUPS_ENABLED
-        if (strcasecmp_P(name, group_info[i].name) == 0) {
+        if (strcasecmp(name, group_info[i].name) == 0) {
             uintptr_t p = PGM_POINTER(&_var_info[vindex].ptr);
             *ptype = (enum ap_var_type)type;
             return (AP_Param *)(p + PGM_POINTER(&group_info[i].offset));
@@ -610,7 +610,7 @@ AP_Param::find(const char *name, enum ap_var_type *ptype)
             // we continue looking as we want to allow top level
             // parameter to have the same prefix name as group
             // parameters, for example CAM_P_G
-        } else if (strcasecmp_P(name, _var_info[i].name) == 0) {
+        } else if (strcasecmp(name, _var_info[i].name) == 0) {
             *ptype = (enum ap_var_type)type;
             return (AP_Param *)PGM_POINTER(&_var_info[i].ptr);
         }
@@ -674,7 +674,7 @@ AP_Param *
 AP_Param::find_object(const char *name)
 {
     for (uint8_t i=0; i<_num_vars; i++) {
-        if (strcasecmp_P(name, _var_info[i].name) == 0) {
+        if (strcasecmp(name, _var_info[i].name) == 0) {
             return (AP_Param *)PGM_POINTER(&_var_info[i].ptr);
         }
     }

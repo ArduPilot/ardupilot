@@ -109,10 +109,10 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 	// that name as the argument to the command, and set the bit in
 	// bits accordingly.
 	//
-	if (!strcasecmp_P(argv[1].str, "all")) {
+	if (!strcasecmp(argv[1].str, "all")) {
 		bits = ~0;
 	} else {
-		#define TARG(_s)	if (!strcasecmp_P(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
+		#define TARG(_s)	if (!strcasecmp(argv[1].str, #_s)) bits |= MASK_LOG_ ## _s
 		TARG(ATTITUDE_FAST);
 		TARG(ATTITUDE_MED);
 		TARG(GPS);
@@ -130,7 +130,7 @@ int8_t Rover::select_logs(uint8_t argc, const Menu::arg *argv)
 		#undef TARG
 	}
 
-	if (!strcasecmp_P(argv[0].str, "enable")) {
+	if (!strcasecmp(argv[0].str, "enable")) {
 		g.log_bitmask.set_and_save(g.log_bitmask | bits);
 	}else{
 		g.log_bitmask.set_and_save(g.log_bitmask & ~bits);
