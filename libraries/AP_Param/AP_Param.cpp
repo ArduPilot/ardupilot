@@ -642,17 +642,6 @@ AP_Param::find_def_value_ptr(const char *name)
     return &info->def_value;
 }
 
-// Find a variable by name.
-//
-AP_Param *
-AP_Param::find_P(const prog_char_t *name, enum ap_var_type *ptype)
-{
-    char param_name[AP_MAX_NAME_SIZE+1];
-    strncpy(param_name, name, AP_MAX_NAME_SIZE);
-    param_name[AP_MAX_NAME_SIZE] = 0;
-    return find(param_name, ptype);
-}
-
 // Find a variable by index. Note that this is quite slow.
 //
 AP_Param *
@@ -1214,7 +1203,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info)
     // find the new variable in the variable structures
     enum ap_var_type ptype;
     AP_Param *ap2;
-    ap2 = find_P((const prog_char_t *)&info->new_name[0], &ptype);
+    ap2 = find(&info->new_name[0], &ptype);
     if (ap2 == NULL) {
         hal.console->printf_P("Unknown conversion '%s'\n", info->new_name);
         return;
