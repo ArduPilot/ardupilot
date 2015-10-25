@@ -264,7 +264,7 @@ void SITLScheduler::panic(const prog_char_t *errormsg, ...)
     va_list ap;
 
     va_start(ap, errormsg);
-    hal.console->vprintf_P(errormsg, ap);
+    hal.console->vprintf(errormsg, ap);
     va_end(ap);
     hal.console->printf_P("\n");
 
