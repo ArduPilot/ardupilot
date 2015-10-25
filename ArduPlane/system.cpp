@@ -636,43 +636,43 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case MANUAL:
-        port->print_P("Manual");
+        port->print("Manual");
         break;
     case CIRCLE:
-        port->print_P("Circle");
+        port->print("Circle");
         break;
     case STABILIZE:
-        port->print_P("Stabilize");
+        port->print("Stabilize");
         break;
     case TRAINING:
-        port->print_P("Training");
+        port->print("Training");
         break;
     case ACRO:
-        port->print_P("ACRO");
+        port->print("ACRO");
         break;
     case FLY_BY_WIRE_A:
-        port->print_P("FBW_A");
+        port->print("FBW_A");
         break;
     case AUTOTUNE:
-        port->print_P("AUTOTUNE");
+        port->print("AUTOTUNE");
         break;
     case FLY_BY_WIRE_B:
-        port->print_P("FBW_B");
+        port->print("FBW_B");
         break;
     case CRUISE:
-        port->print_P("CRUISE");
+        port->print("CRUISE");
         break;
     case AUTO:
-        port->print_P("AUTO");
+        port->print("AUTO");
         break;
     case RTL:
-        port->print_P("RTL");
+        port->print("RTL");
         break;
     case LOITER:
-        port->print_P("Loiter");
+        port->print("Loiter");
         break;
     case GUIDED:
-        port->print_P("Guided");
+        port->print("Guided");
         break;
     default:
         port->printf_P("Mode(%u)", (unsigned)mode);
@@ -683,7 +683,7 @@ void Plane::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 #if CLI_ENABLED == ENABLED
 void Plane::print_comma(void)
 {
-    cliSerial->print_P(",");
+    cliSerial->print(",");
 }
 #endif
 
