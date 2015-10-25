@@ -483,7 +483,7 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
     }
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
-    if (!state[0]._type.load()) {
+    if (!state[0]._type.configured()) {
         if (RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_pan) ||
             RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_tilt) ||
             RC_Channel_aux::function_assigned(RC_Channel_aux::Aux_servo_function_t::k_mount_roll)) {
