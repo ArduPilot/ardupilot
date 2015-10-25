@@ -14,15 +14,18 @@ namespace Linux {
     class Storage;
     class GPIO_BBB;
     class GPIO_RPI;
+    class GPIO_Sysfs;
     class Storage;
     class Storage_FRAM;
     class DigitalSource;
+    class DigitalSource_Sysfs;
     class RCInput;
     class RCInput_PRU;
     class RCInput_AioPRU;
     class RCInput_Navio;
     class RCInput_Raspilot;
     class RCInput_ZYNQ;
+    class RCInput_UART;
     class RCInput_UDP;
     class RCOutput_PRU;
     class RCOutput_AioPRU;

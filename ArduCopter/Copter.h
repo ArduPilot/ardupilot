@@ -84,7 +84,6 @@
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 #include <AC_Fence/AC_Fence.h>           // Arducopter Fence library
-#include <SITL/SITL.h>               // software in the loop support
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_Notify/AP_Notify.h>          // Notify library
@@ -116,6 +115,10 @@
 
 // Local modules
 #include "Parameters.h"
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
@@ -186,7 +189,7 @@ private:
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
 
     // Mission library

@@ -17,14 +17,12 @@
   balloon simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Balloon.h"
+
 #include <stdio.h>
 
-/*
-  constructor
- */
+namespace SITL {
+
 Balloon::Balloon(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
@@ -119,4 +117,5 @@ void Balloon::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

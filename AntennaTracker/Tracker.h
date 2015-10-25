@@ -51,7 +51,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <SITL/SITL.h>
 #include <PID/PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF/AP_NavEKF.h>
@@ -75,6 +74,10 @@
 
 #include "Parameters.h"
 #include <GCS_MAVLink/GCS.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 class Tracker : public AP_HAL::HAL::Callbacks {
 public:
@@ -122,7 +125,7 @@ private:
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
     
     /**

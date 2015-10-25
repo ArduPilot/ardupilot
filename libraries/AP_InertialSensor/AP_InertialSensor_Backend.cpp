@@ -37,13 +37,6 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
     gyro.rotate(_imu._board_orientation);
 }
 
-void AP_InertialSensor_Backend::_publish_delta_angle(uint8_t instance, const Vector3f &delta_angle)
-{
-    // publish delta angle
-    _imu._delta_angle[instance] = delta_angle;
-    _imu._delta_angle_valid[instance] = true;
-}
-
 /*
   rotate gyro vector and add the gyro offset
  */
@@ -51,14 +44,49 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 {
     _imu._gyro[instance] = gyro;
     _imu._gyro_healthy[instance] = true;
+
+    if (_imu._gyro_raw_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    // publish delta angle
+    _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
+    _imu._delta_angle_valid[instance] = true;
 }
 
-void AP_InertialSensor_Backend::_publish_delta_velocity(uint8_t instance, const Vector3f &delta_velocity, float dt)
+void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
+                                                            const Vector3f &gyro)
 {
-    // publish delta velocity
-    _imu._delta_velocity[instance] = delta_velocity;
-    _imu._delta_velocity_dt[instance] = dt;
-    _imu._delta_velocity_valid[instance] = true;
+    float dt;
+
+    if (_imu._gyro_raw_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    dt = 1.0f / _imu._gyro_raw_sample_rates[instance];
+
+    // compute delta angle
+    Vector3f delta_angle = (gyro + _imu._last_raw_gyro[instance]) * 0.5f * dt;
+
+    // compute coning correction
+    // see page 26 of:
+    // Tian et al (2010) Three-loop Integration of GPS and Strapdown INS with Coning and Sculling Compensation
+    // Available: http://www.sage.unsw.edu.au/snap/publications/tian_etal2010b.pdf
+    // see also examples/coning.py
+    Vector3f delta_coning = (_imu._delta_angle_acc[instance] +
+                             _imu._last_delta_angle[instance] * (1.0f / 6.0f));
+    delta_coning = delta_coning % delta_angle;
+    delta_coning *= 0.5f;
+
+    // integrate delta angle accumulator
+    // the angles and coning corrections are accumulated separately in the
+    // referenced paper, but in simulation little difference was found between
+    // integrating together and integrating separately (see examples/coning.py)
+    _imu._delta_angle_acc[instance] += delta_angle + delta_coning;
+
+    // save previous delta angle for coning correction
+    _imu._last_delta_angle[instance] = delta_angle;
+    _imu._last_raw_gyro[instance] = gyro;
 }
 
 /*
@@ -68,17 +96,35 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 {
     _imu._accel[instance] = accel;
     _imu._accel_healthy[instance] = true;
+
+    if (_imu._accel_raw_sample_rates[instance] <= 0) {
+        return;
+    }
+
+    // publish delta velocity
+    _imu._delta_velocity[instance] = _imu._delta_velocity_acc[instance];
+    _imu._delta_velocity_dt[instance] = _imu._delta_velocity_acc_dt[instance];
+    _imu._delta_velocity_valid[instance] = true;
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              const Vector3f &accel)
 {
-#if INS_VIBRATION_CHECK
-    if (_imu._accel_sample_rates[instance] > 0) {
-        float dt = 1.0f / _imu._accel_sample_rates[instance];
-        _imu.calc_vibration_and_clipping(instance, accel, dt);
+    float dt;
+
+    if (_imu._accel_raw_sample_rates[instance] <= 0) {
+        return;
     }
+
+    dt = 1.0f / _imu._accel_raw_sample_rates[instance];
+
+#if INS_VIBRATION_CHECK
+    _imu.calc_vibration_and_clipping(instance, accel, dt);
 #endif
+
+    // delta velocity
+    _imu._delta_velocity_acc[instance] += accel * dt;
+    _imu._delta_velocity_acc_dt[instance] += dt;
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
@@ -87,16 +133,22 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
     _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
-void AP_InertialSensor_Backend::_set_accel_sample_rate(uint8_t instance,
-                                                       uint32_t rate)
+void AP_InertialSensor_Backend::_set_accel_raw_sample_rate(uint8_t instance,
+                                                           uint32_t rate)
 {
-    _imu._accel_sample_rates[instance] = rate;
+    _imu._accel_raw_sample_rates[instance] = rate;
 }
 
 // set accelerometer error_count
 void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_t error_count)
 {
     _imu._accel_error_count[instance] = error_count;
+}
+
+void AP_InertialSensor_Backend::_set_gyro_raw_sample_rate(uint8_t instance,
+                                                          uint32_t rate)
+{
+    _imu._gyro_raw_sample_rates[instance] = rate;
 }
 
 // set gyro error_count

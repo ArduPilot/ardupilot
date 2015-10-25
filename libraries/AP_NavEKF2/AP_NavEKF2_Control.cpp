@@ -171,7 +171,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     // Once tilt has converged, align yaw using magnetic field measurements
     if (tiltAlignComplete && !yawAlignComplete) {
         Vector3f eulerAngles;
-        getEulerAngles(eulerAngles);
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
         stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         StoreQuatReset();
         yawAlignComplete = true;

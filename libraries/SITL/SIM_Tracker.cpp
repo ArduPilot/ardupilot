@@ -18,8 +18,10 @@
 */
 
 #include "SIM_Tracker.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #include <stdio.h>
+
+namespace SITL {
 
 Tracker::Tracker(const char *home_str, const char *frame_str) :
 Aircraft(home_str, frame_str)
@@ -40,7 +42,7 @@ void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &p
 
 /*
   update function for onoff servos.
-  These servos either move at a constant rate or are still 
+  These servos either move at a constant rate or are still
   Returns (yaw_rate,pitch_rate) tuple
 */
 void Tracker::update_onoff_servos(float &yaw_rate, float &pitch_rate)
@@ -69,7 +71,7 @@ void Tracker::update(const struct sitl_input &input)
 {
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;
-    
+
     float yaw_rate, pitch_rate;
 
     yaw_input = (input.servos[0]-1500)/500.0f;
@@ -115,8 +117,8 @@ void Tracker::update(const struct sitl_input &input)
         last_debug_us = time_now_us;
         printf("roll=%.1f pitch=%.1f yaw=%.1f rates=%.1f/%.1f/%.1f in=%.3f,%.3f\n",
                roll_current,
-               pitch_current_relative, 
-               yaw_current_relative, 
+               pitch_current_relative,
+               yaw_current_relative,
                roll_rate, pitch_rate, yaw_rate,
                yaw_input, pitch_input);
     }
@@ -135,4 +137,4 @@ void Tracker::update(const struct sitl_input &input)
     update_position();
 }
 
-#endif
+} // namespace SITL

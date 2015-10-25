@@ -593,7 +593,8 @@ void AP_InertialSensor_MPU6000::start()
     _gyro_instance = _imu.register_gyro();
     _accel_instance = _imu.register_accel();
 
-    _set_accel_sample_rate(_accel_instance, 1000);
+    _set_accel_raw_sample_rate(_accel_instance, 1000);
+    _set_gyro_raw_sample_rate(_gyro_instance, 1000);
 
     hal.scheduler->resume_timer_procs();
 
@@ -712,12 +713,16 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
         accel.rotate(ROTATION_YAW_270);
         gyro.rotate(ROTATION_YAW_270);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+        accel.rotate(ROTATION_YAW_90);
+        gyro.rotate(ROTATION_YAW_90);
 #endif
 
         _rotate_and_correct_accel(_accel_instance, accel);
         _rotate_and_correct_gyro(_gyro_instance, gyro);
 
         _notify_new_accel_raw_sample(_accel_instance, accel);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
         _accel_filtered = _accel_filter.apply(accel);
         _gyro_filtered = _gyro_filter.apply(gyro);

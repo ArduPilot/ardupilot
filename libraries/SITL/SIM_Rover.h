@@ -17,16 +17,16 @@
   rover simulator class
 */
 
-#ifndef _SIM_ROVER_H
-#define _SIM_ROVER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a rover simulator
  */
-class SimRover : public Aircraft
-{
+class SimRover : public Aircraft {
 public:
     SimRover(const char *home_str, const char *frame_str);
 
@@ -53,5 +53,4 @@ private:
     float calc_lat_accel(float steering_angle, float speed);
 };
 
-
-#endif // _SIM_ROVER_H
+} // namespace SITL

@@ -276,11 +276,18 @@ private:
     Vector3f _delta_velocity[INS_MAX_INSTANCES];
     float _delta_velocity_dt[INS_MAX_INSTANCES];
     bool _delta_velocity_valid[INS_MAX_INSTANCES];
+    // delta velocity accumulator
+    Vector3f _delta_velocity_acc[INS_MAX_INSTANCES];
+    // time accumulator for delta velocity accumulator
+    float _delta_velocity_acc_dt[INS_MAX_INSTANCES];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
     bool _delta_angle_valid[INS_MAX_INSTANCES];
+    Vector3f _delta_angle_acc[INS_MAX_INSTANCES];
+    Vector3f _last_delta_angle[INS_MAX_INSTANCES];
+    Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
     // product id
     AP_Int16 _product_id;
@@ -293,8 +300,9 @@ private:
     // accelerometer max absolute offsets to be used for calibration
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
-    // accelerometer sample rate in units of Hz
-    uint32_t _accel_sample_rates[INS_MAX_INSTANCES];
+    // accelerometer and gyro raw sample rate in units of Hz
+    uint32_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    uint32_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];

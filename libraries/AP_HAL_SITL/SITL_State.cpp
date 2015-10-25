@@ -22,6 +22,7 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
+using namespace SITL;
 
 void SITL_State::_set_param_default(const char *parm)
 {
@@ -74,7 +75,7 @@ void SITL_State::_sitl_setup(void)
     fprintf(stdout, "Starting SITL input\n");
 
     // find the barometer object if it exists
-    _sitl = (SITL *)AP_Param::find_object("SIM_");
+    _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     _barometer = (AP_Baro *)AP_Param::find_object("GND_");
     _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
     _compass = (Compass *)AP_Param::find_object("COMPASS_");

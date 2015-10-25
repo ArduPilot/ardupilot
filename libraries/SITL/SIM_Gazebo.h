@@ -17,17 +17,18 @@
   simulator connection for ardupilot version of Gazebo
 */
 
-#ifndef _SIM_GAZEBO_H
-#define _SIM_GAZEBO_H
+#pragma once
+
+#include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+
+namespace SITL {
 
 /*
   Gazebo simulator
  */
-class Gazebo : public Aircraft
-{
+class Gazebo : public Aircraft {
 public:
     Gazebo(const char *home_str, const char *frame_str);
 
@@ -46,7 +47,7 @@ private:
     struct servo_packet {
       float motor_speed[4];
     };
-    
+
     /*
       reply packet sent from Gazebo to ArduPilot
      */
@@ -68,5 +69,4 @@ private:
     SocketAPM sock;
 };
 
-
-#endif // _SIM_GAZEBO_H
+} // namespace SITL

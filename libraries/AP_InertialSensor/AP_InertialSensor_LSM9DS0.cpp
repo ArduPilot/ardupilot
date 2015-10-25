@@ -757,6 +757,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
     gyro_data *= _gyro_scale;
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
     _gyro_filtered = _gyro_filter.apply(gyro_data);
     _gyro_sample_available = true;
 }

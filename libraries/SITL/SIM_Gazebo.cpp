@@ -17,16 +17,16 @@
   simulator connector for ardupilot version of Gazebo
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Gazebo.h"
+
 #include <stdio.h>
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
-/*
-  constructor
- */
+namespace SITL {
+
 Gazebo::Gazebo(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     last_timestamp(0),
@@ -127,4 +127,5 @@ void Gazebo::update(const struct sitl_input &input)
     recv_fdm(input);
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

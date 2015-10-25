@@ -18,7 +18,7 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       1.5f
+#define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
@@ -34,14 +34,14 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1.5E-03f
+#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       1.5f
+#define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
@@ -57,14 +57,14 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1.5E-03f
+#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 
 #else
 // generic defaults (and for plane)
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
-#define ALT_NOISE_DEFAULT       1.5f
+#define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.005f
 #define ACC_PNOISE_DEFAULT      0.25f
@@ -80,7 +80,7 @@
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
-#define GSCALE_PNOISE_DEFAULT   1.5E-03f
+#define GSCALE_PNOISE_DEFAULT   3.0E-03f
 
 #endif // APM_BUILD_DIRECTORY
 

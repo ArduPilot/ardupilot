@@ -17,16 +17,16 @@
   helicopter simulator class
 */
 
-#ifndef _SIM_HELICOPTER_H
-#define _SIM_HELICOPTER_H
+#pragma once
 
 #include "SIM_Aircraft.h"
+
+namespace SITL {
 
 /*
   a helicopter simulator
  */
-class Helicopter : public Aircraft
-{
+class Helicopter : public Aircraft {
 public:
     Helicopter(const char *home_str, const char *frame_str);
 
@@ -59,5 +59,4 @@ private:
     bool gas_heli = false;
 };
 
-
-#endif // _SIM_HELICOPTER_H
+} // namespace SITL

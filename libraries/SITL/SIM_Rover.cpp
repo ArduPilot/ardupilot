@@ -17,15 +17,12 @@
   rover simulator class
 */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_Rover.h"
-#include <stdio.h>
+
 #include <string.h>
 
-/*
-  constructor
- */
+namespace SITL {
+
 SimRover::SimRover(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     max_speed(20),
@@ -157,4 +154,5 @@ void SimRover::update(const struct sitl_input &input)
     // update lat/lon/altitude
     update_position();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL

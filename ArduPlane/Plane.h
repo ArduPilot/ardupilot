@@ -69,7 +69,6 @@
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
 #include <DataFlash/DataFlash.h>
-#include <SITL/SITL.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 
 #include <AP_Navigation/AP_Navigation.h>
@@ -103,6 +102,10 @@
 #include "defines.h"
 
 #include "Parameters.h"
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 /*
   a plane specific arming class
@@ -224,7 +227,7 @@ private:
     AP_SteerController steerController {ahrs};
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL sitl;
+    SITL::SITL sitl;
 #endif
 
     // Training mode

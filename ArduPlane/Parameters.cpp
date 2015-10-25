@@ -1161,7 +1161,7 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL),
+    GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
 #if OBC_FAILSAFE == ENABLED

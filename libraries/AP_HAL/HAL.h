@@ -4,13 +4,13 @@
 
 #include "AP_HAL_Namespace.h"
 
-#include "../AP_HAL/UARTDriver.h"
-#include "../AP_HAL/SPIDriver.h"
-#include "../AP_HAL/AnalogIn.h"
-#include "../AP_HAL/Storage.h"
-#include "../AP_HAL/GPIO.h"
-#include "../AP_HAL/RCInput.h"
-#include "../AP_HAL/RCOutput.h"
+#include "AnalogIn.h"
+#include "GPIO.h"
+#include "RCInput.h"
+#include "RCOutput.h"
+#include "SPIDriver.h"
+#include "Storage.h"
+#include "UARTDriver.h"
 
 class AP_HAL::HAL {
 public:

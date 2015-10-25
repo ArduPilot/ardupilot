@@ -434,7 +434,7 @@ NavEKF::NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     msecBetaMax(200),               // maximum number of msec between synthetic sideslip measurements
     msecFlowAvg(100),               // average number of msec between optical flow measurements
     dtVelPos(0.2f),                 // number of seconds between position and velocity corrections. This should be a multiple of the imu update interval.
-    covTimeStepMax(0.07f),          // maximum time (sec) between covariance prediction updates
+    covTimeStepMax(0.02f),          // maximum time (sec) between covariance prediction updates
     covDelAngMax(0.05f),            // maximum delta angle between covariance prediction updates
     TASmsecMax(200),                // maximum allowed interval between airspeed measurement updates
     DCM33FlowMin(0.71f),            // If Tbn(3,3) is less than this number, optical flow measurements will not be fused as tilt is too high.
@@ -4032,9 +4032,9 @@ void NavEKF::CovarianceInit()
     }
     // quaternions - TODO better maths for initial quaternion covariances that uses roll, pitch and yaw
     P[0][0]   = 1.0e-9f;
-    P[1][1]   = 0.25f*sq(radians(1.0f));
-    P[2][2]   = 0.25f*sq(radians(1.0f));
-    P[3][3]   = 0.25f*sq(radians(1.0f));
+    P[1][1]   = 0.25f*sq(radians(10.0f));
+    P[2][2]   = 0.25f*sq(radians(10.0f));
+    P[3][3]   = 0.25f*sq(radians(10.0f));
     // velocities
     P[4][4]   = sq(0.7f);
     P[5][5]   = P[4][4];
@@ -4942,12 +4942,8 @@ bool NavEKF::assume_zero_sideslip(void) const
  */
 float NavEKF::InitialGyroBiasUncertainty(void) const
 {
-    switch (_ahrs->get_ins().get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
-        return 1.0f;
-    default:
-        return 0.1f;
-    }
+    // this is the assumed uncertainty in gyro bias in rad/sec used to initialise the covariance matrix.
+    return 0.035f;
 }
 
 /*

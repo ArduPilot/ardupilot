@@ -765,6 +765,8 @@ private:
     bool optFlowFusionDelayed;      // true when the optical flow fusion has been delayed
     bool airSpdFusionDelayed;       // true when the air speed fusion has been delayed
     bool sideSlipFusionDelayed;     // true when the sideslip fusion has been delayed
+    bool magFuseTiltInhibit;        // true when the 3-axis magnetoemter fusion is prevented from changing tilt angle
+    uint32_t magFuseTiltInhibit_ms; // time in msec that the condition indicated by magFuseTiltInhibit was commenced
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

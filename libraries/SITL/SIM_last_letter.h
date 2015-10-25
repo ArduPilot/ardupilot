@@ -17,17 +17,18 @@
   simulator connection for ardupilot version of last_letter
 */
 
-#ifndef _SIM_LAST_LETTER_H
-#define _SIM_LAST_LETTER_H
+#pragma once
+
+#include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+
+namespace SITL {
 
 /*
   a last_letter simulator
  */
-class last_letter : public Aircraft
-{
+class last_letter : public Aircraft {
 public:
     last_letter(const char *home_str, const char *frame_str);
 
@@ -48,7 +49,7 @@ private:
     struct servo_packet {
         uint16_t servos[16];
     };
-    
+
     /*
       reply packet sent from last_letter to ArduPilot
      */
@@ -74,5 +75,4 @@ private:
     const char *frame_str;
 };
 
-
-#endif // _SIM_LAST_LETTER_H
+} // namespace SITL
