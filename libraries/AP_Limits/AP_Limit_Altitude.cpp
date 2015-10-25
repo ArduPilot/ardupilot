@@ -10,7 +10,7 @@
 
 #include "AP_Limit_Altitude.h"
 
-const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Limit_Altitude::var_info[] = {
     // @Param: ALT_ON
     // @DisplayName: Enable altitude
     // @Description: Setting this to Enabled(1) will enable the altitude. Setting this to Disabled(0) will disable the altitude

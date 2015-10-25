@@ -29,7 +29,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
+const AP_Param::GroupInfo APM_OBC::var_info[] = {
     // @Param: MAN_PIN
     // @DisplayName: Manual Pin
     // @Description: This sets a digital output pin to set high when in manual mode

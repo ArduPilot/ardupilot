@@ -23,7 +23,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_YawController::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
 	// @Param: SLIP
 	// @DisplayName: Sideslip control gain

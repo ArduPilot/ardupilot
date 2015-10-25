@@ -7,7 +7,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land enabled/disabled and behaviour
     // @Description: Precision Land enabled/disabled and behaviour
     // @Values: 0:Disabled, 1:Enabled Always Land, 2:Enabled Strict

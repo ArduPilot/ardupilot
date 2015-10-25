@@ -4,7 +4,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // index 0 was used for the old orientation matrix
 
     // @Param: SPEED

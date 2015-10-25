@@ -6,7 +6,7 @@
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
 
-const AP_Param::GroupInfo AP_Mission::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
     // @Param: TOTAL
     // @DisplayName: Total mission commands

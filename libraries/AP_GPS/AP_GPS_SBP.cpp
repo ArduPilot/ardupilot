@@ -434,7 +434,7 @@ struct PACKED log_SbpRAW2 {
 };
 
 
-static const struct LogStructure sbp_log_structures[] PROGMEM = {
+static const struct LogStructure sbp_log_structures[] = {
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth),
       "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" },
     { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1),

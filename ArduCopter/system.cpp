@@ -24,7 +24,7 @@ int8_t Copter::main_menu_help(uint8_t argc, const Menu::arg *argv)
 }
 
 // Command/function table for the top-level menu.
-const struct Menu::command main_menu_commands[] PROGMEM = {
+const struct Menu::command main_menu_commands[] = {
 //   command		function called
 //   =======        ===============
     {"logs",                MENU_FUNC(process_logs)},

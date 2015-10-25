@@ -107,7 +107,7 @@ ReplayVehicle replayvehicle;
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
 
-const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
+const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
@@ -173,7 +173,7 @@ enum {
     LOG_CHEK_MSG=100
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
       "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }

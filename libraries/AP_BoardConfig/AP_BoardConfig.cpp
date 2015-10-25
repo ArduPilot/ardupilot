@@ -44,7 +44,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: PWM_COUNT
     // @DisplayName: PWM Count

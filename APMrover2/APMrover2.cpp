@@ -49,7 +49,7 @@ Rover rover;
   with how often they should be called (in 20ms units) and the maximum
   time they are expected to take (in microseconds)
 */
-const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_radio,              1,   1000),
     SCHED_TASK(ahrs_update,             1,   6400),
     SCHED_TASK(read_sonars,             1,   2000),

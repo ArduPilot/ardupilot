@@ -13,7 +13,7 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&tracker.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
 
-const AP_Param::Info Tracker::var_info[] PROGMEM = {
+const AP_Param::Info Tracker::var_info[] = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
     GSCALAR(software_type,          "SYSID_SW_TYPE",  Parameters::k_software_type),
 

@@ -43,7 +43,7 @@ extern const AP_HAL::HAL& hal;
 #define SAMPLE_UNIT 1
 
 // Class level parameters
-const AP_Param::GroupInfo AP_InertialSensor::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Param: PRODUCT_ID
     // @DisplayName: IMU Product ID
     // @Description: Which type of IMU is installed (read-only). 

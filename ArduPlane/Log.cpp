@@ -12,7 +12,7 @@
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] PROGMEM = {
+static const struct Menu::command log_menu_commands[] = {
     {"dump",        MENU_FUNC(dump_log)},
     {"erase",       MENU_FUNC(erase_logs)},
     {"enable",      MENU_FUNC(select_logs)},
@@ -475,7 +475,7 @@ void Plane::Log_Write_Home_And_Origin()
     }
 }
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
       "PM",  "QIHIhhhBH", "TimeUS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },

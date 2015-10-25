@@ -8,7 +8,7 @@
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Common for implementation details
-static const struct Menu::command test_menu_commands[] PROGMEM = {
+static const struct Menu::command test_menu_commands[] = {
 	{"pwm",				MENU_FUNC(test_radio_pwm)},
 	{"radio",			MENU_FUNC(test_radio)},
 	{"passthru",		MENU_FUNC(test_passthru)},

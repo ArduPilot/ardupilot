@@ -98,7 +98,7 @@ public:
     /// the MENU and MENU2 macros defined below.
     ///
     /// @param prompt		The prompt to be displayed with this menu.
-    /// @param commands		An array of ::command structures in program memory (PROGMEM).
+    /// @param commands		An array of ::command structures in program memory.
     /// @param entries		The number of entries in the menu.
     ///
     Menu(const char *prompt, const struct command *commands, uint8_t entries, preprompt ppfunc = 0);
@@ -167,11 +167,11 @@ private:
 /// The MENU2 macro supports the optional pre-prompt printing function.
 ///
 #define MENU(name, prompt, commands)                                                    \
-    static const char __menu_name__ ## name[] PROGMEM = prompt;      \
+    static const char __menu_name__ ## name[] = prompt;      \
     static Menu name(__menu_name__ ## name, commands, ARRAY_SIZE(commands))
 
 #define MENU2(name, prompt, commands, preprompt)                                \
-    static const char __menu_name__ ## name[] PROGMEM = prompt;      \
+    static const char __menu_name__ ## name[] = prompt;      \
     static Menu name(__menu_name__ ## name, commands, ARRAY_SIZE(commands), preprompt)
 
 #endif // __AP_COMMON_MENU_H__

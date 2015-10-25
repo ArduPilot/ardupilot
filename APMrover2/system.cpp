@@ -25,7 +25,7 @@ int8_t Rover::main_menu_help(uint8_t argc, const Menu::arg *argv)
 
 // Command/function table for the top-level menu.
 
-static const struct Menu::command main_menu_commands[] PROGMEM = {
+static const struct Menu::command main_menu_commands[] = {
 //   command		function called
 //   =======        ===============
 	{"logs",		MENU_FUNC(process_logs)},

@@ -9,7 +9,7 @@
 #include "AP_Limits.h"
 #include "AP_Limit_Module.h"
 
-const AP_Param::GroupInfo AP_Limits::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Limits::var_info[] = {
 
     // @Param: ENABLED
     // @DisplayName: Enable Limits Library

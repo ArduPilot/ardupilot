@@ -4,7 +4,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 // table of user settable parameters
-const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_AttitudeControl, 0),
 

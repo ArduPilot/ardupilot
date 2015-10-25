@@ -98,7 +98,7 @@
   4000 = 0.1hz
   
  */
-const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,                4,    130),
     SCHED_TASK(throttle_loop,          8,     75),
     SCHED_TASK(update_GPS,             8,    200),

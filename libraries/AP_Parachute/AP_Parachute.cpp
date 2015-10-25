@@ -9,7 +9,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: ENABLED
     // @DisplayName: Parachute release enabled or disabled

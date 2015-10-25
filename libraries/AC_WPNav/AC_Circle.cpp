@@ -5,7 +5,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @Param: RADIUS
     // @DisplayName: Circle Radius
     // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode

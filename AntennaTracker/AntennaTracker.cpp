@@ -34,7 +34,7 @@
   (in 20ms units) and the maximum time they are expected to take (in
   microseconds)
  */
-const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_ahrs,             1,   1000),
     SCHED_TASK(read_radio,              1,    200),
     SCHED_TASK(update_tracking,         1,   1000),

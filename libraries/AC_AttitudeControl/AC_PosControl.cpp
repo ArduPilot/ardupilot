@@ -5,7 +5,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_PosControl::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
     // @Param: _ACC_XY_FILT

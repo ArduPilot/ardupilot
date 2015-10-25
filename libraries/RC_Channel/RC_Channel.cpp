@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 /// only have 8 input channels.
 RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
 
-const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
+const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
     // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.

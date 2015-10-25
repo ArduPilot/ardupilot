@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 namespace SITL {
 
 // table of user settable parameters
-const AP_Param::GroupInfo SITL::var_info[] PROGMEM = {
+const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("BARO_RND",   0, SITL,  baro_noise,  0.2f),
     AP_GROUPINFO("GYR_RND",    1, SITL,  gyro_noise,  0),
     AP_GROUPINFO("ACC_RND",    2, SITL,  accel_noise, 0),

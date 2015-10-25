@@ -7,7 +7,7 @@ extern const AP_HAL::HAL& hal;
 
 // ------------------------------
 
-const AP_Param::GroupInfo AC_Sprayer::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Sprayer enable/disable
     // @Description: Allows you to enable (1) or disable (0) the sprayer

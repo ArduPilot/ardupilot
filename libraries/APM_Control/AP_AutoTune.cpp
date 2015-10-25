@@ -95,7 +95,7 @@ static const struct {
     float tau;
     float Dratio;
     float rmax;
-} tuning_table[] PROGMEM = {
+} tuning_table[] = {
     { 0.70f, 0.050f,  20 },   // level 1
     { 0.65f, 0.055f,  30 },   // level 2
     { 0.60f, 0.060f,  40 },   // level 3
