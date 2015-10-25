@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Arming::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: REQUIRE
     // @DisplayName: Require Arming Motors 
     // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and send THR_MIN PWM to throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.

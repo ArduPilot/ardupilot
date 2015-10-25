@@ -25,7 +25,7 @@
 extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
-const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // 0 was used by TB_RATIO
     // 1,2,3 were used by throttle curve
 

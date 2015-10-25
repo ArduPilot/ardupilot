@@ -32,7 +32,7 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 #define RALLY_INCLUDE_HOME_DEFAULT 0
 #endif
 
-const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Rally::var_info[] = {
     // @Param: TOTAL
     // @DisplayName: Rally Total
     // @Description: Number of rally points currently loaded

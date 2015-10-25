@@ -13,7 +13,7 @@
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-static const struct Menu::command log_menu_commands[] PROGMEM = {
+static const struct Menu::command log_menu_commands[] = {
     {"dump",        MENU_FUNC(dump_log)},
     {"erase",       MENU_FUNC(erase_logs)},
     {"enable",      MENU_FUNC(select_logs)},
@@ -719,7 +719,7 @@ void Copter::Log_Write_Precland()
  #endif     // PRECISION_LANDING == ENABLED
 }
 
-const struct LogStructure Copter::log_structure[] PROGMEM = {
+const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 #if AUTOTUNE_ENABLED == ENABLED
     { LOG_AUTOTUNE_MSG, sizeof(log_AutoTune),

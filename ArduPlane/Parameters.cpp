@@ -13,7 +13,7 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&plane.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&plane.v, {group_info : class::var_info} }
 
-const AP_Param::Info Plane::var_info[] PROGMEM = {
+const AP_Param::Info Plane::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
     // @Description: This value is incremented when changes are made to the eeprom format
@@ -1230,7 +1230,7 @@ const AP_Param::Info Plane::var_info[] PROGMEM = {
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "RLL2SRV_P" },
     { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "RLL2SRV_I" },
     { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "RLL2SRV_D" },

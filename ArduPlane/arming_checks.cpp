@@ -4,7 +4,7 @@
  */
 #include "Plane.h"
 
-const AP_Param::GroupInfo AP_Arming_Plane::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_Arming, 0),
 

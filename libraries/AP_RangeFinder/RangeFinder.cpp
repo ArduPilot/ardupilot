@@ -25,7 +25,7 @@
 #include "AP_RangeFinder_LightWareSerial.h"
 
 // table of user settable parameters
-const AP_Param::GroupInfo RangeFinder::var_info[] PROGMEM = {
+const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected

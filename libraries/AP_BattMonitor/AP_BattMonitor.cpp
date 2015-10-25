@@ -6,7 +6,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_BattMonitor::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Param: _MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current

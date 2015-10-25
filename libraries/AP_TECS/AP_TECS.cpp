@@ -14,7 +14,7 @@ extern const AP_HAL::HAL& hal;
 //Debug("%.2f %.2f %.2f %.2f \n", var1, var2, var3, var4);
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_TECS::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: CLMB_MAX
     // @DisplayName: Maximum Climb Rate (metres/sec)

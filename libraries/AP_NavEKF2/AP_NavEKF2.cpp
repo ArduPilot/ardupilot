@@ -85,7 +85,7 @@
 #endif // APM_BUILD_DIRECTORY
 
 // Define tuning parameters
-const AP_Param::GroupInfo NavEKF2::var_info[] PROGMEM = {
+const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable EKF2

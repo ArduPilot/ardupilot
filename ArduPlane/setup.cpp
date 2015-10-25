@@ -5,7 +5,7 @@
 #if CLI_ENABLED == ENABLED
 
 // Command/function table for the setup menu
-static const struct Menu::command setup_menu_commands[] PROGMEM = {
+static const struct Menu::command setup_menu_commands[] = {
     // command			function called
     // =======          ===============
     {"reset",           MENU_FUNC(setup_factory)},

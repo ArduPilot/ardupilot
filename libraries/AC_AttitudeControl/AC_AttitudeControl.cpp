@@ -5,7 +5,7 @@
 #include <AP_Math/AP_Math.h>
 
 // table of user settable parameters
-const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 

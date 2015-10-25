@@ -15,7 +15,7 @@ static GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
 extern mavlink_system_t mavlink_system;
 
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 

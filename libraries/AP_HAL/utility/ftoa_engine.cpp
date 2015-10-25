@@ -44,14 +44,14 @@
  * f = factorTable[i]
  * e = exponentTable[i]
  */
-static const int8_t exponentTable[32] PROGMEM = {
+static const int8_t exponentTable[32] = {
 	-36, -33, -31, -29, -26, -24, -21, -19,
 	-17, -14, -12, -9,  -7, -4, -2,  0,
 	3, 5, 8, 10,  	12, 15,  17, 20,
 	22, 24, 27, 29,  32, 34, 36, 39
 };
 
-static const uint32_t factorTable[32] PROGMEM = {
+static const uint32_t factorTable[32] = {
 	2295887404UL,
 	587747175UL,
 	1504632769UL,

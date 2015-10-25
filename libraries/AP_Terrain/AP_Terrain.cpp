@@ -35,7 +35,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_Terrain::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Terrain data enable
     // @Description: enable terrain data. This enables the vehicle storing a database of terrain data on the SD card. The terrain data is requested from the ground station as needed, and stored for later use on the SD card. To be useful the ground station must support TERRAIN_REQUEST messages and have access to a terrain database, such as the SRTM database.

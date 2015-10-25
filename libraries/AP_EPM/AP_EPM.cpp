@@ -12,7 +12,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_EPM::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_EPM::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: EPM Enable/Disable
     // @Description: EPM enable/disable

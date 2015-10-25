@@ -9,7 +9,7 @@
 #endif
 
 // Command/function table for the setup menu
-static const struct Menu::command setup_menu_commands[] PROGMEM = {
+static const struct Menu::command setup_menu_commands[] = {
     {"reset",                       MENU_FUNC(setup_factory)},
     {"show",                        MENU_FUNC(setup_show)},
     {"set",                         MENU_FUNC(setup_set)},

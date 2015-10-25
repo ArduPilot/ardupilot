@@ -12,7 +12,7 @@ extern AP_HAL::HAL& hal;
 #define COMPASS_LEARN_DEFAULT 1
 #endif
 
-const AP_Param::GroupInfo Compass::var_info[] PROGMEM = {
+const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
     // @Param: OFS_X

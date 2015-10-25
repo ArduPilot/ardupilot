@@ -116,7 +116,7 @@ extern const AP_HAL::HAL& hal;
 #define MAX_GYRO_BIAS 0.1745f
 
 // Define tuning parameters
-const AP_Param::GroupInfo NavEKF::var_info[] PROGMEM = {
+const AP_Param::GroupInfo NavEKF::var_info[] = {
 
     // @Param: VELNE_NOISE
     // @DisplayName: GPS horizontal velocity measurement noise scaler

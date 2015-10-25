@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 
 int8_t AP_Scheduler::current_task = -1;
 
-const AP_Param::GroupInfo AP_Scheduler::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Scheduler debug level
     // @Description: Set to non-zero to enable scheduler debug messages. When set to show "Slips" the scheduler will display a message whenever a scheduled task is delayed due to too much CPU load. When set to ShowOverruns the scheduled will display a message whenever a task takes longer than the limit promised in the task table.

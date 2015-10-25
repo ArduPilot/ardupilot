@@ -23,7 +23,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
@@ -141,12 +141,12 @@ void AP_GPS::init(DataFlash_Class *dataflash, const AP_SerialManager& serial_man
 }
 
 // baudrates to try to detect GPSes with
-const uint32_t AP_GPS::_baudrates[] PROGMEM = {4800U, 38400U, 115200U, 57600U, 9600U, 230400U};
+const uint32_t AP_GPS::_baudrates[] = {4800U, 38400U, 115200U, 57600U, 9600U, 230400U};
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const prog_char AP_GPS::_initialisation_blob[] PROGMEM = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
-const prog_char AP_GPS::_initialisation_raw_blob[] PROGMEM = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
+const prog_char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+const prog_char AP_GPS::_initialisation_raw_blob[] = UBLOX_SET_BINARY_RAW_BAUD MTK_SET_BINARY SIRF_SET_BINARY;
 
 /*
   send some more initialisation string bytes if there is room in the

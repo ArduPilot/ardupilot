@@ -144,7 +144,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     mavlink_comm_port[chan]->write(buf, len);
 }
 
-static const uint8_t mavlink_message_crc_progmem[256] PROGMEM = MAVLINK_MESSAGE_CRCS;
+static const uint8_t mavlink_message_crc_progmem[256] = MAVLINK_MESSAGE_CRCS;
 
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid)

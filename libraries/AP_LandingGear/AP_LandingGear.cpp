@@ -8,7 +8,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_LandingGear::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: SERVO_RTRACT
     // @DisplayName: Landing Gear Servo Retracted PWM Value

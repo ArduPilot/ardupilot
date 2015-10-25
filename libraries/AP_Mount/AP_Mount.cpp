@@ -11,7 +11,7 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 
-const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot

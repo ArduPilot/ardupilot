@@ -17,7 +17,7 @@ struct PACKED log_Test {
     int32_t  l1, l2;
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
     "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }

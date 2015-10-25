@@ -42,7 +42,7 @@ static SchedTest schedtest;
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task SchedTest::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
     SCHED_TASK(ins_update,              1,   1000),
     SCHED_TASK(one_hz_print,           50,   1000),
     SCHED_TASK(five_second_call,      250,   1800),

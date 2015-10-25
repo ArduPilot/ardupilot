@@ -11,7 +11,7 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.v, {group_info:class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &rover.v, {group_info : class::var_info} }
 
-const AP_Param::Info Rover::var_info[] PROGMEM = {
+const AP_Param::Info Rover::var_info[] = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
@@ -551,7 +551,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
     { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
     { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },

@@ -8,7 +8,7 @@
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-static const struct Menu::command test_menu_commands[] PROGMEM = {
+static const struct Menu::command test_menu_commands[] = {
 #if HIL_MODE == HIL_MODE_DISABLED
     {"baro",                MENU_FUNC(test_baro)},
 #endif

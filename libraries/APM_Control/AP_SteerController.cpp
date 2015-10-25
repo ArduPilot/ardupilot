@@ -24,7 +24,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_SteerController::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Param: TCONST
 	// @DisplayName: Steering Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved steering angle. A value of 0.75 is a good default and will work with nearly all rovers. Ground steering in aircraft needs a bit smaller time constant, and a value of 0.5 is recommended for best ground handling in fixed wing aircraft. A value of 0.75 means that the controller will try to correct any deviation between the desired and actual steering angle in 0.75 seconds. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the vehicle can achieve.
