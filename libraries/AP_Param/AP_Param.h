@@ -152,7 +152,6 @@ public:
     ///                         it does not exist.
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype);
-    static AP_Param * find_P(const prog_char_t *name, enum ap_var_type *ptype);
 
     /// Find a variable by index.
     ///
