@@ -62,12 +62,8 @@
 // production as it generates bad code.
 //
 #if defined(PRINTF_FORMAT_WARNING_DEBUG)
- # undef PSTR
- # define PSTR(_x)               _x             // help the compiler with printf
  # define float double                  // silence spurious format warnings for %f
 #endif
-
-#define FPSTR(s) (wchar_t *)(s)
 
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
