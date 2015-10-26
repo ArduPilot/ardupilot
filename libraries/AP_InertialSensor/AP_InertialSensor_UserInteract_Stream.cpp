@@ -17,8 +17,8 @@ bool AP_InertialSensor_UserInteractStream::blocking_read()
     return true;
 }
 
-void AP_InertialSensor_UserInteractStream::_printf_P(
-        const prog_char* fmt, ...) {
+void AP_InertialSensor_UserInteractStream::printf(
+        const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     _s->vprintf(fmt, ap);
