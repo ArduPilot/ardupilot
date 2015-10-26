@@ -42,8 +42,7 @@ protected:
 /* Typedefs for template instansations of AP_Curve.
  * Only use the AP_Curve instances listed here!
  * If you need a different one, you must first instantiate the template at the
- * end of AP_Curve.cpp, then add a typedef here.  We can't leave the whole
- * template implementation in the header due to PSTR related issues.
+ * end of AP_Curve.cpp, then add a typedef here.
  */
 
 typedef AP_Curve<int16_t,3> AP_CurveInt16_Size3;
