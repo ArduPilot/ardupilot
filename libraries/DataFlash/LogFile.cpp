@@ -320,7 +320,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
     if (!ReadBlock(pkt, msg_len)) {
         return;
     }
-    port->printf("%S, ", _structures[i].name);
+    port->printf("%s, ", _structures[i].name);
     for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
         char fmt = PGM_UINT8(&_structures[i].format[fmt_ofs]);
         switch (fmt) {
@@ -478,7 +478,7 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 {
     for (uint8_t i=0; i<_num_types; i++) {
         const struct LogStructure *s = &_structures[i];
-        port->printf("FMT, %u, %u, %S, %S, %S\n",
+        port->printf("FMT, %u, %u, %s, %s, %s\n",
                        (unsigned)PGM_UINT8(&s->msg_type),
                        (unsigned)PGM_UINT8(&s->msg_len),
                        s->name, s->format, s->labels);
