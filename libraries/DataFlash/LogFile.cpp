@@ -293,7 +293,7 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
     return -1;
 }
 
-#define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
+#define PGM_UINT8(addr) pgm_read_byte((const char *)addr)
 
 #ifndef DATAFLASH_NO_CLI
 /*
@@ -1014,7 +1014,7 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
 {
     Log_Write_Message(firmware_string);
 
@@ -1060,7 +1060,6 @@ bool DataFlash_Class::Log_Write_Message(const char *message)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-// Write a POWR packet
 void DataFlash_Class::Log_Write_Power(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4

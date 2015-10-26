@@ -33,7 +33,7 @@
 #include "ftoa_engine.h"
 #include <stdint.h>
 
-#define PGM_INT8(addr) (int8_t)pgm_read_byte((const prog_char *)addr)
+#define PGM_INT8(addr) (int8_t)pgm_read_byte((const char *)addr)
 #define PGM_UINT32(addr) pgm_read_dword((const uint32_t *)addr)
 
 /*

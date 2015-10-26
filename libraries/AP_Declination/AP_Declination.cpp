@@ -204,7 +204,7 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
     for(i = start_index; i < (start_index + PGM_UINT8(&declination_keys[1][x])) && current_virtual_index <= y; i++) {
 
         // Pull out the row_value struct
-        memcpy((void*) &stval, (const prog_char *)&declination_values[i], sizeof(struct row_value));
+        memcpy((void*) &stval, (const char *)&declination_values[i], sizeof(struct row_value));
 
         // Pull the first offset and determine sign
         offset = stval.abs_offset;

@@ -352,7 +352,7 @@ public:
     AP_Int8 _gnss_mode;
     
     // handle sending of initialisation strings to the GPS
-    void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
+    void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
     // lock out a GPS port, allowing another application to use the port
@@ -413,13 +413,13 @@ private:
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {
-        const prog_char *blob;
+        const char *blob;
         uint16_t remaining;
     } initblob_state[GPS_MAX_INSTANCES];
 
     static const uint32_t  _baudrates[];
-    static const prog_char _initialisation_blob[];
-    static const prog_char _initialisation_raw_blob[];
+    static const char _initialisation_blob[];
+    static const char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);

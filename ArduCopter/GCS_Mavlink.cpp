@@ -2030,7 +2030,7 @@ void Copter::gcs_check_input(void)
     }
 }
 
-void Copter::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
+void Copter::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
@@ -2044,7 +2044,7 @@ void Copter::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Copter::gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void Copter::gcs_send_text_fmt(const char *fmt, ...)
 {
     va_list arg_list;
     gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;

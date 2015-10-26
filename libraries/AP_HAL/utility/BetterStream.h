@@ -25,7 +25,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Namespace.h>
-/* prog_char_t: */
+/* char: */
 #include <AP_Progmem/AP_Progmem.h>
 
 #include "Stream.h"
@@ -36,25 +36,22 @@
  * on _vprintf(). 
  * Please provide your own platform-specic implementation of vprintf, sprintf,
  * etc. to implement the printf functions.
- *
- * TODO: Segregate prog_char_t dependent functions to be available on AVR
- * platform only, with default implementations elsewhere.
  */
 
 class AP_HAL::BetterStream : public AP_HAL::Stream {
 public:
     BetterStream(void) {}
 
-    virtual void print_P(const prog_char_t *) = 0; 
-    virtual void println_P(const prog_char_t *) = 0;
+    virtual void print_P(const char *) = 0;
+    virtual void println_P(const char *) = 0;
     virtual void printf(const char *, ...) FORMAT(2, 3) = 0;
     /* No format checking on printf_P: can't currently support that on AVR */
-    virtual void _printf_P(const prog_char *, ...) = 0;
+    virtual void _printf_P(const char *, ...) = 0;
 
-#define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
+#define printf_P(fmt, ...) _printf_P((const char *)fmt, ## __VA_ARGS__)
     
     virtual void vprintf(const char *, va_list) = 0;
-    virtual void vprintf_P(const prog_char *, va_list) = 0;
+    virtual void vprintf_P(const char *, va_list) = 0;
 };
 
 #endif // __AP_HAL_UTILITY_BETTERSTREAM_H__

@@ -51,13 +51,13 @@ public:
      * provided by AP_HAL to ensure consistency between ports to
      * different boards
      */
-    void print_P(const prog_char_t *s);
-    void println_P(const prog_char_t *s);
+    void print_P(const char *s);
+    void println_P(const char *s);
     void printf(const char *s, ...) FORMAT(2, 3);
-    void _printf_P(const prog_char *s, ...) FORMAT(2, 3);
+    void _printf_P(const char *s, ...) FORMAT(2, 3);
 
     void vprintf(const char *s, va_list ap);
-    void vprintf_P(const prog_char *s, va_list ap);
+    void vprintf_P(const char *s, va_list ap);
 };
 
 #endif // __AP_HAL_UART_DRIVER_H__

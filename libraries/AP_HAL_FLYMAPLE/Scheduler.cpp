@@ -230,7 +230,7 @@ void FLYMAPLEScheduler::system_initialized()
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
+void FLYMAPLEScheduler::panic(const char *errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     // REVISIT: not tested on FLYMAPLE
