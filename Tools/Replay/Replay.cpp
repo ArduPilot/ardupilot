@@ -558,17 +558,10 @@ void Replay::set_ins_update_rate(uint16_t _update_rate) {
 }
 
 void Replay::inhibit_gyro_cal() {
-    // swiped from LR_MsgHandler.cpp; until we see PARM messages, we
-    // don't have a PARM handler available to set parameters.
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find("INS_GYR_CAL", &var_type);
-    if (vp == NULL) {
-        ::fprintf(stderr, "No GYR_CAL parameter found\n");
+    if (!logreader.set_parameter("INS_GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER)) {
+        ::fprintf(stderr, "Failed to set GYR_CAL parameter\n");
         abort();
     }
-    ((AP_Float *)vp)->set(AP_InertialSensor::GYRO_CAL_NEVER);
-
-    // logreader.set_parameter("GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER);
 }
 
 /*
