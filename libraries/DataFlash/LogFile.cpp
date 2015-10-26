@@ -1060,18 +1060,6 @@ bool DataFlash_Class::Log_Write_Message(const char *message)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-// Write a text message to the log
-bool DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
-{
-    struct log_Message pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
-        time_us : hal.scheduler->micros64(),
-        msg  : {}
-    };
-    strncpy(pkt.msg, message, sizeof(pkt.msg));
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
-}
-
 // Write a POWR packet
 void DataFlash_Class::Log_Write_Power(void)
 {
