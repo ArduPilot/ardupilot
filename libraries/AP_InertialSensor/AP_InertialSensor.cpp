@@ -617,12 +617,12 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 msg = "on its BACK";
                 break;
         }
-        interact->printf_P(
+        interact->printf(
                 "Place vehicle %S and press any key.\n", msg);
 
         // wait for user input
         if (!interact->blocking_read()) {
-            //No need to use interact->printf_P for an error, blocking_read does this when it fails
+            //No need to use interact->printf for an error, blocking_read does this when it fails
             goto failed;
         }
 
@@ -650,7 +650,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 }
                 samples[k][i] += samp;
                 if (!get_accel_health(k)) {
-                    interact->printf_P("accel[%u] not healthy", (unsigned)k);
+                    interact->printf("accel[%u] not healthy", (unsigned)k);
                     goto failed;
                 }
             }
@@ -665,7 +665,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     // run the calibration routine
     for (uint8_t k=0; k<num_accels; k++) {
         if (!_check_sample_range(samples[k], saved_orientation, interact)) {
-            interact->printf_P("Insufficient accel range");
+            interact->printf("Insufficient accel range");
             continue;
         }
 
@@ -675,17 +675,17 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                                         _accel_max_abs_offsets[k],
                                         saved_orientation);
 
-        interact->printf_P("Offsets[%u]: %.2f %.2f %.2f\n",
+        interact->printf("Offsets[%u]: %.2f %.2f %.2f\n",
                             (unsigned)k,
                            (double)new_offsets[k].x, (double)new_offsets[k].y, (double)new_offsets[k].z);
-        interact->printf_P("Scaling[%u]: %.2f %.2f %.2f\n",
+        interact->printf("Scaling[%u]: %.2f %.2f %.2f\n",
                            (unsigned)k,
                            (double)new_scaling[k].x, (double)new_scaling[k].y, (double)new_scaling[k].z);
         if (success) num_ok++;
     }
 
     if (num_ok == num_accels) {
-        interact->printf_P("Calibration successful\n");
+        interact->printf("Calibration successful\n");
 
         for (uint8_t k=0; k<num_accels; k++) {
             // set and save calibration
@@ -721,7 +721,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
     }
 
 failed:
-    interact->printf_P("Calibration FAILED\n");
+    interact->printf("Calibration FAILED\n");
     // restore original scaling and offsets
     for (uint8_t k=0; k<num_accels; k++) {
         _accel_offset[k].set(orig_offset[k]);
@@ -1076,7 +1076,7 @@ bool AP_InertialSensor::_check_sample_range(const Vector3f accel_sample[6], enum
         }
     }
     Vector3f range = max_sample - min_sample;
-    interact->printf_P("AccelRange: %.1f %.1f %.1f",
+    interact->printf("AccelRange: %.1f %.1f %.1f",
             (double)range.x, (double)range.y, (double)range.z);
     bool ok = (range.x >= min_range && 
                range.y >= min_range && 
