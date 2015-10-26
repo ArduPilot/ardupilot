@@ -1,6 +1,7 @@
 #ifndef __ACCELCALIBRATOR_H__
 #define __ACCELCALIBRATOR_H__
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/vectorN.h>
 
 #define ACCEL_CAL_MAX_NUM_PARAMS 9
 
@@ -50,6 +51,7 @@ private:
         Vector3f delta_velocity;
         float delta_time;
     };
+    typedef    VectorN<float, ACCEL_CAL_MAX_NUM_PARAMS> VectorP;
 
     //configuration
     uint8_t _conf_num_samples;
@@ -61,7 +63,8 @@ private:
     accel_cal_status_t _status;
     struct AccelSample* _sample_buffer;
     uint8_t _samples_collected;
-    struct param_t _params;
+    struct param_t &_param_struct;
+    VectorP _param_array;
     float _fitness;
     uint32_t _last_samp_frag_collected_ms;
 
@@ -74,7 +77,7 @@ private:
     float calc_residual(const Vector3f& sample, const struct param_t& params) const;
     float calc_mean_squared_residuals() const;
     float calc_mean_squared_residuals(const struct param_t& params) const;
-    void calc_jacob(const Vector3f& sample, const struct param_t& params, float* ret) const;
+    void calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP ret) const;
     void run_fit(uint8_t max_iterations, float& fitness);
 };
 #endif //__ACCELCALIBRATOR_H__

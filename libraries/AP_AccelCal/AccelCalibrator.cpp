@@ -17,7 +17,8 @@ const extern AP_HAL::HAL& hal;
 
 AccelCalibrator::AccelCalibrator() :
 _conf_tolerance(0.1f),
-_sample_buffer(NULL)
+_sample_buffer(NULL),
+_param_struct(*reinterpret_cast<struct param_t *>(&_param_array))
 {
     clear();
 }
@@ -38,9 +39,9 @@ void AccelCalibrator::start(enum accel_cal_fit_type_t fit_type, uint8_t num_samp
     _conf_sample_time = sample_time;
     _conf_fit_type = fit_type;
 
-    _params.offset = offset;
-    _params.diag = diag;
-    _params.offdiag = offdiag;
+    _param_struct.offset = offset;
+    _param_struct.diag = diag;
+    _param_struct.offdiag = offdiag;
 
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
@@ -123,12 +124,12 @@ bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
     }
 
     Matrix3f M (
-        _params.diag.x    , _params.offdiag.x , _params.offdiag.y,
-        _params.offdiag.x , _params.diag.y    , _params.offdiag.z,
-        _params.offdiag.y , _params.offdiag.z , _params.diag.z
+        _param_struct.diag.x    , _param_struct.offdiag.x , _param_struct.offdiag.y,
+        _param_struct.offdiag.x , _param_struct.diag.y    , _param_struct.offdiag.z,
+        _param_struct.offdiag.y , _param_struct.offdiag.z , _param_struct.diag.z
     );
 
-    s = M*(s+_params.offset);
+    s = M*(s+_param_struct.offset);
 
     return true;
 }
@@ -141,18 +142,18 @@ void AccelCalibrator::check_for_timeout() {
 }
 
 void AccelCalibrator::get_calibration(Vector3f& offset) {
-    offset = -_params.offset;
+    offset = -_param_struct.offset;
 }
 
 void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag) {
-    offset = -_params.offset;
-    diag = _params.diag;
+    offset = -_param_struct.offset;
+    diag = _param_struct.diag;
 }
 
 void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag) {
-    offset = -_params.offset;
-    diag = _params.diag;
-    offdiag = _params.offdiag;
+    offset = -_param_struct.offset;
+    diag = _param_struct.diag;
+    offdiag = _param_struct.offdiag;
 }
 
 /////////////////////////////////////////////////////////////
@@ -243,27 +244,24 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
     if(_sample_buffer == NULL) {
         return;
     }
-    fitness = calc_mean_squared_residuals(_params);
+    fitness = calc_mean_squared_residuals(_param_struct);
     float min_fitness = fitness;
-
-    struct param_t fit_param = _params;
-    float* param_array = (float*)&fit_param;
+    VectorP param_array = _param_array;
+    struct param_t &fit_param(*reinterpret_cast<struct param_t *>(&param_array));
     uint8_t num_iterations = 0;
 
     while(num_iterations < max_iterations) {
         float last_fitness = fitness;
 
         float JTJ[ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS];
-        float JTFI[ACCEL_CAL_MAX_NUM_PARAMS];
-
-        memset(&JTJ,0,sizeof(JTJ));
-        memset(&JTFI,0,sizeof(JTFI));
+        VectorP JTFI;
+        memset(JTJ,0,sizeof(JTJ));
 
         for(uint16_t k = 0; k<_samples_collected; k++) {
             Vector3f sample;
             get_sample(k, sample);
 
-            float jacob[ACCEL_CAL_MAX_NUM_PARAMS];
+            VectorN<float,ACCEL_CAL_MAX_NUM_PARAMS> jacob;
 
             calc_jacob(sample, fit_param, jacob);
 
@@ -295,7 +293,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
 
         if(fitness < min_fitness) {
             min_fitness = fitness;
-            _params = fit_param;
+            _param_struct = fit_param;
         }
 
         num_iterations++;
@@ -316,7 +314,7 @@ float AccelCalibrator::calc_residual(const Vector3f& sample, const struct param_
 
 float AccelCalibrator::calc_mean_squared_residuals() const
 {
-    return calc_mean_squared_residuals(_params);
+    return calc_mean_squared_residuals(_param_struct);
 }
 
 float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params) const
@@ -335,7 +333,7 @@ float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params)
     return sum;
 }
 
-void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& params, float* ret) const {
+void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP ret) const {
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
         case ACCEL_CAL_ELLIPSOID: {
