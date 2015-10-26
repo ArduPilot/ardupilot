@@ -1,6 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Progmem/AP_Progmem.h>
 #include "OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;

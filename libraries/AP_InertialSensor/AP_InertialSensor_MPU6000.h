@@ -7,7 +7,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>

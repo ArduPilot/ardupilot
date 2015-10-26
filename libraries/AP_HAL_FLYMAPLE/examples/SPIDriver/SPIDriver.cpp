@@ -5,7 +5,6 @@
 // Connect MISO and MOSI pins together (12 and 13 on Flymaple)
 
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>

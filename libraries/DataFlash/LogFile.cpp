@@ -1,21 +1,22 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL/AP_HAL.h>
-#include "DataFlash.h"
 #include <stdlib.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Baro/AP_Baro.h>
+
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Progmem/AP_Progmem.h>
 
+#include "DataFlash.h"
 #include "DataFlash_SITL.h"
 #include "DataFlash_File.h"
 #include "DataFlash_Empty.h"
 #include "DataFlash_APM1.h"
 #include "DataFlash_APM2.h"
-
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;

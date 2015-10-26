@@ -7,7 +7,6 @@
 #define __AP_CURVE_H__
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_HAL/AP_HAL.h>
 

@@ -15,7 +15,6 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <fenv.h>

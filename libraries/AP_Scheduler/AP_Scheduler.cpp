@@ -19,10 +19,11 @@
  *  Author: Andrew Tridgell, January 2013
  *
  */
+#include "AP_Scheduler.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Scheduler.h"
 #include <AP_Param/AP_Param.h>
+#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
