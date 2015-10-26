@@ -25,33 +25,15 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Namespace.h>
-/* char: */
-#include <AP_Progmem/AP_Progmem.h>
 
 #include "Stream.h"
-
-/* AP_HAL::BetterStream is a pure virtual interface. It resembles
- * Michael Smith's BetterStream library for Arduino.
- * The Michael Smith BetterStream provided some implementations for AVR based
- * on _vprintf(). 
- * Please provide your own platform-specic implementation of vprintf, sprintf,
- * etc. to implement the printf functions.
- */
 
 class AP_HAL::BetterStream : public AP_HAL::Stream {
 public:
     BetterStream(void) {}
 
-    virtual void print_P(const char *) = 0;
-    virtual void println_P(const char *) = 0;
     virtual void printf(const char *, ...) FORMAT(2, 3) = 0;
-    /* No format checking on printf_P: can't currently support that on AVR */
-    virtual void _printf_P(const char *, ...) = 0;
-
-#define printf_P(fmt, ...) _printf_P((const char *)fmt, ## __VA_ARGS__)
-    
     virtual void vprintf(const char *, va_list) = 0;
-    virtual void vprintf_P(const char *, va_list) = 0;
 };
 
 #endif // __AP_HAL_UTILITY_BETTERSTREAM_H__
