@@ -60,6 +60,12 @@ void Plane::read_control_switch()
         inverted_flight = (control_mode != MANUAL && hal.rcin->read(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
     }
 
+    if (g.parachute_channel > 0) {
+        if (hal.rcin->read(g.parachute_channel-1) >= 1700) {
+            parachute_manual_release();
+        }
+    }
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it
