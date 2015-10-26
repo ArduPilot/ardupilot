@@ -144,9 +144,8 @@ public:
         k_param_rssi = 97,
         k_param_rpm_sensor,
         k_param_parachute,
-        
-        // 100: Arming parameters
         k_param_arming = 100,
+        k_param_parachute_channel,
 
         // 105: Extra parameters
         k_param_fence_retalt = 105,
@@ -490,6 +489,7 @@ public:
     AP_Int8 override_channel;
 #endif
     AP_Int16 gcs_pid_mask;
+    AP_Int8 parachute_channel;
 
     // RC channels
     RC_Channel rc_1;
