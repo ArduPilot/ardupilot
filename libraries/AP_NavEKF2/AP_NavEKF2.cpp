@@ -739,6 +739,8 @@ void NavEKF2::getFilterFaults(uint8_t &faults) const
 {
     if (core) {
         core->getFilterFaults(faults);
+    } else {
+        faults = 0;
     }
 }
 
@@ -757,6 +759,8 @@ void NavEKF2::getFilterTimeouts(uint8_t &timeouts) const
 {
     if (core) {
         core->getFilterTimeouts(timeouts);
+    } else {
+        timeouts = 0;
     }
 }
 
@@ -767,6 +771,8 @@ void NavEKF2::getFilterStatus(nav_filter_status &status) const
 {
     if (core) {
         core->getFilterStatus(status);
+    } else {
+        memset(&status, 0, sizeof(status));
     }
 }
 
@@ -777,6 +783,8 @@ void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
 {
     if (core) {
         core->getFilterGpsStatus(status);
+    } else {
+        memset(&status, 0, sizeof(status));
     }
 }
 
