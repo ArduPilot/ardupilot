@@ -935,6 +935,10 @@ static void fast_loop()
     gps_glitch_update();
 
     camera_mount.update_fast();
+
+    if (should_log(MASK_LOG_RCOUT_FAST)) {
+        DataFlash.Log_Write_RCOUT();
+    }
 }
 
 // rc_loops - reads user input from transmitter/receiver
@@ -1038,7 +1042,7 @@ static void fifty_hz_logging_loop()
         Log_Write_Rate();
     }
 
-    if (should_log(MASK_LOG_RCOUT)) {
+    if (should_log(MASK_LOG_RCOUT) && !should_log(MASK_LOG_RCOUT_FAST)) {
         DataFlash.Log_Write_RCOUT();
     }
 
