@@ -132,7 +132,7 @@ int8_t Copter::setup_show(uint8_t argc, const Menu::arg *argv)
 
         if(!param)
         {
-            cliSerial->printf("Parameter not found: '%s'\n", argv[1]);
+            cliSerial->printf("Parameter not found: '%s'\n", argv[1].str);
             return 0;
         }
         AP_Param::show(param, argv[1].str, type, cliSerial);
