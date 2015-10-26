@@ -617,7 +617,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                 break;
         }
         interact->printf(
-                "Place vehicle %S and press any key.\n", msg);
+                "Place vehicle %s and press any key.\n", msg);
 
         // wait for user input
         if (!interact->blocking_read()) {
