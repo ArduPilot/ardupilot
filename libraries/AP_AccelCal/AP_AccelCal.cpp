@@ -1,9 +1,12 @@
 #include "AP_AccelCal.h"
 #include <stdarg.h>
 #include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/AP_HAL.h>
 
 const extern AP_HAL::HAL& hal;
+static bool _start_collect_sample;
+static void _snoop(const mavlink_message_t* msg);
 
 void AP_AccelCal::update()
 {
@@ -24,7 +27,11 @@ void AP_AccelCal::update()
             fail();
             return;
         }
-
+        if(_start_collect_sample) {
+            collect_sample();
+            _gcs->set_snoop(NULL);
+            _start_collect_sample = false;
+        }
         switch(_status) {
             case ACCEL_CAL_NOT_STARTED:
                 fail();
@@ -41,7 +48,6 @@ void AP_AccelCal::update()
                         return;
                     }
                 }
-
                 // if we're on a new step, print a message describing the step
                 if (step != _step) {
                     _step = step;
@@ -72,6 +78,8 @@ void AP_AccelCal::update()
                     }
                     _printf("Place vehicle %s and press any key.", msg);
                 }
+                // setup snooping of packets so we can see the COMMAND_ACK
+                _gcs->set_snoop(_snoop);
                 break;
             }
             case ACCEL_CAL_COLLECTING_SAMPLE:
@@ -129,7 +137,7 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     if (gcs == NULL || _started) {
         return;
     }
-
+    _start_collect_sample = false;
     _num_calibrators = 0;
 
     AccelCalibrator *cal;
@@ -200,6 +208,8 @@ void AP_AccelCal::collect_sample()
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->collect_sample();
     }
+    // setup snooping of packets so we can see the COMMAND_ACK
+    _gcs->set_snoop(NULL);
     update_status();
 }
 
@@ -278,6 +288,16 @@ void AP_AccelCal::update_status() {
 bool AP_AccelCal::client_active(uint8_t client_num)
 {
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
+}
+
+/*
+  watch for COMMAND_ACK messages
+ */
+static void _snoop(const mavlink_message_t* msg)
+{
+    if (msg->msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
+        _start_collect_sample = true;
+    }
 }
 
 void AP_AccelCal::_printf(const char* fmt, ...)
