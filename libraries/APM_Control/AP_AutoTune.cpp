@@ -267,7 +267,7 @@ void AP_AutoTune::check_save(void)
 /*
   log a parameter change from autotune
  */
-void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
+void AP_AutoTune::log_param_change(float v, const char *suffix)
 {
     if (!dataflash.logging_started()) {
         return;
@@ -288,7 +288,7 @@ void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
   set a float and save a float if it has changed by more than
   0.1%. This reduces the number of insignificant EEPROM writes
  */
-void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix)
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *suffix)
 {
     float old_value = v.get();
     v.set(value);
@@ -301,7 +301,7 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_cha
 /*
   set a int16 and save if changed
  */
-void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix)
+void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix)
 {
     int16_t old_value = v.get();
     v.set(value);

@@ -144,7 +144,7 @@ void DFMessageWriter_WriteSysInfo::process() {
     _finished = true;  // all done!
 }
 
-// void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+// void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
 // {
 //     DFMessageWriter_WriteSysInfo writer(firmware_string);
 //     writer->process();

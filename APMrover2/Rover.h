@@ -399,7 +399,7 @@ private:
     void gcs_send_mission_item_reached_message(uint16_t mission_index);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str);
+    void gcs_send_text(MAV_SEVERITY severity, const char *str);
     void gcs_retry_deferred(void);
 
     void do_erase_logs(void);
@@ -490,7 +490,7 @@ private:
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
     void print_hit_enter();    
-    void gcs_send_text_fmt(const prog_char_t *fmt, ...);
+    void gcs_send_text_fmt(const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

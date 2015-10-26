@@ -593,7 +593,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
 
     // capture data from 6 positions
     for (uint8_t i=0; i<6; i++) {
-        const prog_char_t *msg;
+        const char *msg;
 
         // display message to user
         switch ( i ) {

@@ -25,7 +25,7 @@ enum moduleid {
     AP_LIMITS_ALTITUDE   = (1 << 2)
 };
 
-extern const prog_char_t *get_module_name(enum moduleid i);
+extern const char *get_module_name(enum moduleid i);
 
 // an integer type big enough to fit a bit field for all modules.
 // We have 3 modules, so 8-bit int is enough.

@@ -1172,7 +1172,7 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
 /*
   send a statustext message to all active MAVLink connections
  */
-void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const prog_char_t *fmt, ...)
+void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
 {
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if ((1U<<i) & mavlink_active) {

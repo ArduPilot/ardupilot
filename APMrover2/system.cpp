@@ -197,7 +197,7 @@ void Rover::init_ardupilot()
 	// menu; they must reset in order to fly.
 	//
     if (g.cli_enabled == 1) {
-        const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
+        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
             gcs[1].get_uart()->println(msg);

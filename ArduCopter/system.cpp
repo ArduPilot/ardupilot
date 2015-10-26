@@ -219,7 +219,7 @@ void Copter::init_ardupilot()
 
 #if CLI_ENABLED == ENABLED
     if (g.cli_enabled) {
-        const prog_char_t *msg = "\nPress ENTER 3 times to start interactive setup\n";
+        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
         cliSerial->println(msg);
         if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
             gcs[1].get_uart()->println(msg);

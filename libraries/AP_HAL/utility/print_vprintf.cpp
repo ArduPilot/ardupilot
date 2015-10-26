@@ -223,10 +223,10 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (sign)
                                         s->write(sign);
-                                const prog_char_t *p = "inf";
+                                const char *p = "inf";
                                 if (vtype & FTOA_NAN)
                                         p = "nan";
-                                while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
+                                while ( (ndigs = pgm_read_byte((const char *)p)) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
                                         s->write(ndigs);

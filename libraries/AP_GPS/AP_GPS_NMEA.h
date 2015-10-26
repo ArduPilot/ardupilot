@@ -148,19 +148,19 @@ private:
     ///			unit to send just the messages that we are interested
     ///			in using these strings
     //@{
-    static const prog_char _SiRF_init_string[];         ///< init string for SiRF units
-    static const prog_char _MTK_init_string[];                  ///< init string for MediaTek units
-    static const prog_char _ublox_init_string[];        ///< init string for ublox units
+    static const char _SiRF_init_string[];         ///< init string for SiRF units
+    static const char _MTK_init_string[];                  ///< init string for MediaTek units
+    static const char _ublox_init_string[];        ///< init string for ublox units
     //@}
 
     /// @name	GPS message identifier strings
     //@{
-    static const prog_char _gprmc_string[];
-    static const prog_char _gpgga_string[];
-    static const prog_char _gpvtg_string[];
+    static const char _gprmc_string[];
+    static const char _gpgga_string[];
+    static const char _gpvtg_string[];
     //@}
 
-    static const prog_char _initialisation_blob[];
+    static const char _initialisation_blob[];
 };
 
 #endif // __AP_GPS_NMEA_H__
