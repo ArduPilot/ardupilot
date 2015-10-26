@@ -379,7 +379,7 @@ void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
 }
 
 
-bool LR_MsgHandler::set_parameter(const char *name, float value)
+bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
@@ -390,32 +390,8 @@ bool LR_MsgHandler::set_parameter(const char *name, float value)
             return true;
         }
     }
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(name, &var_type);
-    if (vp == NULL) {
-        return false;
-    }
-    float old_value = 0;
-    if (var_type == AP_PARAM_FLOAT) {
-        old_value = ((AP_Float *)vp)->cast_to_float();
-        ((AP_Float *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        old_value = ((AP_Int32 *)vp)->cast_to_float();
-        ((AP_Int32 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        old_value = ((AP_Int16 *)vp)->cast_to_float();
-        ((AP_Int16 *)vp)->set(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        old_value = ((AP_Int8 *)vp)->cast_to_float();
-        ((AP_Int8 *)vp)->set(value);
-    } else {
-        // we don't support mavlink set on this parameter
-        return false;
-    }
-    if (fabsf(old_value - value) > 1.0e-12) {
-        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
-    }
-    return true;
+
+    return _set_parameter_callback(name, value);
 }
 
 void LR_MsgHandler_PARM::process_message(uint8_t *msg)
