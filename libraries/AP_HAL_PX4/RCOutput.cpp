@@ -252,9 +252,9 @@ uint16_t PX4RCOutput::read(uint8_t ch)
     // if px4io has given us a value for this channel use that,
     // otherwise use the value we last sent. This makes it easier to
     // observe the behaviour of failsafe in px4io
-    if (ch < _outputs.noutputs) {
+    /*if (ch < _outputs.noutputs) {
         return _outputs.output[ch];
-    }
+    }*/
     return _period[ch];
 }
 
