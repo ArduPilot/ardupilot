@@ -2000,7 +2000,7 @@ void Plane::gcs_send_text(MAV_SEVERITY severity, const prog_char_t *str)
         }
     }
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message_P(str);
+    DataFlash.Log_Write_Message(str);
 #endif
 }
 
