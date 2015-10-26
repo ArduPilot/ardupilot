@@ -28,10 +28,13 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
 #include "ftoa_engine.h"
+
 #include <stdint.h>
+
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
 
 #define PGM_INT8(addr) (int8_t)pgm_read_byte((const char *)addr)
 #define PGM_UINT32(addr) pgm_read_dword((const uint32_t *)addr)

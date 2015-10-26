@@ -4,7 +4,6 @@
 #define __AP_MOTORS_CLASS_H__
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library

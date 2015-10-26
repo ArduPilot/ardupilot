@@ -2,7 +2,6 @@
 
 #include <assert.h>
 
-#include <AP_Progmem/AP_Progmem.h>
 #include "AP_InertialSensor.h"
 
 #include <AP_Common/AP_Common.h>

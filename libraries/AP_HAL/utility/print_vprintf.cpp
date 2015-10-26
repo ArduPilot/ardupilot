@@ -37,17 +37,17 @@
 /* From: Id: printf_p_new.c,v 1.1.1.9 2002/10/15 20:10:28 joerg_wunsch Exp */
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
+#include "print_vprintf.h"
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
+
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
-
-#include "print_vprintf.h"
 
 #define GETBYTE(flag, mask, pnt) ((flag)&(mask)?pgm_read_byte(pnt++):*pnt++)
 
