@@ -1,8 +1,9 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.3.1-rc1 20-Oct-2015
+Copter 3.3.1 26-Oct-2015 / 3.3.1-rc1 20-Oct-2015
 Changes from 3.3
 1) Bug fix to prevent potential crash if Follow-Me is used after an aborted takeoff
+2) compiler upgraded to 4.9.3 (runs slightly faster than 4.7.2 which was used previously)
 ------------------------------------------------------------------
 Copter 3.3 29-Sep-2015 / 3.3-rc12 22-Sep-2015
 Changes from 3.3-rc11
