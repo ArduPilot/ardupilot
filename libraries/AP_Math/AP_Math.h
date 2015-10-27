@@ -234,6 +234,18 @@ static inline float minf(float a, float b)
     return (a<b?a:b);
 }
 
+#define NSEC_PER_SEC 1000000000ULL
+
+inline uint32_t hz_to_nsec(uint32_t freq)
+{
+    return NSEC_PER_SEC / freq;
+}
+
+inline uint32_t nsec_to_hz(uint32_t usec)
+{
+    return NSEC_PER_SEC / usec;
+}
+
 #undef INLINE
 #endif // AP_MATH_H
 
