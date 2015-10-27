@@ -143,6 +143,7 @@ def options(opt):
 
 def configure(cfg):
     cfg.load('compiler_cxx compiler_c')
+    cfg.load('clang_compilation_database')
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
