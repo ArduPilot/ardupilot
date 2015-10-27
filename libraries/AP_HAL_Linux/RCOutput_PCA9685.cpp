@@ -225,7 +225,6 @@ void RCOutput_PCA9685::push()
     }
 
     if (!_i2c_sem->take_nonblocking()) {
-        hal.console->printf("RCOutput: Unable to get bus semaphore");
         return;
     }
 
