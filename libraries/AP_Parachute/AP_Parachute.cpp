@@ -73,7 +73,9 @@ void AP_Parachute::release()
     }
 
     // set release time to current system time
-    _release_time = hal.scheduler->millis();
+    if (_release_time == 0) {
+        _release_time = hal.scheduler->millis();
+    }
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
