@@ -1486,7 +1486,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     break;
                 case PARACHUTE_RELEASE:
                     // treat as a manual release which performs some additional check of altitude
-                    plane.parachute_manual_release();
+                    if (plane.parachute.released()) {
+                        plane.gcs_send_text_fmt(PSTR("Parachute already released"));
+                        result = MAV_RESULT_FAILED;
+                    } else if (!plane.parachute.enabled()) {
+                        plane.gcs_send_text_fmt(PSTR("Parachute not enabled"));
+                        result = MAV_RESULT_FAILED;
+                    } else {
+                        if (!plane.parachute_manual_release()) {
+                            result = MAV_RESULT_FAILED;
+                        }
+                    }
                     break;
                 default:
                     result = MAV_RESULT_FAILED;
