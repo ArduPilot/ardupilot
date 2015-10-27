@@ -979,7 +979,7 @@ private:
     void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_check();
     void parachute_release();
-    void parachute_manual_release();
+    bool parachute_manual_release();
 
 public:
     void mavlink_delay_cb();

@@ -32,20 +32,27 @@ void Plane::parachute_release()
   after performing some checks for pilot error checks if the vehicle
   is landed
 */
-void Plane::parachute_manual_release()
+bool Plane::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled
     if (!parachute.enabled() || parachute.released()) {
-        return;
+        return false;
     }
 
     // do not release if vehicle is not flying
     if (!is_flying()) {
         // warn user of reason for failure
         gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Parachute: not flying"));
-        return;
+        return false;
+    }
+
+    if (relative_altitude() < parachute.alt_min()) {
+        gcs_send_text_fmt(PSTR("Parachute: too low"));
+        return false;
     }
 
     // if we get this far release parachute
     parachute_release();
+
+    return true;
 }
