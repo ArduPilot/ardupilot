@@ -126,6 +126,13 @@ public:
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
     void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
 
+    /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
+    ///     should be called continuously (with dt set to be the expected time between calls)
+    ///     actual position target will be moved no faster than the speed_down and speed_up
+    ///     target will also be stopped if the motors hit their limits or leash length is exceeded
+    ///     set force_descend to true during landing to allow target to move low enough to slow the motors
+    void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
+
     /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
     ///     should be called continuously (with dt set to be the expected time between calls)
     ///     almost no checks are performed on the input
@@ -198,6 +205,9 @@ public:
 
     /// get_desired_velocity - returns xy desired velocity (i.e. feed forward) in cm/s in lat and lon direction
     const Vector3f& get_desired_velocity() { return _vel_desired; }
+
+    /// set_desired_velocity_z - sets desired velocity in cm/s in z axis
+    void set_desired_velocity_z(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
     /// set_desired_velocity_xy - sets desired velocity in cm/s in lat and lon directions
     ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
