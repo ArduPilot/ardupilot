@@ -95,7 +95,7 @@ void Tracker::init_tracker()
     // use given start positions - useful for indoor testing, and
     // while waiting for GPS lock
     // sanity check location
-    if (fabsf(current_loc.lat) <= 90.0f && fabsf(current_loc.lng) <= 180.0f) {
+    if (fabsf(g.start_latitude) <= 90.0f && fabsf(g.start_longitude) <= 180.0f) {
         current_loc.lat = g.start_latitude * 1.0e7f;
         current_loc.lng = g.start_longitude * 1.0e7f;
         gcs_send_text_P(SEVERITY_MEDIUM, PSTR("ignoring invalid START_LATITUDE or START_LONGITUDE parameter"));
