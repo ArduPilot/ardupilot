@@ -18,8 +18,9 @@ bool Copter::loiter_init(bool ignore_checks)
         pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
         pos_control.set_accel_z(g.pilot_accel_z);
 
-        // initialise altitude target to stopping point
-        pos_control.set_target_to_stopping_point_z();
+        // initialise position and desired velocity
+        pos_control.set_alt_target(inertial_nav.get_altitude());
+        pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
         return true;
     }else{
@@ -107,7 +108,7 @@ void Copter::loiter_run()
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
         // update altitude target and call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
         break;
@@ -141,7 +142,7 @@ void Copter::loiter_run()
         }
 
         // update altitude target and call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.update_z_controller();
         break;
     }

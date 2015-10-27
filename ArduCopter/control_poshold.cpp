@@ -86,8 +86,9 @@ bool Copter::poshold_init(bool ignore_checks)
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     // initialise lean angles to current attitude
     poshold.pilot_roll = 0;
@@ -510,7 +511,7 @@ void Copter::poshold_run()
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
         }
         // update altitude target and call position controller
-        pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control.add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         pos_control.update_z_controller();
     }
