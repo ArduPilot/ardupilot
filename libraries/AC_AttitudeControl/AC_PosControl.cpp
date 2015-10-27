@@ -351,6 +351,19 @@ void AC_PosControl::pos_to_rate_z()
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
     _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms);
 
+    // check speed limits
+    // To-Do: check these speed limits here or in the pos->rate controller
+    _limit.vel_up = false;
+    _limit.vel_down = false;
+    if (_vel_target.z < _speed_down_cms) {
+        _vel_target.z = _speed_down_cms;
+        _limit.vel_down = true;
+    }
+    if (_vel_target.z > _speed_up_cms) {
+        _vel_target.z = _speed_up_cms;
+        _limit.vel_up = true;
+    }
+
     // add feed forward component
     _vel_target.z += _vel_desired.z;
 
@@ -364,19 +377,6 @@ void AC_PosControl::rate_to_accel_z()
 {
     const Vector3f& curr_vel = _inav.get_velocity();
     float p;                                // used to capture pid values for logging
-
-    // check speed limits
-    // To-Do: check these speed limits here or in the pos->rate controller
-    _limit.vel_up = false;
-    _limit.vel_down = false;
-    if (_vel_target.z < _speed_down_cms) {
-        _vel_target.z = _speed_down_cms;
-        _limit.vel_down = true;
-    }
-    if (_vel_target.z > _speed_up_cms) {
-        _vel_target.z = _speed_up_cms;
-        _limit.vel_up = true;
-    }
 
     // reset last velocity target to current target
     if (_flags.reset_rate_to_accel_z) {
