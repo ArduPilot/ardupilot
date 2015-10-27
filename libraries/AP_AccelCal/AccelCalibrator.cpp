@@ -162,13 +162,14 @@ void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f
 
 bool AccelCalibrator::accept_sample(const Vector3f& sample)
 {
+    static const uint16_t faces = 2*_conf_num_samples-4;
+    static const float a = (4.0f * M_PI_F / (3.0f * faces)) + M_PI_F / 3.0f;
+    static const float theta = 0.5f * acosf(cosf(a) / (1.0f - cosf(a)));
+
     if(_sample_buffer == NULL) {
         return false;
     }
 
-    uint8_t faces = 2*_conf_num_samples-4;
-    float theta = acosf(cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)/(1.0f-cosf((4.0f*M_PI_F/(3.0f*faces)) + M_PI_F/3.0f)));
-    theta *= 0.5f;
     float min_distance = GRAVITY_MSS * 2*sinf(theta/2);
 
     for(uint8_t i=0; i < _samples_collected; i++) {
