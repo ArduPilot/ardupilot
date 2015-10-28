@@ -31,6 +31,7 @@
 #include "Buzzer.h"
 #include "VRBoard_LED.h"
 #include "OreoLED_PX4.h"
+#include "RCOutputRGBLed.h"
 
 #ifndef OREOLED_ENABLED
  # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
