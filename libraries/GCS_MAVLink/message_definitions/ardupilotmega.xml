@@ -257,30 +257,30 @@
       <entry name="GOPRO_HEARTBEAT_STATUS_INCOMPATIBLE" value="1">
         <description>The detected GoPro is not HeroBus compatible</description>
       </entry>
-      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_OFF" value="2">
+      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED" value="2">
         <description>A HeroBus compatible GoPro is connected</description>
       </entry>
-      <entry name="GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_ON" value="3">
-        <description>A HeroBus compatible GoPro is connected</description>
-      </entry>
-      <entry name="GOPRO_HEARTBEAT_STATUS_RECORDING" value="4">
-        <description>A HeroBus compatible GoPro is connected and recording</description>
-      </entry>
-      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_OVERTEMP" value="5">
-        <description>A HeroBus compatible GoPro is connected and overtemperature</description>
-      </entry>
-      <entry name="GOPRO_HEARTBEAT_STATUS_ERR_STORAGE" value="6">
-        <description>A HeroBus compatible GoPro is connected and storage is missing or full</description>
+      <entry name="GOPRO_HEARTBEAT_STATUS_ERROR" value="3">
+        <description>An unrecoverable error was encountered with the connected GoPro, it may require a power cycle</description>
       </entry>
     </enum>
-    <enum name="GOPRO_SET_RESPONSE_RESULT">
-      <entry name="GOPRO_SET_RESPONSE_RESULT_FAILURE" value="0">
-        <description>The write message with ID indicated failed</description>
+
+    <enum name="GOPRO_HEARTBEAT_FLAGS">
+      <!-- each entry is a mask to test a bit in GOPRO_HEARTBEAT_STATUS.flags -->
+      <entry name="GOPRO_FLAG_RECORDING" value="1">
+        <description>GoPro is currently recording</description>
       </entry>
-      <entry name="GOPRO_SET_RESPONSE_RESULT_SUCCESS" value="1">
+    </enum>
+
+    <enum name="GOPRO_REQUEST_STATUS">
+      <entry name="GOPRO_REQUEST_SUCCESS" value="0">
         <description>The write message with ID indicated succeeded</description>
       </entry>
+      <entry name="GOPRO_REQUEST_FAILED" value="1">
+        <description>The write message with ID indicated failed</description>
+      </entry>
     </enum>
+
     <enum name="GOPRO_COMMAND">
       <entry name="GOPRO_COMMAND_POWER" value="0">
         <description>(Get/Set)</description>
@@ -297,8 +297,383 @@
       <entry name="GOPRO_COMMAND_MODEL" value="4">
         <description>(Get/___)</description>
       </entry>
-      <entry name="GOPRO_COMMAND_REQUEST_FAILED" value="254">
-        <description>(Get/___)</description>
+      <entry name="GOPRO_COMMAND_VIDEO_SETTINGS" value="5">
+        <description>(Get/Set)</description>
+        <!-- Packet structure for the four values is as follows
+          byte 0: GOPRO_RESOLUTION
+          byte 1: GOPRO_FRAME_RATE
+          byte 2: GOPRO_FIELD_OF_VIEW
+          byte 3: GOPRO_VIDEO_SETTINGS_FLAGS
+        -->
+      </entry>
+      <entry name="GOPRO_COMMAND_LOW_LIGHT" value="6">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PHOTO_RESOLUTION" value="7">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PHOTO_BURST_RATE" value="8">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE" value="9">
+        <description>(Get/Set)</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE_WHITE_BALANCE" value="10">
+        <description>(Get/Set) Hero 3+ Only</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE_COLOUR" value="11">
+        <description>(Get/Set) Hero 3+ Only</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE_GAIN" value="12">
+        <description>(Get/Set) Hero 3+ Only</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE_SHARPNESS" value="13">
+        <description>(Get/Set) Hero 3+ Only</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_PROTUNE_EXPOSURE" value="14">
+        <description>(Get/Set) Hero 3+ Only</description>
+      </entry>
+      <entry name="GOPRO_COMMAND_TIME" value="15">
+        <description>(Get/Set)</description>
+        <!-- Packet structure for the four values is as follows
+          byte 0...3: uint32_t unix timestamp (byte 0 is MSB)
+        -->
+      </entry>
+      <entry name="GOPRO_COMMAND_CHARGING" value="16">
+        <description>(Get/Set)</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_CAPTURE_MODE">
+      <entry name="GOPRO_CAPTURE_MODE_VIDEO" value="0">
+        <description>Video mode</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_PHOTO" value="1">
+        <description>Photo mode</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_BURST" value="2">
+        <description>Burst mode, hero 3+ only</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_TIME_LAPSE" value="3">
+        <description>Time lapse mode, hero 3+ only</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_MULTI_SHOT" value="4">
+        <description>Multi shot mode, hero 4 only</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_PLAYBACK" value="5">
+        <description>Playback mode, hero 4 only, silver only except when LCD or HDMI is connected to black</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_SETUP" value="6">
+        <description>Playback mode, hero 4 only</description>
+      </entry>
+      <entry name="GOPRO_CAPTURE_MODE_UNKNOWN" value="255">
+        <description>Mode not yet known</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_RESOLUTION">
+      <entry name="GOPRO_RESOLUTION_480p" value="0">
+        <description>848 x 480 (480p)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_720p" value="1">
+        <description>1280 x 720 (720p)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_960p" value="2">
+        <description>1280 x 960 (960p)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_1080p" value="3">
+        <description>1920 x 1080 (1080p)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_1440p" value="4">
+        <description>1920 x 1440 (1440p)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_2_7k_17_9" value="5">
+        <description>2704 x 1440 (2.7k-17:9)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_2_7k_16_9" value="6">
+        <description>2704 x 1524 (2.7k-16:9)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_2_7k_4_3" value="7">
+        <description>2704 x 2028 (2.7k-4:3)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_4k_16_9" value="8">
+        <description>3840 x 2160 (4k-16:9)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_4k_17_9" value="9">
+        <description>4096 x 2160 (4k-17:9)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_720p_SUPERVIEW" value="10">
+        <description>1280 x 720 (720p-SuperView)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_1080p_SUPERVIEW" value="11">
+        <description>1920 x 1080 (1080p-SuperView)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_2_7k_SUPERVIEW" value="12">
+        <description>2704 x 1520 (2.7k-SuperView)</description>
+      </entry>
+      <entry name="GOPRO_RESOLUTION_4k_SUPERVIEW" value="13">
+        <description>3840 x 2160 (4k-SuperView)</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_FRAME_RATE">
+      <entry name="GOPRO_FRAME_RATE_12" value="0">
+        <description>12 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_15" value="1">
+        <description>15 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_24" value="2">
+        <description>24 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_25" value="3">
+        <description>25 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_30" value="4">
+        <description>30 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_48" value="5">
+        <description>48 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_50" value="6">
+        <description>50 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_60" value="7">
+        <description>60 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_80" value="8">
+        <description>80 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_90" value="9">
+        <description>90 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_100" value="10">
+        <description>100 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_120" value="11">
+        <description>120 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_240" value="12">
+        <description>240 FPS</description>
+      </entry>
+      <entry name="GOPRO_FRAME_RATE_12_5" value="13">
+        <description>12.5 FPS</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_FIELD_OF_VIEW">
+      <entry name="GOPRO_FIELD_OF_VIEW_WIDE" value="0">
+        <description>0x00: Wide</description>
+      </entry>
+      <entry name="GOPRO_FIELD_OF_VIEW_MEDIUM" value="1">
+        <description>0x01: Medium</description>
+      </entry>
+      <entry name="GOPRO_FIELD_OF_VIEW_NARROW" value="2">
+        <description>0x02: Narrow</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_VIDEO_SETTINGS_FLAGS">
+      <entry name="GOPRO_VIDEO_SETTINGS_TV_MODE" value="1">
+        <description>0=NTSC, 1=PAL</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PHOTO_RESOLUTION">
+      <entry name="GOPRO_PHOTO_RESOLUTION_5MP_MEDIUM" value="0">
+        <description>5MP Medium</description>
+      </entry>
+      <entry name="GOPRO_PHOTO_RESOLUTION_7MP_MEDIUM" value="1">
+        <description>7MP Medium</description>
+      </entry>
+      <entry name="GOPRO_PHOTO_RESOLUTION_7MP_WIDE" value="2">
+        <description>7MP Wide</description>
+      </entry>
+      <entry name="GOPRO_PHOTO_RESOLUTION_10MP_WIDE" value="3">
+        <description>10MP Wide</description>
+      </entry>
+      <entry name="GOPRO_PHOTO_RESOLUTION_12MP_WIDE" value="4">
+        <description>12MP Wide</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PROTUNE_WHITE_BALANCE">
+      <entry name="GOPRO_PROTUNE_WHITE_BALANCE_AUTO" value="0">
+        <description>Auto</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_WHITE_BALANCE_3000K" value="1">
+        <description>3000K</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_WHITE_BALANCE_5500K" value="2">
+        <description>5500K</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_WHITE_BALANCE_6500K" value="3">
+        <description>6500K</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_WHITE_BALANCE_RAW" value="4">
+        <description>Camera Raw</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PROTUNE_COLOUR">
+      <entry name="GOPRO_PROTUNE_COLOUR_STANDARD" value="0">
+        <description>Auto</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_COLOUR_NEUTRAL" value="1">
+        <description>Neutral</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PROTUNE_GAIN">
+      <entry name="GOPRO_PROTUNE_GAIN_400" value="0">
+        <description>ISO 400</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_GAIN_800" value="1">
+        <description>ISO 800 (Only Hero 4)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_GAIN_1600" value="2">
+        <description>ISO 1600</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_GAIN_3200" value="3">
+        <description>ISO 3200 (Only Hero 4)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_GAIN_6400" value="4">
+        <description>ISO 6400</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PROTUNE_SHARPNESS">
+      <entry name="GOPRO_PROTUNE_SHARPNESS_LOW" value="0">
+        <description>Low Sharpness</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_SHARPNESS_MEDIUM" value="1">
+        <description>Medium Sharpness</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_SHARPNESS_HIGH" value="2">
+        <description>High Sharpness</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_PROTUNE_EXPOSURE">
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_5_0" value="0">
+        <description>-5.0 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_4_5" value="1">
+        <description>-4.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_4_0" value="2">
+        <description>-4.0 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_3_5" value="3">
+        <description>-3.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_3_0" value="4">
+        <description>-3.0 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_2_5" value="5">
+        <description>-2.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_2_0" value="6">
+        <description>-2.0 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_1_5" value="7">
+        <description>-1.5 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_1_0" value="8">
+        <description>-1.0 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_NEG_0_5" value="9">
+        <description>-0.5 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_ZERO" value="10">
+        <description>0.0 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_0_5" value="11">
+        <description>+0.5 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_1_0" value="12">
+        <description>+1.0 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_1_5" value="13">
+        <description>+1.5 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_2_0" value="14">
+        <description>+2.0 EV</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_2_5" value="15">
+        <description>+2.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_3_0" value="16">
+        <description>+3.0 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_3_5" value="17">
+        <description>+3.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_4_0" value="18">
+        <description>+4.0 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_4_5" value="19">
+        <description>+4.5 EV (Hero 3+ Only)</description>
+      </entry>
+      <entry name="GOPRO_PROTUNE_EXPOSURE_POS_5_0" value="20">
+        <description>+5.0 EV (Hero 3+ Only)</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_CHARGING">
+      <entry name="GOPRO_CHARGING_DISABLED" value="0">
+        <description>Charging disabled</description>
+      </entry>
+      <entry name="GOPRO_CHARGING_ENABLED" value="1">
+        <description>Charging enabled</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_MODEL">
+      <entry name="GOPRO_MODEL_UNKNOWN" value="0">
+        <description>Unknown gopro model</description>
+      </entry>
+      <entry name="GOPRO_MODEL_HERO_3_PLUS_SILVER" value="1">
+        <description>Hero 3+ Silver (HeroBus not supported by GoPro)</description>
+      </entry>
+      <entry name="GOPRO_MODEL_HERO_3_PLUS_BLACK" value="2">
+        <description>Hero 3+ Black</description>
+      </entry>
+      <entry name="GOPRO_MODEL_HERO_4_SILVER" value="3">
+        <description>Hero 4 Silver</description>
+      </entry>
+      <entry name="GOPRO_MODEL_HERO_4_BLACK" value="4">
+        <description>Hero 4 Black</description>
+      </entry>
+    </enum>
+
+    <enum name="GOPRO_BURST_RATE">
+      <entry name="GOPRO_BURST_RATE_3_IN_1_SECOND" value="0">
+        <description>3 Shots / 1 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_5_IN_1_SECOND" value="1">
+        <description>5 Shots / 1 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_10_IN_1_SECOND" value="2">
+        <description>10 Shots / 1 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_10_IN_2_SECOND" value="3">
+        <description>10 Shots / 2 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_10_IN_3_SECOND" value="4">
+        <description>10 Shots / 3 Second (Hero 4 Only)</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_30_IN_1_SECOND" value="5">
+        <description>30 Shots / 1 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_30_IN_2_SECOND" value="6">
+        <description>30 Shots / 2 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_30_IN_3_SECOND" value="7">
+        <description>30 Shots / 3 Second</description>
+      </entry>
+      <entry name="GOPRO_BURST_RATE_30_IN_6_SECOND" value="8">
+        <description>30 Shots / 6 Second</description>
       </entry>
     </enum>
 
@@ -914,6 +1289,8 @@
     <message name="GOPRO_HEARTBEAT" id="215">
       <description>Heartbeat from a HeroBus attached GoPro</description>
       <field name="status" type="uint8_t" enum="GOPRO_HEARTBEAT_STATUS">Status</field>
+      <field name="capture_mode" type="uint8_t" enum="GOPRO_CAPTURE_MODE">Current capture mode</field>
+      <field name="flags" type="uint8_t">additional status bits</field> <!-- see GOPRO_HEARTBEAT_FLAGS -->
     </message>
     <message name="GOPRO_GET_REQUEST" id="216">
       <description>Request a GOPRO_COMMAND response from the GoPro</description>
@@ -924,19 +1301,20 @@
     <message name="GOPRO_GET_RESPONSE" id="217">
       <description>Response from a GOPRO_COMMAND get request</description>
       <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
-      <field name="value" type="uint8_t">Value</field>
+      <field name="status" type="uint8_t" enum="GOPRO_REQUEST_STATUS">Status</field>
+      <field name="value" type="uint8_t[4]">Value</field>
     </message>
     <message name="GOPRO_SET_REQUEST" id="218">
       <description>Request to set a GOPRO_COMMAND with a desired</description>
       <field name="target_system" type="uint8_t">System ID</field>
       <field name="target_component" type="uint8_t">Component ID</field>
       <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
-      <field name="value" type="uint8_t">Value</field>
+      <field name="value" type="uint8_t[4]">Value</field>
     </message>
     <message name="GOPRO_SET_RESPONSE" id="219">
       <description>Response from a GOPRO_COMMAND set request</description>
       <field name="cmd_id" type="uint8_t" enum="GOPRO_COMMAND">Command ID</field>
-      <field name="result" type="uint8_t" enum="GOPRO_SET_RESPONSE_RESULT">Result</field>
+      <field name="status" type="uint8_t" enum="GOPRO_REQUEST_STATUS">Status</field>
     </message>
     <!-- 219 to 224 RESERVED for more GOPRO-->
 
