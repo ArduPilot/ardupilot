@@ -19,6 +19,7 @@
 /// @brief	A class to implement a low pass filter without losing precision even for int types
 ///         the downside being that it's a little slower as it internally uses a float
 ///         and it consumes an extra 4 bytes of memory to hold the constant gain
+/// @authors: Leonard Hall <LeonardTHall@gmail.com>, template implmentation: Daniel Frenzel <dgdanielf@gmail.com>
 
 #ifndef __LOW_PASS_FILTER_H__
 #define __LOW_PASS_FILTER_H__

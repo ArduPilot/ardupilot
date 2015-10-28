@@ -96,3 +96,8 @@ template class LowPassFilter2p<float>;
 template class LowPassFilter2p<double>;
 template class LowPassFilter2p<Vector2f>;
 template class LowPassFilter2p<Vector3f>;
+
+#include <AP_Eigen/AP_Eigen.h>
+template class LowPassFilter2p<AP_Eigen::Vector2f>;
+template class LowPassFilter2p<AP_Eigen::Vector3f>;
+
