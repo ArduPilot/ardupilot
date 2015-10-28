@@ -36,9 +36,6 @@ void NavEKF2_core::controlFilterModes()
     // Used during initial bootstrap alignment of the filter
     checkAttitudeAlignmentStatus();
 
-    // Control reset of yaw and magnetic field states
-    controlMagYawReset();
-
     // Set the type of inertial navigation aiding used
     setAidingMode();
 
@@ -65,12 +62,19 @@ void NavEKF2_core::setWindMagStateLearningMode()
             ((frontend._magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
             (frontend._magCal == 4); // all the time
 
-    // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user, or we do not have an absolute position reference
+    // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
+    // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
     // If we do nto have absolute position (eg GPS) then the earth field states cannot be learned
-    bool magCalDenied = !use_compass() || (frontend._magCal == 2) || (PV_AidingMode == AID_NONE);
+    bool magCalDenied = !use_compass() || (frontend._magCal == 2) || (PV_AidingMode == AID_NONE) || (onGround && frontend._magCal != 4);
 
     // Inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
+
+    // If magnetometer states are inhibited, we clear the flag indicating that the magnetic field in-flight initialisation has been completed
+    // because it will need to be done again
+    if (inhibitMagStates) {
+        firstMagYawInit = false;
+    }
 
     // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
     // if we are not using those states

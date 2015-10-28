@@ -102,7 +102,6 @@ void NavEKF2_core::InitialiseVariables()
     badMag = false;
     badIMUdata = false;
     firstMagYawInit = false;
-    secondMagYawInit = false;
     dtIMUavg = 0.0025f;
     dt = 0;
     velDotNEDfilt.zero();

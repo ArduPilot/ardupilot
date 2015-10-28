@@ -22,24 +22,21 @@ void NavEKF2_core::controlMagYawReset()
 {
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
     // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -1.5f) {
-           // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after commencement of flight
-           Vector3f eulerAngles;
-           stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-           stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-           StoreQuatReset();
-           firstMagYawInit = true;
-           magFuseTiltInhibit_ms =  imuSampleTime_ms;
-       } else if (inFlight && !secondMagYawInit && (stateStruct.position.z - posDownAtTakeoff) < -5.0f) {
-           // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after commencement of flight
-           // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
-           Vector3f eulerAngles;
-           stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-           stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-           StoreQuatReset();
-           secondMagYawInit = true;
-           magFuseTiltInhibit_ms =  imuSampleTime_ms;
-       }
+    // Delay if rotating rapidly as time offsets will produce errors in the magnetic field states
+    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && (imuDataDelayed.delVel.length())/imuDataDelayed.delAngDT < 1.0f) {
+        firstMagYawInit = true;
+        // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
+        magFuseTiltInhibit_ms =  imuSampleTime_ms;
+        // Update the yaw  angle and earth field states using the magnetic field measurements
+        Quaternion tempQuat;
+        Vector3f eulerAngles;
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        tempQuat = stateStruct.quat;
+        stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+        // calculate the change in the quaternion state and apply it to the ouput history buffer
+        tempQuat = stateStruct.quat/tempQuat;
+        StoreQuatRotate(tempQuat);
+    }
 
     // perform a yaw alignment check against GPS if exiting on-ground mode for fly forward type vehicle (plane)
     // this is done to protect against unrecoverable heading alignment errors due to compass faults
@@ -135,11 +132,17 @@ void NavEKF2_core::SelectMagFusion()
         magTimeout = true;
     }
 
-    bool temp = RecallMag();
+    // check for availability of magnetometer data to fuse
+    bool newMagDataAvailable = RecallMag();
+
+    if (newMagDataAvailable) {
+        // Control reset of yaw and magnetic field states
+        controlMagYawReset();
+    }
 
     // determine if conditions are right to start a new fusion cycle
     // wait until the EKF time horizon catches up with the measurement
-    bool dataReady = (temp && statesInitialised && use_compass() && yawAlignComplete);
+    bool dataReady = (newMagDataAvailable && statesInitialised && use_compass() && yawAlignComplete);
     if (dataReady) {
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();

@@ -175,7 +175,7 @@ bool NavEKF2_core::RecallOF()
 bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
 {
     // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
-    if (secondMagYawInit && (frontend._magCal != 2) && _ahrs->get_compass()->healthy(0)) {
+    if (firstMagYawInit && (frontend._magCal != 2) && _ahrs->get_compass()->healthy(0)) {
         magOffsets = _ahrs->get_compass()->get_offsets(0) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
@@ -211,7 +211,7 @@ void NavEKF2_core::readMagData()
             Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(0);
             bool changeDetected = (!is_equal(nowMagOffsets.x,lastMagOffsets.x) || !is_equal(nowMagOffsets.y,lastMagOffsets.y) || !is_equal(nowMagOffsets.z,lastMagOffsets.z));
             // Ignore bias changes before final mag field and yaw initialisation, as there may have been a compass calibration
-            if (changeDetected && secondMagYawInit) {
+            if (changeDetected && firstMagYawInit) {
                 stateStruct.body_magfield.x += (nowMagOffsets.x - lastMagOffsets.x) * 0.001f;
                 stateStruct.body_magfield.y += (nowMagOffsets.y - lastMagOffsets.y) * 0.001f;
                 stateStruct.body_magfield.z += (nowMagOffsets.z - lastMagOffsets.z) * 0.001f;
