@@ -957,6 +957,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 break;
 
             case MAV_CMD_PREFLIGHT_CALIBRATION:
+                if(hal.util->get_soft_armed()) {
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
                 if (is_equal(packet.param1,1.0f)) {
                     rover.ins.init_gyro();
                     if (rover.ins.gyro_calibrated_ok_all()) {
@@ -972,15 +976,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     rover.trim_radio();
                     result = MAV_RESULT_ACCEPTED;
                 } else if (is_equal(packet.param5,1.0f)) {
+                    result = MAV_RESULT_ACCEPTED;
                     // start with gyro calibration
                     rover.ins.init_gyro();
                     // reset ahrs gyro bias
                     if (rover.ins.gyro_calibrated_ok_all()) {
                         rover.ahrs.reset_gyro_drift();
+                    } else {
+                        result = MAV_RESULT_FAILED;
                     }
-                    if(!hal.util->get_soft_armed()) {
-                        rover.accelcal.start(this);
-                    }
+                    rover.accelcal.start(this);
+
                 } else if (is_equal(packet.param5,2.0f)) {
                     // start with gyro calibration
                     rover.ins.init_gyro();
