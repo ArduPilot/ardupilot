@@ -70,6 +70,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _flags.reset_accel_to_throttle = true;
     _flags.freeze_ff_xy = true;
     _flags.freeze_ff_z = true;
+    _flags.use_desvel_ff_z = true;
     _limit.pos_up = true;
     _limit.pos_down = true;
     _limit.vel_up = true;
@@ -135,7 +136,9 @@ void AC_PosControl::set_accel_z(float accel_cmss)
 void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
 {
     float alt_change = alt_cm-_pos_target.z;
-    
+
+    // do not use z-axis desired velocity feed forward
+    _flags.use_desvel_ff_z = false;
     _vel_desired.z = 0.0f;
 
     // adjust desired alt if motors have not hit their limits
@@ -167,8 +170,10 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
         _limit.pos_up = true;
     }
 
-    // clear feed forward
-    _vel_desired.z = 0.0f;
+    // do not use z-axis desired velocity feed forward
+    // vel_desired set to desired climb rate for reporting and land-detector
+    _flags.use_desvel_ff_z = false;
+    _vel_desired.z = climb_rate_cms;
 }
 
 /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
@@ -198,6 +203,7 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
 
     float vel_change_limit = _accel_last_z_cms * dt;
     _vel_desired.z = constrain_float(climb_rate_cms, _vel_desired.z-vel_change_limit, _vel_desired.z+vel_change_limit);
+    _flags.use_desvel_ff_z = true;
 
     // adjust desired alt if motors have not hit their limits
     // To-Do: add check of _limit.pos_down?
@@ -227,6 +233,7 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
 {
     _pos_target.z = _inav.get_altitude();
     _vel_desired.z = 0.0f;
+    _flags.use_desvel_ff_z = false;
     _vel_target.z= _inav.get_velocity_z();
     _vel_last.z = _inav.get_velocity_z();
     _accel_feedforward.z = 0.0f;
@@ -263,7 +270,9 @@ void AC_PosControl::get_stopping_point_z(Vector3f& stopping_point) const
     // if position controller is active add current velocity error to avoid sudden jump in acceleration
     if (is_active_z()) {
         curr_vel_z += _vel_error.z;
-        curr_vel_z -= _vel_desired.z;
+        if (_flags.use_desvel_ff_z) {
+            curr_vel_z -= _vel_desired.z;
+        }
     }
 
     // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
@@ -375,7 +384,9 @@ void AC_PosControl::pos_to_rate_z()
     }
 
     // add feed forward component
-    _vel_target.z += _vel_desired.z;
+    if (_flags.use_desvel_ff_z) {
+        _vel_target.z += _vel_desired.z;
+    }
 
     // call rate based throttle controller which will update accel based throttle controller targets
     rate_to_accel_z();
@@ -505,6 +516,7 @@ void AC_PosControl::set_pos_target(const Vector3f& position)
 {
     _pos_target = position;
 
+    _flags.use_desvel_ff_z = false;
     _vel_desired.z = 0.0f;
     // initialise roll and pitch to current roll and pitch.  This avoids a twitch between when the target is set and the pos controller is first run
     // To-Do: this initialisation of roll and pitch targets needs to go somewhere between when pos-control is initialised and when it completes it's first cycle
