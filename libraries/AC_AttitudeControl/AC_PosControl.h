@@ -294,7 +294,7 @@ private:
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
             uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
             uint16_t freeze_ff_xy       : 1;    // 1 use to freeze feed forward during step updates
-            uint16_t freeze_ff_z        : 1;    // 1 use to freeze feed forward during step updates
+            uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
             uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
     } _flags;
 
