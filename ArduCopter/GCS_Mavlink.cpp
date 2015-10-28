@@ -1323,13 +1323,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_UNSUPPORTED;
             } else if (is_equal(packet.param5,1.0f)) {
                 // 3d accel calibration
+                result = MAV_RESULT_ACCEPTED;
                 if (!copter.calibrate_gyros()) {
                     result = MAV_RESULT_FAILED;
                     break;
                 }
-                if(!copter.motors.armed()) {
-                    copter.accelcal.start(this);
-                }
+                copter.accelcal.start(this);
+                
             } else if (is_equal(packet.param5,2.0f)) {
                 // calibrate gyros
                 if (!copter.calibrate_gyros()) {
