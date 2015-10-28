@@ -428,6 +428,9 @@ private:
     // Reset the stored output quaternion history to current EKF state
     void StoreQuatReset(void);
 
+    // Rotate the stored output quaternion history through a quaternion rotation
+    void StoreQuatRotate(Quaternion deltaQuat);
+
     // recall output data from the FIFO
     void RecallOutput();
 

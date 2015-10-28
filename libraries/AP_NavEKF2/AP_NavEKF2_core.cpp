@@ -1223,6 +1223,17 @@ void NavEKF2_core::StoreQuatReset()
     outputDataDelayed.quat = outputDataNew.quat;
 }
 
+// Rotate the stored output quaternion history through a quaternion rotation
+void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
+{
+    outputDataNew.quat = outputDataNew.quat*deltaQuat;
+    // write current measurement to entire table
+    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+        storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
+    }
+    outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
+}
+
 // recall output data from the FIFO
 void NavEKF2_core::RecallOutput()
 {
