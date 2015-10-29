@@ -819,20 +819,20 @@ uint32_t NavEKF2::getLastYawResetAngle(float &yawAng) const
 
 // return the amount of NE position change due to the last position reset in metres
 // returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos)
+uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos) const
 {
     if (!core) {
-        return false;
+        return 0;
     }
     return core->getLastPosNorthEastReset(pos);
 }
 
 // return the amount of NE velocity change due to the last velocity reset in metres/sec
 // returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel)
+uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
 {
     if (!core) {
-        return false;
+        return 0;
     }
     return core->getLastVelNorthEastReset(vel);
 }
