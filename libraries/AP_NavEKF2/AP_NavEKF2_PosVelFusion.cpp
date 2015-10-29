@@ -332,14 +332,15 @@ void NavEKF2_core::FuseVelPosNED()
                         ResetPosition();
                         // reset the velocity to the GPS velocity
                         ResetVelocity();
-                        // don't fuse data on this time step
+                        // don't fuse GPS data on this time step
                         fusePosData = false;
+                        fuseVelData = false;
                         // Reset the position variances and corresponding covariances to a value that will pass the checks
                         zeroRows(P,6,7);
                         zeroCols(P,6,7);
                         P[6][6] = sq(float(0.5f*frontend._gpsGlitchRadiusMax));
                         P[7][7] = P[6][6];
-                        // Reset the normalised innovation to avoid false failing the bad position fusion test
+                        // Reset the normalised innovation to avoid failing the bad fusion tests
                         posTestRatio = 0.0f;
                         velTestRatio = 0.0f;
                     }
@@ -377,19 +378,21 @@ void NavEKF2_core::FuseVelPosNED()
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - lastVelPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
-            // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || velTimeout) {
+            // use velocity data if healthy, timed out, or in constant position mode
+            if (velHealth || velTimeout || (PV_AidingMode == AID_NONE)) {
                 velHealth = true;
                 // restart the timeout count
                 lastVelPassTime_ms = imuSampleTime_ms;
-            } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
-                // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
-                ResetVelocity();
-                fuseVelData =  false;
-                // Reset the normalised innovation to avoid false failing the bad position fusion test
-                velTestRatio = 0.0f;
+                // If we are doing full aiding and velocity fusion times out, reset to the GPS velocity
+                if (PV_AidingMode == AID_ABSOLUTE && velTimeout) {
+                    // reset the velocity to the GPS velocity
+                    ResetVelocity();
+                    // don't fuse GPS velocity data on this time step
+                    fuseVelData = false;
+                    // Reset the normalised innovation to avoid failing the bad fusion tests
+                    velTestRatio = 0.0f;
+                }
             } else {
-                // if data is unhealthy and position is healthy, we do not fuse it
                 velHealth = false;
             }
         }

@@ -583,7 +583,7 @@ void NavEKF2_core::readGpsData()
                 ResetVelocity();
                 ResetPosition();
 
-                // Reset the normalised innovation to avoid false failing the bad position fusion test
+                // Reset the normalised innovation to avoid false failing bad fusion tests
                 velTestRatio = 0.0f;
                 posTestRatio = 0.0f;
             }
