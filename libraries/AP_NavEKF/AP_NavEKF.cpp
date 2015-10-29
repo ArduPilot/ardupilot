@@ -4159,18 +4159,12 @@ void NavEKF::readIMUData()
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
 
-    if (ins.use_accel(0) && ins.use_accel(1)) {
-        // dual accel mode
-
-        // read IMU1 delta velocity data
-        readDeltaVelocity(0, dVelIMU1, dtDelVel1);
+    // dual accel mode - require both IMU's to be able to provide delta velocity outputs
+    if (ins.use_accel(0) && ins.use_accel(1) && readDeltaVelocity(0, dVelIMU1, dtDelVel1) && readDeltaVelocity(1, dVelIMU2, dtDelVel2)) {
 
         // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU1
         float alpha = 1.0f - 5.0f*dtDelVel1;
         imuNoiseFiltState1 = maxf(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState1);
-
-        // read IMU2 delta velocity data
-        readDeltaVelocity(1, dVelIMU2, dtDelVel2);
 
         // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU2
         alpha = 1.0f - 5.0f*dtDelVel2;
@@ -4213,11 +4207,9 @@ void NavEKF::readIMUData()
         // single accel mode - one of the first two accelerometers are unhealthy, not available or de-selected by the user
         // read good accelerometer into dVelIMU1 and copy to dVelIMU2
         // set the switch state based on the IMU we are using to make the data source selection visible
-        if (ins.use_accel(0)) {
-            readDeltaVelocity(0, dVelIMU1, dtDelVel1);
+        if (ins.use_accel(0) && readDeltaVelocity(0, dVelIMU1, dtDelVel1)) {
             lastImuSwitchState = IMUSWITCH_IMU0;
-        } else if (ins.use_accel(1)) {
-            readDeltaVelocity(1, dVelIMU1, dtDelVel1);
+        } else if (ins.use_accel(1) && readDeltaVelocity(1, dVelIMU1, dtDelVel1)) {
             lastImuSwitchState = IMUSWITCH_IMU1;
         } else {
             readDeltaVelocity(ins.get_primary_accel(), dVelIMU1, dtDelVel1);
@@ -4238,14 +4230,11 @@ void NavEKF::readIMUData()
         dVelIMU2 = dVelIMU1;
     }
 
-    if (ins.use_gyro(0) && ins.use_gyro(1)) {
-        // dual gyro mode - average first two gyros
-        Vector3f dAng;
-        dAngIMU.zero();
-        readDeltaAngle(0, dAng);
-        dAngIMU += dAng;
-        readDeltaAngle(1, dAng);
-        dAngIMU += dAng;
+    // Default is to use the average of two gyros if available
+    // This reduces rate offset due to temperature variation
+    Vector3f dAng0,dAng1;
+    if (ins.use_gyro(0) && ins.use_gyro(1) && readDeltaAngle(0, dAng0) && readDeltaAngle(1, dAng1)) {
+        dAngIMU = (dAng0+dAng1);
         dAngIMU *= 0.5f;
     } else {
         // single gyro mode - one of the first two gyros are unhealthy or don't exist
