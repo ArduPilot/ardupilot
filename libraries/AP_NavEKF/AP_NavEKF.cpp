@@ -875,10 +875,8 @@ void NavEKF::SelectVelPosFusion()
                     // we can do optical flow only nav
                     _fusionModeGPS = 3;
                     PV_AidingMode = AID_RELATIVE;
-                    constVelMode = false;
                     constPosMode = false;
                 } else {
-                    constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
                     constPosMode = true;
                     PV_AidingMode = AID_NONE;
                     posTimeout = true;
@@ -931,23 +929,6 @@ void NavEKF::SelectVelPosFusion()
             fusePosData = false;
         }
         fuseVelData = false;
-        // record the fusion time - used to control fusion rate when there is no baro data
-        lastConstPosFuseTime_ms = imuSampleTime_ms;
-    } else if (constVelMode && (fuseHgtData || ((imuSampleTime_ms - lastConstPosFuseTime_ms) > 200))) {
-        // In constant velocity mode we fuse the last valid velocity vector
-        // Reset the stored velocity vector when we enter the mode
-        if (constVelMode && !lastConstVelMode) {
-            heldVelNE.x = state.velocity.x;
-            heldVelNE.y = state.velocity.y;
-        }
-        lastConstVelMode = constVelMode;
-        // We do not fuse when manoeuvring to avoid corrupting the attitude
-        if (accNavMag < 4.9f) {
-            fuseVelData = true;
-        } else {
-            fuseVelData = false;
-        }
-        fusePosData = false;
         // record the fusion time - used to control fusion rate when there is no baro data
         lastConstPosFuseTime_ms = imuSampleTime_ms;
     } else {
@@ -1060,7 +1041,6 @@ void NavEKF::SelectFlowFusion()
     }
     // If the flow measurements have been rejected for too long and we are relying on them, then revert to constant position mode
     if ((flowSensorTimeout || flowFusionTimeout) && PV_AidingMode == AID_RELATIVE) {
-            constVelMode = false; // always clear constant velocity mode if constant velocity mode is active
             constPosMode = true;
             PV_AidingMode = AID_NONE;
             // reset the velocity
@@ -1984,13 +1964,11 @@ void NavEKF::FuseVelPosNED()
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
 
-        // if constant position or constant velocity mode use the current states to calculate the predicted
+        // if constant position mode use the current states to calculate the predicted
         // measurement rather than use states from a previous time. We need to do this
         // because there may be no stored states due to lack of real measurements.
         if (constPosMode) {
             statesAtPosTime = state;
-        } else if (constVelMode) {
-            statesAtVelTime = state;
         }
 
         // set the GPS data timeout depending on whether airspeed data is present
@@ -1999,8 +1977,7 @@ void NavEKF::FuseVelPosNED()
         else gpsRetryTime = gpsRetryTimeNoTAS;
 
         // form the observation vector and zero velocity and horizontal position observations if in constant position mode
-        // If in constant velocity mode, hold the last known horizontal velocity vector
-        if (!constPosMode && !constVelMode) {
+        if (!constPosMode) {
             observation[0] = velNED.x;
             observation[1] = velNED.y;
             observation[2] = velNED.z;
@@ -2008,10 +1985,6 @@ void NavEKF::FuseVelPosNED()
             observation[4] = gpsPosNE.y;
         } else if (constPosMode){
             for (uint8_t i=0; i<=4; i++) observation[i] = 0.0f;
-        } else if (constVelMode) {
-            observation[0] = heldVelNE.x;
-            observation[1] = heldVelNE.y;
-            for (uint8_t i=2; i<=4; i++) observation[i] = 0.0f;
         }
         observation[5] = -hgtMea;
 
@@ -2108,7 +2081,7 @@ void NavEKF::FuseVelPosNED()
         if (fuseVelData) {
             // test velocity measurements
             uint8_t imax = 2;
-            if (_fusionModeGPS == 1 || constVelMode) {
+            if (_fusionModeGPS == 1) {
                 imax = 1;
             }
             float K1 = 0; // innovation to error ratio for IMU1
@@ -2155,8 +2128,8 @@ void NavEKF::FuseVelPosNED()
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - lastVelPassTime) > gpsRetryTime) || PV_AidingMode == AID_NONE);
-            // if data is healthy  or in constant velocity mode we fuse it
-            if (velHealth || velTimeout || constVelMode) {
+            // if data is healthy we fuse it
+            if (velHealth || velTimeout) {
                 velHealth = true;
                 // restart the timeout count
                 lastVelPassTime = imuSampleTime_ms;
@@ -2221,10 +2194,6 @@ void NavEKF::FuseVelPosNED()
         }
         if ((fuseHgtData && hgtHealth) || constPosMode) {
             fuseData[5] = true;
-        }
-        if (constVelMode) {
-            fuseData[0] = true;
-            fuseData[1] = true;
         }
 
         // fuse measurements sequentially
@@ -2356,7 +2325,7 @@ void NavEKF::FuseVelPosNED()
                 bool highRates = ((gpsUpdateCountMax * correctedDelAng.length()) > 0.1f);
                 for (uint8_t i = 0; i<=21; i++) {
                     if (i != 13) {
-                        if ((i <= 3 && highRates) || i >= 10 || constPosMode || constVelMode) {
+                        if ((i <= 3 && highRates) || i >= 10 || constPosMode) {
                             states[i] = states[i] - Kfusion[i] * innovVelPos[obsIndex];
                         } else {
                             if (obsIndex == 5) {
@@ -4830,8 +4799,6 @@ void NavEKF::InitialiseVariables()
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    constVelMode = false;
-    lastConstVelMode = false;
     heldVelNE.zero();
     PV_AidingMode = AID_NONE;
     posTimeout = true;
@@ -5018,7 +4985,7 @@ void  NavEKF::getFilterStatus(nav_filter_status &status) const
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool notDeadReckoning = !constVelMode && !constPosMode;
+    bool notDeadReckoning = !constPosMode;
     bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && (_fusionModeGPS == 3);
@@ -5107,8 +5074,6 @@ void NavEKF::performArmingChecks()
             posTimeout = true;
             velTimeout = true;
             constPosMode = true;
-            constVelMode = false; // always clear constant velocity mode if constant position mode is active
-            lastConstVelMode = false;
             // store the current position to be used to keep reporting the last known position when disarmed
             lastKnownPositionNE.x = state.position.x;
             lastKnownPositionNE.y = state.position.y;
@@ -5135,13 +5100,11 @@ void NavEKF::performArmingChecks()
                 posTimeout = true;
                 velTimeout = true;
                 constPosMode = false;
-                constVelMode = false;
             } else {
                 PV_AidingMode = AID_NONE; // we don't have optical flow data and will only be able to estimate orientation and height
                 posTimeout = true;
                 velTimeout = true;
                 constPosMode = true;
-                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             }
             // Reset the last valid flow measurement time
             flowValidMeaTime_ms = imuSampleTime_ms;
@@ -5159,13 +5122,11 @@ void NavEKF::performArmingChecks()
                 posTimeout = true;
                 velTimeout = true;
                 constPosMode = true;
-                constVelMode = false; // always clear constant velocity mode if constant position mode is active
             } else {
                 PV_AidingMode = AID_ABSOLUTE; // we have GPS data and can estimate all vehicle states
                 posTimeout = false;
                 velTimeout = false;
                 constPosMode = false;
-                constVelMode = false;
                 // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
                 // this is becasue the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
                 lastFixTime_ms = imuSampleTime_ms;
@@ -5214,8 +5175,6 @@ void NavEKF::performArmingChecks()
         velTimeout = true;
         // set constant position mode if aiding is inhibited
         constPosMode = true;
-        constVelMode = false; // always clear constant velocity mode if constant position mode is active
-        lastConstVelMode = false;
     }
 
 }
