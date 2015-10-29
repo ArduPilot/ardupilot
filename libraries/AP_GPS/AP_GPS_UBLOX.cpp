@@ -157,7 +157,7 @@ AP_GPS_UBLOX::read(void)
 
     if (need_rate_update) {
         send_next_rate_update();
-    }else if(!_cfg_saved) {         //save the configuration sent until now
+    }else if(!_cfg_saved && gps._save_config) {         //save the configuration sent until now
         _save_cfg();
     }
 
