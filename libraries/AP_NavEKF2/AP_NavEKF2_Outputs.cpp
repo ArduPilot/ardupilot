@@ -337,7 +337,7 @@ void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 // this indicates the amount of margin available when tuning the various error traps
-// also return the current offsets applied to the GPS position measurements
+// also return the delta in position due to the last position reset
 void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     velVar   = sqrtf(velTestRatio);
@@ -347,7 +347,7 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
     tasVar   = sqrtf(tasTestRatio);
-    offset   = gpsPosGlitchOffsetNE;
+    offset   = posResetNE;
 }
 
 
