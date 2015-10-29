@@ -394,13 +394,13 @@ public:
 
     // return the amount of NE position change in metres due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) {
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
         return 0;
     };
 
     // return the amount of NE velocity change in metres/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) {
+    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
         return 0;
     };
 
