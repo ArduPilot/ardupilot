@@ -729,7 +729,7 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
+uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
 {
     switch (ekf_type()) {
     case 1:
@@ -737,7 +737,7 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
     case 2:
         return EKF2.getLastYawResetAngle(yawAng);
     }
-    return false;
+    return 0;
 }
 
 // return the amount of NE position change in metres due to the last reset
