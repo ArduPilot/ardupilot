@@ -255,9 +255,6 @@ public:
     /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
     void init_vel_controller_xyz();
 
-    /// set_vel_target - sets target velocity in cm/s in north, east and up directions
-    void set_vel_target(const Vector3f& vel_target);
-
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
