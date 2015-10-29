@@ -134,7 +134,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             // a nested group
             const struct GroupInfo *ginfo = (const struct GroupInfo *)PGM_POINTER(&group_info[i].group_info);
             if (group_shift + _group_level_shift >= _group_bits) {
-                Debug("double group nesting in %S", group_info[i].name);
+                Debug("double group nesting in %s", group_info[i].name);
                 return false;
             }
             if (ginfo == NULL ||
@@ -146,21 +146,21 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
 #endif // AP_NESTED_GROUPS_ENABLED
         uint8_t idx = PGM_UINT8(&group_info[i].idx);
         if (idx >= (1<<_group_level_shift)) {
-            Debug("idx too large (%u) in %S", idx, group_info[i].name);
+            Debug("idx too large (%u) in %s", idx, group_info[i].name);
             return false;
         }
         if ((int8_t)idx <= max_idx) {
-            Debug("indexes must be in increasing order in %S", group_info[i].name);
+            Debug("indexes must be in increasing order in %s", group_info[i].name);
             return false;
         }
         max_idx = (int8_t)idx;
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
-            Debug("invalid type in %S", group_info[i].name);
+            Debug("invalid type in %s", group_info[i].name);
             return false;
         }
         if (prefix_length + strlen(group_info[i].name) > 16) {
-            Debug("suffix is too long in %S", group_info[i].name);
+            Debug("suffix is too long in %s", group_info[i].name);
             return false;
         }
         (*total_size) += size + sizeof(struct Param_header);
