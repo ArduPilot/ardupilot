@@ -1,0 +1,8 @@
+LIBRARIES += AP_Common
+LIBRARIES += AP_Math
+LIBRARIES += AP_Notify
+LIBRARIES += AP_Param
+LIBRARIES += AP_Progmem
+LIBRARIES += AP_RangeFinder
+LIBRARIES += GCS_MAVLink
+LIBRARIES += StorageManager

@@ -16,18 +16,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "Buzzer.h"
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
 
-void Buzzer::init()
+bool Buzzer::init()
 {
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
-        return;
+        return false;
     }
 
     // setup the pin and ensure it's off
@@ -38,6 +38,7 @@ void Buzzer::init()
     // warning in plane and rover on every boot
     _flags.armed = AP_Notify::flags.armed;
     _flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
+    return true;
 }
 
 // update - updates led according to timed_updated.  Should be called at 50Hz
@@ -46,6 +47,12 @@ void Buzzer::update()
     // return immediately if disabled
     if (!AP_Notify::flags.external_leds) {
         return;
+    }
+
+    // check for arming failed event
+    if (AP_Notify::events.arming_failed) {
+        // arming failed buzz
+        play_pattern(SINGLE_BUZZ);
     }
 
     // reduce 50hz call down to 10hz
@@ -84,29 +91,6 @@ void Buzzer::update()
                     default:
                         on(false);
                         _pattern = NONE;
-                        break;
-                }
-                return;
-            case GPS_GLITCH:
-                // play bethoven's 5th type buzz (three fast, one long)
-                switch (_pattern_counter) {
-                    case 1:
-                    case 3:
-                    case 5:
-                    case 7:
-                        on(true);
-                        break;
-                    case 2:
-                    case 4:
-                    case 6:
-                        on(false);
-                        break;
-                    case 17:
-                        on(false);
-                        _pattern = NONE;
-                        break;
-                    default:
-                        // do nothing
                         break;
                 }
                 return;
@@ -191,52 +175,12 @@ void Buzzer::update()
         return;
     }
 
-    // check arming failed
-    if (_flags.arming_failed != AP_Notify::flags.arming_failed) {
-        _flags.arming_failed = AP_Notify::flags.arming_failed;
-        if (_flags.arming_failed) {
-            // arming failed buzz
-            play_pattern(SINGLE_BUZZ);
-        }
-        return;
-    }
-
-    // check gps glitch
-    if (_flags.gps_glitching != AP_Notify::flags.gps_glitching) {
-        _flags.gps_glitching = AP_Notify::flags.gps_glitching;
-        if (_flags.gps_glitching) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
-        }
-        return;
-    }
-
-    // check gps failsafe
-    if (_flags.failsafe_gps != AP_Notify::flags.failsafe_gps) {
-        _flags.failsafe_gps = AP_Notify::flags.failsafe_gps;
-        if (_flags.failsafe_gps) {
-            // gps glitch warning buzz
-            play_pattern(GPS_GLITCH);
-        }
-        return;
-    }
-
     // check ekf bad
     if (_flags.ekf_bad != AP_Notify::flags.ekf_bad) {
         _flags.ekf_bad = AP_Notify::flags.ekf_bad;
         if (_flags.ekf_bad) {
             // ekf bad warning buzz
             play_pattern(EKF_BAD);
-        }
-        return;
-    }
-
-    // check baro glitch
-    if (_flags.baro_glitching != AP_Notify::flags.baro_glitching) {
-        _flags.baro_glitching = AP_Notify::flags.baro_glitching;
-        if (_flags.baro_glitching) {
-            // baro glitch warning buzz
-            play_pattern(BARO_GLITCH);
         }
         return;
     }

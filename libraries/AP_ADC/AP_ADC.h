@@ -1,7 +1,7 @@
 #ifndef AP_ADC_H
 #define AP_ADC_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -57,6 +57,6 @@ private:
 };
 
 #include "AP_ADC_ADS7844.h"
-#include "AP_ADC_HIL.h"
+#include "AP_ADC_ADS1115.h"
 
 #endif

@@ -1,12 +1,12 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AnalogIn.h"
 using namespace AP_HAL_AVR;
 
@@ -23,7 +23,7 @@ AVRAnalogIn::AVRAnalogIn() :
 void AVRAnalogIn::init(void* machtnichts) 
 {
     /* Register AVRAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AVRAnalogIn::_timer_event));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AVRAnalogIn::_timer_event, void));
     /* Register each private channel with AVRAnalogIn. */
     _register_channel(&_vcc);
 }

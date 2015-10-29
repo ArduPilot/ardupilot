@@ -16,6 +16,13 @@ homeloc = None
 
 def takeoff(mavproxy, mav):
     '''takeoff get to 30m altitude'''
+
+    # wait for EKF to settle
+    wait_seconds(mav, 15)
+
+    mavproxy.send('arm throttle\n')
+    mavproxy.expect('ARMED')
+    
     mavproxy.send('switch 4\n')
     wait_mode(mav, 'FBWA')
 
@@ -150,12 +157,12 @@ def fly_CIRCLE(mavproxy, mav, num_circles=1):
 
 def wait_level_flight(mavproxy, mav, accuracy=5, timeout=30):
     '''wait for level flight'''
-    tstart = time.time()
+    tstart = get_sim_time(mav)
     print("Waiting for level flight")
     mavproxy.send('rc 1 1500\n')
     mavproxy.send('rc 2 1500\n')
     mavproxy.send('rc 4 1500\n')
-    while time.time() < tstart + timeout:
+    while get_sim_time(mav) < tstart + timeout:
         m = mav.recv_match(type='ATTITUDE', blocking=True)
         roll = math.degrees(m.roll)
         pitch = math.degrees(m.pitch)
@@ -338,6 +345,12 @@ def test_FBWB(mavproxy, mav, count=1, mode='FBWB'):
     mavproxy.send('rc 3 1700\n')
     mavproxy.send('rc 2 1500\n')
 
+    # lock in the altitude by asking for an altitude change then releasing
+    mavproxy.send('rc 2 1000\n')
+    wait_distance(mav, 50, accuracy=20)
+    mavproxy.send('rc 2 1500\n')
+    wait_distance(mav, 50, accuracy=20)
+
     m = mav.recv_match(type='VFR_HUD', blocking=True)
     initial_alt = m.alt
     print("Initial altitude %u\n" % initial_alt)
@@ -427,9 +440,13 @@ def fly_ArduPlane(viewerip=None, map=False):
     if map:
         options += ' --map'
 
-    sil = util.start_SIL('ArduPlane', wipe=True)
+    sil = util.start_SIL('ArduPlane', wipe=True, model='jsbsim', home=HOME_LOCATION, speedup=10)
+    print("Starting MAVProxy")
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
-    mavproxy.expect('Received [0-9]+ parameters')
+    util.expect_setup_callback(mavproxy, expect_callback)
+
+    mavproxy.expect('Telemetry log: (\S+)')
+    mavproxy.expect('Received [0-9]+ parameters',timeout=3000)
 
     # setup test parameters
     mavproxy.send("param load %s/ArduPlane.parm\n" % testdir)
@@ -441,19 +458,9 @@ def fly_ArduPlane(viewerip=None, map=False):
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
 
-    cmd = util.reltopdir("Tools/autotest/jsbsim/runsim.py")
-    cmd += " --home=%s --wind=%s" % (HOME_LOCATION, WIND)
-    if viewerip:
-        cmd += " --fgout=%s:5503" % viewerip
-
-    runsim = pexpect.spawn(cmd, logfile=sys.stdout, timeout=10)
-    runsim.delaybeforesend = 0
-    util.pexpect_autoclose(runsim)
-    runsim.expect('Simulator ready to fly')
-
-    sil = util.start_SIL('ArduPlane')
+    sil = util.start_SIL('ArduPlane', model='jsbsim', home=HOME_LOCATION, speedup=10)
     mavproxy = util.start_MAVProxy_SIL('ArduPlane', options=options)
-    mavproxy.expect('Logging to (\S+)')
+    mavproxy.expect('Telemetry log: (\S+)')
     logfile = mavproxy.match.group(1)
     print("LOGFILE %s" % logfile)
 
@@ -466,12 +473,12 @@ def fly_ArduPlane(viewerip=None, map=False):
     except Exception:
         pass
 
-    mavproxy.expect('Received [0-9]+ parameters')
-
     util.expect_setup_callback(mavproxy, expect_callback)
 
+    mavproxy.expect('Received [0-9]+ parameters')
+
     expect_list_clear()
-    expect_list_extend([runsim, sil, mavproxy])
+    expect_list_extend([sil, mavproxy])
 
     print("Started simulator")
 
@@ -545,7 +552,6 @@ def fly_ArduPlane(viewerip=None, map=False):
     mav.close()
     util.pexpect_close(mavproxy)
     util.pexpect_close(sil)
-    util.pexpect_close(runsim)
 
     if os.path.exists('ArduPlane-valgrind.log'):
         os.chmod('ArduPlane-valgrind.log', 0644)

@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_SPI_DEVICES_H__
 #define __AP_HAL_AVR_SPI_DEVICES_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
 class AP_HAL_AVR::AVRSPI0DeviceDriver : public AP_HAL::SPIDeviceDriver {
@@ -23,7 +23,7 @@ public:
     void init();
     AP_HAL::Semaphore* get_semaphore();
 
-    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+    bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
 
     void cs_assert();
     void cs_release();
@@ -64,7 +64,7 @@ public:
     void init();
     AP_HAL::Semaphore* get_semaphore();
 
-    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+    bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
 
     void cs_assert();
     void cs_release();
@@ -100,7 +100,7 @@ public:
     void init();
     AP_HAL::Semaphore* get_semaphore();
 
-    void transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
+    bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
 
     void cs_assert();
     void cs_release();

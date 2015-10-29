@@ -36,7 +36,7 @@
  *
  */
 
-#include <AP_HAL.h>               // for removing conflict with optical flow sensor on SPI3 bus
+#include <AP_HAL/AP_HAL.h>               // for removing conflict with optical flow sensor on SPI3 bus
 #include "DataFlash_APM2.h"
 
 extern const AP_HAL::HAL& hal;
@@ -89,7 +89,7 @@ bool DataFlash_APM2::_sem_take(uint8_t timeout)
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_APM2::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
     // init to zero
     df_NumPages = 0;
 
@@ -406,4 +406,19 @@ void DataFlash_APM2::ChipErase()
 
     // release SPI bus for use by other sensors
     _spi_sem->give();
+}
+
+// Writing too quickly to DF on APM1/APM2 corrupts the flash.  This
+// could be done at a lower level to more generally restrict bandwidth
+void DataFlash_APM2::WroteStartupFormat()
+{
+    if (! hal.util->get_soft_armed()) {
+        hal.scheduler->delay(10);
+    }
+}
+void DataFlash_APM2::WroteStartupParam()
+{
+    if (! hal.util->get_soft_armed()) {
+        hal.scheduler->delay(2);
+    }
 }

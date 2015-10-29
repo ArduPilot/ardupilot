@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_VRBRAIN_SCHEDULER_H__
 #define __AP_HAL_VRBRAIN_SCHEDULER_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AP_HAL_VRBRAIN_Namespace.h"
 #include <sys/time.h>
@@ -39,7 +39,7 @@ public:
     void     suspend_timer_procs();
     void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
-    void     panic(const prog_char_t *errormsg);
+    void     panic(const prog_char_t *errormsg, ...) FORMAT(2, 3) NORETURN;
 
     bool     in_timerprocess();
     bool     system_initializing();

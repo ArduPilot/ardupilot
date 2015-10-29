@@ -33,9 +33,9 @@
    just need to be able to enter and exit AUTOTUNE mode
 */
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_AutoTune.h"
 
 extern const AP_HAL::HAL& hal;
@@ -60,8 +60,8 @@ extern const AP_HAL::HAL& hal;
 #define AUTOTUNE_MIN_P 0.3f
 
 // tau ranges
-#define AUTOTUNE_MAX_TAU 0.7
-#define AUTOTUNE_MIN_TAU 0.2
+#define AUTOTUNE_MAX_TAU 0.7f
+#define AUTOTUNE_MIN_TAU 0.2f
 
 #define AUTOTUNE_MIN_IMAX 2000
 #define AUTOTUNE_MAX_IMAX 4000
@@ -70,13 +70,15 @@ extern const AP_HAL::HAL& hal;
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          const AP_Vehicle::FixedWing &parms,
                          DataFlash_Class &_dataflash) :
+    running(false),
     current(_gains),
     type(_type),
     aparm(parms),
-    dataflash(_dataflash)
+    dataflash(_dataflash),
+    saturated_surfaces(false)
 {}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
 # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
@@ -123,8 +125,8 @@ void AP_AutoTune::start(void)
     restore = current;
 
     uint8_t level = aparm.autotune_level;
-    if (level > sizeof(tuning_table)/sizeof(tuning_table[0])) {
-        level = sizeof(tuning_table)/sizeof(tuning_table[0]);
+    if (level > ARRAY_SIZE(tuning_table)) {
+        level = ARRAY_SIZE(tuning_table);
     }
     if (level < 1) {
         level = 1;
@@ -150,8 +152,10 @@ void AP_AutoTune::start(void)
  */
 void AP_AutoTune::stop(void)
 {
-    running = false;
-    save_gains(restore);
+    if (running) {
+        running = false;
+        save_gains(restore);
+    }
 }
 
 
@@ -331,7 +335,7 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 
     struct log_ATRP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        timestamp  : hal.scheduler->millis(),
+        time_us    : hal.scheduler->micros64(),
         type       : type,
     	state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),

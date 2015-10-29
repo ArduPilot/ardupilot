@@ -3,11 +3,11 @@
 #ifndef __AP_HAL_VRBRAIN_STORAGE_H__
 #define __AP_HAL_VRBRAIN_STORAGE_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_VRBRAIN_Namespace.h"
 #include <systemlib/perf_counter.h>
 
-#define VRBRAIN_STORAGE_SIZE 4096
+#define VRBRAIN_STORAGE_SIZE HAL_STORAGE_SIZE
 #define VRBRAIN_STORAGE_MAX_WRITE 512
 #define VRBRAIN_STORAGE_LINE_SHIFT 9
 #define VRBRAIN_STORAGE_LINE_SIZE (1<<VRBRAIN_STORAGE_LINE_SHIFT)

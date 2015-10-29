@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include "AP_HAL_PX4.h"
@@ -22,7 +22,7 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
-#include <AP_Scheduler.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 using namespace PX4;
 
@@ -33,6 +33,7 @@ extern bool _px4_thread_should_exit;
 PX4Scheduler::PX4Scheduler() :
     _perf_timers(perf_alloc(PC_ELAPSED, "APM_timers")),
     _perf_io_timers(perf_alloc(PC_ELAPSED, "APM_IO_timers")),
+    _perf_storage_timer(perf_alloc(PC_ELAPSED, "APM_storage_timers")),
 	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
@@ -72,6 +73,16 @@ void PX4Scheduler::init(void *unused)
     pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
 
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_io_thread, this);
+
+    // the storage thread runs at just above IO priority
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, 1024);
+
+    param.sched_priority = APM_STORAGE_PRIORITY;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    pthread_create(&_storage_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_storage_thread, this);
 }
 
 uint64_t PX4Scheduler::micros64() 
@@ -102,6 +113,7 @@ void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
     sem_t wait_semaphore;
     struct hrt_call wait_call;
     sem_init(&wait_semaphore, 0, 0);
+    memset(&wait_call, 0, sizeof(wait_call));
     hrt_call_after(&wait_call, usec, (hrt_callout)sem_post, &wait_semaphore);
     sem_wait(&wait_semaphore);
 }
@@ -109,17 +121,41 @@ void PX4Scheduler::delay_microseconds_semaphore(uint16_t usec)
 void PX4Scheduler::delay_microseconds(uint16_t usec) 
 {
     perf_begin(_perf_delay);
-    if (usec >= 500) {
-        delay_microseconds_semaphore(usec);
-        perf_end(_perf_delay);
-        return;
-    }
-	uint64_t start = micros64();
-    uint64_t dt;
-	while ((dt=(micros64() - start)) < usec) {
-		up_udelay(usec - dt);
-	}
+    delay_microseconds_semaphore(usec);
     perf_end(_perf_delay);
+}
+
+/*
+  wrapper around sem_post that boosts main thread priority
+ */
+static void sem_post_boost(sem_t *sem)
+{
+    hal_px4_set_priority(APM_MAIN_PRIORITY_BOOST);
+    sem_post(sem);
+}
+
+/*
+  return the main thread to normal priority
+ */
+static void set_normal_priority(void *sem)
+{
+    hal_px4_set_priority(APM_MAIN_PRIORITY);
+}
+
+/*
+  a varient of delay_microseconds that boosts priority to
+  APM_MAIN_PRIORITY_BOOST for APM_MAIN_PRIORITY_BOOST_USEC
+  microseconds when the time completes. This significantly improves
+  the regularity of timing of the main loop as it takes 
+ */
+void PX4Scheduler::delay_microseconds_boost(uint16_t usec) 
+{
+    sem_t wait_semaphore;
+    static struct hrt_call wait_call;
+    sem_init(&wait_semaphore, 0, 0);
+    hrt_call_after(&wait_call, usec, (hrt_callout)sem_post_boost, &wait_semaphore);
+    sem_wait(&wait_semaphore);
+    hrt_call_after(&wait_call, APM_MAIN_PRIORITY_BOOST_USEC, (hrt_callout)set_normal_priority, NULL);
 }
 
 void PX4Scheduler::delay(uint16_t ms)
@@ -206,7 +242,7 @@ void PX4Scheduler::resume_timer_procs()
 
 void PX4Scheduler::reboot(bool hold_in_bootloader) 
 {
-	systemreset(hold_in_bootloader);
+	px4_systemreset(hold_in_bootloader);
 }
 
 void PX4Scheduler::_run_timers(bool called_from_timer_thread)
@@ -219,7 +255,7 @@ void PX4Scheduler::_run_timers(bool called_from_timer_thread)
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -279,7 +315,7 @@ void PX4Scheduler::_run_io(void)
     if (!_timer_suspended) {
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i] != NULL) {
+            if (_io_proc[i]) {
                 _io_proc[i]();
             }
         }
@@ -314,9 +350,6 @@ void *PX4Scheduler::_io_thread(void)
     while (!_px4_thread_should_exit) {
         poll(NULL, 0, 1);
 
-        // process any pending storage writes
-        ((PX4Storage *)hal.storage)->_timer_tick();
-
         // run registered IO processes
         perf_begin(_perf_io_timers);
         _run_io();
@@ -325,10 +358,31 @@ void *PX4Scheduler::_io_thread(void)
     return NULL;
 }
 
-void PX4Scheduler::panic(const prog_char_t *errormsg) 
+void *PX4Scheduler::_storage_thread(void)
 {
-    write(1, errormsg, strlen(errormsg));
+    while (!_hal_initialized) {
+        poll(NULL, 0, 1);        
+    }
+    while (!_px4_thread_should_exit) {
+        poll(NULL, 0, 10);
+
+        // process any pending storage writes
+        perf_begin(_perf_storage_timer);
+        ((PX4Storage *)hal.storage)->_timer_tick();
+        perf_end(_perf_storage_timer);
+    }
+    return NULL;
+}
+
+void PX4Scheduler::panic(const prog_char_t *errormsg, ...)
+{
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.scheduler->delay_microseconds(10000);
     _px4_thread_should_exit = true;
     exit(1);

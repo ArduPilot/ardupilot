@@ -5,7 +5,7 @@
 
 #include <inttypes.h>
 #include "AP_ADC.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 class AP_ADC_ADS7844 : public AP_ADC
 {

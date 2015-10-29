@@ -1,9 +1,9 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "SPIDevices.h"
 #include "GPIO.h"
 #include "Semaphores.h"
@@ -109,7 +109,7 @@ void AVRSPI0DeviceDriver::transfer(const uint8_t *tx, uint16_t len) {
     }
 }
 
-void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
+bool AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         uint16_t len) {
     _cs_assert();
     if (rx == NULL) {
@@ -128,6 +128,7 @@ void AVRSPI0DeviceDriver::transaction(const uint8_t *tx, uint8_t *rx,
         }
     }
     _cs_release();
+    return true;
 }
 
 void AVRSPI0DeviceDriver::cs_assert() {

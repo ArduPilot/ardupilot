@@ -41,14 +41,14 @@ void AP_MotorsOctaQuad::setup_motors()
         add_motor(AP_MOTORS_MOT_8,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6);
     }else if( _flags.frame_orientation == AP_MOTORS_V_FRAME ) {
         // V frame set-up
-        add_motor(AP_MOTORS_MOT_1,   45,  0.7981, 1);
-        add_motor(AP_MOTORS_MOT_2,  -45, -0.7981, 7);
-        add_motor(AP_MOTORS_MOT_3, -135,  1.0000, 5);
-        add_motor(AP_MOTORS_MOT_4,  135, -1.0000, 3);
-        add_motor(AP_MOTORS_MOT_5,  -45,  0.7981, 8);
-        add_motor(AP_MOTORS_MOT_6,   45, -0.7981, 2);
-        add_motor(AP_MOTORS_MOT_7,  135,  1.0000, 4);
-        add_motor(AP_MOTORS_MOT_8, -135, -1.0000, 6);
+        add_motor(AP_MOTORS_MOT_1,   45,  0.7981f, 1);
+        add_motor(AP_MOTORS_MOT_2,  -45, -0.7981f, 7);
+        add_motor(AP_MOTORS_MOT_3, -135,  1.0000f, 5);
+        add_motor(AP_MOTORS_MOT_4,  135, -1.0000f, 3);
+        add_motor(AP_MOTORS_MOT_5,  -45,  0.7981f, 8);
+        add_motor(AP_MOTORS_MOT_6,   45, -0.7981f, 2);
+        add_motor(AP_MOTORS_MOT_7,  135,  1.0000f, 4);
+        add_motor(AP_MOTORS_MOT_8, -135, -1.0000f, 6);
     }else if( _flags.frame_orientation == AP_MOTORS_H_FRAME ) {
         // H frame set-up - same as X but motors spin in opposite directions
         add_motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);

@@ -1,11 +1,18 @@
 #ifndef MAVLINK_TYPES_H_
 #define MAVLINK_TYPES_H_
 
-// Visual Studio versions before 2013 don't conform to C99.
-#if (defined _MSC_VER) && (_MSC_VER < 1800)
+// Visual Studio versions before 2010 don't have stdint.h, so we just error out.
+#if (defined _MSC_VER) && (_MSC_VER < 1600)
+#error "The C-MAVLink implementation requires Visual Studio 2010 or greater"
+#endif
+
 #include <stdint.h>
+
+// Macro to define packed structures
+#ifdef __GNUC__
+  #define MAVPACKED( __Declaration__ ) __Declaration__ __attribute__((packed))
 #else
-#include <inttypes.h>
+  #define MAVPACKED( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
 #endif
 
 #ifndef MAVLINK_MAX_PAYLOAD_LEN
@@ -33,7 +40,6 @@
 
 #define MAVLINK_MAX_EXTENDED_PAYLOAD_LEN (MAVLINK_MAX_EXTENDED_PACKET_LEN - MAVLINK_EXTENDED_HEADER_LEN - MAVLINK_NUM_NON_PAYLOAD_BYTES)
 
-#pragma pack(push, 1)
 
 /**
  * Old-style 4 byte param union
@@ -44,6 +50,7 @@
  * and re-instanted on the receiving side using the
  * native type as well.
  */
+MAVPACKED(
 typedef struct param_union {
 	union {
 		float param_float;
@@ -56,7 +63,7 @@ typedef struct param_union {
 		uint8_t bytes[4];
 	};
 	uint8_t type;
-} mavlink_param_union_t;
+}) mavlink_param_union_t;
 
 
 /**
@@ -72,7 +79,9 @@ typedef struct param_union {
  * which should be the same as gcc on little-endian arm. When using shifts/masks the value will be treated as a 64 bit unsigned number,
  * and the bits pulled out using the shifts/masks.
 */
-typedef union {
+MAVPACKED(
+typedef struct param_union_extended {
+    union {
     struct {
         uint8_t is_double:1;
         uint8_t mavlink_type:7;
@@ -89,17 +98,20 @@ typedef union {
         };
     };
     uint8_t data[8];
-} mavlink_param_union_double_t;
+    };
+}) mavlink_param_union_double_t;
 
+/**
+ * This structure is required to make the mavlink_send_xxx convenience functions
+ * work, as it tells the library what the current system and component ID are.
+ */
+MAVPACKED(
 typedef struct __mavlink_system {
     uint8_t sysid;   ///< Used by the MAVLink message_xx_send() convenience function
     uint8_t compid;  ///< Used by the MAVLink message_xx_send() convenience function
-    uint8_t type;    ///< Unused, can be used by user to store the system's type
-    uint8_t state;   ///< Unused, can be used by user to store the system's state
-    uint8_t mode;    ///< Unused, can be used by user to store the system's mode
-    uint32_t nav_mode;    ///< Unused, can be used by user to store the system's navigation mode
-} mavlink_system_t;
+}) mavlink_system_t;
 
+MAVPACKED(
 typedef struct __mavlink_message {
 	uint16_t checksum; ///< sent at end of packet
 	uint8_t magic;   ///< protocol magic marker
@@ -109,14 +121,14 @@ typedef struct __mavlink_message {
 	uint8_t compid;  ///< ID of the message sender component
 	uint8_t msgid;   ///< ID of message in payload
 	uint64_t payload64[(MAVLINK_MAX_PAYLOAD_LEN+MAVLINK_NUM_CHECKSUM_BYTES+7)/8];
-} mavlink_message_t;
+}) mavlink_message_t;
 
+MAVPACKED(
 typedef struct __mavlink_extended_message {
        mavlink_message_t base_msg;
        int32_t extended_payload_len;   ///< Length of extended payload if any
        uint8_t extended_payload[MAVLINK_MAX_EXTENDED_PAYLOAD_LEN];
-} mavlink_extended_message_t;
-#pragma pack(pop)
+}) mavlink_extended_message_t;
 
 typedef enum {
 	MAVLINK_TYPE_CHAR     = 0,
@@ -188,8 +200,15 @@ typedef enum {
     MAVLINK_PARSE_STATE_GOT_COMPID,
     MAVLINK_PARSE_STATE_GOT_MSGID,
     MAVLINK_PARSE_STATE_GOT_PAYLOAD,
-    MAVLINK_PARSE_STATE_GOT_CRC1
+    MAVLINK_PARSE_STATE_GOT_CRC1,
+    MAVLINK_PARSE_STATE_GOT_BAD_CRC1
 } mavlink_parse_state_t; ///< The state machine for the comm parser
+
+typedef enum {
+    MAVLINK_FRAMING_INCOMPLETE=0,
+    MAVLINK_FRAMING_OK=1,
+    MAVLINK_FRAMING_BAD_CRC=2
+} mavlink_framing_t;
 
 typedef struct __mavlink_status {
     uint8_t msg_received;               ///< Number of received messages

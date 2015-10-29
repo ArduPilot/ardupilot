@@ -1,12 +1,14 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 /* To save linker space, we need to make sure the HAL_AVR_APM2 class
  * is built iff we are building for HAL_BOARD_APM2. These defines must
  * wrap the whole HAL_AVR_APM2 class declaration and definition. */
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
 
-#include <AP_HAL_AVR.h>
+#include <assert.h>
+
+#include "AP_HAL_AVR.h"
 #include "AP_HAL_AVR_private.h"
 #include "HAL_AVR_APM2_Class.h"
 
@@ -42,6 +44,8 @@ HAL_AVR_APM2::HAL_AVR_APM2() :
         NULL,            /* no uartD */
         NULL,            /* no uartE */
         &avrI2CDriver,
+        NULL, /* only one i2c */
+        NULL, /* only one i2c */
         &apm2SPIDriver,
         &avrAnalogIn,
         &avrEEPROMStorage,
@@ -53,10 +57,12 @@ HAL_AVR_APM2::HAL_AVR_APM2() :
         &avrUtil )
 {}
 
-void HAL_AVR_APM2::init(int argc, char * const argv[]) const {
+void HAL_AVR_APM2::run(int argc, char* const argv[], Callbacks* callbacks) const
+{
+    assert(callbacks);
 
     scheduler->init((void*)&isrRegistry);
-   
+
     /* uartA is the serial port used for the console, so lets make sure
      * it is initialized at boot */
     uartA->begin(115200, 128, 128);
@@ -81,8 +87,18 @@ void HAL_AVR_APM2::init(int argc, char * const argv[]) const {
     PORTE |= _BV(0);
     PORTD |= _BV(2);
     PORTH |= _BV(0);
-};
 
-const HAL_AVR_APM2 AP_HAL_AVR_APM2;
+    callbacks->setup();
+    scheduler->system_initialized();
+
+    for (;;) {
+        callbacks->loop();
+    }
+}
+
+const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static const HAL_AVR_APM2 hal;
+    return hal;
+}
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_APM2

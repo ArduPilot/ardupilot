@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "RCOutput.h"
@@ -149,6 +149,12 @@ void VRBRAINRCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
     }
 }
 
+bool VRBRAINRCOutput::force_safety_on(void)
+{
+    int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_ON, 0);
+    return (ret == OK);
+}
+
 void VRBRAINRCOutput::force_safety_off(void)
 {
     int ret = ioctl(_pwm_fd, PWM_SERVO_SET_FORCE_SAFETY_OFF, 0);
@@ -173,13 +179,6 @@ void VRBRAINRCOutput::write(uint8_t ch, uint16_t period_us)
         _period[ch] = period_us;
         _need_update = true;
         up_pwm_servo_set(ch, period_us);
-    }
-}
-
-void VRBRAINRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (uint8_t i=0; i<len; i++) {
-        write(i, period_us[i]);
     }
 }
 

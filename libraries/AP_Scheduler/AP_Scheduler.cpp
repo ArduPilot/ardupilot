@@ -20,9 +20,9 @@
  *
  */
 
-#include <AP_HAL.h>
-#include <AP_Scheduler.h>
-#include <AP_Param.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_Scheduler.h"
+#include <AP_Param/AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,8 +73,9 @@ void AP_Scheduler::run(uint16_t time_available)
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
                 if (_debug > 1) {
-                    hal.console->printf_P(PSTR("Scheduler slip task[%u] (%u/%u/%u)\n"), 
-                                          (unsigned)i, 
+                    hal.console->printf_P(PSTR("Scheduler slip task[%u-%s] (%u/%u/%u)\n"),
+                                          (unsigned)i,
+                                          _tasks[i].name,
                                           (unsigned)dt,
                                           (unsigned)interval_ticks,
                                           (unsigned)_task_time_allowed);
@@ -84,7 +85,8 @@ void AP_Scheduler::run(uint16_t time_available)
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = now;
-                task_fn_t func = (task_fn_t)pgm_read_pointer(&_tasks[i].function);
+                task_fn_t func;
+                pgm_read_block(&_tasks[i].function, &func, sizeof(func));
                 current_task = i;
                 func();
                 current_task = -1;
@@ -100,8 +102,9 @@ void AP_Scheduler::run(uint16_t time_available)
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
                     if (_debug > 2) {
-                        hal.console->printf_P(PSTR("Scheduler overrun task[%u] (%u/%u)\n"), 
-                                              (unsigned)i, 
+                        hal.console->printf_P(PSTR("Scheduler overrun task[%u-%s] (%u/%u)\n"),
+                                              (unsigned)i,
+                                              _tasks[i].name,
                                               (unsigned)time_taken,
                                               (unsigned)_task_time_allowed);
                     }

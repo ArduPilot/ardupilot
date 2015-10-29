@@ -25,7 +25,11 @@ prog_groups = re.compile(r"@Group: *(\w+).*((?:\n[ \t]*// @(Path): (\S+))+)", re
 prog_group_param = re.compile(r"@Param: (\w+).*((?:\n[ \t]*// @(\w+): (.*))+)(?:\n\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
-vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % opts.vehicle)
+vehicle_paths = glob.glob(apm_path + "%s/Parameters.cpp" % opts.vehicle)
+extension = 'cpp'
+if len(vehicle_paths) == 0:
+    vehicle_paths = glob.glob(apm_path + "%s/Parameters.pde" % opts.vehicle)
+    extension = 'pde'
 vehicle_paths.sort(reverse=True)
 
 vehicles = []
@@ -53,7 +57,7 @@ for vehicle_path in vehicle_paths:
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
     
-    f = open(vehicle.path+'/Parameters.pde')
+    f = open(vehicle.path+'/Parameters.' + extension)
     p_text = f.read()
     f.close()        
 
@@ -105,7 +109,7 @@ for library in libraries:
         for path in paths:
             path = path.strip()
             debug("\n Processing file '%s'" % path)
-            if path.endswith('.pde'):
+            if path.endswith('.pde') or path.find('/') == -1:
                 if len(vehicles) != 1:
                     print("Unable to handle multiple vehicles with .pde library")
                     continue

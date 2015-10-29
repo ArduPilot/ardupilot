@@ -18,9 +18,9 @@
  */
 
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_BoardConfig.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <sys/types.h>
@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <drivers/drv_pwm_output.h>
+#include <drivers/drv_sbus.h>
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define BOARD_PWM_COUNT_DEFAULT 2
@@ -68,8 +69,21 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
+
+    // @Param: SBUS_OUT
+    // @DisplayName:  Enable use of SBUS output
+    // @Description: Enabling this option on a Pixhawk enables SBUS servo output from the SBUS output connector
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_enable, 0),
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
+
+    // @Param: SERIAL_NUM
+    // @DisplayName: User-defined serial number
+    // @Description: User-defined serial number of this vehicle, it can be any arbitrary number you want and has no effect on the autopilot
+    // @Range: -32767 to 32768 (any 16bit signed number)
+    // @User: Standard
+    AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
     AP_GROUPEND
 };
@@ -102,6 +116,16 @@ void AP_BoardConfig::init()
 
     if (_safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
+    }
+
+    if (_sbus_out_enable.get() == 1) {
+        fd = open("/dev/px4io", 0);
+        if (fd == -1 || ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
+            hal.console->printf("SBUS: Unable to setup SBUS output\n");
+        }
+        if (fd != -1) {
+            close(fd);
+        }   
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */

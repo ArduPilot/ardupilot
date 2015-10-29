@@ -1,13 +1,15 @@
 if [ "`echo $1`" = "load" ]; then
     echo "Loading Test_Capes..."
-    cp BB-SPI0-PXF-01-00A0.dtbo /lib/firmware/
-    cp BB-SPI1-PXF-01-00A0.dtbo /lib/firmware/
-    cp BB-BONE-PRU-05-00A0.dtbo /lib/firmware/
+    cp devicetree/pxf/BB-SPI0-PXF-01-00A0.dtbo /lib/firmware/
+    cp devicetree/pxf/BB-SPI1-PXF-01-00A0.dtbo /lib/firmware/
+    cp devicetree/pxf/BB-BONE-PRU-05-00A0.dtbo /lib/firmware/
     cp rcinpru0 /lib/firmware
     cp pwmpru1 /lib/firmware
     echo BB-BONE-PRU-05 > /sys/devices/bone_capemgr.*/slots
     echo BB-SPI0-PXF-01 > /sys/devices/bone_capemgr.*/slots
     echo BB-SPI1-PXF-01 > /sys/devices/bone_capemgr.*/slots
+    echo am33xx_pwm > /sys/devices/bone_capemgr.*/slots
+    echo bone_pwm_P8_36 > /sys/devices/bone_capemgr.*/slots
     dmesg | grep "SPI"
     dmesg | grep "PRU"
     cat /sys/devices/bone_capemgr.*/slots

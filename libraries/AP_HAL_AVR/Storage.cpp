@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
@@ -24,7 +24,7 @@ void AVREEPROMStorage::write_block(uint16_t dst, const void *src, size_t n)
             eeprom_write_byte((uint8_t*)dst, *p);
         }
         dst++;
-        *p++;
+        p++;
     }
 }
 

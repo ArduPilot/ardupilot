@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include <assert.h>
@@ -176,12 +176,12 @@ void PX4Storage::_storage_open(void)
  */
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-	uint16_t end = loc + length;
-	while (loc < end) {
-		uint8_t line = (loc >> PX4_STORAGE_LINE_SHIFT);
-		_dirty_mask |= 1 << line;
-		loc += PX4_STORAGE_LINE_SIZE;
-	}
+    uint16_t end = loc + length;
+    for (uint8_t line=loc>>PX4_STORAGE_LINE_SHIFT;
+         line <= end>>PX4_STORAGE_LINE_SHIFT;
+         line++) {
+        _dirty_mask |= 1U << line;
+    }
 }
 
 void PX4Storage::read_block(void *dst, uint16_t loc, size_t n) 
@@ -260,13 +260,6 @@ void PX4Storage::_timer_tick(void)
 			close(_fd);
 			_fd = -1;
 			perf_count(_perf_errors);
-		}
-		if (_dirty_mask == 0) {
-			if (fsync(_fd) != 0) {
-				close(_fd);
-				_fd = -1;
-				perf_count(_perf_errors);
-			}
 		}
 	}
 	perf_end(_perf_storage);

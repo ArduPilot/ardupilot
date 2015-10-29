@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
@@ -32,9 +32,9 @@ PX4GPIO::PX4GPIO()
 void PX4GPIO::init()
 {
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
-    _led_fd = open(LED_DEVICE_PATH, O_RDWR);
+    _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
-        hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
+        hal.scheduler->panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
@@ -43,9 +43,9 @@ void PX4GPIO::init()
          hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
     }
 #endif
-    _tone_alarm_fd = open("/dev/tone_alarm", O_WRONLY);
+    _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
     if (_tone_alarm_fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/tone_alarm");
+        hal.scheduler->panic("Unable to open " TONEALARM0_DEVICE_PATH);
     }
 
     _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
@@ -69,7 +69,17 @@ void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     switch (pin) {
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
-        ioctl(_gpio_fmu_fd, output?GPIO_SET_OUTPUT:GPIO_SET_INPUT, 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0)));
+        uint32_t pinmask = 1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0));
+        if (output) {
+            uint8_t old_value = read(pin);
+            if (old_value) {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_HIGH, pinmask);
+            } else {
+                ioctl(_gpio_fmu_fd, GPIO_SET_OUTPUT_LOW, pinmask);
+            }
+        } else {
+            ioctl(_gpio_fmu_fd, GPIO_SET_INPUT, pinmask);
+        }
         break;
     }
 }
@@ -86,51 +96,61 @@ int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
 
 
 uint8_t PX4GPIO::read(uint8_t pin) {
-    uint32_t relays = 0;
     switch (pin) {
 
 #ifdef GPIO_EXT_1
-        case PX4_GPIO_EXT_FMU_RELAY1_PIN:
+        case PX4_GPIO_EXT_FMU_RELAY1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & GPIO_EXT_1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef GPIO_EXT_2
-        case PX4_GPIO_EXT_FMU_RELAY2_PIN:
+        case PX4_GPIO_EXT_FMU_RELAY2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & GPIO_EXT_2)?HIGH:LOW;
-            break;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER1
-        case PX4_GPIO_EXT_IO_RELAY1_PIN:
+        case PX4_GPIO_EXT_IO_RELAY1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER2
-        case PX4_GPIO_EXT_IO_RELAY2_PIN:
+        case PX4_GPIO_EXT_IO_RELAY2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER2)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC1
-        case PX4_GPIO_EXT_IO_ACC1_PIN:
+        case PX4_GPIO_EXT_IO_ACC1_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC1)?HIGH:LOW;
+        }
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC2
-        case PX4_GPIO_EXT_IO_ACC2_PIN:
+        case PX4_GPIO_EXT_IO_ACC2_PIN: {
+            uint32_t relays = 0;
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
+        }
 #endif
 
     case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5): {
-        uint32_t v = 0;
-        ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&v);
-        return (v & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
-    }
+            uint32_t relays = 0;
+            ioctl(_gpio_fmu_fd, GPIO_GET, (unsigned long)&relays);
+            return (relays & (1U<<(pin-PX4_GPIO_FMU_SERVO_PIN(0))))?HIGH:LOW;
+        }
     }
     return LOW;
 }
@@ -232,7 +252,13 @@ bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mo
  */
 bool PX4GPIO::usb_connected(void)
 {
-    return stm32_gpioread(GPIO_OTGFS_VBUS);
+    /*
+      we use a combination of voltage on the USB connector and the
+      open of the /dev/ttyACM0 character device. This copes with
+      systems where the VBUS may go high even with no USB connected
+      (such as AUAV-X2)
+     */
+    return stm32_gpioread(GPIO_OTGFS_VBUS) && _usb_connected;
 }
 
 

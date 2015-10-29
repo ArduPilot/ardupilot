@@ -26,10 +26,11 @@ public:
     /// @param item
     void push_back( const T &item );
 
-    /// pop_front - removes an element from the begin of the buffer (i.e. the oldest element)
-    /// and returns it.  If the buffer is empty, 0 is returned
-    /// @return
-    T pop_front();
+    /// pop_front - removes an element from the beginning of the
+    /// buffer (i.e. the oldest element) and returns it in ret.
+    /// @param ret : the removed element, if exists
+    /// @return : true if successful, false if not
+    bool pop_front(T &ret);
 
     /// peek - returns a reference to an element of the buffer
     /// if position isn't valid (i.e. >= size()) 0 is returned
@@ -37,6 +38,8 @@ public:
     /// "0" is the oldest, size()-1 is the newest
     /// @return
     const T& peek(uint8_t position) const;
+
+    T& peek_mutable(uint8_t position);
 
     /// front - return a reference to the element at the begin of the queue (i.e. the oldest element)
     /// If the queue is empty, 0 is returned.
@@ -103,17 +106,15 @@ void AP_Buffer<T,SIZE>::push_back( const T &item )
 }
 
 template <class T, uint8_t SIZE>
-T AP_Buffer<T,SIZE>::pop_front()
+bool AP_Buffer<T,SIZE>::pop_front(T &ret)
 {
-	T result;
+    if(_num_items == 0) {
+        // buffer is empty
+        return false;
+    }
 
-	// return zero if buffer is empty
-	if( _num_items == 0 ) {
-		return 0;
-	}
-
-	// get next value in buffer
-    result = _buff[_head];
+    // get next value in buffer
+    ret = _buff[_head];
 
     // increment to next point
     _head++;
@@ -123,8 +124,8 @@ T AP_Buffer<T,SIZE>::pop_front()
     // reduce number of items
     _num_items--;
 
-    // return item
-    return result;
+    // success
+    return true;
 }
 
 template <class T, uint8_t SIZE>
@@ -132,11 +133,18 @@ const T& AP_Buffer<T,SIZE>::peek(uint8_t position) const
 {
     uint8_t j = _head + position;
 
-    // return zero if position is out of range
-    if( position >= _num_items ) {
-    	const static T r = 0;
-        return r;
-    }
+    // wrap around if necessary
+    if( j >= SIZE )
+        j -= SIZE;
+
+    // return desired value
+    return _buff[j];
+}
+
+template <class T, uint8_t SIZE>
+T& AP_Buffer<T,SIZE>::peek_mutable(uint8_t position)
+{
+    uint8_t j = _head + position;
 
     // wrap around if necessary
     if( j >= SIZE )

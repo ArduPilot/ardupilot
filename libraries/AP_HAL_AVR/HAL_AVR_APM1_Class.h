@@ -2,14 +2,14 @@
 #ifndef __AP_HAL_AVR_APM1_HAL_AVR_H__
 #define __AP_HAL_AVR_APM1_HAL_AVR_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 /* To save linker space, we need to make sure the HAL_AVR_APM1 class
  * is built iff we are building for HAL_BOARD_APM1. These defines must
  * wrap the whole HAL_AVR_APM1 class declaration and definition. */
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 
-#include <AP_HAL_AVR.h>
+#include "AP_HAL_AVR.h"
 #include "AP_HAL_AVR_Namespace.h"
 
 /**
@@ -20,7 +20,7 @@
 class HAL_AVR_APM1 : public AP_HAL::HAL {
 public:
     HAL_AVR_APM1();
-    void init(int argc, char * const argv[]) const;
+    void run(int argc, char* const argv[], Callbacks* callbacks) const override;
 };
 
 /**

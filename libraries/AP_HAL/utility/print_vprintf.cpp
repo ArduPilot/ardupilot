@@ -38,8 +38,8 @@
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
 
-#include <AP_HAL.h>
-#include <AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
@@ -59,6 +59,7 @@
 #define FL_WIDTH	0x20
 #define FL_PREC		0x40
 #define FL_LONG		0x80
+#define FL_LONGLONG	0x100
 
 #define FL_PGMSTRING	FL_LONG
 #define FL_NEGATIVE	FL_LONG
@@ -73,10 +74,10 @@
 void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt, va_list ap)
 {
         unsigned char c;        /* holds a char from the format string */
-        unsigned char flags;
+        uint16_t flags;
         unsigned char width;
         unsigned char prec;
-        unsigned char buf[13];
+        unsigned char buf[23];
 
         for (;;) {
 
@@ -147,6 +148,9 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (c == 'h')
                                         continue;
+                        } else if ((flags & FL_LONG) && c == 'l') {
+                                flags |= FL_LONGLONG;
+                                continue;
                         }
             
                         break;
@@ -181,7 +185,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 flags |= FL_FLTFIX;
                         } else if (prec > 0)
                                 prec -= 1;
-                        if ((flags & FL_FLTFIX) && fabs(value) > 9999999) {
+                        if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
                                 flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
                         }
 
@@ -279,22 +283,23 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         if (flags & FL_FLTFIX) {                /* 'f' format           */
 
                                 n = exp > 0 ? exp : 0;          /* exponent of left digit */
+                                unsigned char v = 0;
                                 do {
                                         if (n == -1)
                                                 s->write('.');
-                                        flags = (n <= exp && n > exp - ndigs)
+                                        v = (n <= exp && n > exp - ndigs)
                                                 ? buf[exp - n + 1] : '0';
-                                        if (--n < -prec || flags == 0)
+                                        if (--n < -prec || v == 0)
                                                 break;
-                                        s->write(flags);
+                                        s->write(v);
                                 } while (1);
                                 if (n == exp
                                     && (buf[1] > '5'
                                         || (buf[1] == '5' && !(vtype & FTOA_CARRY))) )
                                         {
-                                                flags = '1';
+                                                v = '1';
                                         }
-                                if (flags) s->write(flags);
+                                if (v) s->write(v);
         
                         } else {                                /* 'e(E)' format        */
 
@@ -375,13 +380,23 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                  * Handle integer formats variations for d/i, u, o, p, x, X.
                  */
                 if (c == 'd' || c == 'i') {
-                        long x = (flags & FL_LONG) ? va_arg(ap,long) : va_arg(ap,int);
-                        flags &= ~(FL_NEGATIVE | FL_ALT);
-                        if (x < 0) {
-                                x = -x;
-                                flags |= FL_NEGATIVE;
+                        if (flags & FL_LONGLONG) {
+                                int64_t x = va_arg(ap,long long);
+                                flags &= ~(FL_NEGATIVE | FL_ALT);
+                                if (x < 0) {
+                                        x = -x;
+                                        flags |= FL_NEGATIVE;
+                                }
+                                c = ulltoa_invert (x, (char *)buf, 10) - (char *)buf;
+                        } else {
+                                long x = (flags & FL_LONG) ? va_arg(ap,long) : va_arg(ap,int);
+                                flags &= ~(FL_NEGATIVE | FL_ALT);
+                                if (x < 0) {
+                                        x = -x;
+                                        flags |= FL_NEGATIVE;
+                                }
+                                c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
                         }
-                        c = ultoa_invert (x, (char *)buf, 10) - (char *)buf;
 
                 } else {
                         int base;
@@ -411,10 +426,15 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                         flags |= (FL_ALTHEX | FL_ALTUPP);
                                 base = 16 | XTOA_UPPER;
                         ultoa:
-                                c = ultoa_invert ((flags & FL_LONG)
-                                                    ? va_arg(ap, unsigned long)
-                                                    : va_arg(ap, unsigned int),
-                                                    (char *)buf, base)  -  (char *)buf;
+                                if (flags & FL_LONGLONG) {
+                                        c = ulltoa_invert (va_arg(ap, unsigned long long),
+                                                           (char *)buf, base)  -  (char *)buf;
+                                } else {
+                                        c = ultoa_invert ((flags & FL_LONG)
+                                                          ? va_arg(ap, unsigned long)
+                                                          : va_arg(ap, unsigned int),
+                                                          (char *)buf, base)  -  (char *)buf;
+                                }
                                 flags &= ~FL_NEGATIVE;
                                 break;
 

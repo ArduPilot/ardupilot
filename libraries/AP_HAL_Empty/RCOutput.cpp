@@ -20,9 +20,6 @@ void EmptyRCOutput::disable_ch(uint8_t ch)
 void EmptyRCOutput::write(uint8_t ch, uint16_t period_us)
 {}
 
-void EmptyRCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{}
-
 uint16_t EmptyRCOutput::read(uint8_t ch) {
     return 900;
 }

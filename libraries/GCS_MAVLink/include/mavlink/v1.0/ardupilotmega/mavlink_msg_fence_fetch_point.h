@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_fence_fetch_point_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t idx; ///< point index (first point is 1, 0 is for return point)
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t idx; /*< point index (first point is 1, 0 is for return point)*/
 } mavlink_fence_fetch_point_t;
 
 #define MAVLINK_MSG_ID_FENCE_FETCH_POINT_LEN 3

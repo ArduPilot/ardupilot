@@ -30,6 +30,7 @@ import datetime
 import time
 from xml.sax.saxutils import escape
 
+from VehicleType import VehicleType
 
 class TestResult(object):
     '''all tests return a standardized result type'''
@@ -77,6 +78,10 @@ class TestSuite(object):
     def run(self, logdata, verbose):
         '''run all registered tests in a single call, gathering execution timing info'''
         self.logdata = logdata
+        if 'GPS' not in self.logdata.channels and 'GPS2' in self.logdata.channels:
+            # *cough*
+            self.logdata.channels['GPS'] = self.logdata.channels['GPS2']
+
         self.logfile = logdata.filename
         for test in self.tests:
             # run each test in turn, gathering timing info
@@ -92,10 +97,10 @@ class TestSuite(object):
         print 'Log size: %.2fmb (%d lines)' % (self.logdata.filesizeKB / 1024.0, self.logdata.lineCount)
         print 'Log duration: %s' % str(datetime.timedelta(seconds=self.logdata.durationSecs)) + '\n'
 
-        if self.logdata.vehicleType == "ArduCopter" and self.logdata.getCopterType():
-            print 'Vehicle Type: %s (%s)' % (self.logdata.vehicleType, self.logdata.getCopterType())
+        if self.logdata.vehicleType == VehicleType.Copter and self.logdata.getCopterType():
+            print 'Vehicle Type: %s (%s)' % (self.logdata.vehicleTypeString, self.logdata.getCopterType())
         else:
-            print 'Vehicle Type: %s' % self.logdata.vehicleType
+            print 'Vehicle Type: %s' % self.logdata.vehicleTypeString
         print 'Firmware Version: %s (%s)' % (self.logdata.firmwareVersion, self.logdata.firmwareHash)
         print 'Hardware: %s' % self.logdata.hardwareType
         print 'Free RAM: %s' % self.logdata.freeRAM
@@ -154,8 +159,8 @@ class TestSuite(object):
         print >>xml, "  <sizekb>"    + escape(`self.logdata.filesizeKB`) + "</sizekb>"
         print >>xml, "  <sizelines>" + escape(`self.logdata.lineCount`) + "</sizelines>"
         print >>xml, "  <duration>"  + escape(str(datetime.timedelta(seconds=self.logdata.durationSecs))) + "</duration>"
-        print >>xml, "  <vehicletype>" + escape(self.logdata.vehicleType) + "</vehicletype>"
-        if self.logdata.vehicleType == "ArduCopter" and self.logdata.getCopterType():
+        print >>xml, "  <vehicletype>" + escape(self.logdata.vehicleTypeString) + "</vehicletype>"
+        if self.logdata.vehicleType == VehicleType.Copter and self.logdata.getCopterType():
             print >>xml, "  <coptertype>"  + escape(self.logdata.getCopterType()) + "</coptertype>"
         print >>xml, "  <firmwareversion>" + escape(self.logdata.firmwareVersion) + "</firmwareversion>"
         print >>xml, "  <firmwarehash>" + escape(self.logdata.firmwareHash) + "</firmwarehash>"

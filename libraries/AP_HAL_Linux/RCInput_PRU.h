@@ -7,18 +7,20 @@
   doing the edge detection of the PPM sum input
  */
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
 #define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
-#define NUM_RING_ENTRIES            200
+// we use 300 ring buffer entries to guarantee that a full 25 byte
+// frame of 12 bits per byte
 
-class Linux::LinuxRCInput_PRU : public Linux::LinuxRCInput 
+class Linux::RCInput_PRU : public Linux::RCInput
 {
 public:
     void init(void*);
     void _timer_tick(void);
 
  private:
+    static const unsigned int NUM_RING_ENTRIES=300;
     // shared ring buffer with the PRU which records pin transitions
     struct ring_buffer {
         volatile uint16_t ring_head; // owned by ARM CPU

@@ -20,8 +20,8 @@
 #ifndef __AP_GPS_BACKEND_H__
 #define __AP_GPS_BACKEND_H__
 
-#include <GCS_MAVLink.h>
-#include <AP_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_GPS.h"
 
 class AP_GPS_Backend
 {
@@ -37,16 +37,9 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
+    virtual void inject_data(uint8_t *data, uint8_t len) { return; }
+
 #if GPS_RTK_AVAILABLE
-
-    // true once an RTK GPS Driver has a converged baseline vector and
-    // absolute single point solution to enter into an RTK Fix. 
-    virtual bool can_calculate_base_pos(void) { return false; };
-
-    // tells a RTK GPS Driver to capture the current single-point solution
-    // and baseline solution as the current home data.
-    virtual void calculate_base_pos(void) {};
-
     // Highest status supported by this GPS. 
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }

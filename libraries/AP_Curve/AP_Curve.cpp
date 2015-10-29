@@ -1,5 +1,5 @@
 
-#include <AP_Curve.h>
+#include "AP_Curve.h"
 
 
 // Constructor
@@ -18,7 +18,7 @@ void AP_Curve<T,SIZE>::clear() {
 	for( uint8_t i=0; i<SIZE; i++ ) {
 		_x[i] = 0;
 		_y[i] = 0;
-		_slope[i] = 0.0;
+		_slope[i] = 0.0f;
 	}
 	_num_points = 0;
 }

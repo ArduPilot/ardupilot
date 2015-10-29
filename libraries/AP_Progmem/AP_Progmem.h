@@ -2,7 +2,7 @@
 #ifndef __AP_PROGMEM_H__
 #define __AP_PROGMEM_H__
 
-#include <AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #if defined(__AVR__) 
 #include "AP_Progmem_AVR.h"
 #else

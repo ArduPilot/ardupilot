@@ -194,14 +194,17 @@
                <field type="uint8_t" name="thrust_manual">thrust auto:0, manual:1</field>
           </message>
           <message id="205" name="DETECTION_STATS">
-               <field type="uint16_t" name="detections">Number of detections</field>
+               <field type="uint32_t" name="detections">Number of detections</field>
+               <field type="uint32_t" name="cluster_iters">Number of cluster iterations</field>
                <field type="float" name="best_score">Best score</field>
-               <field type="int32_t" name="best_lat">Latitude of best detection * 1E7</field>
-               <field type="int32_t" name="best_lon">Longitude of best detection * 1E7</field>
-               <field type="int16_t" name="best_alt">Altitude of best detection * 1E3</field>
-               <field type="int32_t" name="best_detection_id">ID of best detection</field>
-               <field type="uint16_t" name="images_done">Number of images already processed</field>
-               <field type="uint16_t" name="images_todo">Number of images still to process</field>
+               <field type="int32_t" name="best_lat">Latitude of the best detection * 1E7</field>
+               <field type="int32_t" name="best_lon">Longitude of the best detection * 1E7</field>
+               <field type="int32_t" name="best_alt">Altitude of the best detection * 1E3</field>
+               <field type="uint32_t" name="best_detection_id">Best detection ID</field>
+               <field type="uint32_t" name="best_cluster_id">Best cluster ID</field>
+               <field type="uint32_t" name="best_cluster_iter_id">Best cluster ID</field>
+               <field type="uint32_t" name="images_done">Number of images already processed</field>
+               <field type="uint32_t" name="images_todo">Number of images still to process</field>
                <field type="float" name="fps">Average images per seconds processed</field>
           </message>
           <message id="206" name="ONBOARD_HEALTH">

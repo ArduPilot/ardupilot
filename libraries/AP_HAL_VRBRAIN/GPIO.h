@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_VRBRAIN_GPIO_H__
 #define __AP_HAL_VRBRAIN_GPIO_H__
 
-#include <AP_HAL_VRBRAIN.h>
+#include "AP_HAL_VRBRAIN.h"
 
  # define HAL_GPIO_A_LED_PIN        25
  # define HAL_GPIO_B_LED_PIN        26
@@ -13,6 +13,8 @@
  # define EXTERNAL_LED_MOTOR1       30
  # define EXTERNAL_LED_MOTOR2       31
  # define BUZZER_PIN                32
+ # define EXTERNAL_RELAY1_PIN       33
+ # define EXTERNAL_RELAY2_PIN       34
  # define HAL_GPIO_LED_ON           HIGH
  # define HAL_GPIO_LED_OFF          LOW
 

@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_HAL_VRBRAIN.h"
@@ -22,7 +22,7 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
-#include <AP_Scheduler.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 using namespace VRBRAIN;
 
@@ -219,7 +219,7 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -228,7 +228,7 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe) {
         _failsafe();
     }
 
@@ -262,8 +262,8 @@ void *VRBRAINScheduler::_timer_thread(void)
 
         if (vrbrain_ran_overtime && millis() - last_ran_overtime > 2000) {
             last_ran_overtime = millis();
-            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
-            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+//            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+//            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
         }
     }
     return NULL;
@@ -279,7 +279,7 @@ void VRBRAINScheduler::_run_io(void)
     if (!_timer_suspended) {
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i] != NULL) {
+            if (_io_proc[i]) {
                 _io_proc[i]();
             }
         }
@@ -325,10 +325,15 @@ void *VRBRAINScheduler::_io_thread(void)
     return NULL;
 }
 
-void VRBRAINScheduler::panic(const prog_char_t *errormsg)
+void VRBRAINScheduler::panic(const prog_char_t *errormsg, ...)
 {
-    write(1, errormsg, strlen(errormsg));
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.scheduler->delay_microseconds(10000);
     _vrbrain_thread_should_exit = true;
     exit(1);

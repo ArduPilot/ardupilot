@@ -28,8 +28,8 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 #include "ftoa_engine.h"
 #include <stdint.h>
 

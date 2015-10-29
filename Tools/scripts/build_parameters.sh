@@ -15,17 +15,17 @@ set -e
 [ -d $HOME/WP_Auth ] && {
     # now upload to WordPress
     ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
-    ./Tools/scripts/update_wiki.py --url http://plane.ardupilot.com $(cat $HOME/WP_Auth/plane.auth) --post-title='ArduPlane Parameters' Parameters.html
+    ./Tools/scripts/update_wiki.py --url http://plane.ardupilot.com $(cat $HOME/WP_Auth/plane.auth) --post-title='Plane Parameters' Parameters.html
     mkdir -p ../buildlogs/Parameters/ArduPlane
     /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/ArduPlane
 
     ./Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
-    ./Tools/scripts/update_wiki.py --url http://copter.ardupilot.com $(cat $HOME/WP_Auth/copter.auth) --post-title='ArduCopter Parameters' Parameters.html
+    ./Tools/scripts/update_wiki.py --url http://copter.ardupilot.com $(cat $HOME/WP_Auth/copter.auth) --post-title='Copter Parameters' Parameters.html
     mkdir -p ../buildlogs/Parameters/ArduCopter
     /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/ArduCopter
 
     ./Tools/autotest/param_metadata/param_parse.py --vehicle APMrover2
-    ./Tools/scripts/update_wiki.py --url http://rover.ardupilot.com $(cat $HOME/WP_Auth/rover.auth) --post-title='APMrover2 Parameters' Parameters.html
+    ./Tools/scripts/update_wiki.py --url http://rover.ardupilot.com $(cat $HOME/WP_Auth/rover.auth) --post-title='Rover Parameters' Parameters.html
     mkdir -p ../buildlogs/Parameters/APMrover2
     /bin/cp Parameters.wiki Parameters.html *.pdef.xml ../buildlogs/Parameters/APMrover2
 

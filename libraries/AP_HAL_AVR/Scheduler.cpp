@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if (CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2)
 
 #include <avr/io.h>
@@ -64,6 +64,24 @@ uint32_t AVRScheduler::micros() {
 
 uint32_t AVRScheduler::millis() {
     return _timer.millis();
+}
+
+/*
+  64 bit version of millis(). This wraps at 32 bits on AVR
+ */
+uint64_t AVRScheduler::millis64() {
+    return millis();
+}
+
+/*
+  64 bit version of micros(). This wraps when 32 bit millis() wraps
+ */
+uint64_t AVRScheduler::micros64() {
+    // this is slow, but solves the problem with logging uint64_t timestamps
+    uint64_t ret = millis();
+    ret *= 1000ULL;
+    ret += micros() % 1000UL;
+    return ret;
 }
 
 void AVRScheduler::delay_microseconds(uint16_t us) {
@@ -179,7 +197,7 @@ void AVRScheduler::_run_timer_procs(bool called_from_isr) {
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -207,7 +225,7 @@ void AVRScheduler::system_initialized() {
     _initialized = true;
 }
 
-void AVRScheduler::panic(const prog_char_t* errormsg) {
+void AVRScheduler::panic(const prog_char_t* errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     _timer_suspended = true;

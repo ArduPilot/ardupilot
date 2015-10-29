@@ -30,9 +30,11 @@ enum failsafe_state {
 enum gcs_failsafe {
     GCS_FAILSAFE_OFF        = 0, // no GCS failsafe
     GCS_FAILSAFE_HEARTBEAT  = 1, // failsafe if we stop receiving heartbeat
-    GCS_FAILSAFE_HB_RSSI    = 2  // failsafe if we stop receiving
+    GCS_FAILSAFE_HB_RSSI    = 2, // failsafe if we stop receiving
                                  // heartbeat or if RADIO.remrssi
                                  // drops to 0
+    GCS_FAILSAFE_HB_AUTO    = 3  // failsafe if we stop receiving heartbeat
+                                 // while in AUTO mode
 };
 
 
@@ -46,12 +48,6 @@ enum gcs_failsafe {
 
 #define T6 1000000
 #define T7 10000000
-
-// HIL enumerations. Note that HIL_MODE_ATTITUDE and HIL_MODE_SENSORS
-// are now the same thing, and are sensors based. The old define is
-// kept to allow old APM_Config.h headers to keep working
-#define HIL_MODE_DISABLED                       0
-#define HIL_MODE_SENSORS                        1
 
 enum FlightMode {
     MANUAL        = 0,
@@ -105,29 +101,22 @@ typedef enum GeofenceEnableReason {
 #define STOP_REPEAT 10
 
 
-// Logging message types. NOTE: If you change the value of one
-// of these then existing logs will break! Only add at the end, and 
-// mark unused ones as 'deprecated', but leave them in
+// Logging message types
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
     LOG_PERFORMANCE_MSG,
-    LOG_CMD_MSG_DEPRECATED,     // deprecated
-    LOG_CURRENT_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
-    LOG_CAMERA_MSG_DEPRECATED,
-    LOG_ATTITUDE_MSG,
-    LOG_MODE_MSG,
-    LOG_COMPASS_MSG,
     LOG_TECS_MSG,
     LOG_RC_MSG,
     LOG_SONAR_MSG,
-    LOG_COMPASS2_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_AIRSPEED_MSG,
-    LOG_COMPASS3_MSG
+    LOG_STATUS_MSG 
+#if OPTFLOW == ENABLED
+    ,LOG_OPTFLOW_MSG
+#endif
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -147,6 +136,7 @@ enum log_messages {
 #define MASK_LOG_SONAR                  (1<<14)
 #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_WHEN_DISARMED          (1UL<<16)
+#define MASK_LOG_IMU_RAW                (1UL<<19)
 
 // Waypoint Modes
 // ----------------
@@ -181,9 +171,6 @@ enum log_messages {
 // to -1)
 #define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)
 
-// mark a function as not to be inlined
-#define NOINLINE __attribute__((noinline))
-
 // altitude control algorithms
 enum {
     ALT_CONTROL_DEFAULT      = 0,
@@ -198,10 +185,9 @@ enum {
     ATT_CONTROL_APMCONTROL = 1
 };
 
-enum Serial2Protocol {
-    SERIAL2_MAVLINK     = 1,
-    SERIAL2_FRSKY_DPORT = 2,
-    SERIAL2_FRSKY_SPORT = 3 // not supported yet
+enum {
+    CRASH_DETECT_ACTION_BITMASK_DISABLED = 0,
+    CRASH_DETECT_ACTION_BITMASK_DISARM = (1<<0),
+    // note: next enum will be (1<<1), then (1<<2), then (1<<3)
 };
-
 #endif // _DEFINES_H

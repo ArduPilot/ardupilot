@@ -2,7 +2,7 @@
 #define LiquidCrystal_h
 
 #include <inttypes.h>
-#include <../AP_HAL/utility/Print.h>
+#include <AP_HAL/utility/Print.h>
 
 // commands
 #define LCD_CLEARDISPLAY 0x01

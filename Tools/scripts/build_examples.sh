@@ -29,5 +29,15 @@ for b in $TESTS; do
     popd
 done
 
+echo "Building some examples for px4-v2"
+test -d ../PX4Firmware && {
+  for d in libraries/AP_GPS/examples/GPS_AUTO_test libraries/AP_InertialSensor/examples/INS_generic libraries/AP_Compass/examples/AP_Compass_test libraries/AP_Baro/examples/BARO_generic libraries/AP_AHRS/examples/AHRS_Test; do
+      echo "Building $d for px4-v2"
+      pushd $d
+      make px4-v2
+      popd
+  done
+}
+
 echo "All examples built OK"
 exit 0

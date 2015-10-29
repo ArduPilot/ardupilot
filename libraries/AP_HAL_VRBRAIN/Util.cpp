@@ -1,5 +1,5 @@
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <stdio.h>
 #include <stdarg.h>
@@ -23,7 +23,7 @@ extern bool _vrbrain_thread_should_exit;
 /*
   constructor
  */
-VRBRAINUtil::VRBRAINUtil(void)
+VRBRAINUtil::VRBRAINUtil(void) : Util()
 {
     _safety_handle = orb_subscribe(ORB_ID(safety));
 }
@@ -93,7 +93,7 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
 {
     timespec ts;
-    ts.tv_sec = time_utc_usec/1.0e6;
+    ts.tv_sec = time_utc_usec/1.0e6f;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
     clock_settime(CLOCK_REALTIME, &ts);    
 }
@@ -106,16 +106,16 @@ bool VRBRAINUtil::get_system_id(char buf[40])
     uint8_t serialid[12];
     memset(serialid, 0, sizeof(serialid));
     get_board_serial(serialid);
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-    const char *board_type = "VRBRAINv40";
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
     const char *board_type = "VRBRAINv45";
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
-    const char *board_type = "VRBRAINv50";
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
     const char *board_type = "VRBRAINv51";
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
+    const char *board_type = "VRBRAINv52";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
     const char *board_type = "VRUBRAINv51";
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    const char *board_type = "VRUBRAINv52";
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     const char *board_type = "VRHEROv10";
 #endif

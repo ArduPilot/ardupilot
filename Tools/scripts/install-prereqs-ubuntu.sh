@@ -5,19 +5,21 @@ CWD=$(pwd)
 OPT="/opt"
 
 BASE_PKGS="gawk make git arduino-core curl"
-SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache"
-PYTHON_PKGS="pymavlink MAVProxy droneapi"
+SITL_PKGS="g++ python-pip python-matplotlib python-serial python-wxgtk2.8 python-scipy python-opencv python-numpy python-pyparsing ccache realpath"
+AVR_PKGS="gcc-avr binutils-avr avr-libc"
+PYTHON_PKGS="pymavlink MAVProxy droneapi catkin_pkg"
 PX4_PKGS="python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
-          zip genromfs"
+          zip genromfs python-empy"
+BEBOP_PKGS="g++-arm-linux-gnueabihf"
 UBUNTU64_PKGS="libc6:i386 libgcc1:i386 gcc-4.6-base:i386 libstdc++5:i386 libstdc++6:i386"
 ASSUME_YES=false
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_8-2013q4"
-ARM_TARBALL="$ARM_ROOT-20131204-linux.tar.bz2"
-ARM_TARBALL_URL="https://launchpad.net/gcc-arm-embedded/4.8/4.8-2013-q4-major/+download/$ARM_TARBALL"
+ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
+ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
+ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
@@ -57,21 +59,8 @@ sudo usermod -a -G dialout $USER
 
 $APT_GET remove modemmanager
 $APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $UBUNTU64_PKGS
-sudo pip -q install $PYTHON_PKGS
-
-
-if [ ! -d PX4Firmware ]; then
-    git clone https://github.com/diydrones/PX4Firmware.git
-fi
-
-if [ ! -d PX4NuttX ]; then
-    git clone https://github.com/diydrones/PX4NuttX.git
-fi
-
-if [ ! -d VRNuttX ]; then
-    git clone https://github.com/virtualrobotix/vrbrain_nuttx.git VRNuttX
-fi
+$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $BEBOP_PKGS $UBUNTU64_PKGS $AVR_PKGS
+sudo pip2 -q install $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
@@ -102,3 +91,10 @@ if ! grep -Fxq "$exportline2" ~/.profile ; then
     fi
 fi
 
+apt-cache search arm-none-eabi
+
+(
+ cd ardupilot
+ git submodule init
+ git submodule update
+)

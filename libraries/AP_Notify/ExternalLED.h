@@ -18,9 +18,10 @@
 #ifndef __EXTERNALLED_H__
 #define __EXTERNALLED_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include "NotifyDevice.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM2
  #define EXTERNAL_LED_ARMED   61    // Armed LED - AN7
@@ -44,14 +45,14 @@
  #define EXTERNAL_LED_MOTOR2  0
 #endif
 
-class ExternalLED
+class ExternalLED: public NotifyDevice
 {
 public:
     // constructor
     ExternalLED() : _counter(0), _counter2(0), _pattern(NONE), _pattern_counter(0) {}
 
     // initialise the LED driver
-    void init(void);
+    bool init(void);
     
     // should be called at 50Hz
     void update(void);

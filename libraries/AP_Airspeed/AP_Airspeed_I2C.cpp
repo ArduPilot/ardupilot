@@ -19,10 +19,10 @@
   backend driver for airspeed from a I2C MS4525D0 sensor
  */
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Airspeed_I2C.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include "AP_Airspeed_I2C.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -43,7 +43,7 @@ bool AP_Airspeed_I2C::init(void)
     _collect();
     i2c_sem->give();
     if (_last_sample_time_ms != 0) {
-        hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_Airspeed_I2C::_timer));
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Airspeed_I2C::_timer, void));
         return true;
     }
     return false;

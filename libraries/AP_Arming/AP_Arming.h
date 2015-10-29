@@ -3,10 +3,10 @@
 #ifndef __AP_ARMING_H__
 #define __AP_ARMING_H__ 
 
-#include <AP_AHRS.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Arming {
 public:
@@ -21,6 +21,8 @@ public:
         ARMING_CHECK_RC         = 0x0040,
         ARMING_CHECK_VOLTAGE    = 0x0080,
         ARMING_CHECK_BATTERY    = 0x0100,
+        ARMING_CHECK_AIRSPEED   = 0x0200,
+        ARMING_CHECK_LOGGING    = 0x0400,
     };
 
     enum ArmingMethod {
@@ -35,45 +37,60 @@ public:
         YES_ZERO_PWM = 2
     };
 
-    //for the hacky funciton pointer to gcs_send_text_p
-    typedef void (*gcs_send_t_p)(gcs_severity, const prog_char_t*);
+    enum ArmingRudder {
+        ARMING_RUDDER_DISABLED  = 0,
+        ARMING_RUDDER_ARMONLY   = 1,
+        ARMING_RUDDER_ARMDISARM = 2
+    };
 
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
-              const bool &home_set, gcs_send_t_p);
+              const enum HomeState &home_set);
 
     ArmingRequired arming_required();
     bool arm(uint8_t method);
     bool disarm();
     bool is_armed();
-    bool rudder_arming_enabled();
+    ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
     uint16_t get_enabled_checks();
 
-    bool pre_arm_checks(bool report);
+    /*
+      pre_arm_checks() is virtual so it can be modified
+      in a vehicle specific subclass
+    */
+    virtual bool pre_arm_checks(bool report);
 
-    //for params
+    void set_logging_available(bool set) { logging_available = set; }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
-private:
-    bool                                                armed;
+protected:
+    // Parameters
+    AP_Int8                 require;
+    AP_Int8                 rudder_arming_value;
+    AP_Int16                checks_to_perform;      // bitmask for which checks are required
 
-    //Parameters
-    AP_Int8                                           require;
-    AP_Int8                                disable_rudder_arm;   
-        //bitmask for which checks are required
-    AP_Int16                                checks_to_perform;
+    // references
+    const AP_AHRS           &ahrs;
+    const AP_Baro           &barometer;
+    Compass                 &_compass;
+    const enum HomeState    &home_is_set;
 
-    //how the vehicle was armed
-    uint8_t                                     arming_method;
-
-    const AP_AHRS                                       &ahrs;
-    const AP_Baro                                  &barometer;
-    Compass                                         &_compass;
-    const bool                                   &home_is_set;
-    gcs_send_t_p                              gcs_send_text_P;
+    // internal members
+    bool                    armed:1;
+    bool                    logging_available:1;
+    uint8_t                 arming_method;          // how the vehicle was armed
+    uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
+    uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
     void set_enabled_checks(uint16_t);
 
     bool barometer_checks(bool report);
+
+    bool airspeed_checks(bool report);
+
+    bool logging_checks(bool report);
+
+    virtual bool ins_checks(bool report);
 
     bool compass_checks(bool report);
 
@@ -82,6 +99,8 @@ private:
     bool battery_checks(bool report);
 
     bool hardware_safety_check(bool report);
+
+    bool board_voltage_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
 };

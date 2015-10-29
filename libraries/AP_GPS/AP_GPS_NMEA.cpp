@@ -29,9 +29,9 @@
 /// TinyGPS parser by Mikal Hart.
 ///
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
-#include <AP_Progmem.h>
+#include <AP_Progmem/AP_Progmem.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -39,6 +39,13 @@
 #include "AP_GPS_NMEA.h"
 
 extern const AP_HAL::HAL& hal;
+
+// optionally log all NMEA data for debug purposes
+// #define NMEA_LOG_PATH "nmea.log"
+
+#ifdef NMEA_LOG_PATH
+#include <stdio.h>
+#endif
 
 // SiRF init messages //////////////////////////////////////////////////////////
 //
@@ -64,7 +71,7 @@ extern const AP_HAL::HAL& hal;
 // MediaTek-based GPS.
 //
 #define MTK_INIT_MSG \
-    "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n" /* GGA & VTG once every fix */ \
+    "$PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n" /* RMC, GGA & VTG once every fix */ \
     "$PMTK330,0*2E\r\n"                                 /* datum = WGS84 */ \
     "$PMTK313,1*2E\r\n"                                 /* SBAS on */ \
     "$PMTK301,2*2E\r\n"                                 /* use SBAS data for DGPS */
@@ -94,6 +101,7 @@ const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
+#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
 
 AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -105,6 +113,8 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _gps_data_good(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
+    // this guarantees that _term is always nul terminated
+    memset(_term, 0, sizeof(_term));
 }
 
 bool AP_GPS_NMEA::read(void)
@@ -114,7 +124,17 @@ bool AP_GPS_NMEA::read(void)
 
     numc = port->available();
     while (numc--) {
-        if (_decode(port->read())) {
+        char c = port->read();
+#ifdef NMEA_LOG_PATH
+        static FILE *logf = NULL;
+        if (logf == NULL) {
+            logf = fopen(NMEA_LOG_PATH, "wb");
+        }
+        if (logf != NULL) {
+            ::fwrite(&c, 1, 1, logf);
+        }
+#endif
+        if (_decode(c)) {
             parsed = true;
         }
     }
@@ -128,6 +148,7 @@ bool AP_GPS_NMEA::_decode(char c)
     switch (c) {
     case ',': // term terminators
         _parity ^= c;
+        /* no break */
     case '\r':
     case '\n':
     case '*':
@@ -179,9 +200,9 @@ uint32_t AP_GPS_NMEA::_parse_decimal_100()
         ++p;
     if (*p == '.') {
         if (isdigit(p[1])) {
-            ret += 10 * (p[1] - '0');
+            ret += 10 * DIGIT_TO_VAL(p[1]);
             if (isdigit(p[2]))
-                ret += p[2] - '0';
+                ret += DIGIT_TO_VAL(p[2]);
         }
     }
     return ret;
@@ -198,19 +219,19 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     int32_t ret = 0;
 
     // scan for decimal point or end of field
-    for (p = _term; isdigit(*p); p++)
+    for (p = _term; *p && isdigit(*p); p++)
         ;
     q = _term;
 
     // convert degrees
-    while ((p - q) > 2) {
+    while ((p - q) > 2 && *q) {
         if (deg)
             deg *= 10;
         deg += DIGIT_TO_VAL(*q++);
     }
 
     // convert minutes
-    while (p > q) {
+    while (p > q && *q) {
         if (min)
             min *= 10;
         min += DIGIT_TO_VAL(*q++);
@@ -220,8 +241,9 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     if (*p == '.') {
         q = p + 1;
         float frac_scale = 0.1f;
-        while (isdigit(*q)) {
-            frac_min += (*q++ - '0') * frac_scale;
+        while (*q && isdigit(*q)) {
+            frac_min += DIGIT_TO_VAL(*q) * frac_scale;
+            q++;
             frac_scale *= 0.1f;
         }
     }
@@ -229,6 +251,33 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     ret += (min * (int32_t)10000000UL / 60);
     ret += (int32_t) (frac_min * (1.0e7f / 60.0f));
     return ret;
+}
+
+/*
+  see if we have a new set of NMEA messages
+ */
+bool AP_GPS_NMEA::_have_new_message()
+{
+    if (_last_GPRMC_ms == 0 ||
+        _last_GPGGA_ms == 0) {
+        return false;
+    }
+    uint32_t now = hal.scheduler->millis();
+    if (now - _last_GPRMC_ms > 150 ||
+        now - _last_GPGGA_ms > 150) {
+        return false;
+    }
+    if (_last_GPVTG_ms != 0 && 
+        now - _last_GPVTG_ms > 150) {
+        return false;
+    }
+    // prevent these messages being used again
+    if (_last_GPVTG_ms != 0) {
+        _last_GPVTG_ms = 1;
+    }
+    _last_GPGGA_ms = 1;
+    _last_GPRMC_ms = 1;
+    return true;
 }
 
 // Processes a just-completed term
@@ -247,7 +296,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.location.lat     = _new_latitude;
                     state.location.lng     = _new_longitude;
                     state.ground_speed     = _new_speed*0.01f;
-                    state.ground_course_cd = _new_course;
+                    state.ground_course_cd = wrap_360_cd(_new_course);
                     make_gps_time(_new_date, _new_time * 10);
                     state.last_gps_time_ms = hal.scheduler->millis();
                     // To-Do: add support for proper reporting of 2D and 3D fix
@@ -265,7 +314,7 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_GPVTG:
                     state.ground_speed     = _new_speed*0.01f;
-                    state.ground_course_cd = _new_course;
+                    state.ground_course_cd = wrap_360_cd(_new_course);
                     // VTG has no fix indicator, can't change fix status
                     break;
                 }
@@ -278,8 +327,8 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status = AP_GPS::NO_FIX;
                 }
             }
-            // we got a good message
-            return true;
+            // see if we got a good message
+            return _have_new_message();
         }
         // we got a bad message, ignore it
         return false;
@@ -289,12 +338,15 @@ bool AP_GPS_NMEA::_term_complete()
     if (_term_number == 0) {
         if (!strcmp_P(_term, _gprmc_string)) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
+            _last_GPRMC_ms = hal.scheduler->millis();
         } else if (!strcmp_P(_term, _gpgga_string)) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
+            _last_GPGGA_ms = hal.scheduler->millis();
         } else if (!strcmp_P(_term, _gpvtg_string)) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
+            _last_GPVTG_ms = hal.scheduler->millis();
             _gps_data_good = true;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
@@ -372,8 +424,6 @@ bool AP_GPS_NMEA::_term_complete()
 
     return false;
 }
-
-#define hexdigit(x) ((x)>9?'A'+(x):'0'+(x))
 
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream

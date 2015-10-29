@@ -8,6 +8,9 @@
 set -e
 set -x
 
+git submodule init
+git submodule update
+
 for d in ArduPlane ArduCopter APMrover2; do
     pushd $d
     make px4-clean

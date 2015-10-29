@@ -3,7 +3,7 @@
 /// @file	ACM_PI.cpp
 /// @brief	Generic PI algorithm
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 
 #include "APM_PI.h"
 

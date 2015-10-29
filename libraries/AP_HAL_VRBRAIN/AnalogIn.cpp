@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "AnalogIn.h"
@@ -16,8 +16,9 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/servorail_status.h>
 #include <uORB/topics/system_power.h>
-#include <GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <errno.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #define ANLOGIN_DEBUGGING 0
 
@@ -40,23 +41,16 @@ static const struct {
     uint8_t pin;
     float scaling;
 } pin_scaling[] = {
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V40)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V50)
-    {  0, 3.3f/4096 },
-    { 10, 3.3f/4096 },
-    { 11, 3.3f/4096 },
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
     {  0, 3.3f/4096 },
     { 10, 3.3f/4096 },
     { 11, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
+    { 10, 3.3f/4096 },
+#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
+    {  1, 3.3f/4096 },
+    {  2, 3.3f/4096 },
+    {  3, 3.3f/4096 },
     { 10, 3.3f/4096 },
 #elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
     { 10, 3.3f/4096 },
@@ -114,7 +108,7 @@ float VRBRAINAnalogSource::read_latest()
 float VRBRAINAnalogSource::_pin_scaler(void)
 {
     float scaling = VRBRAIN_VOLTAGE_SCALING;
-    uint8_t num_scalings = sizeof(pin_scaling)/sizeof(pin_scaling[0]);
+    uint8_t num_scalings = ARRAY_SIZE(pin_scaling);
     for (uint8_t i=0; i<num_scalings; i++) {
         if (pin_scaling[i].pin == _pin) {
             scaling = pin_scaling[i].scaling;
@@ -317,7 +311,7 @@ AP_HAL::AnalogSource* VRBRAINAnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<VRBRAIN_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new VRBRAINAnalogSource(pin, 0.0);
+            _channels[j] = new VRBRAINAnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }

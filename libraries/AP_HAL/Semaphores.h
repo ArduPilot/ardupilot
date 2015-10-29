@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_SEMAPHORES_H__
 #define __AP_HAL_SEMAPHORES_H__
 
-#include <AP_HAL_Namespace.h>
+#include "AP_HAL_Namespace.h"
 
 #define HAL_SEMAPHORE_BLOCK_FOREVER ((uint32_t) 0xFFFFFFFF)
 

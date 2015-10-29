@@ -13,7 +13,7 @@
 #ifndef AP_NAVIGATION_H
 #define AP_NAVIGATION_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 class AP_Navigation {
 public:

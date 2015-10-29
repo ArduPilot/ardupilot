@@ -17,42 +17,44 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-#define CONFIG_INS_TYPE HAL_INS_DEFAULT
-#define CONFIG_BARO     HAL_BARO_DEFAULT
-#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
-
-#ifdef HAL_SERIAL0_BAUD_DEFAULT
-# define SERIAL0_BAUD HAL_SERIAL0_BAUD_DEFAULT
-#endif
-
 #ifndef MAV_SYSTEM_ID
  // use 2 for antenna tracker by default
  # define MAV_SYSTEM_ID          2
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
-// Serial port speeds.
+// RC Channel definitions
 //
-#ifndef SERIAL0_BAUD
- # define SERIAL0_BAUD                   115200
+#ifndef CH_YAW
+ # define CH_YAW        CH_1    // RC input/output for yaw on channel 1
 #endif
-#ifndef SERIAL1_BAUD
- # define SERIAL1_BAUD                    57600
-#endif
-#ifndef SERIAL2_BAUD
- # define SERIAL2_BAUD                    57600
+#ifndef CH_PITCH
+ # define CH_PITCH      CH_2    // RC input/output for pitch on channel 2
 #endif
 
-#ifndef SERIAL_BUFSIZE
- # define SERIAL_BUFSIZE 512
+
+//////////////////////////////////////////////////////////////////////////////
+// yaw and pitch axis angle range defaults
+//
+#ifndef YAW_RANGE_DEFAULT
+ # define YAW_RANGE_DEFAULT 360
+#endif
+#ifndef PITCH_RANGE_DEFAULT
+ # define PITCH_RANGE_DEFAULT 180
 #endif
 
-#ifndef SERIAL1_BUFSIZE
- # define SERIAL1_BUFSIZE 256
+//////////////////////////////////////////////////////////////////////////////
+// Tracking definitions
+//
+#ifndef TRACKING_TIMEOUT_MS
+ # define TRACKING_TIMEOUT_MS               5000    // consider we've lost track of vehicle after 5 seconds with no position update.  Used to update armed/disarmed status leds
 #endif
-
-#ifndef SERIAL2_BUFSIZE
- # define SERIAL2_BUFSIZE 256
+#ifndef TRACKING_TIMEOUT_SEC
+ # define TRACKING_TIMEOUT_SEC              5.0f    // consider we've lost track of vehicle after 5 seconds with no position update.
+#endif
+#ifndef DISTANCE_MIN_DEFAULT
+ # define DISTANCE_MIN_DEFAULT              5.0f    // do not track targets within 5 meters
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

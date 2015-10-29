@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_terrain_check_t
 {
- int32_t lat; ///< Latitude (degrees *10^7)
- int32_t lon; ///< Longitude (degrees *10^7)
+ int32_t lat; /*< Latitude (degrees *10^7)*/
+ int32_t lon; /*< Longitude (degrees *10^7)*/
 } mavlink_terrain_check_t;
 
 #define MAVLINK_MSG_ID_TERRAIN_CHECK_LEN 8

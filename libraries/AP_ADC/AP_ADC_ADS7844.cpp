@@ -54,9 +54,9 @@
  *
  */
 
-#include <AP_Progmem.h>
-#include <AP_Common.h>
-#include <AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_ADC_ADS7844.h"
 
@@ -171,7 +171,7 @@ void AP_ADC_ADS7844::Init()
 
     _ch6_last_sample_time_micros = hal.scheduler->micros();
 
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_ADC_ADS7844::read));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_ADC_ADS7844::read, void));
     hal.scheduler->resume_timer_procs();
 
 }

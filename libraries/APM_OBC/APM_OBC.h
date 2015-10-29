@@ -22,12 +22,12 @@
   Andrew Tridgell and CanberraUAV, August 2012
 */
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Mission.h>
-#include <AP_Baro.h>
-#include <AP_GPS.h>
-#include <AP_RCMapper.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 #include <inttypes.h>
 
 
@@ -64,7 +64,12 @@ public:
             _saved_wp = 0;
         }
 
+    // check that everything is OK
     void check(enum control_mode control_mode, uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms);
+
+    // generate heartbeat msgs, so external failsafe boards are happy
+    // during sensor calibration
+    void heartbeat(void);
 
     // called in servo output code to set servos to crash position if needed
     void check_crash_plane(void);

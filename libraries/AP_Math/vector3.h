@@ -51,9 +51,11 @@
 #define VECTOR3_H
 
 #include <math.h>
+#include <float.h>
 #include <string.h>
 
-#if MATH_CHECK_INDEXES
+
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
 #include <assert.h>
 #endif
 
@@ -118,7 +120,7 @@ public:
     // allow a vector3 to be used as an array, 0 indexed
     T & operator[](uint8_t i) {
         T *_v = &x;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -126,7 +128,7 @@ public:
 
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -154,7 +156,8 @@ public:
     bool is_inf(void) const;
 
     // check if all elements are zero
-    bool is_zero(void) const { return x==0 && y == 0 && z == 0; }
+    bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON) && (fabsf(z) < FLT_EPSILON); }
+
 
     // rotate by a standard rotation
     void rotate(enum Rotation rotation);

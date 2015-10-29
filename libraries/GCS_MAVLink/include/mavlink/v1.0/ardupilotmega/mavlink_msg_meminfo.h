@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_meminfo_t
 {
- uint16_t brkval; ///< heap top
- uint16_t freemem; ///< free memory
+ uint16_t brkval; /*< heap top*/
+ uint16_t freemem; /*< free memory*/
 } mavlink_meminfo_t;
 
 #define MAVLINK_MSG_ID_MEMINFO_LEN 4

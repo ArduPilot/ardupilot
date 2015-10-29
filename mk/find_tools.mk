@@ -18,11 +18,12 @@ ifeq ($(SYSTYPE),Linux)
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
 endif
 ifeq ($(findstring CYGWIN, $(SYSTYPE)),CYGWIN)
-  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
-  FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
+  TOOLPATH :=  $(subst :, ,$(PATH))
+  FIND_TOOL = $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 ifeq ($(findstring MINGW, $(SYSTYPE)),MINGW)
-  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
+  # expect that tools are on the path
+  TOOLPATH :=  $(subst :, ,$(PATH))
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1).exe,$(TOOLPATH))))
 endif
 
@@ -56,11 +57,11 @@ ARM_GDB     :=  $(call FIND_TOOL,arm-none-eabi-gdb)
 ARM_OBJCOPY :=  $(call FIND_TOOL,arm-none-eabi-objcopy)
 
 # toolchains for beagleboneblack
-BBONE_CXX     :=  arm-linux-gnueabihf-g++-4.7
-BBONE_CC      :=  arm-linux-gnueabihf-gcc-4.7
-BBONE_AS      :=  arm-linux-gnueabihf-gcc-4.7
+BBONE_CXX     :=  arm-linux-gnueabihf-g++
+BBONE_CC      :=  arm-linux-gnueabihf-gcc
+BBONE_AS      :=  arm-linux-gnueabihf-gcc
 BBONE_AR      :=  ar
-BBONE_LD      :=  arm-linux-gnueabihf-g++-4.7
+BBONE_LD      :=  arm-linux-gnueabihf-g++
 BBONE_GDB     :=  gdb
 BBONE_OBJCOPY :=  objcopy
 
@@ -73,8 +74,18 @@ RPI_LD      :=  arm-linux-gnueabihf-g++
 RPI_GDB     :=  arm-linux-gnueabihf-gdb
 RPI_OBJCOPY :=  arm-linux-gnueabihf-obj
 
+# toolchains for zynq
+ZYNQ_CXX     :=  arm-xilinx-linux-gnueabi-g++
+ZYNQ_CC      :=  arm-xilinx-linux-gnueabi-gcc
+ZYNQ_AS      :=  arm-xilinx-linux-gnueabi-gcc
+ZYNQ_AR      :=  arm-xilinx-linux-gnueabi-ar
+ZYNQ_LD      :=  arm-xilinx-linux-gnueabi-g++
+ZYNQ_GDB     :=  arm-xilinx-linux-gnueabi-gdb
+ZYNQ_OBJCOPY :=  arm-xilinx-linux-gnueabi-objcopy
+
 # enable ccache if installed
 CCACHE :=  $(call FIND_TOOL,ccache)
+export CCACHE
 
 CXX = $(CCACHE) $($(TOOLCHAIN)_CXX)
 CC = $(CCACHE) $($(TOOLCHAIN)_CC)

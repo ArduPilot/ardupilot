@@ -4,19 +4,19 @@
 
 typedef struct __mavlink_command_int_t
 {
- float param1; ///< PARAM1, see MAV_CMD enum
- float param2; ///< PARAM2, see MAV_CMD enum
- float param3; ///< PARAM3, see MAV_CMD enum
- float param4; ///< PARAM4, see MAV_CMD enum
- int32_t x; ///< PARAM5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
- int32_t y; ///< PARAM6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
- float z; ///< PARAM7 / z position: global: altitude in meters (relative or absolute, depending on frame.
- uint16_t command; ///< The scheduled action for the mission item. see MAV_CMD in common.xml MAVLink specs
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t frame; ///< The coordinate system of the COMMAND. see MAV_FRAME in mavlink_types.h
- uint8_t current; ///< false:0, true:1
- uint8_t autocontinue; ///< autocontinue to next wp
+ float param1; /*< PARAM1, see MAV_CMD enum*/
+ float param2; /*< PARAM2, see MAV_CMD enum*/
+ float param3; /*< PARAM3, see MAV_CMD enum*/
+ float param4; /*< PARAM4, see MAV_CMD enum*/
+ int32_t x; /*< PARAM5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7*/
+ int32_t y; /*< PARAM6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7*/
+ float z; /*< PARAM7 / z position: global: altitude in meters (relative or absolute, depending on frame.*/
+ uint16_t command; /*< The scheduled action for the mission item. see MAV_CMD in common.xml MAVLink specs*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t frame; /*< The coordinate system of the COMMAND. see MAV_FRAME in mavlink_types.h*/
+ uint8_t current; /*< false:0, true:1*/
+ uint8_t autocontinue; /*< autocontinue to next wp*/
 } mavlink_command_int_t;
 
 #define MAVLINK_MSG_ID_COMMAND_INT_LEN 35

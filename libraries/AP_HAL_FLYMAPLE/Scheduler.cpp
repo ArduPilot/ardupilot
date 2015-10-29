@@ -9,11 +9,13 @@
 // Please see the notes in FlymaplePortingNotes.txt in this directory for 
 // information about disabling interrupts on Flymaple
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "Scheduler.h"
+
+#include <stdarg.h>
 
 #define millis libmaple_millis
 #define micros libmaple_micros
@@ -101,6 +103,18 @@ uint32_t FLYMAPLEScheduler::millis() {
 
 uint32_t FLYMAPLEScheduler::micros() {
     return libmaple_micros();
+}
+
+uint64_t FLYMAPLEScheduler::millis64() {
+    return millis();
+}
+
+uint64_t FLYMAPLEScheduler::micros64() {
+    // this is slow, but solves the problem with logging uint64_t timestamps
+    uint64_t ret = millis();
+    ret *= 1000ULL;
+    ret += micros() % 1000;
+    return ret;
 }
 
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
@@ -192,7 +206,7 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -216,12 +230,19 @@ void FLYMAPLEScheduler::system_initialized()
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
+void FLYMAPLEScheduler::panic(const prog_char_t *errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     // REVISIT: not tested on FLYMAPLE
+    va_list ap;
+
     _timer_suspended = true;
-    hal.console->println_P(errormsg);
+
+    va_start(ap, errormsg);
+    hal.console->vprintf_P(errormsg, ap);
+    va_end(ap);
+    hal.console->printf_P("\n");
+
     for(;;);
 }
 

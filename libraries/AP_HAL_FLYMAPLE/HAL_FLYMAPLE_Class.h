@@ -19,14 +19,14 @@
 #ifndef __AP_HAL_FLYMAPLE_CLASS_H__
 #define __AP_HAL_FLYMAPLE_CLASS_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_FLYMAPLE_Namespace.h"
 
 class HAL_FLYMAPLE : public AP_HAL::HAL {
 public:
     HAL_FLYMAPLE();
-    void init(int argc, char * const * argv) const;
+    void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 };
 
 extern const HAL_FLYMAPLE AP_HAL_FLYMAPLE;

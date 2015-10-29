@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_AVR_RC_OUTPUT_H__
 #define __AP_HAL_AVR_RC_OUTPUT_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_AVR_Namespace.h"
 
 class AP_HAL_AVR::APM1RCOutput : public AP_HAL::RCOutput {
@@ -21,7 +21,6 @@ public:
 
     /* Output, either single channel or bulk array of channels */
     void     write(uint8_t ch, uint16_t period_ms);
-    void     write(uint8_t ch, uint16_t* period_ms, uint8_t len);
 
     /* Read back current output state, as either single channel or
      * array of channels. */
@@ -48,7 +47,6 @@ public:
 
     /* Output, either single channel or bulk array of channels */
     void     write(uint8_t ch, uint16_t period_us);
-    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
 
     /* Read back current output state, as either single channel or
      * array of channels starting at 0. */

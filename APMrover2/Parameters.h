@@ -3,7 +3,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 // Global parameter class.
 //
@@ -40,7 +40,7 @@ public:
         k_param_rc_14,
 
         // IO pins
-        k_param_rssi_pin = 20,
+        k_param_rssi_pin = 20,      // unused, replaced by rssi_ library parameters
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
 
@@ -51,11 +51,13 @@ public:
         // misc2
         k_param_log_bitmask = 40,
         k_param_gps,
-        k_param_serial0_baud,
-        k_param_serial1_baud,
-        k_param_serial2_baud,
+        k_param_serial0_baud,   // deprecated, can be deleted
+        k_param_serial1_baud,   // deprecated, can be deleted
+        k_param_serial2_baud,   // deprecated, can be deleted
 
-
+        // 97: RSSI
+        k_param_rssi = 97,
+                
         // 110: Telemetry control
         //
         k_param_gcs0 = 110, // stream rates for uartA
@@ -65,10 +67,14 @@ public:
         k_param_serial0_baud_old,
         k_param_serial1_baud_old,
         k_param_telem_delay,
-        k_param_skip_gyro_cal,
+        k_param_skip_gyro_cal, // unused
         k_param_gcs2,       // stream rates for uartD
         k_param_serial2_baud_old,
-        k_param_serial2_protocol,
+        k_param_serial2_protocol,   // deprecated, can be deleted
+        k_param_serial_manager,     // serial manager library
+        k_param_cli_enabled,
+        k_param_gcs3,
+        k_param_gcs_pid_mask,
 
         //
         // 130: Sensor parameters
@@ -77,6 +83,7 @@ public:
         k_param_steering_learn, // unused
         k_param_NavEKF,  // Extended Kalman Filter Inertial Navigation Group
         k_param_mission, // mission library
+        k_param_NavEKF2,
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -162,7 +169,7 @@ public:
         //
         k_param_camera,
         k_param_camera_mount,
-        k_param_camera_mount2,
+        k_param_camera_mount2,          // unused
 
         //
         // 240: PID Controllers
@@ -199,9 +206,6 @@ public:
     AP_Int8	    reset_switch_chan;
     AP_Int8     initial_mode;
 
-    // IO pins
-    AP_Int8     rssi_pin;
-
     // braking
     AP_Int8     braking_percent;
     AP_Float    braking_speederr;
@@ -210,14 +214,10 @@ public:
 	//
 	AP_Int16    sysid_this_mav;
 	AP_Int16    sysid_my_gcs;
-    AP_Int16    serial0_baud;
-    AP_Int16    serial1_baud;
-#if MAVLINK_COMM_NUM_BUFFERS > 2
-    AP_Int16    serial2_baud;
-    AP_Int8     serial2_protocol;
-#endif
     AP_Int8     telem_delay;
-    AP_Int8     skip_gyro_cal;
+#if CLI_ENABLED == ENABLED
+    AP_Int8     cli_enabled;
+#endif
 
     // sensor parameters
     AP_Int8	    compass_enabled; 
@@ -232,6 +232,7 @@ public:
     AP_Float    auto_kickstart;
     AP_Float    turn_max_g;
     AP_Int16    pivot_turn_angle;
+    AP_Int16    gcs_pid_mask;
 
     // RC channels
     RC_Channel      rc_1;

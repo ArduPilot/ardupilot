@@ -10,7 +10,7 @@ set -x
 
 echo "Testing ArduPlane build"
 pushd ArduPlane
-for b in all apm2 apm2beta apm1-hil apm1-hilsensors apm2-hil apm2-hilsensors sitl sitl-mount linux apm2-obc; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
@@ -19,7 +19,7 @@ popd
 
 echo "Testing ArduCopter build"
 pushd ArduCopter
-for b in all apm2 apm1-hil apm2-hil sitl apm2-heli linux; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
@@ -28,7 +28,7 @@ popd
 
 echo "Testing APMRover build"
 pushd APMrover2
-for b in all apm2 sitl apm2-hil linux; do
+for b in sitl linux; do
     pwd
     make clean
     make $b -j4
@@ -37,7 +37,7 @@ popd
 
 echo "Testing AntennaTracker build"
 pushd AntennaTracker
-for b in apm2 sitl; do
+for b in sitl; do
     pwd
     make clean
     make $b -j4
@@ -46,11 +46,9 @@ popd
 
 echo "Testing build of examples"
 
-examples="Tools/VARTest Tools/CPUInfo"
+examples="Tools/CPUInfo"
 for d in $examples; do
     pushd $d
-    make clean
-    make apm2 -j4
     make clean
     make sitl -j4
     popd
@@ -58,7 +56,7 @@ done
 
 test -d ../libmaple && {
 echo "Testing flymaple build"
-for d in ArduPlane ArduCopter APMrover2; do
+for d in ArduPlane APMrover2; do
     pushd $d
     make clean
     make flymaple -j4

@@ -10,8 +10,8 @@
 #ifndef __AP_LIMIT_MODULE_H__
 #define __AP_LIMIT_MODULE_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 // The module IDs are defined as powers of 2, to make a bit-field
 enum moduleid {

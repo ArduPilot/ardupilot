@@ -1,5 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "Compass.h"
+#include <math.h>
 
 // don't allow any axis of the offset to go above 2000
 #define COMPASS_OFS_LIMIT 2000
@@ -34,45 +35,49 @@ Compass::learn_offsets(void)
 
     // this gain is set so we converge on the offsets in about 5
     // minutes with a 10Hz compass
-    const float gain = 0.01;
-    const float max_change = 10.0;
-    const float min_diff = 50.0;
+    const float gain = 0.01f;
+    const float max_change = 10.0f;
+    const float min_diff = 50.0f;
 
     if (!_null_init_done) {
         // first time through
         _null_init_done = true;
         for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-            const Vector3f &ofs = _offset[k].get();
+            const Vector3f &field = _state[k].field;
+            const Vector3f &ofs = _state[k].offset.get();
             for (uint8_t i=0; i<_mag_history_size; i++) {
                 // fill the history buffer with the current mag vector,
                 // with the offset removed
-                _mag_history[k][i] = Vector3i((_field[k].x+0.5f) - ofs.x, (_field[k].y+0.5f) - ofs.y, (_field[k].z+0.5f) - ofs.z);
+                _state[k].mag_history[i] = Vector3i(roundf(field.x) - ofs.x, 
+                                                    roundf(field.y) - ofs.y, 
+                                                    roundf(field.z) - ofs.z);
             }
-            _mag_history_index[k] = 0;
+            _state[k].mag_history_index = 0;
         }
         return;
     }
 
     for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        const Vector3f &ofs = _offset[k].get();
+        const Vector3f &ofs = _state[k].offset.get();
+        const Vector3f &field = _state[k].field;
         Vector3f b1, diff;
         float length;
 
         if (ofs.is_nan()) {
             // offsets are bad possibly due to a past bug - zero them
-            _offset[k].set(Vector3f());
+            _state[k].offset.set(Vector3f());
         }
 
         // get a past element
-        b1 = Vector3f(_mag_history[k][_mag_history_index[k]].x,
-                      _mag_history[k][_mag_history_index[k]].y,
-                      _mag_history[k][_mag_history_index[k]].z);
+        b1 = Vector3f(_state[k].mag_history[_state[k].mag_history_index].x,
+                      _state[k].mag_history[_state[k].mag_history_index].y,
+                      _state[k].mag_history[_state[k].mag_history_index].z);
 
         // the history buffer doesn't have the offsets
         b1 += ofs;
 
         // get the current vector
-        const Vector3f &b2 = _field[k];
+        const Vector3f &b2 = field;
 
         // calculate the delta for this sample
         diff = b2 - b1;
@@ -85,15 +90,15 @@ Compass::learn_offsets(void)
             // build up before calculating an offset change, as accuracy
             // of the offset change is highly dependent on the size of the
             // rotation.
-            _mag_history_index[k] = (_mag_history_index[k] + 1) % _mag_history_size;
+            _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
             continue;
         }
 
         // put the vector in the history
-        _mag_history[k][_mag_history_index[k]] = Vector3i((_field[k].x+0.5f) - ofs.x, 
-                                                          (_field[k].y+0.5f) - ofs.y, 
-                                                          (_field[k].z+0.5f) - ofs.z);
-        _mag_history_index[k] = (_mag_history_index[k] + 1) % _mag_history_size;
+        _state[k].mag_history[_state[k].mag_history_index] = Vector3i(roundf(field.x) - ofs.x, 
+                                                                      roundf(field.y) - ofs.y, 
+                                                                      roundf(field.z) - ofs.z);
+        _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
 
         // equation 6 of Bills paper
         diff = diff * (gain * (b2.length() - b1.length()) / length);
@@ -106,7 +111,7 @@ Compass::learn_offsets(void)
             diff *= max_change / length;
         }
 
-        Vector3f new_offsets = _offset[k].get() - diff;
+        Vector3f new_offsets = _state[k].offset.get() - diff;
 
         if (new_offsets.is_nan()) {
             // don't apply bad offsets
@@ -119,6 +124,6 @@ Compass::learn_offsets(void)
         new_offsets.z = constrain_float(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
             
         // set the new offsets
-        _offset[k].set(new_offsets);
+        _state[k].offset.set(new_offsets);
     }
 }

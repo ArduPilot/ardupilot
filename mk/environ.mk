@@ -53,6 +53,16 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
     SKETCHBOOK	:= $(shell cygpath ${SKETCHBOOK})
 endif
 
+ifneq ($(wildcard $(SKETCHBOOK)/config.mk),)
+$(info Reading $(SKETCHBOOK)/config.mk)
+include $(SKETCHBOOK)/config.mk
+endif
+
+ifneq ($(wildcard $(SKETCHBOOK)/developer.mk),)
+$(info Reading $(SKETCHBOOK)/developer.mk)
+include $(SKETCHBOOK)/developer.mk
+endif
+
 #
 # Work out the sketch name from the name of the source directory.
 #
@@ -107,19 +117,6 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
-# Jump over the next makefile sections when runing a "make configure"
-ifneq ($(MAKECMDGOALS),configure)
-
-################################################################################
-# Config options
-#
-# The Makefile calling us must specify BOARD
-#
-include $(SKETCHBOOK)/config.mk
-ifeq ($(PORT),)
-$(error ERROR: could not locate $(SKETCHBOOK)/config.mk, please run 'make configure' first and edit config.mk)
-endif
-
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
@@ -131,7 +128,7 @@ HAL_BOARD = HAL_BOARD_PX4
 endif
 
 ifneq ($(findstring sitl, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_AVR_SITL
+HAL_BOARD = HAL_BOARD_SITL
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
@@ -140,9 +137,14 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NONE
 endif
 
-ifneq ($(findstring erle, $(MAKECMDGOALS)),)
+ifneq ($(findstring erleboard, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLE
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
+endif
+
+ifneq ($(findstring zynq, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ZYNQ
 endif
 
 ifneq ($(findstring pxf, $(MAKECMDGOALS)),)
@@ -150,9 +152,30 @@ HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
 endif
 
+ifneq ($(findstring bebop, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BEBOP
+endif
+
+
 ifneq ($(findstring navio, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_LINUX
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
+endif
+
+ifneq ($(findstring raspilot, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+endif
+
+ifneq ($(findstring bbbmini, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+endif
+
+ifneq ($(findstring minlure, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_LINUX
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_MINLURE
 endif
 
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
@@ -184,20 +207,8 @@ ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_FLYMAPLE
 endif
 
-# default to APM2
+# default to SITL
 ifeq ($(HAL_BOARD),)
-#$(warning No HAL_BOARD in config.mk - defaulting to HAL_BOARD_APM2)
-HAL_BOARD = HAL_BOARD_APM2
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
-endif
-
-HARDWARE		?=	arduino
-ifeq ($(BOARD),)
-BOARD = mega2560
-endif
-
-ifneq ($(findstring apm1-1280, $(MAKECMDGOALS)),)
-BOARD = mega
-endif
-
+HAL_BOARD = HAL_BOARD_SITL
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif

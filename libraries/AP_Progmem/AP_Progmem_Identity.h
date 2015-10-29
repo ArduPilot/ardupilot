@@ -80,5 +80,11 @@ static inline uintptr_t pgm_read_pointer(const void *s) {
 	return *(const uintptr_t *)s;
 }
 
+// read something the size of a pointer. This makes the menu code more
+// portable
+static inline void pgm_read_block(const void *s, void *dest, uint8_t len) {
+    memcpy(dest, s, len);
+}
+
 #endif // __AP_PROGMEM_IDENTITY__
 

@@ -1,7 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
-#include <AC_Sprayer.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AC_Sprayer.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,6 +64,10 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
     if (_spinner_pwm < 0) {
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
+
+    // initialise flags
+    _flags.spraying = false;
+    _flags.testing = false;
 
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }

@@ -2,8 +2,8 @@
 #ifndef __AP_ADC_ANALOG_SOURCE_H__
 #define __AP_ADC_ANALOG_SOURCE_H__
 
-#include <AP_ADC.h>
-#include <AP_HAL.h>
+#include <AP_ADC/AP_ADC.h>
+#include <AP_HAL/AP_HAL.h>
 
 class AP_ADC_AnalogSource : public AP_HAL::AnalogSource
 {

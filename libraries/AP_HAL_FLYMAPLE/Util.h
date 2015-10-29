@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_UTIL_H__
 #define __AP_HAL_FLYMAPLE_UTIL_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_FLYMAPLE_Namespace.h"
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEUtil : public AP_HAL::Util {

@@ -17,11 +17,11 @@
   handle disk IO for terrain code
  */
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <GCS_MAVLink.h>
-#include <GCS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -120,7 +120,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     uint16_t oldest_i = 0;
 
     // see if we have that grid
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (cache[i].grid.lat == info.grid_lat && 
             cache[i].grid.lon == info.grid_lon &&
             cache[i].grid.spacing == grid_spacing) {
@@ -159,7 +159,7 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
 {
     // try first with given state
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (disk_block.block.lat == cache[i].grid.lat &&
             disk_block.block.lon == cache[i].grid.lon && 
             cache[i].state == state) {
@@ -167,7 +167,7 @@ int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
         }
     }    
     // then any state
-    for (uint16_t i=0; i<TERRAIN_GRID_BLOCK_CACHE_SIZE; i++) {
+    for (uint16_t i=0; i<cache_size; i++) {
         if (disk_block.block.lat == cache[i].grid.lat &&
             disk_block.block.lon == cache[i].grid.lon) {
             return i;

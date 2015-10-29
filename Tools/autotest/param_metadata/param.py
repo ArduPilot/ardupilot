@@ -22,7 +22,9 @@ known_param_fields = [
              'Range',
              'Units',
              'Increment',
-             'User',                         
+             'User',
+             'RebootRequired',
+             'Bitmask'
                       ]
 
 required_param_fields = [

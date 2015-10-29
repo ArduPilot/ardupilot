@@ -17,12 +17,12 @@
   Flymaple port by Mike McCauley
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "FlymapleWirish.h"
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AnalogIn.h"
 using namespace AP_HAL_FLYMAPLE_NS;
 
@@ -38,7 +38,7 @@ FLYMAPLEAnalogIn::FLYMAPLEAnalogIn() :
 
 void FLYMAPLEAnalogIn::init(void* machtnichts) {
     /* Register FLYMAPLEAnalogIn::_timer_event with the scheduler. */
-    hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&FLYMAPLEAnalogIn::_timer_event));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&FLYMAPLEAnalogIn::_timer_event, void));
     /* Register each private channel with FLYMAPLEAnalogIn. */
     _register_channel(&_vcc);
 }

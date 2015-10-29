@@ -4,27 +4,27 @@
 
 typedef struct __mavlink_rc_channels_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- uint16_t chan1_raw; ///< RC channel 1 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan2_raw; ///< RC channel 2 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan3_raw; ///< RC channel 3 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan4_raw; ///< RC channel 4 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan5_raw; ///< RC channel 5 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan6_raw; ///< RC channel 6 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan7_raw; ///< RC channel 7 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan8_raw; ///< RC channel 8 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan9_raw; ///< RC channel 9 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan10_raw; ///< RC channel 10 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan11_raw; ///< RC channel 11 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan12_raw; ///< RC channel 12 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan13_raw; ///< RC channel 13 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan14_raw; ///< RC channel 14 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan15_raw; ///< RC channel 15 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan16_raw; ///< RC channel 16 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan17_raw; ///< RC channel 17 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint16_t chan18_raw; ///< RC channel 18 value, in microseconds. A value of UINT16_MAX implies the channel is unused.
- uint8_t chancount; ///< Total number of RC channels being received. This can be larger than 18, indicating that more channels are available but not given in this message. This value should be 0 when no RC channels are available.
- uint8_t rssi; ///< Receive signal strength indicator, 0: 0%, 100: 100%, 255: invalid/unknown.
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ uint16_t chan1_raw; /*< RC channel 1 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan2_raw; /*< RC channel 2 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan3_raw; /*< RC channel 3 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan4_raw; /*< RC channel 4 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan5_raw; /*< RC channel 5 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan6_raw; /*< RC channel 6 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan7_raw; /*< RC channel 7 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan8_raw; /*< RC channel 8 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan9_raw; /*< RC channel 9 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan10_raw; /*< RC channel 10 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan11_raw; /*< RC channel 11 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan12_raw; /*< RC channel 12 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan13_raw; /*< RC channel 13 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan14_raw; /*< RC channel 14 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan15_raw; /*< RC channel 15 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan16_raw; /*< RC channel 16 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan17_raw; /*< RC channel 17 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint16_t chan18_raw; /*< RC channel 18 value, in microseconds. A value of UINT16_MAX implies the channel is unused.*/
+ uint8_t chancount; /*< Total number of RC channels being received. This can be larger than 18, indicating that more channels are available but not given in this message. This value should be 0 when no RC channels are available.*/
+ uint8_t rssi; /*< Receive signal strength indicator, 0: 0%, 100: 100%, 255: invalid/unknown.*/
 } mavlink_rc_channels_t;
 
 #define MAVLINK_MSG_ID_RC_CHANNELS_LEN 42

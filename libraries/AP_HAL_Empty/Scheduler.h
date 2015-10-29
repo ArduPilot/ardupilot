@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_EMPTY_SCHEDULER_H__
 #define __AP_HAL_EMPTY_SCHEDULER_H__
 
-#include <AP_HAL_Empty.h>
+#include "AP_HAL_Empty.h"
 
 class Empty::EmptyScheduler : public AP_HAL::Scheduler {
 public:
@@ -32,7 +32,7 @@ public:
     bool     system_initializing();
     void     system_initialized();
 
-    void     panic(const prog_char_t *errormsg);
+    void     panic(const prog_char_t *errormsg, ...) FORMAT(2, 3) NORETURN;
     void     reboot(bool hold_in_bootloader);
 
 };

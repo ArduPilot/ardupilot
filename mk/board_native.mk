@@ -6,12 +6,19 @@ include $(MK_DIR)/find_tools.mk
 # Tool options
 #
 DEFINES         =   -DF_CPU=$(F_CPU)
-DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\"" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
-DEFINES        +=   $(EXTRAFLAGS) # from user config.mk
+DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DSKETCHNAME="\"$(SKETCH)\"" -DSKETCHBOOK="\"$(SKETCHBOOK)\"" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKETCH)
+DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD) -DCONFIG_HAL_BOARD_SUBTYPE=$(HAL_BOARD_SUBTYPE)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-unused-parameter -Wno-missing-field-initializers
 WARNFLAGS      +=   -Wwrite-strings -Wformat=2
-WARNFLAGSCXX    =   -Wno-reorder
+WARNFLAGSCXX    = -Wno-reorder \
+	-Werror=format-security \
+	-Werror=array-bounds \
+	-Wfatal-errors \
+	-Werror=unused-but-set-variable \
+	-Werror=uninitialized \
+	-Werror=init-self \
+	-Wno-missing-field-initializers
 DEPFLAGS        =   -MD -MT $@
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
@@ -26,10 +33,10 @@ ASOPTS          =   -x assembler-with-cpp
 
 CPUFLAGS     = -D_GNU_SOURCE
 CPULDFLAGS   = -g
-OPTFLAGS     ?= -O0 -g
+OPTFLAGS     ?= -O3 -g
 
 CXXFLAGS        =   -g $(CPUFLAGS) $(DEFINES) $(OPTFLAGS)
-CXXFLAGS       +=   $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
+CXXFLAGS       +=   -std=gnu++11 $(WARNFLAGS) $(WARNFLAGSCXX) $(DEPFLAGS) $(CXXOPTS)
 CFLAGS          =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(OPTFLAGS)
 CFLAGS         +=   $(WARNFLAGS) $(DEPFLAGS) $(COPTS)
 ASFLAGS         =   -g $(CPUFLAGS) $(DEFINES) -Wa,$(LISTOPTS) $(DEPFLAGS)
@@ -41,6 +48,9 @@ LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP)
 endif
 
 LIBS ?= -lm -lpthread
+ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
+LIBS += -lwinmm
+endif
 
 ifeq ($(VERBOSE),)
 v = @
@@ -58,6 +68,7 @@ LIBOBJS			:=	$(SKETCHLIBOBJS)
 
 # The ELF file
 SKETCHELF		=	$(BUILDROOT)/$(SKETCH).elf
+BUILDELF                =       $(notdir $(SKETCHELF))
 
 # HEX file
 SKETCHHEX		=	$(BUILDROOT)/$(SKETCH).hex
@@ -91,45 +102,14 @@ print-%:
 -include $(ALLDEPS)
 
 # Link the final object
-$(SKETCHELF):	$(SKETCHOBJS) $(LIBOBJS)
+$(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"
 	$(RULEHDR)
-	$(v)$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(v)$(LD) $(LDFLAGS) -o $@ $(SKETCHOBJS) $(LIBOBJS) $(LIBS)
+	$(v)cp $(SKETCHELF) .
+	@echo "Firmware is in $(BUILDELF)"
 
-#
-# Build sketch objects
-#
 SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES)
-
-$(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< -I$(SRCROOT) $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-$(BUILDROOT)/%.o: $(SRCROOT)/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
-
-#
-# Build library objects from sources in the sketchbook
-#
 SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES)
 
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
-	$(RULEHDR)
-	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.c
-	$(RULEHDR)
-	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
-
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.S
-	$(RULEHDR)
-	$(v)$(AS) $(ASFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
+include $(MK_DIR)/build_rules.mk

@@ -3,7 +3,7 @@
 #define __AP_HAL_NAMESPACE_H__
 
 #include "string.h"
-#include "utility/FastDelegate.h"
+#include "utility/functor.h"
 
 namespace AP_HAL {
 
@@ -40,7 +40,7 @@ namespace AP_HAL {
        which allows us to encapculate a member function as a type
      */
     typedef void(*Proc)(void);
-    typedef fastdelegate::FastDelegate0<> MemberProc;
+    FUNCTOR_TYPEDEF(MemberProc, void);
 
     /**
      * Global names for all of the existing SPI devices on all platforms.
@@ -55,14 +55,15 @@ namespace AP_HAL {
         SPIDevice_ADNS3080_SPI3     = 5,
         SPIDevice_MPU9250           = 6,
         SPIDevice_L3GD20            = 7,
-        SPIDevice_LSM303D           = 8,        
+        SPIDevice_LSM303D           = 8,
         SPIDevice_LSM9DS0_AM        = 9,
-        SPIDevice_LSM9DS0_G         = 10
+        SPIDevice_LSM9DS0_G         = 10,
+        SPIDevice_Ublox             = 11,
+        SPIDevice_RASPIO            = 12
     };
 
+    // Must be implemented by the concrete HALs.
+    const HAL& get_HAL();
 }
-
-// macro to hide the details of AP_HAL::MemberProc
-#define AP_HAL_MEMBERPROC(func) fastdelegate::MakeDelegate(this, func)
 
 #endif // __AP_HAL_NAMESPACE_H__

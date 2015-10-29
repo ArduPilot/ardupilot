@@ -38,8 +38,16 @@
 #define PACKED __attribute__((__packed__))
 #endif
 
+// used to mark a function that may be unused in some builds
+#define UNUSED_FUNCTION __attribute__((unused))
+
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
+
+// sometimes we need to prevent inlining to prevent large stack usage
+#define NOINLINE __attribute__((noinline))
+
+#define FORMAT(a,b) __attribute__((format(printf, a, b)))
 
 // Make some dire warnings into errors
 //
@@ -53,7 +61,7 @@
 // in conjunction with a suitably modified Arduino IDE; never define for
 // production as it generates bad code.
 //
-#if PRINTF_FORMAT_WARNING_DEBUG
+#if defined(PRINTF_FORMAT_WARNING_DEBUG)
  # undef PSTR
  # define PSTR(_x)               _x             // help the compiler with printf_P
  # define float double                  // silence spurious format warnings for %f
@@ -64,6 +72,8 @@
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
 
+#define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
+
 /*
   check if bit bitnumber is set in value, returned as a
   bool. Bitnumber starts at 0 for the first bit
@@ -73,6 +83,14 @@
 // get high or low bytes from 2 byte integer
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
+
+template <typename T, size_t N>
+char (&_ARRAY_SIZE_HELPER(T (&_arr)[N]))[N];
+
+template <typename T>
+char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
+
+#define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
 // @}
 
@@ -113,6 +131,15 @@ struct PACKED Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
+/*
+  home states. Used to record if user has overridden home position.
+*/
+enum HomeState {
+    HOME_UNSET,                 // home is unset, no GPS positions yet received
+    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
+    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
+};
+
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,9 +172,7 @@ struct PACKED Location {
 #define AP_PRODUCT_ID_FLYMAPLE          0x100   // Flymaple with ITG3205, ADXL345, HMC5883, BMP085
 #define AP_PRODUCT_ID_L3G4200D          0x101   // Linux with L3G4200D and ADXL345
 #define AP_PRODUCT_ID_PIXHAWK_FIRE_CAPE 0x102   // Linux with the PixHawk Fire Cape
+#define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
-
-// map from kbaud rate to baudrate
-uint32_t map_baudrate(int16_t rate);
 
 #endif // _AP_COMMON_H

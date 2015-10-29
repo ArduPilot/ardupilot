@@ -20,8 +20,8 @@
   of storage offsets to available storage
  */
 
-#include <AP_HAL.h>
-#include <StorageManager.h>
+#include <AP_HAL/AP_HAL.h>
+#include "StorageManager.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -97,7 +97,7 @@ void StorageManager::erase(void)
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = pgm_read_word(&area.length);
         uint16_t offset = pgm_read_word(&area.offset);
-        for (uint8_t ofs=0; length; ofs += sizeof(blk)) {
+        for (uint16_t ofs=0; ofs<length; ofs += sizeof(blk)) {
             uint8_t n = 16;
             if (ofs + n > length) {
                 n = length - ofs;
@@ -150,15 +150,15 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
         }
         hal.storage->read_block(b, addr+offset, count);
         n -= count;
-        addr += count;
-        b += count;
-
-        // adjust addr for next area
-        addr -= length;
 
         if (n == 0) {
             break;
         }
+
+        // move pointer after written bytes
+        b += count;
+        // continue writing at the beginning of next valid area
+        addr = 0;
     }
     return (n == 0);
 }
@@ -190,15 +190,15 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
         }
         hal.storage->write_block(addr+offset, b, count);
         n -= count;
-        addr += count;
-        b += count;
-
-        // adjust addr for next area
-        addr -= length;
 
         if (n == 0) {
             break;
         }
+
+        // move pointer after written bytes
+        b += count;
+        // continue writing at the beginning of next valid area
+        addr = 0;
     }
     return (n == 0);
 }

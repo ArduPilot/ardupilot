@@ -5,25 +5,23 @@
 
 #include "AP_Baro.h"
 
-class AP_Baro_PX4 : public AP_Baro
+class AP_Baro_PX4 : public AP_Baro_Backend
 {
 public:
-    bool init();
-    uint8_t read();
-    float get_pressure();
-    float get_temperature();
+    AP_Baro_PX4(AP_Baro &);
+    void update();
 
 private:
-    float _temperature;
-    float _pressure;
-    float _pressure_sum;
-    float _temperature_sum;
-    uint32_t _sum_count;
-    void _accumulate(void);
-    void _baro_timer(uint32_t now);
-    uint64_t _last_timestamp;
-    // baro driver handle
-    int _baro_fd;
+    uint8_t _num_instances;
+
+    struct px4_instance {
+        uint8_t instance;
+        int fd;
+        float pressure_sum;
+        float temperature_sum;
+        uint32_t sum_count;
+        uint64_t last_timestamp;
+    } instances[BARO_MAX_INSTANCES];
 };
 
 #endif //  __AP_BARO_PX4_H__
