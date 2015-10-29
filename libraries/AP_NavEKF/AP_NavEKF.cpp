@@ -466,7 +466,7 @@ bool NavEKF::healthy(void) const
     }
     // barometer and position innovations must be within limits when on-ground
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (!vehicleArmed && (fabsf(innovVelPos[5]) > 1.0f || horizErrSq > 1.0f)) {
+    if (!vehicleArmed && (!hgtHealth || fabsf(hgtInnovFiltState) > 1.0f || horizErrSq > 2.0f)) {
         return false;
     }
 
@@ -2169,17 +2169,26 @@ void NavEKF::FuseVelPosNED()
         if (fuseHgtData) {
             // calculate height innovations
             innovVelPos[5] = statesAtHgtTime.position.z - observation[5];
-
+            // calculate the innovation variance
             varInnovVelPos[5] = P[9][9] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
-            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime) > hgtRetryTime;
+            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime;
             // Fuse height data if healthy or timed out or in constant position mode
             if (hgtHealth || hgtTimeout || constPosMode) {
+                // Calculate a filtered value to be used by pre-flight health checks
+                // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
+                if (!vehicleArmed) {
+                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
+                    const float hgtInnovFiltTC = 2.0f;
+                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
+                    hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
+                }
+                // declare height healthy and able to be fused
+                lastHgtPassTime_ms = imuSampleTime_ms;
                 hgtHealth = true;
-                lastHgtPassTime = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step
                 if (hgtTimeout) {
                     ResetHeight();
@@ -4746,7 +4755,7 @@ void NavEKF::InitialiseVariables()
     lastVelPassTime = imuSampleTime_ms;
     lastPosPassTime = imuSampleTime_ms;
     lastPosFailTime = 0;
-    lastHgtPassTime = imuSampleTime_ms;
+    lastHgtPassTime_ms = imuSampleTime_ms;
     lastTasPassTime = imuSampleTime_ms;
     lastStateStoreTime_ms = imuSampleTime_ms;
     lastFixTime_ms = 0;
@@ -4862,6 +4871,7 @@ void NavEKF::InitialiseVariables()
     delAngBiasAtArming.zero();
     posResetNE.zero();
     velResetNE.zero();
+    hgtInnovFiltState = 0.0f;
 }
 
 // return true if we should use the airspeed sensor
