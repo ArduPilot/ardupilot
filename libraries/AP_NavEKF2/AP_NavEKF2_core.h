@@ -531,10 +531,6 @@ private:
     // return true if the vehicle code has requested the filter to be ready for flight
     bool readyToUseGPS(void) const;
 
-    // decay GPS horizontal position offset to close to zero at a rate of 1 m/s
-    // this allows large GPS position jumps to be accomodated gradually
-    void decayGpsOffset(void);
-
     // Check for filter divergence
     void checkDivergence(void);
 
@@ -708,7 +704,6 @@ private:
     Vector8 SQ;                     // intermediate variables used to calculate predicted covariance matrix
     Vector23 SPP;                   // intermediate variables used to calculate predicted covariance matrix
     bool yawAligned;                // true when the yaw angle has been aligned
-    Vector2f gpsPosGlitchOffsetNE;  // offset applied to GPS data in the NE direction to compensate for rapid changes in GPS solution
     Vector2f lastKnownPositionNE;   // last known position
     uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
@@ -720,7 +715,6 @@ private:
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
     bool firstMagYawInit;           // true when the first post takeoff initialisation of earth field and yaw angle has been performed
     bool secondMagYawInit;          // true when the second post takeoff initialisation of earth field and yaw angle has been performed
-    Vector2f gpsVelGlitchOffset;    // Offset applied to the GPS velocity when the gltch radius is being  decayed back to zero
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     bool isAiding;                  // true when the filter is fusing position, velocity or flow measurements
     bool prevIsAiding;              // isAiding from previous frame

@@ -54,8 +54,8 @@ void NavEKF2_core::FuseAirspeed()
     vwn = stateStruct.wind_vel.x;
     vwe = stateStruct.wind_vel.y;
 
-    // calculate the predicted airspeed, compensating for bias in GPS velocity when we are pulling a glitch offset back in
-    VtasPred = pythagorous3((ve - gpsVelGlitchOffset.y - vwe) , (vn - gpsVelGlitchOffset.x - vwn) , vd);
+    // calculate the predicted airspeed
+    VtasPred = pythagorous3((ve - vwe) , (vn - vwn) , vd);
     // perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
@@ -330,9 +330,9 @@ void NavEKF2_core::FuseSideslip()
     vwn = stateStruct.wind_vel.x;
     vwe = stateStruct.wind_vel.y;
 
-    // calculate predicted wind relative velocity in NED, compensating for offset in velcity when we are pulling a GPS glitch offset back in
-    vel_rel_wind.x = vn - vwn - gpsVelGlitchOffset.x;
-    vel_rel_wind.y = ve - vwe - gpsVelGlitchOffset.y;
+    // calculate predicted wind relative velocity in NED
+    vel_rel_wind.x = vn - vwn;
+    vel_rel_wind.y = ve - vwe;
     vel_rel_wind.z = vd;
 
     // rotate into body axes

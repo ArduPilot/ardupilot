@@ -531,9 +531,6 @@ void NavEKF2_core::readGpsData()
                 }
             }
 
-            // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
-            decayGpsOffset();
-
             // save measurement to buffer to be fused later
             StoreGPS();
 
@@ -583,10 +580,6 @@ void NavEKF2_core::readGpsData()
 
                     // put the filter into constant position mode
                     PV_AidingMode = AID_NONE;
-
-                    // reset all glitch states
-                    gpsPosGlitchOffsetNE.zero();
-                    gpsVelGlitchOffset.zero();
 
                     // Reset the velocity and position states
                     ResetVelocity();
@@ -651,34 +644,6 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
         return true;
     }
     return false;
-}
-
-
-// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
-// limit radius to a maximum of 50m
-void NavEKF2_core::decayGpsOffset()
-{
-    float offsetDecaySpd;
-    if (assume_zero_sideslip()) {
-        offsetDecaySpd = 5.0f;
-    } else {
-        offsetDecaySpd = 1.0f;
-    }
-    float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
-    lastDecayTime_ms = imuSampleTime_ms;
-    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
-    // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
-    if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
-        // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
-        gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
-        // calculate scale factor to be applied to both offset components
-        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 50.0f) / offsetRadius;
-        gpsPosGlitchOffsetNE.x *= scaleFactor;
-        gpsPosGlitchOffsetNE.y *= scaleFactor;
-    } else {
-        gpsVelGlitchOffset.zero();
-        gpsPosGlitchOffsetNE.zero();
-    }
 }
 
 
