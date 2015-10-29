@@ -282,11 +282,11 @@ public:
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos);
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
 
     // return the amount of NE velocity change due to the last velocity reset in metres/sec
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel);
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
