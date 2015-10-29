@@ -2154,8 +2154,10 @@ void NavEKF::FuseVelPosNED()
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime;
-            // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || constPosMode) {
+            // Fuse height data if healthy
+            // Force a reset if timed out to prevent the possibility of inertial errors causing persistent loss of height reference
+            // Force fusion in constant position mode on the ground to allow large accelerometer biases to be learned without rejecting barometer
+            if (hgtHealth || hgtTimeout || (constPosMode && !vehicleArmed)) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (!vehicleArmed) {
