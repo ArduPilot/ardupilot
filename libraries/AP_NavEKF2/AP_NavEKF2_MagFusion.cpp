@@ -149,8 +149,8 @@ void NavEKF2_core::SelectMagFusion()
         // If we haven't performed the first airborne magnetic field update or have inhibited magnetic field learning, then we use the simple method of declination to maintain heading
         if(inhibitMagStates) {
             fuseCompass();
-            magHealth = true;
-            magTimeout = false;
+            // zero the test ratio output from the inactive 3-axis magneteometer fusion
+            magTestRatio.zero();
         } else {
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
@@ -163,6 +163,8 @@ void NavEKF2_core::SelectMagFusion()
                 FuseMagnetometer();
                 hal.util->perf_end(_perf_test[0]);
             }
+            // zero the test ratio output from the inactive simple magnetometer yaw fusion
+            yawTestRatio = 0.0f;
         }
     }
 
@@ -650,6 +652,21 @@ void NavEKF2_core::fuseCompass()
         innovation = 0.5f;
     } else if (innovation < -0.5f) {
         innovation = -0.5f;
+    }
+
+    // calculate the innovation test ratio
+    yawTestRatio = sq(innovation) / (sq(frontend._magInnovGate) * varInnov);
+
+    // Declare the magnetometer unhealthy if the innovation test fails
+    if (yawTestRatio > 1.0f) {
+        magHealth = false;
+        // On the ground a large innovation could be due to large initial gyro bias or magnetic interference from nearby objects
+        // If we are flying, then it is more likely due to a magnetometer fault and we should not fuse the data
+        if (inFlight) {
+            return;
+        }
+    } else {
+        magHealth = true;
     }
 
     // correct the state vector
