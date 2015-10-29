@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fenv.h>
+#include "fenv_polyfill.h"
 #include <signal.h>
 #include <pthread.h>
 

@@ -24,6 +24,7 @@
 #include "../AP_ADC/AP_ADC.h"
 #include <SITL_State.h>
 #include <fenv.h>
+#include "fenv_polyfill.h"
 
 extern const AP_HAL::HAL& hal;
 
