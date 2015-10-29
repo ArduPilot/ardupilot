@@ -48,6 +48,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _accel_z_cms(POSCONTROL_ACCEL_Z),
     _accel_last_z_cms(0.0f),
     _accel_cms(POSCONTROL_ACCEL_XY),
+    _jerk_cmsss(POSCONTROL_JERK_LIMIT_CMSSS),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
@@ -920,7 +921,7 @@ void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler, bo
     }
 
     // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
-    float max_delta_accel = dt * POSCONTROL_JERK_LIMIT_CMSSS;
+    float max_delta_accel = dt * _jerk_cmsss;
 
     Vector2f accel_in(_accel_target.x, _accel_target.y);
     Vector2f accel_change = accel_in-_accel_target_jerk_limited;

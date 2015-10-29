@@ -22,6 +22,7 @@
 #define POSCONTROL_STOPPING_DIST_Z_MAX          200.0f  // max stopping distance vertically   
                                                         // should be 1.5 times larger than POSCONTROL_ACCELERATION.
                                                         // max acceleration = max lean angle * 980 * pi / 180.  i.e. 23deg * 980 * 3.141 / 180 = 393 cm/s/s
+#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // default jerk limit on horizontal acceleration (unit: m/s/s/s)
 
 #define POSCONTROL_SPEED                        500.0f  // default horizontal speed in cm/s
 #define POSCONTROL_SPEED_DOWN                  -150.0f  // default descent rate in cm/s
@@ -39,7 +40,6 @@
 
 #define POSCONTROL_VEL_ERROR_CUTOFF_FREQ        4.0f    // low-pass filter on velocity error (unit: hz)
 #define POSCONTROL_THROTTLE_CUTOFF_FREQ         2.0f    // low-pass filter on accel error (unit: hz)
-#define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // jerk limit on horizontal acceleration (unit: m/s/s/s)
 #define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // low-pass filter on acceleration (unit: hz)
 #define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
 
@@ -191,6 +191,10 @@ public:
     ///     leash length will be recalculated the next time update_xy_controller() is called
     void set_speed_xy(float speed_cms);
     float get_speed_xy() const { return _speed_cms; }
+
+    /// set_jerk_xy - set max horizontal jerk in cm/s/s/s
+    void set_jerk_xy(float jerk_cmsss) { _jerk_cmsss = jerk_cmsss; }
+    void set_jerk_xy_to_default() { _jerk_cmsss = POSCONTROL_JERK_LIMIT_CMSSS; }
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration
     ///     should be called whenever the speed, acceleration or position kP is modified
@@ -377,6 +381,7 @@ private:
     float       _accel_z_cms;           // max vertical acceleration in cm/s/s
     float       _accel_last_z_cms;      // max vertical acceleration in cm/s/s
     float       _accel_cms;             // max horizontal acceleration in cm/s/s
+    float       _jerk_cmsss;            // max horizontal jerk in cm/s/s/s
     float       _leash;                 // horizontal leash length in cm.  target will never be further than this distance from the vehicle
     float       _leash_down_z;          // vertical leash down in cm.  target will never be further than this distance below the vehicle
     float       _leash_up_z;            // vertical leash up in cm.  target will never be further than this distance above the vehicle
