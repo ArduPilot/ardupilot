@@ -81,7 +81,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
 
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
     // This enables us to handle large changes to the external magnetic field environment that occur before arming
-    if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f) || !consistentMagData) {
+    if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
         magYawResetTimer_ms = imuSampleTime_ms;
     }
     if (imuSampleTime_ms - magYawResetTimer_ms > 5000) {
@@ -96,7 +96,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend._gpsCheck & MASK_GPS_YAW_ERR)) {
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend._gpsCheck & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;
@@ -106,9 +106,10 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (yawFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "Mag yaw error x=%.1f y=%.1f",
+                           "Mag yaw error x=%.1f y=%.1f yaw=%.1f",
                            (double)magTestRatio.x,
-                           (double)magTestRatio.y);
+                           (double)magTestRatio.y,
+                           (double)yawTestRatio);
         gpsCheckStatus.bad_yaw = true;
     } else {
         gpsCheckStatus.bad_yaw = false;

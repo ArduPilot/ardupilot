@@ -343,9 +343,10 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     velVar   = sqrtf(velTestRatio);
     posVar   = sqrtf(posTestRatio);
     hgtVar   = sqrtf(hgtTestRatio);
-    magVar.x = sqrtf(magTestRatio.x);
-    magVar.y = sqrtf(magTestRatio.y);
-    magVar.z = sqrtf(magTestRatio.z);
+    // If we are using simple compass yaw fusion, populate all three components with the yaw test ratio to provide an equivalent output
+    magVar.x = sqrtf(max(magTestRatio.x,yawTestRatio));
+    magVar.y = sqrtf(max(magTestRatio.y,yawTestRatio));
+    magVar.z = sqrtf(max(magTestRatio.z,yawTestRatio));
     tasVar   = sqrtf(tasTestRatio);
     offset   = posResetNE;
 }
