@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_serial_control_t
 {
- uint32_t baudrate; ///< Baudrate of transfer. Zero means no change.
- uint16_t timeout; ///< Timeout for reply data in milliseconds
- uint8_t device; ///< See SERIAL_CONTROL_DEV enum
- uint8_t flags; ///< See SERIAL_CONTROL_FLAG enum
- uint8_t count; ///< how many bytes in this transfer
- uint8_t data[70]; ///< serial data
+ uint32_t baudrate; /*< Baudrate of transfer. Zero means no change.*/
+ uint16_t timeout; /*< Timeout for reply data in milliseconds*/
+ uint8_t device; /*< See SERIAL_CONTROL_DEV enum*/
+ uint8_t flags; /*< See SERIAL_CONTROL_FLAG enum*/
+ uint8_t count; /*< how many bytes in this transfer*/
+ uint8_t data[70]; /*< serial data*/
 } mavlink_serial_control_t;
 
 #define MAVLINK_MSG_ID_SERIAL_CONTROL_LEN 79

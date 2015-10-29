@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_compassmot_status_t
 {
- float current; ///< current (amps)
- float CompensationX; ///< Motor Compensation X
- float CompensationY; ///< Motor Compensation Y
- float CompensationZ; ///< Motor Compensation Z
- uint16_t throttle; ///< throttle (percent*10)
- uint16_t interference; ///< interference (percent)
+ float current; /*< current (amps)*/
+ float CompensationX; /*< Motor Compensation X*/
+ float CompensationY; /*< Motor Compensation Y*/
+ float CompensationZ; /*< Motor Compensation Z*/
+ uint16_t throttle; /*< throttle (percent*10)*/
+ uint16_t interference; /*< interference (percent)*/
 } mavlink_compassmot_status_t;
 
 #define MAVLINK_MSG_ID_COMPASSMOT_STATUS_LEN 20

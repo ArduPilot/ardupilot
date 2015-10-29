@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_gimbal_report_factory_tests_progress_t
 {
- uint8_t test; ///< Which factory test is currently running
- uint8_t test_section; ///< Which section of the test is currently running.  The meaning of this is test-dependent
- uint8_t test_section_progress; ///< The progress of the current test section, 0x64=100%
- uint8_t test_status; ///< The status of the currently executing test section.  The meaning of this is test and section-dependent
+ uint8_t test; /*< Which factory test is currently running*/
+ uint8_t test_section; /*< Which section of the test is currently running.  The meaning of this is test-dependent*/
+ uint8_t test_section_progress; /*< The progress of the current test section, 0x64=100%*/
+ uint8_t test_status; /*< The status of the currently executing test section.  The meaning of this is test and section-dependent*/
 } mavlink_gimbal_report_factory_tests_progress_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_REPORT_FACTORY_TESTS_PROGRESS_LEN 4

@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_local_position_ned_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- float x; ///< X Position
- float y; ///< Y Position
- float z; ///< Z Position
- float vx; ///< X Speed
- float vy; ///< Y Speed
- float vz; ///< Z Speed
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ float x; /*< X Position*/
+ float y; /*< Y Position*/
+ float z; /*< Z Position*/
+ float vx; /*< X Speed*/
+ float vy; /*< Y Speed*/
+ float vz; /*< Z Speed*/
 } mavlink_local_position_ned_t;
 
 #define MAVLINK_MSG_ID_LOCAL_POSITION_NED_LEN 28

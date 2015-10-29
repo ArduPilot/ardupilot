@@ -4,20 +4,20 @@
 
 typedef struct __mavlink_gimbal_set_factory_parameters_t
 {
- uint32_t magic_1; ///< Magic number 1 for validation
- uint32_t magic_2; ///< Magic number 2 for validation
- uint32_t magic_3; ///< Magic number 3 for validation
- uint32_t serial_number_pt_1; ///< Unit Serial Number Part 1 (part code, design, language/country)
- uint32_t serial_number_pt_2; ///< Unit Serial Number Part 2 (option, year, month)
- uint32_t serial_number_pt_3; ///< Unit Serial Number Part 3 (incrementing serial number per month)
- uint16_t assembly_year; ///< Assembly Date Year
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t assembly_month; ///< Assembly Date Month
- uint8_t assembly_day; ///< Assembly Date Day
- uint8_t assembly_hour; ///< Assembly Time Hour
- uint8_t assembly_minute; ///< Assembly Time Minute
- uint8_t assembly_second; ///< Assembly Time Second
+ uint32_t magic_1; /*< Magic number 1 for validation*/
+ uint32_t magic_2; /*< Magic number 2 for validation*/
+ uint32_t magic_3; /*< Magic number 3 for validation*/
+ uint32_t serial_number_pt_1; /*< Unit Serial Number Part 1 (part code, design, language/country)*/
+ uint32_t serial_number_pt_2; /*< Unit Serial Number Part 2 (option, year, month)*/
+ uint32_t serial_number_pt_3; /*< Unit Serial Number Part 3 (incrementing serial number per month)*/
+ uint16_t assembly_year; /*< Assembly Date Year*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t assembly_month; /*< Assembly Date Month*/
+ uint8_t assembly_day; /*< Assembly Date Day*/
+ uint8_t assembly_hour; /*< Assembly Time Hour*/
+ uint8_t assembly_minute; /*< Assembly Time Minute*/
+ uint8_t assembly_second; /*< Assembly Time Second*/
 } mavlink_gimbal_set_factory_parameters_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_SET_FACTORY_PARAMETERS_LEN 33

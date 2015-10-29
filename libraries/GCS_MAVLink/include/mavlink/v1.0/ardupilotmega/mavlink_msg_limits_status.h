@@ -4,15 +4,15 @@
 
 typedef struct __mavlink_limits_status_t
 {
- uint32_t last_trigger; ///< time of last breach in milliseconds since boot
- uint32_t last_action; ///< time of last recovery action in milliseconds since boot
- uint32_t last_recovery; ///< time of last successful recovery in milliseconds since boot
- uint32_t last_clear; ///< time of last all-clear in milliseconds since boot
- uint16_t breach_count; ///< number of fence breaches
- uint8_t limits_state; ///< state of AP_Limits, (see enum LimitState, LIMITS_STATE)
- uint8_t mods_enabled; ///< AP_Limit_Module bitfield of enabled modules, (see enum moduleid or LIMIT_MODULE)
- uint8_t mods_required; ///< AP_Limit_Module bitfield of required modules, (see enum moduleid or LIMIT_MODULE)
- uint8_t mods_triggered; ///< AP_Limit_Module bitfield of triggered modules, (see enum moduleid or LIMIT_MODULE)
+ uint32_t last_trigger; /*< time of last breach in milliseconds since boot*/
+ uint32_t last_action; /*< time of last recovery action in milliseconds since boot*/
+ uint32_t last_recovery; /*< time of last successful recovery in milliseconds since boot*/
+ uint32_t last_clear; /*< time of last all-clear in milliseconds since boot*/
+ uint16_t breach_count; /*< number of fence breaches*/
+ uint8_t limits_state; /*< state of AP_Limits, (see enum LimitState, LIMITS_STATE)*/
+ uint8_t mods_enabled; /*< AP_Limit_Module bitfield of enabled modules, (see enum moduleid or LIMIT_MODULE)*/
+ uint8_t mods_required; /*< AP_Limit_Module bitfield of required modules, (see enum moduleid or LIMIT_MODULE)*/
+ uint8_t mods_triggered; /*< AP_Limit_Module bitfield of triggered modules, (see enum moduleid or LIMIT_MODULE)*/
 } mavlink_limits_status_t;
 
 #define MAVLINK_MSG_ID_LIMITS_STATUS_LEN 22

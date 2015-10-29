@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_gps_global_origin_t
 {
- int32_t latitude; ///< Latitude (WGS84), in degrees * 1E7
- int32_t longitude; ///< Longitude (WGS84), in degrees * 1E7
- int32_t altitude; ///< Altitude (AMSL), in meters * 1000 (positive for up)
+ int32_t latitude; /*< Latitude (WGS84), in degrees * 1E7*/
+ int32_t longitude; /*< Longitude (WGS84), in degrees * 1E7*/
+ int32_t altitude; /*< Altitude (AMSL), in meters * 1000 (positive for up)*/
 } mavlink_gps_global_origin_t;
 
 #define MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN_LEN 12

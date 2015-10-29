@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_gimbal_perform_factory_tests_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_perform_factory_tests_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_PERFORM_FACTORY_TESTS_LEN 2

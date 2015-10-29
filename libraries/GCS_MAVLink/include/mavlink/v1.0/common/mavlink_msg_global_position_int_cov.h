@@ -4,17 +4,17 @@
 
 typedef struct __mavlink_global_position_int_cov_t
 {
- uint64_t time_utc; ///< Timestamp (microseconds since UNIX epoch) in UTC. 0 for unknown. Commonly filled by the precision time source of a GPS receiver.
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- int32_t lat; ///< Latitude, expressed as degrees * 1E7
- int32_t lon; ///< Longitude, expressed as degrees * 1E7
- int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters), above MSL
- int32_t relative_alt; ///< Altitude above ground in meters, expressed as * 1000 (millimeters)
- float vx; ///< Ground X Speed (Latitude), expressed as m/s
- float vy; ///< Ground Y Speed (Longitude), expressed as m/s
- float vz; ///< Ground Z Speed (Altitude), expressed as m/s
- float covariance[36]; ///< Covariance matrix (first six entries are the first ROW, next six entries are the second row, etc.)
- uint8_t estimator_type; ///< Class id of the estimator this estimate originated from.
+ uint64_t time_utc; /*< Timestamp (microseconds since UNIX epoch) in UTC. 0 for unknown. Commonly filled by the precision time source of a GPS receiver.*/
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ int32_t lat; /*< Latitude, expressed as degrees * 1E7*/
+ int32_t lon; /*< Longitude, expressed as degrees * 1E7*/
+ int32_t alt; /*< Altitude in meters, expressed as * 1000 (millimeters), above MSL*/
+ int32_t relative_alt; /*< Altitude above ground in meters, expressed as * 1000 (millimeters)*/
+ float vx; /*< Ground X Speed (Latitude), expressed as m/s*/
+ float vy; /*< Ground Y Speed (Longitude), expressed as m/s*/
+ float vz; /*< Ground Z Speed (Altitude), expressed as m/s*/
+ float covariance[36]; /*< Covariance matrix (first six entries are the first ROW, next six entries are the second row, etc.)*/
+ uint8_t estimator_type; /*< Class id of the estimator this estimate originated from.*/
 } mavlink_global_position_int_cov_t;
 
 #define MAVLINK_MSG_ID_GLOBAL_POSITION_INT_COV_LEN 185

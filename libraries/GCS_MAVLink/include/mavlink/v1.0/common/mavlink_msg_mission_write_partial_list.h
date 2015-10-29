@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_mission_write_partial_list_t
 {
- int16_t start_index; ///< Start index, 0 by default and smaller / equal to the largest index of the current onboard list.
- int16_t end_index; ///< End index, equal or greater than start index.
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ int16_t start_index; /*< Start index, 0 by default and smaller / equal to the largest index of the current onboard list.*/
+ int16_t end_index; /*< End index, equal or greater than start index.*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_mission_write_partial_list_t;
 
 #define MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST_LEN 6

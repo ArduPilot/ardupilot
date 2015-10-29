@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_scaled_pressure_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- float press_abs; ///< Absolute pressure (hectopascal)
- float press_diff; ///< Differential pressure 1 (hectopascal)
- int16_t temperature; ///< Temperature measurement (0.01 degrees celsius)
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ float press_abs; /*< Absolute pressure (hectopascal)*/
+ float press_diff; /*< Differential pressure 1 (hectopascal)*/
+ int16_t temperature; /*< Temperature measurement (0.01 degrees celsius)*/
 } mavlink_scaled_pressure_t;
 
 #define MAVLINK_MSG_ID_SCALED_PRESSURE_LEN 14

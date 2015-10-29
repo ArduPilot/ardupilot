@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_gimbal_home_offset_calibration_result_t
 {
- uint8_t calibration_result; ///< The result of the home offset calibration
+ uint8_t calibration_result; /*< The result of the home offset calibration*/
 } mavlink_gimbal_home_offset_calibration_result_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_HOME_OFFSET_CALIBRATION_RESULT_LEN 1

@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_terrain_report_t
 {
- int32_t lat; ///< Latitude (degrees *10^7)
- int32_t lon; ///< Longitude (degrees *10^7)
- float terrain_height; ///< Terrain height in meters AMSL
- float current_height; ///< Current vehicle height above lat/lon terrain height (meters)
- uint16_t spacing; ///< grid spacing (zero if terrain at this location unavailable)
- uint16_t pending; ///< Number of 4x4 terrain blocks waiting to be received or read from disk
- uint16_t loaded; ///< Number of 4x4 terrain blocks in memory
+ int32_t lat; /*< Latitude (degrees *10^7)*/
+ int32_t lon; /*< Longitude (degrees *10^7)*/
+ float terrain_height; /*< Terrain height in meters AMSL*/
+ float current_height; /*< Current vehicle height above lat/lon terrain height (meters)*/
+ uint16_t spacing; /*< grid spacing (zero if terrain at this location unavailable)*/
+ uint16_t pending; /*< Number of 4x4 terrain blocks waiting to be received or read from disk*/
+ uint16_t loaded; /*< Number of 4x4 terrain blocks in memory*/
 } mavlink_terrain_report_t;
 
 #define MAVLINK_MSG_ID_TERRAIN_REPORT_LEN 22

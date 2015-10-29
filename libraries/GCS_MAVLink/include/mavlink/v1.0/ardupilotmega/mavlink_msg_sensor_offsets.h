@@ -4,18 +4,18 @@
 
 typedef struct __mavlink_sensor_offsets_t
 {
- float mag_declination; ///< magnetic declination (radians)
- int32_t raw_press; ///< raw pressure from barometer
- int32_t raw_temp; ///< raw temperature from barometer
- float gyro_cal_x; ///< gyro X calibration
- float gyro_cal_y; ///< gyro Y calibration
- float gyro_cal_z; ///< gyro Z calibration
- float accel_cal_x; ///< accel X calibration
- float accel_cal_y; ///< accel Y calibration
- float accel_cal_z; ///< accel Z calibration
- int16_t mag_ofs_x; ///< magnetometer X offset
- int16_t mag_ofs_y; ///< magnetometer Y offset
- int16_t mag_ofs_z; ///< magnetometer Z offset
+ float mag_declination; /*< magnetic declination (radians)*/
+ int32_t raw_press; /*< raw pressure from barometer*/
+ int32_t raw_temp; /*< raw temperature from barometer*/
+ float gyro_cal_x; /*< gyro X calibration*/
+ float gyro_cal_y; /*< gyro Y calibration*/
+ float gyro_cal_z; /*< gyro Z calibration*/
+ float accel_cal_x; /*< accel X calibration*/
+ float accel_cal_y; /*< accel Y calibration*/
+ float accel_cal_z; /*< accel Z calibration*/
+ int16_t mag_ofs_x; /*< magnetometer X offset*/
+ int16_t mag_ofs_y; /*< magnetometer Y offset*/
+ int16_t mag_ofs_z; /*< magnetometer Z offset*/
 } mavlink_sensor_offsets_t;
 
 #define MAVLINK_MSG_ID_SENSOR_OFFSETS_LEN 42

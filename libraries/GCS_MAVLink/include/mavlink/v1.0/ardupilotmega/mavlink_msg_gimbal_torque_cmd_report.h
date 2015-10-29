@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_gimbal_torque_cmd_report_t
 {
- int16_t rl_torque_cmd; ///< Roll Torque Command
- int16_t el_torque_cmd; ///< Elevation Torque Command
- int16_t az_torque_cmd; ///< Azimuth Torque Command
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ int16_t rl_torque_cmd; /*< Roll Torque Command*/
+ int16_t el_torque_cmd; /*< Elevation Torque Command*/
+ int16_t az_torque_cmd; /*< Azimuth Torque Command*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_torque_cmd_report_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_TORQUE_CMD_REPORT_LEN 8

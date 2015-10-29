@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_ping_t
 {
- uint64_t time_usec; ///< Unix timestamp in microseconds or since system boot if smaller than MAVLink epoch (1.1.2009)
- uint32_t seq; ///< PING sequence
- uint8_t target_system; ///< 0: request ping from all receiving systems, if greater than 0: message is a ping response and number is the system id of the requesting system
- uint8_t target_component; ///< 0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system
+ uint64_t time_usec; /*< Unix timestamp in microseconds or since system boot if smaller than MAVLink epoch (1.1.2009)*/
+ uint32_t seq; /*< PING sequence*/
+ uint8_t target_system; /*< 0: request ping from all receiving systems, if greater than 0: message is a ping response and number is the system id of the requesting system*/
+ uint8_t target_component; /*< 0: request ping from all receiving components, if greater than 0: message is a ping response and number is the system id of the requesting system*/
 } mavlink_ping_t;
 
 #define MAVLINK_MSG_ID_PING_LEN 14

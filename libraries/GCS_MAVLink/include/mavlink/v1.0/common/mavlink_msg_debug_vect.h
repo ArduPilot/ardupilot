@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_debug_vect_t
 {
- uint64_t time_usec; ///< Timestamp
- float x; ///< x
- float y; ///< y
- float z; ///< z
- char name[10]; ///< Name
+ uint64_t time_usec; /*< Timestamp*/
+ float x; /*< x*/
+ float y; /*< y*/
+ float z; /*< z*/
+ char name[10]; /*< Name*/
 } mavlink_debug_vect_t;
 
 #define MAVLINK_MSG_ID_DEBUG_VECT_LEN 30

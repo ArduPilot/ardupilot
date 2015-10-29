@@ -4,17 +4,17 @@
 
 typedef struct __mavlink_autopilot_version_t
 {
- uint64_t capabilities; ///< bitmask of capabilities (see MAV_PROTOCOL_CAPABILITY enum)
- uint64_t uid; ///< UID if provided by hardware
- uint32_t flight_sw_version; ///< Firmware version number
- uint32_t middleware_sw_version; ///< Middleware version number
- uint32_t os_sw_version; ///< Operating system version number
- uint32_t board_version; ///< HW / board version (last 8 bytes should be silicon ID, if any)
- uint16_t vendor_id; ///< ID of the board vendor
- uint16_t product_id; ///< ID of the product
- uint8_t flight_custom_version[8]; ///< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.
- uint8_t middleware_custom_version[8]; ///< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.
- uint8_t os_custom_version[8]; ///< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.
+ uint64_t capabilities; /*< bitmask of capabilities (see MAV_PROTOCOL_CAPABILITY enum)*/
+ uint64_t uid; /*< UID if provided by hardware*/
+ uint32_t flight_sw_version; /*< Firmware version number*/
+ uint32_t middleware_sw_version; /*< Middleware version number*/
+ uint32_t os_sw_version; /*< Operating system version number*/
+ uint32_t board_version; /*< HW / board version (last 8 bytes should be silicon ID, if any)*/
+ uint16_t vendor_id; /*< ID of the board vendor*/
+ uint16_t product_id; /*< ID of the product*/
+ uint8_t flight_custom_version[8]; /*< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.*/
+ uint8_t middleware_custom_version[8]; /*< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.*/
+ uint8_t os_custom_version[8]; /*< Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.*/
 } mavlink_autopilot_version_t;
 
 #define MAVLINK_MSG_ID_AUTOPILOT_VERSION_LEN 60

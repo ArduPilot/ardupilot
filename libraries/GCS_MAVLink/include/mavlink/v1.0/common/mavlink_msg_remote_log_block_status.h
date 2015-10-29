@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_remote_log_block_status_t
 {
- uint32_t block_cnt; ///< log data block count
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t block_status; ///< 0:log data failed, 1:log received
+ uint32_t block_cnt; /*< log data block count*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t block_status; /*< 0:log data failed, 1:log received*/
 } mavlink_remote_log_block_status_t;
 
 #define MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS_LEN 7

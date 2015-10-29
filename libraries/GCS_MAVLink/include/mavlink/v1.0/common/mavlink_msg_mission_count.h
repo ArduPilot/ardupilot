@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_mission_count_t
 {
- uint16_t count; ///< Number of mission items in the sequence
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint16_t count; /*< Number of mission items in the sequence*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_mission_count_t;
 
 #define MAVLINK_MSG_ID_MISSION_COUNT_LEN 4

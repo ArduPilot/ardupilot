@@ -4,15 +4,15 @@
 
 typedef struct __mavlink_global_position_int_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- int32_t lat; ///< Latitude, expressed as * 1E7
- int32_t lon; ///< Longitude, expressed as * 1E7
- int32_t alt; ///< Altitude in meters, expressed as * 1000 (millimeters), AMSL (not WGS84 - note that virtually all GPS modules provide the AMSL as well)
- int32_t relative_alt; ///< Altitude above ground in meters, expressed as * 1000 (millimeters)
- int16_t vx; ///< Ground X Speed (Latitude), expressed as m/s * 100
- int16_t vy; ///< Ground Y Speed (Longitude), expressed as m/s * 100
- int16_t vz; ///< Ground Z Speed (Altitude), expressed as m/s * 100
- uint16_t hdg; ///< Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ int32_t lat; /*< Latitude, expressed as * 1E7*/
+ int32_t lon; /*< Longitude, expressed as * 1E7*/
+ int32_t alt; /*< Altitude in meters, expressed as * 1000 (millimeters), AMSL (not WGS84 - note that virtually all GPS modules provide the AMSL as well)*/
+ int32_t relative_alt; /*< Altitude above ground in meters, expressed as * 1000 (millimeters)*/
+ int16_t vx; /*< Ground X Speed (Latitude), expressed as m/s * 100*/
+ int16_t vy; /*< Ground Y Speed (Longitude), expressed as m/s * 100*/
+ int16_t vz; /*< Ground Z Speed (Altitude), expressed as m/s * 100*/
+ uint16_t hdg; /*< Compass heading in degrees * 100, 0.0..359.99 degrees. If unknown, set to: UINT16_MAX*/
 } mavlink_global_position_int_t;
 
 #define MAVLINK_MSG_ID_GLOBAL_POSITION_INT_LEN 28

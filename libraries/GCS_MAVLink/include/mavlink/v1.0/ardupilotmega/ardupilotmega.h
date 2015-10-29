@@ -16,11 +16,11 @@ extern "C" {
 // MESSAGE LENGTHS AND CRCS
 
 #ifndef MAVLINK_MESSAGE_LENGTHS
-#define MAVLINK_MESSAGE_LENGTHS {9, 31, 12, 0, 14, 28, 3, 32, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 20, 2, 25, 23, 30, 101, 22, 26, 16, 14, 28, 32, 28, 28, 22, 22, 21, 6, 6, 37, 4, 4, 2, 2, 4, 2, 2, 3, 13, 12, 37, 0, 0, 0, 27, 25, 0, 0, 0, 0, 0, 68, 26, 185, 181, 42, 6, 4, 0, 11, 18, 0, 0, 37, 20, 35, 33, 3, 0, 0, 0, 22, 39, 37, 53, 51, 53, 51, 0, 28, 56, 42, 33, 0, 0, 0, 0, 0, 0, 0, 26, 32, 32, 20, 32, 62, 44, 64, 84, 9, 254, 16, 0, 36, 44, 64, 22, 6, 14, 12, 97, 2, 2, 113, 35, 6, 79, 35, 35, 22, 13, 255, 14, 18, 43, 8, 22, 14, 36, 43, 41, 207, 7, 0, 0, 0, 0, 36, 60, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 28, 44, 3, 9, 22, 12, 18, 34, 66, 98, 8, 48, 19, 3, 20, 24, 29, 45, 4, 40, 2, 0, 0, 29, 0, 0, 0, 0, 27, 44, 22, 0, 0, 0, 0, 0, 0, 42, 14, 2, 3, 2, 1, 33, 1, 6, 2, 4, 2, 3, 2, 8, 1, 3, 2, 4, 2, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 254, 36, 30, 18, 18, 51, 9, 0}
+#define MAVLINK_MESSAGE_LENGTHS {9, 31, 12, 0, 14, 28, 3, 32, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 20, 2, 25, 23, 30, 101, 22, 26, 16, 14, 28, 32, 28, 28, 22, 22, 21, 6, 6, 37, 4, 4, 2, 2, 4, 2, 2, 3, 13, 12, 37, 0, 0, 0, 27, 25, 0, 0, 0, 0, 0, 68, 26, 185, 181, 42, 6, 4, 0, 11, 18, 0, 0, 37, 20, 35, 33, 3, 0, 0, 0, 22, 39, 37, 53, 51, 53, 51, 0, 28, 56, 42, 33, 0, 0, 0, 0, 0, 0, 0, 26, 32, 32, 20, 32, 62, 44, 64, 84, 9, 254, 16, 0, 36, 44, 64, 22, 6, 14, 12, 97, 2, 2, 113, 35, 6, 79, 35, 35, 22, 13, 255, 14, 18, 43, 8, 22, 14, 36, 43, 41, 207, 7, 0, 0, 0, 0, 36, 60, 0, 42, 8, 4, 12, 15, 13, 6, 15, 14, 0, 12, 3, 8, 28, 44, 3, 9, 22, 12, 18, 34, 66, 98, 8, 48, 19, 3, 20, 24, 29, 45, 4, 40, 2, 0, 0, 29, 0, 0, 0, 0, 27, 44, 22, 0, 0, 0, 0, 0, 0, 42, 14, 2, 3, 2, 1, 33, 1, 6, 2, 4, 2, 3, 2, 8, 3, 3, 6, 7, 2, 0, 0, 0, 0, 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 254, 36, 30, 18, 18, 51, 9, 0}
 #endif
 
 #ifndef MAVLINK_MESSAGE_CRCS
-#define MAVLINK_MESSAGE_CRCS {50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 78, 0, 0, 0, 15, 3, 0, 0, 0, 0, 0, 153, 183, 51, 82, 118, 148, 21, 0, 243, 124, 0, 0, 38, 20, 158, 152, 143, 0, 0, 0, 106, 49, 22, 143, 140, 5, 150, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 93, 138, 108, 32, 185, 84, 34, 0, 124, 237, 4, 76, 128, 56, 116, 134, 237, 203, 250, 87, 203, 220, 25, 226, 46, 29, 223, 85, 6, 229, 203, 1, 195, 109, 168, 181, 34, 0, 0, 0, 0, 0, 154, 178, 0, 134, 219, 208, 188, 84, 22, 19, 21, 134, 0, 78, 68, 189, 127, 154, 21, 21, 144, 1, 234, 73, 181, 22, 83, 167, 138, 234, 240, 47, 189, 52, 174, 229, 85, 0, 0, 72, 0, 0, 0, 0, 92, 36, 71, 0, 0, 0, 0, 0, 0, 134, 205, 94, 128, 54, 63, 112, 201, 221, 226, 238, 103, 235, 14, 69, 77, 50, 163, 115, 47, 0, 0, 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 204, 49, 170, 44, 83, 46, 0}
+#define MAVLINK_MESSAGE_CRCS {50, 124, 137, 0, 237, 217, 104, 119, 0, 0, 0, 89, 0, 0, 0, 0, 0, 0, 0, 0, 214, 159, 220, 168, 24, 23, 170, 144, 67, 115, 39, 246, 185, 104, 237, 244, 222, 212, 9, 254, 230, 28, 28, 132, 221, 232, 11, 153, 41, 39, 78, 0, 0, 0, 15, 3, 0, 0, 0, 0, 0, 153, 183, 51, 82, 118, 148, 21, 0, 243, 124, 0, 0, 38, 20, 158, 152, 143, 0, 0, 0, 106, 49, 22, 143, 140, 5, 150, 0, 231, 183, 63, 54, 0, 0, 0, 0, 0, 0, 0, 175, 102, 158, 208, 56, 93, 138, 108, 32, 185, 84, 34, 0, 124, 237, 4, 76, 128, 56, 116, 134, 237, 203, 250, 87, 203, 220, 25, 226, 46, 29, 223, 85, 6, 229, 203, 1, 195, 109, 168, 181, 34, 0, 0, 0, 0, 0, 154, 178, 0, 134, 219, 208, 188, 84, 22, 19, 21, 134, 0, 78, 68, 189, 127, 154, 21, 21, 144, 1, 234, 73, 181, 22, 83, 167, 138, 234, 240, 47, 189, 52, 174, 229, 85, 0, 0, 72, 0, 0, 0, 0, 92, 36, 71, 0, 0, 0, 0, 0, 0, 134, 205, 94, 128, 54, 63, 112, 201, 221, 226, 238, 103, 235, 14, 69, 101, 50, 202, 17, 162, 0, 0, 0, 0, 0, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 204, 49, 170, 44, 83, 46, 0}
 #endif
 
 #ifndef MAVLINK_MESSAGE_INFO
@@ -34,7 +34,7 @@ extern "C" {
 // ENUM DEFINITIONS
 
 
-/** @brief  */
+/** @brief Commands to be executed by the MAV. They can be executed on user request, or as part of a mission script. If the action is used in a mission, the parameter mapping to the waypoint/mission message is as follows: Param 1, Param 2, Param 3, Param 4, X: Param 5, Y:Param 6, Z:Param 7. This command list is similar what ARINC 424 is for commercial aircraft: A data format how to interpret waypoint/mission data. */
 #ifndef HAVE_ENUM_MAV_CMD
 #define HAVE_ENUM_MAV_CMD
 typedef enum MAV_CMD
@@ -285,24 +285,31 @@ typedef enum GOPRO_HEARTBEAT_STATUS
 {
 	GOPRO_HEARTBEAT_STATUS_DISCONNECTED=0, /* No GoPro connected | */
 	GOPRO_HEARTBEAT_STATUS_INCOMPATIBLE=1, /* The detected GoPro is not HeroBus compatible | */
-	GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_OFF=2, /* A HeroBus compatible GoPro is connected | */
-	GOPRO_HEARTBEAT_STATUS_CONNECTED_POWER_ON=3, /* A HeroBus compatible GoPro is connected | */
-	GOPRO_HEARTBEAT_STATUS_RECORDING=4, /* A HeroBus compatible GoPro is connected and recording | */
-	GOPRO_HEARTBEAT_STATUS_ERR_OVERTEMP=5, /* A HeroBus compatible GoPro is connected and overtemperature | */
-	GOPRO_HEARTBEAT_STATUS_ERR_STORAGE=6, /* A HeroBus compatible GoPro is connected and storage is missing or full | */
-	GOPRO_HEARTBEAT_STATUS_ENUM_END=7, /*  | */
+	GOPRO_HEARTBEAT_STATUS_CONNECTED=2, /* A HeroBus compatible GoPro is connected | */
+	GOPRO_HEARTBEAT_STATUS_ERROR=3, /* An unrecoverable error was encountered with the connected GoPro, it may require a power cycle | */
+	GOPRO_HEARTBEAT_STATUS_ENUM_END=4, /*  | */
 } GOPRO_HEARTBEAT_STATUS;
 #endif
 
 /** @brief  */
-#ifndef HAVE_ENUM_GOPRO_SET_RESPONSE_RESULT
-#define HAVE_ENUM_GOPRO_SET_RESPONSE_RESULT
-typedef enum GOPRO_SET_RESPONSE_RESULT
+#ifndef HAVE_ENUM_GOPRO_HEARTBEAT_FLAGS
+#define HAVE_ENUM_GOPRO_HEARTBEAT_FLAGS
+typedef enum GOPRO_HEARTBEAT_FLAGS
 {
-	GOPRO_SET_RESPONSE_RESULT_FAILURE=0, /* The write message with ID indicated failed | */
-	GOPRO_SET_RESPONSE_RESULT_SUCCESS=1, /* The write message with ID indicated succeeded | */
-	GOPRO_SET_RESPONSE_RESULT_ENUM_END=2, /*  | */
-} GOPRO_SET_RESPONSE_RESULT;
+	GOPRO_FLAG_RECORDING=1, /* GoPro is currently recording | */
+	GOPRO_HEARTBEAT_FLAGS_ENUM_END=2, /*  | */
+} GOPRO_HEARTBEAT_FLAGS;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_REQUEST_STATUS
+#define HAVE_ENUM_GOPRO_REQUEST_STATUS
+typedef enum GOPRO_REQUEST_STATUS
+{
+	GOPRO_REQUEST_SUCCESS=0, /* The write message with ID indicated succeeded | */
+	GOPRO_REQUEST_FAILED=1, /* The write message with ID indicated failed | */
+	GOPRO_REQUEST_STATUS_ENUM_END=2, /*  | */
+} GOPRO_REQUEST_STATUS;
 #endif
 
 /** @brief  */
@@ -315,9 +322,243 @@ typedef enum GOPRO_COMMAND
 	GOPRO_COMMAND_SHUTTER=2, /* (___/Set) | */
 	GOPRO_COMMAND_BATTERY=3, /* (Get/___) | */
 	GOPRO_COMMAND_MODEL=4, /* (Get/___) | */
-	GOPRO_COMMAND_REQUEST_FAILED=254, /* (Get/___) | */
-	GOPRO_COMMAND_ENUM_END=255, /*  | */
+	GOPRO_COMMAND_VIDEO_SETTINGS=5, /* (Get/Set) | */
+	GOPRO_COMMAND_LOW_LIGHT=6, /* (Get/Set) | */
+	GOPRO_COMMAND_PHOTO_RESOLUTION=7, /* (Get/Set) | */
+	GOPRO_COMMAND_PHOTO_BURST_RATE=8, /* (Get/Set) | */
+	GOPRO_COMMAND_PROTUNE=9, /* (Get/Set) | */
+	GOPRO_COMMAND_PROTUNE_WHITE_BALANCE=10, /* (Get/Set) Hero 3+ Only | */
+	GOPRO_COMMAND_PROTUNE_COLOUR=11, /* (Get/Set) Hero 3+ Only | */
+	GOPRO_COMMAND_PROTUNE_GAIN=12, /* (Get/Set) Hero 3+ Only | */
+	GOPRO_COMMAND_PROTUNE_SHARPNESS=13, /* (Get/Set) Hero 3+ Only | */
+	GOPRO_COMMAND_PROTUNE_EXPOSURE=14, /* (Get/Set) Hero 3+ Only | */
+	GOPRO_COMMAND_TIME=15, /* (Get/Set) | */
+	GOPRO_COMMAND_CHARGING=16, /* (Get/Set) | */
+	GOPRO_COMMAND_ENUM_END=17, /*  | */
 } GOPRO_COMMAND;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_CAPTURE_MODE
+#define HAVE_ENUM_GOPRO_CAPTURE_MODE
+typedef enum GOPRO_CAPTURE_MODE
+{
+	GOPRO_CAPTURE_MODE_VIDEO=0, /* Video mode | */
+	GOPRO_CAPTURE_MODE_PHOTO=1, /* Photo mode | */
+	GOPRO_CAPTURE_MODE_BURST=2, /* Burst mode, hero 3+ only | */
+	GOPRO_CAPTURE_MODE_TIME_LAPSE=3, /* Time lapse mode, hero 3+ only | */
+	GOPRO_CAPTURE_MODE_MULTI_SHOT=4, /* Multi shot mode, hero 4 only | */
+	GOPRO_CAPTURE_MODE_PLAYBACK=5, /* Playback mode, hero 4 only, silver only except when LCD or HDMI is connected to black | */
+	GOPRO_CAPTURE_MODE_SETUP=6, /* Playback mode, hero 4 only | */
+	GOPRO_CAPTURE_MODE_UNKNOWN=255, /* Mode not yet known | */
+	GOPRO_CAPTURE_MODE_ENUM_END=256, /*  | */
+} GOPRO_CAPTURE_MODE;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_RESOLUTION
+#define HAVE_ENUM_GOPRO_RESOLUTION
+typedef enum GOPRO_RESOLUTION
+{
+	GOPRO_RESOLUTION_480p=0, /* 848 x 480 (480p) | */
+	GOPRO_RESOLUTION_720p=1, /* 1280 x 720 (720p) | */
+	GOPRO_RESOLUTION_960p=2, /* 1280 x 960 (960p) | */
+	GOPRO_RESOLUTION_1080p=3, /* 1920 x 1080 (1080p) | */
+	GOPRO_RESOLUTION_1440p=4, /* 1920 x 1440 (1440p) | */
+	GOPRO_RESOLUTION_2_7k_17_9=5, /* 2704 x 1440 (2.7k-17:9) | */
+	GOPRO_RESOLUTION_2_7k_16_9=6, /* 2704 x 1524 (2.7k-16:9) | */
+	GOPRO_RESOLUTION_2_7k_4_3=7, /* 2704 x 2028 (2.7k-4:3) | */
+	GOPRO_RESOLUTION_4k_16_9=8, /* 3840 x 2160 (4k-16:9) | */
+	GOPRO_RESOLUTION_4k_17_9=9, /* 4096 x 2160 (4k-17:9) | */
+	GOPRO_RESOLUTION_720p_SUPERVIEW=10, /* 1280 x 720 (720p-SuperView) | */
+	GOPRO_RESOLUTION_1080p_SUPERVIEW=11, /* 1920 x 1080 (1080p-SuperView) | */
+	GOPRO_RESOLUTION_2_7k_SUPERVIEW=12, /* 2704 x 1520 (2.7k-SuperView) | */
+	GOPRO_RESOLUTION_4k_SUPERVIEW=13, /* 3840 x 2160 (4k-SuperView) | */
+	GOPRO_RESOLUTION_ENUM_END=14, /*  | */
+} GOPRO_RESOLUTION;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_FRAME_RATE
+#define HAVE_ENUM_GOPRO_FRAME_RATE
+typedef enum GOPRO_FRAME_RATE
+{
+	GOPRO_FRAME_RATE_12=0, /* 12 FPS | */
+	GOPRO_FRAME_RATE_15=1, /* 15 FPS | */
+	GOPRO_FRAME_RATE_24=2, /* 24 FPS | */
+	GOPRO_FRAME_RATE_25=3, /* 25 FPS | */
+	GOPRO_FRAME_RATE_30=4, /* 30 FPS | */
+	GOPRO_FRAME_RATE_48=5, /* 48 FPS | */
+	GOPRO_FRAME_RATE_50=6, /* 50 FPS | */
+	GOPRO_FRAME_RATE_60=7, /* 60 FPS | */
+	GOPRO_FRAME_RATE_80=8, /* 80 FPS | */
+	GOPRO_FRAME_RATE_90=9, /* 90 FPS | */
+	GOPRO_FRAME_RATE_100=10, /* 100 FPS | */
+	GOPRO_FRAME_RATE_120=11, /* 120 FPS | */
+	GOPRO_FRAME_RATE_240=12, /* 240 FPS | */
+	GOPRO_FRAME_RATE_12_5=13, /* 12.5 FPS | */
+	GOPRO_FRAME_RATE_ENUM_END=14, /*  | */
+} GOPRO_FRAME_RATE;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_FIELD_OF_VIEW
+#define HAVE_ENUM_GOPRO_FIELD_OF_VIEW
+typedef enum GOPRO_FIELD_OF_VIEW
+{
+	GOPRO_FIELD_OF_VIEW_WIDE=0, /* 0x00: Wide | */
+	GOPRO_FIELD_OF_VIEW_MEDIUM=1, /* 0x01: Medium | */
+	GOPRO_FIELD_OF_VIEW_NARROW=2, /* 0x02: Narrow | */
+	GOPRO_FIELD_OF_VIEW_ENUM_END=3, /*  | */
+} GOPRO_FIELD_OF_VIEW;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_VIDEO_SETTINGS_FLAGS
+#define HAVE_ENUM_GOPRO_VIDEO_SETTINGS_FLAGS
+typedef enum GOPRO_VIDEO_SETTINGS_FLAGS
+{
+	GOPRO_VIDEO_SETTINGS_TV_MODE=1, /* 0=NTSC, 1=PAL | */
+	GOPRO_VIDEO_SETTINGS_FLAGS_ENUM_END=2, /*  | */
+} GOPRO_VIDEO_SETTINGS_FLAGS;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PHOTO_RESOLUTION
+#define HAVE_ENUM_GOPRO_PHOTO_RESOLUTION
+typedef enum GOPRO_PHOTO_RESOLUTION
+{
+	GOPRO_PHOTO_RESOLUTION_5MP_MEDIUM=0, /* 5MP Medium | */
+	GOPRO_PHOTO_RESOLUTION_7MP_MEDIUM=1, /* 7MP Medium | */
+	GOPRO_PHOTO_RESOLUTION_7MP_WIDE=2, /* 7MP Wide | */
+	GOPRO_PHOTO_RESOLUTION_10MP_WIDE=3, /* 10MP Wide | */
+	GOPRO_PHOTO_RESOLUTION_12MP_WIDE=4, /* 12MP Wide | */
+	GOPRO_PHOTO_RESOLUTION_ENUM_END=5, /*  | */
+} GOPRO_PHOTO_RESOLUTION;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PROTUNE_WHITE_BALANCE
+#define HAVE_ENUM_GOPRO_PROTUNE_WHITE_BALANCE
+typedef enum GOPRO_PROTUNE_WHITE_BALANCE
+{
+	GOPRO_PROTUNE_WHITE_BALANCE_AUTO=0, /* Auto | */
+	GOPRO_PROTUNE_WHITE_BALANCE_3000K=1, /* 3000K | */
+	GOPRO_PROTUNE_WHITE_BALANCE_5500K=2, /* 5500K | */
+	GOPRO_PROTUNE_WHITE_BALANCE_6500K=3, /* 6500K | */
+	GOPRO_PROTUNE_WHITE_BALANCE_RAW=4, /* Camera Raw | */
+	GOPRO_PROTUNE_WHITE_BALANCE_ENUM_END=5, /*  | */
+} GOPRO_PROTUNE_WHITE_BALANCE;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PROTUNE_COLOUR
+#define HAVE_ENUM_GOPRO_PROTUNE_COLOUR
+typedef enum GOPRO_PROTUNE_COLOUR
+{
+	GOPRO_PROTUNE_COLOUR_STANDARD=0, /* Auto | */
+	GOPRO_PROTUNE_COLOUR_NEUTRAL=1, /* Neutral | */
+	GOPRO_PROTUNE_COLOUR_ENUM_END=2, /*  | */
+} GOPRO_PROTUNE_COLOUR;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PROTUNE_GAIN
+#define HAVE_ENUM_GOPRO_PROTUNE_GAIN
+typedef enum GOPRO_PROTUNE_GAIN
+{
+	GOPRO_PROTUNE_GAIN_400=0, /* ISO 400 | */
+	GOPRO_PROTUNE_GAIN_800=1, /* ISO 800 (Only Hero 4) | */
+	GOPRO_PROTUNE_GAIN_1600=2, /* ISO 1600 | */
+	GOPRO_PROTUNE_GAIN_3200=3, /* ISO 3200 (Only Hero 4) | */
+	GOPRO_PROTUNE_GAIN_6400=4, /* ISO 6400 | */
+	GOPRO_PROTUNE_GAIN_ENUM_END=5, /*  | */
+} GOPRO_PROTUNE_GAIN;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PROTUNE_SHARPNESS
+#define HAVE_ENUM_GOPRO_PROTUNE_SHARPNESS
+typedef enum GOPRO_PROTUNE_SHARPNESS
+{
+	GOPRO_PROTUNE_SHARPNESS_LOW=0, /* Low Sharpness | */
+	GOPRO_PROTUNE_SHARPNESS_MEDIUM=1, /* Medium Sharpness | */
+	GOPRO_PROTUNE_SHARPNESS_HIGH=2, /* High Sharpness | */
+	GOPRO_PROTUNE_SHARPNESS_ENUM_END=3, /*  | */
+} GOPRO_PROTUNE_SHARPNESS;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_PROTUNE_EXPOSURE
+#define HAVE_ENUM_GOPRO_PROTUNE_EXPOSURE
+typedef enum GOPRO_PROTUNE_EXPOSURE
+{
+	GOPRO_PROTUNE_EXPOSURE_NEG_5_0=0, /* -5.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_4_5=1, /* -4.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_4_0=2, /* -4.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_3_5=3, /* -3.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_3_0=4, /* -3.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_2_5=5, /* -2.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_2_0=6, /* -2.0 EV | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_1_5=7, /* -1.5 EV | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_1_0=8, /* -1.0 EV | */
+	GOPRO_PROTUNE_EXPOSURE_NEG_0_5=9, /* -0.5 EV | */
+	GOPRO_PROTUNE_EXPOSURE_ZERO=10, /* 0.0 EV | */
+	GOPRO_PROTUNE_EXPOSURE_POS_0_5=11, /* +0.5 EV | */
+	GOPRO_PROTUNE_EXPOSURE_POS_1_0=12, /* +1.0 EV | */
+	GOPRO_PROTUNE_EXPOSURE_POS_1_5=13, /* +1.5 EV | */
+	GOPRO_PROTUNE_EXPOSURE_POS_2_0=14, /* +2.0 EV | */
+	GOPRO_PROTUNE_EXPOSURE_POS_2_5=15, /* +2.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_POS_3_0=16, /* +3.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_POS_3_5=17, /* +3.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_POS_4_0=18, /* +4.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_POS_4_5=19, /* +4.5 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_POS_5_0=20, /* +5.0 EV (Hero 3+ Only) | */
+	GOPRO_PROTUNE_EXPOSURE_ENUM_END=21, /*  | */
+} GOPRO_PROTUNE_EXPOSURE;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_CHARGING
+#define HAVE_ENUM_GOPRO_CHARGING
+typedef enum GOPRO_CHARGING
+{
+	GOPRO_CHARGING_DISABLED=0, /* Charging disabled | */
+	GOPRO_CHARGING_ENABLED=1, /* Charging enabled | */
+	GOPRO_CHARGING_ENUM_END=2, /*  | */
+} GOPRO_CHARGING;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_MODEL
+#define HAVE_ENUM_GOPRO_MODEL
+typedef enum GOPRO_MODEL
+{
+	GOPRO_MODEL_UNKNOWN=0, /* Unknown gopro model | */
+	GOPRO_MODEL_HERO_3_PLUS_SILVER=1, /* Hero 3+ Silver (HeroBus not supported by GoPro) | */
+	GOPRO_MODEL_HERO_3_PLUS_BLACK=2, /* Hero 3+ Black | */
+	GOPRO_MODEL_HERO_4_SILVER=3, /* Hero 4 Silver | */
+	GOPRO_MODEL_HERO_4_BLACK=4, /* Hero 4 Black | */
+	GOPRO_MODEL_ENUM_END=5, /*  | */
+} GOPRO_MODEL;
+#endif
+
+/** @brief  */
+#ifndef HAVE_ENUM_GOPRO_BURST_RATE
+#define HAVE_ENUM_GOPRO_BURST_RATE
+typedef enum GOPRO_BURST_RATE
+{
+	GOPRO_BURST_RATE_3_IN_1_SECOND=0, /* 3 Shots / 1 Second | */
+	GOPRO_BURST_RATE_5_IN_1_SECOND=1, /* 5 Shots / 1 Second | */
+	GOPRO_BURST_RATE_10_IN_1_SECOND=2, /* 10 Shots / 1 Second | */
+	GOPRO_BURST_RATE_10_IN_2_SECOND=3, /* 10 Shots / 2 Second | */
+	GOPRO_BURST_RATE_10_IN_3_SECOND=4, /* 10 Shots / 3 Second (Hero 4 Only) | */
+	GOPRO_BURST_RATE_30_IN_1_SECOND=5, /* 30 Shots / 1 Second | */
+	GOPRO_BURST_RATE_30_IN_2_SECOND=6, /* 30 Shots / 2 Second | */
+	GOPRO_BURST_RATE_30_IN_3_SECOND=7, /* 30 Shots / 3 Second | */
+	GOPRO_BURST_RATE_30_IN_6_SECOND=8, /* 30 Shots / 6 Second | */
+	GOPRO_BURST_RATE_ENUM_END=9, /*  | */
+} GOPRO_BURST_RATE;
 #endif
 
 /** @brief  */

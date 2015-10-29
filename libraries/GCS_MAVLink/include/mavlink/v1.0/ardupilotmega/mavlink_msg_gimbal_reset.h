@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_gimbal_reset_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_gimbal_reset_t;
 
 #define MAVLINK_MSG_ID_GIMBAL_RESET_LEN 2

@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_gps_accuracy_t
 {
- float h_acc; ///< GPS-reported horizontal accuracy
- float s_acc; ///< GPS-reported speed accuracy
- float h_vel_filt; ///< GPS-reported, filtered horizontal velocity
- float v_vel_filt; ///< GPS-reported, filtered vertical velocity
- float p_drift; ///< GPS position drift
- uint8_t instance; ///< Which instance of GPS we're reporting on
- uint8_t ekf_check_mask; ///< Which fields pass EKF checks
+ float h_acc; /*< GPS-reported horizontal accuracy*/
+ float s_acc; /*< GPS-reported speed accuracy*/
+ float h_vel_filt; /*< GPS-reported, filtered horizontal velocity*/
+ float v_vel_filt; /*< GPS-reported, filtered vertical velocity*/
+ float p_drift; /*< GPS position drift*/
+ uint8_t instance; /*< Which instance of GPS we're reporting on*/
+ uint8_t ekf_check_mask; /*< Which fields pass EKF checks*/
 } mavlink_gps_accuracy_t;
 
 #define MAVLINK_MSG_ID_GPS_ACCURACY_LEN 22

@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_remote_log_data_block_t
 {
- uint32_t block_cnt; ///< log data block count
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t block_size; ///< size of log data block i.e. being sent
- uint8_t data[200]; ///< log data block
+ uint32_t block_cnt; /*< log data block count*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t block_size; /*< size of log data block i.e. being sent*/
+ uint8_t data[200]; /*< log data block*/
 } mavlink_remote_log_data_block_t;
 
 #define MAVLINK_MSG_ID_REMOTE_LOG_DATA_BLOCK_LEN 207

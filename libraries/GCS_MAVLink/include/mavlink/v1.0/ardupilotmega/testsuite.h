@@ -2512,11 +2512,13 @@ static void mavlink_test_gopro_heartbeat(uint8_t system_id, uint8_t component_id
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_gopro_heartbeat_t packet_in = {
-		5
+		5,72,139
     };
 	mavlink_gopro_heartbeat_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.status = packet_in.status;
+        	packet1.capture_mode = packet_in.capture_mode;
+        	packet1.flags = packet_in.flags;
         
         
 
@@ -2526,12 +2528,12 @@ static void mavlink_test_gopro_heartbeat(uint8_t system_id, uint8_t component_id
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_heartbeat_pack(system_id, component_id, &msg , packet1.status );
+	mavlink_msg_gopro_heartbeat_pack(system_id, component_id, &msg , packet1.status , packet1.capture_mode , packet1.flags );
 	mavlink_msg_gopro_heartbeat_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_heartbeat_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.status );
+	mavlink_msg_gopro_heartbeat_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.status , packet1.capture_mode , packet1.flags );
 	mavlink_msg_gopro_heartbeat_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -2544,7 +2546,7 @@ static void mavlink_test_gopro_heartbeat(uint8_t system_id, uint8_t component_id
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_heartbeat_send(MAVLINK_COMM_1 , packet1.status );
+	mavlink_msg_gopro_heartbeat_send(MAVLINK_COMM_1 , packet1.status , packet1.capture_mode , packet1.flags );
 	mavlink_msg_gopro_heartbeat_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
@@ -2600,13 +2602,14 @@ static void mavlink_test_gopro_get_response(uint8_t system_id, uint8_t component
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_gopro_get_response_t packet_in = {
-		5,72
+		5,72,{ 139, 140, 141, 142 }
     };
 	mavlink_gopro_get_response_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.cmd_id = packet_in.cmd_id;
-        	packet1.value = packet_in.value;
+        	packet1.status = packet_in.status;
         
+        	mav_array_memcpy(packet1.value, packet_in.value, sizeof(uint8_t)*4);
         
 
         memset(&packet2, 0, sizeof(packet2));
@@ -2615,12 +2618,12 @@ static void mavlink_test_gopro_get_response(uint8_t system_id, uint8_t component
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_get_response_pack(system_id, component_id, &msg , packet1.cmd_id , packet1.value );
+	mavlink_msg_gopro_get_response_pack(system_id, component_id, &msg , packet1.cmd_id , packet1.status , packet1.value );
 	mavlink_msg_gopro_get_response_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_get_response_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cmd_id , packet1.value );
+	mavlink_msg_gopro_get_response_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cmd_id , packet1.status , packet1.value );
 	mavlink_msg_gopro_get_response_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -2633,7 +2636,7 @@ static void mavlink_test_gopro_get_response(uint8_t system_id, uint8_t component
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_get_response_send(MAVLINK_COMM_1 , packet1.cmd_id , packet1.value );
+	mavlink_msg_gopro_get_response_send(MAVLINK_COMM_1 , packet1.cmd_id , packet1.status , packet1.value );
 	mavlink_msg_gopro_get_response_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
@@ -2644,15 +2647,15 @@ static void mavlink_test_gopro_set_request(uint8_t system_id, uint8_t component_
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_gopro_set_request_t packet_in = {
-		5,72,139,206
+		5,72,139,{ 206, 207, 208, 209 }
     };
 	mavlink_gopro_set_request_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.target_system = packet_in.target_system;
         	packet1.target_component = packet_in.target_component;
         	packet1.cmd_id = packet_in.cmd_id;
-        	packet1.value = packet_in.value;
         
+        	mav_array_memcpy(packet1.value, packet_in.value, sizeof(uint8_t)*4);
         
 
         memset(&packet2, 0, sizeof(packet2));
@@ -2695,7 +2698,7 @@ static void mavlink_test_gopro_set_response(uint8_t system_id, uint8_t component
 	mavlink_gopro_set_response_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         	packet1.cmd_id = packet_in.cmd_id;
-        	packet1.result = packet_in.result;
+        	packet1.status = packet_in.status;
         
         
 
@@ -2705,12 +2708,12 @@ static void mavlink_test_gopro_set_response(uint8_t system_id, uint8_t component
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_set_response_pack(system_id, component_id, &msg , packet1.cmd_id , packet1.result );
+	mavlink_msg_gopro_set_response_pack(system_id, component_id, &msg , packet1.cmd_id , packet1.status );
 	mavlink_msg_gopro_set_response_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_set_response_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cmd_id , packet1.result );
+	mavlink_msg_gopro_set_response_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.cmd_id , packet1.status );
 	mavlink_msg_gopro_set_response_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -2723,7 +2726,7 @@ static void mavlink_test_gopro_set_response(uint8_t system_id, uint8_t component
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-	mavlink_msg_gopro_set_response_send(MAVLINK_COMM_1 , packet1.cmd_id , packet1.result );
+	mavlink_msg_gopro_set_response_send(MAVLINK_COMM_1 , packet1.cmd_id , packet1.status );
 	mavlink_msg_gopro_set_response_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
