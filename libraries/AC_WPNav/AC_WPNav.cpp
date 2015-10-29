@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] PROGMEM = {
     // @DisplayName: Loiter maximum jerk
     // @Description: Loiter maximum jerk in cm/s/s/s
     // @Units: cm/s/s/s
-    // @Range: 500 2000
+    // @Range: 500 5000
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LOIT_JERK",   7, AC_WPNav, _loiter_jerk_max_cmsss, WPNAV_LOITER_JERK_MAX_DEFAULT),
