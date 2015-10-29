@@ -209,6 +209,9 @@ public:
     /// set_xy_target in cm from home
     void set_xy_target(float x, float y);
 
+    /// shift position target target in x, y axis
+    void shift_pos_xy_target(float x_cm, float y_cm);
+
     /// get_desired_velocity - returns xy desired velocity (i.e. feed forward) in cm/s in lat and lon direction
     const Vector3f& get_desired_velocity() { return _vel_desired; }
 

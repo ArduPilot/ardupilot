@@ -532,6 +532,19 @@ void AC_PosControl::set_xy_target(float x, float y)
     _pos_target.y = y;
 }
 
+/// shift position target target in x, y axis
+void AC_PosControl::shift_pos_xy_target(float x_cm, float y_cm)
+{
+    // move pos controller target
+    _pos_target.x += x_cm;
+    _pos_target.y += y_cm;
+
+    // disable feed forward
+    if (!is_zero(x_cm) || !is_zero(y_cm)) {
+        freeze_ff_xy();
+    }
+}
+
 /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
 void AC_PosControl::set_target_to_stopping_point_xy()
 {
