@@ -662,7 +662,7 @@ private:
     uint32_t lastVelPassTime;       // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime;       // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastPosFailTime;       // time stamp when GPS position measurement last failed innovation consistency check (msec)
-    uint32_t lastHgtPassTime;       // time stamp when height measurement last passed innovation consistency check (msec)
+    uint32_t lastHgtPassTime_ms;       // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
@@ -722,12 +722,12 @@ private:
     uint32_t lastConstPosFuseTime_ms;   // last time in msec the constant position constraint was applied
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
     float posDown;                  // Down position state used in calculation of posDownRate
-    Vector3f delAngBiasAtArming;      // value of the gyro delta angle bias at arming
     Vector2f posResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
     uint32_t lastPosReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
     Vector2f velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
-
+    Vector3f delAngBiasAtArming;    // value of the gyro delta angle bias at arming
+    float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
