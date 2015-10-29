@@ -740,6 +740,32 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
     return false;
 }
 
+// return the amount of NE position change in metres due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos)
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastPosNorthEastReset(pos);
+    case 2:
+        return EKF2.getLastPosNorthEastReset(pos);
+    }
+    return 0;
+}
+
+// return the amount of NE velocity change in metres/sec due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel)
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastVelNorthEastReset(vel);
+    case 2:
+        return EKF2.getLastVelNorthEastReset(vel);
+    }
+    return 0;
+}
+
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
