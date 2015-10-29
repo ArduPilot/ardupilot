@@ -5584,7 +5584,7 @@ void NavEKF::alignMagStateDeclination()
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF::getLastYawResetAngle(float &yawAng)
+uint32_t NavEKF::getLastYawResetAngle(float &yawAng) const
 {
     yawAng = yawResetAngle;
     return lastYawReset_ms;
