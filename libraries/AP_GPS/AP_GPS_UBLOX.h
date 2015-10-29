@@ -50,6 +50,16 @@
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
 #define UBX_MSG_TYPES 2
 
+//Configuration Sub-Sections
+#define SAVE_CFG_IO     (1<<0)
+#define SAVE_CFG_MSG    (1<<1)
+#define SAVE_CFG_INF    (1<<2)
+#define SAVE_CFG_NAV    (1<<3)
+#define SAVE_CFG_RXM    (1<<4)
+#define SAVE_CFG_RINV   (1<<9)
+#define SAVE_CFG_ANT    (1<<10)
+#define SAVE_CFG_ALL    (SAVE_CFG_IO|SAVE_CFG_MSG|SAVE_CFG_INF|SAVE_CFG_NAV|SAVE_CFG_RXM|SAVE_CFG_RINV|SAVE_CFG_ANT)
+
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
 public:
@@ -281,6 +291,19 @@ private:
         } svinfo[UBLOX_MAX_RXM_RAWX_SATS];
     };
 #endif
+
+    struct PACKED ubx_ack_ack {
+        uint8_t clsID;
+        uint8_t msgID;
+    };
+
+
+    struct PACKED ubx_cfg_cfg {
+        uint32_t clearMask;
+        uint32_t saveMask;
+        uint32_t loadMask;
+    };
+
     // Receive buffer
     union PACKED {
         ubx_nav_posllh posllh;
@@ -303,6 +326,7 @@ private:
         ubx_rxm_raw rxm_raw;
         ubx_rxm_rawx rxm_rawx;
 #endif
+        ubx_ack_ack ack;
         uint8_t bytes[];
     } _buffer;
 
@@ -321,6 +345,7 @@ private:
         MSG_DOP = 0x4,
         MSG_SOL = 0x6,
         MSG_VELNED = 0x12,
+        MSG_CFG_CFG = 0x09,
         MSG_CFG_PRT = 0x00,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_SET_RATE = 0x01,
@@ -376,6 +401,7 @@ private:
     // processing
     uint8_t         _fix_count;
     uint8_t         _class;
+    bool            _cfg_saved;
 
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
@@ -407,6 +433,7 @@ private:
     void        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
     void		send_next_rate_update(void);
     void        _request_version(void);
+    void        _save_cfg(void);
 
     void unexpected_message(void);
     void write_logging_headers(void);
