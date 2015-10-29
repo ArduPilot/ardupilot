@@ -128,6 +128,22 @@ uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng)
     return lastYawReset_ms;
 }
 
+// return the amount of NE position change due to the last position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos)
+{
+    pos = posResetNE;
+    return lastPosReset_ms;
+}
+
+// return the amount of NE velocity change due to the last velocity reset in metres/sec
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastVelNorthEastReset(Vector2f &vel)
+{
+    vel = velResetNE;
+    return lastVelReset_ms;
+}
+
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 void NavEKF2_core::getWind(Vector3f &wind) const
 {
