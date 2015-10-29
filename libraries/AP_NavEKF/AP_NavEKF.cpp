@@ -5616,6 +5616,22 @@ uint32_t NavEKF::getLastYawResetAngle(float &yawAng)
     return lastYawReset_ms;
 }
 
+// return the amount of NE position change due to the last position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF::getLastPosNorthEastReset(Vector2f &pos)
+{
+    pos = posResetNE;
+    return lastPosReset_ms;
+}
+
+// return the amount of NE velocity change due to the last velocity reset in metres/sec
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF::getLastVelNorthEastReset(Vector2f &vel)
+{
+    vel = velResetNE;
+    return lastVelReset_ms;
+}
+
 // Check for signs of bad gyro health before flight
 bool NavEKF::checkGyroHealthPreFlight(void) const
 {

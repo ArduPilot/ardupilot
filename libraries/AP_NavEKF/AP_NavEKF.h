@@ -280,7 +280,15 @@ public:
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng);
 
-    // report any reason for why the backend is refusing to initialise    
+    // return the amount of NE position change due to the last position reset in metres
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    uint32_t getLastPosNorthEastReset(Vector2f &pos);
+
+    // return the amount of NE velocity change due to the last velocity reset in metres/sec
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    uint32_t getLastVelNorthEastReset(Vector2f &vel);
+
+    // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -721,6 +729,11 @@ private:
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
     float posDown;                  // Down position state used in calculation of posDownRate
     Vector3f delAngBiasAtArming;      // value of the gyro delta angle bias at arming
+    Vector2f posResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
+    uint32_t lastPosReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
+    Vector2f velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
+    uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
+
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
