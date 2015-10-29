@@ -108,6 +108,13 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GNSS_MODE", 10, AP_GPS, _gnss_mode, 0),
 
+    // @Param: SAVE_CFG
+    // @DisplayName: Save GPS configuration
+    // @Description: Determines whether the configuration for this GPS should be written to non-volatile memory on the GPS. Currently working for UBlox.
+    // @Values: 0:Do not save config,1:Save config
+    // @User: Advanced
+    AP_GROUPINFO("SAVE_CFG", 11, AP_GPS, _save_config, 0),
+
     AP_GROUPEND
 };
 
