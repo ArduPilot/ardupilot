@@ -33,7 +33,7 @@ bool Rover::print_log_menu(void)
 		// Pass it the capitalised name of the log option, as defined
 		// in defines.h but without the LOG_ prefix.  It will check for
 		// the bit being set and print the name of the log option to suit.
-		#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %S", #_s)
+		#define PLOG(_s)	if (g.log_bitmask & MASK_LOG_ ## _s) cliSerial->printf(" %s", #_s)
 		PLOG(ATTITUDE_FAST);
 		PLOG(ATTITUDE_MED);
 		PLOG(GPS);
