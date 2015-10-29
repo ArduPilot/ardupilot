@@ -147,9 +147,10 @@ void AC_WPNav::init_loiter_target(const Vector3f& position, bool reset_I)
     // initialise position controller
     _pos_control.init_xy_controller(reset_I);
 
-    // initialise pos controller speed and acceleration
+    // initialise pos controller speed, acceleration and jerk
     _pos_control.set_speed_xy(_loiter_speed_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
+    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
 
     // set target position
     _pos_control.set_xy_target(position.x, position.y);
@@ -193,6 +194,7 @@ void AC_WPNav::init_loiter_target()
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(_loiter_speed_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
+    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
 
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
@@ -254,6 +256,7 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 
     _pos_control.set_speed_xy(gnd_speed_limit_cms);
     _pos_control.set_accel_xy(_loiter_accel_cmss);
+    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
 
     // rotate pilot input to lat/lon frame
     Vector2f desired_accel;
@@ -344,6 +347,7 @@ void AC_WPNav::init_brake_target(float accel_cmss)
     // initialise pos controller speed and acceleration
     _pos_control.set_speed_xy(curr_vel.length());
     _pos_control.set_accel_xy(accel_cmss);
+    _pos_control.set_jerk_xy(_loiter_jerk_max_cmsss);
     _pos_control.calc_leash_length_xy();
 
     _pos_control.get_stopping_point_xy(stopping_point);
@@ -387,6 +391,7 @@ void AC_WPNav::wp_and_spline_init()
     // initialise position controller speed and acceleration
     _pos_control.set_speed_xy(_wp_speed_cms);
     _pos_control.set_accel_xy(_wp_accel_cms);
+    _pos_control.set_jerk_xy_to_default();
     _pos_control.set_speed_z(-_wp_speed_down_cms, _wp_speed_up_cms);
     _pos_control.set_accel_z(_wp_accel_z_cms);
     _pos_control.calc_leash_length_xy();
@@ -657,6 +662,7 @@ void AC_WPNav::update_wpnav()
         // allow the accel and speed values to be set without changing
         // out of auto mode. This makes it easier to tune auto flight
         _pos_control.set_accel_xy(_wp_accel_cms);
+        _pos_control.set_jerk_xy_to_default();
         _pos_control.set_accel_z(_wp_accel_z_cms);
     
         // sanity check dt
