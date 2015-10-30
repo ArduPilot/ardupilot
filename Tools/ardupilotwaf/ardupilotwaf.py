@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from waflib import Logs
+from __future__ import print_function
+from waflib import Logs, Utils
 
 SOURCE_EXTS = [
     '*.S',
@@ -133,15 +134,24 @@ def vehicle_stlib(bld, **kw):
     )
 
 def find_tests(bld, use=[]):
+    if not bld.env.HAS_GTEST:
+        return
+
     features = ''
     if bld.cmd == 'check':
         features='test'
+
+    use = Utils.to_list(use)
+    use.append('GTEST')
+
+    includes = [bld.srcnode.abspath() + '/tests/']
 
     for f in bld.path.ant_glob(incl='*.cpp'):
         target = f.change_ext('.' + bld.env.BOARD)
         bld.program(
             features=features,
             target=target,
+            includes=includes,
             source=[f],
             use=use,
         )
