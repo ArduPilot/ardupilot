@@ -46,10 +46,8 @@ public:
         _ahrs(ahrs),
         _state(GIMBAL_STATE_NOT_PRESENT),
         _gimbalParams(parameters),
-        vehicleYawRateFilt(0.0f),
-        yawRateFiltPole(10.0f),
+        yaw_rate_ff_filt(0.0f),
         lockedToBody(false),
-        yawErrorLimit(0.1f),
         vehicle_delta_angles(),
         vehicle_to_gimbal_quat(),
         vehicle_to_gimbal_quat_filt(),
@@ -88,18 +86,7 @@ public:
 private:
     gimbal_state_t _state;
 
-    // filtered yaw rate from the vehicle
-    float vehicleYawRateFilt;
-
-    // circular frequency (rad/sec) constant of filter applied to forward path vehicle yaw rate
-    // this frequency must not be larger than the update rate (Hz).
-    // reducing it makes the gimbal yaw less responsive to vehicle yaw
-    // increasing it makes the gimbal yawe more responsive to vehicle yaw
-    float const yawRateFiltPole;
-
-    // amount of yaw angle that we permit the gimbal to lag the vehicle when operating in slave mode
-    // reducing this makes the gimbal respond more to vehicle yaw disturbances
-    float const yawErrorLimit;
+    float yaw_rate_ff_filt;
 
     static const uint8_t _compid = MAV_COMP_ID_GIMBAL;
 
