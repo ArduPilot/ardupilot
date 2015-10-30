@@ -348,7 +348,8 @@ void Rover::update_GPS_10Hz(void)
 {
     have_position = ahrs.get_position(current_loc);
 
-    if (have_position && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1){
             ground_start_count--;

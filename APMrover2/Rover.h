@@ -375,6 +375,8 @@ private:
     // we need to run the speed controller
     bool auto_throttle_mode;
 
+    // Store the time the last GPS message was received.
+    uint32_t last_gps_msg_ms{0}; 
 
 private:
     // private member functions
