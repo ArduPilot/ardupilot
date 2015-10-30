@@ -152,6 +152,13 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
 
+    cfg.env.HAS_GTEST = cfg.check_cxx(
+        lib='gtest',
+        mandatory=False,
+        uselib_store='GTEST',
+        errmsg='not found, unit tests disabled',
+    )
+
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
     board = BOARDS[cfg.env.BOARD]
@@ -223,6 +230,8 @@ def build(bld):
         bld.recurse(d)
 
     if bld.cmd == 'check':
+        if not bld.env.HAS_GTEST:
+            bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
 class CheckContext(waflib.Build.BuildContext):
