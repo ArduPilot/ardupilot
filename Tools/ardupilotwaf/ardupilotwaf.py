@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from waflib import Logs
+
 SOURCE_EXTS = [
     '*.S',
     '*.c',
@@ -129,3 +131,59 @@ def vehicle_stlib(bld, **kw):
         defines=_get_legacy_defines(vehicle),
         idx=_get_next_idx(),
     )
+
+def find_tests(bld, use=[]):
+    features = ''
+    if bld.cmd == 'check':
+        features='test'
+
+    for f in bld.path.ant_glob(incl='*.cpp'):
+        target = f.change_ext('.' + bld.env.BOARD)
+        bld.program(
+            features=features,
+            target=target,
+            source=[f],
+            use=use,
+        )
+
+def test_summary(bld):
+    from io import BytesIO
+    import sys
+
+    if not hasattr(bld, 'utest_results'):
+        Logs.info('check: no test run')
+        return
+
+    fails = []
+
+    for filename, exit_code, out, err in bld.utest_results:
+        Logs.pprint('GREEN' if exit_code == 0 else 'YELLOW',
+                    '    %s' % filename,
+                    'returned %d' % exit_code)
+
+        if exit_code != 0:
+            fails.append(filename)
+        elif not bld.options.check_verbose:
+            continue
+
+        if len(out):
+            buf = BytesIO(out)
+            for line in buf:
+                print("    OUT: %s" % line.decode(), end='', file=sys.stderr)
+            print()
+
+        if len(err):
+            buf = BytesIO(err)
+            for line in buf:
+                print("    ERR: %s" % line.decode(), end='', file=sys.stderr)
+            print()
+
+    if not fails:
+        Logs.info('check: All %u tests passed!' % len(bld.utest_results))
+        return
+
+    Logs.error('check: %u of %u tests failed' %
+               (len(fails), len(bld.utest_results)))
+
+    for filename in fails:
+        Logs.error('    %s' % filename)
