@@ -721,8 +721,7 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
     case 1:
         return EKF1.prearm_failure_reason();
     case 2:
-        // not implemented yet
-        return nullptr;
+        return EKF2.prearm_failure_reason();
     }
     return nullptr;
 }
