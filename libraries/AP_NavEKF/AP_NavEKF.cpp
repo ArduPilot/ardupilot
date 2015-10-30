@@ -31,24 +31,25 @@
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     0.5f
-#define ALT_NOISE_DEFAULT       1.0f
+#define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
 #define GYRO_PNOISE_DEFAULT     0.015f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    1E-06f
 #define ABIAS_PNOISE_DEFAULT    0.00005f
-#define MAGE_PNOISE_DEFAULT     0.0003f
-#define MAGB_PNOISE_DEFAULT     0.0003f
+#define MAGE_PNOISE_DEFAULT     0.0006f
+#define MAGB_PNOISE_DEFAULT     0.0006f
 #define VEL_GATE_DEFAULT        5
 #define POS_GATE_DEFAULT        10
 #define HGT_GATE_DEFAULT        10
 #define MAG_GATE_DEFAULT        3
-#define MAG_CAL_DEFAULT         1
+#define MAG_CAL_DEFAULT         3
 #define GLITCH_ACCEL_DEFAULT    100
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.1f
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -73,8 +74,9 @@
 #define FLOW_MEAS_DELAY         25
 #define FLOW_NOISE_DEFAULT      0.15f
 #define FLOW_GATE_DEFAULT       5
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
-#else
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // generic defaults (and for plane)
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
@@ -97,6 +99,31 @@
 #define FLOW_MEAS_DELAY         25
 #define FLOW_NOISE_DEFAULT      0.3f
 #define FLOW_GATE_DEFAULT       3
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
+
+#else
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     0.5f
+#define ALT_NOISE_DEFAULT       2.0f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.015f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    1E-06f
+#define ABIAS_PNOISE_DEFAULT    0.00005f
+#define MAGE_PNOISE_DEFAULT     0.0006f
+#define MAGB_PNOISE_DEFAULT     0.0006f
+#define VEL_GATE_DEFAULT        5
+#define POS_GATE_DEFAULT        10
+#define HGT_GATE_DEFAULT        10
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         3
+#define GLITCH_ACCEL_DEFAULT    100
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.25f
+#define FLOW_GATE_DEFAULT       3
+#define INIT_ACCEL_BIAS_UNCERTAINTY 0.1f
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -108,9 +135,6 @@ extern const AP_HAL::HAL& hal;
 // when the wind estimation first starts with no airspeed sensor,
 // assume 3m/s to start
 #define STARTUP_WIND_SPEED 3.0f
-
-// initial imu bias uncertainty (deg/sec)
-#define INIT_ACCEL_BIAS_UNCERTAINTY 0.3f
 
 // maximum gyro bias in rad/sec that can be compensated for
 #define MAX_GYRO_BIAS 0.1745f
