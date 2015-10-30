@@ -423,7 +423,15 @@ void NavEKF2_core::StoreIMU_reset()
 void NavEKF2_core::RecallIMU()
 {
     imuDataDelayed = storedIMU[fifoIndexDelayed];
+    // make sure that the delta time used for the delta angles and velocities are is no less than 10% of dtIMUavg to prevent
+    // divide by zero problems when converting to rates or acceleration
+    float minDT = 0.1f*dtIMUavg;
+    imuDataDelayed.delAngDT = max(imuDataDelayed.delAngDT,minDT);
+    imuDataDelayed.delVelDT = max(imuDataDelayed.delVelDT,minDT);
 }
+
+// read the delta velocity and corresponding time interval from the IMU
+// return false if data is not available
 bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
@@ -434,9 +442,6 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     }
     return false;
 }
-
-
-
 
 /********************************************************
 *             Global Position Measurement               *
@@ -632,7 +637,8 @@ bool NavEKF2_core::RecallGPS()
     }
 }
 
-
+// read the delta angle and corresponding time interval from the IMU
+// return false if data is not available
 bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
