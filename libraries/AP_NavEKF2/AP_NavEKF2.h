@@ -235,6 +235,9 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
 
+    // report any reason for why the backend is refusing to initialise
+    const char *prearm_failure_reason(void) const;
+
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set(enable); }
     
