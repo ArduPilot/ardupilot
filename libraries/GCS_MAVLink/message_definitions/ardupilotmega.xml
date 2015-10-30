@@ -45,6 +45,28 @@
                 <param index="7">Empty</param>
             </entry>
 
+            <entry name="MAV_CMD_SOLO_BTN_FLY_CLICK" value="42001">
+                <description>Set mode to LOITER, if that fails set mode to ALT_HOLD.</description>
+                <param index="1">Empty</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
+
+            <entry name="MAV_CMD_SOLO_BTN_FLY_HOLD" value="42002">
+                <description>If disarmed, arm, else if armed and landed, take off, else if flying, land</description>
+                <param index="1">Takeoff altitude</param>
+                <param index="2">Empty</param>
+                <param index="3">Empty</param>
+                <param index="4">Empty</param>
+                <param index="5">Empty</param>
+                <param index="6">Empty</param>
+                <param index="7">Empty</param>
+            </entry>
+
             <entry name="MAV_CMD_DO_START_MAG_CAL" value="42424">
                 <description>Initiate a magnetometer calibration</description>
                 <param index="1">uint8_t bitmask of magnetometers (0 means all)</param>
