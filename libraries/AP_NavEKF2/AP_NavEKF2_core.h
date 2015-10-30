@@ -778,6 +778,7 @@ private:
     Vector2f velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     float yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
+    Quaternion prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

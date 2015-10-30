@@ -20,10 +20,18 @@ extern const AP_HAL::HAL& hal;
 // Control reset of yaw and magnetic field states
 void NavEKF2_core::controlMagYawReset()
 {
+    // Use a quaternion division to calcualte the delta quaternion between the rotation at the current and last time
+    Quaternion deltaQuat = stateStruct.quat / prevQuatMagReset;
+    prevQuatMagReset = stateStruct.quat;
+    // convert the quaternion to a rotation vector and find its length
+    Vector3f deltaRotVec;
+    deltaQuat.to_axis_angle(deltaRotVec);
+    float deltaRot = deltaRotVec.length();
+
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
     // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-    // Delay if rotating rapidly as time offsets will produce errors in the magnetic field states
-    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && (imuDataDelayed.delVel.length())/imuDataDelayed.delAngDT < 1.0f) {
+    // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
+    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && deltaRot < 0.1745f) {
         firstMagYawInit = true;
         // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
         magFuseTiltInhibit_ms =  imuSampleTime_ms;
