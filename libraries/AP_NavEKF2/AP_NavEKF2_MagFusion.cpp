@@ -479,7 +479,7 @@ void NavEKF2_core::FuseMagnetometer()
     // calculate the measurement innovation
     innovMag[obsIndex] = MagPred[obsIndex] - magDataDelayed.mag[obsIndex];
     // calculate the innovation test ratio
-    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(frontend._magInnovGate) * varInnovMag[obsIndex]);
+    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(max(frontend._magInnovGate,1)) * varInnovMag[obsIndex]);
     // check the last values from all components and set magnetometer health accordingly
     magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
     // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
@@ -632,7 +632,23 @@ void NavEKF2_core::fuseCompass()
         }
         varInnov += H_MAG[rowIndex]*PH[rowIndex];
     }
-    float varInnovInv = 1.0f / varInnov;
+    float varInnovInv;
+    if (varInnov >= R_MAG) {
+        varInnovInv = 1.0f / varInnov;
+        // All three magnetometer components are used in this measurement, so we output health status on three axes
+        faultStatus.bad_xmag = false;
+        faultStatus.bad_ymag = false;
+        faultStatus.bad_zmag = false;
+    } else {
+        // the calculation is badly conditioned, so we cannot perform fusion on this step
+        // we reset the covariance matrix and try again next measurement
+        CovarianceInit();
+        // All three magnetometer components are used in this measurement, so we output health status on three axes
+        faultStatus.bad_xmag = true;
+        faultStatus.bad_ymag = true;
+        faultStatus.bad_zmag = true;
+        return;
+    }
     for (uint8_t rowIndex=0; rowIndex<=stateIndexLim; rowIndex++) {
         Kfusion[rowIndex] = 0.0f;
         for (uint8_t colIndex=0; colIndex<=2; colIndex++) {
@@ -655,7 +671,7 @@ void NavEKF2_core::fuseCompass()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(frontend._magInnovGate) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(max(frontend._magInnovGate,1)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
