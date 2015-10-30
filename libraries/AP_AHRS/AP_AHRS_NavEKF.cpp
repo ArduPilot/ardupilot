@@ -729,7 +729,7 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
+uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
 {
     switch (ekf_type()) {
     case 1:
@@ -737,7 +737,33 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
     case 2:
         return EKF2.getLastYawResetAngle(yawAng);
     }
-    return false;
+    return 0;
+}
+
+// return the amount of NE position change in metres due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos) const
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastPosNorthEastReset(pos);
+    case 2:
+        return EKF2.getLastPosNorthEastReset(pos);
+    }
+    return 0;
+}
+
+// return the amount of NE velocity change in metres/sec due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastVelNorthEastReset(vel);
+    case 2:
+        return EKF2.getLastVelNorthEastReset(vel);
+    }
+    return 0;
 }
 
 // Resets the baro so that it reads zero at the current height

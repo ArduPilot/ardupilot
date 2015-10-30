@@ -91,6 +91,8 @@ void NavEKF2_core::InitialiseVariables()
     timeTasReceived_ms = 0;
     magYawResetTimer_ms = imuSampleTime_ms;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
+    lastPosReset_ms = 0;
+    lastVelReset_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -106,7 +108,6 @@ void NavEKF2_core::InitialiseVariables()
     velDotNEDfilt.zero();
     summedDelAng.zero();
     summedDelVel.zero();
-    gpsPosGlitchOffsetNE.zero();
     lastKnownPositionNE.zero();
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
@@ -127,7 +128,6 @@ void NavEKF2_core::InitialiseVariables()
     PV_AidingMode = AID_NONE;
     posTimeout = true;
     velTimeout = true;
-    gpsVelGlitchOffset.zero();
     isAiding = false;
     prevIsAiding = false;
     memset(&faultStatus, 0, sizeof(faultStatus));
@@ -195,6 +195,8 @@ void NavEKF2_core::InitialiseVariables()
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
     magFuseTiltInhibit = false;
+    posResetNE.zero();
+    velResetNE.zero();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)

@@ -21,12 +21,16 @@ extern const AP_HAL::HAL& hal;
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF2_core::ResetVelocity(void)
 {
+    // Store the position before the reset so that we can record the reset delta
+    velResetNE.x = stateStruct.velocity.x;
+    velResetNE.y = stateStruct.velocity.y;
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
     } else if (!gpsNotAvailable) {
-        // reset horizontal velocity states, applying an offset to the GPS velocity to prevent the GPS position being rejected when the GPS position offset is being decayed to zero.
-        stateStruct.velocity.x  = gpsDataNew.vel.x + gpsVelGlitchOffset.x; // north velocity from blended accel data
-        stateStruct.velocity.y  = gpsDataNew.vel.y + gpsVelGlitchOffset.y; // east velocity from blended accel data
+        // reset horizontal velocity states to the GPS velocity
+        stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
+        stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
     }
     for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
         storedOutput[i].velocity.x = stateStruct.velocity.x;
@@ -36,19 +40,30 @@ void NavEKF2_core::ResetVelocity(void)
     outputDataNew.velocity.y = stateStruct.velocity.y;
     outputDataDelayed.velocity.x = stateStruct.velocity.x;
     outputDataDelayed.velocity.y = stateStruct.velocity.y;
+
+    // Calculate the position jump due to the reset
+    velResetNE.x = stateStruct.velocity.x - velResetNE.x;
+    velResetNE.y = stateStruct.velocity.y - velResetNE.y;
+
+    // store the time of the reset
+    lastVelReset_ms = imuSampleTime_ms;
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF2_core::ResetPosition(void)
 {
+    // Store the position before the reset so that we can record the reset delta
+    posResetNE.x = stateStruct.position.x;
+    posResetNE.y = stateStruct.position.y;
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
         stateStruct.position.x = lastKnownPositionNE.x;
         stateStruct.position.y = lastKnownPositionNE.y;
     } else if (!gpsNotAvailable) {
         // write to state vector and compensate for offset  between last GPs measurement and the EKF time horizon
-        stateStruct.position.x = gpsDataNew.pos.x + gpsPosGlitchOffsetNE.x + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(lastTimeGpsReceived_ms));
-        stateStruct.position.y = gpsDataNew.pos.y + gpsPosGlitchOffsetNE.y + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(lastTimeGpsReceived_ms));
+        stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(lastTimeGpsReceived_ms));
+        stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(lastTimeGpsReceived_ms));
     }
     for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
         storedOutput[i].position.x = stateStruct.position.x;
@@ -58,6 +73,13 @@ void NavEKF2_core::ResetPosition(void)
     outputDataNew.position.y = stateStruct.position.y;
     outputDataDelayed.position.x = stateStruct.position.x;
     outputDataDelayed.position.y = stateStruct.position.y;
+
+    // Calculate the position jump due to the reset
+    posResetNE.x = stateStruct.position.x - posResetNE.x;
+    posResetNE.y = stateStruct.position.y - posResetNE.y;
+
+    // store the time of the reset
+    lastPosReset_ms = imuSampleTime_ms;
 }
 
 // reset the vertical position state using the last height measurement
@@ -218,11 +240,11 @@ void NavEKF2_core::FuseVelPosNED()
         else gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
 
         // form the observation vector
-        observation[0] = gpsDataDelayed.vel.x + gpsVelGlitchOffset.x;
-        observation[1] = gpsDataDelayed.vel.y + gpsVelGlitchOffset.y;
+        observation[0] = gpsDataDelayed.vel.x;
+        observation[1] = gpsDataDelayed.vel.y;
         observation[2] = gpsDataDelayed.vel.z;
-        observation[3] = gpsDataDelayed.pos.x + gpsPosGlitchOffsetNE.x;
-        observation[4] = gpsDataDelayed.pos.y + gpsPosGlitchOffsetNE.y;
+        observation[3] = gpsDataDelayed.pos.x;
+        observation[4] = gpsDataDelayed.pos.y;
         observation[5] = -baroDataDelayed.hgt;
 
         // calculate additional error in GPS position caused by manoeuvring
@@ -304,24 +326,21 @@ void NavEKF2_core::FuseVelPosNED()
                 // only reset the failed time and do glitch timeout checks if we are doing full aiding
                 if (PV_AidingMode == AID_ABSOLUTE) {
                     lastPosPassTime_ms = imuSampleTime_ms;
-                    // if timed out or outside the specified uncertainty radius, increment the offset applied to GPS data to compensate for large GPS position jumps
+                    // if timed out or outside the specified uncertainty radius, reset to the GPS
                     if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend._gpsGlitchRadiusMax)))) {
-                        gpsPosGlitchOffsetNE.x += innovVelPos[3];
-                        gpsPosGlitchOffsetNE.y += innovVelPos[4];
-                        // limit the radius of the offset and decay the offset to zero radially
-                        decayGpsOffset();
-                        // reset the position to the current GPS position which will include the glitch correction offset
+                        // reset the position to the current GPS position
                         ResetPosition();
                         // reset the velocity to the GPS velocity
                         ResetVelocity();
-                        // don't fuse data on this time step
+                        // don't fuse GPS data on this time step
                         fusePosData = false;
+                        fuseVelData = false;
                         // Reset the position variances and corresponding covariances to a value that will pass the checks
                         zeroRows(P,6,7);
                         zeroCols(P,6,7);
                         P[6][6] = sq(float(0.5f*frontend._gpsGlitchRadiusMax));
                         P[7][7] = P[6][6];
-                        // Reset the normalised innovation to avoid false failing the bad position fusion test
+                        // Reset the normalised innovation to avoid failing the bad fusion tests
                         posTestRatio = 0.0f;
                         velTestRatio = 0.0f;
                     }
@@ -359,19 +378,21 @@ void NavEKF2_core::FuseVelPosNED()
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
             velTimeout = (((imuSampleTime_ms - lastVelPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
-            // if data is healthy  or in constant velocity mode we fuse it
+            // use velocity data if healthy or timed out
             if (velHealth || velTimeout) {
                 velHealth = true;
                 // restart the timeout count
                 lastVelPassTime_ms = imuSampleTime_ms;
-            } else if (velTimeout && !posHealth && PV_AidingMode == AID_ABSOLUTE) {
-                // if data is not healthy and timed out and position is unhealthy and we are using aiding, we reset the velocity, but do not fuse data on this time step
-                ResetVelocity();
-                fuseVelData =  false;
-                // Reset the normalised innovation to avoid false failing the bad position fusion test
-                velTestRatio = 0.0f;
+                // If we are doing full aiding and velocity fusion times out, reset to the GPS velocity
+                if (PV_AidingMode == AID_ABSOLUTE && velTimeout) {
+                    // reset the velocity to the GPS velocity
+                    ResetVelocity();
+                    // don't fuse GPS velocity data on this time step
+                    fuseVelData = false;
+                    // Reset the normalised innovation to avoid failing the bad fusion tests
+                    velTestRatio = 0.0f;
+                }
             } else {
-                // if data is unhealthy and position is healthy, we do not fuse it
                 velHealth = false;
             }
         }

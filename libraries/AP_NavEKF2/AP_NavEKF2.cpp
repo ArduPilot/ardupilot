@@ -809,12 +809,32 @@ bool NavEKF2::getHeightControlLimit(float &height) const
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2::getLastYawResetAngle(float &yawAng)
+uint32_t NavEKF2::getLastYawResetAngle(float &yawAng) const
 {
     if (!core) {
-        return false;
+        return 0;
     }
     return core->getLastYawResetAngle(yawAng);
+}
+
+// return the amount of NE position change due to the last position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2::getLastPosNorthEastReset(Vector2f &pos) const
+{
+    if (!core) {
+        return 0;
+    }
+    return core->getLastPosNorthEastReset(pos);
+}
+
+// return the amount of NE velocity change due to the last velocity reset in metres/sec
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
+{
+    if (!core) {
+        return 0;
+    }
+    return core->getLastVelNorthEastReset(vel);
 }
 
 #endif //HAL_CPU_CLASS

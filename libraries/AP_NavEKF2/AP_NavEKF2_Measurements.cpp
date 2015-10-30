@@ -531,9 +531,6 @@ void NavEKF2_core::readGpsData()
                 }
             }
 
-            // calculate a position offset which is applied to NE position and velocity wherever it is used throughout code to allow GPS position jumps to be accommodated gradually
-            decayGpsOffset();
-
             // save measurement to buffer to be fused later
             StoreGPS();
 
@@ -561,41 +558,34 @@ void NavEKF2_core::readGpsData()
     // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
     if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
 
-        // Let other processes know that GPS i snota vailable and that a timeout has occurred
+        // Let other processes know that GPS is not available and that a timeout has occurred
         posTimeout = true;
         velTimeout = true;
         gpsNotAvailable = true;
 
-        // If we are currently reliying on GPS for navigation, then we need to switch to a non-GPS mode of operation
-        if (PV_AidingMode == AID_ABSOLUTE) {
+        // If we are totally reliant on GPS for navigation, then we need to switch to a non-GPS mode of operation
+        // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
+        // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
+        if (PV_AidingMode == AID_ABSOLUTE && !useAirspeed() && !assume_zero_sideslip()) {
+            if (optFlowBackupAvailable) {
+                // we can do optical flow only nav
+                frontend._fusionModeGPS = 3;
+                PV_AidingMode = AID_RELATIVE;
+            } else {
+                // store the current position
+                lastKnownPositionNE.x = stateStruct.position.x;
+                lastKnownPositionNE.y = stateStruct.position.y;
 
-            // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
-            // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
-            if (!useAirspeed() && !assume_zero_sideslip()) {
-                if (optFlowBackupAvailable) {
-                    // we can do optical flow only nav
-                    frontend._fusionModeGPS = 3;
-                    PV_AidingMode = AID_RELATIVE;
-                } else {
-                    // store the current position
-                    lastKnownPositionNE.x = stateStruct.position.x;
-                    lastKnownPositionNE.y = stateStruct.position.y;
+                // put the filter into constant position mode
+                PV_AidingMode = AID_NONE;
 
-                    // put the filter into constant position mode
-                    PV_AidingMode = AID_NONE;
+                // Reset the velocity and position states
+                ResetVelocity();
+                ResetPosition();
 
-                    // reset all glitch states
-                    gpsPosGlitchOffsetNE.zero();
-                    gpsVelGlitchOffset.zero();
-
-                    // Reset the velocity and position states
-                    ResetVelocity();
-                    ResetPosition();
-
-                    // Reset the normalised innovation to avoid false failing the bad position fusion test
-                    velTestRatio = 0.0f;
-                    posTestRatio = 0.0f;
-                }
+                // Reset the normalised innovation to avoid false failing bad fusion tests
+                velTestRatio = 0.0f;
+                posTestRatio = 0.0f;
             }
         }
     }
@@ -651,34 +641,6 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
         return true;
     }
     return false;
-}
-
-
-// decay GPS horizontal position offset to close to zero at a rate of 1 m/s for copters and 5 m/s for planes
-// limit radius to a maximum of 50m
-void NavEKF2_core::decayGpsOffset()
-{
-    float offsetDecaySpd;
-    if (assume_zero_sideslip()) {
-        offsetDecaySpd = 5.0f;
-    } else {
-        offsetDecaySpd = 1.0f;
-    }
-    float lapsedTime = 0.001f*float(imuSampleTime_ms - lastDecayTime_ms);
-    lastDecayTime_ms = imuSampleTime_ms;
-    float offsetRadius = pythagorous2(gpsPosGlitchOffsetNE.x, gpsPosGlitchOffsetNE.y);
-    // decay radius if larger than offset decay speed multiplied by lapsed time (plus a margin to prevent divide by zero)
-    if (offsetRadius > (offsetDecaySpd * lapsedTime + 0.1f)) {
-        // Calculate the GPS velocity offset required. This is necessary to prevent the position measurement being rejected for inconsistency when the radius is being pulled back in.
-        gpsVelGlitchOffset = -gpsPosGlitchOffsetNE*offsetDecaySpd/offsetRadius;
-        // calculate scale factor to be applied to both offset components
-        float scaleFactor = constrain_float((offsetRadius - offsetDecaySpd * lapsedTime), 0.0f, 50.0f) / offsetRadius;
-        gpsPosGlitchOffsetNE.x *= scaleFactor;
-        gpsPosGlitchOffsetNE.y *= scaleFactor;
-    } else {
-        gpsVelGlitchOffset.zero();
-        gpsPosGlitchOffsetNE.zero();
-    }
 }
 
 

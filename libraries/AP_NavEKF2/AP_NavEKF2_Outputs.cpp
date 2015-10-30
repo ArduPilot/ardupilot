@@ -122,10 +122,26 @@ void NavEKF2_core::getQuaternion(Quaternion& ret) const
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng)
+uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng) const
 {
     yawAng = yawResetAngle;
     return lastYawReset_ms;
+}
+
+// return the amount of NE position change due to the last position reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
+{
+    pos = posResetNE;
+    return lastPosReset_ms;
+}
+
+// return the amount of NE velocity change due to the last velocity reset in metres/sec
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2_core::getLastVelNorthEastReset(Vector2f &vel) const
+{
+    vel = velResetNE;
+    return lastVelReset_ms;
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -321,7 +337,7 @@ void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 // this indicates the amount of margin available when tuning the various error traps
-// also return the current offsets applied to the GPS position measurements
+// also return the delta in position due to the last position reset
 void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     velVar   = sqrtf(velTestRatio);
@@ -331,7 +347,7 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     magVar.y = sqrtf(magTestRatio.y);
     magVar.z = sqrtf(magTestRatio.z);
     tasVar   = sqrtf(tasTestRatio);
-    offset   = gpsPosGlitchOffsetNE;
+    offset   = posResetNE;
 }
 
 
