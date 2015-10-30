@@ -382,6 +382,10 @@ void Rover::update_GPS_10Hz(void)
             do_take_picture();
         }
 #endif
+
+        if (!hal.util->get_soft_armed()) {
+            update_home();
+        }
     }
 }
 
