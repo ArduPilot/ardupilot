@@ -505,4 +505,15 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
 
 }
 
+// report the reason for why the backend is refusing to initialise
+const char *NavEKF2_core::prearm_failure_reason(void) const
+{
+    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+        // we are not failing
+        return nullptr;
+    }
+    return prearm_fail_string;
+}
+
+
 #endif // HAL_CPU_CLASS

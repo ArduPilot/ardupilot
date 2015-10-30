@@ -837,4 +837,13 @@ uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
     return core->getLastVelNorthEastReset(vel);
 }
 
+// report the reason for why the backend is refusing to initialise
+const char *NavEKF2::prearm_failure_reason(void) const
+{
+    if (!core) {
+        return nullptr;
+    }
+    return core->prearm_failure_reason();
+}
+
 #endif //HAL_CPU_CLASS

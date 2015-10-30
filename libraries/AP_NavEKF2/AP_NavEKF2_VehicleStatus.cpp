@@ -23,62 +23,6 @@ extern const AP_HAL::HAL& hal;
 */
 bool NavEKF2_core::calcGpsGoodToAlign(void)
 {
-    // fail if reported speed accuracy greater than threshold
-    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f) && (frontend._gpsCheck & MASK_GPS_SPD_ERR);
-
-    // Report check result as a text string and bitmask
-    if (gpsSpdAccFail) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "GPS speed error %.1f", (double)gpsSpdAccuracy);
-        gpsCheckStatus.bad_sAcc = true;
-    } else {
-        gpsCheckStatus.bad_sAcc = false;
-    }
-
-    // fail if not enough sats
-    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend._gpsCheck & MASK_GPS_NSATS);
-
-    // Report check result as a text string and bitmask
-    if (numSatsFail) {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
-        gpsCheckStatus.bad_sats = true;
-    } else {
-        gpsCheckStatus.bad_sats = false;
-    }
-
-    // fail if satellite geometry is poor
-    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend._gpsCheck & MASK_GPS_HDOP);
-
-    // Report check result as a text string and bitmask
-    if (hdopFail) {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
-        gpsCheckStatus.bad_hdop = true;
-    } else {
-        gpsCheckStatus.bad_hdop = false;
-    }
-
-    // fail if horiziontal position accuracy not sufficient
-    float hAcc = 0.0f;
-    bool hAccFail;
-    if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = (hAcc > 5.0f)  && (frontend._gpsCheck & MASK_GPS_POS_ERR);
-    } else {
-        hAccFail =  false;
-    }
-
-    // Report check result as a text string and bitmask
-    if (hAccFail) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "GPS horiz error %.1f", (double)hAcc);
-        gpsCheckStatus.bad_hAcc = true;
-    } else {
-        gpsCheckStatus.bad_hAcc = false;
-    }
-
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
     // This enables us to handle large changes to the external magnetic field environment that occur before arming
     if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
@@ -91,28 +35,6 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
         // reset timer to ensure that bad magnetometer data cannot cause a heading reset more often than every 5 seconds
         magYawResetTimer_ms = imuSampleTime_ms;
-    }
-
-    // fail if magnetometer innovations are outside limits indicating bad yaw
-    // with bad yaw we are unable to use GPS
-    bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f || yawTestRatio > 1.0f) && (frontend._gpsCheck & MASK_GPS_YAW_ERR)) {
-        yawFail = true;
-    } else {
-        yawFail = false;
-    }
-
-    // Report check result as a text string and bitmask
-    if (yawFail) {
-        hal.util->snprintf(prearm_fail_string,
-                           sizeof(prearm_fail_string),
-                           "Mag yaw error x=%.1f y=%.1f yaw=%.1f",
-                           (double)magTestRatio.x,
-                           (double)magTestRatio.y,
-                           (double)yawTestRatio);
-        gpsCheckStatus.bad_yaw = true;
-    } else {
-        gpsCheckStatus.bad_yaw = false;
     }
 
     // Check for significant change in GPS position if disarmed which indicates bad GPS
@@ -188,18 +110,99 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         gpsCheckStatus.bad_horiz_vel = false;
     }
 
-    // record time of fail - assume  fail first time called
-    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail || lastGpsVelFail_ms == 0) {
+    // fail if horiziontal position accuracy not sufficient
+    float hAcc = 0.0f;
+    bool hAccFail;
+    if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
+        hAccFail = (hAcc > 5.0f)  && (frontend._gpsCheck & MASK_GPS_POS_ERR);
+    } else {
+        hAccFail =  false;
+    }
+
+    // Report check result as a text string and bitmask
+    if (hAccFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS horiz error %.1f", (double)hAcc);
+        gpsCheckStatus.bad_hAcc = true;
+    } else {
+        gpsCheckStatus.bad_hAcc = false;
+    }
+
+    // fail if reported speed accuracy greater than threshold
+    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f) && (frontend._gpsCheck & MASK_GPS_SPD_ERR);
+
+    // Report check result as a text string and bitmask
+    if (gpsSpdAccFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "GPS speed error %.1f", (double)gpsSpdAccuracy);
+        gpsCheckStatus.bad_sAcc = true;
+    } else {
+        gpsCheckStatus.bad_sAcc = false;
+    }
+
+    // fail if satellite geometry is poor
+    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend._gpsCheck & MASK_GPS_HDOP);
+
+    // Report check result as a text string and bitmask
+    if (hdopFail) {
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
+                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * _ahrs->get_gps().get_hdop()));
+        gpsCheckStatus.bad_hdop = true;
+    } else {
+        gpsCheckStatus.bad_hdop = false;
+    }
+
+    // fail if not enough sats
+    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend._gpsCheck & MASK_GPS_NSATS);
+
+    // Report check result as a text string and bitmask
+    if (numSatsFail) {
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
+                           "GPS numsats %u (needs 6)", _ahrs->get_gps().num_sats());
+        gpsCheckStatus.bad_sats = true;
+    } else {
+        gpsCheckStatus.bad_sats = false;
+    }
+
+    // fail if magnetometer innovations are outside limits indicating bad yaw
+    // with bad yaw we are unable to use GPS
+    bool yawFail;
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend._gpsCheck & MASK_GPS_YAW_ERR)) {
+        yawFail = true;
+    } else {
+        yawFail = false;
+    }
+
+    // Report check result as a text string and bitmask
+    if (yawFail) {
+        hal.util->snprintf(prearm_fail_string,
+                           sizeof(prearm_fail_string),
+                           "Mag yaw error x=%.1f y=%.1f",
+                           (double)magTestRatio.x,
+                           (double)magTestRatio.y);
+        gpsCheckStatus.bad_yaw = true;
+    } else {
+        gpsCheckStatus.bad_yaw = false;
+    }
+
+    // assume failed first time through and notify user checks have started
+    if (lastGpsVelFail_ms == 0) {
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF starting GPS checks");
+        lastGpsVelFail_ms = imuSampleTime_ms;
+    }
+
+    // record time of fail
+    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 
     // continuous period without fail required to return a healthy status
     if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
         return true;
-    } else {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF checking GPS");
-        return false;
     }
+    return false;
 }
 
 // update inflight calculaton that determines if GPS data is good enough for reliable navigation
