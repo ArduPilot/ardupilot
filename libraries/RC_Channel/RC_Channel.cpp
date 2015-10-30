@@ -511,3 +511,11 @@ uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
     // invalid limit value, return trim
     return radio_trim;
 }
+
+/*
+  Return true if the channel is at trim and within the DZ
+*/
+bool RC_Channel::in_trim_dz()
+{
+    return is_bounded(radio_in, radio_trim - _dead_zone, radio_trim + _dead_zone);
+}
