@@ -99,7 +99,7 @@ void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
         if (_samples_collected >= _conf_num_samples) {
             run_fit(50, _fitness);
 
-            if (_fitness < _conf_tolerance) {
+            if (_fitness < _conf_tolerance && accept_result()) {
                 set_status(ACCEL_CAL_SUCCESS);
             } else {
                 set_status(ACCEL_CAL_FAILED);
@@ -107,6 +107,19 @@ void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
         } else {
             set_status(ACCEL_CAL_WAITING_FOR_ORIENTATION);
         }
+    }
+}
+
+bool AccelCalibrator::accept_result() const {
+    if (fabsf(_params.offset.x) > GRAVITY_MSS ||
+        fabsf(_params.offset.y) > GRAVITY_MSS ||
+        fabsf(_params.offset.z) > GRAVITY_MSS ||
+        _params.diag.x < 0.8f || _params.diag.x > 1.2f ||
+        _params.diag.y < 0.8f || _params.diag.y > 1.2f ||
+        _params.diag.z < 0.8f || _params.diag.z > 1.2f) {
+        return false;
+    } else {
+        return true;
     }
 }
 

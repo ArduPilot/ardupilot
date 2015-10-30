@@ -70,6 +70,7 @@ private:
     void reset_state();
     void set_status(enum accel_cal_status_t);
     uint8_t get_num_params();
+    bool accept_result() const;
 
     float calc_residual(const Vector3f& sample, const struct param_t& params) const;
     float calc_mean_squared_residuals() const;
