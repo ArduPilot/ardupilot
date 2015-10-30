@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
+import waflib
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -134,16 +135,22 @@ BOARDS = {
 BOARDS_NAMES = sorted(list(BOARDS.keys()))
 
 def options(opt):
-    opt.load('compiler_cxx compiler_c')
+    opt.load('compiler_cxx compiler_c waf_unit_test')
     opt.add_option('--board',
                    action='store',
                    choices=BOARDS_NAMES,
                    default='sitl',
                    help='Target board to build, choices are %s' % BOARDS_NAMES)
 
+    g = opt.add_option_group('Check options')
+    g.add_option('--check-verbose',
+                 action='store_true',
+                 help='Output all test programs')
+
 def configure(cfg):
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
+    cfg.load('waf_unit_test')
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
@@ -198,11 +205,26 @@ def build(bld):
     vehicles.sort()
 
     tools = collect_dirs_to_recurse(bld, 'Tools/*')
-    examples = collect_dirs_to_recurse(bld, 'libraries/*/examples/*', excl='*/AP_HAL_*/* */SITL/*')
+    examples = collect_dirs_to_recurse(bld,
+                                       'libraries/*/examples/*',
+                                       excl='libraries/AP_HAL_* libraries/SITL')
+
+    tests = collect_dirs_to_recurse(bld,
+                                    '**/tests',
+                                    excl='modules Tools libraries/AP_HAL_* libraries/SITL')
+    board_tests = ['libraries/%s/**/tests' % l for l in bld.env.AP_LIBRARIES]
+    tests.extend(collect_dirs_to_recurse(bld, board_tests))
 
     hal_examples = []
     for l in bld.env.AP_LIBRARIES:
         hal_examples.extend(collect_dirs_to_recurse(bld, 'libraries/' + l + '/examples/*'))
 
-    for d in vehicles + tools + examples + hal_examples:
+    for d in vehicles + tools + examples + hal_examples + tests:
         bld.recurse(d)
+
+    if bld.cmd == 'check':
+        bld.add_post_fun(ardupilotwaf.test_summary)
+
+class CheckContext(waflib.Build.BuildContext):
+    '''executes tests after build'''
+    cmd = 'check'
