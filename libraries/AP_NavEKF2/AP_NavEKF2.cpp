@@ -59,8 +59,8 @@
 #define FLOW_GATE_DEFAULT       3
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
 
-#else
-// generic defaults (and for plane)
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+// plane defaults
 #define VELNE_NOISE_DEFAULT     0.5f
 #define VELD_NOISE_DEFAULT      0.7f
 #define POSNE_NOISE_DEFAULT     1.0f
@@ -76,6 +76,29 @@
 #define HGT_GATE_DEFAULT        4
 #define MAG_GATE_DEFAULT        3
 #define MAG_CAL_DEFAULT         0
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_NOISE_DEFAULT      0.25f
+#define FLOW_GATE_DEFAULT       3
+#define GSCALE_PNOISE_DEFAULT   3.0E-03f
+
+#else
+// build type not specified, use copter defaults
+#define VELNE_NOISE_DEFAULT     0.5f
+#define VELD_NOISE_DEFAULT      0.7f
+#define POSNE_NOISE_DEFAULT     1.0f
+#define ALT_NOISE_DEFAULT       5.0f
+#define MAG_NOISE_DEFAULT       0.05f
+#define GYRO_PNOISE_DEFAULT     0.005f
+#define ACC_PNOISE_DEFAULT      0.25f
+#define GBIAS_PNOISE_DEFAULT    7.0E-05f
+#define ABIAS_PNOISE_DEFAULT    1.0E-04f
+#define MAG_PNOISE_DEFAULT      2.5E-02f
+#define VEL_GATE_DEFAULT        3
+#define POS_GATE_DEFAULT        3
+#define HGT_GATE_DEFAULT        3
+#define MAG_GATE_DEFAULT        3
+#define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
