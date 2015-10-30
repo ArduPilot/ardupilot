@@ -1474,6 +1474,30 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             hal.util->set_test_mode(packet.param1);
             break;
         }
+
+        case MAV_CMD_SOLO_BTN_FLY_CLICK: {
+            result = MAV_RESULT_ACCEPTED;
+
+            if (!set_mode(LOITER)) {
+                set_mode(ALT_HOLD);
+            }
+            break;
+        }
+
+        case MAV_CMD_SOLO_BTN_FLY_HOLD: {
+            result = MAV_RESULT_ACCEPTED;
+
+            if (!motors.armed()) {
+                init_arm_motors(true);
+            } else if (ap.land_complete) {
+                if (set_mode(LOITER)) {
+                    do_user_takeoff(packet.param1*100, true);
+                }
+            } else if (!ap.land_complete) {
+                set_mode(LAND);
+            }
+        }
+
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
