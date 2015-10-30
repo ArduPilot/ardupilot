@@ -57,6 +57,9 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 100: Arming parameters
+        k_param_arming = 100,
                 
         // 110: Telemetry control
         //

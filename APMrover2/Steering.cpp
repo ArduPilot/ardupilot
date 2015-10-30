@@ -248,6 +248,10 @@ void Rover::set_servos(void)
             channel_throttle->servo_out = 0;
         }
 
+        if (!hal.util->get_soft_armed()) {
+            channel_throttle->servo_out = 0;
+        }
+
         // convert 0 to 100% into PWM
         channel_throttle->calc_pwm();
 
@@ -277,6 +281,25 @@ void Rover::set_servos(void)
         channel_throttle->calc_pwm();
     }
 
+    if (!arming.is_armed()) {
+        //Some ESCs get noisy (beep error msgs) if PWM == 0.
+        //This little segment aims to avoid this.
+        switch (arming.arming_required()) {
+        case AP_Arming::NO:
+            //keep existing behavior: do nothing to radio_out
+            //(don't disarm throttle channel even if AP_Arming class is)
+            break;
+
+        case AP_Arming::YES_ZERO_PWM:
+            channel_throttle->radio_out = 0;
+            break;
+
+        case AP_Arming::YES_MIN_PWM:
+        default:
+            channel_throttle->radio_out = channel_throttle->radio_trim;
+            break;
+        }
+    }
 
 #if HIL_MODE == HIL_MODE_DISABLED || HIL_SERVOS
 	// send values to the PWM timers for output

@@ -96,10 +96,6 @@ void Rover::setup()
 
     notify.init(false);
 
-    // rover does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
-    AP_Notify::flags.pre_arm_check = true;
-    AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
     
     rssi.init();
@@ -147,7 +143,8 @@ void Rover::loop()
 // update AHRS system
 void Rover::ahrs_update()
 {
-    hal.util->set_soft_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(arming.is_armed() &&
+                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -291,6 +288,11 @@ void Rover::one_second_loop(void)
 
     // cope with changes to aux functions
     update_aux();
+
+    // update notify flags
+    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
