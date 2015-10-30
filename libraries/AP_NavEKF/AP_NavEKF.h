@@ -728,6 +728,7 @@ private:
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     Vector3f delAngBiasAtArming;    // value of the gyro delta angle bias at arming
     float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
+    Quaternion prevQuatMagReset;    // Quaternion from the previous frame that the magnetic field state reset condition test was performed
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement

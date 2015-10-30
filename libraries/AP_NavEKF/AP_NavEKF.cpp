@@ -1021,6 +1021,34 @@ void NavEKF::SelectMagFusion()
     // determine if conditions are right to start a new fusion cycle
     bool dataReady = statesInitialised && use_compass() && newDataMag;
     if (dataReady) {
+        // Calculate change in angle since last magetoemter fusion - used to check if in-flight alignment can be performed
+        // Use a quaternion division to calcualte the delta quaternion between the rotation at the current and last time
+        Quaternion deltaQuat = state.quat / prevQuatMagReset;
+        prevQuatMagReset = state.quat;
+        // convert the quaternion to a rotation vector and find its length
+        Vector3f deltaRotVec;
+        deltaQuat.to_axis_angle(deltaRotVec);
+        float deltaRot = deltaRotVec.length();
+
+        // Check if the magnetic field states should be reset
+        if (vehicleArmed && !firstMagYawInit && (state.position.z  - posDownAtArming) < -1.5f && !assume_zero_sideslip() && deltaRot < 0.1745f) {
+            // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
+            // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
+            // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
+            Vector3f eulerAngles;
+            getEulerAngles(eulerAngles);
+            state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+            firstMagYawInit = true;
+        } else if (vehicleArmed && !secondMagYawInit && (state.position.z - posDownAtArming) < -5.0f && !assume_zero_sideslip() && deltaRot < 0.1745f) {
+            // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
+            // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
+            // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
+            Vector3f eulerAngles;
+            getEulerAngles(eulerAngles);
+            state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+            secondMagYawInit = true;
+        }
+
         // reset state updates and counter used to spread fusion updates across several frames to reduce 10Hz pulsing
         memset(&magIncrStateDelta[0], 0, sizeof(magIncrStateDelta));
         magUpdateCount = 0;
@@ -5169,22 +5197,6 @@ void NavEKF::performArmingChecks()
             StoreStatesReset();
         }
 
-    } else if (vehicleArmed && !firstMagYawInit && (state.position.z  - posDownAtArming) < -1.5f && !assume_zero_sideslip() && state.omega.length() < 1.0f) {
-        // Do the first in-air yaw and earth mag field initialisation when the vehicle has gained 1.5m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
-        // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
-        // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
-        Vector3f eulerAngles;
-        getEulerAngles(eulerAngles);
-        state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-        firstMagYawInit = true;
-    } else if (vehicleArmed && !secondMagYawInit && (state.position.z - posDownAtArming) < -5.0f && !assume_zero_sideslip() && state.omega.length() < 1.0f) {
-        // Do the second and final yaw and earth mag field initialisation when the vehicle has gained 5.0m of altitude after arming if it is a non-fly forward vehicle (vertical takeoff)
-        // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
-        // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
-        Vector3f eulerAngles;
-        getEulerAngles(eulerAngles);
-        state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-        secondMagYawInit = true;
     }
 
     // Always turn aiding off when the vehicle is disarmed
