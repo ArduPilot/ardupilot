@@ -70,9 +70,9 @@ void NavEKF2_core::setWindMagStateLearningMode()
     // Inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
 
-    // If magnetometer states are inhibited, we clear the flag indicating that the magnetic field in-flight initialisation has been completed
-    // because it will need to be done again
-    if (inhibitMagStates) {
+    // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
+    // because we want it re-done for each takeoff
+    if (onGround) {
         firstMagYawInit = false;
     }
 
