@@ -486,7 +486,7 @@
 #endif
 
 #ifndef RTL_CONE_SLOPE
-# define RTL_CONE_SLOPE             2.0    // default alt to return to home in cm, 0 = Maintain current altitude
+# define RTL_CONE_SLOPE             3.0f   // slope of RTL cone. 0 = No cone
 #endif
 
 #ifndef RTL_SPEED
