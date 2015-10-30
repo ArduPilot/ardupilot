@@ -314,8 +314,9 @@ private:
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // Flag for if we have gps lock and have set the home location
-    bool home_is_set;
+    // Flag for if we have g_gps lock and have set the home location in AHRS
+    enum HomeState home_is_set = HOME_UNSET;
+
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     struct Location prev_WP;
     // The location of the current/active waypoint.  Used for track following
