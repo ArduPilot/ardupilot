@@ -49,8 +49,10 @@ void Rover::init_rc_out()
     // setup PWM values to send if the FMU firmware dies
     RC_Channel::setup_failsafe_trim_all();  
 
-    // setup PX4 to output the min throttle when safety off if arming
-    // is setup for min on disarm
+    // output throttle trim when safety off if arming
+    // is setup for min on disarm.  MIN is from plane where MIN is effectively no throttle.
+    // For Rover's no throttle means TRIM as rovers can go backwards i.e. MIN throttle is
+    // full speed backward.
     if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
         hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1),  channel_throttle->radio_trim);
     }
@@ -94,8 +96,8 @@ void Rover::rudder_arm_disarm_check()
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if (!is_moving()) {
-		// when armed and not moving, full left rudder starts disarming counter
+	} else if (!motor_active()) {
+		// when armed and motor not active (not moving), full left rudder starts disarming counter
 		if (channel_steer->control_in < -4000) {
 			uint32_t now = millis();
 

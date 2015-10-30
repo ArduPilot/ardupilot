@@ -372,7 +372,7 @@ private:
     uint32_t rudder_arm_timer;
 
     // true if we are in an auto-throttle mode, which means
-    // we need to run the speed/height controller
+    // we need to run the speed controller
     bool auto_throttle_mode;
 
 
@@ -522,7 +522,7 @@ private:
     void change_arm_state(void);
     bool disarm_motors(void);
     bool arm_motors(AP_Arming::ArmingMethod method);
-    bool is_moving();
+    bool motor_active();
     void update_home();
 
 public:

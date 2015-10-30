@@ -117,3 +117,14 @@ void Rover::read_trim_switch()
     }
 }
 
+bool Rover::motor_active()
+{
+    // Check if armed and throttle is not neutral
+    if (hal.util->get_soft_armed()) {
+        if (!channel_throttle->in_trim_dz()) {
+            return true;
+        }
+    }
+
+    return false;
+}
