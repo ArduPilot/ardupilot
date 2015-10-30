@@ -135,7 +135,7 @@ void AccelCalibrator::new_sample(const Vector3f delta_velocity, float dt) {
         if (_samples_collected >= _conf_num_samples) {
             run_fit(MAX_ITERATIONS, _fitness);
 
-            if (_fitness < _conf_tolerance) {
+            if (_fitness < _conf_tolerance && accept_result()) {
                 set_status(ACCEL_CAL_SUCCESS);
             } else {
                 set_status(ACCEL_CAL_FAILED);
@@ -143,6 +143,20 @@ void AccelCalibrator::new_sample(const Vector3f delta_velocity, float dt) {
         } else {
             set_status(ACCEL_CAL_WAITING_FOR_ORIENTATION);
         }
+    }
+}
+
+// determines if the result is acceptable
+bool AccelCalibrator::accept_result() const {
+    if (fabsf(_param_struct.offset.x) > GRAVITY_MSS ||
+        fabsf(_param_struct.offset.y) > GRAVITY_MSS ||
+        fabsf(_param_struct.offset.z) > GRAVITY_MSS ||
+        _param_struct.diag.x < 0.8f || _param_struct.diag.x > 1.2f ||
+        _param_struct.diag.y < 0.8f || _param_struct.diag.y > 1.2f ||
+        _param_struct.diag.z < 0.8f || _param_struct.diag.z > 1.2f) {
+        return false;
+    } else {
+        return true;
     }
 }
 

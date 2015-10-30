@@ -120,6 +120,9 @@ private:
     // sets status of calibrator and takes appropriate actions
     void set_status(enum accel_cal_status_t);
 
+    // determines if the result is acceptable
+    bool accept_result() const;
+
     // returns number of paramters are required for selected Fit type
     uint8_t get_num_params() const;
 
