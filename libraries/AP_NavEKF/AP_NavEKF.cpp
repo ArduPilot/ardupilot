@@ -923,12 +923,16 @@ void NavEKF::SelectVelPosFusion()
         // If no height has been received for 200 msec, then fuse anyway so we have a guaranteed minimum aiding rate equivalent to GPS
         // only fuse synthetic measurements when rate of change of velocity is less than 0.5g to reduce attitude errors due to launch acceleration
         // do not use velocity fusion to reduce the effect of movement on attitude
+        if (!vehicleArmed) {
+            fuseVelData = true;
+        } else {
+            fuseVelData = false;
+        }
         if (accNavMag < 4.9f) {
             fusePosData = true;
         } else {
             fusePosData = false;
         }
-        fuseVelData = false;
         // record the fusion time - used to control fusion rate when there is no baro data
         lastConstPosFuseTime_ms = imuSampleTime_ms;
     } else {
