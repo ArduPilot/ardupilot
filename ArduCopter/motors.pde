@@ -332,20 +332,6 @@ static bool pre_arm_checks(bool display_failure)
         }
     }
 
-    // check GPS
-    if (!pre_arm_gps_checks(display_failure)) {
-        return false;
-    }
-
-#if AC_FENCE == ENABLED
-    // check fence is initialised
-    if(!fence.pre_arm_check()) {
-        if (display_failure) {
-            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check fence"));
-        }
-        return false;
-    }
-#endif
 
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
@@ -423,6 +409,22 @@ static bool pre_arm_checks(bool display_failure)
         }
 #endif
     }
+
+    // check GPS
+    if (!pre_arm_gps_checks(display_failure)) {
+        return false;
+    }
+
+#if AC_FENCE == ENABLED
+    // check fence is initialised
+    if(!fence.pre_arm_check()) {
+        if (display_failure) {
+            gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: check fence"));
+        }
+        return false;
+    }
+#endif
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN
 #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
