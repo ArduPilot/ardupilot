@@ -382,6 +382,13 @@ static bool pre_arm_checks(bool display_failure)
                      */
                     threshold *= 2;
                 }
+                if (vec_diff.length() > GRAVITY_MSS) {
+                    // more than 1G of discrepancy means we should report a failed accelerometer
+                    if (display_failure) {
+                        gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: Accelerometers not healthy"));
+                    }
+                    return false;
+                }
                 if (vec_diff.length() > threshold) {
                     if (display_failure) {
                         gcs_send_text_P(SEVERITY_HIGH,PSTR("PreArm: inconsistent Accelerometers"));
