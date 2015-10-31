@@ -30,34 +30,59 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
 
     DFMessageWriter *message_writer;
     // DataFlash
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM1
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    backends[_next_backend] = new DataFlash_APM1(structure, num_types, message_writer);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    backends[_next_backend] = new DataFlash_APM2(structure, num_types, message_writer);
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
+#define DATAFLASH_TMP_CLASS DataFlash_APM1
+#else
+#define DATAFLASH_TMP_CLASS DataFlash_APM2
+#endif
+
     message_writer = factory->create();
     if (message_writer != NULL)  {
-        backends[_next_backend] = new DataFlash_File(structure, num_types,
-                                                     message_writer,
-                                                     HAL_BOARD_LOG_DIRECTORY);
+        backends[_next_backend] = new DATAFLASH_TMP_CLASS(structure, num_types, message_writer);
     }
-#endif
     if (backends[_next_backend] == NULL) {
         hal.scheduler->panic(PSTR("Unable to open dataflash"));
     }
     _next_backend++;
+#undef DATAFLASH_TMP_CLASS
+
+#elif defined(HAL_BOARD_LOG_DIRECTORY)
+    if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
+        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
+        message_writer = factory->create();
+        if (message_writer != NULL)  {
+            backends[_next_backend] = new DataFlash_File(structure, num_types,
+                                                         message_writer,
+                                                         HAL_BOARD_LOG_DIRECTORY);
+        }
+        if (backends[_next_backend] == NULL) {
+            hal.console->printf(PSTR("Unable to open DataFlash_File"));
+        } else {
+            _next_backend++;
+        }
+    }
+#endif
 
 #if defined (HAL_BOARD_REMOTE_LOG_PORT)
-    message_writer = factory->create();
-    if (message_writer != NULL)  {
-        backends[_next_backend] = new DataFlash_MAVLink(structure, num_types,
-                                                        message_writer);
+    if (_params.backend_types == DATAFLASH_BACKEND_MAVLINK ||
+        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
+        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+            hal.scheduler->panic(PSTR("Too many backends"));
+            return;
+        }
+        message_writer = factory->create();
+        if (message_writer != NULL)  {
+            backends[_next_backend] = new DataFlash_MAVLink(structure, num_types,
+                                                            message_writer);
+        }
+        if (backends[_next_backend] == NULL) {
+            hal.console->printf(PSTR("Unable to open DataFlash_MAVLink"));
+        } else {
+            _next_backend++;
+        }
     }
-    if (backends[_next_backend] == NULL) {
-        // is this really worth panicing about?  Maybe.
-        hal.scheduler->panic(PSTR("Unable to open mavlink dataflash backend"));
-    }
-    _next_backend++;
 #endif
 
     for (uint8_t i=0; i<_next_backend; i++) {

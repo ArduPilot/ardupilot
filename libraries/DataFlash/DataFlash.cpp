@@ -3,6 +3,17 @@
 
 extern const AP_HAL::HAL& hal;
 
+const AP_Param::GroupInfo DataFlash_Class::var_info[] PROGMEM = {
+    // @Param: _BACKEND_TYPES
+    // @DisplayName: DataFlash Backend Storage type
+    // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
+    // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
+    // @User: Standard
+    AP_GROUPINFO("_BACKEND_TYPE",  0, DataFlash_Class, _params.backend_types,       DATAFLASH_BACKEND_FILE),
+    AP_GROUPEND
+};
+
+
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
         for (uint8_t i=0; i<_next_backend; i++) { \
