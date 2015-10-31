@@ -118,7 +118,7 @@ bool DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
     }
 
     if (bufferspace_available() < size) {
-        if (_front._startup_messagewriter->finished()) {
+        if (_startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...
             dropped++;
         }
@@ -227,7 +227,7 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
             _target_component_id = msg->compid;
             _chan = chan;
             _next_seq_num = 0;
-            _front.StartNewLog();
+            _startup_messagewriter->reset();
             _last_response_time = hal.scheduler->millis();
             Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
         }
@@ -302,6 +302,35 @@ void DataFlash_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
+void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
+{
+    if (df.stats.collection_count == 0) {
+        return;
+    }
+    struct log_DF_MAV_Stats pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
+        timestamp         : hal.scheduler->millis(),
+        seqno             : df._next_seq_num-1,
+        dropped           : df.dropped,
+        retries           : df._blocks_retry.sent_count,
+        resends           : df.stats.resends,
+        internal_errors   : df.internal_errors,
+        state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
+        state_free_min    : df.stats.state_free_min,
+        state_free_max    : df.stats.state_free_max,
+        state_pending_avg : (uint8_t)(df.stats.state_pending/df.stats.collection_count),
+        state_pending_min : df.stats.state_pending_min,
+        state_pending_max : df.stats.state_pending_max,
+        state_sent_avg    : (uint8_t)(df.stats.state_sent/df.stats.collection_count),
+        state_sent_min    : df.stats.state_sent_min,
+        state_sent_max    : df.stats.state_sent_max,
+        // state_retry_avg   : (uint8_t)(df.stats.state_retry/df.stats.collection_count),
+        // state_retry_min    : df.stats.state_retry_min,
+        // state_retry_max    : df.stats.state_retry_max
+    };
+    WriteBlock(&pkt,sizeof(pkt));
+}
+
 void DataFlash_MAVLink::stats_log()
 {
     if (!_initialised || !_logging_started) {
@@ -310,7 +339,7 @@ void DataFlash_MAVLink::stats_log()
     if (stats.collection_count == 0) {
         return;
     }
-    _front.Log_Write_DF_MAV(*this);
+    Log_Write_DF_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            dropped,

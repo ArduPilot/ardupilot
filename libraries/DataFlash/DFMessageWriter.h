@@ -1,29 +1,33 @@
 #ifndef DF_LOGSTARTUP_H
 #define DF_LOGSTARTUP_H
 
-#include "DataFlash.h"
+#include "DataFlash_Backend.h"
 
 class DFMessageWriter {
 public:
-    DFMessageWriter(DataFlash_Class &DataFlash) :
-        _DataFlash(DataFlash) { }
+    DFMessageWriter() :
+        _finished(false)
+        { }
 
     virtual void reset() = 0;
     virtual void process() = 0;
     virtual bool finished() { return _finished; };
     void abort() { _finished = true; }
+    virtual void set_dataflash_backend(class DataFlash_Backend *dataflash_backend) {
+        _dataflash_backend = dataflash_backend;
+    }
 
 protected:
     bool _finished;
-    DataFlash_Class &_DataFlash;
+    DataFlash_Backend *_dataflash_backend;
 };
 
 
 class DFMessageWriter_WriteSysInfo : public DFMessageWriter {
 public:
-    DFMessageWriter_WriteSysInfo(DataFlash_Class &DataFlash,
-                                 const prog_char_t *firmware_string) :
-        DFMessageWriter(DataFlash),
+    DFMessageWriter_WriteSysInfo(const prog_char_t *firmware_string) :
+        DFMessageWriter(),
+        stage(ws_blockwriter_stage_init),
         _firmware_string(firmware_string)
         { }
 
@@ -44,8 +48,10 @@ private:
 
 class DFMessageWriter_DFLogStart : public DFMessageWriter {
 public:
-    DFMessageWriter_DFLogStart(DataFlash_Class &DataFlash) :
-        DFMessageWriter(DataFlash)
+    DFMessageWriter_DFLogStart() :
+        DFMessageWriter(),
+        stage(ls_blockwriter_stage_init),
+        next_format_to_send(0)
         { }
 
     void reset();
@@ -68,6 +74,19 @@ private:
     uint16_t num_format_types;
     const struct LogStructure *_structures;
 };
+
+
+class DFMessageWriter_Factory {
+public:
+    DFMessageWriter_Factory(DataFlash_Class &dataflash) :
+        _dataflash(dataflash)
+        { }
+    virtual DFMessageWriter *create() = 0;
+
+protected:
+    DataFlash_Class &_dataflash;
+};
+
 
 #endif
 

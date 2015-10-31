@@ -18,20 +18,20 @@
 #include <stdint.h>
 #include <GCS_MAVLink.h> // for mavlink_msg_t
 
-#include "DataFlash.h"
+#include "DFMessageWriter.h"
+#include "LogStructure.h"
+
+class DataFlash_MAVLink;
 
 class DataFlash_Backend
 {
+    friend class DFMessageWriter_DFLogStart; // for access to _num_types etc
+    friend class DFMessageWriter; // for access to _num_types etc
+
 public:
 
-    DataFlash_Backend(DataFlash_Class &front) :
-        _front(front),
-        _logging_started(false),
-        _writes_enabled(false),
-        _writing_preface_messages(false),
-        _last_periodic_1Hz(0),
-        _last_periodic_10Hz(0)
-        { }
+    DataFlash_Backend(const struct LogStructure *structure, uint8_t num_types,
+                      class DFMessageWriter *writer);
 
     void internal_error();
     virtual bool CardInserted(void) = 0;
@@ -79,6 +79,7 @@ public:
     virtual uint16_t start_new_log(void) = 0;
     bool _logging_started;
 
+    // FIXME: move me to a notional LogStructure.cpp?
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
 
     // for Dataflash_MAVlink
@@ -88,9 +89,17 @@ public:
 
     virtual void periodic_tasks();
 
-protected:
-    DataFlash_Class &_front;
+    void Log_Write_DF_MAV(DataFlash_MAVLink &df);
+    bool Log_Write_Format(const struct LogStructure *structure);
+    bool Log_Write_Message(const char *message);
+    bool Log_Write_Message_P(const prog_char_t *message);
+    bool Log_Write_Mode(uint8_t mode);;
+    bool Log_Write_Parameter(const char *name, float value);
+    bool Log_Write_Parameter(const AP_Param *ap,
+                             const AP_Param::ParamToken &token,
+                             enum ap_var_type type);
 
+protected:
     uint32_t dropped;
     uint8_t internal_errors; // uint8_t - wishful thinking?
 
@@ -117,7 +126,10 @@ protected:
     */
     virtual void ReadBlock(void *pkt, uint16_t size) = 0;
 
+    DFMessageWriter *_startup_messagewriter;
+
 private:
+    
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
 };

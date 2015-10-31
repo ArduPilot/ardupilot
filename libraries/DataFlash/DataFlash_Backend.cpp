@@ -2,6 +2,21 @@
 
 extern const AP_HAL::HAL& hal;
 
+DataFlash_Backend::DataFlash_Backend(const struct LogStructure *structure,
+                                     uint8_t num_types,
+                                     DFMessageWriter *writer) :
+    _structures(structure),
+    _num_types(num_types),
+    _startup_messagewriter(writer),
+    _logging_started(false),
+    _writes_enabled(false),
+    _writing_preface_messages(false),
+    _last_periodic_1Hz(0),
+    _last_periodic_10Hz(0)
+{
+    writer->set_dataflash_backend(this);
+}
+
 void DataFlash_Backend::periodic_10Hz(const uint32_t now)
 {
 }
@@ -36,12 +51,12 @@ void DataFlash_Backend::internal_error() {
 
 bool DataFlash_Backend::WriteBlockCheckPrefaceMessages()
 {
-    if (_front._startup_messagewriter == NULL) {
+    if (_startup_messagewriter == NULL) {
         internal_error();
         return false;
     }
 
-    if (_front._startup_messagewriter->finished()) {
+    if (_startup_messagewriter->finished()) {
         return true;
     }
 
@@ -55,7 +70,7 @@ bool DataFlash_Backend::WriteBlockCheckPrefaceMessages()
     // end up clearing the buffer.....
 
     push_log_blocks();
-    if (_front._startup_messagewriter->finished()) {
+    if (_startup_messagewriter->finished()) {
         return true;
     }
 
@@ -67,11 +82,11 @@ bool DataFlash_Backend::WriteBlockCheckPrefaceMessages()
 void DataFlash_Backend::WriteMorePrefaceMessages()
 {
 
-    if (_front._startup_messagewriter == NULL) {
+    if (_startup_messagewriter == NULL) {
         internal_error();
         return;
     }
-    if (_front._startup_messagewriter->finished()) {
+    if (_startup_messagewriter->finished()) {
         return;
     }
 
@@ -88,12 +103,12 @@ void DataFlash_Backend::WriteMorePrefaceMessages()
     while (bufferspace_available() > 300) {
         if (i++ >= limit) {
             internal_error();
-            _front._startup_messagewriter->abort();
+            _startup_messagewriter->abort();
             break;
         }
-        _front._startup_messagewriter->process();
-        if (_front._startup_messagewriter->finished()) {
-            _front._startup_messagewriter->abort();
+        _startup_messagewriter->process();
+        if (_startup_messagewriter->finished()) {
+            _startup_messagewriter->abort();
             break;
         }
     }

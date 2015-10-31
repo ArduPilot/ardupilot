@@ -45,8 +45,11 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory) :
-    DataFlash_Backend(front),
+DataFlash_File::DataFlash_File(const struct LogStructure *structure,
+                               uint8_t num_types,
+                               DFMessageWriter *writer,
+                               const char *log_directory) :
+    DataFlash_Backend(structure, num_types, writer),
     _write_fd(-1),
     _read_fd(-1),
     _read_offset(0),
@@ -94,6 +97,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
 
 void DataFlash_File::periodic_tasks()
 {
+    if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
+        return;
+    }
     DataFlash_Backend::WriteMorePrefaceMessages();
 }
 
@@ -682,6 +688,7 @@ void DataFlash_File::stop_logging(void)
 uint16_t DataFlash_File::start_new_log(void)
 {
     stop_logging();
+    _startup_messagewriter->reset();
 
     if (_open_error) {
         // we have previously failed to open a file - don't try again

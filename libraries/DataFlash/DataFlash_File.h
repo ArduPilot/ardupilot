@@ -24,7 +24,8 @@ class DataFlash_File : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_File(DataFlash_Class &front, const char *log_directory);
+    DataFlash_File(const struct LogStructure *structure, uint8_t num_types,
+                   DFMessageWriter *, const char *log_directory);
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);

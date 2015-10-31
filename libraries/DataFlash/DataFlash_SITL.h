@@ -41,8 +41,9 @@ private:
     AP_HAL::Semaphore *_spi_sem;
 public:
 
-    DataFlash_SITL(DataFlash_Class &front) :
-        DataFlash_Block(front) { }
+    DataFlash_SITL(const struct LogStructure *structure, uint8_t num_types,
+                   DFMessageWriter *writer) :
+        DataFlash_Block(structure, num_types, writer) { }
 
     void        Prep_MinSpace() { }
     void        Init(const struct LogStructure *structure, uint8_t num_types);

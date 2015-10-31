@@ -25,8 +25,9 @@ class DataFlash_MAVLink : public DataFlash_Backend
     friend class DataFlash_Class; // for access to stats on Log_Df_Mav_Stats
 public:
     // constructor
-    DataFlash_MAVLink(DataFlash_Class &front) :
-        DataFlash_Backend(front),
+    DataFlash_MAVLink(const struct LogStructure *structure, uint8_t num_types,
+                      DFMessageWriter*writer) :
+        DataFlash_Backend(structure, num_types, writer),
         _blocks_free(NULL),
         _initialised(false),
         _max_blocks_per_send_blocks(1),
@@ -163,6 +164,8 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
+    void Log_Write_DF_MAV(DataFlash_MAVLink &df);
+    
     void internal_error();
     uint16_t bufferspace_available(); // in bytes
     uint8_t remaining_space_in_current_block();
@@ -185,7 +188,12 @@ private:
     uint32_t _stats_last_logged_time;
     uint8_t mavlink_seq;
 
-    uint16_t start_new_log(void) { return 0; }
+    /* we currently ignore requests to start a new log.  Notionally we
+     * could close the currently logging session and hope the client
+     * re-opens one */
+    uint16_t start_new_log(void) {
+        return 0;
+    }
     void ReadBlock(void *pkt, uint16_t size) {}
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // performance counters

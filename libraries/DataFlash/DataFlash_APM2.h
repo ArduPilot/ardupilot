@@ -44,8 +44,9 @@ private:
     AP_HAL::Semaphore* _spi_sem;
 
 public:
-    DataFlash_APM2(DataFlash_Class &front) :
-        DataFlash_Block(front) { }
+    DataFlash_APM2(const struct LogStructure *structure, uint8_t num_types,
+                   DFMessageWriter *writer) :
+        DataFlash_Block(structure, num_types, writer) { }
 
     void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
