@@ -617,7 +617,7 @@ bool NavEKF::InitialiseFilterDynamic(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMUactual = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
+    dtDelAng = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecGpsAvg);
@@ -679,7 +679,7 @@ bool NavEKF::InitialiseFilterBootstrap(void)
     InitialiseVariables();
 
     // get initial time deltat between IMU measurements (sec)
-    dtIMUactual = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
+    dtDelAng = dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
 
     // set number of updates over which gps and baro measurements are applied to the velocity and position states
     gpsUpdateCountMaxInv = (dtIMUavg * 1000.0f)/float(msecGpsAvg);
@@ -781,7 +781,7 @@ void NavEKF::UpdateFilter()
 
     // the vehicle was previously disarmed and time has slipped
     // gyro auto-zero has likely just been done - skip this timestep
-    if (!prev_armed && dtIMUactual > dtIMUavg*5.0f) {
+    if (!prev_armed && dtDelAng > dtIMUavg*5.0f) {
         // stop the timer used for load measurement
         prev_armed = armed;
         goto end;
@@ -789,7 +789,7 @@ void NavEKF::UpdateFilter()
     prev_armed = armed;
 
     // detect if the filter update has been delayed for too long
-    if (dtIMUactual > 0.2f) {
+    if (dtDelAng > 0.2f) {
         // we have stalled for too long - reset states
         ResetVelocity();
         ResetPosition();
@@ -816,11 +816,11 @@ void NavEKF::UpdateFilter()
     // sum delta angles and time used by covariance prediction
     summedDelAng = summedDelAng + correctedDelAng;
     summedDelVel = summedDelVel + correctedDelVel12;
-    dt += dtIMUactual;
+    dt += dtDelAng;
 
     // perform a covariance prediction if the total delta angle has exceeded the limit
     // or the time limit will be exceeded at the next IMU update
-    if (((dt >= (covTimeStepMax - dtIMUactual)) || (summedDelAng.length() > covDelAngMax))) {
+    if (((dt >= (covTimeStepMax - dtDelAng)) || (summedDelAng.length() > covDelAngMax))) {
         CovariancePrediction();
     } else {
         covPredStep = false;
@@ -1223,10 +1223,11 @@ void NavEKF::UpdateStrapdownEquationsNED()
         IMU1_weighting = 0.0f;
     }
     correctedDelVel12 = correctedDelVel1 * IMU1_weighting + correctedDelVel2 * (1.0f - IMU1_weighting);
+    float dtDelVel = dtDelVel1 * IMU1_weighting + dtDelVel2 * (1.0f - IMU1_weighting);
 
     // apply correction for earths rotation rate
     // % * - and + operators have been overloaded
-    correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtIMUactual;
+    correctedDelAng   = correctedDelAng - prevTnb * earthRateNED*dtDelAng;
 
     // convert the rotation vector to its equivalent quaternion
     correctedDelAngQuat.from_axis_angle(correctedDelAng);
@@ -1261,7 +1262,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     delVelNav2.z += delVelGravity2_z;
 
     // calculate the rate of change of velocity (used for launch detect and other functions)
-    velDotNED = delVelNav / dtIMUactual;
+    velDotNED = delVelNav / dtDelVel;
 
     // apply a first order lowpass filter
     velDotNEDfilt = velDotNED * 0.05f + velDotNEDfilt * 0.95f;
@@ -1282,16 +1283,16 @@ void NavEKF::UpdateStrapdownEquationsNED()
     state.vel2     += delVelNav2;
 
     // apply a trapezoidal integration to velocities to calculate position
-    state.position += (state.velocity + lastVelocity) * (dtIMUactual*0.5f);
-    state.posD1    += (state.vel1.z + lastVel1.z) * (dtIMUactual*0.5f);
-    state.posD2    += (state.vel2.z + lastVel2.z) * (dtIMUactual*0.5f);
+    state.position += (state.velocity + lastVelocity) * (dtDelVel*0.5f);
+    state.posD1    += (state.vel1.z + lastVel1.z) * (dtDelVel1*0.5f);
+    state.posD2    += (state.vel2.z + lastVel2.z) * (dtDelVel2*0.5f);
 
     // capture current angular rate to augmented state vector for use by optical flow fusion
-    state.omega = correctedDelAng / dtIMUactual;
+    state.omega = correctedDelAng / dtDelAng;
 
     // LPF the yaw rate using a 1 second time constant yaw rate and determine if we are doing continual
     // fast rotations that can cause problems due to gyro scale factor errors.
-    float alphaLPF = constrain_float(dtIMUactual, 0.0f, 1.0f);
+    float alphaLPF = constrain_float(dtDelAng, 0.0f, 1.0f);
     yawRateFilt += (state.omega.z - yawRateFilt)*alphaLPF;
     if (fabsf(yawRateFilt) > 1.0f) {
         highYawRate = true;
@@ -1306,7 +1307,7 @@ void NavEKF::UpdateStrapdownEquationsNED()
     // using a simple complementary filter
     float lastPosDownDerivative = posDownDerivative;
     posDownDerivative = 2.0f * (state.position.z - posDown);
-    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (dtIMUactual*0.5f);
+    posDown += (posDownDerivative + lastPosDownDerivative + 2.0f*delVelNav.z) * (dtDelVel*0.5f);
 }
 
 // calculate the predicted state covariance matrix
@@ -3704,8 +3705,8 @@ void NavEKF::RecallOmega(Vector3f &omegaAvg, uint32_t msecStart, uint32_t msecEn
     if (numAvg >= 1)
     {
         omegaAvg = omegaAvg / float(numAvg);
-    } else if (dtIMUactual > 0) {
-        omegaAvg = correctedDelAng / dtIMUactual;
+    } else if (dtDelAng > 0) {
+        omegaAvg = correctedDelAng / dtDelAng;
     } else {
         omegaAvg.zero();
     }
@@ -4210,7 +4211,7 @@ void NavEKF::readIMUData()
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     dtIMUavg = 1.0f/ins.get_sample_rate();
-    dtIMUactual = max(ins.get_delta_time(),1.0e-4f);
+    dtDelAng = max(ins.get_delta_time(),1.0e-4f);
 
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
@@ -4809,7 +4810,7 @@ void NavEKF::InitialiseVariables()
     secondMagYawInit = false;
     storeIndex = 0;
     dtIMUavg = 0.0025f;
-    dtIMUactual = 0.0025f;
+    dtDelAng = 0.0025f;
     dt = 0;
     hgtMea = 0;
     storeIndex = 0;
