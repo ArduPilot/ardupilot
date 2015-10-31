@@ -686,9 +686,6 @@ static void start_logging()
         if (!ap.logging_started) {
             ap.logging_started = true;
             in_mavlink_delay = true;
-            DFMessageWriter_LogStartup *logstartup =
-                new DFMessageWriter_LogStartup(DataFlash, FIRMWARE_STRING);
-            DataFlash.setStartupMessageWriter(logstartup);
             DataFlash.StartNewLog();
             in_mavlink_delay = false;
         }
@@ -724,5 +721,7 @@ static void Log_Write_Baro(void) {}
 static int8_t process_logs(uint8_t argc, const Menu::arg *argv) {
     return 0;
 }
+
+#undef FOR_EACH_BACKEND
 
 #endif // LOGGING_DISABLED

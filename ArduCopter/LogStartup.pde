@@ -14,6 +14,13 @@ void DFMessageWriter_LogStartup::reset()
     _writesysinfo->reset();
 }
 
+void DFMessageWriter_LogStartup::set_dataflash_backend(DataFlash_Backend *backend)
+{
+    DFMessageWriter::set_dataflash_backend(backend);
+    _dflogstart->set_dataflash_backend(backend);
+    _writesysinfo->set_dataflash_backend(backend);
+}
+
 void DFMessageWriter_LogStartup::process()
 {
     switch(stage) {
@@ -39,7 +46,7 @@ void DFMessageWriter_LogStartup::process()
         // fall through
 
     case blockwriter_stage_frame:
-        if (!DataFlash.Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING))) {
+        if (!_dataflash_backend->Log_Write_Message_P(PSTR("Frame: " FRAME_CONFIG_STRING))) {
             return;
         }
         stage = blockwriter_stage_control_mode;
@@ -47,7 +54,7 @@ void DFMessageWriter_LogStartup::process()
 
     case blockwriter_stage_control_mode:
         // log the flight mode
-        if (!DataFlash.Log_Write_Mode(control_mode)) {
+        if (!_dataflash_backend->Log_Write_Mode(control_mode)) {
             return;
         }
         // fall through
