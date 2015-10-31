@@ -335,6 +335,8 @@ public:
         k_param_fs_ekf_action, // 248
         k_param_rtl_climb_min,  // 249
 
+        k_param_DataFlash = 250 // Logging Group
+
         // 254,255: reserved
     };
 
