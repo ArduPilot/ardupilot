@@ -1036,7 +1036,7 @@ void NavEKF::SelectMagFusion()
             // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
             // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
             Vector3f eulerAngles;
-            getEulerAngles(eulerAngles);
+            statesAtMagMeasTime.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
             state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
             firstMagYawInit = true;
         } else if (vehicleArmed && !secondMagYawInit && (state.position.z - posDownAtArming) < -5.0f && !assume_zero_sideslip() && deltaRot < 0.1745f) {
@@ -1044,7 +1044,7 @@ void NavEKF::SelectMagFusion()
             // This second and final correction is needed for flight from large metal structures where the magnetic field distortion can extend up to 5m
             // Do not do this alignment if the vehicle is rotating rapidly as timing erors in the mag data will cause significant errors
             Vector3f eulerAngles;
-            getEulerAngles(eulerAngles);
+            statesAtMagMeasTime.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
             state.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
             secondMagYawInit = true;
         }
