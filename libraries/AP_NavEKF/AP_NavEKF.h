@@ -706,6 +706,7 @@ private:
     uint32_t lastTime_ms; // time stamp used for LPF filter applied to GPS checks
     uint32_t lastInnovPassTime_ms; // last time GPS innovation quality check passed
     uint32_t lastInnovFailTime_ms; // last time GPS innovation quality check failed
+    Quaternion prevQuatMagReset;    // Quaternion from the previous frame that the magnetic field state reset condition test was performed
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement
