@@ -18,17 +18,16 @@
   Based on SIM_last_letter
 */
 
-#ifndef _SIM_ARDUCOPTER_SITL_ROS_H
-#define _SIM_ARDUCOPTER_SITL_ROS_H
+#pragma once
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+namespace SITL {
 /*
   a arducopter_sitl_ros simulator
  */
-class arducopter_sitl_ros : public Aircraft
-{
+class arducopter_sitl_ros : public Aircraft {
 public:
     arducopter_sitl_ros(const char *home_str, const char *frame_str);
 
@@ -73,5 +72,4 @@ private:
     SocketAPM sock;
 };
 
-
-#endif // _SIM_LAST_LETTER_H
+} // namespace SITL

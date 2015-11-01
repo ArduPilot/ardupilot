@@ -18,7 +18,6 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "SIM_arducopter_sitl_ros.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -27,9 +26,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-  constructor
- */
+namespace SITL {
+
 arducopter_sitl_ros::arducopter_sitl_ros(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     last_timestamp_us(0),
@@ -130,4 +128,5 @@ void arducopter_sitl_ros::update(const struct sitl_input &input)
     recv_fdm(input);
     sync_frame_time();
 }
-#endif // CONFIG_HAL_BOARD
+
+} // namespace SITL
