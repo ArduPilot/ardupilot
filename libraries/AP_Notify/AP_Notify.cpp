@@ -55,6 +55,9 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         NotifyDevice *AP_Notify::_devices[] = {&toshibaled, &tonealarm};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
         NotifyDevice *AP_Notify::_devices[0];
+    #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+        AP_BoardLED boardled;
+        NotifyDevice *AP_Notify::_devices[] = {&boardled};
     #else
         AP_BoardLED boardled;
         ToshibaLED_I2C toshibaled;
