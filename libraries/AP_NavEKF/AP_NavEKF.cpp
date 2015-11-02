@@ -4210,15 +4210,17 @@ void NavEKF::readGpsData()
         // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
         // If we don't have an origin, then set it to the current GPS coordinates
         const struct Location &gpsloc = _ahrs->get_gps().location();
-        if (validOrigin) {
+        if (validOrigin && PV_AidingMode == AID_ABSOLUTE) {
             gpsPosNE = location_diff(EKF_origin, gpsloc);
         } else if (gpsGoodToAlign){
-            // Set the NE origin to the current GPS position
-            setOrigin();
-            // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-            EKF_origin.alt = gpsloc.alt - hgtMea;
-            // We are by definition at the origin at the instant of alignment so set NE position to zero
-            gpsPosNE.zero();
+            // Set the NE origin to the current GPS position if not previously set
+            if (!validOrigin) {
+                setOrigin();
+                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                EKF_origin.alt = gpsloc.alt - hgtMea;
+                // We are by definition at the origin at the instant of alignment so set NE position to zero
+                gpsPosNE.zero();
+            }
             // If the vehicle is in flight (use arm status to determine) and GPS useage isn't explicitly prohibited, we switch to absolute position mode
             if (vehicleArmed && _fusionModeGPS != 3) {
                 constPosMode = false;
