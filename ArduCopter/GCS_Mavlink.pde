@@ -1498,6 +1498,21 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             }
         }
 
+        case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
+            result = MAV_RESULT_ACCEPTED;
+
+            bool shot_mode = (control_mode == GUIDED && packet.param1 != 0.0f);
+
+            if (!shot_mode) {
+                if (set_mode(LOITER)) {
+                    // might want to tell loiter to stop hard here
+                } else {
+                    set_mode(ALT_HOLD);
+                }
+            }
+            break;
+        }
+
         default:
             result = MAV_RESULT_UNSUPPORTED;
             break;
