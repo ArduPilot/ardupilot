@@ -1,15 +1,15 @@
-#ifndef __NavioAnalogIn_H__
-#define __NavioAnalogIn_H__
+#ifndef __ADS1115AnalogIn_H__
+#define __ADS1115AnalogIn_H__
 
 #include "AP_HAL_Linux.h"
 #include <AP_ADC/AP_ADC.h>
 
-#define NAVIO_ADC_MAX_CHANNELS 6
+#define ADS1115_ADC_MAX_CHANNELS 6
 
-class NavioAnalogSource: public AP_HAL::AnalogSource {
+class ADS1115AnalogSource: public AP_HAL::AnalogSource {
 public:
-    friend class NavioAnalogIn;
-    NavioAnalogSource(int16_t pin);
+    friend class ADS1115AnalogIn;
+    ADS1115AnalogSource(int16_t pin);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -23,9 +23,9 @@ private:
     float _value;
 };
 
-class NavioAnalogIn: public AP_HAL::AnalogIn {
+class ADS1115AnalogIn: public AP_HAL::AnalogIn {
 public:
-    NavioAnalogIn();
+    ADS1115AnalogIn();
     void init(void* implspecific);
     AP_HAL::AnalogSource* channel(int16_t n);
 
@@ -36,7 +36,7 @@ public:
     }
 private:
     AP_ADC_ADS1115 *_adc;
-    NavioAnalogSource *_channels[NAVIO_ADC_MAX_CHANNELS];
+    ADS1115AnalogSource *_channels[ADS1115_ADC_MAX_CHANNELS];
 
     uint8_t _channels_number;
 
