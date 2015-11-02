@@ -22,7 +22,7 @@ WIPE_EEPROM=0
 REVERSE_THROTTLE=0
 NO_REBUILD=0
 START_HIL=0
-TRACKER_ARGS=""
+EXTRA_ARGS=""
 EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
@@ -42,7 +42,7 @@ Options:
     -D               build with debugging
     -B               add a breakpoint at given location in debugger
     -T               start an antenna tracker instance
-    -A               pass arguments to antenna tracker
+    -A               pass arguments to SITL instance
     -t               set antenna tracker start location
     -L               select start location from Tools/autotest/locations.txt
     -l               set the custom start location from -L
@@ -97,7 +97,7 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
       START_ANTENNA_TRACKER=1
       ;;
     A)
-      TRACKER_ARGS="$OPTARG"
+      EXTRA_ARGS="$OPTARG"
       ;;
     R)
       REVERSE_THROTTLE=1
@@ -375,7 +375,7 @@ if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
 
-cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
+cmd="$cmd --model $MODEL --speedup=$SPEEDUP $EXTRA_ARGS"
 
 case $VEHICLE in
     ArduPlane)
