@@ -115,6 +115,13 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
         memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
     }
 
+    i2c_sem->give();
+
+    // reduce error count
+    if (num_errors > 0) {
+        num_errors--;
+    }
+
     report->pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;    //convert to radians
     report->pixel_flow_y_integral = static_cast<float>(f_integral.pixel_flow_y_integral) / 10000.0f;    //convert to radians
     report->frame_count_since_last_readout = f_integral.frame_count_since_last_readout;
@@ -127,13 +134,6 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     report->time_since_last_sonar_update = f_integral.sonar_timestamp;  // microseconds
     report->gyro_temperature = f_integral.gyro_temperature;             // Temperature * 100 in centi-degrees Celsius
     report->sensor_id = 0;
-
-    i2c_sem->give();
-
-    // reduce error count
-    if (num_errors > 0) {
-        num_errors--;
-    }
 
     return true;
 
