@@ -86,13 +86,11 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
     if (i2c_sem == NULL) {
-        num_errors++;
         return false;
     }
 
     // take i2c bus sempahore (non blocking)
     if (!i2c_sem->take_nonblocking()) {
-        num_errors++;
         return false;
     }
 
