@@ -466,7 +466,7 @@ void Copter::Log_Write_Event(uint8_t id)
             time_us  : hal.scheduler->micros64(),
             id       : id
         };
-        DataFlash.WriteBlock(&pkt, sizeof(pkt));
+        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
