@@ -46,7 +46,7 @@
             </entry>
 
             <entry name="MAV_CMD_SOLO_BTN_FLY_CLICK" value="42001">
-                <description>Set mode to LOITER, if that fails set mode to ALT_HOLD.</description>
+                <description>FLY button has been clicked.</description>
                 <param index="1">Empty</param>
                 <param index="2">Empty</param>
                 <param index="3">Empty</param>
@@ -57,7 +57,7 @@
             </entry>
 
             <entry name="MAV_CMD_SOLO_BTN_FLY_HOLD" value="42002">
-                <description>If disarmed, arm, else if armed and landed, take off, else if flying, land</description>
+                <description>FLY button has been held for 1.5 seconds.</description>
                 <param index="1">Takeoff altitude</param>
                 <param index="2">Empty</param>
                 <param index="3">Empty</param>
