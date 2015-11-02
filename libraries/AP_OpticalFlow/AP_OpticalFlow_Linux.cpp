@@ -103,18 +103,14 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     // Perform the writing and reading in a single command
     if (PX4FLOW_REG == 0x00) {
         if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
-            num_errors++;
-            i2c_sem->give();
-            return false;
+            goto fail_transfer;
         }
         memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
     }
 
     if (PX4FLOW_REG == 0x16) {
         if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
-            num_errors++;
-            i2c_sem->give();
-            return false;
+            goto fail_transfer;
         }
         memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
     }
@@ -140,6 +136,11 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     }
 
     return true;
+
+fail_transfer:
+    num_errors++;
+    i2c_sem->give();
+    return false;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
