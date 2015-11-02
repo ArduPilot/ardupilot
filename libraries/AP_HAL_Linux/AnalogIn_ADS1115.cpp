@@ -2,10 +2,10 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#include "AnalogIn_Navio.h"
+#include "AnalogIn_ADS1115.h"
 
-#define NAVIO_ANALOGIN_DEBUG 0
-#if NAVIO_ANALOGIN_DEBUG
+#define ADS1115_ANALOGIN_DEBUG 0
+#if ADS1115_ANALOGIN_DEBUG
 #include <cstdio>
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #define error(fmt, args ...)  do {fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -14,13 +14,13 @@
 #define error(fmt, args ...)  
 #endif
 
-NavioAnalogSource::NavioAnalogSource(int16_t pin):
+ADS1115AnalogSource::ADS1115AnalogSource(int16_t pin):
     _pin(pin),
     _value(0.0f)
 {
 }
 
-void NavioAnalogSource::set_pin(uint8_t pin)
+void ADS1115AnalogSource::set_pin(uint8_t pin)
 {
     if (_pin == pin) {
         return;
@@ -28,44 +28,44 @@ void NavioAnalogSource::set_pin(uint8_t pin)
     _pin = pin;
 }
 
-float NavioAnalogSource::read_average()
+float ADS1115AnalogSource::read_average()
 { 
     return read_latest();
 }
 
-float NavioAnalogSource::read_latest()
+float ADS1115AnalogSource::read_latest()
 {
     return _value;
 }
 
-float NavioAnalogSource::voltage_average()
+float ADS1115AnalogSource::voltage_average()
 {
     return _value;
 }
 
-float NavioAnalogSource::voltage_latest()
+float ADS1115AnalogSource::voltage_latest()
 {
     return _value;
 }
 
-float NavioAnalogSource::voltage_average_ratiometric()
+float ADS1115AnalogSource::voltage_average_ratiometric()
 {
     return _value;
 }
 
 extern const AP_HAL::HAL& hal;
 
-NavioAnalogIn::NavioAnalogIn() 
+ADS1115AnalogIn::ADS1115AnalogIn() 
 {
     _adc = new AP_ADC_ADS1115();
     _channels_number = _adc->get_channels_number();
 }
 
-AP_HAL::AnalogSource* NavioAnalogIn::channel(int16_t pin)
+AP_HAL::AnalogSource* ADS1115AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j = 0; j < _channels_number; j++) {
         if (_channels[j] == NULL) {
-            _channels[j] = new NavioAnalogSource(pin);
+            _channels[j] = new ADS1115AnalogSource(pin);
             return _channels[j];
         }
     }
@@ -74,27 +74,27 @@ AP_HAL::AnalogSource* NavioAnalogIn::channel(int16_t pin)
     return NULL;
 }
 
-void NavioAnalogIn::init(void* implspecific)
+void ADS1115AnalogIn::init(void* implspecific)
 {
     _adc->init();
     hal.scheduler->suspend_timer_procs();
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&NavioAnalogIn::_update, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&ADS1115AnalogIn::_update, void));
     hal.scheduler->resume_timer_procs();
 }
 
-void NavioAnalogIn::_update()
+void ADS1115AnalogIn::_update()
 {
     if (hal.scheduler->micros() - _last_update_timestamp < 100000) {
         return;
     }
 
-    adc_report_s reports[NAVIO_ADC_MAX_CHANNELS];
+    adc_report_s reports[ADS1115_ADC_MAX_CHANNELS];
 
     size_t rc = _adc->read(reports, 6);
 
     for (size_t i = 0; i < rc; i++) {
         for (uint8_t j=0; j < rc; j++) {
-            NavioAnalogSource *source = _channels[j];
+            ADS1115AnalogSource *source = _channels[j];
 
 #if 0
             if (source != NULL) {
