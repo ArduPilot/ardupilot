@@ -127,7 +127,6 @@ void location_update(struct Location &loc, float bearing, float distance)
 
 /*
  *  extrapolate latitude/longitude given distances north and east
- *  This function costs about 80 usec on an AVR2560
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
