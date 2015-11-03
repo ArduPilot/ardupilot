@@ -284,23 +284,29 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 // update_battery_resistance - calculate battery resistance when throttle is above hover_out
 void AP_MotorsMulticopter::update_battery_resistance()
 {
+    
     // if motors are stopped, reset resting voltage and current
-    if (_throttle_control_input <= 0 || !_flags.armed) {
+    if (!_flags.armed) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
+        _batt_resistance=0;
     } else {
         // update battery resistance when throttle is over hover throttle
-        if ((_batt_timer < 400) && ((_batt_current_resting*2.0f) < _batt_current)) {
-            if (_throttle_control_input >= _hover_out) {
-                // filter reaches 90% in 1/4 the test time
-                _batt_resistance += 0.05f*(( (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting) ) - _batt_resistance);
-                _batt_timer += 1;
-            } else {
-                // initialize battery resistance to prevent change in resting voltage estimate
-                _batt_resistance = ((_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting));
-            }
+        if ((_batt_timer < 18000) && ((_batt_current_resting*2.0f) < _batt_current)) && ((batt_current-_batt_current_resting)>2) && ((_batt_voltage_resting-_batt_voltage)>0.1)) {
+            if (_throttle_control_input >= _hover_out*0.95) { 
+                float _batt_resistance_temp = (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting);
+                if (_batt_resistance_temp <0.5 && _batt_resistance_temp >0.001) {
+                    if (_batt_resistance==0) { 
+                        _batt_resistance = _batt_resistance_temp;
+                     }
+                    _batt_resistance += 0.05f*( _batt_resistance_temp - _batt_resistance); // filter reaches 90% in 1/4 the test time
+                    _batt_timer += 40;
+                }
+            } 
         }
+      _batt_timer += 1;
+      }
     }
 }
 
