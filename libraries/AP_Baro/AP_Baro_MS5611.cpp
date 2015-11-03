@@ -384,10 +384,9 @@ void AP_Baro_MS5611::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
     dT = _D2-(((uint32_t)_C5)<<8);
     TEMP = (dT * _C6)/8388608;
     OFF = _C2 * 65536.0f + (_C4 * dT) / 128;
@@ -424,10 +423,9 @@ void AP_Baro_MS5607::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
     dT = _D2-(((uint32_t)_C5)<<8);
     TEMP = (dT * _C6)/8388608;
     OFF = _C2 * 131072.0f + (_C4 * dT) / 64;
