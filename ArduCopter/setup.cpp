@@ -4,18 +4,19 @@
 
 #if CLI_ENABLED == ENABLED
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-#define WITH_ESC_CALIB
-#endif
+#define PWM_CALIB_MIN 1000
+#define PWM_CALIB_MAX 2000
+#define PWM_HIGHEST_MAX 2200
+#define PWM_LOWEST_MAX 1200
+#define PWM_HIGHEST_MIN 1800
+#define PWM_LOWEST_MIN 800
 
 // Command/function table for the setup menu
 static const struct Menu::command setup_menu_commands[] = {
     {"reset",                       MENU_FUNC(setup_factory)},
     {"show",                        MENU_FUNC(setup_show)},
     {"set",                         MENU_FUNC(setup_set)},
-#ifdef WITH_ESC_CALIB
     {"esc_calib",                   MENU_FUNC(esc_calib)},
-#endif
 };
 
 // Create the setup menu object.
@@ -156,14 +157,6 @@ int8_t Copter::setup_show(uint8_t argc, const Menu::arg *argv)
     return(0);
 }
 
-#ifdef WITH_ESC_CALIB
-#define PWM_CALIB_MIN 1000
-#define PWM_CALIB_MAX 2000
-#define PWM_HIGHEST_MAX 2200
-#define PWM_LOWEST_MAX 1200
-#define PWM_HIGHEST_MIN 1800
-#define PWM_LOWEST_MIN 800
-
 int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 {
 
@@ -299,7 +292,6 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 
 	return(0);
 }
-#endif // WITH_ESC_CALIB
 
 
 /***************************************************************************/
