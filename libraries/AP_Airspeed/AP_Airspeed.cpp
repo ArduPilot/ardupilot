@@ -26,12 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
- #define ARSPD_DEFAULT_PIN 64
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #define ARSPD_DEFAULT_PIN 0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_PIN 1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  #include <sys/stat.h>
