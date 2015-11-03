@@ -246,8 +246,6 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
     s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
   double N = WGS84_A / sqrt(1. - d*d);
@@ -349,6 +347,3 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
 }
-
-#endif
-
