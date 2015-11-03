@@ -1321,7 +1321,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, rover.gps);
         break;
@@ -1329,8 +1328,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg, rover.gps);
         break;
-        
-#endif
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
