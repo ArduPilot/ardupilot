@@ -13,10 +13,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_InertialSensor ins;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 static void display_offsets_and_scaling();
 static void run_test();
 static void run_calibration();
@@ -24,12 +20,6 @@ static void run_calibration();
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, HAL_GPIO_OUTPUT);
-    hal.gpio->write(40, 1);
-#endif
 
     ins.init(AP_InertialSensor::RATE_100HZ);
 
