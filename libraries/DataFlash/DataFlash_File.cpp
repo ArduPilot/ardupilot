@@ -53,6 +53,7 @@ DataFlash_File::DataFlash_File(const char *log_directory) :
     _initialised(false),
     _open_error(false),
     _log_directory(log_directory),
+    _cached_oldest_log(0),
     _writebuf(NULL),
     _writebuf_size(16*1024),
 #if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -199,6 +200,7 @@ void DataFlash_File::EraseAll()
         unlink(fname);
         free(fname);
     }
+    _cached_oldest_log = 0;
 }
 
 /* Write a block of data at current offset */
@@ -343,6 +345,10 @@ float DataFlash_File::avail_space_percent()
 // returns 0 if no log was found
 uint16_t DataFlash_File::find_oldest_log()
 {
+    if (_cached_oldest_log != 0) {
+        return _cached_oldest_log;
+    }
+
     uint16_t last_log_num = find_last_log();
     if (last_log_num == 0) {
         return 0;
@@ -396,6 +402,8 @@ uint16_t DataFlash_File::find_oldest_log()
     }
     closedir(d);
 
+    _cached_oldest_log = current_oldest_log;
+
     return current_oldest_log;
 }
 
@@ -406,6 +414,8 @@ void DataFlash_File::Prep_MinSpace()
         // no files to remove
         return;
     }
+
+    _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -676,6 +686,8 @@ uint16_t DataFlash_File::start_new_log(void)
     }
     char *fname = _log_file_name(log_num);
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    _cached_oldest_log = 0;
+
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
