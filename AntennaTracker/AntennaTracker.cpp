@@ -112,11 +112,6 @@ void Tracker::one_second_loop()
     }
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-// needed for APM1 inertialsensor driver
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
