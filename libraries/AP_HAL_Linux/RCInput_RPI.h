@@ -1,5 +1,5 @@
-#ifndef __AP_HAL_LINUX_RCINPUT_NAVIO_H__
-#define __AP_HAL_LINUX_RCINPUT_NAVIO_H__
+#ifndef __AP_HAL_LINUX_RCINPUT_RPI_H__
+#define __AP_HAL_LINUX_RCINPUT_RPI_H__
 
 #include "AP_HAL_Linux.h"
 #include "RCInput.h"
@@ -24,9 +24,9 @@
 
 
 enum state_t{
-    RCIN_NAVIO_INITIAL_STATE = -1,
-    RCIN_NAVIO_ZERO_STATE = 0,
-    RCIN_NAVIO_ONE_STATE = 1
+    RCIN_RPI_INITIAL_STATE = -1,
+    RCIN_RPI_ZERO_STATE = 0,
+    RCIN_RPI_ONE_STATE = 1
 };
 
 
@@ -45,8 +45,8 @@ typedef struct {
 } dma_cb_t;
 
 class Memory_table {
-// Allow RCInput_Navio access to private members of Memory_table
-friend class Linux::RCInput_Navio;
+// Allow RCInput_RPI access to private members of Memory_table
+friend class Linux::RCInput_RPI;
   
 private:
     void** _virt_pages;
@@ -74,13 +74,13 @@ public:
 };
 
 
-class Linux::RCInput_Navio : public Linux::RCInput
+class Linux::RCInput_RPI : public Linux::RCInput
 { 
 public:
     void init(void*);
     void _timer_tick(void);
-    RCInput_Navio();
-    ~RCInput_Navio();
+    RCInput_RPI();
+    ~RCInput_RPI();
     
 private:
 
@@ -131,4 +131,4 @@ private:
 
 };
 
-#endif // __AP_HAL_LINUX_RCINPUT_NAVIO_H__
+#endif // __AP_HAL_LINUX_RCINPUT_RPI_H__
