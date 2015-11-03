@@ -47,10 +47,7 @@ public:
     //MAVLink methods
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan) { return ; }
 
-#if GPS_MAX_INSTANCES > 1
     virtual void send_mavlink_gps2_rtk(mavlink_channel_t chan) { return ; }
-#endif
-
 #endif
 
 protected:
