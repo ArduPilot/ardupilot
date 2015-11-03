@@ -4,6 +4,9 @@
  * control_stop.pde - init and run calls for stop flight mode
  */
 
+static uint32_t stop_timeout_start = 0;
+static float stop_timeout_ms = 0;
+
 // stop_init - initialise stop controller
 static bool stop_init(bool ignore_checks)
 {
@@ -25,6 +28,8 @@ static bool stop_init(bool ignore_checks)
 
         // initialise altitude target to stopping point
         pos_control.set_target_to_stopping_point_z();
+
+        stop_timeout_ms = 0;
 
         return true;
     }else{
@@ -68,4 +73,17 @@ static void stop_run()
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt);
     pos_control.update_z_controller();
+
+    if (stop_timeout_ms != 0 && millis()-stop_timeout_start >= stop_timeout_ms) {
+        if(!set_mode(LOITER)) {
+            set_mode(ALT_HOLD);
+        }
+        gcs_send_heartbeat();
+    }
+}
+
+static void stop_timeout_to_loiter_ms(uint32_t timeout_ms)
+{
+    stop_timeout_start = millis();
+    stop_timeout_ms = timeout_ms;
 }
