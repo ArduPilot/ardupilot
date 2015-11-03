@@ -14,10 +14,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // INS and Baro declaration
 AP_InertialSensor ins;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 Compass compass;
 
 AP_GPS gps;
@@ -34,13 +30,6 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
-
-#ifdef APM2_HARDWARE
-    // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, HAL_HAL_GPIO_OUTPUT);
-    hal.gpio->write(40, HIGH);
-#endif
-
     ins.init(AP_InertialSensor::RATE_100HZ);
     ahrs.init();
     serial_manager.init();
