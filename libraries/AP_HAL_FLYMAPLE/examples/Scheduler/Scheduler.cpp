@@ -8,11 +8,12 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-/** 
+/*
  * You'll want to use a logic analyzer to watch the effects of this test.
- * On the APM2 its pretty easy to hook up an analyzer to pins A0 through A3.
+ * Define each of the pins below to the pins used during the test on your
+ * board.
  */
-#define DELAY_TOGGLE_PIN       15  /* A0 = pin 15 */     
+#define DELAY_TOGGLE_PIN       15  /* A0 = pin 15 */
 #define FAILSAFE_TOGGLE_PIN    16  /* A1 = pin 16 */
 #define SCHEDULED_TOGGLE_PIN_1 17  /* A2 = pin 17 */
 #define SCHEDULED_TOGGLE_PIN_2 18  /* A3 = pin 18 */
@@ -61,7 +62,7 @@ void setup_pin(int pin_num) {
 
 void setup (void) {
 //    hal.scheduler->delay(5000);
-    hal.console->printf("Starting AP_HAL_AVR::Scheduler test\r\n");
+    hal.console->printf("Starting AP_HAL::Scheduler test\r\n");
 
     setup_pin(DELAY_TOGGLE_PIN);
     setup_pin(FAILSAFE_TOGGLE_PIN);
