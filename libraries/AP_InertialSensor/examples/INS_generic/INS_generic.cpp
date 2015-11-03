@@ -49,7 +49,7 @@ void loop(void)
     "    d) display offsets and scaling\r\n"
     "    l) level (capture offsets from level)\r\n"
     "    t) test\r\n"
-    "    r) reboot"));
+    "    r) reboot");
 
     // wait for user input
     while( !hal.console->available() ) {
