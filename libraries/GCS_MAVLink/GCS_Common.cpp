@@ -923,8 +923,6 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
     }
 #endif
 
-#if GPS_MAX_INSTANCES > 1
-
     if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
 
         if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RAW_LEN) {
@@ -940,7 +938,6 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
         }
 #endif
     }
-#endif
 
     //TODO: Should check what else managed to get through...
     return true;
