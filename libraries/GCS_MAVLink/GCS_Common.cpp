@@ -914,14 +914,12 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
         return false;
     }
 
-#if GPS_RTK_AVAILABLE
     if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
         if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS_RTK_LEN) {
             gps.send_mavlink_gps_rtk(chan);
         }
 
     }
-#endif
 
     if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
 
@@ -929,14 +927,12 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
             gps.send_mavlink_gps2_raw(chan);
         }
 
-#if GPS_RTK_AVAILABLE
         if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
             if (comm_get_txspace(chan) >= 
                 MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RTK_LEN) {
                 gps.send_mavlink_gps2_rtk(chan);
             }
         }
-#endif
     }
 
     //TODO: Should check what else managed to get through...
