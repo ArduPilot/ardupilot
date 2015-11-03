@@ -937,17 +937,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
-#endif
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
-#endif
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
