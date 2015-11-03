@@ -457,6 +457,13 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw_integrated(float roll_rate_bf, f
     // compute angle_bf_error
     _angle_err_quat.to_axis_angle(_angle_bf_error);
 
+    static const float err_lim_rad = radians(AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX*0.01f);
+    float angle_bf_error_mag = _angle_bf_error.length();
+    if (angle_bf_error_mag > err_lim_rad) {
+        _angle_bf_error *= err_lim_rad/angle_bf_error_mag;
+        _angle_err_quat.from_axis_angle(_angle_bf_error);
+    }
+
     // convert to centidegrees (kill it with fire)
     _angle_bf_error *= degrees(1.0f)*100.0f;
 
