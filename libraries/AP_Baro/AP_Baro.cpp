@@ -182,18 +182,12 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
 {
     float ret;
     float temp    = get_ground_temperature() + 273.15f;
-#if HAL_CPU_CLASS <= HAL_CPU_CLASS_16
-    // on slower CPUs use a less exact, but faster, calculation
-    float scaling = base_pressure / pressure;
-    ret = logf(scaling) * temp * 29.271267f;
-#else
-    // on faster CPUs use a more exact calculation
     float scaling = pressure / base_pressure;
-    
-    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
-    // in the troposphere (up to 11,000 m amsl).
-	ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
-#endif
+
+    // This is an exact calculation that is within +-2.5m of the standard
+    // atmosphere tables in the troposphere (up to 11,000 m amsl).
+    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
+
     return ret;
 }
 
