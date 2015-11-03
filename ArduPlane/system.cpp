@@ -74,10 +74,6 @@ static void failsafe_check_static()
     plane.failsafe_check();
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 void Plane::init_ardupilot()
 {
     // initialise serial port
@@ -168,10 +164,6 @@ void Plane::init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    apm1_adc.Init();      // APM ADC library initialization
 #endif
 
     // initialise airspeed sensor
@@ -617,18 +609,6 @@ void Plane::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
-    } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
-    }
-#endif
 }
 
 
@@ -797,9 +777,6 @@ bool Plane::disarm_motors(void)
     return true;
 }
 
-/*
-  having local millis() and micros() reduces code size a bit on AVR
- */
 uint32_t Plane::millis(void) const
 {
     return hal.scheduler->millis();

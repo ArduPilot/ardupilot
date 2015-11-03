@@ -20,9 +20,6 @@ static const struct Menu::command test_menu_commands[] = {
 
     // Tests below here are for hardware sensors only present
     // when real sensors are attached or they are emulated
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    {"adc",                 MENU_FUNC(test_adc)},
-#endif
     {"gps",                 MENU_FUNC(test_gps)},
     {"ins",                 MENU_FUNC(test_ins)},
     {"airspeed",            MENU_FUNC(test_airspeed)},
@@ -317,26 +314,6 @@ int8_t Plane::test_shell(uint8_t argc, const Menu::arg *argv)
 
 //-------------------------------------------------------------------------------------------
 // tests in this section are for real sensors or sensors that have been simulated
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-int8_t Plane::test_adc(uint8_t argc, const Menu::arg *argv)
-{
-    print_hit_enter();
-    apm1_adc.Init();
-    hal.scheduler->delay(1000);
-    cliSerial->printf("ADC\n");
-    hal.scheduler->delay(1000);
-
-    while(1) {
-        for (int8_t i=0; i<9; i++) cliSerial->printf("%.1f\t",apm1_adc.Ch(i));
-        cliSerial->println();
-        hal.scheduler->delay(100);
-        if(cliSerial->available() > 0) {
-            return (0);
-        }
-    }
-}
-#endif
 
 int8_t Plane::test_gps(uint8_t argc, const Menu::arg *argv)
 {
