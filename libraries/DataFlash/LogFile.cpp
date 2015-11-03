@@ -15,8 +15,6 @@
 #include "DataFlash_SITL.h"
 #include "DataFlash_File.h"
 #include "DataFlash_Empty.h"
-#include "DataFlash_APM1.h"
-#include "DataFlash_APM2.h"
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
@@ -27,11 +25,7 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
     _structures = structure;
 
     // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    backend = new DataFlash_APM1(*this);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    backend = new DataFlash_APM2(*this);
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
+#if defined(HAL_BOARD_LOG_DIRECTORY)
     backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
 #else
     // no dataflash driver
