@@ -1519,9 +1519,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     bool shot_mode = (packet.param1 != 0.0f && control_mode == GUIDED);
 
                     if (!shot_mode) {
-                        if (set_mode(LOITER)) {
+                        if (set_mode(STOP)) {
                             send_heartbeat_immediately = true;
-                            // might want to tell loiter to stop hard here
+                            stop_timeout_to_loiter_ms(2500);
                         } else if(set_mode(ALT_HOLD)) {
                             send_heartbeat_immediately = true;
                         }
