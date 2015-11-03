@@ -391,9 +391,9 @@ void Rover::log_init(void)
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
         g.log_bitmask.set(0);
     } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_WARNING, "Preparing log system");
+        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
         DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_WARNING, "Prepared log system");
+        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
         for (uint8_t i=0; i<num_gcs; i++) {
             gcs[i].reset_cli_timeout();
         }
