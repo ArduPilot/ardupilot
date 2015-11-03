@@ -33,7 +33,6 @@ extern const AP_HAL::HAL& hal;
 
 /*
   layout for fixed wing and rovers
-  On APM2 this gives 167 waypoints, 10 rally points and 20 fence points
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
@@ -59,8 +58,7 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
 
 
 /*
-  layout for copter. 
-  On APM2 this gives 161 waypoints, 6 fence points and 6 rally points
+  layout for copter.
   On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
   On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
