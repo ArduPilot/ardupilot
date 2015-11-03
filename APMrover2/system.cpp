@@ -74,10 +74,6 @@ static void failsafe_check_static()
     rover.failsafe_check();
 }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    AP_ADC_ADS7844 apm1_adc;
-#endif
-
 void Rover::init_ardupilot()
 {
     // initialise console serial port
@@ -146,10 +142,6 @@ void Rover::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    apm1_adc.Init();      // APM ADC library initialization
-#endif
 
 	if (g.compass_enabled==true) {
 		if (!compass.init()|| !compass.read()) {
@@ -431,18 +423,6 @@ void Rover::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
-    } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
-    }
-#endif
 }
 
 
