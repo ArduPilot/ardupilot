@@ -408,6 +408,14 @@ static bool pre_arm_checks(bool display_failure)
             }
         }
 #endif
+
+        // check lean angle
+        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
+            if (display_failure) {
+                gcs_send_text_P(SEVERITY_HIGH,PSTR("Arm: Leaning"));
+            }
+            return false;
+        }
     }
 
     // check GPS
@@ -653,11 +661,6 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
         }
     }
 
-    // check gps
-    if (!pre_arm_gps_checks(display_failure)) {
-        return false;
-    }
-
     // check lean angle
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > aparm.angle_max) {
@@ -666,6 +669,11 @@ static bool arm_checks(bool display_failure, bool arming_from_gcs)
             }
             return false;
         }
+    }
+
+    // check gps
+    if (!pre_arm_gps_checks(display_failure)) {
+        return false;
     }
 
     // check throttle
