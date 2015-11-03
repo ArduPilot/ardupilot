@@ -89,7 +89,7 @@
 
    Note that these are only approximate, not exact CPU speeds.
  */
-#define HAL_CPU_CLASS_16   1   // 16Mhz, AVR2560 or similar
+#define HAL_CPU_CLASS_16   1   // DEPRECATED: 16Mhz, AVR2560 or similar
 #define HAL_CPU_CLASS_75   2   // 75Mhz, Flymaple or similar
 #define HAL_CPU_CLASS_150  3   // 150Mhz, PX4 or similar, assumes
                                // hardware floating point. Assumes tens
