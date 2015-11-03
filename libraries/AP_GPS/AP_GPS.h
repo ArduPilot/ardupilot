@@ -32,7 +32,6 @@
    than 1 then redundent sensors may be available
  */
 #define GPS_MAX_INSTANCES 2
-#define GPS_RTK_AVAILABLE 1
 #define GPS_RTK_INJECT_TO_ALL 127
 
 class DataFlash_Class;
@@ -334,10 +333,8 @@ public:
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
-#if GPS_RTK_AVAILABLE
     void send_mavlink_gps_rtk(mavlink_channel_t chan);
     void send_mavlink_gps2_rtk(mavlink_channel_t chan);
-#endif
 
 private:
     struct GPS_timing {
@@ -371,9 +368,7 @@ private:
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
         struct NMEA_detect_state nmea_detect_state;
-#if GPS_RTK_AVAILABLE
         struct SBP_detect_state sbp_detect_state;
-#endif
     } detect_state[GPS_MAX_INSTANCES];
 
     struct {

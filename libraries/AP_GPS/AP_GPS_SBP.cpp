@@ -25,8 +25,6 @@
 #include "AP_GPS_SBP.h"
 #include <DataFlash/DataFlash.h>
 
-#if GPS_RTK_AVAILABLE
-
 extern const AP_HAL::HAL& hal;
 
 #define SBP_DEBUGGING 1
@@ -518,5 +516,3 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
 
 #endif // SBP_HW_LOGGING
-
-#endif // GPS_RTK_AVAILABLE
