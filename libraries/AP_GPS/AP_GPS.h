@@ -31,29 +31,9 @@
    maximum number of GPS instances available on this platform. If more
    than 1 then redundent sensors may be available
  */
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define GPS_MAX_INSTANCES 2
-#else
-#define GPS_MAX_INSTANCES 1
-#endif
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define GPS_RTK_AVAILABLE 1
-#else
-#define GPS_RTK_AVAILABLE 0
-#endif
-
 #define GPS_RTK_INJECT_TO_ALL 127
-
-/**
- * save flash by skipping NMEA and SIRF support on copter and plane
- * for APM1/APM2
- */
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 && defined(APM_BUILD_DIRECTORY)
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    #define GPS_SKIP_SIRF_NMEA
-  #endif
-#endif
 
 class DataFlash_Class;
 class AP_GPS_Backend;
