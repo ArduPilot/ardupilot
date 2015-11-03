@@ -20,15 +20,8 @@
 // into progmem
 #define MAVLINK_MESSAGE_CRC(msgid) mavlink_get_message_crc(msgid)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#include <util/crc16.h>
-#define HAVE_CRC_ACCUMULATE
-// only two telemetry ports on APM1/APM2
-#define MAVLINK_COMM_NUM_BUFFERS 2
-#else
-// allow four telemetry ports on other boards
+// allow four telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 4
-#endif
 
 /*
   The MAVLink protocol code generator does its own alignment, so
@@ -39,14 +32,7 @@
 
 #include "include/mavlink/v1.0/ardupilotmega/version.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-// this allows us to make mavlink_message_t much smaller. It means we
-// can't support the largest messages in common.xml, but we don't need
-// those for APM1/APM2
-#define MAVLINK_MAX_PAYLOAD_LEN 104
-#else
 #define MAVLINK_MAX_PAYLOAD_LEN 255
-#endif
 
 #include "include/mavlink/v1.0/mavlink_types.h"
 
@@ -91,15 +77,6 @@ uint16_t comm_get_available(mavlink_channel_t chan);
 /// @param chan		Channel to check
 /// @returns		Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan);
-
-#ifdef HAVE_CRC_ACCUMULATE
-// use the AVR C library implementation. This is a bit over twice as
-// fast as the C version
-static inline void crc_accumulate(uint8_t data, uint16_t *crcAccum)
-{
-	*crcAccum = _crc_ccitt_update(*crcAccum, data);
-}
-#endif
 
 /*
   return true if the MAVLink parser is idle, so there is no partly parsed
