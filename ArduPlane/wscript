@@ -19,6 +19,7 @@ def build(bld):
             'AP_Menu',
             'AP_Mount',
             'AP_Navigation',
+            'AP_Parachute',
             'AP_RCMapper',
             'AP_RPM',
             'AP_RSSI',
