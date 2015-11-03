@@ -241,16 +241,4 @@ void Tracker::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
-    } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
-    }
-#endif
 }
