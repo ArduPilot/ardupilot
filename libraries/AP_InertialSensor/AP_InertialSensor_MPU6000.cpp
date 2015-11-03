@@ -10,9 +10,7 @@ extern const AP_HAL::HAL& hal;
 // MPU6000 accelerometer scaling
 #define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define MPU6000_DRDY_PIN 70
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #define MPU6000_DRDY_PIN BBB_P8_14
@@ -808,7 +806,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
         hal.scheduler->panic("MPU6000: Unable to get semaphore");
     }
 
-    // initially run the bus at low speed (500kHz on APM2)
+    // initially run the bus at low speed
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
 
     // Chip reset

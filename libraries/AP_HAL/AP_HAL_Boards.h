@@ -49,7 +49,6 @@
 #define HAL_BOARD_SUBTYPE_VRUBRAIN_V52   4004
 
 // InertialSensor driver types
-#define HAL_INS_OILPAN  1
 #define HAL_INS_MPU60XX_SPI 2
 #define HAL_INS_MPU60XX_I2C 3
 #define HAL_INS_HIL     4
