@@ -913,11 +913,7 @@ Format characters in the format string for binary log messages
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2" }
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 #define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
-#else
-#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES
-#endif
 
 // message types 0 to 128 reversed for vehicle specific use
 
