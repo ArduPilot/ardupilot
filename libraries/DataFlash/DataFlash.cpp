@@ -68,7 +68,6 @@ void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_F
     backend->Log_Fill_Format(s, pkt);
 }
 
-#ifndef DATAFLASH_NO_CLI
 void DataFlash_Class::LogReadProcess(uint16_t log_num,
                                      uint16_t start_page, uint16_t end_page,
                                      print_mode_fn printMode,
@@ -84,7 +83,6 @@ void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port) {
 void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
     backend->ListAvailableLogs(port);
 }
-#endif // DATAFLASH_NO_CLI
 
 bool DataFlash_Class::logging_started(void) {
     return backend->log_write_started;
