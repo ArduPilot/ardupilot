@@ -1,10 +1,6 @@
 #ifndef DATAFLASH_BACKEND_H
 #define DATAFLASH_BACKEND_H
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define DATAFLASH_NO_CLI
-#endif
-
 #include "DataFlash.h"
 
 class DataFlash_Backend
