@@ -70,7 +70,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_GPS_DISCONNECTED 16
     { "MBMLT100O3L32dbaP16dP16", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN 17
-    { "MFMST200O4L16>c<gf#gL64P32df#df#P32df#df#", false }
+    { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false }
 };
 
 bool ToneAlarm_PX4::init()
@@ -143,13 +143,13 @@ void ToneAlarm_PX4::update()
 
     check_cont_tone();
 
-    /*if (AP_Notify::flags.powering_off) {
+    if (AP_Notify::flags.powering_off) {
         if (!flags.powering_off) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
         }
         flags.powering_off = AP_Notify::flags.powering_off;
         return;
-    }*/
+    }
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if(AP_Notify::flags.compass_cal_running) {
