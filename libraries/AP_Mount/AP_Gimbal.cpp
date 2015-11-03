@@ -261,8 +261,8 @@ void AP_Gimbal::update_joint_angle_est()
 Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
     // Get filtered vehicle turn rate in body frame
-    static const float tc = 0.03f;
-    static const float yawErrorLimit = radians(3);
+    static const float tc = 0.05f;
+    static const float yawErrorLimit = radians(5);
     float dt = _measurement.delta_time;
     float alpha = dt/(dt+tc);
 
