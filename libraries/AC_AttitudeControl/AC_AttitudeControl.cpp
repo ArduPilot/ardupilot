@@ -471,10 +471,12 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw_integrated(float roll_rate_bf, f
     update_rate_bf_targets();
 
     // just for logging:
+    // _angle_err_quat is rotation from current angle to desired angle
+    // angle_target_quat is rotation from 0,0,0 to estimated copter orientation
     Quaternion angle_target_quat;
     angle_target_quat.from_rotation_matrix(_ahrs.get_dcm_matrix());
     angle_target_quat *= _angle_err_quat;
-    angle_target_quat.to_axis_angle(_angle_ef_target);
+    angle_target_quat.to_euler(_angle_ef_target.x,_angle_ef_target.y,_angle_ef_target.z);
     _angle_ef_target *= degrees(1.0f)*100.0f;
 }
 
