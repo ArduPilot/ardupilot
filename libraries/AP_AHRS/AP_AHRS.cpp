@@ -250,7 +250,7 @@ void AP_AHRS::update_trig(void)
         _cos_roll = temp.c.z / _cos_pitch;
     }
     _cos_pitch = constrain_float(_cos_pitch, 0, 1.0);
-    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing,which it does do in avr-libc
+    _cos_roll = constrain_float(_cos_roll, -1.0, 1.0); // this relies on constrain_float() of infinity doing the right thing
 
     // sin_roll, sin_pitch
     _sin_pitch = -temp.c.x;
