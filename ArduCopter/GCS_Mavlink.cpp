@@ -1526,13 +1526,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             send_text(MAV_SEVERITY_WARNING, "Frame: " FRAME_CONFIG_STRING);
 
-            #if CONFIG_HAL_BOARD != HAL_BOARD_APM1 && CONFIG_HAL_BOARD != HAL_BOARD_APM2
             // send system ID if we can
             char sysid[40];
             if (hal.util->get_system_id(sysid)) {
                 send_text(MAV_SEVERITY_WARNING, sysid);
             }
-            #endif
 
             break;
         }
