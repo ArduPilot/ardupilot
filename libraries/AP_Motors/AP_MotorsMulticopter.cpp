@@ -301,7 +301,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
 
             if (_batt_resistance_temp>0.001 &&_batt_resistance_temp<3) { //check if the new batt_resistance_temp between 1 and 3000 mohm
 
-                if (_throttle_control_input < _hover_out && _batt_resistance>0) {
+                if ((_throttle_control_input < _hover_out*1.05) && _batt_resistance>0) {
                     // initialize battery resistance only throttle < hover to prevent change in resting voltage estimate and help later for faster filtering
                     _batt_resistance = _batt_resistance_temp;
                 } else {
