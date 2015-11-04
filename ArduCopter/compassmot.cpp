@@ -95,13 +95,13 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     AP_Notify::flags.esc_calibration = true;
 
     // warn user we are starting calibration
-    gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "STARTING CALIBRATION");
+    gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "STARTING CALIBRATION");
 
     // inform what type of compensation we are attempting
     if (comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "CURRENT");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "CURRENT");
     } else{
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "THROTTLE");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "THROTTLE");
     }
 
     // disable throttle and battery failsafe
@@ -245,10 +245,10 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
         }
         compass.save_motor_compensation();
         // display success message
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Calibration Successful!");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_INFO, "Calibration Successful!");
     } else {
         // compensation vector never updated, report failure
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL, "Failed!");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_NOTICE, "Failed!");
         compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
     }
 
