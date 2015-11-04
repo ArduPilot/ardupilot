@@ -332,7 +332,7 @@ void Plane::one_second_loop()
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt("G_Dt_max=%lu G_Dt_min=%lu\n", 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
@@ -769,22 +769,22 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Disable fence failed (autodisable)");
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Fence disabled (autodisable)");
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
             }
         } else if (g.fence_autoenable == 2) {
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Disable fence floor failed (autodisable)");
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Fence floor disabled (auto disable)");
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             }
         }
 #endif
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
-        gcs_send_text_fmt("Landing aborted via throttle, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
