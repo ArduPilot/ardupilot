@@ -295,7 +295,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
          //_batt_resistance=0;
     } else if (_batt_timer < 25000) { //check if the resting Values maximale not older than 10 sec in longest case
 
-        if ( ((_batt_current_resting*2.0f) < _batt_current) && ((batt_current-_batt_current_resting)>1) && ((_batt_voltage_resting-_batt_voltage)>0.05) ) {
+        if ( ((_batt_current_resting*2.0f) < _batt_current) && ((_batt_current-_batt_current_resting)>1) && ((_batt_voltage_resting-_batt_voltage)>0.05) ) {
 
             _batt_resistance_temp=(_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting); //Check for Good enough Vaulues to prevent calc error and prevent div / 0
 
