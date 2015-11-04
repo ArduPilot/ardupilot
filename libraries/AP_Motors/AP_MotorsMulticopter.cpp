@@ -311,7 +311,7 @@ void AP_MotorsMulticopter::update_battery_resistance()
                 }
             }
         }
-    _batt_timer += 1
+    _batt_timer += 1;
     }
     
 }
