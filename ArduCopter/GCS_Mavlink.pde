@@ -1504,6 +1504,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     send_heartbeat_immediately = true;
                 }
             }
+            break;
         }
 
         case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
