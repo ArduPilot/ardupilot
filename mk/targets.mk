@@ -9,18 +9,8 @@ sitl-arm: HAL_BOARD = HAL_BOARD_SITL
 sitl-arm: TOOLCHAIN = RPI
 sitl-arm: all
 
-apm1: HAL_BOARD = HAL_BOARD_APM1
-apm1: TOOLCHAIN = AVR
-apm1: all
-
-apm1-1280: HAL_BOARD = HAL_BOARD_APM1
-apm1-1280: TOOLCHAIN = AVR
-apm1-1280: all
-apm1-1280: BOARD = mega
-
-apm2: HAL_BOARD = HAL_BOARD_APM2
-apm2: TOOLCHAIN = AVR
-apm2: all
+apm1 apm1-1280 apm2 apm2beta:
+	$(error $@ is deprecated on master branch; use master-AVR)
 
 flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
 flymaple: TOOLCHAIN = ARM
@@ -110,9 +100,6 @@ USED_FRAMES := $(foreach frame,$(FRAMES), $(findstring $(frame), $(MAKECMDGOALS)
 # generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
 $(foreach board,$(USED_BOARDS),$(eval $(call board_template,$(board))))
 $(foreach board,$(USED_BOARDS),$(foreach frame,$(USED_FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
-
-apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
-apm2beta: apm2
 
 sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
 sitl-mount: sitl

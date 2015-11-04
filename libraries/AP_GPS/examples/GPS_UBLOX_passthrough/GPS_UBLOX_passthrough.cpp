@@ -2,8 +2,6 @@
 /*
  *       GPS UBlox passthrough sketch
  *       Code by DIYDrones.com
- *
- *       Works with APM2.x
  */
 
 #include <stdlib.h>

@@ -38,7 +38,6 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void);
-#ifndef DATAFLASH_NO_CLI
     void LogReadProcess(const uint16_t list_entry,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
@@ -46,7 +45,6 @@ public:
     void DumpPageInfo(AP_HAL::BetterStream *port);
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
-#endif
 
     uint16_t bufferspace_available();
 
@@ -126,8 +124,6 @@ protected:
 };
 
 
-#include "DataFlash_APM1.h"
-#include "DataFlash_APM2.h"
 #include "DataFlash_SITL.h"
 #include "DataFlash_Empty.h"
 

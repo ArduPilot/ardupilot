@@ -79,8 +79,6 @@ void HAL_FLYMAPLE::run(int argc, char* const argv[], Callbacks* callbacks) const
      * it is initialized at boot */
     uartA->begin(115200);
 
-    /* The AVR RCInput drivers take an AP_HAL_AVR::ISRRegistry*
-     * as the init argument */
     rcin->init(NULL);
     rcout->init(NULL);
     spi->init(NULL);

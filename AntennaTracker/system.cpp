@@ -52,17 +52,13 @@ void Tracker::init_tracker()
     gcs[1].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
     gcs[1].set_snoop(mavlink_snoop_static);
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // setup serial port for telem2 and start snooping for vehicle data
     gcs[2].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 1);
     gcs[2].set_snoop(mavlink_snoop_static);
-#endif
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // setup serial port for fourth telemetry port (not used by default) and start snooping for vehicle data
     gcs[3].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 2);
     gcs[3].set_snoop(mavlink_snoop_static);
-#endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -241,16 +237,4 @@ void Tracker::check_usb_mux(void)
 
     // the user has switched to/from the telemetry port
     usb_connected = usb_check;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // the APM2 has a MUX setup where the first serial port switches
-    // between USB and a TTL serial connection. When on USB we use
-    // SERIAL0_BAUD, but when connected as a TTL serial port we run it
-    // at SERIAL1_BAUD.
-    if (usb_connected) {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_Console, 0);
-    } else {
-        serial_manager.set_console_baud(AP_SerialManager::SerialProtocol_MAVLink, 0);
-    }
-#endif
 }

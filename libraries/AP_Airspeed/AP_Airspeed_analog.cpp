@@ -30,18 +30,8 @@ extern const AP_HAL::HAL& hal;
 // scaling for 3DR analog airspeed sensor
 #define VOLTS_TO_PASCAL 819
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-extern AP_ADC_ADS7844 apm1_adc;
-#endif
-
 bool AP_Airspeed_Analog::init()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    if (_pin == 64) {
-        _source = new AP_ADC_AnalogSource( &apm1_adc, 7, 1.0f);
-        return true;
-    }
-#endif
     _source = hal.analogin->channel(_pin);
     return true;
 }

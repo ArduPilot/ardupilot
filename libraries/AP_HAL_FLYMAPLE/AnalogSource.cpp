@@ -170,7 +170,6 @@ bool FLYMAPLEAnalogSource::reading_settled()
 void FLYMAPLEAnalogSource::new_sample(uint16_t sample) {
     _sum += sample;
     _latest = sample;
-    // Copied from AVR code in ArduPlane-2.74b, but AVR code is wrong!
     if (_sum_count >= 15) { // Flymaple has a 12 bit ADC, so can only sum 16 in a uint16_t
         _sum >>= 1;
         _sum_count = 8;

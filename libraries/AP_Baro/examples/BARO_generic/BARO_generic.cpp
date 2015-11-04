@@ -18,12 +18,6 @@ void setup()
 
     hal.scheduler->delay(1000);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // disable CS on MPU6000
-    hal.gpio->pinMode(63, HAL_GPIO_OUTPUT);
-    hal.gpio->write(63, 1);
-#endif
-
     barometer.init();
     barometer.calibrate();
 

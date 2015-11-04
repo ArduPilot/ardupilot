@@ -32,18 +32,6 @@
 /// change in your local copy of APM_Config.h.
 ///
 
-#if defined( __AVR_ATmega1280__ )
- // default choices for a 1280. We can't fit everything in, so we 
- // make some popular choices by default
- #define LOGGING_ENABLED DISABLED
- #ifndef MOUNT
- # define MOUNT DISABLED
- #endif
- #ifndef CAMERA
- # define CAMERA DISABLED
- #endif
-#endif
-
 // Just so that it's completely clear...
 #define ENABLED			1
 #define DISABLED		0
@@ -58,13 +46,7 @@
  #define HIL_MODE        HIL_MODE_DISABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define BATTERY_PIN_1	  0
-# define CURRENT_PIN_1	  1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-# define BATTERY_PIN_1	  1
-# define CURRENT_PIN_1	  2
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 # define BATTERY_PIN_1	  1
 # define CURRENT_PIN_1	  2
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -98,11 +80,7 @@
 //
 
 #ifndef FRSKY_TELEM_ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
- # define FRSKY_TELEM_ENABLED DISABLED
-#else
- # define FRSKY_TELEM_ENABLED ENABLED
-#endif
+#define FRSKY_TELEM_ENABLED ENABLED
 #endif
 
 
@@ -286,25 +264,7 @@
 # define LOGGING_ENABLED		ENABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define DEFAULT_LOG_BITMASK     \
-    MASK_LOG_ATTITUDE_MED | \
-    MASK_LOG_GPS | \
-    MASK_LOG_PM | \
-    MASK_LOG_CTUN | \
-    MASK_LOG_NTUN | \
-    MASK_LOG_MODE | \
-    MASK_LOG_CMD | \
-    MASK_LOG_SONAR | \
-    MASK_LOG_COMPASS | \
-    MASK_LOG_CURRENT | \
-    MASK_LOG_STEERING | \
-    MASK_LOG_CAMERA
-#else
-// other systems have plenty of space for full logs
 #define DEFAULT_LOG_BITMASK   0xffff
-#endif
-
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -324,11 +284,7 @@
 
 // use this to completely disable the CLI
 #ifndef CLI_ENABLED
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
-# define CLI_ENABLED ENABLED
-#else
-# define CLI_ENABLED DISABLED
-#endif
+#define CLI_ENABLED ENABLED
 #endif
 
 // if RESET_SWITCH_CH is not zero, then this is the PWM value on

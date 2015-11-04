@@ -14,14 +14,6 @@
  *        |                                                                                  |
  *        |                                      J1-3(I2C Clk) J1-2(I2C Data) J1-1(GND)      |
  *        ------------------------------------------------------------------------------------
- *
- * To connect to APM2.x:
- *    APM I2C Clock <-> J1-3
- *    APM I2C Data  <-> J1-2 
- *    APM GND (from output Rail) <-> J1-1 J2-5
- *    APM 5V (from output Rail fed by ESC or BEC) <-> J2-2
- *
- *  APM2.x's I2C connector from outside edge: GND, Data, CLK, 3.3V
  */
 
 // i2c address

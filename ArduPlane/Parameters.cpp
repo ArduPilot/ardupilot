@@ -1060,9 +1060,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
@@ -1070,9 +1068,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: RC11_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
@@ -1124,17 +1120,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
-#endif
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
-#endif
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp

@@ -24,10 +24,6 @@
 #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_Vehicle::FixedWing aparm;

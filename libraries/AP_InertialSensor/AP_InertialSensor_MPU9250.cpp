@@ -514,7 +514,6 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
     // now that we have initialised, we set the SPI bus speed to high
-    // (8MHz on APM2)
     _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 
     _spi_sem->give();

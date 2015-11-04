@@ -23,8 +23,7 @@
 /*
   parameter defaults for different types of vehicle. The
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
-  where the code is built. Note that this trick won't work for arduino
-  builds on APM2, but NavEKF doesn't run on APM2, so that's OK
+  where the code is built.
  */
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 // copter defaults

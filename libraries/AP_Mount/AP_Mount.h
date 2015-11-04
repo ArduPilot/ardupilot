@@ -102,7 +102,7 @@ public:
     void set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode);
 
     // set_mode_to_default - restores the mode to it's default mode held in the MNT_DEFLT_MODE parameter
-    //      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+    //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 

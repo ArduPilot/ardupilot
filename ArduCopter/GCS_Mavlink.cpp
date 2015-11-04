@@ -1526,13 +1526,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             send_text(MAV_SEVERITY_WARNING, "Frame: " FRAME_CONFIG_STRING);
 
-            #if CONFIG_HAL_BOARD != HAL_BOARD_APM1 && CONFIG_HAL_BOARD != HAL_BOARD_APM2
             // send system ID if we can
             char sysid[40];
             if (hal.util->get_system_id(sysid)) {
                 send_text(MAV_SEVERITY_WARNING, sysid);
             }
-            #endif
 
             break;
         }
@@ -1789,7 +1787,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, copter.gps);
         break;
@@ -1798,8 +1795,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, copter.gps);
         result = MAV_RESULT_ACCEPTED;
         break;
-
-#endif
 
 #if PRECISION_LANDING == ENABLED
         case MAVLINK_MSG_ID_LANDING_TARGET:

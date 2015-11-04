@@ -597,7 +597,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     //update _accel_ef_blended
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
@@ -606,9 +605,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     } else {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
     }
-#else
-    _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
-#endif // HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over

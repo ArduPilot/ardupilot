@@ -197,11 +197,8 @@ void GCS_MAVLINK::reset_cli_timeout() {
 
 void GCS_MAVLINK::send_meminfo(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    extern unsigned __brkval;
-#else
     unsigned __brkval = 0;
-#endif
+
     mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
 }
 
@@ -298,7 +295,7 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
     ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
 
     /*
-      avoid the _send() function to save memory on APM2, as it avoids
+      avoid the _send() function to save memory, as it avoids
       the stack usage of the _send() function by using the already
       declared ret_packet above
      */
@@ -440,9 +437,8 @@ bool GCS_MAVLINK::have_flow_control(void)
 
 /*
   handle a request to change stream rate. Note that copter passes in
-  save==false, as sending mavlink messages on copter on APM2 costs
-  enough that it can cause flight issues, so we don't want the save to
-  happen when the user connects the ground station.
+  save==false so we don't want the save to happen when the user connects the
+  ground station.
  */
 void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
 {
@@ -510,13 +506,11 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(msg, &packet);
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_APM1 && CONFIG_HAL_BOARD != HAL_BOARD_APM2
     // send system ID if we can
     char sysid[40];
     if (hal.util->get_system_id(sysid)) {
         send_text(MAV_SEVERITY_WARNING, sysid);
     }
-#endif
 
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
@@ -920,16 +914,12 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
         return false;
     }
 
-#if GPS_RTK_AVAILABLE
     if (gps.highest_supported_status(0) > AP_GPS::GPS_OK_FIX_3D) {
         if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS_RTK_LEN) {
             gps.send_mavlink_gps_rtk(chan);
         }
 
     }
-#endif
-
-#if GPS_MAX_INSTANCES > 1
 
     if (gps.num_sensors() > 1 && gps.status(1) > AP_GPS::NO_GPS) {
 
@@ -937,16 +927,13 @@ bool GCS_MAVLINK::send_gps_raw(AP_GPS &gps)
             gps.send_mavlink_gps2_raw(chan);
         }
 
-#if GPS_RTK_AVAILABLE
         if (gps.highest_supported_status(1) > AP_GPS::GPS_OK_FIX_3D) {
             if (comm_get_txspace(chan) >= 
                 MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_GPS2_RTK_LEN) {
                 gps.send_mavlink_gps2_rtk(chan);
             }
         }
-#endif
     }
-#endif
 
     //TODO: Should check what else managed to get through...
     return true;
