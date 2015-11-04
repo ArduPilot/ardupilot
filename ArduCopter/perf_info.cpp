@@ -12,6 +12,8 @@
 static uint16_t perf_info_loop_count;
 static uint32_t perf_info_max_time; // in microseconds
 static uint32_t perf_info_min_time; // in microseconds
+static uint64_t perf_info_sigma_time;
+static uint64_t perf_info_sigmasquared_time;
 static uint16_t perf_info_long_running;
 static uint32_t perf_info_log_dropped;
 static bool perf_ignore_loop = false;
@@ -24,6 +26,8 @@ void Copter::perf_info_reset()
     perf_info_min_time = 0;
     perf_info_long_running = 0;
     perf_info_log_dropped = DataFlash.num_dropped();
+    perf_info_sigma_time = 0;
+    perf_info_sigmasquared_time = 0;
 }
 
 // perf_ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
@@ -52,6 +56,8 @@ void Copter::perf_info_check_loop_time(uint32_t time_in_micros)
     if( time_in_micros > PERF_INFO_OVERTIME_THRESHOLD_MICROS ) {
         perf_info_long_running++;
     }
+    perf_info_sigma_time += time_in_micros;
+    perf_info_sigmasquared_time += time_in_micros * time_in_micros;
 }
 
 // perf_info_get_long_running_percentage - get number of long running loops as a percentage of the total number of loops
@@ -82,4 +88,16 @@ uint16_t Copter::perf_info_get_num_long_running()
 uint32_t Copter::perf_info_get_num_dropped()
 {
     return perf_info_log_dropped;
+}
+
+// perf_info_get_avg_time - return average loop time (in microseconds)
+uint32_t Copter::perf_info_get_avg_time()
+{
+    return (perf_info_sigma_time / perf_info_loop_count);
+}
+
+// perf_info_get_stddev_time - return stddev of average loop time (in us)
+uint32_t Copter::perf_info_get_stddev_time()
+{
+    return sqrt((perf_info_sigmasquared_time - (perf_info_sigma_time*perf_info_sigma_time)/perf_info_loop_count) / perf_info_loop_count);
 }

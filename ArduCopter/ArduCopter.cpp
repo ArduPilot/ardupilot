@@ -191,11 +191,13 @@ void Copter::perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu",
+        gcs().send_text(MAV_SEVERITY_WARNING, "PERF: %u/%u max=%lu min=%lu avg=%lu sd=%lu",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time());
+                          (unsigned long)perf_info_get_min_time(),
+                          (unsigned long)perf_info_get_avg_time(),
+                          (unsigned long)perf_info_get_stddev_time());
     }
     perf_info_reset();
     pmTest1 = 0;
