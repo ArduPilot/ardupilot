@@ -599,7 +599,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
         
         // do command
-        send_text(MAV_SEVERITY_WARNING,"command received: ");
+        send_text(MAV_SEVERITY_INFO,"command received: ");
         
         switch(packet.command) {
             
@@ -827,7 +827,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // check if this is the HOME wp
         if (packet.seq == 0) {
             tracker.set_home(tell_command); // New home in EEPROM
-            send_text(MAV_SEVERITY_WARNING,"new HOME received");
+            send_text(MAV_SEVERITY_INFO,"new HOME received");
             waypoint_receiving = false;
         }
 
@@ -916,7 +916,7 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_WARNING, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM...");
     }
     in_mavlink_delay = false;
 }
@@ -974,10 +974,10 @@ void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Tracker::gcs_send_text_fmt(const char *fmt, ...)
+void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
+    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);

@@ -243,7 +243,7 @@ private:
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed();
-    void gcs_send_text_fmt(const char *fmt, ...);
+    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void init_capabilities(void);
     void compass_cal_update();
 

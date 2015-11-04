@@ -4,9 +4,9 @@
 
 void Tracker::init_barometer(void)
 {
-    gcs_send_text(MAV_SEVERITY_WARNING, "Calibrating barometer");    
+    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     barometer.calibrate();
-    gcs_send_text(MAV_SEVERITY_WARNING, "barometer calibration complete");
+    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
 }
 
 // read the barometer and return the updated altitude in meters
