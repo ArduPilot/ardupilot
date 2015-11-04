@@ -1135,7 +1135,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         uint8_t result = MAV_RESULT_UNSUPPORTED;
 
         // do command
-        send_text(MAV_SEVERITY_WARNING,"command received: ");
+        send_text(MAV_SEVERITY_INFO,"command received: ");
 
         switch(packet.command) {
 
@@ -1386,9 +1386,9 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Go around command accepted.");
+                plane.gcs_send_text(MAV_SEVERITY_INFO,"Go around command accepted.");
             } else {
-                plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Rejected go around command.");
+                plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Rejected go around command.");
             }
             break;
 
@@ -1412,7 +1412,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     if (! plane.geofence_set_floor_enabled(false)) {
                         result = MAV_RESULT_FAILED;
                     } else {
-                        plane.gcs_send_text(MAV_SEVERITY_CRITICAL,"Fence floor disabled.");
+                        plane.gcs_send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled.");
                     }
                     break;
                 default:
@@ -1454,7 +1454,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 plane.Log_Write_Home_And_Origin();
                 GCS_MAVLINK::send_home_all(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                plane.gcs_send_text_fmt("set home to %.6f %.6f at %um",
+                plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "set home to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
                                         (double)(new_home_loc.lng*1.0e-7f),
                                         (uint32_t)(new_home_loc.alt*0.01f));
@@ -1487,10 +1487,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 case PARACHUTE_RELEASE:
                     // treat as a manual release which performs some additional check of altitude
                     if (plane.parachute.released()) {
-                        plane.gcs_send_text_fmt("Parachute already released");
+                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute already released");
                         result = MAV_RESULT_FAILED;
                     } else if (!plane.parachute.enabled()) {
-                        plane.gcs_send_text_fmt("Parachute not enabled");
+                        plane.gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Parachute not enabled");
                         result = MAV_RESULT_FAILED;
                     } else {
                         if (!plane.parachute_manual_release()) {
@@ -1550,10 +1550,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     {
         // mark the firmware version in the tlog
-        send_text(MAV_SEVERITY_WARNING, FIRMWARE_STRING);
+        send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        send_text(MAV_SEVERITY_WARNING, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+        send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
         handle_param_request_list(msg);
         break;
@@ -1893,7 +1893,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         plane.home_is_set = HOME_SET_NOT_LOCKED;
         plane.Log_Write_Home_And_Origin();
         GCS_MAVLINK::send_home_all(new_home_loc);
-        plane.gcs_send_text_fmt("set home to %.6f %.6f at %um",
+        plane.gcs_send_text_fmt(MAV_SEVERITY_INFO, "set home to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
                                 (uint32_t)(new_home_loc.alt*0.01f));
@@ -1929,7 +1929,7 @@ void Plane::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_WARNING, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM...");
     }
     check_usb_mux();
 
@@ -2006,10 +2006,10 @@ void Plane::gcs_send_text(MAV_SEVERITY severity, const char *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Plane::gcs_send_text_fmt(const char *fmt, ...)
+void Plane::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
+    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);

@@ -46,7 +46,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     default:
         break;
     }
-    gcs_send_text_fmt("flight mode = %u", (unsigned)control_mode);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype)
@@ -91,7 +91,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     if (fstype == FAILSAFE_GCS) {
         gcs_send_text(MAV_SEVERITY_CRITICAL, "No GCS heartbeat.");
     }
-    gcs_send_text_fmt("flight mode = %u", (unsigned)control_mode);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_short_off_event()
@@ -113,7 +113,7 @@ void Plane::low_battery_event(void)
     if (failsafe.low_battery) {
         return;
     }
-    gcs_send_text_fmt("Low Battery %.2fV Used %.0f mAh",
+    gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Low Battery %.2fV Used %.0f mAh",
                       (double)battery.voltage(), (double)battery.current_total_mah());
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {

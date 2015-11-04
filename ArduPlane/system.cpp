@@ -254,10 +254,10 @@ void Plane::startup_ground(void)
 {
     set_mode(INITIALISING);
 
-    gcs_send_text(MAV_SEVERITY_WARNING,"<startup_ground> GROUND START");
+    gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> GROUND START");
 
 #if (GROUND_START_DELAY > 0)
-    gcs_send_text(MAV_SEVERITY_WARNING,"<startup_ground> With Delay");
+    gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With Delay");
     delay(GROUND_START_DELAY * 1000);
 #endif
 
@@ -304,7 +304,7 @@ void Plane::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);    
 
-    gcs_send_text(MAV_SEVERITY_WARNING,"\n\n Ready to FLY.");
+    gcs_send_text(MAV_SEVERITY_INFO,"\n\n Ready to FLY.");
 }
 
 enum FlightMode Plane::get_previous_mode() {

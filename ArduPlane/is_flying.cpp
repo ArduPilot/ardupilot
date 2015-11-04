@@ -226,7 +226,7 @@ void Plane::crash_detection_update(void)
             if (crashed_near_land_waypoint) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected - no action taken");
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Crash Detected - no action taken");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected - no action taken");
             }
         }
         else {
@@ -237,7 +237,7 @@ void Plane::crash_detection_update(void)
             if (crashed_near_land_waypoint) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected");
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Crash Detected");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected");
             }
         }
     }
