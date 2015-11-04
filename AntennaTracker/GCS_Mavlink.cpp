@@ -977,7 +977,7 @@ void Tracker::gcs_send_text(MAV_SEVERITY severity, const char *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
+void Tracker::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
     gcs[0].pending_status.severity = (uint8_t)severity;
