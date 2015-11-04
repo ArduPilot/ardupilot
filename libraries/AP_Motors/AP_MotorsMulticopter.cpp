@@ -281,33 +281,39 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     _lift_max = bvf*(1-_thrust_curve_expo) + _thrust_curve_expo*bvf*bvf;
 }
 
-// update_battery_resistance - calculate battery resistance when throttle is above hover_out
+// inti _battery_resistance or update _battery_resistance float if throttle over Hover;
 void AP_MotorsMulticopter::update_battery_resistance()
 {
-    
-    // if motors are stopped, reset resting voltage and current
-    if (!_flags.armed) {
+  
+    float _batt_resistance_temp;
+
+    // if motors are stopped, reset resting voltage and current and batt timer
+    if (_throttle_control_input <= 0 || !_flags.armed) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
-        _batt_resistance=0;
-    } else {
-        // update battery resistance when throttle is over hover throttle
-        if ((_batt_timer < 18000) && ((_batt_current_resting*2.0f) < _batt_current)) && ((batt_current-_batt_current_resting)>2) && ((_batt_voltage-_batt_voltage_resting-)>0.1)) {
-            if (_throttle_control_input >= _hover_out*0.95) { 
-                float _batt_resistance_temp = (_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting);
-                if (_batt_resistance_temp <0.5 && _batt_resistance_temp >0.001) {
-                    if (_batt_resistance==0) { 
-                        _batt_resistance = _batt_resistance_temp;
-                     }
-                    _batt_resistance += 0.05f*( _batt_resistance_temp - _batt_resistance); // filter reaches 90% in 1/4 the test time
-                    _batt_timer += 40;
+         //_batt_resistance=0;
+    } else if (_batt_timer < 25000) { //check if the resting Values maximale not older than 10 sec in longest case
+
+        if ( ((_batt_current_resting*2.0f) < _batt_current) && ((batt_current-_batt_current_resting)>1) && ((_batt_voltage_resting-_batt_voltage)>0.05) ) {
+
+            _batt_resistance_temp=(_batt_voltage_resting-_batt_voltage)/(_batt_current-_batt_current_resting); //Check for Good enough Vaulues to prevent calc error and prevent div / 0
+
+            if (_batt_resistance_temp>0.001 &&_batt_resistance_temp<3) { //check if the new batt_resistance_temp between 1 and 3000 mohm
+
+                if (_throttle_control_input < _hover_out && _batt_resistance>0) {
+                    // initialize battery resistance only throttle < hover to prevent change in resting voltage estimate and help later for faster filtering
+                    _batt_resistance = _batt_resistance_temp;
+                } else {
+                    // update slow filtred battery resistance when throttle is over hover throttle or batt_resistance have alrady a Value
+                    _batt_resistance += 0.05f*(_batt_resistance_temp - _batt_resistance); // filter reaches 90% in 1/4 the test time
+                    _batt_timer += 60; //we have good Values lets count batt counter faster to use less old resting Values
                 }
-            } 
+            }
         }
-      _batt_timer += 1;
-      }
+    _batt_timer += 1
     }
+    
 }
 
 // update_throttle_thr_mix - slew set_throttle_thr_mix to requested value
