@@ -167,10 +167,12 @@ def configure(cfg):
         'SKETCHBOOK="' + cfg.srcnode.abspath() + '"',
     ])
 
-def collect_dirs_to_recurse(bld, glob, **kw):
+def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
-    for d in bld.srcnode.ant_glob(glob + '/wscript', **kw):
-        dirs.append(d.parent.relpath())
+    globs = waflib.Utils.to_list(globs)
+    for g in globs:
+        for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
+            dirs.append(d.parent.relpath())
     return dirs
 
 def build(bld):
