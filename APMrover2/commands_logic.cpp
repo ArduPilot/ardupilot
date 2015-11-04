@@ -228,7 +228,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // check if we have gone futher past the wp then last time and output new message if we have
         if ((uint32_t)distance_past_wp != (uint32_t)get_distance(current_loc, next_WP)) {
             distance_past_wp = get_distance(current_loc, next_WP);
-            gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Passed Waypoint #%i dist %um",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed Waypoint #%i dist %um",
                               (unsigned)cmd.index,
                               (unsigned)distance_past_wp);
         }
@@ -255,7 +255,7 @@ bool Rover::verify_RTL()
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Reached Destination: Distance away %um",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Destination: Distance away %um",
                           (unsigned)get_distance(current_loc, next_WP));
         rtl_complete = true;
         return true;
