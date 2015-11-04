@@ -58,6 +58,15 @@ public:
     // return TCP client address for uartC
     const char *get_client_address(void) const { return _client_address; }
 
+    // paths for UART devices
+    const char *_uart_path[5] {
+        "tcp:0:wait",
+        "GPS1",
+        "tcp:2",
+        "tcp:3",
+        "GPS2"
+    };
+    
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);

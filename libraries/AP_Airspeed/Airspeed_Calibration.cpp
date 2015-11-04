@@ -37,8 +37,6 @@ void Airspeed_Calibration::init(float initial_ratio)
 /*
   update the state of the airspeed calibration - needs to be called
   once a second
-
-  On an AVR2560 this costs 1.9 milliseconds per call
  */
 float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 {

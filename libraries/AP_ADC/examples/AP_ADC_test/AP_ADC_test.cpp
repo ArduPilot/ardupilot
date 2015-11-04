@@ -17,9 +17,10 @@
 
 uint32_t timer;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-/* Only build this sketch for APM1 and Linux */
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+/* Only build this sketch for Linux */
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 AP_ADC_ADS7844 adc;
 
@@ -106,9 +107,8 @@ void loop()
     }
 }
 
-#else // Non-APM1:
-#warning AP_ADC_test built as stub for APM2
-const AP_HAL::HAL& hal = AP_HAL_AVR_APM2;
+#else
+#warning AP_ADC_test built as stub
 void setup () {}
 void loop () {}
 #endif  // CONFIG_HAL_BOARD

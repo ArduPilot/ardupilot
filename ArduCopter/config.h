@@ -60,11 +60,6 @@
 
 #define MAGNETOMETER ENABLED
 
-// low power cpus are not supported
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
- # error ArduCopter ver3.3 and higher is not supported on APM1, APM2 boards
-#endif
-
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f

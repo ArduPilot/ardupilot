@@ -1,10 +1,6 @@
 #ifndef DATAFLASH_BACKEND_H
 #define DATAFLASH_BACKEND_H
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75
-#define DATAFLASH_NO_CLI
-#endif
-
 #include "DataFlash.h"
 
 class DataFlash_Backend
@@ -48,7 +44,6 @@ public:
     virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs() = 0;
-#ifndef DATAFLASH_NO_CLI
     virtual void LogReadProcess(const uint16_t list_entry,
                                 uint16_t start_page, uint16_t end_page,
                                 print_mode_fn printMode,
@@ -56,7 +51,6 @@ public:
     virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
     virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
-#endif // DATAFLASH_NO_CLI
 
     void EnableWrites(bool enable) { _writes_enabled = enable; }
     bool logging_started(void) const { return log_write_started; }

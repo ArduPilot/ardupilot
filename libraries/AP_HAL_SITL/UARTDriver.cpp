@@ -35,9 +35,12 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/select.h>
+#include <termios.h>
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+
+extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
@@ -53,34 +56,48 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (rxSpace != 0) {
         _rxSpace = rxSpace;
     }
-    switch (_portNumber) {
-    case 0:
-        _tcp_start_connection(true);
-        break;
 
-    case 1:
+    const char *path = _sitlState->_uart_path[_portNumber];
+
+    if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
         _fd = _sitlState->gps_pipe();
-        break;
-
-    case 2:
-        if (_sitlState->get_client_address() != NULL) {
-            _tcp_start_client(_sitlState->get_client_address());
-        } else {
-            _tcp_start_connection(false);
-        }
-        break;
-
-    case 4:
-        /* gps2 */
+    } else if (strcmp(path, "GPS2") == 0) {
+        /* 2nd gps */
         _connected = true;
         _fd = _sitlState->gps2_pipe();
-        break;
-
-    default:
-        _tcp_start_connection(false);
-        break;
+    } else {
+        /* parse type:args:flags string for path. 
+           For example:
+             tcp:5760:wait    // tcp listen on port 5760
+             tcp:0:wait       // tcp listen on use base_port + 0
+             tcpclient:192.168.2.15:5762
+             uart:/dev/ttyUSB0:57600
+         */
+        char *saveptr = NULL;
+        char *s = strdup(path);
+        char *devtype = strtok_r(s, ":", &saveptr);
+        char *args1 = strtok_r(NULL, ":", &saveptr);
+        char *args2 = strtok_r(NULL, ":", &saveptr);
+        if (strcmp(devtype, "tcp") == 0) {
+            uint16_t port = atoi(args1);
+            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            _tcp_start_connection(port, wait);
+        } else if (strcmp(devtype, "tcpclient") == 0) {
+            if (args2 == NULL) {
+                hal.scheduler->panic("Invalid tcp client path: %s", path);                
+            }
+            uint16_t port = atoi(args2);
+            _tcp_start_client(args1, port);
+        } else if (strcmp(devtype, "uart") == 0) {
+            uint32_t baudrate = args2? atoi(args2) : 57600;
+            ::printf("UART connection %s:%u\n", args1, baudrate);
+            _uart_start_connection(args1, baudrate);
+        } else {
+            hal.scheduler->panic("Invalid device path: %s", path);
+        }
+        free(s);
     }
 }
 
@@ -142,8 +159,12 @@ int16_t SITLUARTDriver::read(void)
         return -1;
     }
 
-    if (_console) {
-        return ::read(0, &c, 1);
+    if (!_use_send_recv) {
+        int fd = _console?0:_fd;
+        if (::read(fd, &c, 1) != 1) {
+            return -1;
+        }
+        return (uint8_t)c;
     }
 
     int n = recv(_fd, &c, 1, MSG_DONTWAIT);
@@ -175,7 +196,7 @@ size_t SITLUARTDriver::write(uint8_t c)
     if (_nonblocking_writes) {
         flags |= MSG_DONTWAIT;
     }
-    if (_console) {
+    if (!_use_send_recv) {
         return ::write(_fd, &c, 1);
     }
     return send(_fd, &c, 1, flags);
@@ -194,7 +215,7 @@ size_t SITLUARTDriver::write(const uint8_t *buffer, size_t size)
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
  */
-void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
+void SITLUARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -204,9 +225,12 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
         return;
     }
 
+    _use_send_recv = true;
+
     if (_console) {
         // hack for console access
         _connected = true;
+        _use_send_recv = false;
         _listen_fd = -1;
         _fd = 1;
         return;
@@ -222,7 +246,11 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 #ifdef HAVE_SOCK_SIN_LEN
         sockaddr.sin_len = sizeof(sockaddr);
 #endif
-        sockaddr.sin_port = htons(_sitlState->base_port() + _portNumber);
+        if (port > 1000) {
+            sockaddr.sin_port = htons(port);
+        } else {
+            sockaddr.sin_port = htons(_sitlState->base_port() + port);
+        }
         sockaddr.sin_family = AF_INET;
 
         _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -275,7 +303,7 @@ void SITLUARTDriver::_tcp_start_connection(bool wait_for_connection)
 /*
   start a TCP client connection for the serial port. 
  */
-void SITLUARTDriver::_tcp_start_client(const char *address)
+void SITLUARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
     int one=1;
     struct sockaddr_in sockaddr;
@@ -285,18 +313,11 @@ void SITLUARTDriver::_tcp_start_client(const char *address)
         return;
     }
 
+    _use_send_recv = true;
+    
     if (_fd != -1) {
         close(_fd);
     }
-
-    char *addr2 = strdup(address);
-    char *p = strchr(addr2, ':');
-    if (p == NULL) {
-        fprintf(stderr, "need IP:port\n");
-        exit(1);
-    }
-    *p = 0;
-    uint16_t port = htons(atoi(p+1));
 
     memset(&sockaddr,0,sizeof(sockaddr));
 
@@ -305,9 +326,7 @@ void SITLUARTDriver::_tcp_start_client(const char *address)
 #endif
     sockaddr.sin_port = port;
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(addr2);
-
-    free(addr2);
+    sockaddr.sin_addr.s_addr = inet_addr(address);
 
     _fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_fd == -1) {
@@ -329,6 +348,44 @@ void SITLUARTDriver::_tcp_start_client(const char *address)
     setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     _connected = true;
+}
+
+
+/*
+  start a UART connection for the serial port
+ */
+void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
+{
+    struct termios t {};
+    if (!_connected) {
+        ::printf("Opening %s\n", path);
+        _fd = ::open(path, O_RDWR | O_CLOEXEC);
+    }
+
+    if (_fd == -1) {
+        hal.scheduler->panic("Unable to open UART %s", path);
+    }
+
+    // set non-blocking
+    int flags = fcntl(_fd, F_GETFL, 0);
+    flags = flags | O_NONBLOCK;
+    fcntl(_fd, F_SETFL, flags);
+
+    // disable LF -> CR/LF
+    tcgetattr(_fd, &t);
+    t.c_iflag &= ~(BRKINT | ICRNL | IMAXBEL | IXON | IXOFF);
+    t.c_oflag &= ~(OPOST | ONLCR);
+    t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
+    t.c_cc[VMIN] = 0;
+    tcsetattr(_fd, TCSANOW, &t);
+
+    // set baudrate
+    tcgetattr(_fd, &t);
+    cfsetspeed(&t, baudrate);
+    tcsetattr(_fd, TCSANOW, &t);
+
+    _connected = true;
+    _use_send_recv = false;
 }
 
 /*

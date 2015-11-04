@@ -234,7 +234,6 @@ static void test_wrap_cd(void)
     hal.console->printf("wrap_cd tests done\n");
 }
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 static void test_wgs_conversion_functions(void)
 {
 
@@ -319,7 +318,6 @@ static void test_wgs_conversion_functions(void)
 
     }
 }
-#endif //HAL_CPU_CLASS
 
 /*
  *  polygon tests
@@ -330,9 +328,7 @@ void setup(void)
     test_offset();
     test_accuracy();
     test_wrap_cd();
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     test_wgs_conversion_functions();
-#endif
     hal.console->printf("ALL TESTS DONE\n");
 }
 

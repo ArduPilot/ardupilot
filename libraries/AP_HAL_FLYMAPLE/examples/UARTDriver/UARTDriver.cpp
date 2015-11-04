@@ -1,10 +1,6 @@
 // -*- Mode: C++; c-basic-offset: 8; indent-tabs-mode: nil -*-
 
-//
-// Example code for the AP_HAL AVRUARTDriver, based on FastSerial
-//
 // This code is placed into the public domain.
-//
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>

@@ -7,7 +7,6 @@
 #
 ifeq ($(SYSTYPE),Darwin)
   # use the tools that come with Arduino
-  TOOLPATH :=  $(ARDUINO)/hardware/tools/avr/bin
   # use BWK awk
   AWK =  awk
   FIND_TOOL    =  $(firstword $(wildcard $(addsuffix /$(1),$(TOOLPATH))))
@@ -35,15 +34,6 @@ NATIVE_LD      :=  g++
 NATIVE_GDB     :=  gdb
 NATIVE_OBJCOPY :=  objcopy
 
-AVR_CXX     :=  $(call FIND_TOOL,avr-g++)
-AVR_CC      :=  $(call FIND_TOOL,avr-gcc)
-AVR_AS      :=  $(call FIND_TOOL,avr-gcc)
-AVR_AR      :=  $(call FIND_TOOL,avr-ar)
-AVR_LD      :=  $(call FIND_TOOL,avr-gcc)
-AVR_GDB     :=  $(call FIND_TOOL,avr-gdb)
-AVR_OBJCOPY :=  $(call FIND_TOOL,avr-objcopy)
-
-AVRDUDE      :=  $(call FIND_TOOL,avrdude)
 AVARICE      :=  $(call FIND_TOOL,avarice)
 
 # Tools for Maple/Flymaple

@@ -23,7 +23,6 @@
  *
  */
 
-// AVR LibC Includes
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 

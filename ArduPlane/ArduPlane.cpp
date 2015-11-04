@@ -162,9 +162,7 @@ void Plane::ahrs_update()
 
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
         DataFlash.Log_Write_IMUDT(ins);
-#endif
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -267,10 +265,8 @@ void Plane::update_logging2(void)
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_IMU))
         DataFlash.Log_Write_Vibration(ins);
-#endif
 }
 
 
@@ -330,9 +326,7 @@ void Plane::one_second_loop()
         Log_Write_Status();
     }
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-#endif
 }
 
 void Plane::log_perf_info()
@@ -342,10 +336,11 @@ void Plane::log_perf_info()
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-    if (should_log(MASK_LOG_PM))
+
+    if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
-#endif
+    }
+
     G_Dt_max = 0;
     G_Dt_min = 0;
     resetPerfData();

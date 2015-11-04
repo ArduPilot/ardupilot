@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "AP_HAL_SITL_Namespace.h"
+#include <AP_HAL/utility/Socket.h>
 
 class HALSITL::SITLUARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -57,7 +58,8 @@ public:
 
 private:
     uint8_t _portNumber;
-    bool _connected; // true if a client has connected
+    bool _connected = false; // true if a client has connected
+    bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
     int _serial_port;
     static bool _console;
@@ -68,8 +70,9 @@ private:
     // IPv4 address of target for uartC
     const char *_tcp_client_addr;
 
-    void _tcp_start_connection(bool wait_for_connection);
-    void _tcp_start_client(const char *address);
+    void _tcp_start_connection(uint16_t port, bool wait_for_connection);
+    void _uart_start_connection(const char *path, uint32_t baudrate);
+    void _tcp_start_client(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );

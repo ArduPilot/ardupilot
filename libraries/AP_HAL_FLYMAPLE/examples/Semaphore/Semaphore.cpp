@@ -7,17 +7,18 @@
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-/** 
+/*
  * You'll want to use a logic analyzer to watch the effects of this test.
- * On the APM2 its pretty easy to hook up an analyzer to pins A0 through A3.
+ * Define each of the pins below to the pins used during the test on your
+ * board.
  */
-#define PIN_A0 15  /* A0 */
-#define PIN_A1 16  /* A1 */
-#define PIN_A2 17  /* A2 */
-#define PIN_A3 18  /* A3 */
+#define PIN_A0 15
+#define PIN_A1 16
+#define PIN_A2 17
+#define PIN_A3 18
 
 /** 
- * Create an AVRSemaphore for this test.
+ * Create a Semaphore for this test.
  */
 
 AP_HAL::Semaphore *sem;

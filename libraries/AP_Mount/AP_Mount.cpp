@@ -583,7 +583,7 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
-//      this operation requires 230us on an APM2, 60us on a Pixhawk/PX4
+//      this operation requires 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
     set_mode(instance, (enum MAV_MOUNT_MODE)state[instance]._default_mode.get());
