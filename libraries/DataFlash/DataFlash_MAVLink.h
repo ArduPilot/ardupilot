@@ -100,8 +100,6 @@ public:
 
 protected:
     struct _stats {
-        uint32_t dropped;
-        uint8_t internal_errors; // uint8_t - wishful thinking?
         // the following are reset any time we log stats (see "reset_stats")
         uint8_t collection_count;
         uint16_t state_free; // cumulative across collection period

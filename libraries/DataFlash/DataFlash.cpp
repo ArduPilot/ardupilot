@@ -93,8 +93,8 @@ void DataFlash_Class::Log_Write_DF_MAV(DataFlash_MAVLink &df)
     struct log_DF_MAV_Stats pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DF_MAV_STATS),
         timestamp         : hal.scheduler->millis(),
-        dropped           : df.stats.dropped,
-        internal_errors   : df.stats.internal_errors,
+        dropped           : df.dropped,
+        internal_errors   : df.internal_errors,
         state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
         state_free_min    : df.stats.state_free_min,
         state_free_max    : df.stats.state_free_max,

@@ -34,8 +34,39 @@ void DataFlash_Backend::internal_error() {
 #endif
 }
 
-void DataFlash_Backend::write_more_preface_messages()
+bool DataFlash_Backend::WriteBlockCheckPrefaceMessages()
 {
+    if (_front._startup_messagewriter == NULL) {
+        internal_error();
+        return false;
+    }
+
+    if (_front._startup_messagewriter->finished()) {
+        return true;
+    }
+
+    if (_writing_preface_messages) {
+        // we have been called by a messagewriter, so writing is OK
+        return true;
+    }
+
+    // we didn't come from push_log_blocks, so this is some random
+    // caller hoping to write blocks out.  Push out log blocks - we might
+    // end up clearing the buffer.....
+
+    push_log_blocks();
+    if (_front._startup_messagewriter->finished()) {
+        return true;
+    }
+
+    // sorry!  currently busy writing out startup messages...
+    dropped++;
+    return false;
+}
+
+void DataFlash_Backend::WriteMorePrefaceMessages()
+{
+
     if (_front._startup_messagewriter == NULL) {
         internal_error();
         return;

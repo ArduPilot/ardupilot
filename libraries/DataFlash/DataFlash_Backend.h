@@ -72,8 +72,9 @@ public:
         _structures = structure;
     }
 
-    void write_more_preface_messages();
+    void WriteMorePrefaceMessages();
     virtual uint16_t bufferspace_available() = 0;
+    virtual void push_log_blocks(void) = 0;
     
     virtual uint16_t start_new_log(void) = 0;
     bool _logging_started;
@@ -89,6 +90,9 @@ public:
 protected:
     DataFlash_Class &_front;
 
+    uint32_t dropped;
+    uint8_t internal_errors; // uint8_t - wishful thinking?
+
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz(const uint32_t now);
     virtual void periodic_fullrate(const uint32_t now);
@@ -99,6 +103,8 @@ protected:
     void _print_log_entry(uint8_t msg_type,
                           void (*print_mode)(AP_HAL::BetterStream *port, uint8_t mode),
                           AP_HAL::BetterStream *port);
+
+    virtual bool WriteBlockCheckPrefaceMessages();
 
     const struct LogStructure *_structures;
     uint8_t _num_types;

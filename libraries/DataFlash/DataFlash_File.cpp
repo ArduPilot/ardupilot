@@ -94,7 +94,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
 
 void DataFlash_File::periodic_tasks()
 {
-    DataFlash_Backend::write_more_preface_messages();
+    DataFlash_Backend::WriteMorePrefaceMessages();
 }
 
 uint16_t DataFlash_File::bufferspace_available() {
@@ -220,6 +220,11 @@ bool DataFlash_File::WriteBlock(const void *pBuffer, uint16_t size)
     if (_write_fd == -1 || !_initialised || _open_error || !_writes_enabled) {
         return false;
     }
+
+    if (! WriteBlockCheckPrefaceMessages()) {
+        return false;
+    }
+
     uint16_t _head;
     uint16_t space = BUF_SPACE(_writebuf);
     if (space < size) {
@@ -927,6 +932,10 @@ void DataFlash_File::_io_timer(void)
 #endif
     }
     perf_end(_perf_write);
+}
+
+void DataFlash_File::push_log_blocks() {
+    // diy-drones master has a flush() call which we might call here
 }
 
 #endif // HAL_OS_POSIX_IO

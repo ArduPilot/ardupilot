@@ -75,23 +75,14 @@ bool DataFlash_MAVLink::WriteBlock(const void *pBuffer, uint16_t size)
         return false;
     }
 
-    if (_front._startup_messagewriter != NULL && !_front._startup_messagewriter->finished()) {
-        // the block writer is running ATM.
-        if (!_writing_preface_messages) {
-            // we didn't come from push_log_blocks, so this is some random
-            // caller hoping to write blocks out
-            push_log_blocks();
-            if (!_front._startup_messagewriter->finished()) {
-                // sorry!  currently busy writing out startup messages...
-                stats.dropped++;
-                return false;
-            }
-        }
+    if (! WriteBlockCheckPrefaceMessages()) {
+        return false;
     }
+
     if (bufferspace_available() < size) {
         if (_front._startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...
-            stats.dropped++;
+            dropped++;
         }
         return false;
     }
@@ -239,12 +230,12 @@ void DataFlash_MAVLink::set_channel(mavlink_channel_t chan)
 }
 
 void DataFlash_MAVLink::internal_error() {
-    stats.internal_errors++;
+    internal_errors++;
     DataFlash_Backend::internal_error();
 }
 void DataFlash_MAVLink::stats_init() {
-    stats.dropped = 0;
-    stats.internal_errors = 0;
+    dropped = 0;
+    internal_errors = 0;
     stats_reset();
 }
 void DataFlash_MAVLink::stats_reset() {
@@ -362,7 +353,7 @@ void DataFlash_MAVLink::push_log_blocks()
         return;
     }
 
-    DataFlash_Backend::write_more_preface_messages();
+    DataFlash_Backend::WriteMorePrefaceMessages();
 
     // here's an argument for keeping linked lists for each state!
     // firstly, send out any blocks that have been requested:
