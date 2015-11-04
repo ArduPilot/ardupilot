@@ -90,8 +90,9 @@ void Copter::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_cli
         return;
     }
 
-    float takeoff_minspeed = min(50.0f,takeoff_state.max_speed);
+    // acceleration of 50cm/s/s
     static const float takeoff_accel = 50.0f;
+    float takeoff_minspeed = min(50.0f,takeoff_state.max_speed);
     float time_elapsed = (millis()-takeoff_state.start_ms)*1.0e-3f;
     float speed = min(time_elapsed*takeoff_accel+takeoff_minspeed, takeoff_state.max_speed);
 
