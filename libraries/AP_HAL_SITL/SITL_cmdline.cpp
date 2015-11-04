@@ -47,6 +47,11 @@ void SITL_State::_usage(void)
            "\t--speedup SPEEDUP  set simulation speedup\n"
            "\t--gimbal           enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR set directory for additional files\n"
+           "\t--uartA device     set device string for UARTA\n"
+           "\t--uartB device     set device string for UARTB\n"
+           "\t--uartC device     set device string for UARTC\n"
+           "\t--uartD device     set device string for UARTD\n"
+           "\t--uartE device     set device string for UARTE\n"
         );
 }
 
