@@ -1019,6 +1019,8 @@ private:
     uint32_t perf_info_get_min_time();
     uint16_t perf_info_get_num_long_running();
     uint32_t perf_info_get_num_dropped();
+    uint32_t perf_info_get_avg_time();
+    uint32_t perf_info_get_stddev_time();
     Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
