@@ -16,7 +16,7 @@ const extern AP_HAL::HAL& hal;
 ////////////////////////////////////////////////////////////
 
 AccelCalibrator::AccelCalibrator() :
-_conf_tolerance(0.1f),
+_conf_tolerance(ACCEL_CAL_TOLERANCE),
 _sample_buffer(NULL),
 _param_struct(*reinterpret_cast<struct param_t *>(&_param_array))
 {

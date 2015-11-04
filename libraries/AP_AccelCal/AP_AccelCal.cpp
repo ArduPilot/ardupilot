@@ -52,7 +52,7 @@ void AP_AccelCal::update()
                 if (step != _step) {
                     _step = step;
 
-                    const prog_char_t *msg;
+                    const char *msg;
                     switch (step) {
                         case 1:
                             msg = "level";
@@ -157,13 +157,19 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
 
 void AP_AccelCal::success()
 {
-    _printf("Calibration successful");
+    AccelCalibrator *cal;
+    for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+        _printf("Calibration of acc %d successful with fitness %f\n",i,cal->get_fitness());
+    }
     clear();
 }
 
 void AP_AccelCal::fail()
 {
-    _printf("Calibration FAILED");
+    AccelCalibrator *cal;
+    for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+        _printf("Calibration of acc %d FAILED with fitness %f\n",i,cal->get_fitness());
+    }
     clear();
 }
 

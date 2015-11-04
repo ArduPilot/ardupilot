@@ -4,7 +4,7 @@
 #include <AP_Math/vectorN.h>
 
 #define ACCEL_CAL_MAX_NUM_PARAMS 9
-
+#define ACCEL_CAL_TOLERANCE 0.5
 #define MAX_ITERATIONS
 enum accel_cal_status_t {
     ACCEL_CAL_NOT_STARTED=0,

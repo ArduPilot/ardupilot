@@ -5,7 +5,6 @@
 #include "AccelCalibrator.h"
 
 #define AP_ACCELCAL_MAX_NUM_CLIENTS 4
-
 class GCS_MAVLINK;
 class AP_AccelCal_Client;
 
