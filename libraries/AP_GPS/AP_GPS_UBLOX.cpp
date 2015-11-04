@@ -68,7 +68,8 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     rate_update_step(0),
     _last_5hz_time(0),
     _last_hw_status(0),
-    _cfg_saved(false)
+    _cfg_saved(false),
+    _last_cfg_sent_time(0)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
@@ -147,10 +148,12 @@ AP_GPS_UBLOX::read(void)
     uint8_t data;
     int16_t numc;
     bool parsed = false;
+    uint32_t millis_now = hal.scheduler->millis();
 
     if (need_rate_update) {
         send_next_rate_update();
-    }else if(!_cfg_saved) {         //save the configuration sent until now
+    }else if(!_cfg_saved && (millis_now - _last_cfg_sent_time) > 1000)  {         //save the configuration sent until now
+        _last_cfg_sent_time = millis_now;
         _save_cfg();
     }
 
@@ -722,7 +725,8 @@ AP_GPS_UBLOX::_configure_gps(void)
 }
 
 /*
- *
+ * save gps configurations to non-volatile memory sent until the call of
+ * this message
  */
 void
 AP_GPS_UBLOX::_save_cfg()
