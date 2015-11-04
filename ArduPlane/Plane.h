@@ -916,7 +916,7 @@ private:
     void update_aux();
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
-    void gcs_send_text_fmt(const char *fmt, ...);
+    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();
