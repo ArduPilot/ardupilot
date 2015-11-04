@@ -75,12 +75,12 @@ private:
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
-    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
     void update();
     void accumulate();
 
 private:
     virtual void _calculate() = 0;
+
     AP_SerialBus *_serial;
 
     bool _check_crc();
@@ -98,6 +98,9 @@ private:
     bool _use_timer;
 
 protected:
+    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
+    void _init();
+
     // Internal calibration registers
     uint16_t                 _C1,_C2,_C3,_C4,_C5,_C6;
     float                    _D1,_D2;

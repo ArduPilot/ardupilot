@@ -184,6 +184,10 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _D1(0.0f),
     _D2(0.0f)
 {
+}
+
+void AP_Baro_MS56XX::_init()
+{
     _instance = _frontend.register_sensor();
     _serial->init();
 
@@ -385,8 +389,10 @@ void AP_Baro_MS56XX::update()
 
 /* MS5611 class */
 AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
-{}
+    : AP_Baro_MS56XX(baro, serial, use_timer)
+{
+    _init();
+}
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5611::_calculate()
@@ -425,8 +431,11 @@ void AP_Baro_MS5611::_calculate()
 
 /* MS5607 Class */
 AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
-{}
+    : AP_Baro_MS56XX(baro, serial, use_timer)
+{
+    _init();
+}
+
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5607::_calculate()
 {
@@ -466,6 +475,7 @@ void AP_Baro_MS5607::_calculate()
 AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
     : AP_Baro_MS56XX(baro, serial, use_timer)
 {
+    _init();
 }
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
