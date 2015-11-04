@@ -878,7 +878,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
-            send_text(MAV_SEVERITY_WARNING,"command received: ");
+            send_text(MAV_SEVERITY_INFO,"command received: ");
 
             switch(packet.command) {
 
@@ -1137,10 +1137,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
-            send_text(MAV_SEVERITY_WARNING, FIRMWARE_STRING);
+            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text(MAV_SEVERITY_WARNING, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
+            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
             handle_param_request_list(msg);
             break;
@@ -1363,7 +1363,7 @@ void Rover::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_WARNING, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM...");
     }
     check_usb_mux();
 
@@ -1440,10 +1440,10 @@ void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Rover::gcs_send_text_fmt(const char *fmt, ...)
+void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
+    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);

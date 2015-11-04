@@ -489,7 +489,7 @@ private:
     bool should_log(uint32_t mask);
     void frsky_telemetry_send(void);
     void print_hit_enter();    
-    void gcs_send_text_fmt(const char *fmt, ...);
+    void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
