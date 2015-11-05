@@ -432,34 +432,37 @@ void NavEKF2_core::readGpsData()
                 calcGpsGoodForFlight();
             }
 
-            // read latitutde and longitude from GPS and convert to local NE position relative to the stored origin
-            // If we don't have an origin, then set it to the current GPS coordinates
+            // Read the GPS locaton in WGS-84 lat,long,height coordinates
             const struct Location &gpsloc = _ahrs->get_gps().location();
-            if (validOrigin) {
-                gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
-            } else if (gpsGoodToAlign) {
-                // Set the NE origin to the current GPS position
-                setOrigin();
-                // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
-                alignMagStateDeclination();
-                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-                EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
-                // We are by definition at the origin at the instant of alignment so set NE position to zero
-                gpsDataNew.pos.zero();
-                // If GPS useage isn't explicitly prohibited, we switch to absolute position mode
-                if (isAiding && frontend->_fusionModeGPS != 3) {
-                    PV_AidingMode = AID_ABSOLUTE;
-                    // Initialise EKF position and velocity states
-                    ResetPosition();
-                    ResetVelocity();
+
+            // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
+            if (gpsGoodToAlign && !validOrigin) {
+                // Set the NE origin to the current GPS position if not previously set
+                if (!validOrigin) {
+                    setOrigin();
+                    // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
+                    alignMagStateDeclination();
+                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                    EKF_origin.alt = gpsloc.alt - baroDataNew.hgt;
                 }
             }
 
-            // save measurement to buffer to be fused later
-            StoreGPS();
+            // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
+            if (validOrigin) {
+                gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
+                StoreGPS();
+                // declare GPS available for use
+                gpsNotAvailable = false;
+            }
 
-            // declare GPS available for use
-            gpsNotAvailable = false;
+            // Commence GPS aiding when able to
+            if (readyToUseGPS() && PV_AidingMode != AID_ABSOLUTE) {
+                PV_AidingMode = AID_ABSOLUTE;
+                // Initialise EKF position and velocity states to last GPS measurement
+                ResetPosition();
+                ResetVelocity();
+            }
+
         } else {
             // report GPS fix status
             gpsCheckStatus.bad_fix = true;
