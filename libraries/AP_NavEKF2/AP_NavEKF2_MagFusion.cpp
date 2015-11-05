@@ -136,7 +136,7 @@ void NavEKF2_core::SelectMagFusion()
     if (magHealth) {
         magTimeout = false;
         lastHealthyMagTime_ms = imuSampleTime_ms;
-    } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > frontend.magFailTimeLimit_ms && use_compass()) {
+    } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > frontend->magFailTimeLimit_ms && use_compass()) {
         magTimeout = true;
     }
 
@@ -250,7 +250,7 @@ void NavEKF2_core::FuseMagnetometer()
         MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
 
         // scale magnetometer observation error with total angular rate to allow for timing errors
-        R_MAG = sq(constrain_float(frontend._magNoise, 0.01f, 0.5f)) + sq(frontend.magVarRateScale*imuDataDelayed.delAng.length() / dtIMUavg);
+        R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / dtIMUavg);
 
         // calculate observation jacobians
         SH_MAG[0] = sq(q0) - sq(q1) + sq(q2) - sq(q3);
@@ -487,7 +487,7 @@ void NavEKF2_core::FuseMagnetometer()
     // calculate the measurement innovation
     innovMag[obsIndex] = MagPred[obsIndex] - magDataDelayed.mag[obsIndex];
     // calculate the innovation test ratio
-    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(max(frontend._magInnovGate,1)) * varInnovMag[obsIndex]);
+    magTestRatio[obsIndex] = sq(innovMag[obsIndex]) / (sq(max(frontend->_magInnovGate,1)) * varInnovMag[obsIndex]);
     // check the last values from all components and set magnetometer health accordingly
     magHealth = (magTestRatio[0] < 1.0f && magTestRatio[1] < 1.0f && magTestRatio[2] < 1.0f);
     // Don't fuse unless all componenets pass. The exception is if the bad health has timed out and we are not a fly forward vehicle
@@ -679,7 +679,7 @@ void NavEKF2_core::fuseCompass()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(max(frontend._magInnovGate,1)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(max(frontend->_magInnovGate,1)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {

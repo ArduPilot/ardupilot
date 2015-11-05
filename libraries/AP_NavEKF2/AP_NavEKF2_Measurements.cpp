@@ -25,15 +25,15 @@ void NavEKF2_core::readRangeFinder(void)
     uint8_t maxIndex;
     uint8_t minIndex;
     // get theoretical correct range when the vehicle is on the ground
-    rngOnGnd = _rng.ground_clearance_cm() * 0.01f;
-    if (_rng.status() == RangeFinder::RangeFinder_Good && (imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
+    rngOnGnd = frontend->_rng.ground_clearance_cm() * 0.01f;
+    if (frontend->_rng.status() == RangeFinder::RangeFinder_Good && (imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
         // store samples and sample time into a ring buffer
         rngMeasIndex ++;
         if (rngMeasIndex > 2) {
             rngMeasIndex = 0;
         }
         storedRngMeasTime_ms[rngMeasIndex] = imuSampleTime_ms;
-        storedRngMeas[rngMeasIndex] = _rng.distance_cm() * 0.01f;
+        storedRngMeas[rngMeasIndex] = frontend->_rng.distance_cm() * 0.01f;
         // check for three fresh samples and take median
         bool sampleFresh[3];
         for (uint8_t index = 0; index <= 2; index++) {
@@ -91,7 +91,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
     }
     // check for takeoff if relying on optical flow and zero measurements until takeoff detected
     // if we haven't taken off - constrain position and velocity states
-    if (frontend._fusionModeGPS == 3) {
+    if (frontend->_fusionModeGPS == 3) {
         detectOptFlowTakeoff();
     }
     // calculate rotation matrices at mid sample time for flow observations
@@ -111,10 +111,10 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // record time last observation was received so we can detect loss of data elsewhere
         flowValidMeaTime_ms = imuSampleTime_ms;
         // estimate sample time of the measurement
-        ofDataNew.time_ms = imuSampleTime_ms - frontend._flowDelay_ms - frontend.flowTimeDeltaAvg_ms/2;
+        ofDataNew.time_ms = imuSampleTime_ms - frontend->_flowDelay_ms - frontend->flowTimeDeltaAvg_ms/2;
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        ofDataNew.time_ms = roundToNearest(ofDataNew.time_ms, frontend.fusionTimeStep_ms);
+        ofDataNew.time_ms = roundToNearest(ofDataNew.time_ms, frontend->fusionTimeStep_ms);
         // Prevent time delay exceeding age of oldest IMU data in the buffer
         ofDataNew.time_ms = max(ofDataNew.time_ms,imuDataDelayed.time_ms);
         // Save data to buffer
@@ -175,7 +175,7 @@ bool NavEKF2_core::RecallOF()
 bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
 {
     // compass offsets are valid if we have finalised magnetic field initialisation and magnetic field learning is not prohibited and primary compass is valid
-    if (firstMagYawInit && (frontend._magCal != 2) && _ahrs->get_compass()->healthy(0)) {
+    if (firstMagYawInit && (frontend->_magCal != 2) && _ahrs->get_compass()->healthy(0)) {
         magOffsets = _ahrs->get_compass()->get_offsets(0) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
@@ -194,11 +194,11 @@ void NavEKF2_core::readMagData()
         lastMagUpdate_us = _ahrs->get_compass()->last_update_usec();
 
         // estimate of time magnetometer measurement was taken, allowing for delays
-        magDataNew.time_ms = imuSampleTime_ms - frontend.magDelay_ms;
+        magDataNew.time_ms = imuSampleTime_ms - frontend->magDelay_ms;
 
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        magDataNew.time_ms = roundToNearest(magDataNew.time_ms, frontend.fusionTimeStep_ms);
+        magDataNew.time_ms = roundToNearest(magDataNew.time_ms, frontend->fusionTimeStep_ms);
 
         // read compass data and scale to improve numerical conditioning
         magDataNew.mag = _ahrs->get_compass()->get_field() * 0.001f;
@@ -465,11 +465,11 @@ void NavEKF2_core::readGpsData()
 
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend._gpsDelay_ms;
+            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend->_gpsDelay_ms;
 
             // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
             // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend.fusionTimeStep_ms);
+            gpsDataNew.time_ms = roundToNearest(gpsDataNew.time_ms, frontend->fusionTimeStep_ms);
 
             // Prevent time delay exceeding age of oldest IMU data in the buffer
             gpsDataNew.time_ms = max(gpsDataNew.time_ms,imuDataDelayed.time_ms);
@@ -498,7 +498,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity and set GPS fusion mode accordingly
-            if (_ahrs->get_gps().have_vertical_velocity() && frontend._fusionModeGPS == 0) {
+            if (_ahrs->get_gps().have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -528,7 +528,7 @@ void NavEKF2_core::readGpsData()
                 // We are by definition at the origin at the instant of alignment so set NE position to zero
                 gpsDataNew.pos.zero();
                 // If GPS useage isn't explicitly prohibited, we switch to absolute position mode
-                if (isAiding && frontend._fusionModeGPS != 3) {
+                if (isAiding && frontend->_fusionModeGPS != 3) {
                     PV_AidingMode = AID_ABSOLUTE;
                     // Initialise EKF position and velocity states
                     ResetPosition();
@@ -555,10 +555,10 @@ void NavEKF2_core::readGpsData()
     bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
 
     // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
-    uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend.gpsRetryTimeUseTAS_ms : frontend.gpsRetryTimeNoTAS_ms;
+    uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend->gpsRetryTimeUseTAS_ms : frontend->gpsRetryTimeNoTAS_ms;
 
     // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
-    uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend.gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
+    uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend->gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
 
     // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
     if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
@@ -574,7 +574,7 @@ void NavEKF2_core::readGpsData()
         if (PV_AidingMode == AID_ABSOLUTE && !useAirspeed() && !assume_zero_sideslip()) {
             if (optFlowBackupAvailable) {
                 // we can do optical flow only nav
-                frontend._fusionModeGPS = 3;
+                frontend->_fusionModeGPS = 3;
                 PV_AidingMode = AID_RELATIVE;
             } else {
                 // store the current position
@@ -659,36 +659,36 @@ void NavEKF2_core::readHgtData()
 {
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    if (_baro.get_last_update() - lastHgtReceived_ms > 70) {
+    if (frontend->_baro.get_last_update() - lastHgtReceived_ms > 70) {
         // Don't use Baro height if operating in optical flow mode as we use range finder instead
-        if (frontend._fusionModeGPS == 3 && frontend._altSource == 1) {
+        if (frontend->_fusionModeGPS == 3 && frontend->_altSource == 1) {
             if ((imuSampleTime_ms - rngValidMeaTime_ms) < 2000) {
                 // adjust range finder measurement to allow for effect of vehicle tilt and height of sensor
                 baroDataNew.hgt = max(rngMea * Tnb_flow.c.z, rngOnGnd);
                 // calculate offset to baro data that enables baro to be used as a backup
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
+                baroHgtOffset = 0.1f * (frontend->_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             } else if (isAiding && takeOffDetected) {
                 // we have lost range finder measurements and are in optical flow flight
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
-                baroDataNew.hgt = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
+                baroDataNew.hgt = max(frontend->_baro.get_altitude() - baroHgtOffset, rngOnGnd);
             } else {
                 // If we are on ground and have no range finder reading, assume the nominal on-ground height
                 baroDataNew.hgt = rngOnGnd;
                 // calculate offset to baro data that enables baro to be used as a backup
                 // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
+                baroHgtOffset = 0.1f * (frontend->_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
             }
         } else {
             // Normal operation is to use baro measurement
-            baroDataNew.hgt = _baro.get_altitude();
+            baroDataNew.hgt = frontend->_baro.get_altitude();
         }
 
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
         if (!getTakeoffExpected()) {
             const float gndHgtFiltTC = 0.5f;
-            const float dtBaro = frontend.hgtAvg_ms*1.0e-3f;
+            const float dtBaro = frontend->hgtAvg_ms*1.0e-3f;
             float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
             meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
         } else if (isAiding && getTakeoffExpected()) {
@@ -698,14 +698,14 @@ void NavEKF2_core::readHgtData()
         }
 
         // time stamp used to check for new measurement
-        lastHgtReceived_ms = _baro.get_last_update();
+        lastHgtReceived_ms = frontend->_baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastHgtReceived_ms - frontend._hgtDelay_ms;
+        baroDataNew.time_ms = lastHgtReceived_ms - frontend->_hgtDelay_ms;
 
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        baroDataNew.time_ms = roundToNearest(baroDataNew.time_ms, frontend.fusionTimeStep_ms);
+        baroDataNew.time_ms = roundToNearest(baroDataNew.time_ms, frontend->fusionTimeStep_ms);
 
         // Prevent time delay exceeding age of oldest IMU data in the buffer
         baroDataNew.time_ms = max(baroDataNew.time_ms,imuDataDelayed.time_ms);
@@ -773,10 +773,10 @@ void NavEKF2_core::readAirSpdData()
             aspeed->last_update_ms() != timeTasReceived_ms) {
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
-        tasDataNew.time_ms = timeTasReceived_ms - frontend.tasDelay_ms;
+        tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
         // Assign measurement to nearest fusion interval so that multiple measurements can be fused on the same frame
         // This allows us to perform the covariance prediction over longer time steps which reduces numerical precision errors
-        tasDataNew.time_ms = roundToNearest(tasDataNew.time_ms, frontend.fusionTimeStep_ms);
+        tasDataNew.time_ms = roundToNearest(tasDataNew.time_ms, frontend->fusionTimeStep_ms);
         newDataTas = true;
         StoreTAS();
         RecallTAS();

@@ -242,6 +242,8 @@ public:
     void set_enable(bool enable) { _enable.set(enable); }
     
 private:
+    uint8_t num_cores; // number of allocated cores
+    uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
     const AP_AHRS *_ahrs;
     AP_Baro &_baro;
@@ -281,6 +283,7 @@ private:
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
+    AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

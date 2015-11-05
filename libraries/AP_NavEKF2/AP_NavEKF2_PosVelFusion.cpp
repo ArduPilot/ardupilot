@@ -105,13 +105,13 @@ void NavEKF2_core::ResetHeight(void)
 bool NavEKF2_core::resetHeightDatum(void)
 {
     // if we are using a range finder for height, return false
-    if (frontend._altSource == 1) {
+    if (frontend->_altSource == 1) {
         return false;
     }
     // record the old height estimate
     float oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
-    _baro.update_calibration();
+    frontend->_baro.update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and afer the reset is the same
@@ -143,7 +143,7 @@ void NavEKF2_core::SelectVelPosFusion()
     // Determine if we need to fuse position and velocity data on this time step
     if (RecallGPS() && PV_AidingMode == AID_ABSOLUTE) {
         // Don't fuse velocity data if GPS doesn't support it
-        if (frontend._fusionModeGPS <= 1) {
+        if (frontend->_fusionModeGPS <= 1) {
             fuseVelData = true;
         } else {
             fuseVelData = false;
@@ -159,7 +159,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // If we haven't received height data for a while, then declare the height data as being timed out
     // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend.hgtRetryTimeMode0_ms : frontend.hgtRetryTimeMode12_ms;
+    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
     if (imuSampleTime_ms - lastHgtReceived_ms > hgtRetryTime_ms) {
         hgtTimeout = true;
     }
@@ -236,8 +236,8 @@ void NavEKF2_core::FuseVelPosNED()
 
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
-        if (useAirspeed()) gpsRetryTime = frontend.gpsRetryTimeUseTAS_ms;
-        else gpsRetryTime = frontend.gpsRetryTimeNoTAS_ms;
+        if (useAirspeed()) gpsRetryTime = frontend->gpsRetryTimeUseTAS_ms;
+        else gpsRetryTime = frontend->gpsRetryTimeNoTAS_ms;
 
         // form the observation vector
         observation[0] = gpsDataDelayed.vel.x;
@@ -248,7 +248,7 @@ void NavEKF2_core::FuseVelPosNED()
         observation[5] = -baroDataDelayed.hgt;
 
         // calculate additional error in GPS position caused by manoeuvring
-        posErr = frontend.gpsPosVarAccScale * accNavMag;
+        posErr = frontend->gpsPosVarAccScale * accNavMag;
 
         // estimate the GPS Velocity, GPS horiz position and height measurement variances.
         // if the GPS is able to report a speed error, we use it to adjust the observation noise for GPS velocity
@@ -266,35 +266,35 @@ void NavEKF2_core::FuseVelPosNED()
         } else {
             if (gpsSpdAccuracy > 0.0f) {
                 // use GPS receivers reported speed accuracy if available and floor at value set by gps noise parameter
-                R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend._gpsHorizVelNoise, 50.0f));
-                R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend._gpsVertVelNoise, 50.0f));
+                R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
+                R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
             } else {
                 // calculate additional error in GPS velocity caused by manoeuvring
-                R_OBS[0] = sq(constrain_float(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend.gpsNEVelVarAccScale * accNavMag);
-                R_OBS[2] = sq(constrain_float(frontend._gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend.gpsDVelVarAccScale  * accNavMag);
+                R_OBS[0] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
+                R_OBS[2] = sq(constrain_float(frontend->_gpsVertVelNoise,  0.05f, 5.0f)) + sq(frontend->gpsDVelVarAccScale  * accNavMag);
             }
             R_OBS[1] = R_OBS[0];
-            R_OBS[3] = sq(constrain_float(frontend._gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+            R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
             R_OBS[4] = R_OBS[3];
         }
-        R_OBS[5] = sq(constrain_float(frontend._baroAltNoise, 0.1f, 10.0f));
+        R_OBS[5] = sq(constrain_float(frontend->_baroAltNoise, 0.1f, 10.0f));
 
         // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
         if (getTakeoffExpected() || getTouchdownExpected()) {
-            R_OBS[5] *= frontend.gndEffectBaroScaler;
+            R_OBS[5] *= frontend->gndEffectBaroScaler;
         }
 
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
         // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
         // plus a margin for manoeuvres. It is better to reject GPS horizontal velocity errors early
-        for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend._gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend.gpsNEVelVarAccScale * accNavMag);
+        for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         for (uint8_t i=2; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
 
         // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtReceived_ms) <  (2 * frontend.hgtAvg_ms)) {
+        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtReceived_ms) <  (2 * frontend->hgtAvg_ms)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = stateStruct.position.z - observation[5];
             float velDErr = stateStruct.velocity.z - observation[2];
@@ -315,7 +315,7 @@ void NavEKF2_core::FuseVelPosNED()
             varInnovVelPos[3] = P[6][6] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[7][7] + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            float maxPosInnov2 = sq(frontend._gpsPosInnovGate)*(varInnovVelPos[3] + varInnovVelPos[4]);
+            float maxPosInnov2 = sq(frontend->_gpsPosInnovGate)*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data or not aiding
@@ -327,7 +327,7 @@ void NavEKF2_core::FuseVelPosNED()
                 if (PV_AidingMode == AID_ABSOLUTE) {
                     lastPosPassTime_ms = imuSampleTime_ms;
                     // if timed out or outside the specified uncertainty radius, reset to the GPS
-                    if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend._gpsGlitchRadiusMax)))) {
+                    if (posTimeout || ((P[6][6] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                         // reset the position to the current GPS position
                         ResetPosition();
                         // reset the velocity to the GPS velocity
@@ -338,7 +338,7 @@ void NavEKF2_core::FuseVelPosNED()
                         // Reset the position variances and corresponding covariances to a value that will pass the checks
                         zeroRows(P,6,7);
                         zeroCols(P,6,7);
-                        P[6][6] = sq(float(0.5f*frontend._gpsGlitchRadiusMax));
+                        P[6][6] = sq(float(0.5f*frontend->_gpsGlitchRadiusMax));
                         P[7][7] = P[6][6];
                         // Reset the normalised innovation to avoid failing the bad fusion tests
                         posTestRatio = 0.0f;
@@ -355,7 +355,7 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if (frontend._fusionModeGPS >= 1 || PV_AidingMode != AID_ABSOLUTE) {
+            if (frontend->_fusionModeGPS >= 1 || PV_AidingMode != AID_ABSOLUTE) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
@@ -373,7 +373,7 @@ void NavEKF2_core::FuseVelPosNED()
             }
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate the test ratio
-            velTestRatio = innovVelSumSq / (varVelSum * sq(frontend._gpsVelInnovGate));
+            velTestRatio = innovVelSumSq / (varVelSum * sq(frontend->_gpsVelInnovGate));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
@@ -404,7 +404,7 @@ void NavEKF2_core::FuseVelPosNED()
 
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
-            hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend._hgtInnovGate) * varInnovVelPos[5]);
+            hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend->_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime_ms;

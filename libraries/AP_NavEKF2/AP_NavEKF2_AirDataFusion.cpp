@@ -38,7 +38,7 @@ void NavEKF2_core::FuseAirspeed()
     float vwn;
     float vwe;
     float EAS2TAS = _ahrs->get_EAS2TAS();
-    const float R_TAS = sq(constrain_float(frontend._easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
+    const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     Vector3 SH_TAS;
     float SK_TAS;
     Vector24 H_TAS;
@@ -121,11 +121,11 @@ void NavEKF2_core::FuseAirspeed()
         innovVtas = VtasPred - tasDataDelayed.tas;
 
         // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(frontend._tasInnovGate) * varInnovVtas);
+        tasTestRatio = sq(innovVtas) / (sq(frontend->_tasInnovGate) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend.tasRetryTime_ms;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
@@ -207,7 +207,7 @@ void NavEKF2_core::SelectTasFusion()
     readAirSpdData();
 
     // If we haven't received airspeed data for a while, then declare the airspeed data as being timed out
-    if (imuSampleTime_ms - tasDataNew.time_ms > frontend.tasRetryTime_ms) {
+    if (imuSampleTime_ms - tasDataNew.time_ms > frontend->tasRetryTime_ms) {
         tasTimeout = true;
     }
 
@@ -278,9 +278,9 @@ void NavEKF2_core::SelectBetaFusion()
     }
 
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend.betaAvg_ms);
+    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend->betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend.gpsRetryTimeNoTAS_ms));
+    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->gpsRetryTimeNoTAS_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
     bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion

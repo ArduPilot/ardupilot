@@ -46,9 +46,9 @@ void NavEKF2_core::SelectFlowFusion()
     // check is the terrain offset estimate is still valid
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000);
     // Perform tilt check
-    bool tiltOK = (Tnb_flow.c.z > frontend.DCM33FlowMin);
+    bool tiltOK = (Tnb_flow.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if we are using optical flow and are on the ground
-    if (frontend._fusionModeGPS == 3 && !takeOffDetected && isAiding) {
+    if (frontend->_fusionModeGPS == 3 && !takeOffDetected && isAiding) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
@@ -83,7 +83,7 @@ void NavEKF2_core::SelectFlowFusion()
     if (newDataFlow && tiltOK && PV_AidingMode == AID_RELATIVE)
     {
         // Set the flow noise used by the fusion processes
-        R_LOS = sq(max(frontend._flowNoise, 0.05f));
+        R_LOS = sq(max(frontend->_flowNoise, 0.05f));
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -129,7 +129,7 @@ void NavEKF2_core::EstimateTerrainOffset()
 
         // in addition to a terrain gradient error model, we also have a time based error growth that is scaled using the gradient parameter
         float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend.gndGradientSigma))) + sq(float(frontend.gndGradientSigma) * timeLapsed);
+        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend->gndGradientSigma))) + sq(float(frontend->gndGradientSigma) * timeLapsed);
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
@@ -145,7 +145,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             float q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            float R_RNG = frontend._rngNoise;
+            float R_RNG = frontend->_rngNoise;
 
             // calculate Kalman gain
             float SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -161,7 +161,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             innovRng = predRngMeas - rngMea;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(innovRng) / (sq(frontend._rngInnovGate) * varInnovRng);
+            auxRngTestRatio = sq(innovRng) / (sq(frontend->_rngInnovGate) * varInnovRng);
 
             // Check the innovation for consistency and don't fuse if > 5Sigma
             if ((sq(innovRng)*SK_RNG) < 25.0f)
@@ -249,10 +249,10 @@ void NavEKF2_core::EstimateTerrainOffset()
             K_OPT = Popt*H_OPT/auxFlowObsInnovVar;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend._flowInnovGate) * auxFlowObsInnovVar);
+            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend->_flowInnovGate) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (max(flowRadXY[0],flowRadXY[1]) < frontend._maxFlowRate) {
+            if (max(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov;
@@ -633,10 +633,10 @@ void NavEKF2_core::FuseOptFlow()
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend._flowInnovGate) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend->_flowInnovGate) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
-        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend._maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend._maxFlowRate)) {
+        if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
 

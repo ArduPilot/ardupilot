@@ -57,15 +57,15 @@ void NavEKF2_core::setWindMagStateLearningMode()
 
     // Determine if learning of magnetic field states has been requested by the user
     bool magCalRequested =
-            ((frontend._magCal == 0) && inFlight) || // when flying
-            ((frontend._magCal == 1) && manoeuvring)  || // when manoeuvring
-            ((frontend._magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
-            (frontend._magCal == 4); // all the time
+            ((frontend->_magCal == 0) && inFlight) || // when flying
+            ((frontend->_magCal == 1) && manoeuvring)  || // when manoeuvring
+            ((frontend->_magCal == 3) && firstMagYawInit) || // when initial in-air yaw and field reset has completed
+            (frontend->_magCal == 4); // all the time
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
     // If we do nto have absolute position (eg GPS) then the earth field states cannot be learned
-    bool magCalDenied = !use_compass() || (frontend._magCal == 2) || (PV_AidingMode == AID_NONE) || (onGround && frontend._magCal != 4);
+    bool magCalDenied = !use_compass() || (frontend->_magCal == 2) || (PV_AidingMode == AID_NONE) || (onGround && frontend->_magCal != 4);
 
     // Inhibit the magnetic field calibration if not requested or denied
     inhibitMagStates = (!magCalRequested || magCalDenied);
@@ -96,7 +96,7 @@ void NavEKF2_core::setAidingMode()
     // Don't allow filter to start position or velocity aiding until the tilt and yaw alignment is complete
     bool filterIsStable = tiltAlignComplete && yawAlignComplete;
     // If GPS useage has been prohiited then we use flow aiding provided optical flow data is present
-    bool useFlowAiding = (frontend._fusionModeGPS == 3) && optFlowDataPresent();
+    bool useFlowAiding = (frontend->_fusionModeGPS == 3) && optFlowDataPresent();
     // Start aiding if we have a source of aiding data and the filter attitude algnment is complete
     // Latch to on. Aiding can be turned off by setting both
     isAiding = ((readyToUseGPS() || useFlowAiding) && filterIsStable) || isAiding;
@@ -121,7 +121,7 @@ void NavEKF2_core::setAidingMode()
             meaHgtAtTakeOff = baroDataDelayed.hgt;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
-        } else if (frontend._fusionModeGPS == 3) {
+        } else if (frontend->_fusionModeGPS == 3) {
             // We have commenced aiding, but GPS useage has been prohibited so use optical flow only
             hal.console->printf("EKF2 is using optical flow\n");
             PV_AidingMode = AID_RELATIVE; // we have optical flow data and can estimate all vehicle states
@@ -259,7 +259,7 @@ uint8_t NavEKF2_core::setInhibitGPS(void)
         return 0;
     }
     if (optFlowDataPresent()) {
-        frontend._fusionModeGPS = 3;
+        frontend->_fusionModeGPS = 3;
 //#error writing to a tuning parameter
         return 2;
     } else {

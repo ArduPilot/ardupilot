@@ -53,7 +53,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     gpsDriftNE = min(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
-    bool gpsDriftFail = (gpsDriftNE > 3.0f) && onGround && (frontend._gpsCheck & MASK_GPS_POS_DRIFT);
+    bool gpsDriftFail = (gpsDriftNE > 3.0f) && onGround && (frontend->_gpsCheck & MASK_GPS_POS_DRIFT);
 
     // Report check result as a text string and bitmask
     if (gpsDriftFail) {
@@ -71,8 +71,8 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend._fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
+        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
+    } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
     } else {
@@ -95,7 +95,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (onGround) {
         gpsHorizVelFilt = 0.1f * pythagorous2(gpsDataDelayed.vel.x,gpsDataDelayed.vel.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend._gpsCheck & MASK_GPS_HORIZ_SPD);
+        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
@@ -114,7 +114,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     float hAcc = 0.0f;
     bool hAccFail;
     if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = (hAcc > 5.0f)  && (frontend._gpsCheck & MASK_GPS_POS_ERR);
+        hAccFail = (hAcc > 5.0f)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
     }
@@ -130,7 +130,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if reported speed accuracy greater than threshold
-    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f) && (frontend._gpsCheck & MASK_GPS_SPD_ERR);
+    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
 
     // Report check result as a text string and bitmask
     if (gpsSpdAccFail) {
@@ -143,7 +143,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend._gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (_ahrs->get_gps().get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
 
     // Report check result as a text string and bitmask
     if (hdopFail) {
@@ -155,7 +155,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // fail if not enough sats
-    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend._gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (_ahrs->get_gps().num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
@@ -169,7 +169,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // fail if magnetometer innovations are outside limits indicating bad yaw
     // with bad yaw we are unable to use GPS
     bool yawFail;
-    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend._gpsCheck & MASK_GPS_YAW_ERR)) {
+    if ((magTestRatio.x > 1.0f || magTestRatio.y > 1.0f) && (frontend->_gpsCheck & MASK_GPS_YAW_ERR)) {
         yawFail = true;
     } else {
         yawFail = false;
@@ -358,7 +358,7 @@ void NavEKF2_core::detectFlight()
 // determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
 bool NavEKF2_core::getTakeoffExpected()
 {
-    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend.gndEffectTimeout_ms) {
+    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
         expectGndEffectTakeoff = false;
     }
 
@@ -377,7 +377,7 @@ void NavEKF2_core::setTakeoffExpected(bool val)
 // determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
 bool NavEKF2_core::getTouchdownExpected()
 {
-    if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend.gndEffectTimeout_ms) {
+    if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend->gndEffectTimeout_ms) {
         expectGndEffectTouchdown = false;
     }
 

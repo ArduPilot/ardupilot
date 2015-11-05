@@ -62,8 +62,11 @@ class NavEKF2_core
 {
 public:
     // Constructor
-    NavEKF2_core(NavEKF2 &frontend, const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
+    NavEKF2_core(void);
 
+    // setup this core backend
+    void setup_core(NavEKF2 *_frontend, uint8_t _imu_index);
+    
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
     bool InitialiseFilterBootstrap(void);
@@ -261,7 +264,8 @@ public:
 
 private:
     // Reference to the global EKF frontend for parameters
-    NavEKF2 &frontend;
+    NavEKF2 *frontend;
+    uint8_t imu_index;
 
     typedef float ftype;
 #if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
@@ -314,8 +318,6 @@ private:
 #endif
 
     const AP_AHRS *_ahrs;
-    AP_Baro &_baro;
-    const RangeFinder &_rng;
 
     // the states are available in two forms, either as a Vector31, or
     // broken down as individual elements. Both are equivalent (same

@@ -26,11 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define GYRO_BIAS_LIMIT 0.349066f
 
 // constructor
-NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
-    frontend(_frontend),
-    _ahrs(ahrs),
-    _baro(baro),
-    _rng(rng),
+NavEKF2_core::NavEKF2_core(void) :
     stateStruct(*reinterpret_cast<struct state_elements *>(&statesArray)),
 
     //variables
@@ -57,6 +53,15 @@ NavEKF2_core::NavEKF2_core(NavEKF2 &_frontend, const AP_AHRS *ahrs, AP_Baro &bar
     _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
     _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
 }
+
+// setup this core backend
+void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index)
+{
+    frontend = _frontend;
+    imu_index = _imu_index;
+    _ahrs = frontend->_ahrs;
+}
+    
 
 /********************************************************
 *                   INIT FUNCTIONS                      *
@@ -220,7 +225,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = _ahrs->get_ins().get_accel();
+    initAccVec = _ahrs->get_ins().get_accel(imu_index);
 
     // read the magnetometer data
     readMagData();
@@ -276,7 +281,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    hal.console->printf("EKF2 initialised\n");
+    hal.console->printf("EKF2 initialised on IMU %u\n", (unsigned)imu_index);
 
     return true;
 }
@@ -303,7 +308,7 @@ void NavEKF2_core::CovarianceInit()
     // positions
     P[6][6]   = sq(15.0f);
     P[7][7]   = P[6][6];
-    P[8][8]   = sq(frontend._baroAltNoise);
+    P[8][8]   = sq(frontend->_baroAltNoise);
     // gyro delta angle biases
     P[9][9] = sq(radians(InitialGyroBiasUncertainty() * dtIMUavg));
     P[10][10] = P[9][9];
@@ -375,7 +380,7 @@ void NavEKF2_core::UpdateFilter()
 
     // perform a covariance prediction if the total delta angle has exceeded the limit
     // or the time limit will be exceeded at the next IMU update
-    if (((dt >= (frontend.covTimeStepMax - dtIMUavg)) || (summedDelAng.length() > frontend.covDelAngMax))) {
+    if (((dt >= (frontend->covTimeStepMax - dtIMUavg)) || (summedDelAng.length() > frontend->covDelAngMax))) {
         CovariancePrediction();
     } else {
         covPredStep = false;
@@ -695,12 +700,12 @@ void NavEKF2_core::CovariancePrediction()
 
     // use filtered height rate to increase wind process noise when climbing or descending
     // this allows for wind gradient effects.
-    windVelSigma  = dt * constrain_float(frontend._windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend._wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
-    dAngBiasSigma = dt * constrain_float(frontend._gyroBiasProcessNoise, 0.0f, 1e-4f);
-    dVelBiasSigma = dt * constrain_float(frontend._accelBiasProcessNoise, 1e-6f, 1e-2f);
-    dAngScaleSigma = dt * constrain_float(frontend._gyroScaleProcessNoise,1e-6f,1e-2f);
-    magEarthSigma = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
-    magBodySigma  = dt * constrain_float(frontend._magProcessNoise, 1e-4f, 1e-1f);
+    windVelSigma  = dt * constrain_float(frontend->_windVelProcessNoise, 0.01f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate));
+    dAngBiasSigma = dt * constrain_float(frontend->_gyroBiasProcessNoise, 0.0f, 1e-4f);
+    dVelBiasSigma = dt * constrain_float(frontend->_accelBiasProcessNoise, 1e-6f, 1e-2f);
+    dAngScaleSigma = dt * constrain_float(frontend->_gyroScaleProcessNoise,1e-6f,1e-2f);
+    magEarthSigma = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
+    magBodySigma  = dt * constrain_float(frontend->_magProcessNoise, 1e-4f, 1e-1f);
     for (uint8_t i= 0; i<=8;  i++) processNoise[i] = 0.0f;
     for (uint8_t i=9; i<=11; i++) processNoise[i] = dAngBiasSigma;
     for (uint8_t i=12; i<=14; i++) processNoise[i] = dAngScaleSigma;
@@ -734,9 +739,9 @@ void NavEKF2_core::CovariancePrediction()
     day_s = stateStruct.gyro_scale.y;
     daz_s = stateStruct.gyro_scale.z;
     dvz_b = stateStruct.accel_zbias;
-    float _gyrNoise = constrain_float(frontend._gyrNoise, 1e-3f, 5e-2f);
+    float _gyrNoise = constrain_float(frontend->_gyrNoise, 1e-3f, 5e-2f);
     daxNoise = dayNoise = dazNoise = dt*_gyrNoise;
-    float _accNoise = constrain_float(frontend._accNoise, 5e-2f, 1.0f);
+    float _accNoise = constrain_float(frontend->_accNoise, 5e-2f, 1.0f);
     dvxNoise = dvyNoise = dvzNoise = dt*_accNoise;
 
     // calculate the predicted covariance due to inertial sensor error propagation
