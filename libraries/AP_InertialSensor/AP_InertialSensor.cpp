@@ -296,6 +296,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
+    // @Param: TRIM_OPTION
+    // @DisplayName: ACC TRIM Option
+    // @Description: Choose what is the truth for accel trim calculation
+    // @User: Advanced
+    // @Values: 0:accel cal Level is Truth, 1:body aligned accel is truth
+    AP_GROUPINFO("TRIM_OPTION", 25, AP_InertialSensor, _trim_option, 0),
+
+    // @Param: ACC_BODY_ALIGNED
+    // @DisplayName: ACC body aligned
+    // @Description: The body aligned accel to be used for trim calculation
+    // @User: Advanced
+    // @Value: Accelerometer ID    
+    AP_GROUPINFO("ACC_BODYFIX", 26, AP_InertialSensor, _acc_body_aligned, 2),
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -1628,15 +1641,39 @@ void AP_InertialSensor::_acal_save_calibrations()
 
     Vector3f aligned_sample;
     Vector3f misaligned_sample;
-    if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
-        // determine trim from aligned sample vs misaligned sample
-        Vector3f cross = (misaligned_sample%aligned_sample);
-        float dot = (misaligned_sample*aligned_sample);
-        Quaternion q(sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
-        q.normalize();
-        _trim_roll = q.get_euler_roll();
-        _trim_pitch = q.get_euler_pitch();
-        _new_trim = true;
+    switch(_trim_option) {
+
+        case 0:
+            // The first level step of accel cal will be taken as gnd truth,
+            // i.e. trim will be set as per the output of primary accel from the level step
+            get_primary_accel_cal_sample_avg(0,aligned_sample);
+            _trim_pitch = atan2f(aligned_sample.x, pythagorous2(aligned_sample.y, aligned_sample.z));
+            _trim_roll = atan2f(-aligned_sample.y, -aligned_sample.z);
+            _new_trim = true;
+            break;
+        case 1:
+            // Reference accel is truth, in this scenario there is a reference accel
+            // as mentioned in ACC_BODY_ALIGNED
+            if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
+                // determine trim from aligned sample vs misaligned sample
+                Vector3f cross = (misaligned_sample%aligned_sample);
+                float dot = (misaligned_sample*aligned_sample);
+                Quaternion q(sqrt(sq(misaligned_sample.length())*sq(aligned_sample.length()))+dot, cross.x, cross.y, cross.z);
+                q.normalize();
+                _trim_roll = q.get_euler_roll();
+                _trim_pitch = q.get_euler_pitch();
+                _new_trim = true;
+            }
+            break;
+        default:
+            _new_trim = false;
+            //noop
+    }
+
+    if (fabsf(_trim_roll) > radians(10) || 
+        fabsf(_trim_pitch) > radians(10)) {
+        hal.console->print("ERR: Trim over maximum of 10 degrees!!");
+        _new_trim = false;  //we have either got faulty level during acal or highly misaligned accelerometers 
     }
 }
 
@@ -1653,13 +1690,10 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
 
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_PX4
-    return false;
-#endif
     if (_accel_count != 3 || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
         return false;
     }
-    _accel_calibrator[2].get_sample_corrected(sample_num, ret);
+    _accel_calibrator[_acc_body_aligned].get_sample_corrected(sample_num, ret);
     ret.rotate(_board_orientation);
     return true;
 }

@@ -394,6 +394,10 @@ private:
         float delta_time;
     } _hil {};
 
+    // Trim options
+    AP_Int8 _acc_body_aligned;
+    AP_Int8 _trim_option;
+
     DataFlash_Class *_dataflash;
 
     static AP_InertialSensor *_s_instance;
