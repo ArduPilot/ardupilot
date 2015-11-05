@@ -481,9 +481,19 @@ bool NavEKF2::InitialiseFilter(void)
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF2::UpdateFilter(void)
 {
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].UpdateFilter();
+    if (!core) {
+        return;
+    }
+    for (uint8_t i=0; i<num_cores; i++) {
+        core[i].UpdateFilter();
+    }
+
+    // set primary to first healthy filter
+    primary = 0;
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (core[i].healthy()) {
+            primary = i;
+            break;
         }
     }
 }
