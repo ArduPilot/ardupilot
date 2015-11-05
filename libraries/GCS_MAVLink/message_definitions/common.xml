@@ -379,7 +379,10 @@
                <entry value="154" name="MAV_COMP_ID_GIMBAL">
                     <description/>
                </entry>
-               <entry value="155" name="MAV_COMP_ID_ADSB">
+               <entry value="155" name="MAV_COMP_ID_LOG">
+                    <description/>
+               </entry>
+               <entry value="156" name="MAV_COMP_ID_ADSB">
                     <description/>
                </entry>
           </enum>
