@@ -100,4 +100,15 @@ bool Util::is_chardev_node(const char *path)
     return S_ISCHR(st.st_mode);
 }
 
+/*
+  always report 256k of free memory. Using mallinfo() isn't useful as
+  it only reported the current heap, which auto-expands. What we're
+  trying to do here is ensure that code which checks for free memory
+  before allocating objects does allow the allocation
+ */
+uint32_t Util::available_memory(void)
+{
+    return 256*1024;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
