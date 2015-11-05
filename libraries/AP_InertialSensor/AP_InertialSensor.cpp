@@ -1628,6 +1628,9 @@ bool AP_InertialSensor::is_still()
            (vibe.z < _still_threshold);
 }
 
+/*
+    set and save accelerometer bias along with trim calculation
+*/
 void AP_InertialSensor::_acal_save_calibrations()
 {
     for (uint8_t i=0; i<_accel_count; i++) {
@@ -1677,6 +1680,9 @@ void AP_InertialSensor::_acal_save_calibrations()
     }
 }
 
+/*
+    Returns true if new valid trim values are available and passes them to reference vars    
+*/
 bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
 {
     if (_new_trim) {
@@ -1688,6 +1694,9 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
     return false;
 }
 
+/*    
+    Returns body fixed accelerometer level data averaged during accel calibration's first step
+*/
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
     if (_accel_count != 3 || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
@@ -1698,6 +1707,9 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
     return true;
 }
 
+/*    
+    Returns Primary accelerometer level data averaged during accel calibration's first step
+*/
 bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
 {
     uint8_t count = 0;
