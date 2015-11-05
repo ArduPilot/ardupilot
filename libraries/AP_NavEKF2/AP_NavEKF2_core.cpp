@@ -191,9 +191,6 @@ void NavEKF2_core::InitialiseVariables()
     memset(&statesArray, 0, sizeof(statesArray));
     posDownDerivative = 0.0f;
     posDown = 0.0f;
-    imuNoiseFiltState0 = 0.0f;
-    imuNoiseFiltState1 = 0.0f;
-    lastImuSwitchState = IMUSWITCH_MIXED;
     posVelFusionDelayed = false;
     optFlowFusionDelayed = false;
     airSpdFusionDelayed = false;
