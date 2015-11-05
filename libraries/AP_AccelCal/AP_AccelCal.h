@@ -16,13 +16,28 @@ public:
     _saving(false)
     { update_status(); }
 
+    // start all the registered calibrations
     void start(GCS_MAVLINK *gcs);
+
+    // interface to the user in case of the faillure to even a single calibrator
     void fail();
+
+    // interface to the user in case all the calibrators succeed
     void success();
+
+    // reset all the calibrators to there pre calibration stage so as to make them ready for next calibration request
     void clear();
+
+    // Run an iteration of all registered calibrations
     void update();
+
+    // interface to the clients for registration
     void register_client(AP_AccelCal_Client* client);
+
+    // proceed through the collection step for each of the registered calibrators
     void collect_sample();
+
+    // get the status of the calibrator server as a whole
     accel_cal_status_t get_status() { return _status; }
 
 private:
@@ -32,9 +47,13 @@ private:
     uint8_t _num_clients;
     AP_AccelCal_Client* _clients[AP_ACCELCAL_MAX_NUM_CLIENTS];
 
+    // update the state of the Accel calibrator server
     void update_status();
+
+    // checks if no new sample has been recieved for considerable amount of time
     bool check_for_timeout();
 
+    // check if client's calibrator is active
     bool client_active(uint8_t client_num);
 
     bool _started;

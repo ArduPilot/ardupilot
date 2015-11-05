@@ -1,3 +1,17 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "AP_AccelCal.h"
 #include <stdarg.h>
 #include <GCS_MAVLink/GCS.h>
@@ -8,6 +22,7 @@ const extern AP_HAL::HAL& hal;
 static bool _start_collect_sample;
 static void _snoop(const mavlink_message_t* msg);
 
+// Run an iteration of all registered calibrations
 void AP_AccelCal::update()
 {
     if (!get_calibrator(0)) {
@@ -132,6 +147,7 @@ void AP_AccelCal::update()
     }
 }
 
+// start all the registered calibrations
 void AP_AccelCal::start(GCS_MAVLINK *gcs)
 {
     if (gcs == NULL || _started) {
@@ -155,6 +171,7 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     update_status();
 }
 
+// interface to the user in case all the calibrators succeed
 void AP_AccelCal::success()
 {
     AccelCalibrator *cal;
@@ -164,6 +181,9 @@ void AP_AccelCal::success()
     clear();
 }
 
+// interface to the user in case of the faillure to even a single calibrator
+// TODO: return reason of faillure for each calibrator and make distinction
+//       b/w passed and failed calibration
 void AP_AccelCal::fail()
 {
     AccelCalibrator *cal;
@@ -173,6 +193,7 @@ void AP_AccelCal::fail()
     clear();
 }
 
+// reset all the calibrators to there pre calibration stage so as to make them ready for next calibration request
 void AP_AccelCal::clear()
 {
     if (!_started) {
@@ -197,6 +218,7 @@ void AP_AccelCal::clear()
     update_status();
 }
 
+// proceed through the collection step for each of the registered calibrators
 void AP_AccelCal::collect_sample()
 {
     if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
@@ -219,6 +241,7 @@ void AP_AccelCal::collect_sample()
     update_status();
 }
 
+// interface to the clients for registration
 void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
     if (client == NULL || _num_clients == AP_ACCELCAL_MAX_NUM_CLIENTS) {
         return;
@@ -237,6 +260,8 @@ void AP_AccelCal::register_client(AP_AccelCal_Client* client) {
     _num_clients++;
 }
 
+// get the calibrator associated with the ID, ID is given to clients in the order of there
+// registration
 AccelCalibrator* AP_AccelCal::get_calibrator(uint8_t index) {
     AccelCalibrator* ret;
     for(uint8_t i=0; i<_num_clients; i++) {
@@ -250,6 +275,7 @@ AccelCalibrator* AP_AccelCal::get_calibrator(uint8_t index) {
     return NULL;
 }
 
+// update the state of the Accel calibrator server
 void AP_AccelCal::update_status() {
     AccelCalibrator *cal;
 
@@ -261,36 +287,37 @@ void AP_AccelCal::update_status() {
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         if (cal->get_status() == ACCEL_CAL_FAILED) {
-            _status = ACCEL_CAL_FAILED;
+            _status = ACCEL_CAL_FAILED;         //fail if even one of the calibration has
             return;
         }
     }
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         if (cal->get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
-            _status = ACCEL_CAL_COLLECTING_SAMPLE;
+            _status = ACCEL_CAL_COLLECTING_SAMPLE;          // move to Collecting sample state if all the callibrators have
             return;
         }
     }
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         if (cal->get_status() == ACCEL_CAL_WAITING_FOR_ORIENTATION) {
-            _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;
+            _status = ACCEL_CAL_WAITING_FOR_ORIENTATION;    // move to waiting for user ack for orientation confirmation
             return;
         }
     }
 
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         if (cal->get_status() == ACCEL_CAL_NOT_STARTED) {
-            _status = ACCEL_CAL_NOT_STARTED;
+            _status = ACCEL_CAL_NOT_STARTED;    // we haven't started if all the calibrators haven't
             return;
         }
     }
 
-    _status = ACCEL_CAL_SUCCESS;
+    _status = ACCEL_CAL_SUCCESS;    // we have succeeded calibration if all the calibrators have
     return;
 }
 
+// check if client's calibrator is active
 bool AP_AccelCal::client_active(uint8_t client_num)
 {
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
