@@ -10,3 +10,6 @@
 [submodule "modules/waf"]
 	path = modules/waf
 	url = git://github.com/diydrones/waf.git
+[submodule "modules/gbenchmark"]
+	path = modules/gbenchmark
+	url = git://github.com/google/benchmark.git
