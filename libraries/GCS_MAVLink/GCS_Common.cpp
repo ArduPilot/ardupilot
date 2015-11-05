@@ -198,8 +198,11 @@ void GCS_MAVLINK::reset_cli_timeout() {
 void GCS_MAVLINK::send_meminfo(void)
 {
     unsigned __brkval = 0;
-
-    mavlink_msg_meminfo_send(chan, __brkval, hal.util->available_memory());
+    uint32_t memory = hal.util->available_memory();
+    if (memory > 0xffff) {
+        memory = 0xffff;
+    }
+    mavlink_msg_meminfo_send(chan, __brkval, memory);
 }
 
 // report power supply status
