@@ -106,6 +106,8 @@
 
 #endif // APM_BUILD_DIRECTORY
 
+extern const AP_HAL::HAL& hal;
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
@@ -451,6 +453,12 @@ bool NavEKF2::InitialiseFilter(void)
             if (_imuMask & (1U<<i)) {
                 num_cores++;
             }
+        }
+
+        if (hal.util->available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory");
+            _enable.set(0);
+            return false;
         }
         
         core = new NavEKF2_core[num_cores];
