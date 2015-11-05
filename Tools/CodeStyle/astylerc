@@ -1,0 +1,9 @@
+style=stroustrup
+add-brackets
+indent=spaces=4
+indent-col1-comments
+min-conditional-indent=0
+suffix=none
+lineend=linux
+unpad-paren
+pad-header
