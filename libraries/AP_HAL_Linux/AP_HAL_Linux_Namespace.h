@@ -56,4 +56,5 @@ namespace Linux {
     class OpticalFlow_Onboard;
     class Flow_PX4;
     class Perf_Lttng;
+    class PerfManager;
 }
