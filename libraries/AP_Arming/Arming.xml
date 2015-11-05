@@ -1,104 +1,106 @@
-<?xml version='1.0'?>
+<?xml version="1.0"?>
 <arming_checks>
-    <enums>
-        <enum name="ARM_CHECK_SUBSYSTEM">
-            <entry value="0" name="PREARM_CHECK_BARO">
-                <description>Barometer</description>
-            </entry>
-            <entry value="1" name="PREARM_CHECK_COMPASS">
-                <description>Compass</description>
-            </entry>
-            <entry value="2" name="PREARM_CHECK_GPS">
-                <description>GPS</description>
-            </entry>
-            <entry value="3" name="PREARM_CHECK_INS">
-                <description>INS</description>
-            </entry>
-            <entry value="4" name="PREARM_CHECK_PARAMETERS">
-                <description>Parameters</description>
-            </entry>
-            <entry value="5" name="PREARM_CHECK_RC">
-                <description>RC</description>
-            </entry>
-            <entry value="6" name="PREARM_CHECK_BOARD_VOLTAGE">
-                <description>Board Voltage</description>
-            </entry>
-            <entry value="7" name="PREARM_CHECK_BATTERY">
-                <description>Battery</description>
-            </entry>
-            <entry value="8" name="PREARM_CHECK_AIRSPEED">
-                <description>Airspeed</description>
-            </entry>
-            <entry value="9" name="PREARM_CHECK_LOGGING">
-                <description>Logging</description>
-            </entry>
-            <entry value="10" name="PREARM_CHECK_RANGEFINDER">
-                <description>Range Finder</description>
-            </entry>
-            <entry value="11" name="PREARM_CHECK_SAFETYSWITCH">
-                <description>Safety Switch</description>
-            </entry>
-            <entry value="12" name="PREARM_CHECK_FLIGHTMODE">
-                <description>Flight Mode</description>
-            </entry>
-        </enum>
-    </enums>
-	<error_descriptions autopilot="MAV_AUTOPILOT_ARDUPILOTMEGA" version="0x3400">
-        <mav_type="MAV_TYPE_QUADROTOR"></mav_type>
-        <mav_type="MAV_TYPE_COAXIAL"></mav_type>
-        <mav_type="MAV_TYPE_HELICOPTER"></mav_type>
-        <mav_type="MAV_TYPE_HEXAROTOR"></mav_type>
-        <mav_type="MAV_TYPE_OCTOROTOR"></mav_type>
-        <mav_type="MAV_TYPE_TRICOPTER"></mav_type>
+    <error_descriptions autopilot="MAV_AUTOPILOT_ARDUPILOTMEGA" group="multirotors" version="0x030400">
+        <mav_types group="multirotors">
+            <mav_type>MAV_TYPE_QUADROTOR</mav_type>
+            <mav_type>MAV_TYPE_COAXIAL</mav_type>
+            <mav_type>MAV_TYPE_HELICOPTER</mav_type>
+            <mav_type>MAV_TYPE_HEXAROTOR</mav_type>
+            <mav_type>MAV_TYPE_OCTOROTOR</mav_type>
+            <mav_type>MAV_TYPE_TRICOPTER</mav_type>
+        </mav_types>
+        <enums>
+            <enum name="ARM_CHECK_SUBSYSTEM">
+                <entry id="0" name="PREARM_CHECK_BARO">
+                    <description lang="en">Barometer</description>
+                </entry>
+                <entry id="1" name="PREARM_CHECK_COMPASS">
+                    <description lang="en">Compass</description>
+                </entry>
+                <entry id="2" name="PREARM_CHECK_GPS">
+                    <description lang="en">GPS</description>
+                </entry>
+                <entry id="3" name="PREARM_CHECK_INS">
+                    <description lang="en">INS</description>
+                </entry>
+                <entry id="4" name="PREARM_CHECK_PARAMETERS">
+                    <description lang="en">Parameters</description>
+                </entry>
+                <entry id="5" name="PREARM_CHECK_RC">
+                    <description lang="en">RC</description>
+                </entry>
+                <entry id="6" name="PREARM_CHECK_BOARD_VOLTAGE">
+                    <description lang="en">Board Voltage</description>
+                </entry>
+                <entry id="7" name="PREARM_CHECK_BATTERY">
+                    <description lang="en">Battery</description>
+                </entry>
+                <entry id="8" name="PREARM_CHECK_AIRSPEED">
+                    <description lang="en">Airspeed</description>
+                </entry>
+                <entry id="9" name="PREARM_CHECK_LOGGING">
+                    <description lang="en">Logging</description>
+                </entry>
+                <entry id="10" name="PREARM_CHECK_RANGEFINDER">
+                    <description lang="en">Range Finder</description>
+                </entry>
+                <entry id="11" name="PREARM_CHECK_SAFETYSWITCH">
+                    <description lang="en">Safety Switch</description>
+                </entry>
+                <entry id="12" name="PREARM_CHECK_FLIGHTMODE">
+                    <description lang="en">Flight Mode</description>
+                </entry>
+            </enum>
+        </enums>
         <error_description>
-            <error id="0" subsystem="PREARM_CHECK_BARO">
-                <description>Barometer not healthy</description>
+            <error subsystem="PREARM_CHECK_BARO" value="0">
+                <description lang="en">Barometer not healthy</description>
             </error>
-            <error id="1" subsystem="PREARM_CHECK_BARO">
-                <description>Altitude disparity</description>
+            <error subsystem="PREARM_CHECK_BARO" value="1">
+                <description lang="en">Altitude disparity</description>
             </error>
-            <error id="3" subsystem="PREARM_CHECK_AIRSPEED">
-                <description>airspeed not healthy</description>
+            <error subsystem="PREARM_CHECK_AIRSPEED" value="3">
+                <description lang="en">airspeed not healthy</description>
             </error>
-            <error id="4" subsystem="PREARM_CHECK_LOGGING">
-                <description>logging not available</description>
+            <error subsystem="PREARM_CHECK_LOGGING" value="4">
+                <description lang="en">logging not available</description>
             </error>
-            <error id="5" subsystem="PREARM_CHECK_INS">
-                <description>gyros not healthy</description>
+            <error subsystem="PREARM_CHECK_INS" value="5">
+                <description lang="en">gyros not healthy</description>
             </error>
-            <error id="6" subsystem="PREARM_CHECK_INS">
-                <description>gyros not calibrated</description>
+            <error subsystem="PREARM_CHECK_INS" value="6">
+                <description lang="en">gyros not calibrated</description>
             </error>
-            <error id="7" subsystem="PREARM_CHECK_INS">
-                <description>accels not healthy</description>
+            <error subsystem="PREARM_CHECK_INS" value="7">
+                <description lang="en">accels not healthy</description>
             </error>
-            <error id="8" subsystem="PREARM_CHECK_INS">
-                <description>3D accel cal needed</description>
+            <error subsystem="PREARM_CHECK_INS" value="8">
+                <description lang="en">3D accel cal needed</description>
             </error>
-            <error id="9" subsystem="PREARM_CHECK_INS">
-                <description>inconsistent Accelerometers</description>
+            <error subsystem="PREARM_CHECK_INS" value="9">
+                <description lang="en">inconsistent Accelerometers</description>
             </error>
-            <error id="10" subsystem="PREARM_CHECK_INS">
-                <description>inconsistent gyros</description>
+            <error subsystem="PREARM_CHECK_INS" value="10">
+                <description lang="en">inconsistent gyros</description>
             </error>
-            <error id="11" subsystem="PREARM_CHECK_COMPASS">
-                <description>Compass not healthy</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="11">
+                <description lang="en">Compass not healthy</description>
             </error>
-            <error id="12" subsystem="PREARM_CHECK_COMPASS">
-                <description>Compass not calibrated</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="12">
+                <description lang="en">Compass not calibrated</description>
             </error>
-            <error id="13" subsystem="PREARM_CHECK_COMPASS">
-                <description>Compass calibration running</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="13">
+                <description lang="en">Compass calibration running</description>
             </error>
-            <error id="14" subsystem="PREARM_CHECK_COMPASS">
-                <description>Compass calibrated requires reboot</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="14">
+                <description lang="en">Compass calibrated requires reboot</description>
             </error>
-            <error id="15" subsystem="PREARM_CHECK_COMPASS">
-                <description>Compass offsets too high</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="15">
+                <description lang="en">Compass offsets too high</description>
             </error>
-            <error id="16" subsystem="PREARM_CHECK_COMPASS">
-                <description>Check mag field</description>
+            <error subsystem="PREARM_CHECK_COMPASS" value="16">
+                <description lang="en">Check mag field</description>
             </error>
         </error_description>
-	</error_descriptions>
+    </error_descriptions>
 </arming_checks>
