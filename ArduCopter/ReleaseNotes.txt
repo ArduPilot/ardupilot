@@ -1,5 +1,20 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.2-rc1 4-Nov-2015
+Changes from 3.3.1
+1) Helicopter Improvements:
+    a) Fix Arming race condition
+    b) Fix servos to move after arming in Stabilize and Acro
+    c) Implement Pirouette Compensation
+    d) Add Rate I-Leak-Min functionality
+    e) Add new Stab Collective and Acro Expo Col functions
+    f) Add circular swashplate limits (Cyclic Ring)
+    g) Add new H_SV_Man functions
+    h) Add Hover Roll Trim function
+    i) Add Engine Run Enable Aux Channel function
+    j) Add servo boot test function
+    h) Add Disarm Delay parameter
+------------------------------------------------------------------
 Copter 3.3.1 26-Oct-2015 / 3.3.1-rc1 20-Oct-2015
 Changes from 3.3
 1) Bug fix to prevent potential crash if Follow-Me is used after an aborted takeoff
