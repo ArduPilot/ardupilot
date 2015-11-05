@@ -98,7 +98,7 @@ void NavEKF2_core::setAidingMode()
     // If GPS useage has been prohiited then we use flow aiding provided optical flow data is present
     bool useFlowAiding = (frontend->_fusionModeGPS == 3) && optFlowDataPresent();
     // Start aiding if we have a source of aiding data and the filter attitude algnment is complete
-    // Latch to on. Aiding can be turned off by setting both
+    // Latch to on
     isAiding = ((readyToUseGPS() || useFlowAiding) && filterIsStable) || isAiding;
 
     // check to see if we are starting or stopping aiding and set states and modes as required
