@@ -134,7 +134,7 @@ bool VRBRAINUtil::get_system_id(char buf[40])
 */
 uint32_t VRBRAINUtil::available_memory(void)
 {
-    return mallinfo(),fordblks;
+    return mallinfo().fordblks;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
