@@ -75,6 +75,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Enabling this option on a Pixhawk enables SBUS servo output from the SBUS output connector
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_enable, 0),
+    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
@@ -85,8 +86,20 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    // @Param: CAN_ENABLE
+    // @DisplayName:  Enable use of UAVCAN devices
+    // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
+#endif
+    
     AP_GROUPEND
 };
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+extern "C" int uavcan_main(int argc, const char *argv[]);
+#endif
 
 void AP_BoardConfig::init()
 {
@@ -126,6 +139,18 @@ void AP_BoardConfig::init()
         if (fd != -1) {
             close(fd);
         }   
+    }
+
+    if (_can_enable == 1) {
+        const char *args[] = { "uavcan", "start", NULL };
+        int ret = uavcan_main(3, args);
+        if (ret != 0) {
+            hal.console->printf("UAVCAN: failed to start\n");
+        } else {
+            hal.console->printf("UAVCAN: started\n");            
+            // give some time for CAN bus initialisation
+            hal.scheduler->delay(500);
+        }
     }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
