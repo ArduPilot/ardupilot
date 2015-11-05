@@ -35,10 +35,16 @@ ASOPTS          =   -x assembler-with-cpp
 
 # features: TODO detect dependecy and make them optional
 HAVE_LTTNG=
+HAVE_LIBSYSTEMD=
 
 ifeq ($(HAVE_LTTNG),1)
 DEFINES        += -DPERF_LTTNG=1
 LIBS           += -llttng-ust -ldl
+endif
+
+ifeq ($(HAVE_LIBSYSTEMD),1)
+DEFINES        += -DHAVE_LIBSYSTEMD=1
+LIBS           += -lsystemd
 endif
 
 # disable as this breaks distcc
