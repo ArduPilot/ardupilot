@@ -316,8 +316,9 @@ void NavEKF2_core::StoreIMU()
         fifoIndexNow = 0;
     }
     storedIMU[fifoIndexNow] = imuDataNew;
-    // set the index required to access the oldest data
-    fifoIndexDelayed = fifoIndexNow + 1;
+    // set the index required to access the oldest data, applying an offset to the fusion time horizon that is used to
+    // prevent the same fusion operation being performed on the same frame across multiple EKF's
+    fifoIndexDelayed = fifoIndexNow + 1 + fusionHorizonOffset;
     if (fifoIndexDelayed >= IMU_BUFFER_LENGTH) {
         fifoIndexDelayed = 0;
     }
