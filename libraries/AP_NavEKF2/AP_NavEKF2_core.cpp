@@ -283,8 +283,6 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     // set to true now that states have be initialised
     statesInitialised = true;
 
-    hal.console->printf("EKF2 initialised on IMU %u\n", (unsigned)imu_index);
-
     return true;
 }
 

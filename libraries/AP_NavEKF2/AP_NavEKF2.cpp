@@ -397,7 +397,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: IMU_MASK
     // @DisplayName: Bitmask of active IMUs
-    // @Description: 1 byte bitmap of IMUs to use in EKF2
+    // @Description: 1 byte bitmap of IMUs to use in EKF2. A separate instance of EKF2 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF2 will fail to start.
+    // @Range: 1 127
     // @User: Advanced
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 1),
     
