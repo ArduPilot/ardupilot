@@ -7,7 +7,7 @@
 #define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
-static uint8_t auto_disarming_counter;
+static uint32_t auto_disarm_begin;
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -43,7 +43,7 @@ void Copter::arm_motors_check()
         if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
             auto_trim_counter = 250;
             // ensure auto-disarm doesn't trigger immediately
-            auto_disarming_counter = 0;
+            auto_disarm_begin = millis();
         }
 
     // full left
@@ -70,25 +70,24 @@ void Copter::arm_motors_check()
 }
 
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
-// called at 1hz
 void Copter::auto_disarm_check()
 {
-    uint8_t disarm_delay = constrain_int16(g.disarm_delay, 0, 127);
+    uint32_t tnow_ms = millis();
+    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
-    if (!motors.armed() || disarm_delay == 0) {
-        auto_disarming_counter = 0;
+    if (!motors.armed() || disarm_delay_ms == 0) {
+        auto_disarm_begin = tnow_ms;
         return;
     }
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
     if ((ap.using_interlock && !motors.get_interlock()) || ap.motor_emergency_stop) {
-        auto_disarming_counter++;
 #if FRAME_CONFIG != HELI_FRAME
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
-        disarm_delay /= 2;
+        disarm_delay_ms /= 2;
 #endif
     } else {
         bool sprung_throttle_stick = (g.throttle_behavior & THR_BEHAVE_FEEDBACK_FROM_MID_STICK) != 0;
@@ -100,19 +99,16 @@ void Copter::auto_disarm_check()
             thr_low = g.rc_3.control_in <= deadband_top;
         }
 
-        if (thr_low && ap.land_complete) {
-            // increment counter
-            auto_disarming_counter++;
-        } else {
-            // reset counter
-            auto_disarming_counter = 0;
+        if (!thr_low || !ap.land_complete) {
+            // reset timer
+            auto_disarm_begin = tnow_ms;
         }
     }
 
-    // disarm once counter expires
-    if (auto_disarming_counter >= disarm_delay) {
+    // disarm once timer expires
+    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
         init_disarm_motors();
-        auto_disarming_counter = 0;
+        auto_disarm_begin = tnow_ms;
     }
 }
 
