@@ -69,9 +69,10 @@ void Plane::compass_cal_update() {
     Accel calibration
 */
 void Plane::accel_cal_update() {
-    accelcal.update();
-    if (hal.util->get_soft_armed() && accelcal.get_status() != ACCEL_CAL_NOT_STARTED) {
-        accelcal.clear();
+    AP_AccelCal *acal = ins.get_acal();
+    acal->update();
+    if (hal.util->get_soft_armed() && acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+        acal->clear();
     }
     float trim_roll, trim_pitch;
     if(ins.get_new_trim(trim_roll, trim_pitch)) {
