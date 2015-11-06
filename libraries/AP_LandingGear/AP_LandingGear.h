@@ -54,6 +54,11 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
+    AP_INT16 get_lgear_time() {
+     return _lgear_time_seconds;
+    }
+
+
 private:
 
     bool     _retract_enabled;          // true if landing gear retraction is enabled
