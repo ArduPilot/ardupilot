@@ -477,6 +477,9 @@ bool NavEKF2::InitialiseFilter(void)
                 num_cores++;
             }
         }
+
+        // Set the primary initially to be the lowest index
+        primary = 0;
     }
 
     // initialse the cores. We return success only if all cores
@@ -498,12 +501,17 @@ void NavEKF2::UpdateFilter(void)
         core[i].UpdateFilter();
     }
 
-    // set primary to first healthy filter
-    primary = 0;
-    for (uint8_t i=0; i<num_cores; i++) {
-        if (core[i].healthy()) {
-            primary = i;
-            break;
+    // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score
+    if (core[primary].faultScore() > 0.0f || !core[primary].healthy()) {
+        float score = 1e9f;
+        for (uint8_t i=0; i<num_cores; i++) {
+            if (core[i].healthy()) {
+                float tempScore = core[i].faultScore();
+                if (tempScore < score) {
+                    primary = i;
+                    score = tempScore;
+                }
+            }
         }
     }
 }
