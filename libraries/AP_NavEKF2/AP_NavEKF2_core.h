@@ -80,6 +80,10 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
+    // Return a consolidated fault score where higher numbers are less healthy
+    // Intended to be used by the front-end to determine which is the primary EKF
+    float faultScore(void) const;
+
     // Return the last calculated NED position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
