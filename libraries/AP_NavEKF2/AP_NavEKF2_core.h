@@ -615,10 +615,6 @@ private:
     float calcMagHeadingInnov();
 
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
-    // using buffered IMU data
-    void calcOutputStates();
-
-    // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
     void calcOutputStatesFast();
 
