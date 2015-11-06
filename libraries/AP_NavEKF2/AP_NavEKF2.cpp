@@ -517,6 +517,18 @@ bool NavEKF2::healthy(void) const
     return core[primary].healthy();
 }
 
+// returns the index of the primary core
+// return false if no primary core selected
+bool NavEKF2::getPrimaryCoreIndex(uint8_t index) const
+{
+    if (!core) {
+        return false;
+    }
+    index = primary;
+    return true;
+}
+
+
 // Return the last calculated NED position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
