@@ -1537,48 +1537,6 @@
                   <description>Payload battery</description>
               </entry>
           </enum>
-          <enum name="MAV_PREARM_CHECK_SUBSYSTEM">
-              <description>Bit position of prearm check subsystems</description>
-              <entry value="0" name="MAV_PREARM_CHECK_BARO">
-                  <description>Barometer</description>
-              </entry>
-              <entry value="1" name="MAV_PREARM_CHECK_COMPASS">
-                  <description>Compass</description>
-              </entry>
-              <entry value="2" name="MAV_PREARM_CHECK_GPS">
-                  <description>GPS</description>
-              </entry>
-              <entry value="3" name="MAV_PREARM_CHECK_INS">
-                  <description>INS</description>
-              </entry>
-              <entry value="4" name="MAV_PREARM_CHECK_PARAMETERS">
-                  <description>Parameters</description>
-              </entry>
-              <entry value="5" name="MAV_PREARM_CHECK_RC">
-                  <description>RC</description>
-              </entry>
-              <entry value="6" name="MAV_PREARM_CHECK_BOARD_VOLTAGE">
-                  <description>Board Voltage</description>
-              </entry>
-              <entry value="7" name="MAV_PREARM_CHECK_BATTERY">
-                  <description>Battery</description>
-              </entry>
-              <entry value="8" name="MAV_PREARM_CHECK_AIRSPEED">
-                  <description>Airspeed</description>
-              </entry>
-              <entry value="9" name="MAV_PREARM_CHECK_LOGGING">
-                  <description>Logging</description>
-              </entry>
-              <entry value="10" name="MAV_PREARM_CHECK_RANGEFINDER">
-                  <description>Range Finder</description>
-              </entry>
-              <entry value="11" name="MAV_PREARM_CHECK_SAFETYSWITCH">
-                  <description>Safety Switch</description>
-              </entry>
-              <entry value="12" name="MAV_PREARM_CHECK_FLIGHTMODE">
-                  <description>Flight Mode</description>
-              </entry>
-          </enum>
      </enums>
      <messages>
           <message id="0" name="HEARTBEAT">
@@ -2767,14 +2725,13 @@
         </message>
         <message id="246" name="PREARM_CHECK_REPORT">
                <description>The status of any pre-arm checks (checks performed before takeoff)</description>
-               <field type="uint64_t" name="enabled_checks">bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)</field>
-               <field type="uint64_t" name="passed_checks">bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)</field>
+               <field type="uint64_t" name="enabled_checks">bitmask of enabled checks (0=disabled, 1=enabled)</field>
+               <field type="uint64_t" name="passed_checks">bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)</field>
         </message>
-        <message id="247" name="PREARM_CHECK_FAILURE_DESCRIPTION">
-               <description>Description that should be passed to user describing pre-arm check failure</description>
-               <field type="uint8_t" name="subsystem" enum="MAV_PREARM_CHECK_SUBSYSTEM">subsystem that has failed pre-arm check</field>
-               <field type="uint32_t" name="code">failure code (autopilot specific, may allow GCS to recognise failure without parsing text string)</field>
-               <field type="char[50]" name="description">text description of the failure</field>
+        <message id="247" name="PREARM_CHECK_FAILURE_CODE">
+               <description>Failure code for a single failed check.  Code's text description should be looked up in Arming.xml and displayed to user</description>
+               <field type="uint8_t" name="check_id">corresponds to bit position of PREARM_CHECK_REPORT's enabled_checks field</field>
+               <field type="uint32_t" name="code">failure code (autopilot specific, corresponding text should be looked up in Arming.xml)</field>
         </message>
         <message id="248" name="V2_EXTENSION">
             <description>Message implementing parts of the V2 payload specs in V1 frames for transitional support.</description>
