@@ -203,6 +203,7 @@ void NavEKF2_core::InitialiseVariables()
     magFuseTiltInhibit = false;
     posResetNE.zero();
     velResetNE.zero();
+    hgtInnovFiltState = 0.0f;
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)

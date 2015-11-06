@@ -410,6 +410,16 @@ void NavEKF2_core::FuseVelPosNED()
             hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime_ms;
             // Fuse height data if healthy or timed out or in constant position mode
             if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE)) {
+                // Calculate a filtered value to be used by pre-flight health checks
+                // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
+                if (onGround) {
+                    float dtBaro = (imuSampleTime_ms - lastHgtPassTime_ms)*1.0e-3f;
+                    const float hgtInnovFiltTC = 2.0f;
+                    float alpha = constrain_float(dtBaro/(dtBaro+hgtInnovFiltTC),0.0f,1.0f);
+                    hgtInnovFiltState += (innovVelPos[5]-hgtInnovFiltState)*alpha;
+                } else {
+                    hgtInnovFiltState = 0.0f;
+                }
                 hgtHealth = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
                 // if timed out, reset the height, but do not fuse data on this time step

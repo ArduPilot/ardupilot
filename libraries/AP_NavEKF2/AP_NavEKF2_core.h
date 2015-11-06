@@ -782,6 +782,7 @@ private:
     float yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     Quaternion prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     uint8_t fusionHorizonOffset;    // number of IMU samples that the fusion time horizon  has been shifted forward to prevent multiple EKF instances fusing data at the same time
+    float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
