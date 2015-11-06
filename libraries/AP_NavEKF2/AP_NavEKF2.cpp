@@ -526,14 +526,13 @@ bool NavEKF2::healthy(void) const
 }
 
 // returns the index of the primary core
-// return false if no primary core selected
-bool NavEKF2::getPrimaryCoreIndex(uint8_t index) const
+// return -1 if no primary core selected
+int8_t NavEKF2::getPrimaryCoreIndex(void) const
 {
     if (!core) {
-        return false;
+        return -1;
     }
-    index = primary;
-    return true;
+    return primary;
 }
 
 
