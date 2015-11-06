@@ -178,7 +178,6 @@ private:
 
     AP_Baro barometer;
     Compass compass;
-    AP_AccelCal accelcal;
     AP_InertialSensor ins;
 
 #if CONFIG_SONAR == ENABLED

@@ -182,9 +182,11 @@ void Copter::compass_cal_update()
 }
 
 void Copter::accel_cal_update() {
-    accelcal.update();
-    if (motors.armed() && accelcal.get_status() != ACCEL_CAL_NOT_STARTED) {
-        accelcal.clear();
+
+    AP_AccelCal *acal = ins.get_acal();
+    acal->update();
+    if (motors.armed() && acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+        acal->clear();
     }
     float trim_roll, trim_pitch;
     if(ins.get_new_trim(trim_roll, trim_pitch)) {

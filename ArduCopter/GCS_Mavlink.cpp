@@ -1328,7 +1328,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                     break;
                 }
-                copter.accelcal.start(this);
+                copter.ins.get_acal()->start(this);
                 
             } else if (is_equal(packet.param5,2.0f)) {
                 // calibrate gyros
