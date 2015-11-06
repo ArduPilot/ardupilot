@@ -41,6 +41,29 @@ bool NavEKF2_core::healthy(void) const
     return true;
 }
 
+// Return a consolidated fault score where higher numbers are less healthy
+// Intended to be used by the front-end to determine which is the primary EKF
+float NavEKF2_core::faultScore(void) const
+{
+    float score = 0.0f;
+    // If velocity, position or height measurements are failing consistency checks, this adds to the score
+    if (velTestRatio > 1.0f) {
+        score += velTestRatio-1.0f;
+    }
+    if (posTestRatio > 1.0f) {
+        score += posTestRatio-1.0f;
+    }
+    if (hgtTestRatio > 1.0f) {
+        score += hgtTestRatio-1.0f;
+    }
+    // If the tilt error is excessive this adds to the score
+    const float tiltErrThreshold = 0.1f;
+    if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
+        score += tiltErrFilt / tiltErrThreshold;
+    }
+    return score;
+}
+
 // return data for debugging optical flow fusion
 void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
