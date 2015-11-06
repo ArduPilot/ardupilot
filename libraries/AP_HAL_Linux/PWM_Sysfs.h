@@ -15,14 +15,26 @@ public:
         INVERSE = 1,
     };
 
-    void enable(bool enable);
+    void enable(bool value);
     bool is_enabled();
     void set_period(uint32_t nsec_period);
     uint32_t get_period();
     void set_freq(uint32_t freq);
     uint32_t get_freq();
-    void set_duty_cycle(uint32_t nsec_duty_cycle);
+
+    /*
+     * This is the main method, to be called on hot path. It doesn't log any
+     * failure so not to risk flooding the log. If logging is necessary, check
+     * the return value.
+     */
+    bool set_duty_cycle(uint32_t nsec_duty_cycle);
+
+    /*
+     * This is supposed to be called in the hot path, so it returns the cached
+     * value rather than getting it from hardware.
+     */
     uint32_t get_duty_cycle();
+
     void set_polarity(PWM_Sysfs::Polarity polarity);
     PWM_Sysfs::Polarity get_polarity();
 
@@ -32,5 +44,3 @@ private:
     const uint16_t _channel;
     const uint8_t _chip;
 };
-
-
