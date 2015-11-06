@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_prearm_check_report_t
 {
- uint64_t enabled_checks; /*< bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)*/
- uint64_t passed_checks; /*< bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)*/
+ uint64_t enabled_checks; /*< bitmask of enabled checks (0=disabled, 1=enabled)*/
+ uint64_t passed_checks; /*< bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)*/
 } mavlink_prearm_check_report_t;
 
 #define MAVLINK_MSG_ID_PREARM_CHECK_REPORT_LEN 16
@@ -31,8 +31,8 @@ typedef struct __mavlink_prearm_check_report_t
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)
- * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
+ * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled)
+ * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_prearm_check_report_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -66,8 +66,8 @@ static inline uint16_t mavlink_msg_prearm_check_report_pack(uint8_t system_id, u
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)
- * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
+ * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled)
+ * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_prearm_check_report_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -127,8 +127,8 @@ static inline uint16_t mavlink_msg_prearm_check_report_encode_chan(uint8_t syste
  * @brief Send a prearm_check_report message
  * @param chan MAVLink channel to send the message
  *
- * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)
- * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
+ * @param enabled_checks bitmask of enabled checks (0=disabled, 1=enabled)
+ * @param passed_checks bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -199,7 +199,7 @@ static inline void mavlink_msg_prearm_check_report_send_buf(mavlink_message_t *m
 /**
  * @brief Get field enabled_checks from prearm_check_report message
  *
- * @return bitmask of enabled checks (0=disabled, 1=enabled).  bits position correspond to the MAV_PREARM_CHECK_SUBSYSTEM enum (i.e. GPS is bit 2, b00000100)
+ * @return bitmask of enabled checks (0=disabled, 1=enabled)
  */
 static inline uint64_t mavlink_msg_prearm_check_report_get_enabled_checks(const mavlink_message_t* msg)
 {
@@ -209,7 +209,7 @@ static inline uint64_t mavlink_msg_prearm_check_report_get_enabled_checks(const 
 /**
  * @brief Get field passed_checks from prearm_check_report message
  *
- * @return bitmask of passed checks (0=failed, 1=passed).  bit position corresonds to the MAV_PREARM_CHECK_SUBSYSTEM enum.  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
+ * @return bitmask of passed checks (0=failed, 1=passed).  Bitmask of passed checks = (enabled_checks AND passed_checks), Bitmask of failed checks = (enabled_checks AND ~passed_checks)
  */
 static inline uint64_t mavlink_msg_prearm_check_report_get_passed_checks(const mavlink_message_t* msg)
 {
