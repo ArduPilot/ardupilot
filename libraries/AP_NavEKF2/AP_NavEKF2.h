@@ -43,9 +43,9 @@ public:
 
     NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
-    // allow logging to determine if enabled
-    bool enabled(void) const {
-        return _enable != 0;
+    // allow logging to determine the number of active cores
+    uint8_t activeCores(void) const {
+        return num_cores;
     }
 
     // Initialise the filter
