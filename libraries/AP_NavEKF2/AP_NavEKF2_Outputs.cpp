@@ -31,9 +31,9 @@ bool NavEKF2_core::healthy(void) const
     if ((imuSampleTime_ms - ekfStartTime_ms) < 1000 ) {
         return false;
     }
-    // barometer and position innovations must be within limits when on-ground
+    // position and height innovations must be within limits when on-ground and in a static mode of operation
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (onGround && (fabsf(innovVelPos[5]) > 1.0f || horizErrSq > 1.0f)) {
+    if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsf(hgtInnovFiltState) > 1.0f))) {
         return false;
     }
 
