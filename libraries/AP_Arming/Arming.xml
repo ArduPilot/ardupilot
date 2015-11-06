@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<arming_checks>
+<prearm_checks>
     <error_descriptions autopilot="MAV_AUTOPILOT_ARDUPILOTMEGA" group="multirotors" version="0x030400">
         <mav_types group="multirotors">
             <mav_type>MAV_TYPE_QUADROTOR</mav_type>
@@ -10,7 +10,7 @@
             <mav_type>MAV_TYPE_TRICOPTER</mav_type>
         </mav_types>
         <enums>
-            <enum name="ARM_CHECK_SUBSYSTEM">
+            <enum name="PREARM_CHECK_SUBSYSTEM">
                 <entry id="0" name="PREARM_CHECK_BARO">
                     <description lang="en">Barometer</description>
                 </entry>
@@ -103,4 +103,4 @@
             </error>
         </error_description>
     </error_descriptions>
-</arming_checks>
+</prearm_checks>
