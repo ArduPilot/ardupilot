@@ -55,10 +55,11 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index)
+void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
 {
     frontend = _frontend;
     imu_index = _imu_index;
+    core_index = _core_index;
     _ahrs = frontend->_ahrs;
 }
     
@@ -70,6 +71,10 @@ void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index)
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
 void NavEKF2_core::InitialiseVariables()
 {
+    // Offset the fusion horizon if necessary to prevent frame over-runs
+    if (dtIMUavg < 0.005) {
+        fusionHorizonOffset = 2*core_index;
+    }
     // initialise time stamps
     imuSampleTime_ms = hal.scheduler->millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
