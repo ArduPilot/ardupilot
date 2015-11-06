@@ -110,7 +110,6 @@ private:
 
     Compass compass;
 
-    AP_AccelCal accelcal;
     AP_InertialSensor ins;
 
     RangeFinder rng {serial_manager};
@@ -215,6 +214,7 @@ private:
     void update_ahrs();
     void update_compass(void);
     void compass_accumulate(void);
+    void accel_cal_update(void);
     void barometer_accumulate(void);
     void update_GPS(void);
     void init_servos();

@@ -66,6 +66,21 @@ void Tracker::compass_cal_update() {
 }
 
 /*
+    Accel calibration
+*/
+void Tracker::accel_cal_update() {
+    AP_AccelCal *acal = ins.get_acal();
+    acal->update();
+    if (hal.util->get_soft_armed() && acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+        acal->clear();
+    }
+    float trim_roll, trim_pitch;
+    if(ins.get_new_trim(trim_roll, trim_pitch)) {
+        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
+    }
+}
+
+/*
   read the GPS
  */
 void Tracker::update_GPS(void)
