@@ -56,6 +56,11 @@ public:
     // Constructor
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
+    // allow logging to determine if the EKF is enabled
+    bool enabled(void) const {
+        return (_enable != 0);
+    }
+
     // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
     // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
     bool InitialiseFilterDynamic(void);
