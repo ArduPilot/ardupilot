@@ -1257,9 +1257,8 @@ void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
               WriteBlock(&pkt5, sizeof(pkt5));
         }
     }
-
-    // do EKF2 as well if enabled
-    if (ahrs.get_NavEKF2().enabled()) {
+    // only log EKF2 if enabled
+    if (ahrs.get_NavEKF2().activeCores() > 0) {
         Log_Write_EKF2(ahrs, optFlowEnabled);
     }
 }
