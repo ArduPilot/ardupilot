@@ -142,7 +142,6 @@ private:
     AP_GPS gps;
     AP_Baro barometer;
     Compass compass;
-    AP_AccelCal accelcal;
     AP_InertialSensor ins;
     RangeFinder sonar { serial_manager };
 
