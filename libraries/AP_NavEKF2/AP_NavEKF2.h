@@ -57,6 +57,10 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
+    // returns the index of the primary core
+    // return false if no primary core selected
+    bool getPrimaryCoreIndex(uint8_t index) const;
+
     // Return the last calculated NED position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
