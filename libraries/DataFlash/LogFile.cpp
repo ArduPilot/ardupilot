@@ -1367,8 +1367,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     ahrs.get_NavEKF2().getFilterGpsStatus(gpsStatus);
     float tiltError;
     ahrs.get_NavEKF2().getTiltError(tiltError);
-    uint8_t primaryIndex;
-    ahrs.get_NavEKF2().getPrimaryCoreIndex(primaryIndex);
+    uint8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
     struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1384,7 +1383,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         timeouts : (uint8_t)(timeoutStatus),
         solution : (uint16_t)(solutionStatus.value),
         gps : (uint16_t)(gpsStatus.value),
-        primary : (uint8_t)primaryIndex
+        primary : (int8_t)primaryIndex
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
