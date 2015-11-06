@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // @Param: CAN_ENABLE
     // @DisplayName:  Enable use of UAVCAN devices
     // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPEND
 };
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 extern "C" int uavcan_main(int argc, const char *argv[]);
 #endif
 
@@ -141,6 +141,7 @@ void AP_BoardConfig::init()
         }   
     }
 
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     if (_can_enable == 1) {
         const char *args[] = { "uavcan", "start", NULL };
         int ret = uavcan_main(3, args);
@@ -152,6 +153,8 @@ void AP_BoardConfig::init()
             hal.scheduler->delay(500);
         }
     }
+#endif
+    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
 
