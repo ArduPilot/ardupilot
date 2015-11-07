@@ -835,6 +835,14 @@ Format characters in the format string for binary log messages
       "NKF4","QcccccfbbBBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF5_MSG, sizeof(log_EKF5), \
       "NKF5","QBhhhcccCC","TimeUS,normInnov,FIX,FIY,AFI,HAGL,offset,RI,meaRng,errHAGL" }, \
+    { LOG_NKF6_MSG, sizeof(log_EKF1), \
+      "NKF6","QccCfffffffccc","TimeUS,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ" }, \
+    { LOG_NKF7_MSG, sizeof(log_NKF2), \
+      "NKF7","Qbccccchhhhhh","TimeUS,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ" }, \
+    { LOG_NKF8_MSG, sizeof(log_NKF3), \
+      "NKF8","Qcccccchhhcc","TimeUS,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT" }, \
+    { LOG_NKF9_MSG, sizeof(log_NKF4), \
+      "NKF9","QcccccfbbBBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -994,6 +1002,10 @@ enum LogMessages {
     LOG_NKF3_MSG,
     LOG_NKF4_MSG,
     LOG_NKF5_MSG,
+    LOG_NKF6_MSG,
+    LOG_NKF7_MSG,
+    LOG_NKF8_MSG,
+    LOG_NKF9_MSG,
 };
 
 enum LogOriginType {
