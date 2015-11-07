@@ -1,7 +1,0 @@
-Multirotor mixer for PX4FMU
-===========================
-
-This file defines a single mixer for a octocopter in the + configuration. All controls
-are mixed 100%.
-
-R: 8+ 10000 10000 10000 0
