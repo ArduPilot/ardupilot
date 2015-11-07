@@ -4213,6 +4213,8 @@ void NavEKF::readGpsData()
         // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
         if (!validOrigin && gpsGoodToAlign) {
             setOrigin();
+            // Now we know the location we have an estimate for the magnetic field declination and adjust the earth field accordingly
+            alignMagStateDeclination();
             // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
             EKF_origin.alt = gpsloc.alt - hgtMea;
         }
@@ -4469,6 +4471,9 @@ Quaternion NavEKF::calcQuatAndFieldStates(float roll, float pitch)
 
         // write to earth magnetic field state vector
         state.earth_magfield = initMagNED;
+
+        // align the NE earth magnetic field states with the published declination
+        alignMagStateDeclination();
 
         // clear bad magnetometer status
         badMag = false;
@@ -5435,6 +5440,19 @@ uint32_t NavEKF::getLastYawResetAngle(float &yawAng)
 {
     yawAng = yawResetAngle;
     return lastYawReset_ms;
+}
+
+// align the NE earth magnetic field states with the published declination
+void NavEKF::alignMagStateDeclination()
+{
+    // get the magnetic declination
+    float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
+
+    // rotate the NE values so that the declination matches the published value
+    Vector3f initMagNED = state.earth_magfield;
+    float magLengthNE = pythagorous2(initMagNED.x,initMagNED.y);
+    state.earth_magfield.x = magLengthNE * cosf(magDecAng);
+    state.earth_magfield.y = magLengthNE * sinf(magDecAng);
 }
 
 #endif // HAL_CPU_CLASS
