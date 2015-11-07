@@ -234,7 +234,7 @@ void GCS_MAVLINK::send_ahrs2(AP_AHRS &ahrs)
     AP_AHRS_NavEKF &_ahrs = reinterpret_cast<AP_AHRS_NavEKF&>(ahrs);
     if (_ahrs.get_NavEKF2().activeCores() > 0) {
         _ahrs.get_NavEKF2().getLLH(loc);
-        _ahrs.get_NavEKF2().getEulerAngles(euler);
+        _ahrs.get_NavEKF2().getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
                                euler.y,
