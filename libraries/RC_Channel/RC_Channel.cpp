@@ -517,5 +517,5 @@ uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
 */
 bool RC_Channel::in_trim_dz()
 {
-    return is_bounded(radio_in, radio_trim - _dead_zone, radio_trim + _dead_zone);
+    return is_bounded_int32(radio_in, radio_trim - _dead_zone, radio_trim + _dead_zone);
 }
