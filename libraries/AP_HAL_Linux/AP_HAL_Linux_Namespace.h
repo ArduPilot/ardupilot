@@ -25,6 +25,7 @@ namespace Linux {
     class RCInput_RPI;
     class RCInput_Raspilot;
     class RCInput_ZYNQ;
+    class RCInput_BH;
     class RCInput_UART;
     class RCInput_UDP;
     class RCOutput_PRU;
@@ -33,6 +34,7 @@ namespace Linux {
     class RCOutput_Raspilot;
     class RCOutput_ZYNQ;
     class RCOutput_Bebop;
+    class RCOutput_BH;
     class Semaphore;
     class Scheduler;
     class Util;

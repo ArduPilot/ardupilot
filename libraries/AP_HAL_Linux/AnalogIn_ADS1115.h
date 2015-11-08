@@ -30,9 +30,9 @@ public:
     AP_HAL::AnalogSource* channel(int16_t n);
 
     /* Board voltage is not available */
-    float board_voltage(void) 
-    { 
-        return 0.0f; 
+    float board_voltage(void)
+    {
+        return 0.0f;
     }
 private:
     AP_ADC_ADS1115 *_adc;
