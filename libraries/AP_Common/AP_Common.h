@@ -155,7 +155,10 @@ enum HomeState {
 #define AP_PRODUCT_ID_MPU9250           0x103   // MPU9250
 #define AP_PRODUCT_ID_VRBRAIN           0x150   // VRBRAIN on NuttX
 
-
-bool is_bounded(int32_t value, int32_t lower_bound, int32_t upper_bound);
+/*
+  Return true if value is between lower and upper bound inclusive.
+  False otherwise.
+*/
+bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
 #endif // _AP_COMMON_H
