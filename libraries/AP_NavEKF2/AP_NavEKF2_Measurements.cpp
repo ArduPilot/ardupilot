@@ -206,19 +206,6 @@ void NavEKF2_core::readMagData()
         // check for consistent data between magnetometers
         consistentMagData = _ahrs->get_compass()->consistent();
 
-        // check if compass offsets have been changed and adjust EKF bias states to maintain consistent innovations
-        if (_ahrs->get_compass()->healthy(0)) {
-            Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(0);
-            bool changeDetected = (!is_equal(nowMagOffsets.x,lastMagOffsets.x) || !is_equal(nowMagOffsets.y,lastMagOffsets.y) || !is_equal(nowMagOffsets.z,lastMagOffsets.z));
-            // Ignore bias changes before final mag field and yaw initialisation, as there may have been a compass calibration
-            if (changeDetected && firstMagYawInit) {
-                stateStruct.body_magfield.x += (nowMagOffsets.x - lastMagOffsets.x) * 0.001f;
-                stateStruct.body_magfield.y += (nowMagOffsets.y - lastMagOffsets.y) * 0.001f;
-                stateStruct.body_magfield.z += (nowMagOffsets.z - lastMagOffsets.z) * 0.001f;
-            }
-            lastMagOffsets = nowMagOffsets;
-        }
-
         // save magnetometer measurement to buffer to be fused later
         StoreMag();
     }
