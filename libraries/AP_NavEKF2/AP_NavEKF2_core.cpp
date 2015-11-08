@@ -107,7 +107,7 @@ void NavEKF2_core::InitialiseVariables()
     // initialise other variables
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
-    magTimeout = true;
+    magTimeout = false;
     tasTimeout = true;
     badMag = false;
     badIMUdata = false;
@@ -204,6 +204,7 @@ void NavEKF2_core::InitialiseVariables()
     posResetNE.zero();
     velResetNE.zero();
     hgtInnovFiltState = 0.0f;
+    magSelectIndex = _ahrs->get_compass()->get_primary();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
