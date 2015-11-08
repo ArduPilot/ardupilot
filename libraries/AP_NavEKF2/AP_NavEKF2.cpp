@@ -683,6 +683,15 @@ void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ)
     }
 }
 
+// return the magnetometer in use for the specified instance
+uint8_t NavEKF2::getActiveMag(int8_t instance)
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getActiveMag();
+    }
+}
+
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
 bool NavEKF2::getMagOffsets(Vector3f &magOffsets) const

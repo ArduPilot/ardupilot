@@ -130,6 +130,10 @@ public:
     // An out of range instance (eg -1) returns data for the the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ);
 
+    // return the magnetometer in use for the specified instance
+    // An out of range instance (eg -1) returns data for the the primary instance
+    uint8_t getActiveMag(int8_t instance);
+
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(Vector3f &magOffsets) const;

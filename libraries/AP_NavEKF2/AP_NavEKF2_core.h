@@ -143,6 +143,9 @@ public:
     // return body magnetic field estimates in measurement units / 1000
     void getMagXYZ(Vector3f &magXYZ) const;
 
+    // return the index for the active magnetometer
+    uint8_t getActiveMag() const;
+
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(Vector3f &magOffsets) const;

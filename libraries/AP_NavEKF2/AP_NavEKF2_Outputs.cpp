@@ -341,6 +341,11 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
     magXYZ = stateStruct.body_magfield*1000.0f;
 }
 
+// return the index for the active magnetometer
+uint8_t NavEKF2_core::getActiveMag() const
+{
+    return (uint8_t)magSelectIndex;
+}
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
 void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
