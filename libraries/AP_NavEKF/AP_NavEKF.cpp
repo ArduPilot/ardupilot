@@ -552,6 +552,9 @@ void NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScal
 {
     if (core) {
         core->getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    } else {
+        ekfGndSpdLimit = 0;
+        ekfNavVelGainScaler = 0;
     }
 }
 
@@ -675,6 +678,8 @@ void NavEKF::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &ma
 {
     if (core) {
         core->getInnovations(velInnov, posInnov, magInnov, tasInnov);
+    } else {
+        tasInnov = 0;
     }
 }
 
@@ -683,6 +688,11 @@ void NavEKF::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f 
 {
     if (core) {
         core->getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    } else {
+        velVar = 0;
+        posVar = 0;
+        hgtVar = 0;
+        tasVar = 0;
     }
 }
 
@@ -715,6 +725,16 @@ void NavEKF::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, f
 {
     if (core) {
         core->getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
+    } else {
+        varFlow = 0;
+        gndOffset = 0;
+        flowInnovX = 0;
+        flowInnovY = 0;
+        auxInnov = 0;
+        HAGL = 0;
+        rngInnov = 0;
+        range = 0;
+        gndOffsetErr = 0;
     }
 }
 
