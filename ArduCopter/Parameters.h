@@ -356,6 +356,7 @@ public:
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
         k_param_pi_precland,    // 252
+        k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
     };
