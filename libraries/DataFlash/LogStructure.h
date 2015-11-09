@@ -588,6 +588,45 @@ struct PACKED log_RPM {
     float rpm2;
 };
 
+// #if SBP_HW_LOGGING
+
+struct PACKED log_SbpLLH {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t tow;
+    int32_t  lat;
+    int32_t  lon;
+    int32_t  alt;
+    uint8_t  n_sats;
+    uint8_t  flags;
+};
+
+struct PACKED log_SbpHealth {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint32_t crc_error_counter;
+    uint32_t last_injected_data_ms;
+    uint32_t last_iar_num_hypotheses;
+};
+
+struct PACKED log_SbpRAW1 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t msg_type;
+    uint16_t sender_id;
+    uint8_t msg_len;
+    uint8_t data1[64];
+};
+
+struct PACKED log_SbpRAW2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t msg_type;
+    uint8_t data2[192];
+};
+
+// #endif // SBP_HW_LOGGING
+
 /*
 Format characters in the format string for binary log messages
   b   : int8_t
@@ -777,7 +816,17 @@ Format characters in the format string for binary log messages
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "Qff", "TimeUS,rpm1,rpm2" }
 
-#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES
+// #if SBP_HW_LOGGING
+#define LOG_SBP_STRUCTURES \
+    { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
+      "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" }, \
+    { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1), \
+      "SBR1", "QHHBZ",      "TimeUS,msg_type,sender_id,msg_len,d1" }, \
+    { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2), \
+      "SBR2", "QHZZZ",      "TimeUS,msg_type,d2,d3,d4" }
+// #endif
+
+#define LOG_COMMON_STRUCTURES LOG_BASE_STRUCTURES, LOG_EXTRA_STRUCTURES, LOG_SBP_STRUCTURES
 
 // message types 0 to 128 reversed for vehicle specific use
 
@@ -864,14 +913,23 @@ enum LogMessages {
     LOG_NKF8_MSG,
     LOG_NKF9_MSG,
     LOG_DF_MAV_STATS,
+
+    LOG_MSG_SBPHEALTH,
+    LOG_MSG_SBPLLH,
+    LOG_MSG_SBPBASELINE,
+    LOG_MSG_SBPTRACKING1,
+    LOG_MSG_SBPTRACKING2,
+    LOG_MSG_SBPRAW1,
+    LOG_MSG_SBPRAW2,
+    LOG_MSG_SBPRAWx,
+
+// message types 211 to 220 reversed for autotune use
+
 };
 
 enum LogOriginType {
     ekf_origin = 0,
     ahrs_home = 1
 };
-
-// message types 200 to 210 reversed for GPS driver use
-// message types 211 to 220 reversed for autotune use
 
 #endif

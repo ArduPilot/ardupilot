@@ -87,7 +87,6 @@ public:
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
     void StartNewLog(void);
-    void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable);
     void Log_Write_SysInfo(const char *firmware_string);
     void Log_Write_Format(const struct LogStructure *structure);
