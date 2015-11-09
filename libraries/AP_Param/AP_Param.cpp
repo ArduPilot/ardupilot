@@ -699,8 +699,7 @@ void AP_Param::notify() const {
         param_header_type = PGM_UINT8(&info->type);
     }
 
-    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
-                                          cast_to_float((enum ap_var_type)param_header_type));
+    send_parameter(name, (enum ap_var_type)param_header_type);
 }
 
 
@@ -747,8 +746,7 @@ bool AP_Param::save(bool force_save)
     if (scan(&phdr, &ofs)) {
         // found an existing copy of the variable
         eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
-        GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
-                                              cast_to_float((enum ap_var_type)phdr.type));
+        send_parameter(name, (enum ap_var_type)phdr.type);
         return true;
     }
     if (ofs == (uint16_t) ~0) {
@@ -787,8 +785,8 @@ bool AP_Param::save(bool force_save)
     write_sentinal(ofs + sizeof(phdr) + type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(ap, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
     eeprom_write_check(&phdr, ofs, sizeof(phdr));
-    GCS_MAVLINK::send_parameter_value_all(name, (enum ap_var_type)info->type,
-                                          cast_to_float((enum ap_var_type)phdr.type));
+
+    send_parameter(name, (enum ap_var_type)phdr.type);
     return true;
 }
 
@@ -1447,3 +1445,21 @@ float AP_Param::get_default_value(const float *def_value_ptr)
     return PGM_FLOAT(def_value_ptr);
 }
 
+
+void AP_Param::send_parameter(char *name, enum ap_var_type param_header_type) const
+{
+    if (param_header_type != AP_PARAM_VECTOR3F) {
+        // nice and simple for scalar types
+        GCS_MAVLINK::send_parameter_value_all(name, param_header_type, cast_to_float(param_header_type));
+        return;
+    }
+
+    // for vectors we need to send 3 messages
+    Vector3f *v = (Vector3f *)this;
+    char &name_axis = name[strlen(name)-1];
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->x);
+    name_axis = 'Y';
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->y);
+    name_axis = 'Z';
+    GCS_MAVLINK::send_parameter_value_all(name, AP_PARAM_FLOAT, v->z);
+}

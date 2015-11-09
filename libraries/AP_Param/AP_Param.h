@@ -179,6 +179,9 @@ public:
     ///
     void notify() const;
 
+    // send a parameter to all GCS instances
+    void send_parameter(char *name, enum ap_var_type param_header_type) const;
+
     /// Save the current value of the variable to EEPROM.
     ///
     /// @param  force_save     If true then force save even if default
