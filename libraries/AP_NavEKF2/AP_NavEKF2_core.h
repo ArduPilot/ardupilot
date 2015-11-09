@@ -358,8 +358,7 @@ private:
         Vector3f    delVel;         // 3..5
         float       delAngDT;       // 6
         float       delVelDT;       // 7
-        uint32_t    frame;          // 8
-        uint32_t    time_ms;        // 9
+        uint32_t    time_ms;        // 8
     };
 
     struct gps_elements {
