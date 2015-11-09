@@ -416,7 +416,7 @@ float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params)
 
 // calculate jacobian, a matrix that defines relation to variation in fitness with variation in each of the parameters
 // this is used in LSq estimator to adjust variation in parameter to be used for next iteration of LSq
-void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP ret) const {
+void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP &ret) const {
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
         case ACCEL_CAL_ELLIPSOID: {

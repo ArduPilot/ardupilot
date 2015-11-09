@@ -127,7 +127,7 @@ private:
     float calc_residual(const Vector3f& sample, const struct param_t& params) const;
     float calc_mean_squared_residuals() const;
     float calc_mean_squared_residuals(const struct param_t& params) const;
-    void calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP ret) const;
+    void calc_jacob(const Vector3f& sample, const struct param_t& params, VectorP& ret) const;
     void run_fit(uint8_t max_iterations, float& fitness);
 };
 #endif //__ACCELCALIBRATOR_H__
