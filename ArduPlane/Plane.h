@@ -738,7 +738,7 @@ private:
     void do_erase_logs(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
-    bool Log_Write_Startup(uint8_t type);
+    void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_TECS_Tuning(void);
     void Log_Write_Nav_Tuning();
