@@ -649,16 +649,6 @@ void DataFlash_Class::StartNewLog(void)
     }
 }
 
-// add new logging formats to the log. Used by libraries that want to
-// add their own log messages
-void DataFlash_Class::AddLogFormats(const struct LogStructure *structures, uint8_t num_types)
-{
-    // write new log formats
-    for (uint8_t i=0; i<num_types; i++) {
-        Log_Write_Format(&structures[i]);
-    }
-}
-
 /*
   write a structure format to the log - should be in frontend
  */
