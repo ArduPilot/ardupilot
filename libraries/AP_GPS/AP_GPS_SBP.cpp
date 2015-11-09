@@ -45,9 +45,6 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
-bool AP_GPS_SBP::logging_started = false;
-
-
 AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -387,69 +384,6 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
 
 #if SBP_HW_LOGGING
 
-#define LOG_MSG_SBPHEALTH 202
-#define LOG_MSG_SBPLLH 203
-#define LOG_MSG_SBPBASELINE 204
-#define LOG_MSG_SBPTRACKING1 205
-#define LOG_MSG_SBPTRACKING2 206
-
-#define LOG_MSG_SBPRAW1 207
-#define LOG_MSG_SBPRAW2 208
-
-struct PACKED log_SbpLLH {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t tow;
-    int32_t  lat;
-    int32_t  lon;
-    int32_t  alt;
-    uint8_t  n_sats;
-    uint8_t  flags;
-};
-
-struct PACKED log_SbpHealth {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t crc_error_counter;
-    uint32_t last_injected_data_ms;
-    uint32_t last_iar_num_hypotheses;
-};
-
-struct PACKED log_SbpRAW1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t msg_type;
-    uint16_t sender_id;
-    uint8_t msg_len;
-    uint8_t data1[64];
-};
-
-struct PACKED log_SbpRAW2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t msg_type;
-    uint8_t data2[192];
-};
-
-
-static const struct LogStructure sbp_log_structures[] = {
-    { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth),
-      "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" },
-    { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1),
-      "SBR1", "QHHBZ",      "TimeUS,msg_type,sender_id,msg_len,d1" },
-    { LOG_MSG_SBPRAW2, sizeof(log_SbpRAW2),
-      "SBR2", "QHZZZ",      "TimeUS,msg_type,d2,d3,d4" }
-};
-
-void
-AP_GPS_SBP::logging_write_headers(void)
-{
-    if (!logging_started) {
-        logging_started = true;
-        gps._DataFlash->AddLogFormats(sbp_log_structures, ARRAY_SIZE(sbp_log_structures));
-    }
-}
-
 void 
 AP_GPS_SBP::logging_log_full_update()
 {
@@ -457,8 +391,6 @@ AP_GPS_SBP::logging_log_full_update()
     if (gps._DataFlash == NULL || !gps._DataFlash->logging_started()) {
       return;
     }
-
-    logging_write_headers();
 
     struct log_SbpHealth pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MSG_SBPHEALTH),
@@ -485,8 +417,6 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
     if (( ((uint16_t) gps._sbp_logmask) & msg_type) == 0) {
         return;
     }
-
-    logging_write_headers();
 
     uint64_t time_us = AP_HAL::micros64();
 
