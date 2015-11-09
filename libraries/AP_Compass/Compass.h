@@ -293,6 +293,7 @@ public:
 
     // return last update time in microseconds
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
+    uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
