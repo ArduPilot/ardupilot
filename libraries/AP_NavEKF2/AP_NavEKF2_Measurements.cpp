@@ -217,7 +217,7 @@ void NavEKF2_core::readMagData()
         }
 
         // store time of last measurement update
-        lastMagUpdate_us = _ahrs->get_compass()->last_update_usec();
+        lastMagUpdate_us = _ahrs->get_compass()->last_update_usec(magSelectIndex);
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magDataNew.time_ms = imuSampleTime_ms - frontend->magDelay_ms;
