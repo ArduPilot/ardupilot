@@ -689,6 +689,8 @@ uint8_t NavEKF2::getActiveMag(int8_t instance)
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         return core[instance].getActiveMag();
+    } else {
+        return 255;
     }
 }
 
