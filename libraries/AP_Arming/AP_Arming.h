@@ -51,6 +51,16 @@ public:
         ARMING_CHECK_PASSED = 2
     };
 
+    struct FailureDescription {
+        enum ArmingChecks group;
+        const char *description;
+    };
+
+    const FailureDescription FailureDescriptions[2] = {
+        {.group = ARMING_CHECK_BARO, .description = "Barometer not healthy"},
+        {.group = ARMING_CHECK_BARO, .description = "Altitude disparity"}
+    };
+
     AP_Arming(const AP_AHRS &ahrs_ref, const AP_Baro &baro, Compass &compass,
               const AP_BattMonitor &battery, const enum HomeState &home_set);
 
@@ -119,5 +129,5 @@ protected:
 
     virtual ArmingCheckResult manual_transmitter_checks(bool report);
 
-    void update_enabled_passed_state(enum MAV_PREARM_CHECK_SUBSYSTEM subsystem, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask);
+    void update_enabled_passed_state(uint32_t check_id, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask);
 };

@@ -15,6 +15,7 @@
  */
 
 #include "AP_Arming.h"
+#include "Arming_Failure.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -413,20 +414,20 @@ AP_Arming::ArmingCheckResult AP_Arming::board_voltage_checks(bool report)
     return ARMING_CHECK_PASSED;
 }
 
-void AP_Arming::update_enabled_passed_state(enum MAV_PREARM_CHECK_SUBSYSTEM subsystem, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask)
+void AP_Arming::update_enabled_passed_state(uint32_t check_id, ArmingCheckResult res, uint64_t &enabled_bitmask, uint64_t &passed_bitmask)
 {
     switch (res) {
         case ARMING_CHECK_DISABLED:
-            enabled_bitmask &= ~(1UL<<subsystem);
-            passed_bitmask &= ~(1UL<<subsystem);
+            enabled_bitmask &= ~(1UL<<check_id);
+            passed_bitmask &= ~(1UL<<check_id);
             break;
         case ARMING_CHECK_FAILED:
-            enabled_bitmask |= (1UL<<subsystem);
-            passed_bitmask &= ~(1UL<<subsystem);
+            enabled_bitmask |= (1UL<<check_id);
+            passed_bitmask &= ~(1UL<<check_id);
             break;
         case ARMING_CHECK_PASSED:
-            enabled_bitmask |= (1UL<<subsystem);
-            passed_bitmask |= (1UL<<subsystem);
+            enabled_bitmask |= (1UL<<check_id);
+            passed_bitmask |= (1UL<<check_id);
             break;
     }
 }
