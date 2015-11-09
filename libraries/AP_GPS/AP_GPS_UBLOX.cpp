@@ -58,7 +58,8 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
     _last_5hz_time(0),
     noReceivedHdop(true),
     _cfg_saved(false),
-    _last_cfg_sent_time(0)
+    _last_cfg_sent_time(0),
+    _num_cfg_save_tries(0)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, NULL, 0);
@@ -159,9 +160,10 @@ AP_GPS_UBLOX::read(void)
 
     if (need_rate_update) {
         send_next_rate_update();
-    }else if(!_cfg_saved && gps._save_config && (millis_now - _last_cfg_sent_time) > 1000)  {         //save the configuration sent until now
+    }else if(!_cfg_saved && gps._save_config && _num_cfg_save_tries < 5 && (millis_now - _last_cfg_sent_time) > 5000)  {         //save the configuration sent until now
         _last_cfg_sent_time = millis_now;
         _save_cfg();
+        _num_cfg_save_tries++;
     }
 
     numc = port->available();

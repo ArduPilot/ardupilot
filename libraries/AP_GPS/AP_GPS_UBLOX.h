@@ -406,6 +406,7 @@ private:
     uint32_t        _last_vel_time;
     uint32_t        _last_pos_time;
     uint32_t        _last_cfg_sent_time;
+    uint8_t         _num_cfg_save_tries;
 
     // do we have new position information?
     bool            _new_position:1;
