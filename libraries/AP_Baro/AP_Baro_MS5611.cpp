@@ -317,7 +317,7 @@ void AP_Baro_MS56XX::_timer(void)
             _serial->write(ADDR_CMD_CONVERT_D2);
         }
     } else {
-        uint32_t d1 = _serial->read_24bits(0);;
+        uint32_t d1 = _serial->read_24bits(0);
         if (d1 != 0) {
             // occasional zero values have been seen on the PXF
             // board. These may be SPI errors, but safest to ignore
