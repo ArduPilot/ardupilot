@@ -18,10 +18,12 @@ class DataFlash_File : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_File(DataFlash_Class &front, const char *log_directory);
+    DataFlash_File(DataFlash_Class &front,
+                   DFMessageWriter_DFLogStart *,
+                   const char *log_directory);
 
     // initialisation
-    void Init(const struct LogStructure *structure, uint8_t num_types);
+    void Init() override;
     bool CardInserted(void);
 
     // erase handling
@@ -41,7 +43,7 @@ public:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs() override;
-    uint16_t start_new_log(void);
+    uint16_t start_new_log(void) override;
     void LogReadProcess(const uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
@@ -70,7 +72,7 @@ private:
     /*
       read a block
     */
-    bool ReadBlock(void *pkt, uint16_t size);
+    bool ReadBlock(void *pkt, uint16_t size) override;
 
     uint16_t _log_num_from_list_entry(const uint16_t list_entry);
 

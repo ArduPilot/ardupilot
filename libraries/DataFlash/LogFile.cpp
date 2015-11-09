@@ -13,28 +13,43 @@
 
 #include "DataFlash.h"
 #include "DataFlash_SITL.h"
+#include "DataFlash_Block.h"
 #include "DataFlash_File.h"
-#include "DataFlash_Empty.h"
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
 
-void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_types)
+void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
-    _num_types = num_types;
-    _structures = structure;
-
-    // DataFlash
-#if defined(HAL_BOARD_LOG_DIRECTORY)
-    backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
-#else
-    // no dataflash driver
-    backend = new DataFlash_Empty(*this);
-#endif
-    if (backend == NULL) {
-        AP_HAL::panic("Unable to open dataflash");
+    if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+        hal.scheduler->panic("Too many backends");
+        return;
     }
-    backend->Init(structure, num_types);
+    _num_types = num_types;
+    _structures = structures;
+
+    ;
+#if defined(HAL_BOARD_LOG_DIRECTORY)
+    if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
+        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
+        DFMessageWriter_DFLogStart *message_writer =
+            new DFMessageWriter_DFLogStart(_firmware_string);
+        if (message_writer != NULL)  {
+            backends[_next_backend] = new DataFlash_File(*this,
+                                                         message_writer,
+                                                         HAL_BOARD_LOG_DIRECTORY);
+        }
+        if (backends[_next_backend] == NULL) {
+            hal.console->printf("Unable to open DataFlash_File");
+        } else {
+            _next_backend++;
+        }
+    }
+#endif
+
+    for (uint8_t i=0; i<_next_backend; i++) {
+        backends[i]->Init();
+    }
 }
 
 // This function determines the number of whole or partial log files in the DataFlash
@@ -75,6 +90,8 @@ uint16_t DataFlash_Block::get_num_logs(void)
 // This function starts a new log file in the DataFlash
 uint16_t DataFlash_Block::start_new_log(void)
 {
+    _startup_messagewriter->reset();
+
     uint16_t last_page = find_last_page();
 
     StartRead(last_page);
@@ -292,30 +309,30 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
 
 /*
   read and print a log entry using the format strings from the given structure
-  - this really should in in the frontend, not the backend
  */
 void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
                                          print_mode_fn print_mode,
                                          AP_HAL::BetterStream *port)
 {
     uint8_t i;
-    for (i=0; i<_num_types; i++) {
-        if (msg_type == PGM_UINT8(&_structures[i].msg_type)) {
+    for (i=0; i<num_types(); i++) {
+        if (msg_type == structure(i)->msg_type) {
             break;
         }
     }
-    if (i == _num_types) {
+    if (i == num_types()) {
         port->printf("UNKN, %u\n", (unsigned)msg_type);
         return;
     }
-    uint8_t msg_len = PGM_UINT8(&_structures[i].msg_len) - 3;
+    const struct LogStructure *log_structure = structure(i);
+    uint8_t msg_len = log_structure->msg_len - 3;
     uint8_t pkt[msg_len];
     if (!ReadBlock(pkt, msg_len)) {
         return;
     }
-    port->printf("%s, ", _structures[i].name);
+    port->printf("%s, ", log_structure->name);
     for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
-        char fmt = PGM_UINT8(&_structures[i].format[fmt_ofs]);
+        char fmt = log_structure->format[fmt_ofs];
         switch (fmt) {
         case 'b': {
             port->printf("%d", (int)pkt[ofs]);
@@ -469,8 +486,8 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
  */
 void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 {
-    for (uint8_t i=0; i<_num_types; i++) {
-        const struct LogStructure *s = &_structures[i];
+    for (uint8_t i=0; i<num_types(); i++) {
+        const struct LogStructure *s = structure(i);
         port->printf("FMT, %u, %u, %s, %s, %s\n",
                        (unsigned)PGM_UINT8(&s->msg_type),
                        (unsigned)PGM_UINT8(&s->msg_len),
@@ -603,19 +620,11 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
 
 // This function starts a new log file in the DataFlash, and writes
 // the format of supported messages in the log
-uint16_t DataFlash_Class::StartNewLog(void)
+void DataFlash_Class::StartNewLog(void)
 {
-    uint16_t ret;
-
-    ret = start_new_log();
-    if (ret == 0xFFFF) {
-        // don't write out formats if we fail to open the log
-        return ret;
+    for (uint8_t i=0; i<_next_backend; i++) {
+        backends[i]->start_new_log();
     }
-
-    _startup_messagewriter.reset();
-
-    return ret;
 }
 
 // add new logging formats to the log. Used by libraries that want to
@@ -647,7 +656,7 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
 /*
   write a structure format to the log
  */
-bool DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
+bool DataFlash_Backend::Log_Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Log_Fill_Format(s, pkt);
@@ -657,7 +666,7 @@ bool DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
 /*
   write a parameter to the log
  */
-bool DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+bool DataFlash_Backend::Log_Write_Parameter(const char *name, float value)
 {
     struct log_Parameter pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
@@ -672,9 +681,9 @@ bool DataFlash_Class::Log_Write_Parameter(const char *name, float value)
 /*
   write a parameter to the log
  */
-bool DataFlash_Class::Log_Write_Parameter(const AP_Param *ap,
-                                          const AP_Param::ParamToken &token,
-                                          enum ap_var_type type)
+bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
+                                            const AP_Param::ParamToken &token,
+                                            enum ap_var_type type)
 {
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
@@ -1026,23 +1035,24 @@ void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
 }
 
 // Write a mission command. Total length : 36 bytes
-bool DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
-                                            const AP_Mission::Mission_Command &cmd)
+bool DataFlash_Backend::Log_Write_Mission_Cmd(const AP_Mission &mission,
+                                              const AP_Mission::Mission_Command &cmd)
 {
     mavlink_mission_item_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
     return Log_Write_MavCmd(mission.num_commands(),mav_cmd);
 }
 
-void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
+void DataFlash_Backend::Log_Write_EntireMission(const AP_Mission &mission)
 {
-    DFMessageWriter_WriteEntireMission writer(*this);
+    DFMessageWriter_WriteEntireMission writer;
+    writer.set_dataflash_backend(this);
     writer.set_mission(&mission);
     writer.process();
 }
 
 // Write a text message to the log
-bool DataFlash_Class::Log_Write_Message(const char *message)
+bool DataFlash_Backend::Log_Write_Message(const char *message)
 {
     struct log_Message pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
@@ -1521,7 +1531,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 #endif
 
 // Write a command processing packet
-bool DataFlash_Class::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
+bool DataFlash_Backend::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
 {
     struct log_Cmd pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
@@ -1685,7 +1695,7 @@ void DataFlash_Class::Log_Write_Compass(const Compass &compass)
 }
 
 // Write a mode packet.
-bool DataFlash_Class::Log_Write_Mode(uint8_t mode)
+bool DataFlash_Backend::Log_Write_Mode(uint8_t mode)
 {
     struct log_Mode pkt = {
         LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),

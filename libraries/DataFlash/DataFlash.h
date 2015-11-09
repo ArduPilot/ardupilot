@@ -30,19 +30,24 @@
 #include "DFMessageWriter.h"
 
 class DataFlash_Backend;
-class DFMessageWriter;
+
+enum DataFlash_Backend_Type {
+    DATAFLASH_BACKEND_NONE = 0,
+    DATAFLASH_BACKEND_FILE = 1,
+};
 
 class DataFlash_Class
 {
-    friend class DFMessageWriter_DFLogStart; // for access to _num_types etc
+    friend class DataFlash_Backend; // for _num_types
 
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
     DataFlash_Class(const char *firmware_string) :
-        _startup_messagewriter(DFMessageWriter_DFLogStart(*this,firmware_string)),
-        _vehicle_messages(NULL)
-        { }
+        _firmware_string(firmware_string)
+        {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
 
     void set_mission(const AP_Mission *mission);
 
@@ -59,9 +64,9 @@ public:
     void Prep();
 
     /* Write a block of data at current offset */
-    bool WriteBlock(const void *pBuffer, uint16_t size);
+    void WriteBlock(const void *pBuffer, uint16_t size);
     /* Write an *important* block of data at current offset */
-    bool WriteCriticalBlock(const void *pBuffer, uint16_t size);
+    void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
     // high level interface
     uint16_t find_last_log() const;
@@ -77,16 +82,14 @@ public:
     void ShowDeviceInfo(AP_HAL::BetterStream *port);
     void ListAvailableLogs(AP_HAL::BetterStream *port);
 
-    uint16_t bufferspace_available();
-
     void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
 
-    uint16_t StartNewLog(void);
+    void StartNewLog(void);
     void AddLogFormats(const struct LogStructure *structures, uint8_t num_types);
     void EnableWrites(bool enable);
     void Log_Write_SysInfo(const char *firmware_string);
-    bool Log_Write_Format(const struct LogStructure *structure);
-    bool Log_Write_Parameter(const char *name, float value);
+    void Log_Write_Format(const struct LogStructure *structure);
+    void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
     void Log_Write_RFND(const RangeFinder &rangefinder);
     void Log_Write_IMU(const AP_InertialSensor &ins);
@@ -105,18 +108,18 @@ public:
 #endif
     bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     void Log_Write_Radio(const mavlink_radio_t &packet);
-    bool Log_Write_Message(const char *message);
+    void Log_Write_Message(const char *message);
     void Log_Write_Camera(const AP_AHRS &ahrs, const AP_GPS &gps, const Location &current_loc);
     void Log_Write_ESC(void);
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
-    bool Log_Write_Mode(uint8_t mode);
+    void Log_Write_Mode(uint8_t mode);
     void Log_Write_Parameters(void);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
-    bool Log_Write_Mission_Cmd(const AP_Mission &mission,
+    void Log_Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
     void Log_Write_Origin(uint8_t origin_type, const Location &loc);
     void Log_Write_RPM(const AP_RPM &rpm_sensor);
@@ -147,12 +150,18 @@ public:
     bool Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
 
-    DFMessageWriter_DFLogStart _startup_messagewriter;
     vehicle_startup_message_Log_Writer _vehicle_messages;
+
+    // parameter support
+    static const struct AP_Param::GroupInfo        var_info[];
+    struct {
+        AP_Int8 backend_types;
+    } _params;
+
+    const struct LogStructure *structure(uint16_t num) const;
 
 protected:
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
-    uint16_t start_new_log(void);
 
     void WroteStartupFormat();
     void WroteStartupParam();
@@ -163,11 +172,14 @@ protected:
     /* Write a block with specified importance */
     /* might be useful if you have a boolean indicating a message is
      * important... */
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+    void WritePrioritisedBlock(const void *pBuffer, uint16_t size,
                                bool is_critical);
 
 private:
-    DataFlash_Backend *backend;
+    #define DATAFLASH_MAX_BACKENDS 2
+    uint8_t _next_backend;
+    DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
+    const char *_firmware_string;
 };
 
 #endif
