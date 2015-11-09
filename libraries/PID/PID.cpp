@@ -11,7 +11,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
+const AP_Param::GroupInfo PID::var_info[] = {
     AP_GROUPINFO("P",    0, PID, _kp, 0),
     AP_GROUPINFO("I",    1, PID, _ki, 0),
     AP_GROUPINFO("D",    2, PID, _kd, 0),

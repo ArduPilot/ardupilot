@@ -17,14 +17,14 @@ void test_high_low_byte(void)
     for (i=0; i<=300; i++) {
         high = HIGHBYTE(i);
         low = LOWBYTE(i);
-        hal.console->printf_P(PSTR("\ni:%u high:%u low:%u"),(unsigned int)i, (unsigned int)high, (unsigned int)low);
+        hal.console->printf("\ni:%u high:%u low:%u",(unsigned int)i, (unsigned int)high, (unsigned int)low);
     }
 
     // test values from 300 to 65400 at increments of 200
     for (i=301; i<=65400; i+=200) {
         high = HIGHBYTE(i);
         low = LOWBYTE(i);
-        hal.console->printf_P(PSTR("\ni:%u high:%u low:%u"),(unsigned int)i, (unsigned int)high, (unsigned int)low);
+        hal.console->printf("\ni:%u high:%u low:%u",(unsigned int)i, (unsigned int)high, (unsigned int)low);
     }
 }
 

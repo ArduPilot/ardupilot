@@ -23,9 +23,11 @@ This provides some support code and variables for MAVLink enabled sketches
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-#include "GCS_MAVLink.h"
-#include "GCS.h"
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Progmem/AP_Progmem.h>
+
+#include "GCS.h"
+#include "GCS_MAVLink.h"
 
 #ifdef MAVLINK_SEPARATE_HELPERS
 #include "include/mavlink/v1.0/mavlink_helpers.h"
@@ -144,7 +146,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     mavlink_comm_port[chan]->write(buf, len);
 }
 
-static const uint8_t mavlink_message_crc_progmem[256] PROGMEM = MAVLINK_MESSAGE_CRCS;
+static const uint8_t mavlink_message_crc_progmem[256] = MAVLINK_MESSAGE_CRCS;
 
 // return CRC byte for a mavlink message ID
 uint8_t mavlink_get_message_crc(uint8_t msgid)

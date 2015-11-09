@@ -17,7 +17,7 @@ struct PACKED log_Test {
     int32_t  l1, l2;
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
     "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
@@ -34,7 +34,7 @@ public:
 
 private:
 
-    DataFlash_Class dataflash{PSTR("DF Test 0.1")};
+    DataFlash_Class dataflash{"DF Test 0.1"};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
@@ -110,7 +110,7 @@ void DataFlashTest::loop(void)
 
 void DataFlashTest::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
-    port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+    port->printf("Mode(%u)", (unsigned)mode);
 }
 
 /*

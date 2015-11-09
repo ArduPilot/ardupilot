@@ -9,7 +9,7 @@
 // ------------------------------
 #define CAM_DEBUG DISABLED
 
-const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture

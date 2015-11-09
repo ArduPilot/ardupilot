@@ -6,7 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AC_P.h"
 
-const AP_Param::GroupInfo AC_P::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_P::var_info[] = {
     // @Param: P
     // @DisplayName: PI Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value

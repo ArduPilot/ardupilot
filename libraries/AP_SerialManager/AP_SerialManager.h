@@ -112,7 +112,6 @@ public:
     void set_blocking_writes_all(bool blocking);
 
     // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    //  used on APM2 to switch the console between the console baud rate (115200) and the SERIAL1 baud rate (user configurable)
     void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
 
     // parameter var table

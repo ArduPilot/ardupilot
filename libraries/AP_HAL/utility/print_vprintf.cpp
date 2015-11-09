@@ -37,17 +37,17 @@
 /* From: Id: printf_p_new.c,v 1.1.1.9 2002/10/15 20:10:28 joerg_wunsch Exp */
 /* $Id: vfprintf.c,v 1.18.2.1 2009/04/01 23:12:06 arcanum Exp $ */
 
+#include "print_vprintf.h"
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
+
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
-
-#include "print_vprintf.h"
 
 #define GETBYTE(flag, mask, pnt) ((flag)&(mask)?pgm_read_byte(pnt++):*pnt++)
 
@@ -223,10 +223,10 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 }
                                 if (sign)
                                         s->write(sign);
-                                const prog_char_t *p = PSTR("inf");
+                                const char *p = "inf";
                                 if (vtype & FTOA_NAN)
-                                        p = PSTR("nan");
-                                while ( (ndigs = pgm_read_byte((const prog_char *)p)) != 0) {
+                                        p = "nan";
+                                while ( (ndigs = pgm_read_byte((const char *)p)) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
                                         s->write(ndigs);
@@ -357,7 +357,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         case 'S':
                         // pgmstring: // not yet used
                                 pnt = va_arg (ap, char *);
-                                size = strnlen_P (pnt, (flags & FL_PREC) ? prec : ~0);
+                                size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
                                 flags |= FL_PGMSTRING;
 
                         str_lpad:

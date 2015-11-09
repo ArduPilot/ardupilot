@@ -17,7 +17,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i",cmd.id);
 
     // remember the course of our next navigation leg
     next_navigation_leg_cd = mission.get_next_ground_course_cd(0);
@@ -117,7 +117,7 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 void Rover::exit_mission()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(PSTR("No commands. Can't set AUTO - setting HOLD"));
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "No commands. Can't set AUTO - setting HOLD");
         set_mode(HOLD);
     }
 }
@@ -164,7 +164,7 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
                 // this is a command that doesn't require verify
                 return true;
             }
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Unsupported command"));
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"verify_conditon: Unsupported command");
             return true;
 	}
     return false;
@@ -203,7 +203,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // Check if we need to loiter at this waypoint
         if (loiter_time_max > 0) {
             if (loiter_time == 0) {  // check if we are just starting loiter
-                gcs_send_text_fmt(PSTR("Reached Waypoint #%i - Loiter for %i seconds"),
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Waypoint #%i - Loiter for %i seconds",
                                   (unsigned)cmd.index,
                                   (unsigned)loiter_time_max);
                 // record the current time i.e. start timer
@@ -214,7 +214,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
                 return false;
             }
         } else {
-            gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Waypoint #%i dist %um",
                               (unsigned)cmd.index,
                               (unsigned)get_distance(current_loc, next_WP));
         }
@@ -228,7 +228,7 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // check if we have gone futher past the wp then last time and output new message if we have
         if ((uint32_t)distance_past_wp != (uint32_t)get_distance(current_loc, next_WP)) {
             distance_past_wp = get_distance(current_loc, next_WP);
-            gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed Waypoint #%i dist %um",
                               (unsigned)cmd.index,
                               (unsigned)distance_past_wp);
         }
@@ -248,14 +248,14 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Rover::verify_RTL()
 {
 	if (wp_distance <= g.waypoint_radius) {
-		gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached Destination"));
+		gcs_send_text(MAV_SEVERITY_INFO,"Reached Destination");
                 rtl_complete = true;
 		return true;
 	}
 
     // have we gone past the waypoint?
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_fmt(PSTR("Reached Destination: Distance away %um"),
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Destination: Distance away %um",
                           (unsigned)get_distance(current_loc, next_WP));
         rtl_complete = true;
         return true;
@@ -309,12 +309,12 @@ void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
         g.speed_cruise.set(cmd.content.speed.target_ms);
-        gcs_send_text_fmt(PSTR("Cruise speed: %.1f m/s"), (double)g.speed_cruise.get());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise speed: %.1f m/s", (double)g.speed_cruise.get());
     }
 
 	if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
 		g.throttle_cruise.set(cmd.content.speed.throttle_pct);
-        gcs_send_text_fmt(PSTR("Cruise throttle: %.1f"), g.throttle_cruise.get());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Cruise throttle: %.1f", g.throttle_cruise.get());
     }
 }
 

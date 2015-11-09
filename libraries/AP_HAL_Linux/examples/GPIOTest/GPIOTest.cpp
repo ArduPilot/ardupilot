@@ -97,7 +97,7 @@ public:
 
 MenuCommands commands;
 
-const struct Menu::command test_menu_commands[] PROGMEM = {
+const struct Menu::command test_menu_commands[] = {
     {"input",          MENU_FUNC(gpio_input)},
     {"output",         MENU_FUNC(gpio_output)},
     {"input_ch",       MENU_FUNC(gpio_input_channel)},

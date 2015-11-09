@@ -4,9 +4,9 @@
 
 void Rover::init_barometer(void)
 {
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));    
+    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     barometer.calibrate();
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
+    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
 }
 
 void Rover::init_sonar(void)
@@ -56,7 +56,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar1 obstacle %u cm"),
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
                                   (unsigned)obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
@@ -67,7 +67,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar2 obstacle %u cm"),
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
                                   (unsigned)obstacle.sonar2_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
@@ -83,7 +83,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(PSTR("Sonar obstacle %u cm"),
+                gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Sonar obstacle %u cm",
                                   (unsigned)obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = hal.scheduler->millis();
@@ -96,7 +96,7 @@ void Rover::read_sonars(void)
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&
         hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
-        gcs_send_text_fmt(PSTR("Obstacle passed"));
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;
     }

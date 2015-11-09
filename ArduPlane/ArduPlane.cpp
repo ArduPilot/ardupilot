@@ -36,7 +36,7 @@
   often they should be called (in 20ms units) and the maximum time
   they are expected to take (in microseconds)
  */
-const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_radio,              1,    700),
     SCHED_TASK(check_short_failsafe,    1,   1000),
     SCHED_TASK(ahrs_update,             1,   6400),
@@ -77,6 +77,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(compass_save,         3000,   2500),
     SCHED_TASK(update_logging1,         5,   1700),
     SCHED_TASK(update_logging2,         5,   1700),
+    SCHED_TASK(parachute_check,         5,    500),
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,   10,    100),
 #endif
@@ -161,9 +162,7 @@ void Plane::ahrs_update()
 
     if (should_log(MASK_LOG_IMU)) {
         Log_Write_IMU();
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
         DataFlash.Log_Write_IMUDT(ins);
-#endif
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -266,10 +265,8 @@ void Plane::update_logging2(void)
     if (should_log(MASK_LOG_RC))
         Log_Write_RC();
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     if (should_log(MASK_LOG_IMU))
         DataFlash.Log_Write_Vibration(ins);
-#endif
 }
 
 
@@ -329,22 +326,21 @@ void Plane::one_second_loop()
         Log_Write_Status();
     }
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-#endif
 }
 
 void Plane::log_perf_info()
 {
     if (scheduler.debug() != 0) {
-        gcs_send_text_fmt(PSTR("G_Dt_max=%lu G_Dt_min=%lu\n"), 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "G_Dt_max=%lu G_Dt_min=%lu\n",
                           (unsigned long)G_Dt_max, 
                           (unsigned long)G_Dt_min);
     }
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-    if (should_log(MASK_LOG_PM))
+
+    if (should_log(MASK_LOG_PM)) {
         Log_Write_Performance();
-#endif
+    }
+
     G_Dt_max = 0;
     G_Dt_min = 0;
     resetPerfData();
@@ -361,13 +357,6 @@ void Plane::terrain_update(void)
 {
 #if AP_TERRAIN_AVAILABLE
     terrain.update();
-
-    // tell the rangefinder our height, so it can go into power saving
-    // mode if available
-    float height;
-    if (terrain.height_above_terrain(height, true)) {
-        rangefinder.set_estimated_terrain_height(height);
-    }
 #endif
 }
 
@@ -634,7 +623,7 @@ void Plane::update_flight_mode(void)
             if (tdrag_mode && !auto_state.fbwa_tdrag_takeoff_mode) {
                 if (auto_state.highest_airspeed < g.takeoff_tdrag_speed1) {
                     auto_state.fbwa_tdrag_takeoff_mode = true;
-                    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag mode\n"));
+                    gcs_send_text(MAV_SEVERITY_WARNING, "FBWA tdrag mode\n");
                 }
             }
         }
@@ -780,22 +769,22 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Disable fence failed (autodisable)"));
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
             } else {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence disabled (autodisable)"));
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
             }
         } else if (g.fence_autoenable == 2) {
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Disable fence floor failed (autodisable)"));
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
             } else {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence floor disabled (auto disable)"));
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             }
         }
 #endif
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
-        gcs_send_text_fmt(PSTR("Landing aborted via throttle, climbing to %dm"), auto_state.takeoff_altitude_rel_cm/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Landing aborted via throttle, climbing to %dm", auto_state.takeoff_altitude_rel_cm/100);
         break;
 
     case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
@@ -852,8 +841,15 @@ void Plane::update_flight_stage(void)
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_ABORT);
                 } else if (auto_state.land_complete == true) {
                     set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_FINAL);
-                } else {
-                    set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                } else if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+                    float path_progress = location_path_proportion(current_loc, prev_WP_loc, next_WP_loc);
+                    bool lined_up = abs(nav_controller->bearing_error_cd()) < 1000;
+                    bool below_prev_WP = current_loc.alt < prev_WP_loc.alt;
+                    if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
+                    } else {
+                        set_flight_stage(AP_SpdHgtControl::FLIGHT_NORMAL);                        
+                    }
                 }
 
             } else {

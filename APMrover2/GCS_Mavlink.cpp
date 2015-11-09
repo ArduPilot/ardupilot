@@ -615,7 +615,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 /*
   default stream rates to 1Hz
  */
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] PROGMEM = {
+const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
     // @Description: Raw sensor stream rate to ground station
@@ -878,7 +878,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
-            send_text_P(MAV_SEVERITY_WARNING,PSTR("command received: "));
+            send_text(MAV_SEVERITY_INFO,"command received: ");
 
             switch(packet.command) {
 
@@ -1001,7 +1001,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                     }
                 }
                 else {
-                    send_text_P(MAV_SEVERITY_WARNING, PSTR("Unsupported preflight calibration"));
+                    send_text(MAV_SEVERITY_WARNING, "Unsupported preflight calibration");
                 }
                 break;
 
@@ -1137,10 +1137,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
         {
             // mark the firmware version in the tlog
-            send_text_P(MAV_SEVERITY_WARNING, PSTR(FIRMWARE_STRING));
+            send_text(MAV_SEVERITY_INFO, FIRMWARE_STRING);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-            send_text_P(MAV_SEVERITY_WARNING, PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+            send_text(MAV_SEVERITY_INFO, "PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
             handle_param_request_list(msg);
             break;
@@ -1321,7 +1321,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         }
         break;
 
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, rover.gps);
         break;
@@ -1329,8 +1328,6 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_gps_inject(msg, rover.gps);
         break;
-        
-#endif
 
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
@@ -1366,7 +1363,7 @@ void Rover::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Initialising APM..."));
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM...");
     }
     check_usb_mux();
 
@@ -1426,15 +1423,15 @@ void Rover::gcs_update(void)
     }
 }
 
-void Rover::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
+void Rover::gcs_send_text(MAV_SEVERITY severity, const char *str)
 {
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
-            gcs[i].send_text_P(severity, str);
+            gcs[i].send_text(severity, str);
     }
     }
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.Log_Write_Message_P(str);
+    DataFlash.Log_Write_Message(str);
 #endif
 }
 
@@ -1443,12 +1440,12 @@ void Rover::gcs_send_text_P(MAV_SEVERITY severity, const prog_char_t *str)
  *  only one fits in the queue, so if you send more than one before the
  *  last one gets into the serial buffer then the old one will be lost
  */
-void Rover::gcs_send_text_fmt(const prog_char_t *fmt, ...)
+void Rover::gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...)
 {
     va_list arg_list;
-    gcs[0].pending_status.severity = (uint8_t)MAV_SEVERITY_WARNING;
+    gcs[0].pending_status.severity = (uint8_t)severity;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf_P((char *)gcs[0].pending_status.text,
+    hal.util->vsnprintf((char *)gcs[0].pending_status.text,
             sizeof(gcs[0].pending_status.text), fmt, arg_list);
     va_end(arg_list);
 #if LOGGING_ENABLED == ENABLED

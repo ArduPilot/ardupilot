@@ -13,10 +13,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_InertialSensor ins;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 static void display_offsets_and_scaling();
 static void run_test();
 static void run_calibration();
@@ -24,12 +20,6 @@ static void run_calibration();
 void setup(void)
 {
     hal.console->println("AP_InertialSensor startup...");
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, HAL_GPIO_OUTPUT);
-    hal.gpio->write(40, 1);
-#endif
 
     ins.init(AP_InertialSensor::RATE_100HZ);
 
@@ -43,13 +33,13 @@ void loop(void)
     int16_t user_input;
 
     hal.console->println();
-    hal.console->println_P(PSTR(
+    hal.console->println(
     "Menu:\r\n"
-    "    c) calibrate accelerometers\r\n"
+    "    c calibrate accelerometers\r\n"
     "    d) display offsets and scaling\r\n"
     "    l) level (capture offsets from level)\r\n"
     "    t) test\r\n"
-    "    r) reboot"));
+    "    r) reboot");
 
     // wait for user input
     while( !hal.console->available() ) {
@@ -99,18 +89,18 @@ static void display_offsets_and_scaling()
     Vector3f gyro_offsets = ins.get_gyro_offsets();
 
     // display results
-    hal.console->printf_P(
-            PSTR("\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+    hal.console->printf(
+            "\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_offsets.x,
                     accel_offsets.y,
                     accel_offsets.z);
-    hal.console->printf_P(
-            PSTR("Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+    hal.console->printf(
+            "Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     accel_scale.x,
                     accel_scale.y,
                     accel_scale.z);
-    hal.console->printf_P(
-            PSTR("Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n"),
+    hal.console->printf(
+            "Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
                     gyro_offsets.x,
                     gyro_offsets.y,
                     gyro_offsets.z);
@@ -146,7 +136,7 @@ static void run_test()
 
 		if (counter++ % 50 == 0) {
 			// display results
-			hal.console->printf_P(PSTR("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n"), 
+			hal.console->printf("Accel X:%4.2f \t Y:%4.2f \t Z:%4.2f \t len:%4.2f \t Gyro X:%4.2f \t Y:%4.2f \t Z:%4.2f\n", 
 								  accel.x, accel.y, accel.z, length, gyro.x, gyro.y, gyro.z);
 		}
     }

@@ -15,7 +15,6 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <fenv.h>
@@ -90,7 +89,7 @@ public:
     AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed{aparm};
-    DataFlash_Class dataflash{PSTR("Replay v0.1")};
+    DataFlash_Class dataflash{"Replay v0.1"};
 
 private:
     Parameters g;
@@ -107,7 +106,7 @@ ReplayVehicle replayvehicle;
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
 
-const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
+const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
     // barometer ground calibration. The GND_ prefix is chosen for
@@ -147,7 +146,7 @@ const AP_Param::Info ReplayVehicle::var_info[] PROGMEM = {
 void ReplayVehicle::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        hal.scheduler->panic(PSTR("Bad parameter table"));
+        hal.scheduler->panic("Bad parameter table");
     }
 }
 
@@ -173,7 +172,7 @@ enum {
     LOG_CHEK_MSG=100
 };
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CHEK_MSG, sizeof(log_Chek),
       "CHEK", "QccCLLffff",  "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD" }

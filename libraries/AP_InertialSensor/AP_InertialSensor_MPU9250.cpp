@@ -189,6 +189,8 @@ AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu) :
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     /* no rotation needed */
     _default_rotation(ROTATION_NONE)
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+    _default_rotation(ROTATION_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     _default_rotation(ROTATION_NONE)
 #else /* rotate for bbone default (and other boards) */
@@ -281,7 +283,7 @@ bool AP_InertialSensor_MPU9250::initialize_driver_state(AP_HAL::SPIDeviceDriver 
     }
 
     if (tries == 5) {
-        hal.console->println_P(PSTR("Failed to boot MPU9250 5 times"));
+        hal.console->println("Failed to boot MPU9250 5 times");
         goto fail_tries;
     }
 
@@ -514,7 +516,6 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     _register_write(MPUREG_INT_PIN_CFG, BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN);
 
     // now that we have initialised, we set the SPI bus speed to high
-    // (8MHz on APM2)
     _spi->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
 
     _spi_sem->give();
@@ -528,10 +529,10 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU9250::_dump_registers(AP_HAL::SPIDeviceDriver *spi)
 {
-    hal.console->println_P(PSTR("MPU9250 registers"));
+    hal.console->println("MPU9250 registers");
     for (uint8_t reg=0; reg<=126; reg++) {
         uint8_t v = _register_read(spi, reg);
-        hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
         if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
             hal.console->println();
         }

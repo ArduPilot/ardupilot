@@ -5,7 +5,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 AP_HAL::AnalogSource* ch;
 
 void setup (void) {
-    hal.console->printf_P(PSTR("Starting AP_HAL::AnalogIn test\r\n"));
+    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
     ch = hal.analogin->channel(0);
 }
 
@@ -17,7 +17,7 @@ void loop (void)
     if (pin == 0) {
 	    hal.console->println();
     }
-    hal.console->printf_P(PSTR("[%u %.3f] "),
+    hal.console->printf("[%u %.3f] ",
 			  (unsigned)pin, v);
     pin = (pin+1) % 16;
     ch->set_pin(pin);

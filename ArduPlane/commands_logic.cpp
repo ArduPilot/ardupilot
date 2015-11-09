@@ -31,9 +31,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // once landed, post some landing statistics to the GCS
         auto_state.post_landing_stats = false;
 
-        gcs_send_text_fmt(PSTR("Executing nav command ID #%i"),cmd.id);
+        // reset loiter start time. New command is a new loiter
+        loiter.start_time_ms = 0;
+
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing nav command ID #%i",cmd.id);
     } else {
-        gcs_send_text_fmt(PSTR("Executing command ID #%i"),cmd.id);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Executing command ID #%i",cmd.id);
     }
 
     switch(cmd.id) {
@@ -124,7 +127,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_INVERTED_FLIGHT:
         if (cmd.p1 == 0 || cmd.p1 == 1) {
             auto_state.inverted_flight = (bool)cmd.p1;
-            gcs_send_text_fmt(PSTR("Set inverted %u"), cmd.p1);
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set inverted %u", cmd.p1);
         }
         break;
 
@@ -137,15 +140,15 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 #if GEOFENCE_ENABLED == ENABLED
         if (cmd.p1 != 2) {
             if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
-                gcs_send_text_fmt(PSTR("Unable to set fence enabled state to %u"), cmd.p1);
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to set fence enabled state to %u", cmd.p1);
             } else {
-                gcs_send_text_fmt(PSTR("Set fence enabled state to %u"), cmd.p1);
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set fence enabled state to %u", cmd.p1);
             }
         } else { //commanding to only disable floor
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_fmt(PSTR("Unabled to disable fence floor.\n"));
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unabled to disable fence floor.\n");
             } else {
-                gcs_send_text_fmt(PSTR("Fence floor disabled.\n"));
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Fence floor disabled.\n");
             }
         }    
 #endif
@@ -170,6 +173,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
+        break;
+#endif
+
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        do_parachute(cmd);
         break;
 #endif
 
@@ -256,6 +265,13 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_CHANGE_ALT:
         return verify_change_alt();
 
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        // assume parachute was released successfully
+        return true;
+        break;
+#endif
+
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
@@ -278,9 +294,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     default:
         // error message
         if (AP_Mission::is_nav_cmd(cmd)) {
-            gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_nav: Invalid or no current Nav cmd"));
+            gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: Invalid or no current Nav cmd");
         }else{
-        gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("verify_conditon: Invalid or no current Condition cmd"));
+        gcs_send_text(MAV_SEVERITY_WARNING,"verify_conditon: Invalid or no current Condition cmd");
     }
         // return true so that we do not get stuck at this command
         return true;
@@ -392,7 +408,6 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
     // we set start_time_ms when we reach the waypoint
-    loiter.start_time_ms = 0;
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // units are seconds
     loiter_set_direction_wp(cmd);
 }
@@ -479,7 +494,7 @@ bool Plane::verify_takeoff()
             float takeoff_course = wrap_PI(radians(gps.ground_course_cd()*0.01f)) - steer_state.locked_course_err;
             takeoff_course = wrap_PI(takeoff_course);
             steer_state.hold_course_cd = wrap_360_cd(degrees(takeoff_course)*100);
-            gcs_send_text_fmt(PSTR("Holding course %ld at %.1fm/s (%.1f)"), 
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Holding course %ld at %.1fm/s (%.1f)",
                               steer_state.hold_course_cd,
                               (double)gps.ground_speed(),
                               (double)degrees(steer_state.locked_course_err));
@@ -496,7 +511,7 @@ bool Plane::verify_takeoff()
     // see if we have reached takeoff altitude
     int32_t relative_alt_cm = adjusted_relative_altitude_cm();
     if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
-        gcs_send_text_fmt(PSTR("Takeoff complete at %.2fm"), 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Takeoff complete at %.2fm",
                           (double)(relative_alt_cm*0.01f));
         steer_state.hold_course_cd = -1;
         auto_state.takeoff_complete = true;
@@ -505,9 +520,9 @@ bool Plane::verify_takeoff()
 #if GEOFENCE_ENABLED == ENABLED
         if (g.fence_autoenable > 0) {
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Enable fence failed (cannot autoenable"));
+                gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
             } else {
-                gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("Fence enabled. (autoenabled)"));
+                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled. (autoenabled)");
             }
         }
 #endif
@@ -552,7 +567,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
     
     if (auto_state.wp_distance <= acceptance_distance) {
-        gcs_send_text_fmt(PSTR("Reached Waypoint #%i dist %um"),
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
@@ -560,7 +575,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // have we flown past the waypoint?
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs_send_text_fmt(PSTR("Passed Waypoint #%i dist %um"),
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed Waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
@@ -584,7 +599,7 @@ bool Plane::verify_loiter_time()
             loiter.start_time_ms = millis();
         }
     } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER time complete"));
+        gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: LOITER time complete");
         return true;
     }
     return false;
@@ -595,7 +610,7 @@ bool Plane::verify_loiter_turns()
     update_loiter();
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("verify_nav: LOITER orbits complete"));
+        gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: LOITER orbits complete");
         // clear the command queue;
         return true;
     }
@@ -679,7 +694,7 @@ bool Plane::verify_RTL()
     update_loiter();
 	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
-			gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached home"));
+			gcs_send_text(MAV_SEVERITY_INFO,"Reached home");
 			return true;
     } else {
         return false;
@@ -729,11 +744,11 @@ bool Plane::verify_continue_and_change_alt()
 bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 {
     if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Reached altitude"));
+        gcs_send_text(MAV_SEVERITY_INFO,"Reached altitude");
         return true;
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs_send_text_fmt(PSTR("Reached descent rate %.1f m/s"), (double)auto_state.sink_rate);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
         return true;        
     }
 
@@ -839,17 +854,17 @@ void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     case 0:             // Airspeed
         if (cmd.content.speed.target_ms > 0) {
             g.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
-            gcs_send_text_fmt(PSTR("Set airspeed %u m/s"), (unsigned)cmd.content.speed.target_ms);
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
         }
         break;
     case 1:             // Ground speed
-        gcs_send_text_fmt(PSTR("Set groundspeed %u"), (unsigned)cmd.content.speed.target_ms);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)cmd.content.speed.target_ms);
         g.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
         break;
     }
 
     if (cmd.content.speed.throttle_pct > 0 && cmd.content.speed.throttle_pct <= 100) {
-        gcs_send_text_fmt(PSTR("Set throttle %u"), (unsigned)cmd.content.speed.throttle_pct);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set throttle %u", (unsigned)cmd.content.speed.throttle_pct);
         aparm.throttle_cruise.set(cmd.content.speed.throttle_pct);
     }
 }
@@ -903,6 +918,27 @@ void Plane::do_take_picture()
 #endif
 }
 
+#if PARACHUTE == ENABLED
+// do_parachute - configure or release parachute
+void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
+{
+    switch (cmd.p1) {
+        case PARACHUTE_DISABLE:
+            parachute.enabled(false);
+            break;
+        case PARACHUTE_ENABLE:
+            parachute.enabled(true);
+            break;
+        case PARACHUTE_RELEASE:
+            parachute_release();
+            break;
+        default:
+            // do nothing
+            break;
+    }
+}
+#endif
+
 // log_picture - log picture taken and send feedback to GCS
 void Plane::log_picture()
 {
@@ -946,7 +982,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(PSTR("Returning to Home"));
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Returning to Home");
         memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
         auto_rtl_command.content.location = 
             rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());

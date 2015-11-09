@@ -26,11 +26,13 @@ public:
     // update - give chance to driver to get updates from sensor
     //  returns true if new data available
     virtual bool update() = 0;
+    // what frame of reference is our sensor reporting in?
+    virtual MAV_FRAME get_frame_of_reference();
 
-    // get_angle_to_target - returns body frame angles (in radians) to target
+    // get_angle_to_target - returns angles (in radians) to target
     //  returns true if angles are available, false if not (i.e. no target)
-    //  x_angle_rad : body-frame roll direction, positive = target is to right (looking down)
-    //  y_angle_rad : body-frame pitch direction, postiive = target is forward (looking down)
+    //  x_angle_rad : roll direction, positive = target is to right (looking down)
+    //  y_angle_rad : pitch direction, postiive = target is forward (looking down)
     virtual bool get_angle_to_target(float &x_angle_rad, float &y_angle_rad) = 0;
 
     // handle_msg - parses a mavlink message from the companion computer

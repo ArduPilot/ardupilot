@@ -23,8 +23,6 @@
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
 
-#if GPS_RTK_AVAILABLE
-
 extern const AP_HAL::HAL& hal;
 
 #define SBF_DEBUGGING 0
@@ -297,6 +295,3 @@ AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
         Debug("SBF: Not enough TXSPACE");
     }
 }
-
-
-#endif // GPS_RTK_AVAILABLE

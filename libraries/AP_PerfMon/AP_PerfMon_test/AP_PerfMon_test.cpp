@@ -4,7 +4,6 @@
 */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
@@ -22,7 +21,7 @@ void setup()
 {
   AP_PERFMON_FUNCTION(setup)
 
-  hal.console->print_P(PSTR("Performance Monitor test v1.1\n"));
+  hal.console->print("Performance Monitor test v1.1\n");
 }
 
 void loop()

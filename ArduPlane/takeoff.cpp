@@ -22,7 +22,7 @@ bool Plane::auto_takeoff_check(void)
 
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {
-        gcs_send_text_fmt(PSTR("Timer Interrupted AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer Interrupted AUTO");
 	    launchTimerStarted = false;
 	    last_tkoff_arm_time = 0;
         last_check_ms = now;
@@ -48,13 +48,13 @@ bool Plane::auto_takeoff_check(void)
     if (!launchTimerStarted) {
         launchTimerStarted = true;
         last_tkoff_arm_time = now;
-        gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec",
                 (double)SpdHgt_Controller->get_VXdot(), (double)(wait_time_ms*0.001f));
     }
 
     // Only perform velocity check if not timed out
     if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
-        gcs_send_text_fmt(PSTR("Timeout AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timeout AUTO");
         goto no_launch;
     }
 
@@ -62,14 +62,14 @@ bool Plane::auto_takeoff_check(void)
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
         labs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad Launch AUTO");
         goto no_launch;
     }
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), (double)gps.ground_speed());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO, GPSspd = %.1f", (double)gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
         return true;
@@ -179,7 +179,7 @@ int8_t Plane::takeoff_tail_hold(void)
 
 return_zero:
     if (auto_state.fbwa_tdrag_takeoff_mode) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("FBWA tdrag off"));
+        gcs_send_text(MAV_SEVERITY_NOTICE, "FBWA tdrag off");
         auto_state.fbwa_tdrag_takeoff_mode = false;
     }
     return 0;

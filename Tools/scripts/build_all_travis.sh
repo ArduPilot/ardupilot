@@ -12,21 +12,22 @@ set -x
 
 # If TRAVIS_BUILD_TARGET is not set, default to all of them
 if [ -z "$TRAVIS_BUILD_TARGET" ]; then
-    TRAVIS_BUILD_TARGET="sitl linux navio raspilot px4-v2"
+    TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure px4-v2"
 fi
 
 declare -A build_platforms
 declare -A build_concurrency
 declare -A build_extra_clean
 
-build_platforms=(  ["ArduPlane"]="navio raspilot sitl linux px4-v2"
-                   ["ArduCopter"]="navio raspilot sitl linux px4-v2"
-                   ["APMrover2"]="navio raspilot sitl linux px4-v2"
-                   ["AntennaTracker"]="navio raspilot sitl linux px4-v2"
+build_platforms=(  ["ArduPlane"]="navio raspilot minlure sitl linux px4-v2"
+                   ["ArduCopter"]="navio raspilot minlure sitl linux px4-v2"
+                   ["APMrover2"]="navio raspilot minlure sitl linux px4-v2"
+                   ["AntennaTracker"]="navio raspilot minlure sitl linux px4-v2"
                    ["Tools/Replay"]="linux")
 
 build_concurrency=(["navio"]="-j2"
                    ["raspilot"]="-j2"
+                   ["minlure"]="-j2"
                    ["sitl"]="-j2"
                    ["linux"]="-j2"
                    ["px4-v2"]="")

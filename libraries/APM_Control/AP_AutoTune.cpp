@@ -33,10 +33,12 @@
    just need to be able to enter and exit AUTOTUNE mode
 */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
 #include "AP_AutoTune.h"
+
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -95,7 +97,7 @@ static const struct {
     float tau;
     float Dratio;
     float rmax;
-} tuning_table[] PROGMEM = {
+} tuning_table[] = {
     { 0.70f, 0.050f,  20 },   // level 1
     { 0.65f, 0.055f,  30 },   // level 2
     { 0.60f, 0.060f,  40 },   // level 3
@@ -267,18 +269,18 @@ void AP_AutoTune::check_save(void)
 /*
   log a parameter change from autotune
  */
-void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
+void AP_AutoTune::log_param_change(float v, const char *suffix)
 {
     if (!dataflash.logging_started()) {
         return;
     }
     char key[AP_MAX_NAME_SIZE+1];
     if (type == AUTOTUNE_ROLL) {
-        strncpy_P(key, PSTR("RLL2SRV_"), 8);
-        strncpy_P(&key[8], suffix, AP_MAX_NAME_SIZE-8);
+        strncpy(key, "RLL2SRV_", 8);
+        strncpy(&key[8], suffix, AP_MAX_NAME_SIZE-8);
     } else {
-        strncpy_P(key, PSTR("PTCH2SRV_"), 9);
-        strncpy_P(&key[9], suffix, AP_MAX_NAME_SIZE-9);
+        strncpy(key, "PTCH2SRV_", 9);
+        strncpy(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
     key[AP_MAX_NAME_SIZE] = 0;
     dataflash.Log_Write_Parameter(key, v);
@@ -288,7 +290,7 @@ void AP_AutoTune::log_param_change(float v, const prog_char_t *suffix)
   set a float and save a float if it has changed by more than
   0.1%. This reduces the number of insignificant EEPROM writes
  */
-void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix)
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *suffix)
 {
     float old_value = v.get();
     v.set(value);
@@ -301,7 +303,7 @@ void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const prog_cha
 /*
   set a int16 and save if changed
  */
-void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix)
+void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix)
 {
     int16_t old_value = v.get();
     v.set(value);
@@ -318,12 +320,12 @@ void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_c
 void AP_AutoTune::save_gains(const ATGains &v)
 {
     current = last_save;
-    save_float_if_changed(current.tau, v.tau, PSTR("TCONST"));
-    save_float_if_changed(current.P, v.P, PSTR("P"));
-    save_float_if_changed(current.I, v.I, PSTR("I"));
-    save_float_if_changed(current.D, v.D, PSTR("D"));
-    save_int16_if_changed(current.rmax, v.rmax, PSTR("RMAX"));
-    save_int16_if_changed(current.imax, v.imax, PSTR("IMAX"));
+    save_float_if_changed(current.tau, v.tau, "TCONST");
+    save_float_if_changed(current.P, v.P, "P");
+    save_float_if_changed(current.I, v.I, "I");
+    save_float_if_changed(current.D, v.D, "D");
+    save_int16_if_changed(current.rmax, v.rmax, "RMAX");
+    save_int16_if_changed(current.imax, v.imax, "IMAX");
     last_save = current;
 }
 

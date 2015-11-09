@@ -1,21 +1,20 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL/AP_HAL.h>
-#include "DataFlash.h"
 #include <stdlib.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Baro/AP_Baro.h>
+
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Progmem/AP_Progmem.h>
 
+#include "DataFlash.h"
 #include "DataFlash_SITL.h"
 #include "DataFlash_File.h"
 #include "DataFlash_Empty.h"
-#include "DataFlash_APM1.h"
-#include "DataFlash_APM2.h"
-
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
@@ -26,18 +25,14 @@ void DataFlash_Class::Init(const struct LogStructure *structure, uint8_t num_typ
     _structures = structure;
 
     // DataFlash
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-    backend = new DataFlash_APM1(*this);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-    backend = new DataFlash_APM2(*this);
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
+#if defined(HAL_BOARD_LOG_DIRECTORY)
     backend = new DataFlash_File(*this, HAL_BOARD_LOG_DIRECTORY);
 #else
     // no dataflash driver
     backend = new DataFlash_Empty(*this);
 #endif
     if (backend == NULL) {
-        hal.scheduler->panic(PSTR("Unable to open dataflash"));
+        hal.scheduler->panic("Unable to open dataflash");
     }
     backend->Init(structure, num_types);
 }
@@ -293,9 +288,8 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
     return -1;
 }
 
-#define PGM_UINT8(addr) pgm_read_byte((const prog_char *)addr)
+#define PGM_UINT8(addr) pgm_read_byte((const char *)addr)
 
-#ifndef DATAFLASH_NO_CLI
 /*
   read and print a log entry using the format strings from the given structure
   - this really should in in the frontend, not the backend
@@ -311,7 +305,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
         }
     }
     if (i == _num_types) {
-        port->printf_P(PSTR("UNKN, %u\n"), (unsigned)msg_type);
+        port->printf("UNKN, %u\n", (unsigned)msg_type);
         return;
     }
     uint8_t msg_len = PGM_UINT8(&_structures[i].msg_len) - 3;
@@ -319,66 +313,66 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
     if (!ReadBlock(pkt, msg_len)) {
         return;
     }
-    port->printf_P(PSTR("%S, "), _structures[i].name);
+    port->printf("%s, ", _structures[i].name);
     for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
         char fmt = PGM_UINT8(&_structures[i].format[fmt_ofs]);
         switch (fmt) {
         case 'b': {
-            port->printf_P(PSTR("%d"), (int)pkt[ofs]);
+            port->printf("%d", (int)pkt[ofs]);
             ofs += 1;
             break;
         }
         case 'B': {
-            port->printf_P(PSTR("%u"), (unsigned)pkt[ofs]);
+            port->printf("%u", (unsigned)pkt[ofs]);
             ofs += 1;
             break;
         }
         case 'h': {
             int16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%d"), (int)v);
+            port->printf("%d", (int)v);
             ofs += sizeof(v);
             break;
         }
         case 'H': {
             uint16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%u"), (unsigned)v);
+            port->printf("%u", (unsigned)v);
             ofs += sizeof(v);
             break;
         }
         case 'i': {
             int32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%ld"), (long)v);
+            port->printf("%ld", (long)v);
             ofs += sizeof(v);
             break;
         }
         case 'I': {
             uint32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%lu"), (unsigned long)v);
+            port->printf("%lu", (unsigned long)v);
             ofs += sizeof(v);
             break;
         }
         case 'q': {
             int64_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%lld"), (long long)v);
+            port->printf("%lld", (long long)v);
             ofs += sizeof(v);
             break;
         }
         case 'Q': {
             uint64_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%llu"), (unsigned long long)v);
+            port->printf("%llu", (unsigned long long)v);
             ofs += sizeof(v);
             break;
         }
         case 'f': {
             float v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%f"), (double)v);
+            port->printf("%f", (double)v);
             ofs += sizeof(v);
             break;
         }
@@ -388,35 +382,35 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             // note that %f here *really* means a single-precision
             // float, so we lose precision printing this double out
             // dtoa_engine needed....
-            port->printf_P(PSTR("%f"), (double)v);
+            port->printf("%f", (double)v);
             ofs += sizeof(v);
             break;
         }
         case 'c': {
             int16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
+            port->printf("%.2f", (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'C': {
             uint16_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
+            port->printf("%.2f", (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'e': {
             int32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
+            port->printf("%.2f", (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
         case 'E': {
             uint32_t v;
             memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf_P(PSTR("%.2f"), (double)(0.01f*v));
+            port->printf("%.2f", (double)(0.01f*v));
             ofs += sizeof(v);
             break;
         }
@@ -431,7 +425,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             char v[5];
             memcpy(&v, &pkt[ofs], sizeof(v));
             v[sizeof(v)-1] = 0;
-            port->printf_P(PSTR("%s"), v);
+            port->printf("%s", v);
             ofs += sizeof(v)-1;
             break;
         }
@@ -439,7 +433,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             char v[17];
             memcpy(&v, &pkt[ofs], sizeof(v));
             v[sizeof(v)-1] = 0;
-            port->printf_P(PSTR("%s"), v);
+            port->printf("%s", v);
             ofs += sizeof(v)-1;
             break;
         }
@@ -447,7 +441,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             char v[65];
             memcpy(&v, &pkt[ofs], sizeof(v));
             v[sizeof(v)-1] = 0;
-            port->printf_P(PSTR("%s"), v);
+            port->printf("%s", v);
             ofs += sizeof(v)-1;
             break;
         }
@@ -461,7 +455,7 @@ void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
             break;
         }
         if (ofs < msg_len) {
-            port->printf_P(PSTR(", "));
+            port->printf(", ");
         }
     }
     port->println();
@@ -477,7 +471,7 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 {
     for (uint8_t i=0; i<_num_types; i++) {
         const struct LogStructure *s = &_structures[i];
-        port->printf_P(PSTR("FMT, %u, %u, %S, %S, %S\n"),
+        port->printf("FMT, %u, %u, %s, %s, %s\n",
                        (unsigned)PGM_UINT8(&s->msg_type),
                        (unsigned)PGM_UINT8(&s->msg_len),
                        s->name, s->format, s->labels);
@@ -551,9 +545,9 @@ void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
 {
     for (uint16_t count=1; count<=df_NumPages; count++) {
         StartRead(count);
-        port->printf_P(PSTR("DF page, log file #, log page: %u,\t"), (unsigned)count);
-        port->printf_P(PSTR("%u,\t"), (unsigned)GetFileNumber());
-        port->printf_P(PSTR("%u\n"), (unsigned)GetFilePage());
+        port->printf("DF page, log file #, log page: %u,\t", (unsigned)count);
+        port->printf("%u,\t", (unsigned)GetFileNumber());
+        port->printf("%u\n", (unsigned)GetFilePage());
     }
 }
 
@@ -563,14 +557,14 @@ void DataFlash_Block::DumpPageInfo(AP_HAL::BetterStream *port)
 void DataFlash_Block::ShowDeviceInfo(AP_HAL::BetterStream *port)
 {
     if (!CardInserted()) {
-        port->println_P(PSTR("No dataflash inserted"));
+        port->println("No dataflash inserted");
         return;
     }
     ReadManufacturerID();
-    port->printf_P(PSTR("Manufacturer: 0x%02x   Device: 0x%04x\n"),
+    port->printf("Manufacturer: 0x%02x   Device: 0x%04x\n",
                     (unsigned)df_manufacturer,
                     (unsigned)df_device);
-    port->printf_P(PSTR("NumPages: %u  PageSize: %u\n"),
+    port->printf("NumPages: %u  PageSize: %u\n",
                    (unsigned)df_NumPages+1,
                    (unsigned)df_PageSize);
 }
@@ -586,16 +580,16 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
     uint16_t log_end = 0;
 
     if (num_logs == 0) {
-        port->printf_P(PSTR("\nNo logs\n\n"));
+        port->printf("\nNo logs\n\n");
         return;
     }
-    port->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
+    port->printf("\n%u logs\n", (unsigned)num_logs);
 
     for (uint16_t i=num_logs; i>=1; i--) {
         uint16_t last_log_start = log_start, last_log_end = log_end;
         uint16_t temp = last_log_num - i + 1;
         get_log_boundaries(temp, log_start, log_end);
-        port->printf_P(PSTR("Log %u,    start %u,   end %u\n"),
+        port->printf("Log %u,    start %u,   end %u\n",
                        (unsigned)temp,
                        (unsigned)log_start,
                        (unsigned)log_end);
@@ -606,7 +600,6 @@ void DataFlash_Block::ListAvailableLogs(AP_HAL::BetterStream *port)
     }
     port->println();
 }
-#endif // DATAFLASH_NO_CLI
 
 // This function starts a new log file in the DataFlash, and writes
 // the format of supported messages in the log
@@ -646,9 +639,9 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
     pkt.msgid = LOG_FORMAT_MSG;
     pkt.type = PGM_UINT8(&s->msg_type);
     pkt.length = PGM_UINT8(&s->msg_len);
-    strncpy_P(pkt.name, s->name, sizeof(pkt.name));
-    strncpy_P(pkt.format, s->format, sizeof(pkt.format));
-    strncpy_P(pkt.labels, s->labels, sizeof(pkt.labels));
+    strncpy(pkt.name, s->name, sizeof(pkt.name));
+    strncpy(pkt.format, s->format, sizeof(pkt.format));
+    strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
 }
 
 /*
@@ -1014,12 +1007,12 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_Class::Log_Write_SysInfo(const prog_char_t *firmware_string)
+void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
 {
-    Log_Write_Message_P(firmware_string);
+    Log_Write_Message(firmware_string);
 
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    Log_Write_Message_P(PSTR("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION));
+    Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
 #endif
 
     // write system identifier as well if available
@@ -1060,19 +1053,6 @@ bool DataFlash_Class::Log_Write_Message(const char *message)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-// Write a text message to the log
-bool DataFlash_Class::Log_Write_Message_P(const prog_char_t *message)
-{
-    struct log_Message pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
-        time_us : hal.scheduler->micros64(),
-        msg  : {}
-    };
-    strncpy_P(pkt.msg, message, sizeof(pkt.msg));
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
-}
-
-// Write a POWR packet
 void DataFlash_Class::Log_Write_Power(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -1131,152 +1111,154 @@ void DataFlash_Class::Log_Write_POS(AP_AHRS &ahrs)
 #if AP_AHRS_NAVEKF_AVAILABLE
 void DataFlash_Class::Log_Write_EKF(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
 {
-	// Write first EKF packet
-    Vector3f euler;
-    Vector3f posNED;
-    Vector3f velNED;
-    Vector3f dAngBias;
-    Vector3f dVelBias;
-    Vector3f gyroBias;
-    float posDownDeriv;
-    ahrs.get_NavEKF().getEulerAngles(euler);
-    ahrs.get_NavEKF().getVelNED(velNED);
-    ahrs.get_NavEKF().getPosNED(posNED);
-    ahrs.get_NavEKF().getGyroBias(gyroBias);
-    posDownDeriv = ahrs.get_NavEKF().getPosDownDerivative();
-    struct log_EKF1 pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
-        time_us : hal.scheduler->micros64(),
-        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
-        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
-        velN    : (float)(velNED.x), // velocity North (m/s)
-        velE    : (float)(velNED.y), // velocity East (m/s)
-        velD    : (float)(velNED.z), // velocity Down (m/s)
-        posD_dot : (float)(posDownDeriv), // first derivative of down position
-        posN    : (float)(posNED.x), // metres North
-        posE    : (float)(posNED.y), // metres East
-        posD    : (float)(posNED.z), // metres Down
-        gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
-        gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
-        gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-
-    // Write second EKF packet
-    float ratio;
-    float az1bias, az2bias;
-    Vector3f wind;
-    Vector3f magNED;
-    Vector3f magXYZ;
-    ahrs.get_NavEKF().getIMU1Weighting(ratio);
-    ahrs.get_NavEKF().getAccelZBias(az1bias, az2bias);
-    ahrs.get_NavEKF().getWind(wind);
-    ahrs.get_NavEKF().getMagNED(magNED);
-    ahrs.get_NavEKF().getMagXYZ(magXYZ);
-    struct log_EKF2 pkt2 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
-        time_us : hal.scheduler->micros64(),
-        Ratio   : (int8_t)(100*ratio),
-        AZ1bias : (int8_t)(100*az1bias),
-        AZ2bias : (int8_t)(100*az2bias),
-        windN   : (int16_t)(100*wind.x),
-        windE   : (int16_t)(100*wind.y),
-        magN    : (int16_t)(magNED.x),
-        magE    : (int16_t)(magNED.y),
-        magD    : (int16_t)(magNED.z),
-        magX    : (int16_t)(magXYZ.x),
-        magY    : (int16_t)(magXYZ.y),
-        magZ    : (int16_t)(magXYZ.z)
-    };
-    WriteBlock(&pkt2, sizeof(pkt2));
-
-    // Write third EKF packet
-    Vector3f velInnov;
-    Vector3f posInnov;
-    Vector3f magInnov;
-    float tasInnov;
-    ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
-    struct log_EKF3 pkt3 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
-        time_us : hal.scheduler->micros64(),
-        innovVN : (int16_t)(100*velInnov.x),
-        innovVE : (int16_t)(100*velInnov.y),
-        innovVD : (int16_t)(100*velInnov.z),
-        innovPN : (int16_t)(100*posInnov.x),
-        innovPE : (int16_t)(100*posInnov.y),
-        innovPD : (int16_t)(100*posInnov.z),
-        innovMX : (int16_t)(magInnov.x),
-        innovMY : (int16_t)(magInnov.y),
-        innovMZ : (int16_t)(magInnov.z),
-        innovVT : (int16_t)(100*tasInnov)
-    };
-    WriteBlock(&pkt3, sizeof(pkt3));
-
-    // Write fourth EKF packet
-    float velVar;
-    float posVar;
-    float hgtVar;
-    Vector3f magVar;
-    float tasVar;
-    Vector2f offset;
-    uint8_t faultStatus, timeoutStatus;
-    nav_filter_status solutionStatus;
-    nav_gps_status gpsStatus {};
-    ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    ahrs.get_NavEKF().getFilterFaults(faultStatus);
-    ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
-    ahrs.get_NavEKF().getFilterStatus(solutionStatus);
-    ahrs.get_NavEKF().getFilterGpsStatus(gpsStatus);
-    struct log_EKF4 pkt4 = {
-        LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
-        time_us : hal.scheduler->micros64(),
-        sqrtvarV : (int16_t)(100*velVar),
-        sqrtvarP : (int16_t)(100*posVar),
-        sqrtvarH : (int16_t)(100*hgtVar),
-        sqrtvarMX : (int16_t)(100*magVar.x),
-        sqrtvarMY : (int16_t)(100*magVar.y),
-        sqrtvarMZ : (int16_t)(100*magVar.z),
-        sqrtvarVT : (int16_t)(100*tasVar),
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
-        faults : (uint8_t)(faultStatus),
-        timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint16_t)(solutionStatus.value),
-        gps : (uint16_t)(gpsStatus.value)
-    };
-    WriteBlock(&pkt4, sizeof(pkt4));
-
-
-    // Write fifth EKF packet
-    if (optFlowEnabled) {
-        float normInnov; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
-        float gndOffset; // estimated vertical position of the terrain relative to the nav filter zero datum
-        float flowInnovX, flowInnovY; // optical flow LOS rate vector innovations from the main nav filter
-        float auxFlowInnov; // optical flow LOS rate innovation from terrain offset estimator
-        float HAGL; // height above ground level
-        float rngInnov; // range finder innovations
-        float range; // measured range
-        float gndOffsetErr; // filter ground offset state error
-        ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
-        struct log_EKF5 pkt5 = {
-            LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+    // only log EKF if enabled
+    if (ahrs.get_NavEKF().enabled()) {
+        // Write first EKF packet
+        Vector3f euler;
+        Vector3f posNED;
+        Vector3f velNED;
+        Vector3f dAngBias;
+        Vector3f dVelBias;
+        Vector3f gyroBias;
+        float posDownDeriv;
+        ahrs.get_NavEKF().getEulerAngles(euler);
+        ahrs.get_NavEKF().getVelNED(velNED);
+        ahrs.get_NavEKF().getPosNED(posNED);
+        ahrs.get_NavEKF().getGyroBias(gyroBias);
+        posDownDeriv = ahrs.get_NavEKF().getPosDownDerivative();
+        struct log_EKF1 pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF1_MSG),
             time_us : hal.scheduler->micros64(),
-            normInnov : (uint8_t)(min(100*normInnov,255)),
-            FIX : (int16_t)(1000*flowInnovX),
-            FIY : (int16_t)(1000*flowInnovY),
-            AFI : (int16_t)(1000*auxFlowInnov),
-            HAGL : (int16_t)(100*HAGL),
-            offset : (int16_t)(100*gndOffset),
-            RI : (int16_t)(100*rngInnov),
-            meaRng : (uint16_t)(100*range),
-            errHAGL : (uint16_t)(100*gndOffsetErr)
-         };
-        WriteBlock(&pkt5, sizeof(pkt5));
-    }
+            roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+            pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+            yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+            velN    : (float)(velNED.x), // velocity North (m/s)
+            velE    : (float)(velNED.y), // velocity East (m/s)
+            velD    : (float)(velNED.z), // velocity Down (m/s)
+            posD_dot : (float)(posDownDeriv), // first derivative of down position
+            posN    : (float)(posNED.x), // metres North
+            posE    : (float)(posNED.y), // metres East
+            posD    : (float)(posNED.z), // metres Down
+            gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
+            gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
+            gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+        };
+        WriteBlock(&pkt, sizeof(pkt));
 
-    // do EKF2 as well if enabled
-    if (ahrs.get_NavEKF2().enabled()) {
+        // Write second EKF packet
+        float ratio;
+        float az1bias, az2bias;
+        Vector3f wind;
+        Vector3f magNED;
+        Vector3f magXYZ;
+        ahrs.get_NavEKF().getIMU1Weighting(ratio);
+        ahrs.get_NavEKF().getAccelZBias(az1bias, az2bias);
+        ahrs.get_NavEKF().getWind(wind);
+        ahrs.get_NavEKF().getMagNED(magNED);
+        ahrs.get_NavEKF().getMagXYZ(magXYZ);
+        struct log_EKF2 pkt2 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF2_MSG),
+            time_us : hal.scheduler->micros64(),
+            Ratio   : (int8_t)(100*ratio),
+            AZ1bias : (int8_t)(100*az1bias),
+            AZ2bias : (int8_t)(100*az2bias),
+            windN   : (int16_t)(100*wind.x),
+            windE   : (int16_t)(100*wind.y),
+            magN    : (int16_t)(magNED.x),
+            magE    : (int16_t)(magNED.y),
+            magD    : (int16_t)(magNED.z),
+            magX    : (int16_t)(magXYZ.x),
+            magY    : (int16_t)(magXYZ.y),
+            magZ    : (int16_t)(magXYZ.z)
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));
+
+        // Write third EKF packet
+        Vector3f velInnov;
+        Vector3f posInnov;
+        Vector3f magInnov;
+        float tasInnov;
+        ahrs.get_NavEKF().getInnovations(velInnov, posInnov, magInnov, tasInnov);
+        struct log_EKF3 pkt3 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF3_MSG),
+            time_us : hal.scheduler->micros64(),
+            innovVN : (int16_t)(100*velInnov.x),
+            innovVE : (int16_t)(100*velInnov.y),
+            innovVD : (int16_t)(100*velInnov.z),
+            innovPN : (int16_t)(100*posInnov.x),
+            innovPE : (int16_t)(100*posInnov.y),
+            innovPD : (int16_t)(100*posInnov.z),
+            innovMX : (int16_t)(magInnov.x),
+            innovMY : (int16_t)(magInnov.y),
+            innovMZ : (int16_t)(magInnov.z),
+            innovVT : (int16_t)(100*tasInnov)
+        };
+        WriteBlock(&pkt3, sizeof(pkt3));
+
+        // Write fourth EKF packet
+        float velVar;
+        float posVar;
+        float hgtVar;
+        Vector3f magVar;
+        float tasVar;
+        Vector2f offset;
+        uint8_t faultStatus, timeoutStatus;
+        nav_filter_status solutionStatus;
+        nav_gps_status gpsStatus {};
+        ahrs.get_NavEKF().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+        ahrs.get_NavEKF().getFilterFaults(faultStatus);
+        ahrs.get_NavEKF().getFilterTimeouts(timeoutStatus);
+        ahrs.get_NavEKF().getFilterStatus(solutionStatus);
+        ahrs.get_NavEKF().getFilterGpsStatus(gpsStatus);
+        struct log_EKF4 pkt4 = {
+            LOG_PACKET_HEADER_INIT(LOG_EKF4_MSG),
+            time_us : hal.scheduler->micros64(),
+            sqrtvarV : (int16_t)(100*velVar),
+            sqrtvarP : (int16_t)(100*posVar),
+            sqrtvarH : (int16_t)(100*hgtVar),
+            sqrtvarMX : (int16_t)(100*magVar.x),
+            sqrtvarMY : (int16_t)(100*magVar.y),
+            sqrtvarMZ : (int16_t)(100*magVar.z),
+            sqrtvarVT : (int16_t)(100*tasVar),
+            offsetNorth : (int8_t)(offset.x),
+            offsetEast : (int8_t)(offset.y),
+            faults : (uint8_t)(faultStatus),
+            timeouts : (uint8_t)(timeoutStatus),
+            solution : (uint16_t)(solutionStatus.value),
+            gps : (uint16_t)(gpsStatus.value)
+        };
+        WriteBlock(&pkt4, sizeof(pkt4));
+
+
+        // Write fifth EKF packet
+        if (optFlowEnabled) {
+            float normInnov; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
+            float gndOffset; // estimated vertical position of the terrain relative to the nav filter zero datum
+            float flowInnovX, flowInnovY; // optical flow LOS rate vector innovations from the main nav filter
+            float auxFlowInnov; // optical flow LOS rate innovation from terrain offset estimator
+            float HAGL; // height above ground level
+            float rngInnov; // range finder innovations
+            float range; // measured range
+            float gndOffsetErr; // filter ground offset state error
+            ahrs.get_NavEKF().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
+            struct log_EKF5 pkt5 = {
+                LOG_PACKET_HEADER_INIT(LOG_EKF5_MSG),
+                time_us : hal.scheduler->micros64(),
+                normInnov : (uint8_t)(min(100*normInnov,255)),
+                FIX : (int16_t)(1000*flowInnovX),
+                FIY : (int16_t)(1000*flowInnovY),
+                AFI : (int16_t)(1000*auxFlowInnov),
+                HAGL : (int16_t)(100*HAGL),
+                offset : (int16_t)(100*gndOffset),
+                RI : (int16_t)(100*rngInnov),
+                  meaRng : (uint16_t)(100*range),
+                  errHAGL : (uint16_t)(100*gndOffsetErr)
+               };
+              WriteBlock(&pkt5, sizeof(pkt5));
+        }
+    }
+    // only log EKF2 if enabled
+    if (ahrs.get_NavEKF2().activeCores() > 0) {
         Log_Write_EKF2(ahrs, optFlowEnabled);
     }
 }
@@ -1292,11 +1274,11 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f dVelBias;
     Vector3f gyroBias;
     float posDownDeriv;
-    ahrs.get_NavEKF2().getEulerAngles(euler);
-    ahrs.get_NavEKF2().getVelNED(velNED);
-    ahrs.get_NavEKF2().getPosNED(posNED);
-    ahrs.get_NavEKF2().getGyroBias(gyroBias);
-    posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative();
+    ahrs.get_NavEKF2().getEulerAngles(0,euler);
+    ahrs.get_NavEKF2().getVelNED(0,velNED);
+    ahrs.get_NavEKF2().getPosNED(0,posNED);
+    ahrs.get_NavEKF2().getGyroBias(0,gyroBias);
+    posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(0);
     struct log_EKF1 pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1322,11 +1304,12 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f magNED;
     Vector3f magXYZ;
     Vector3f gyroScaleFactor;
-    ahrs.get_NavEKF2().getAccelZBias(azbias);
-    ahrs.get_NavEKF2().getWind(wind);
-    ahrs.get_NavEKF2().getMagNED(magNED);
-    ahrs.get_NavEKF2().getMagXYZ(magXYZ);
-    ahrs.get_NavEKF2().getGyroScaleErrorPercentage(gyroScaleFactor);
+    uint8_t magIndex = ahrs.get_NavEKF2().getActiveMag(0);
+    ahrs.get_NavEKF2().getAccelZBias(0,azbias);
+    ahrs.get_NavEKF2().getWind(0,wind);
+    ahrs.get_NavEKF2().getMagNED(0,magNED);
+    ahrs.get_NavEKF2().getMagXYZ(0,magXYZ);
+    ahrs.get_NavEKF2().getGyroScaleErrorPercentage(0,gyroScaleFactor);
     struct log_NKF2 pkt2 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF2_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1341,7 +1324,8 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         magD    : (int16_t)(magNED.z),
         magX    : (int16_t)(magXYZ.x),
         magY    : (int16_t)(magXYZ.y),
-        magZ    : (int16_t)(magXYZ.z)
+        magZ    : (int16_t)(magXYZ.z),
+        index   : (uint8_t)(magIndex)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 
@@ -1351,7 +1335,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     Vector3f magInnov;
     float tasInnov = 0;
     float yawInnov = 0;
-    ahrs.get_NavEKF2().getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    ahrs.get_NavEKF2().getInnovations(0,velInnov, posInnov, magInnov, tasInnov, yawInnov);
     struct log_NKF3 pkt3 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF3_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1379,14 +1363,15 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
     uint8_t faultStatus=0, timeoutStatus=0;
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
-    ahrs.get_NavEKF2().getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_NavEKF2().getVariances(0,velVar, posVar, hgtVar, magVar, tasVar, offset);
     float magLength = magVar.length();
-    ahrs.get_NavEKF2().getFilterFaults(faultStatus);
-    ahrs.get_NavEKF2().getFilterTimeouts(timeoutStatus);
-    ahrs.get_NavEKF2().getFilterStatus(solutionStatus);
-    ahrs.get_NavEKF2().getFilterGpsStatus(gpsStatus);
+    ahrs.get_NavEKF2().getFilterFaults(0,faultStatus);
+    ahrs.get_NavEKF2().getFilterTimeouts(0,timeoutStatus);
+    ahrs.get_NavEKF2().getFilterStatus(0,solutionStatus);
+    ahrs.get_NavEKF2().getFilterGpsStatus(0,gpsStatus);
     float tiltError;
-    ahrs.get_NavEKF2().getTiltError(tiltError);
+    ahrs.get_NavEKF2().getTiltError(0,tiltError);
+    uint8_t primaryIndex = ahrs.get_NavEKF2().getPrimaryCoreIndex();
     struct log_NKF4 pkt4 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : hal.scheduler->micros64(),
@@ -1401,12 +1386,12 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         faults : (uint8_t)(faultStatus),
         timeouts : (uint8_t)(timeoutStatus),
         solution : (uint16_t)(solutionStatus.value),
-        gps : (uint16_t)(gpsStatus.value)
+        gps : (uint16_t)(gpsStatus.value),
+        primary : (int8_t)primaryIndex
     };
     WriteBlock(&pkt4, sizeof(pkt4));
 
-
-    // Write fifth EKF packet
+    // Write fifth EKF packet - take data from the primary instance
     if (optFlowEnabled) {
         float normInnov=0; // normalised innovation variance ratio for optical flow observations fused by the main nav filter
         float gndOffset=0; // estimated vertical position of the terrain relative to the nav filter zero datum
@@ -1416,7 +1401,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         float rngInnov=0; // range finder innovations
         float range=0; // measured range
         float gndOffsetErr=0; // filter ground offset state error
-        ahrs.get_NavEKF2().getFlowDebug(normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
+        ahrs.get_NavEKF2().getFlowDebug(-1,normInnov, gndOffset, flowInnovX, flowInnovY, auxFlowInnov, HAGL, rngInnov, range, gndOffsetErr);
         struct log_EKF5 pkt5 = {
             LOG_PACKET_HEADER_INIT(LOG_NKF5_MSG),
             time_us : hal.scheduler->micros64(),
@@ -1431,6 +1416,106 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
             errHAGL : (uint16_t)(100*gndOffsetErr)
          };
         WriteBlock(&pkt5, sizeof(pkt5));
+    }
+
+    // log innovations for the second IMU if enabled
+    if (ahrs.get_NavEKF2().activeCores() >= 2) {
+        // Write 6th EKF packet
+        ahrs.get_NavEKF2().getEulerAngles(1,euler);
+        ahrs.get_NavEKF2().getVelNED(1,velNED);
+        ahrs.get_NavEKF2().getPosNED(1,posNED);
+        ahrs.get_NavEKF2().getGyroBias(1,gyroBias);
+        posDownDeriv = ahrs.get_NavEKF2().getPosDownDerivative(1);
+        struct log_EKF1 pkt6 = {
+            LOG_PACKET_HEADER_INIT(LOG_NKF6_MSG),
+            time_us : hal.scheduler->micros64(),
+            roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+            pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+            yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+            velN    : (float)(velNED.x), // velocity North (m/s)
+            velE    : (float)(velNED.y), // velocity East (m/s)
+            velD    : (float)(velNED.z), // velocity Down (m/s)
+            posD_dot : (float)(posDownDeriv), // first derivative of down position
+            posN    : (float)(posNED.x), // metres North
+            posE    : (float)(posNED.y), // metres East
+            posD    : (float)(posNED.z), // metres Down
+            gyrX    : (int16_t)(100*degrees(gyroBias.x)), // cd/sec, displayed as deg/sec due to format string
+            gyrY    : (int16_t)(100*degrees(gyroBias.y)), // cd/sec, displayed as deg/sec due to format string
+            gyrZ    : (int16_t)(100*degrees(gyroBias.z)) // cd/sec, displayed as deg/sec due to format string
+        };
+        WriteBlock(&pkt6, sizeof(pkt6));
+
+        // Write 7th EKF packet
+        ahrs.get_NavEKF2().getAccelZBias(1,azbias);
+        ahrs.get_NavEKF2().getWind(1,wind);
+        ahrs.get_NavEKF2().getMagNED(1,magNED);
+        ahrs.get_NavEKF2().getMagXYZ(1,magXYZ);
+        ahrs.get_NavEKF2().getGyroScaleErrorPercentage(1,gyroScaleFactor);
+        magIndex = ahrs.get_NavEKF2().getActiveMag(1);
+        struct log_NKF2 pkt7 = {
+            LOG_PACKET_HEADER_INIT(LOG_NKF7_MSG),
+            time_us : hal.scheduler->micros64(),
+            AZbias  : (int8_t)(100*azbias),
+            scaleX  : (int16_t)(100*gyroScaleFactor.x),
+            scaleY  : (int16_t)(100*gyroScaleFactor.y),
+            scaleZ  : (int16_t)(100*gyroScaleFactor.z),
+            windN   : (int16_t)(100*wind.x),
+            windE   : (int16_t)(100*wind.y),
+            magN    : (int16_t)(magNED.x),
+            magE    : (int16_t)(magNED.y),
+            magD    : (int16_t)(magNED.z),
+            magX    : (int16_t)(magXYZ.x),
+            magY    : (int16_t)(magXYZ.y),
+            magZ    : (int16_t)(magXYZ.z),
+            index   : (uint8_t)(magIndex)
+        };
+        WriteBlock(&pkt7, sizeof(pkt7));
+
+        // Write 8th EKF packet
+        ahrs.get_NavEKF2().getInnovations(1,velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        struct log_NKF3 pkt8 = {
+            LOG_PACKET_HEADER_INIT(LOG_NKF8_MSG),
+            time_us : hal.scheduler->micros64(),
+            innovVN : (int16_t)(100*velInnov.x),
+            innovVE : (int16_t)(100*velInnov.y),
+            innovVD : (int16_t)(100*velInnov.z),
+            innovPN : (int16_t)(100*posInnov.x),
+            innovPE : (int16_t)(100*posInnov.y),
+            innovPD : (int16_t)(100*posInnov.z),
+            innovMX : (int16_t)(magInnov.x),
+            innovMY : (int16_t)(magInnov.y),
+            innovMZ : (int16_t)(magInnov.z),
+            innovYaw : (int16_t)(100*degrees(yawInnov)),
+            innovVT : (int16_t)(100*tasInnov)
+        };
+        WriteBlock(&pkt8, sizeof(pkt8));
+
+        // Write 9th EKF packet
+        ahrs.get_NavEKF2().getVariances(1,velVar, posVar, hgtVar, magVar, tasVar, offset);
+        magLength = magVar.length();
+        ahrs.get_NavEKF2().getFilterFaults(1,faultStatus);
+        ahrs.get_NavEKF2().getFilterTimeouts(1,timeoutStatus);
+        ahrs.get_NavEKF2().getFilterStatus(1,solutionStatus);
+        ahrs.get_NavEKF2().getFilterGpsStatus(1,gpsStatus);
+        ahrs.get_NavEKF2().getTiltError(1,tiltError);
+        struct log_NKF4 pkt9 = {
+            LOG_PACKET_HEADER_INIT(LOG_NKF9_MSG),
+            time_us : hal.scheduler->micros64(),
+            sqrtvarV : (int16_t)(100*velVar),
+            sqrtvarP : (int16_t)(100*posVar),
+            sqrtvarH : (int16_t)(100*hgtVar),
+            sqrtvarM : (int16_t)(100*magLength),
+            sqrtvarVT : (int16_t)(100*tasVar),
+            tiltErr : (float)tiltError,
+            offsetNorth : (int8_t)(offset.x),
+            offsetEast : (int8_t)(offset.y),
+            faults : (uint8_t)(faultStatus),
+            timeouts : (uint8_t)(timeoutStatus),
+            solution : (uint16_t)(solutionStatus.value),
+            gps : (uint16_t)(gpsStatus.value),
+            primary : (int8_t)primaryIndex
+        };
+        WriteBlock(&pkt9, sizeof(pkt9));
     }
 }
 #endif

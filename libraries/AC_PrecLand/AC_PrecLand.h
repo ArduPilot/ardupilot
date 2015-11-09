@@ -62,7 +62,7 @@ public:
 
     // accessors for logging
     bool enabled() const { return _enabled; }
-    const Vector2f& last_bf_angle_to_target() const { return _bf_angle_to_target; }
+    const Vector2f& last_bf_angle_to_target() const { return _angle_to_target; }
     const Vector2f& last_ef_angle_to_target() const { return _ef_angle_to_target; }
     const Vector3f& last_target_pos_offset() const { return _target_pos_offset; }
 
@@ -72,7 +72,7 @@ public:
 private:
 
     // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-    //  body-frame angles stored in _bf_angle_to_target
+    //  angles stored in _angle_to_target
     //  earth-frame angles stored in _ef_angle_to_target
     //  position estimate is stored in _target_pos
     void calc_angles_and_pos(float alt_above_terrain_cm);
@@ -94,7 +94,7 @@ private:
     float                       _dt;                // time difference (in seconds) between calls from the main program
 
     // output from sensor (stored for logging)
-    Vector2f                    _bf_angle_to_target;// last body-frame angle to target
+    Vector2f                    _angle_to_target;   // last raw sensor angle to target
     Vector2f                    _ef_angle_to_target;// last earth-frame angle to target
 
     // output from controller

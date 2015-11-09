@@ -76,10 +76,7 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
 
         // base the ki values by the sensors maximum drift
-        // rate. The APM2 has gyros which are much less drift
-        // prone than the APM1, so we should have a lower ki,
-        // which will make us less prone to increasing omegaI
-        // incorrectly due to sensor noise
+        // rate.
         _gyro_drift_limit = ins.get_gyro_drift_rate();
 
         // enable centrifugal correction by default
@@ -388,8 +385,20 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastYawResetAngle(float &yawAng) {
-        return false;
+    virtual uint32_t getLastYawResetAngle(float &yawAng) const {
+        return 0;
+    };
+
+    // return the amount of NE position change in metres due to the last reset
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
+        return 0;
+    };
+
+    // return the amount of NE velocity change in metres/sec due to the last reset
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
+        return 0;
     };
 
     // Resets the baro so that it reads zero at the current height

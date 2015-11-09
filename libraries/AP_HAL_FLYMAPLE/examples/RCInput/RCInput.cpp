@@ -2,7 +2,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
@@ -14,8 +13,8 @@ void multiread(AP_HAL::RCInput* in, uint16_t* channels) {
     bool valid;
     valid = in->new_input();
     in->read(channels, 8);
-    hal.console->printf_P(
-            PSTR("multi      read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf(
+            "multi      read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);
@@ -28,8 +27,8 @@ void individualread(AP_HAL::RCInput* in, uint16_t* channels) {
     for (int i = 0; i < 8; i++) {
         channels[i] = in->read(i);
     }
-    hal.console->printf_P(
-            PSTR("individual read %d: %d %d %d %d %d %d %d %d\r\n"),
+    hal.console->printf(
+            "individual read %d: %d %d %d %d %d %d %d %d\r\n",
             (int) valid, 
             channels[0], channels[1], channels[2], channels[3],
             channels[4], channels[5], channels[6], channels[7]);

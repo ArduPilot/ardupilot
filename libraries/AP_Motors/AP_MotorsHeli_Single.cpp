@@ -20,7 +20,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_NESTEDGROUPINFO(AP_MotorsHeli, 0),
     
     // @Param: SV1_POS
@@ -206,18 +206,6 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
             // do nothing
             break;
     }
-}
-
-// allow_arming - check if it's safe to arm
-bool AP_MotorsHeli_Single::allow_arming() const
-{
-    // returns false if main rotor speed is not zero
-    if (_main_rotor.get_rotor_speed() > 0) {
-        return false;
-    }
-
-    // all other cases it is OK to arm
-    return true;
 }
 
 // set_desired_rotor_speed

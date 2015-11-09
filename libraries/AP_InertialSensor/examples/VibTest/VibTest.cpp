@@ -6,7 +6,6 @@
 
 #include <stdarg.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
@@ -58,7 +57,7 @@ static uint32_t gyro_deltat_min[INS_MAX_INSTANCES];
 static uint32_t gyro_deltat_max[INS_MAX_INSTANCES];
 static DataFlash_File DataFlash("/fs/microsd/VIBTEST");
 
-static const struct LogStructure log_structure[] PROGMEM = {
+static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     LOG_EXTRA_STRUCTURES
 };

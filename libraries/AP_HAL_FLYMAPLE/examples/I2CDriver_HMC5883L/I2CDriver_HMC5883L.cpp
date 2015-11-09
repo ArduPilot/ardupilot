@@ -7,7 +7,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
@@ -17,14 +16,14 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #define HMC5883L  0x1E
 
 void setup() {
-    hal.console->printf_P(PSTR("Initializing HMC5883L at address %x\r\n"),
+    hal.console->printf("Initializing HMC5883L at address %x\r\n",
                                 HMC5883L);
 
     uint8_t stat = hal.i2c->writeRegister(HMC5883L,0x02,0x00);
     if (stat == 0) {
-        hal.console->printf_P(PSTR("successful init\r\n"));
+        hal.console->printf("successful init\r\n");
     } else {
-        hal.console->printf_P(PSTR("failed init: return status %d\r\n"),
+        hal.console->printf("failed init: return status %d\r\n",
                 (int)stat);
         for(;;);
     }
@@ -43,9 +42,9 @@ void loop() {
         y |= data[3];
         z = data[4] << 8;
         z |= data[5];
-        hal.console->printf_P(PSTR("x: %d y: %d z: %d \r\n"), x, y, z);
+        hal.console->printf("x: %d y: %d z: %d \r\n", x, y, z);
     } else { 
-        hal.console->printf_P(PSTR("i2c error: status %d\r\n"), (int)stat);
+        hal.console->printf("i2c error: status %d\r\n", (int)stat);
     }
 }
 

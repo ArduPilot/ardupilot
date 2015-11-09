@@ -172,7 +172,7 @@ bool SITLScheduler::system_initializing() {
 void SITLScheduler::system_initialized() {
     if (_initialized) {
         panic(
-            PSTR("PANIC: scheduler system initialized called more than once"));
+            "PANIC: scheduler system initialized called more than once");
     }
     int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
 #ifndef __i386__
@@ -189,14 +189,14 @@ void SITLScheduler::system_initialized() {
 
 void SITLScheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0)
-        hal.uartA->println_P(PSTR("NESTED ATOMIC ERROR"));
+        hal.uartA->println("NESTED ATOMIC ERROR");
     else
         _nested_atomic_ctr--;
 }
 
 void SITLScheduler::reboot(bool hold_in_bootloader)
 {
-    hal.uartA->println_P(PSTR("REBOOT NOT IMPLEMENTED\r\n"));
+    hal.uartA->println("REBOOT NOT IMPLEMENTED\r\n");
 }
 
 void SITLScheduler::_run_timer_procs(bool called_from_isr)
@@ -259,8 +259,15 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
     _in_io_proc = false;
 }
 
-void SITLScheduler::panic(const prog_char_t *errormsg) {
-    hal.console->println_P(errormsg);
+void SITLScheduler::panic(const char *errormsg, ...)
+{
+    va_list ap;
+
+    va_start(ap, errormsg);
+    hal.console->vprintf(errormsg, ap);
+    va_end(ap);
+    hal.console->printf("\n");
+
     for(;;);
 }
 

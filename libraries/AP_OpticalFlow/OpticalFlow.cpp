@@ -1,11 +1,10 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_Progmem/AP_Progmem.h>
 #include "OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo OpticalFlow::var_info[] PROGMEM = {
+const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Param: _ENABLE
     // @DisplayName: Optical flow enable/disable
     // @Description: Setting this to Enabled(1) will enable optical flow. Setting this to Disabled(0) will disable optical flow

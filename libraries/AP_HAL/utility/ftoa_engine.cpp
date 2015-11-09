@@ -28,12 +28,15 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
 #include "ftoa_engine.h"
+
 #include <stdint.h>
 
-#define PGM_INT8(addr) (int8_t)pgm_read_byte((const prog_char *)addr)
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Progmem/AP_Progmem.h>
+
+#define PGM_INT8(addr) (int8_t)pgm_read_byte((const char *)addr)
 #define PGM_UINT32(addr) pgm_read_dword((const uint32_t *)addr)
 
 /*
@@ -44,14 +47,14 @@
  * f = factorTable[i]
  * e = exponentTable[i]
  */
-static const int8_t exponentTable[32] PROGMEM = {
+static const int8_t exponentTable[32] = {
 	-36, -33, -31, -29, -26, -24, -21, -19,
 	-17, -14, -12, -9,  -7, -4, -2,  0,
 	3, 5, 8, 10,  	12, 15,  17, 20,
 	22, 24, 27, 29,  32, 34, 36, 39
 };
 
-static const uint32_t factorTable[32] PROGMEM = {
+static const uint32_t factorTable[32] = {
 	2295887404UL,
 	587747175UL,
 	1504632769UL,

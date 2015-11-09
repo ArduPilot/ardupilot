@@ -5,7 +5,7 @@
 #if CLI_ENABLED == ENABLED
 
 // Command/function table for the setup menu
-static const struct Menu::command setup_menu_commands[] PROGMEM = {
+static const struct Menu::command setup_menu_commands[] = {
 	// command			function called
 	// =======        	===============
 	{"erase",			MENU_FUNC(setup_erase)}
@@ -18,12 +18,12 @@ MENU(setup_menu, "setup", setup_menu_commands);
 int8_t Rover::setup_mode(uint8_t argc, const Menu::arg *argv)
 {
 	// Give the user some guidance
-	cliSerial->printf_P(PSTR("Setup Mode\n"
+	cliSerial->printf("Setup Mode\n"
 						 "\n"
 						 "IMPORTANT: if you have not previously set this system up, use the\n"
 						 "'reset' command to initialize the EEPROM to sensible default values\n"
 						 "and then the 'radio' command to configure for your radio.\n"
-						 "\n"));
+						 "\n");
 
 	// Run the setup menu.  When the menu exits, we will return to the main menu.
 	setup_menu.run();
@@ -34,7 +34,7 @@ int8_t Rover::setup_erase(uint8_t argc, const Menu::arg *argv)
 {
 	int			c;
 
-	cliSerial->printf_P(PSTR("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: "));
+	cliSerial->printf("\nType 'Y' and hit Enter to erase all waypoint and parameter data, any other key to abort: ");
 
 	do {
 		c = cliSerial->read();
@@ -48,9 +48,9 @@ int8_t Rover::setup_erase(uint8_t argc, const Menu::arg *argv)
 
 void Rover::zero_eeprom(void)
 {
-	cliSerial->printf_P(PSTR("\nErasing EEPROM\n"));
+	cliSerial->printf("\nErasing EEPROM\n");
     StorageManager::erase();
-	cliSerial->printf_P(PSTR("done\n"));
+	cliSerial->printf("done\n");
 }
 
 #endif // CLI_ENABLED

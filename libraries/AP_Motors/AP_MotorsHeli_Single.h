@@ -80,9 +80,6 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     void output_test(uint8_t motor_seq, int16_t pwm);
 
-    // allow_arming - returns true if main rotor is spinning and it is ok to arm
-    bool allow_arming() const;
-
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(int16_t desired_speed);
 

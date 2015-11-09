@@ -244,7 +244,6 @@ template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) cons
 template Matrix3<float> Matrix3<float>::transposed(void) const;
 template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Matrix3<double>::zero(void);
 template void Matrix3<double>::rotate(const Vector3<double> &g);
 template void Matrix3<double>::rotateXY(const Vector3<double> &g);
@@ -256,4 +255,3 @@ template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v
 template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
 template Matrix3<double> Matrix3<double>::transposed(void) const;
 template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
-#endif

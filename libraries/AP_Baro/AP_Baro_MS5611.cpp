@@ -51,11 +51,11 @@ void AP_SerialBus_SPI::init()
 {
     _spi = hal.spi->device(_device);
     if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("did not get valid SPI device driver!"));
+        hal.scheduler->panic("did not get valid SPI device driver!");
     }
     _spi_sem = _spi->get_semaphore();
     if (_spi_sem == NULL) {
-        hal.scheduler->panic(PSTR("AP_SerialBus_SPI did not get valid SPI semaphroe!"));
+        hal.scheduler->panic("AP_SerialBus_SPI did not get valid SPI semaphroe!");
     }
     _spi->set_bus_speed(_speed);
 }
@@ -111,7 +111,7 @@ void AP_SerialBus_I2C::init()
 {
     _i2c_sem = _i2c->get_semaphore();
     if (_i2c_sem == NULL) {
-        hal.scheduler->panic(PSTR("AP_SerialBus_I2C did not get valid I2C semaphore!"));
+        hal.scheduler->panic("AP_SerialBus_I2C did not get valid I2C semaphore!");
     }
 }
 
@@ -174,7 +174,7 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     hal.scheduler->suspend_timer_procs();
 
     if (!_serial->sem_take_blocking()){
-        hal.scheduler->panic(PSTR("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init"));
+        hal.scheduler->panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
     }
 
     _serial->write(CMD_MS5611_RESET);
@@ -190,7 +190,7 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
     if (!_check_crc()) {
-        hal.scheduler->panic(PSTR("Bad CRC on MS5611"));
+        hal.scheduler->panic("Bad CRC on MS5611");
     }
 
     // Send a command to read Temp first
@@ -384,10 +384,9 @@ void AP_Baro_MS5611::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
     dT = _D2-(((uint32_t)_C5)<<8);
     TEMP = (dT * _C6)/8388608;
     OFF = _C2 * 65536.0f + (_C4 * dT) / 128;
@@ -424,10 +423,9 @@ void AP_Baro_MS5607::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    // we do the calculations using floating point
-    // as this is much faster on an AVR2560, and also allows
-    // us to take advantage of the averaging of D1 and D1 over
-    // multiple samples, giving us more precision
+    // we do the calculations using floating point allows us to take advantage
+    // of the averaging of D1 and D1 over multiple samples, giving us more
+    // precision
     dT = _D2-(((uint32_t)_C5)<<8);
     TEMP = (dT * _C6)/8388608;
     OFF = _C2 * 131072.0f + (_C4 * dT) / 64;

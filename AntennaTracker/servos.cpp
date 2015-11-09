@@ -248,7 +248,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     }
 
     if (new_slew_dir != slew_dir) {
-        tracker.gcs_send_text_fmt(PSTR("SLEW: %d/%d err=%ld servo=%ld ez=%.3f"),
+        tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "SLEW: %d/%d err=%ld servo=%ld ez=%.3f",
                                   (int)slew_dir, (int)new_slew_dir,
                                   (long)angle_err,
                                   (long)channel_yaw.servo_out,

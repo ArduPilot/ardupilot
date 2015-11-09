@@ -10,14 +10,14 @@ extern const AP_HAL::HAL& hal;
 // MPU6000 accelerometer scaling
 #define MPU6000_ACCEL_SCALE_1G    (GRAVITY_MSS / 4096.0f)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#define MPU6000_DRDY_PIN 70
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
 #define MPU6000_DRDY_PIN BBB_P8_14
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 #define MPU6000_DRDY_PIN RPI_GPIO_24
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+#define MPU6000_DRDY_PIN MINNOW_GPIO_I2S_CLK
 #endif
 #endif
 
@@ -370,7 +370,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
 
     ret = _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, _rx);
     if(ret != 0) {
-        hal.console->printf_P(PSTR("MPU6000: error in i2c read\n"));
+        hal.console->printf("MPU6000: error in i2c read\n");
         n_samples = 0;
         return;
     }
@@ -380,7 +380,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
     if(n_samples > 3) {
-        hal.console->printf_P(PSTR("bytes_read = %d, n_samples %d > 3, dropping samples\n"),
+        hal.console->printf("bytes_read = %d, n_samples %d > 3, dropping samples\n",
                                    bytes_read, n_samples);
 
         /* Too many samples, do a FIFO RESET */
@@ -399,7 +399,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
     }
 
     if(ret != 0) {
-        hal.console->printf_P(PSTR("MPU6000: error in i2c read %d bytes\n"),
+        hal.console->printf("MPU6000: error in i2c read %d bytes\n",
                                    n_samples * MPU6000_SAMPLE_SIZE);
         n_samples = 0;
         return;
@@ -526,7 +526,7 @@ void AP_InertialSensor_MPU6000::start()
     hal.scheduler->suspend_timer_procs();
 
     if (!_bus_sem->take(100)) {
-        hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
+        hal.scheduler->panic("MPU6000: Unable to get semaphore");
     }
 
     // initially run the bus at low speed
@@ -767,10 +767,10 @@ void AP_InertialSensor_MPU6000::_register_write_check(uint8_t reg, uint8_t val)
     _register_write(reg, val);
     readed = _register_read(reg);
     if (readed != val){
-        hal.console->printf_P(PSTR("Values doesn't match; written: %02x; read: %02x "), val, readed);
+        hal.console->printf("Values doesn't match; written: %02x; read: %02x ", val, readed);
     }
 #if MPU6000_DEBUG
-    hal.console->printf_P(PSTR("Values written: %02x; readed: %02x "), val, readed);
+    hal.console->printf("Values written: %02x; readed: %02x ", val, readed);
 #endif
 }
 
@@ -803,10 +803,10 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
     if (!_bus_sem->take(100)) {
-        hal.scheduler->panic(PSTR("MPU6000: Unable to get semaphore"));
+        hal.scheduler->panic("MPU6000: Unable to get semaphore");
     }
 
-    // initially run the bus at low speed (500kHz on APM2)
+    // initially run the bus at low speed
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_LOW);
 
     // Chip reset
@@ -848,7 +848,7 @@ bool AP_InertialSensor_MPU6000::_hardware_init(void)
 #endif
     }
     if (tries == 5) {
-        hal.console->println_P(PSTR("Failed to boot MPU6000 5 times"));
+        hal.console->println("Failed to boot MPU6000 5 times");
         goto fail_tries;
     }
 
@@ -867,11 +867,11 @@ fail_tries:
 // dump all config registers - used for debug
 void AP_InertialSensor_MPU6000::_dump_registers(void)
 {
-    hal.console->println_P(PSTR("MPU6000 registers"));
+    hal.console->println("MPU6000 registers");
     if (_bus_sem->take(100)) {
         for (uint8_t reg=MPUREG_PRODUCT_ID; reg<=108; reg++) {
             uint8_t v = _register_read(reg);
-            hal.console->printf_P(PSTR("%02x:%02x "), (unsigned)reg, (unsigned)v);
+            hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
             if ((reg - (MPUREG_PRODUCT_ID-1)) % 16 == 0) {
                 hal.console->println();
             }
@@ -921,7 +921,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
     assert(buf);
 
     if (_registered) {
-        hal.console->println_P(PSTR("Error: can't passthrough when slave is already configured"));
+        hal.console->println("Error: can't passthrough when slave is already configured");
         return -1;
     }
 
@@ -944,7 +944,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
 int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->println_P(PSTR("Error: can't passthrough when slave is already configured"));
+        hal.console->println("Error: can't passthrough when slave is already configured");
         return -1;
     }
 
@@ -966,7 +966,7 @@ int AP_MPU6000_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 int AP_MPU6000_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->println_P(PSTR("Error: can't read before configuring slave"));
+        hal.console->println("Error: can't read before configuring slave");
         return -1;
     }
 

@@ -22,7 +22,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_PitchController::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
 	// @Param: TCONST
 	// @DisplayName: Pitch Time Constant

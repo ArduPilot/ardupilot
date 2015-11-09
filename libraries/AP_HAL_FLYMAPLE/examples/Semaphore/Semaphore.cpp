@@ -1,24 +1,24 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-/** 
+/*
  * You'll want to use a logic analyzer to watch the effects of this test.
- * On the APM2 its pretty easy to hook up an analyzer to pins A0 through A3.
+ * Define each of the pins below to the pins used during the test on your
+ * board.
  */
-#define PIN_A0 15  /* A0 */
-#define PIN_A1 16  /* A1 */
-#define PIN_A2 17  /* A2 */
-#define PIN_A3 18  /* A3 */
+#define PIN_A0 15
+#define PIN_A1 16
+#define PIN_A2 17
+#define PIN_A3 18
 
 /** 
- * Create an AVRSemaphore for this test.
+ * Create a Semaphore for this test.
  */
 
 AP_HAL::Semaphore *sem;
@@ -53,7 +53,7 @@ void blink_a3() {
 }
 
 void setup_pin(int pin_num) {
-    hal.console->printf_P(PSTR("Setup pin %d\r\n"), pin_num);
+    hal.console->printf("Setup pin %d\r\n", pin_num);
     hal.gpio->pinMode(pin_num,HAL_GPIO_OUTPUT);
     /* Blink so we can see setup on the logic analyzer.*/
     hal.gpio->write(pin_num,1);
@@ -61,24 +61,24 @@ void setup_pin(int pin_num) {
 }
 
 void setup (void) {
-    hal.console->printf_P(PSTR("Starting Semaphore test\r\n"));
+    hal.console->printf("Starting Semaphore test\r\n");
 
     setup_pin(PIN_A0);
     setup_pin(PIN_A1);
     setup_pin(PIN_A2);
     setup_pin(PIN_A3);
     
-    hal.console->printf_P(PSTR("Using SPIDeviceManager builtin Semaphore\r\n"));
+    hal.console->printf("Using SPIDeviceManager builtin Semaphore\r\n");
 
     AP_HAL::SPIDeviceDriver *dataflash = hal.spi->device(AP_HAL::SPIDevice_Dataflash); // not really
 
     if (dataflash == NULL) {
-        hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver!"));
+        hal.scheduler->panic("Error: No SPIDeviceDriver!");
     }
    
     sem = dataflash->get_semaphore();
     if (sem == NULL) {
-        hal.scheduler->panic(PSTR("Error: No SPIDeviceDriver semaphore!"));
+        hal.scheduler->panic("Error: No SPIDeviceDriver semaphore!");
     }
 
     hal.scheduler->register_timer_process(async_blinker);

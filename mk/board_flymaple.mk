@@ -73,14 +73,6 @@ LDFLAGS         =   $(CPUFLAGS) $(OPTFLAGS) $(WARNFLAGS) -mcpu=cortex-m3 -mthumb
            -Xassembler --march=armv7-m -Wall 
 LDFLAGS        +=   -Wl,--gc-sections -Wl,-Map -Wl,$(SKETCHMAP) $(CPULDFLAGS)
 
-# under certain situations with certain avr-gcc versions the --relax flag causes
-# a bug. Give the user a way to disable this flag per-sketch.
-# I know this is a rotten hack but we're really close to sunset on AVR.
-EXCLUDE_RELAX := $(wildcard $(SRCROOT)/norelax.inoflag)
-ifeq ($(EXCLUDE_RELAX),)
-#  LDFLAGS      +=   -Wl,--relax
-endif
-
 LIBS = -lm
 
 ifeq ($(VERBOSE),)

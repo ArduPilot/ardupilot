@@ -15,6 +15,8 @@
 
 #include "Scheduler.h"
 
+#include <stdarg.h>
+
 #define millis libmaple_millis
 #define micros libmaple_micros
 #include "FlymapleWirish.h"
@@ -222,23 +224,30 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
+void FLYMAPLEScheduler::panic(const char *errormsg, ...) {
     /* Suspend timer processes. We still want the timer event to go off
      * to run the _failsafe code, however. */
     // REVISIT: not tested on FLYMAPLE
+    va_list ap;
+
     _timer_suspended = true;
-    hal.console->println_P(errormsg);
+
+    va_start(ap, errormsg);
+    hal.console->vprintf(errormsg, ap);
+    va_end(ap);
+    hal.console->printf("\n");
+
     for(;;);
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
-    hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
+    hal.uartA->println("GOING DOWN FOR A REBOOT\r\n");
     hal.scheduler->delay(100);
     nvic_sys_reset();
 }

@@ -410,16 +410,6 @@ else
     sh /etc/init.d/rc.error           
 fi
 
-if [ -f /bin/uavcan ]
-then
-    if uavcan start 1
-    then
-        echo "started uavcan OK"
-    else
-        echo "failed to start uavcan"
-    fi
-fi
-
 # optional oreo leds
 if oreoled start autoupdate
 then

@@ -5,18 +5,17 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void test_snprintf_P() {
+void test_snprintf() {
     char test[40];
     memset(test,0,40);
-    hal.util->snprintf_P(test, 40, PSTR("hello %d from prog %f %S\r\n"),
-            10, 1.2345, PSTR("progmem"));
+    hal.util->snprintf(test, 40, "hello %d from prog %f %S\r\n",
+            10, 1.2345, "progmem");
     hal.console->write((const uint8_t*)test, strlen(test));
 
 }
@@ -43,9 +42,9 @@ void setup(void)
     
     test_snprintf(); 
     
-    hal.console->println("Test snprintf_P:");
+    hal.console->println("Test snprintf:");
 
-    test_snprintf_P();
+    test_snprintf();
 
     hal.console->println("done");
 }

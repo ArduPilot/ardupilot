@@ -30,7 +30,7 @@ void Rover::set_next_WP(const struct Location& loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP, next_WP)) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Resetting prev_WP"));
+        gcs_send_text(MAV_SEVERITY_NOTICE, "Resetting prev_WP");
         prev_WP = current_loc;
     }
 
@@ -63,7 +63,7 @@ void Rover::init_home()
         return;
     }
 
-	gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("init home"));
+	gcs_send_text(MAV_SEVERITY_INFO, "init home");
 
     ahrs.set_home(gps.location());
 	home_is_set = true;

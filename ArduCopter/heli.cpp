@@ -25,10 +25,10 @@ void Copter::heli_init()
       3.4 they get the same throttle range as in previous versions of
       the code
      */
-    if (!g.heli_servo_rsc.radio_min.load()) {
+    if (!g.heli_servo_rsc.radio_min.configured()) {
         g.heli_servo_rsc.radio_min.set_and_save(g.rc_8.radio_min.get());
     }
-    if (!g.heli_servo_rsc.radio_max.load()) {
+    if (!g.heli_servo_rsc.radio_max.configured()) {
         g.heli_servo_rsc.radio_max.set_and_save(g.rc_8.radio_max.get());
     }
 }

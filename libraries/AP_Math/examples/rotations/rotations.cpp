@@ -23,7 +23,7 @@ static void test_rotation_accuracy(void)
     int16_t i;
     float rot_angle;
 
-    hal.console->println_P(PSTR("\nRotation method accuracy:"));
+    hal.console->println("\nRotation method accuracy:");
 
     for( i=0; i<90; i++ ) {
 
@@ -41,8 +41,8 @@ static void test_rotation_accuracy(void)
         attitude.to_euler(&roll, &pitch, &yaw);
 
         // display results
-        hal.console->printf_P(
-                PSTR("actual angle: %d\tcalculated angle:%4.2f\n"),
+        hal.console->printf(
+                "actual angle: %d\tcalculated angle:%4.2f\n",
                 (int)i,ToDeg(yaw));
     }
 }

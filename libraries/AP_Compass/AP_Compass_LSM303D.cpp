@@ -239,8 +239,8 @@ bool AP_Compass_LSM303D::_data_ready()
 bool AP_Compass_LSM303D::_read_raw()
 {
     if (_register_read(ADDR_CTRL_REG7) != _reg7_expected) {
-        hal.console->println_P(
-                               PSTR("LSM303D _read_data_transaction_accel: _reg7_expected unexpected"));
+        hal.console->println(
+                               "LSM303D _read_data_transaction_accel: _reg7_expected unexpected");
         // reset();
         return false;
     }
@@ -302,7 +302,7 @@ AP_Compass_LSM303D::init()
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
     if (whoami != WHO_I_AM) {
         hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic(PSTR("LSM303D: bad WHOAMI"));
+        hal.scheduler->panic("LSM303D: bad WHOAMI");
     }
 
     uint8_t tries = 0;
@@ -312,19 +312,19 @@ AP_Compass_LSM303D::init()
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_spi_sem->take(100)) {
-                hal.scheduler->panic(PSTR("LSM303D: Unable to get semaphore"));
+                hal.scheduler->panic("LSM303D: Unable to get semaphore");
             }
             if (_data_ready()) {
                 _spi_sem->give();
                 break;
             } else {
-                hal.console->println_P(
-                                       PSTR("LSM303D startup failed: no data ready"));
+                hal.console->println(
+                                       "LSM303D startup failed: no data ready");
             }
             _spi_sem->give();
         }
         if (tries++ > 5) {
-            hal.scheduler->panic(PSTR("PANIC: failed to boot LSM303D 5 times"));
+            hal.scheduler->panic("PANIC: failed to boot LSM303D 5 times");
         }
     } while (1);
 
@@ -356,7 +356,7 @@ uint32_t AP_Compass_LSM303D::get_dev_id()
 bool AP_Compass_LSM303D::_hardware_init(void)
 {
     if (!_spi_sem->take(100)) {
-        hal.scheduler->panic(PSTR("LSM303D: Unable to get semaphore"));
+        hal.scheduler->panic("LSM303D: Unable to get semaphore");
     }
 
     // initially run the bus at low speed

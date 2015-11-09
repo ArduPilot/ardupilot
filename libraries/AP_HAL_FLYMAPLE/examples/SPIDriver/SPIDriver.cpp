@@ -5,7 +5,6 @@
 // Connect MISO and MOSI pins together (12 and 13 on Flymaple)
 
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_FLYMAPLE/AP_HAL_FLYMAPLE.h>
@@ -16,11 +15,11 @@ AP_HAL::SPIDeviceDriver* spidev;
 
 void setup (void) {
     hal.scheduler->delay(5000);
-    hal.console->printf_P(PSTR("Starting AP_HAL_FLYMAPLE::SPIDriver test\r\n"));
+    hal.console->printf("Starting AP_HAL_FLYMAPLE::SPIDriver test\r\n");
 
     spidev = hal.spi->device(AP_HAL::SPIDevice_MPU6000); // Not really MPU6000, just a generic SPU driver
     if (!spidev)
-       hal.scheduler->panic(PSTR("Starting AP_HAL_FLYMAPLE::SPIDriver failed to get spidev\r\n"));
+       hal.scheduler->panic("Starting AP_HAL_FLYMAPLE::SPIDriver failed to get spidev\r\n");
 }
 
 void loop (void) { 

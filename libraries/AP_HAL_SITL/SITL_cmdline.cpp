@@ -47,6 +47,11 @@ void SITL_State::_usage(void)
            "\t--speedup SPEEDUP  set simulation speedup\n"
            "\t--gimbal           enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR set directory for additional files\n"
+           "\t--uartA device     set device string for UARTA\n"
+           "\t--uartB device     set device string for UARTB\n"
+           "\t--uartC device     set device string for UARTC\n"
+           "\t--uartD device     set device string for UARTD\n"
+           "\t--uartE device     set device string for UARTE\n"
         );
 }
 
@@ -102,7 +107,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     enum long_options {
         CMDLINE_CLIENT=0,
         CMDLINE_GIMBAL,
-        CMDLINE_AUTOTESTDIR
+        CMDLINE_AUTOTESTDIR,
+        CMDLINE_UARTA,
+        CMDLINE_UARTB,
+        CMDLINE_UARTC,
+        CMDLINE_UARTD,
+        CMDLINE_UARTE
     };
 
     const struct GetOptLong::option options[] = {
@@ -116,6 +126,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
+        {"uartA",           true,   0, CMDLINE_UARTA},
+        {"uartB",           true,   0, CMDLINE_UARTB},
+        {"uartC",           true,   0, CMDLINE_UARTC},
+        {"uartD",           true,   0, CMDLINE_UARTD},
+        {"uartE",           true,   0, CMDLINE_UARTE},
         {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
@@ -171,6 +186,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
             break;
+
+        case CMDLINE_UARTA:
+        case CMDLINE_UARTB:
+        case CMDLINE_UARTC:
+        case CMDLINE_UARTD:
+        case CMDLINE_UARTE:
+            _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
+            break;
+            
         default:
             _usage();
             exit(1);

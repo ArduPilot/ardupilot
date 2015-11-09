@@ -9,18 +9,8 @@ sitl-arm: HAL_BOARD = HAL_BOARD_SITL
 sitl-arm: TOOLCHAIN = RPI
 sitl-arm: all
 
-apm1: HAL_BOARD = HAL_BOARD_APM1
-apm1: TOOLCHAIN = AVR
-apm1: all
-
-apm1-1280: HAL_BOARD = HAL_BOARD_APM1
-apm1-1280: TOOLCHAIN = AVR
-apm1-1280: all
-apm1-1280: BOARD = mega
-
-apm2: HAL_BOARD = HAL_BOARD_APM2
-apm2: TOOLCHAIN = AVR
-apm2: all
+apm1 apm1-1280 apm2 apm2beta:
+	$(error $@ is deprecated on master branch; use master-AVR)
 
 flymaple: HAL_BOARD = HAL_BOARD_FLYMAPLE
 flymaple: TOOLCHAIN = ARM
@@ -61,6 +51,10 @@ navio: all
 raspilot: HAL_BOARD = HAL_BOARD_LINUX
 raspilot: TOOLCHAIN = RPI
 raspilot: all
+ 
+erlebrain2: HAL_BOARD = HAL_BOARD_LINUX
+erlebrain2: TOOLCHAIN = RPI
+erlebrain2: all
 
 bbbmini: HAL_BOARD = HAL_BOARD_LINUX
 bbbmini: TOOLCHAIN = BBONE
@@ -85,7 +79,7 @@ empty: all
 
 # cope with copter and hil targets
 FRAMES = quad tri hexa y6 octa octa-quad heli single coax obc nologging
-BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio raspilot bbbmini minlure
+BOARDS = apm1 apm2 apm2beta apm1-1280 px4 px4-v1 px4-v2 sitl flymaple linux vrbrain vrbrain-v40 vrbrain-v45 vrbrainv-50 vrbrain-v51 vrbrain-v52 vrubrain-v51 vrubrain-v52 vrhero-v10 erle pxf navio raspilot bbbmini minlure erlebrain2
 
 define frame_template
 $(1)-$(2) : EXTRAFLAGS += "-DFRAME_CONFIG=$(shell echo $(2) | tr a-z A-Z | sed s/-/_/g)_FRAME "
@@ -110,9 +104,6 @@ USED_FRAMES := $(foreach frame,$(FRAMES), $(findstring $(frame), $(MAKECMDGOALS)
 # generate targets of the form BOARD-FRAME and BOARD-FRAME-HIL
 $(foreach board,$(USED_BOARDS),$(eval $(call board_template,$(board))))
 $(foreach board,$(USED_BOARDS),$(foreach frame,$(USED_FRAMES),$(eval $(call frame_template,$(board),$(frame)))))
-
-apm2beta: EXTRAFLAGS += "-DAPM2_BETA_HARDWARE "
-apm2beta: apm2
 
 sitl-mount: EXTRAFLAGS += "-DMOUNT=ENABLED"
 sitl-mount: sitl

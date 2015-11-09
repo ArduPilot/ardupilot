@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 
 // Define tuning parameters
-const AP_Param::GroupInfo SmallEKF::var_info[] PROGMEM = {
+const AP_Param::GroupInfo SmallEKF::var_info[] = {
     AP_GROUPEND
 };
 

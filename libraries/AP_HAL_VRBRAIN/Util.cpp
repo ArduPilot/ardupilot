@@ -132,14 +132,9 @@ bool VRBRAINUtil::get_system_id(char buf[40])
 /**
    how much free memory do we have in bytes.
 */
-uint16_t VRBRAINUtil::available_memory(void)
+uint32_t VRBRAINUtil::available_memory(void)
 {
-    struct mallinfo mem;
-    mem = mallinfo();
-    if (mem.fordblks > 0xFFFF) {
-        return 0xFFFF;
-    }
-    return mem.fordblks;
+    return mallinfo().fordblks;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

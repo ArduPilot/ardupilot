@@ -86,13 +86,11 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
     if (i2c_sem == NULL) {
-        num_errors++;
         return false;
     }
 
     // take i2c bus sempahore (non blocking)
     if (!i2c_sem->take_nonblocking()) {
-        num_errors++;
         return false;
     }
 
@@ -105,20 +103,23 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     // Perform the writing and reading in a single command
     if (PX4FLOW_REG == 0x00) {
         if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_FRAME_SIZE + I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
-            num_errors++;
-            i2c_sem->give();
-            return false;
+            goto fail_transfer;
         }
         memcpy(&f_integral, &(val[I2C_FRAME_SIZE]), I2C_INTEGRAL_FRAME_SIZE);
     }
 
     if (PX4FLOW_REG == 0x16) {
         if (hal.i2c->readRegisters(PX4FLOW_I2C_ADDRESS, 0, I2C_INTEGRAL_FRAME_SIZE, val) != 0) {
-            num_errors++;
-            i2c_sem->give();
-            return false;
+            goto fail_transfer;
         }
         memcpy(&f_integral, val, I2C_INTEGRAL_FRAME_SIZE);
+    }
+
+    i2c_sem->give();
+
+    // reduce error count
+    if (num_errors > 0) {
+        num_errors--;
     }
 
     report->pixel_flow_x_integral = static_cast<float>(f_integral.pixel_flow_x_integral) / 10000.0f;    //convert to radians
@@ -134,14 +135,12 @@ bool AP_OpticalFlow_Linux::read(optical_flow_s* report)
     report->gyro_temperature = f_integral.gyro_temperature;             // Temperature * 100 in centi-degrees Celsius
     report->sensor_id = 0;
 
-    i2c_sem->give();
-
-    // reduce error count
-    if (num_errors > 0) {
-        num_errors--;
-    }
-
     return true;
+
+fail_transfer:
+    num_errors++;
+    i2c_sem->give();
+    return false;
 }
 
 // update - read latest values from sensor and fill in x,y and totals.
@@ -188,7 +187,7 @@ void AP_OpticalFlow_Linux::update(void)
     _update_frontend(state);
 
 #if PX4FLOW_DEBUG
-    hal.console->printf_P(PSTR("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n"),
+    hal.console->printf("PX4FLOW id:%u qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f\n",
             (unsigned)state.device_id,
             (unsigned)state.surface_quality,
             (double)state.flowRate.x,

@@ -10,10 +10,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Relay.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-#define RELAY1_PIN_DEFAULT 47
-#define RELAY2_PIN_DEFAULT -1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define RELAY1_PIN_DEFAULT 13
 #define RELAY2_PIN_DEFAULT -1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -33,7 +30,7 @@
 #define RELAY2_PIN_DEFAULT -1
 #endif
 
-const AP_Param::GroupInfo AP_Relay::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Relay::var_info[] = {
     // @Param: PIN
     // @DisplayName: First Relay Pin
     // @Description: Digital pin number for first relay control. This is the pin used for camera control.

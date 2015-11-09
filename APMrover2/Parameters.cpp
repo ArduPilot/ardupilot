@@ -11,7 +11,7 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.v, {group_info:class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &rover.v, {group_info : class::var_info} }
 
-const AP_Param::Info Rover::var_info[] PROGMEM = {
+const AP_Param::Info Rover::var_info[] = {
 	GSCALAR(format_version,         "FORMAT_VERSION",   1),
 	GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
 
@@ -197,9 +197,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Group: RC9_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_9,                    "RC9_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC10_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_10,                    "RC10_", RC_Channel_aux),
@@ -207,9 +205,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Group: RC11_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_11,                    "RC11_", RC_Channel_aux),
-#endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // @Group: RC12_
     // @Path: ../libraries/RC_Channel/RC_Channel.cpp,../libraries/RC_Channel/RC_Channel_aux.cpp
     GGROUP(rc_12,                    "RC12_", RC_Channel_aux),
@@ -454,17 +450,13 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[1],  gcs1,       "SR1_",     GCS_MAVLINK),
 
-#if MAVLINK_COMM_NUM_BUFFERS > 2
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[2],  gcs2,       "SR2_",     GCS_MAVLINK),
-#endif
 
-#if MAVLINK_COMM_NUM_BUFFERS > 3
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
-#endif
 
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
@@ -551,7 +543,7 @@ const AP_Param::Info Rover::var_info[] PROGMEM = {
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
+const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
     { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
     { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
@@ -566,26 +558,26 @@ const AP_Param::ConversionInfo conversion_table[] PROGMEM = {
 void Rover::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        cliSerial->printf_P(PSTR("Bad var table\n"));        
-        hal.scheduler->panic(PSTR("Bad var table"));
+        cliSerial->printf("Bad var table\n");
+        hal.scheduler->panic("Bad var table");
     }
 
 	if (!g.format_version.load() ||
 	     g.format_version != Parameters::k_format_version) {
 
 		// erase all parameters
-		cliSerial->printf_P(PSTR("Firmware change: erasing EEPROM...\n"));
+		cliSerial->printf("Firmware change: erasing EEPROM...\n");
 		AP_Param::erase_all();
 
 		// save the current format version
 		g.format_version.set_and_save(Parameters::k_format_version);
-		cliSerial->println_P(PSTR("done."));
+		cliSerial->println("done.");
     } else {
 	    unsigned long before = micros();
 	    // Load all auto-loaded EEPROM variables
 	    AP_Param::load_all();
 
-	    cliSerial->printf_P(PSTR("load_all took %luus\n"), micros() - before);
+	    cliSerial->printf("load_all took %luus\n", micros() - before);
 	}
 
     // set a more reasonable default NAVL1_PERIOD for rovers

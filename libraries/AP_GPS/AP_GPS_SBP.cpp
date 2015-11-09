@@ -25,8 +25,6 @@
 #include "AP_GPS_SBP.h"
 #include <DataFlash/DataFlash.h>
 
-#if GPS_RTK_AVAILABLE
-
 extern const AP_HAL::HAL& hal;
 
 #define SBP_DEBUGGING 1
@@ -434,7 +432,7 @@ struct PACKED log_SbpRAW2 {
 };
 
 
-static const struct LogStructure sbp_log_structures[] PROGMEM = {
+static const struct LogStructure sbp_log_structures[] = {
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth),
       "SBPH", "QIII",   "TimeUS,CrcError,LastInject,IARhyp" },
     { LOG_MSG_SBPRAW1, sizeof(log_SbpRAW1),
@@ -518,5 +516,3 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 
 
 #endif // SBP_HW_LOGGING
-
-#endif // GPS_RTK_AVAILABLE

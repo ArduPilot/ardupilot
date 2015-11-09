@@ -8,7 +8,7 @@
 // and stores them in Flash memory, not RAM.
 // User enters the string in the console to call the functions on the right.
 // See class Menu in AP_Coommon for implementation details
-static const struct Menu::command test_menu_commands[] PROGMEM = {
+static const struct Menu::command test_menu_commands[] = {
 #if HIL_MODE == HIL_MODE_DISABLED
     {"baro",                MENU_FUNC(test_baro)},
 #endif
@@ -44,9 +44,9 @@ int8_t Copter::test_baro(uint8_t argc, const Menu::arg *argv)
         read_barometer();
 
         if (!barometer.healthy()) {
-            cliSerial->println_P(PSTR("not healthy"));
+            cliSerial->println("not healthy");
         } else {
-            cliSerial->printf_P(PSTR("Alt: %0.2fm, Raw: %f Temperature: %.1f\n"),
+            cliSerial->printf("Alt: %0.2fm, Raw: %f Temperature: %.1f\n",
                                 (double)(baro_alt / 100.0f),
                                 (double)barometer.get_pressure(),
                                 (double)barometer.get_temperature());
@@ -65,13 +65,13 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     uint8_t medium_loopCounter = 0;
 
     if (!g.compass_enabled) {
-        cliSerial->printf_P(PSTR("Compass: "));
+        cliSerial->printf("Compass: ");
         print_enabled(false);
         return (0);
     }
 
     if (!compass.init()) {
-        cliSerial->println_P(PSTR("Compass initialisation failed!"));
+        cliSerial->println("Compass initialisation failed!");
         return 0;
     }
 
@@ -118,7 +118,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                 if (compass.healthy()) {
                     const Vector3f &mag_ofs = compass.get_offsets();
                     const Vector3f &mag = compass.get_field();
-                    cliSerial->printf_P(PSTR("Heading: %ld, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n"),
+                    cliSerial->printf("Heading: %d, XYZ: %.0f, %.0f, %.0f,\tXYZoff: %6.2f, %6.2f, %6.2f\n",
                                         (wrap_360_cd(ToDeg(heading) * 100)) /100,
                                         (double)mag.x,
                                         (double)mag.y,
@@ -127,7 +127,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
                                         (double)mag_ofs.y,
                                         (double)mag_ofs.z);
                 } else {
-                    cliSerial->println_P(PSTR("compass not healthy"));
+                    cliSerial->println("compass not healthy");
                 }
                 counter=0;
             }
@@ -139,7 +139,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
 
     // save offsets. This allows you to get sane offset values using
     // the CLI before you go flying.
-    cliSerial->println_P(PSTR("saving offsets"));
+    cliSerial->println("saving offsets");
     compass.save_offsets();
     return (0);
 }
@@ -148,12 +148,12 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
 {
     Vector3f gyro, accel;
     print_hit_enter();
-    cliSerial->printf_P(PSTR("INS\n"));
+    cliSerial->printf("INS\n");
     delay(1000);
 
     ahrs.init();
     ins.init(ins_sample_rate);
-    cliSerial->printf_P(PSTR("...done\n"));
+    cliSerial->printf("...done\n");
 
     delay(50);
 
@@ -164,7 +164,7 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
 
         float test = accel.length() / GRAVITY_MSS;
 
-        cliSerial->printf_P(PSTR("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %7.4f \n"),
+        cliSerial->printf("a %7.4f %7.4f %7.4f g %7.4f %7.4f %7.4f t %7.4f \n",
                 (double)accel.x, (double)accel.y, (double)accel.z,
             (double)gyro.x, (double)gyro.y, (double)gyro.z,
             (double)test);
@@ -180,14 +180,14 @@ int8_t Copter::test_optflow(uint8_t argc, const Menu::arg *argv)
 {
 #if OPTFLOW == ENABLED
     if(optflow.enabled()) {
-        cliSerial->printf_P(PSTR("dev id: %d\t"),(int)optflow.device_id());
+        cliSerial->printf("dev id: %d\t",(int)optflow.device_id());
         print_hit_enter();
 
         while(1) {
             delay(200);
             optflow.update();
             const Vector2f& flowRate = optflow.flowRate();
-            cliSerial->printf_P(PSTR("flowX : %7.4f\t flowY : %7.4f\t flow qual : %d\n"),
+            cliSerial->printf("flowX : %7.4f\t flowY : %7.4f\t flow qual : %d\n",
                             (double)flowRate.x,
                             (double)flowRate.y,
                             (int)optflow.quality());
@@ -197,7 +197,7 @@ int8_t Copter::test_optflow(uint8_t argc, const Menu::arg *argv)
             }
         }
     } else {
-        cliSerial->printf_P(PSTR("OptFlow: "));
+        cliSerial->printf("OptFlow: ");
         print_enabled(false);
     }
     return (0);
@@ -212,14 +212,14 @@ int8_t Copter::test_relay(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     while(1) {
-        cliSerial->printf_P(PSTR("Relay on\n"));
+        cliSerial->printf("Relay on\n");
         relay.on(0);
         delay(3000);
         if(cliSerial->available() > 0) {
             return (0);
         }
 
-        cliSerial->printf_P(PSTR("Relay off\n"));
+        cliSerial->printf("Relay off\n");
         relay.off(0);
         delay(3000);
         if(cliSerial->available() > 0) {
@@ -248,15 +248,15 @@ int8_t Copter::test_sonar(uint8_t argc, const Menu::arg *argv)
 #if CONFIG_SONAR == ENABLED
 	sonar.init();
 
-    cliSerial->printf_P(PSTR("RangeFinder: %d devices detected\n"), sonar.num_sensors());
+    cliSerial->printf("RangeFinder: %d devices detected\n", sonar.num_sensors());
 
     print_hit_enter();
     while(1) {
         delay(100);
         sonar.update();
 
-        cliSerial->printf_P(PSTR("Primary: status %d distance_cm %d \n"), (int)sonar.status(), sonar.distance_cm());
-        cliSerial->printf_P(PSTR("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n"),
+        cliSerial->printf("Primary: status %d distance_cm %d \n", (int)sonar.status(), sonar.distance_cm());
+        cliSerial->printf("All: device_0 type %d status %d distance_cm %d, device_1 type %d status %d distance_cm %d\n",
         (int)sonar._type[0], (int)sonar.status(0), sonar.distance_cm(0), (int)sonar._type[1], (int)sonar.status(1), sonar.distance_cm(1));
 
         if(cliSerial->available() > 0) {
@@ -270,7 +270,7 @@ int8_t Copter::test_sonar(uint8_t argc, const Menu::arg *argv)
 
 void Copter::print_hit_enter()
 {
-    cliSerial->printf_P(PSTR("Hit Enter to exit.\n\n"));
+    cliSerial->printf("Hit Enter to exit.\n\n");
 }
 
 #endif // CLI_ENABLED

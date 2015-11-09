@@ -855,13 +855,13 @@ void DataFlash_File::LogReadProcess(const uint16_t list_entry,
  */
 void DataFlash_File::DumpPageInfo(AP_HAL::BetterStream *port)
 {
-    port->printf_P(PSTR("DataFlash: num_logs=%u\n"), 
+    port->printf("DataFlash: num_logs=%u\n", 
                    (unsigned)get_num_logs());    
 }
 
 void DataFlash_File::ShowDeviceInfo(AP_HAL::BetterStream *port)
 {
-    port->printf_P(PSTR("DataFlash logs stored in %s\n"), 
+    port->printf("DataFlash logs stored in %s\n", 
                    _log_directory);
 }
 
@@ -874,10 +874,10 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
     uint16_t num_logs = get_num_logs();
 
     if (num_logs == 0) {
-        port->printf_P(PSTR("\nNo logs\n\n"));
+        port->printf("\nNo logs\n\n");
         return;
     }
-    port->printf_P(PSTR("\n%u logs\n"), (unsigned)num_logs);
+    port->printf("\n%u logs\n", (unsigned)num_logs);
 
     for (uint16_t i=1; i<=num_logs; i++) {
         uint16_t log_num = _log_num_from_list_entry(i);
@@ -886,7 +886,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
                 struct stat st;
                 if (stat(filename, &st) == 0) {
                     struct tm *tm = gmtime(&st.st_mtime);
-                    port->printf_P(PSTR("Log %u in %s of size %u %u/%u/%u %u:%u\n"),
+                    port->printf("Log %u in %s of size %u %u/%u/%u %u:%u\n",
                                    (unsigned)i,
                                    filename,
                                    (unsigned)st.st_size,

@@ -49,7 +49,7 @@ Rover rover;
   with how often they should be called (in 20ms units) and the maximum
   time they are expected to take (in microseconds)
 */
-const AP_Scheduler::Task Rover::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_radio,              1,   1000),
     SCHED_TASK(ahrs_update,             1,   6400),
     SCHED_TASK(read_sonars,             1,   2000),
@@ -302,7 +302,7 @@ void Rover::one_second_loop(void)
     // write perf data every 20s
     if (counter % 10 == 0) {
         if (scheduler.debug() != 0) {
-            hal.console->printf_P(PSTR("G_Dt_max=%lu\n"), (unsigned long)G_Dt_max);
+            hal.console->printf("G_Dt_max=%lu\n", (unsigned long)G_Dt_max);
         }
         if (should_log(MASK_LOG_PM))
             Log_Write_Performance();

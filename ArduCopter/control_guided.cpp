@@ -113,6 +113,7 @@ void Copter::guided_posvel_control_start()
     // set speed and acceleration from wpnav's speed and acceleration
     pos_control.set_speed_xy(wp_nav.get_speed_xy());
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+    pos_control.set_jerk_xy_to_default();
 
     const Vector3f& curr_pos = inertial_nav.get_position();
     const Vector3f& curr_vel = inertial_nav.get_velocity();
@@ -139,8 +140,9 @@ void Copter::guided_angle_control_start()
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
     pos_control.set_accel_z(wp_nav.get_accel_z());
 
-    // initialise altitude target to stopping point
-    pos_control.set_target_to_stopping_point_z();
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
@@ -493,7 +495,7 @@ void Copter::guided_angle_control_run()
     attitude_control.angle_ef_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
 
     // call position controller
-    pos_control.set_alt_target_from_climb_rate(climb_rate_cms, G_Dt, false);
+    pos_control.set_alt_target_from_climb_rate_ff(climb_rate_cms, G_Dt, false);
     pos_control.update_z_controller();
 }
 

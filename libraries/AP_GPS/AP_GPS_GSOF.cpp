@@ -23,8 +23,6 @@
 #include "AP_GPS_GSOF.h"
 #include <DataFlash/DataFlash.h>
 
-#if GPS_RTK_AVAILABLE
-
 extern const AP_HAL::HAL& hal;
 
 #define gsof_DEBUGGING 0
@@ -353,4 +351,3 @@ AP_GPS_GSOF::inject_data(uint8_t *data, uint8_t len)
         Debug("GSOF: Not enough TXSPACE");
     }
 }
-#endif // GPS_RTK_AVAILABLE

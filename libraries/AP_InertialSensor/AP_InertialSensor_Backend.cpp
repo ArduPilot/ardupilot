@@ -118,9 +118,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     dt = 1.0f / _imu._accel_raw_sample_rates[instance];
 
-#if INS_VIBRATION_CHECK
     _imu.calc_vibration_and_clipping(instance, accel, dt);
-#endif
 
     // delta velocity
     _imu._delta_velocity_acc[instance] += accel * dt;

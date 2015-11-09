@@ -4,7 +4,7 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup(void) {
-    hal.console->println_P(PSTR("Starting Printf test"));
+    hal.console->println("Starting Printf test");
 }
 
 static const struct {

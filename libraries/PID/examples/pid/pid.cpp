@@ -31,8 +31,8 @@ void setup()
     pid.kD(0);
     pid.imax(0);
     pid.load_gains();
-    hal.console->printf_P(
-            PSTR("P %f  I %f  D %f  imax %f\n"),
+    hal.console->printf(
+            "P %f  I %f  D %f  imax %f\n",
             pid.kP(), pid.kI(), pid.kD(), pid.imax());
 }
 

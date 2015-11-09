@@ -127,7 +127,6 @@ void location_update(struct Location &loc, float bearing, float distance)
 
 /*
  *  extrapolate latitude/longitude given distances north and east
- *  This function costs about 80 usec on an AVR2560
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
@@ -242,12 +241,10 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
     // print output including the minus sign
     if( lat_or_lon < 0 ) {
-        s->printf_P(PSTR("-"));
+        s->printf("-");
     }
-    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
@@ -350,6 +347,3 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
 }
-
-#endif
-

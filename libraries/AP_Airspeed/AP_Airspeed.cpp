@@ -26,12 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
- #include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
- #define ARSPD_DEFAULT_PIN 64
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #define ARSPD_DEFAULT_PIN 0
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
  #define ARSPD_DEFAULT_PIN 1
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
  #include <sys/stat.h>
@@ -67,7 +62,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_Airspeed::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Airspeed enable
@@ -195,7 +190,7 @@ void AP_Airspeed::calibrate(bool in_startup)
     }
     if (count == 0) {
         // unhealthy sensor
-        hal.console->println_P(PSTR("Airspeed sensor unhealthy"));
+        hal.console->println("Airspeed sensor unhealthy");
         _offset.set(0);
         return;
     }

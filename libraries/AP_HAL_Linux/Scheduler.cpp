@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_TONEALARM_PRIORITY    11
 #define APM_LINUX_IO_PRIORITY           10
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
 #define APM_LINUX_UART_PERIOD           10000
 #define APM_LINUX_RCIN_PERIOD           500
 #define APM_LINUX_TONEALARM_PERIOD      10000
@@ -38,7 +38,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_RCIN_PERIOD           10000
 #define APM_LINUX_TONEALARM_PERIOD      10000
 #define APM_LINUX_IO_PERIOD             20000
-#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
 
 
 
@@ -69,7 +69,7 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     if (r != 0) {
         hal.console->printf("Error creating thread '%s': %s\n",
                             name, strerror(r));
-        panic(PSTR("Failed to create thread"));
+        panic("Failed to create thread");
     }
     pthread_attr_destroy(&attr);
 
@@ -407,10 +407,15 @@ void *Scheduler::_io_thread(void* arg)
     return NULL;
 }
 
-void Scheduler::panic(const prog_char_t *errormsg)
+void Scheduler::panic(const char *errormsg, ...)
 {
-    write(1, errormsg, strlen(errormsg));
+    va_list ap;
+
+    va_start(ap, errormsg);
+    vdprintf(1, errormsg, ap);
+    va_end(ap);
     write(1, "\n", 1);
+
     hal.rcin->deinit();
     hal.scheduler->delay_microseconds(10000);
     exit(1);

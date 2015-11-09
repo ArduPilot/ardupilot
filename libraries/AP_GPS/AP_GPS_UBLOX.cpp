@@ -79,7 +79,7 @@ AP_GPS_UBLOX::send_next_rate_update(void)
         return;
     }
 
-    //hal.console->printf_P(PSTR("next_rate: %u\n"), (unsigned)rate_update_step);
+    //hal.console->printf("next_rate: %u\n", (unsigned)rate_update_step);
 
     switch (rate_update_step++) {
     case 0:

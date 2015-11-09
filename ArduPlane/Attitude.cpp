@@ -558,6 +558,12 @@ void Plane::flap_slew_limit(int8_t &last_value, int8_t &new_value)
 */
 bool Plane::suppress_throttle(void)
 {
+    if (auto_throttle_mode && parachute.released()) {
+        // throttle always suppressed in auto-throttle modes after parachute release
+        throttle_suppressed = true;
+        return true;
+    }
+    
     if (!throttle_suppressed) {
         // we've previously met a condition for unsupressing the throttle
         return false;
@@ -603,7 +609,7 @@ bool Plane::suppress_throttle(void)
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
-        gcs_send_text_fmt(PSTR("Throttle enabled - altitude %.2f"), 
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled - altitude %.2f",
                           (double)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
@@ -614,7 +620,7 @@ bool Plane::suppress_throttle(void)
         // groundspeed with bad GPS reception
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
-            gcs_send_text_fmt(PSTR("Throttle enabled - speed %.2f airspeed %.2f"), 
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled - speed %.2f airspeed %.2f",
                               (double)gps.ground_speed(),
                               (double)airspeed.get_airspeed());
             throttle_suppressed = false;
@@ -1055,7 +1061,7 @@ void Plane::set_servos(void)
 void Plane::demo_servos(uint8_t i) 
 {
     while(i > 0) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING,PSTR("Demo Servos!"));
+        gcs_send_text(MAV_SEVERITY_INFO,"Demo Servos!");
         demoing_servos = true;
         servo_write(1, 1400);
         hal.scheduler->delay(400);

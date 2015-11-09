@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_Baro::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // NOTE: Index numbers 0 and 1 were for the old integer
     // ground temperature and pressure
 
@@ -104,8 +104,8 @@ void AP_Baro::calibrate()
         do {
             update();
             if (hal.scheduler->millis() - tstart > 500) {
-                hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [2]\r\n"));
+                hal.scheduler->panic("PANIC: AP_Baro::read unsuccessful "
+                        "for more than 500ms in AP_Baro::calibrate [2]\r\n");
             }
             hal.scheduler->delay(10);
         } while (!healthy());
@@ -124,8 +124,8 @@ void AP_Baro::calibrate()
         do {
             update();
             if (hal.scheduler->millis() - tstart > 500) {
-                hal.scheduler->panic(PSTR("PANIC: AP_Baro::read unsuccessful "
-                        "for more than 500ms in AP_Baro::calibrate [3]\r\n"));
+                hal.scheduler->panic("PANIC: AP_Baro::read unsuccessful "
+                        "for more than 500ms in AP_Baro::calibrate [3]\r\n");
             }
         } while (!healthy());
         for (uint8_t i=0; i<_num_sensors; i++) {
@@ -152,7 +152,7 @@ void AP_Baro::calibrate()
             return;
         }
     }
-    hal.scheduler->panic(PSTR("AP_Baro: all sensors uncalibrated"));
+    hal.scheduler->panic("AP_Baro: all sensors uncalibrated");
 }
 
 /*
@@ -168,6 +168,14 @@ void AP_Baro::update_calibration()
         }
         float last_temperature = sensors[i].ground_temperature;
         sensors[i].ground_temperature.set(get_calibration_temperature(i));
+
+        // don't notify the GCS too rapidly or we flood the link
+        uint32_t now = hal.scheduler->millis();
+        if (now - _last_notify_ms > 10000) {
+            sensors[i].ground_pressure.notify();
+            sensors[i].ground_temperature.notify();
+            _last_notify_ms = now;
+        }
         if (fabsf(last_temperature - sensors[i].ground_temperature) > 3) {
             // reset _EAS2TAS to force it to recalculate. This happens
             // when a digital airspeed sensor comes online
@@ -182,18 +190,12 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
 {
     float ret;
     float temp    = get_ground_temperature() + 273.15f;
-#if HAL_CPU_CLASS <= HAL_CPU_CLASS_16
-    // on slower CPUs use a less exact, but faster, calculation
-    float scaling = base_pressure / pressure;
-    ret = logf(scaling) * temp * 29.271267f;
-#else
-    // on faster CPUs use a more exact calculation
     float scaling = pressure / base_pressure;
-    
-    // This is an exact calculation that is within +-2.5m of the standard atmosphere tables
-    // in the troposphere (up to 11,000 m amsl).
-	ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
-#endif
+
+    // This is an exact calculation that is within +-2.5m of the standard
+    // atmosphere tables in the troposphere (up to 11,000 m amsl).
+    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
+
     return ret;
 }
 
@@ -322,7 +324,7 @@ void AP_Baro::init(void)
     }
 #endif
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
-        hal.scheduler->panic(PSTR("Baro: unable to initialise driver"));
+        hal.scheduler->panic("Baro: unable to initialise driver");
     }
 }
 
@@ -396,7 +398,7 @@ void AP_Baro::accumulate(void)
 uint8_t AP_Baro::register_sensor(void)
 {
     if (_num_sensors >= BARO_MAX_INSTANCES) {
-        hal.scheduler->panic(PSTR("Too many barometers"));
+        hal.scheduler->panic("Too many barometers");
     }
     return _num_sensors++;
 }

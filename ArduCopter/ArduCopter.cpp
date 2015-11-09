@@ -98,7 +98,7 @@
   4000 = 0.1hz
   
  */
-const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,                4,    130),
     SCHED_TASK(throttle_loop,          8,     75),
     SCHED_TASK(update_GPS,             8,    200),
@@ -108,6 +108,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     SCHED_TASK(update_batt_compass,   40,    120),
     SCHED_TASK(read_aux_switches,     40,     50),
     SCHED_TASK(arm_motors_check,      40,     50),
+    SCHED_TASK(auto_disarm_check,     40,     50),
     SCHED_TASK(auto_trim,             40,     75),
     SCHED_TASK(update_altitude,       40,    140),
     SCHED_TASK(run_nav_updates,        8,    100),
@@ -206,7 +207,7 @@ void Copter::perf_update(void)
     if (should_log(MASK_LOG_PM))
         Log_Write_Performance();
     if (scheduler.debug()) {
-        gcs_send_text_fmt(PSTR("PERF: %u/%u %lu %lu\n"),
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu\n",
                           (unsigned)perf_info_get_num_long_running(),
                           (unsigned)perf_info_get_num_loops(),
                           (unsigned long)perf_info_get_max_time(),
@@ -474,9 +475,6 @@ void Copter::one_hz_loop()
     }else{
         pre_arm_checks(false);
     }
-
-    // auto disarm checks
-    auto_disarm_check();
 
     if (!motors.armed()) {
         // make it possible to change ahrs orientation at runtime during initial config

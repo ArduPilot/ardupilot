@@ -12,7 +12,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Limit_Geofence::var_info[] = {
     // @Param: FNC_ON
     // @DisplayName: Enable Geofence
     // @Description: Setting this to Enabled(1) will enable the geofence. Setting this to Disabled(0) will disable the geofence

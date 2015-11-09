@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 
-const AP_Param::GroupInfo AP_MotorsSingle::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_MotorsSingle::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_MotorsMulticopter, 0),
 

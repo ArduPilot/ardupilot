@@ -19,9 +19,10 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
+#include "StorageManager.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "StorageManager.h"
+#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,11 +33,10 @@ extern const AP_HAL::HAL& hal;
 
 /*
   layout for fixed wing and rovers
-  On APM2 this gives 167 waypoints, 10 rally points and 20 fence points
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] PROGMEM = {
+const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     1280}, // 0x500 parameter bytes
     { StorageMission, 1280,  2506},
     { StorageRally,   3786,   150}, // 10 rally points
@@ -58,12 +58,11 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
 
 
 /*
-  layout for copter. 
-  On APM2 this gives 161 waypoints, 6 fence points and 6 rally points
+  layout for copter.
   On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
   On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] PROGMEM = {
+const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     1536}, // 0x600 param bytes
     { StorageMission, 1536,  2422},
     { StorageRally,   3958,    90}, // 6 rally points

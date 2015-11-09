@@ -12,11 +12,7 @@
 
 // 20 routes should be enough for now. This may need to increase as
 // we make more extensive use of MAVLink forwarding
-#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define MAVLINK_MAX_ROUTES 20
-#else
-#define MAVLINK_MAX_ROUTES 5
-#endif
 
 /*
   object to handle MAVLink packet routing

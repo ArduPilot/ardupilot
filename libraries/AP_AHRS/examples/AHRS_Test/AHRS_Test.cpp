@@ -14,10 +14,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 // INS and Baro declaration
 AP_InertialSensor ins;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
-
 Compass compass;
 
 AP_GPS gps;
@@ -34,13 +30,6 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
-
-#ifdef APM2_HARDWARE
-    // we need to stop the barometer from holding the SPI bus
-    hal.gpio->pinMode(40, HAL_HAL_GPIO_OUTPUT);
-    hal.gpio->write(40, HIGH);
-#endif
-
     ins.init(AP_InertialSensor::RATE_100HZ);
     ahrs.init();
     serial_manager.init();
@@ -82,9 +71,9 @@ void loop(void)
 
     if (now - last_print >= 100000 /* 100ms : 10hz */) {
         Vector3f drift  = ahrs.get_gyro_drift();
-        hal.console->printf_P(
-                PSTR("r:%4.1f  p:%4.1f y:%4.1f "
-                    "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n"),
+        hal.console->printf(
+                "r:%4.1f  p:%4.1f y:%4.1f "
+                    "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
                         ToDeg(ahrs.roll),
                         ToDeg(ahrs.pitch),
                         ToDeg(ahrs.yaw),

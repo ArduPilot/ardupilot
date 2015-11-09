@@ -610,7 +610,7 @@ bool Copter::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(PSTR("Reached Command #%i"),cmd.index);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -692,7 +692,7 @@ bool Copter::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(PSTR("Reached Command #%i"),cmd.index);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Command #%i",cmd.index);
         return true;
     }else{
         return false;

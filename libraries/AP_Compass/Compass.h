@@ -29,9 +29,7 @@
 #define AP_COMPASS_MOT_COMP_CURRENT     0x02
 
 // setup default mag orientation for some board types
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-# define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
 # define MAG_BOARD_ORIENTATION ROTATION_ROLL_180
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 # define MAG_BOARD_ORIENTATION ROTATION_YAW_90
@@ -295,6 +293,7 @@ public:
 
     // return last update time in microseconds
     uint32_t last_update_usec(void) const { return _state[get_primary()].last_update_usec; }
+    uint32_t last_update_usec(uint8_t i) const { return _state[i].last_update_usec; }
 
     static const struct AP_Param::GroupInfo var_info[];
 

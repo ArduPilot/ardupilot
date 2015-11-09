@@ -13,7 +13,7 @@ void setup(void)
     /*
       init Storage API
      */
-    hal.console->printf_P(PSTR("Starting AP_HAL::Storage test\r\n"));
+    hal.console->printf("Starting AP_HAL::Storage test\r\n");
     st->init(NULL);
 
     /*
@@ -33,7 +33,7 @@ void setup(void)
     /*
       print XORed result
      */
-    hal.console->printf_P(PSTR("XORed ememory: %u\r\n"), (unsigned) XOR_res);
+    hal.console->printf("XORed ememory: %u\r\n", (unsigned) XOR_res);
 }
 
 // In main loop do nothing

@@ -174,7 +174,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
         EKF2.getRotationBodyToNED(_dcm_matrix);
         if (active_EKF_type() == EKF_TYPE2) {
             Vector3f eulers;
-            EKF2.getEulerAngles(eulers);
+            EKF2.getEulerAngles(-1,eulers);
             roll  = eulers.x;
             pitch = eulers.y;
             yaw   = eulers.z;
@@ -183,7 +183,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             update_trig();
 
             // keep _gyro_bias for get_gyro_drift()
-            EKF2.getGyroBias(_gyro_bias);
+            EKF2.getGyroBias(-1,_gyro_bias);
             _gyro_bias = -_gyro_bias;
 
             // calculate corrected gryo estimate for get_gyro()
@@ -201,7 +201,7 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             _gyro_estimate += _gyro_bias;
 
             float abias;
-            EKF2.getAccelZBias(abias);
+            EKF2.getAccelZBias(-1,abias);
 
             // This EKF uses the primary IMU
             // Eventually we will run a separate instance of the EKF for each IMU and do the selection and blending of EKF outputs upstream
@@ -277,7 +277,7 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         }
         break;
     case EKF_TYPE2:
-        if (EKF2.getLLH(loc) && EKF2.getPosNED(ned_pos)) {
+        if (EKF2.getLLH(loc) && EKF2.getPosNED(-1,ned_pos)) {
             // fixup altitude using relative position from AHRS home, not
             // EKF origin
             loc.alt = get_home().alt - ned_pos.z*100;
@@ -316,7 +316,7 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void)
         break;
 
     case EKF_TYPE2:
-        EKF2.getWind(wind);
+        EKF2.getWind(-1,wind);
         break;
     }
     return wind;
@@ -395,7 +395,7 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
         return Vector2f(vec.x, vec.y);
 
     case EKF_TYPE2:
-        EKF2.getVelNED(vec);
+        EKF2.getVelNED(-1,vec);
         return Vector2f(vec.x, vec.y);
     }
 }
@@ -425,7 +425,7 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
         return true;
 
     case EKF_TYPE2:
-        EKF2.getVelNED(vec);
+        EKF2.getVelNED(-1,vec);
         return true;
     }
 }
@@ -444,7 +444,7 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity)
         return true;
 
     case EKF_TYPE2:
-        velocity = EKF2.getPosDownDerivative();
+        velocity = EKF2.getPosDownDerivative(-1);
         return true;
     }
 }
@@ -478,7 +478,7 @@ bool AP_AHRS_NavEKF::get_relative_position_NED(Vector3f &vec) const
         return EKF1.getPosNED(vec);
 
     case EKF_TYPE2:
-        return EKF2.getPosNED(vec);
+        return EKF2.getPosNED(-1,vec);
     }
 }
 
@@ -531,7 +531,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         }
         if (always_use_EKF()) {
             uint8_t ekf2_faults;
-            EKF2.getFilterFaults(ekf2_faults);
+            EKF2.getFilterFaults(-1,ekf2_faults);
             if (ekf2_faults == 0) {
                 ret = EKF_TYPE2;
             }
@@ -549,7 +549,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         if (ret == EKF_TYPE1) {
             EKF1.getFilterStatus(filt_state);
         } else {
-            EKF2.getFilterStatus(filt_state);
+            EKF2.getFilterStatus(-1,filt_state);
         }
         if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS and we have a 3D lock, then
@@ -654,7 +654,7 @@ bool AP_AHRS_NavEKF::get_filter_status(nav_filter_status &status) const
         return true;
 
     case EKF_TYPE2:
-        EKF2.getFilterStatus(status);
+        EKF2.getFilterStatus(-1,status);
         return true;
     }
 
@@ -721,15 +721,14 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
     case 1:
         return EKF1.prearm_failure_reason();
     case 2:
-        // not implemented yet
-        return nullptr;
+        return EKF2.prearm_failure_reason();
     }
     return nullptr;
 }
 
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
+uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng) const
 {
     switch (ekf_type()) {
     case 1:
@@ -737,7 +736,33 @@ uint32_t AP_AHRS_NavEKF::getLastYawResetAngle(float &yawAng)
     case 2:
         return EKF2.getLastYawResetAngle(yawAng);
     }
-    return false;
+    return 0;
+}
+
+// return the amount of NE position change in metres due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastPosNorthEastReset(Vector2f &pos) const
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastPosNorthEastReset(pos);
+    case 2:
+        return EKF2.getLastPosNorthEastReset(pos);
+    }
+    return 0;
+}
+
+// return the amount of NE velocity change in metres/sec due to the last reset
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t AP_AHRS_NavEKF::getLastVelNorthEastReset(Vector2f &vel) const
+{
+    switch (ekf_type()) {
+    case 1:
+        return EKF1.getLastVelNorthEastReset(vel);
+    case 2:
+        return EKF2.getLastVelNorthEastReset(vel);
+    }
+    return 0;
 }
 
 // Resets the baro so that it reads zero at the current height
@@ -853,7 +878,7 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
 
     case EKF_TYPE2:
         // use EKF to get variance
-        EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+        EKF2.getVariances(-1,velVar, posVar, hgtVar, magVar, tasVar, offset);
         return true;
     }
 }

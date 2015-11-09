@@ -54,7 +54,6 @@
  *
  */
 
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -91,8 +90,8 @@ void AP_ADC_ADS7844::read(void)
     if (!got) { 
         semfail_ctr++;
         if (semfail_ctr > 100) {
-            hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem "
-                        "100 times in AP_ADC_ADS7844::read"));
+            hal.scheduler->panic("PANIC: failed to take _spi_sem "
+                        "100 times in AP_ADC_ADS7844::read");
         }
         return;
     } else {
@@ -138,20 +137,20 @@ void AP_ADC_ADS7844::Init()
     hal.scheduler->suspend_timer_procs();
     _spi = hal.spi->device(AP_HAL::SPIDevice_ADS7844);
     if (_spi == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device "
-                    "driver\n"));
+        hal.scheduler->panic("PANIC: AP_ADC_ADS7844 missing SPI device "
+                    "driver\n");
     }
 
     _spi_sem = _spi->get_semaphore();
 
     if (_spi_sem == NULL) {
-        hal.scheduler->panic(PSTR("PANIC: AP_ADC_ADS7844 missing SPI device "
-                    "semaphore"));
+        hal.scheduler->panic("PANIC: AP_ADC_ADS7844 missing SPI device "
+                    "semaphore");
     }
    
     if (!_spi_sem->take(0)) {
-        hal.scheduler->panic(PSTR("PANIC: failed to take _spi_sem in"
-                    "AP_ADC_ADS7844::Init"));
+        hal.scheduler->panic("PANIC: failed to take _spi_sem in"
+                    "AP_ADC_ADS7844::Init");
     }
     
     _spi->cs_assert();

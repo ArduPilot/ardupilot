@@ -55,6 +55,9 @@ private:
     char *jsbsim_fgout;
     int jsbsim_stdout;
 
+    // default JSBSim model
+    const char *jsbsim_model = "Rascal";
+
     bool created_templates;
     bool started_jsbsim;
     bool opened_control_socket;

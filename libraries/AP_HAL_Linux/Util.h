@@ -38,6 +38,8 @@ public:
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current);
 
+    uint32_t available_memory(void) override;
+    
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;

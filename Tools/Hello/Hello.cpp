@@ -11,7 +11,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup()
 {
-	hal.console->println_P(PSTR("hello world"));
+	hal.console->println("hello world");
 }
 
 void loop()

@@ -9,7 +9,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_Parachute::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: ENABLED
     // @DisplayName: Parachute release enabled or disabled
@@ -73,7 +73,9 @@ void AP_Parachute::release()
     }
 
     // set release time to current system time
-    _release_time = hal.scheduler->millis();
+    if (_release_time == 0) {
+        _release_time = hal.scheduler->millis();
+    }
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
@@ -91,7 +93,7 @@ void AP_Parachute::update()
     uint32_t time_diff = hal.scheduler->millis() - _release_time;
 
     // check if we should release parachute
-    if ((_release_time != 0) && !_released) {
+    if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -100,6 +102,7 @@ void AP_Parachute::update()
                 // set relay
                 _relay.on(_release_type);
             }
+            _release_in_progress = true;
             _released = true;
         }
     }else if ((_release_time == 0) || time_diff >= AP_PARACHUTE_RELEASE_DELAY_MS + AP_PARACHUTE_RELEASE_DURATION_MS) {
@@ -111,7 +114,7 @@ void AP_Parachute::update()
             _relay.off(_release_type);
         }
         // reset released flag and release_time
-        _released = false;
+        _release_in_progress = false;
         _release_time = 0;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;

@@ -80,7 +80,7 @@ void setup(void)
         bool result;
         result = Polygon_outside(test_points[i].point,
                 OBC_boundary, ARRAY_SIZE(OBC_boundary));
-        hal.console->printf_P(PSTR("%10f,%10f  %s  %s\n"),
+        hal.console->printf("%10f,%10f  %s  %s\n",
                         1.0e-7f*test_points[i].point.x,
                         1.0e-7f*test_points[i].point.y,
                         result ? "OUTSIDE" : "INSIDE ",

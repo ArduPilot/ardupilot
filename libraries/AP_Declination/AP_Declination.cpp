@@ -45,7 +45,7 @@ struct row_value {
 };
 
 // 730 bytes
-static const uint8_t exceptions[10][73] PROGMEM = \
+static const uint8_t exceptions[10][73] = \
 { \
     {150,145,140,135,130,125,120,115,110,105,100,95,90,85,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5,0,4,9,14,19,24,29,34,39,44,49,54,59,64,69,74,79,84,89,94,99,104,109,114,119,124,129,134,139,144,149,154,159,164,169,174,179,175,170,165,160,155,150}, \
     {143,137,131,126,120,115,110,105,100,95,90,85,80,75,71,66,62,57,53,48,44,39,35,31,27,22,18,14,9,5,1,3,7,11,16,20,25,29,34,38,43,47,52,57,61,66,71,76,81,86,91,96,101,107,112,117,123,128,134,140,146,151,157,163,169,175,178,172,166,160,154,148,143}, \
@@ -60,7 +60,7 @@ static const uint8_t exceptions[10][73] PROGMEM = \
 };
 
 // 100 bytes
-static const uint8_t exception_signs[10][10] PROGMEM = \
+static const uint8_t exception_signs[10][10] = \
 { \
     {0,0,0,1,255,255,224,0,0,0}, \
     {0,0,0,1,255,255,240,0,0,0}, \
@@ -75,7 +75,7 @@ static const uint8_t exception_signs[10][10] PROGMEM = \
 };
 
 // 76 bytes
-static const uint8_t declination_keys[2][37] PROGMEM = \
+static const uint8_t declination_keys[2][37] = \
 { \
 // Row start values
     {36,30,25,21,18,16,14,12,11,10,9,9,9,8,8,8,7,6,6,5,4,4,4,3,4,4,4}, \
@@ -84,7 +84,7 @@ static const uint8_t declination_keys[2][37] PROGMEM = \
 };
 
 // 1056 total values @ 1 byte each = 1056 bytes
-static const row_value declination_values[] PROGMEM = \
+static const row_value declination_values[] = \
 { \
     {0,0,4},{1,1,0},{0,0,2},{1,1,0},{0,0,2},{1,1,3},{2,1,1},{3,1,3},{4,1,1},{3,1,1},{2,1,1},{3,1,0},{2,1,0},{1,1,0},{2,1,1},{1,1,0},{2,1,0},{3,1,4},{4,1,1},{3,1,0},{4,1,0},{3,1,2},{2,1,2},{1,1,1},{0,0,0},{1,0,1},{3,0,0},{4,0,0},{6,0,0},{8,0,0},{11,0,0},{13,0,1},{10,0,0},{9,0,0},{7,0,0},{5,0,0},{4,0,0},{2,0,0},{1,0,2}, \
     {0,0,6},{1,1,0},{0,0,6},{1,1,2},{2,1,0},{3,1,2},{4,1,2},{3,1,3},{2,1,0},{1,1,0},{2,1,0},{1,1,2},{2,1,2},{3,1,3},{4,1,0},{3,1,3},{2,1,1},{1,1,1},{0,0,0},{1,0,1},{2,0,0},{4,0,0},{5,0,0},{6,0,0},{7,0,0},{8,0,0},{9,0,0},{8,0,0},{6,0,0},{7,0,0},{6,0,0},{4,0,1},{3,0,0},{2,0,0},{1,0,0},{2,0,0},{0,0,0},{1,0,0}, \
@@ -204,7 +204,7 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
     for(i = start_index; i < (start_index + PGM_UINT8(&declination_keys[1][x])) && current_virtual_index <= y; i++) {
 
         // Pull out the row_value struct
-        memcpy_P((void*) &stval, (const prog_char *)&declination_values[i], sizeof(struct row_value));
+        memcpy((void*) &stval, (const char *)&declination_values[i], sizeof(struct row_value));
 
         // Pull the first offset and determine sign
         offset = stval.abs_offset;

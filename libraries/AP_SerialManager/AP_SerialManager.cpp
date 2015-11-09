@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_SerialManager::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
@@ -257,7 +257,6 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
 }
 
 // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-//  used on APM2 to switch the console between the console baud rate (115200) and the SERIAL1 baud rate (user configurable)
 void AP_SerialManager::set_console_baud(enum SerialProtocol protocol, uint8_t instance) const
 {
     uint8_t found_instance = 0;
@@ -276,10 +275,8 @@ void AP_SerialManager::set_console_baud(enum SerialProtocol protocol, uint8_t in
 }
 
 /*
- *  map from a 16 bit EEPROM baud rate to a real baud rate
- * The practical rates for APM1/APM2 are up to 500kbaud, although
- * beyond 115200 isn't recommended. For PX4 we can do 1.5MBit,
- * although 921600 is more reliable
+ *  map from a 16 bit EEPROM baud rate to a real baud rate.
+ *  For PX4 we can do 1.5MBit, although 921600 is more reliable.
  */
 uint32_t AP_SerialManager::map_baudrate(int32_t rate) const
 {

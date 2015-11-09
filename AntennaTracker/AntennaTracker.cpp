@@ -34,7 +34,7 @@
   (in 20ms units) and the maximum time they are expected to take (in
   microseconds)
  */
-const AP_Scheduler::Task Tracker::scheduler_tasks[] PROGMEM = {
+const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_ahrs,             1,   1000),
     SCHED_TASK(read_radio,              1,    200),
     SCHED_TASK(update_tracking,         1,   1000),
@@ -111,11 +111,6 @@ void Tracker::one_second_loop()
         one_second_counter = 0;
     }
 }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-// needed for APM1 inertialsensor driver
-AP_ADC_ADS7844 apm1_adc;
-#endif
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

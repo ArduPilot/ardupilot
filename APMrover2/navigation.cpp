@@ -21,11 +21,6 @@ void Rover::navigate()
 	// ----------------------------
 	wp_distance = get_distance(current_loc, next_WP);
 
-	if (wp_distance < 0){
-		gcs_send_text_P(MAV_SEVERITY_CRITICAL,PSTR("<navigate> WP error - distance < 0"));
-		return;
-	}
-
 	// control mode specific updates to nav_bearing
 	// --------------------------------------------
 	update_navigation();

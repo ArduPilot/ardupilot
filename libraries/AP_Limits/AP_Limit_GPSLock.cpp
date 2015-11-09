@@ -10,7 +10,7 @@
 
 #include "AP_Limit_GPSLock.h"
 
-const AP_Param::GroupInfo AP_Limit_GPSLock::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_Limit_GPSLock::var_info[] = {
     // @Param: GPSLCK_ON
     // @DisplayName: Enable gpslock
     // @Description: Setting this to Enabled(1) will enable the gpslock. Setting this to Disabled(0) will disable the gpslock

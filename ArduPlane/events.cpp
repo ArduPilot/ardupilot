@@ -7,7 +7,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
     failsafe.ch3_timer_ms = millis();
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Short event on, "));
+    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe - Short event on, ");
     switch(control_mode)
     {
     case MANUAL:
@@ -46,13 +46,13 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     default:
         break;
     }
-    gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Long event on, "));
+    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe - Long event on, ");
     //  If the GCS is locked up we allow control to revert to RC
     hal.rcin->clear_overrides();
     failsafe.state = fstype;
@@ -89,15 +89,15 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         break;
     }
     if (fstype == FAILSAFE_GCS) {
-        gcs_send_text_P(MAV_SEVERITY_CRITICAL, PSTR("No GCS heartbeat."));
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "No GCS heartbeat.");
     }
-    gcs_send_text_fmt(PSTR("flight mode = %u"), (unsigned)control_mode);
+    gcs_send_text_fmt(MAV_SEVERITY_INFO, "flight mode = %u", (unsigned)control_mode);
 }
 
 void Plane::failsafe_short_off_event()
 {
     // We're back in radio contact
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Failsafe - Short event off"));
+    gcs_send_text(MAV_SEVERITY_WARNING, "Failsafe - Short event off");
     failsafe.state = FAILSAFE_NONE;
 
     // re-read the switch so we can return to our preferred mode
@@ -113,7 +113,7 @@ void Plane::low_battery_event(void)
     if (failsafe.low_battery) {
         return;
     }
-    gcs_send_text_fmt(PSTR("Low Battery %.2fV Used %.0f mAh"),
+    gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Low Battery %.2fV Used %.0f mAh",
                       (double)battery.voltage(), (double)battery.current_total_mah());
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
         flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {

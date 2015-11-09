@@ -31,11 +31,10 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 /// global array with pointers to all APM RC channels, will be used by AP_Mount
-/// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
-/// only have 8 input channels.
+/// and AP_Camera classes / It points to RC input channels.
 RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
 
-const AP_Param::GroupInfo RC_Channel::var_info[] PROGMEM = {
+const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
     // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
@@ -114,9 +113,7 @@ RC_Channel::set_angle(int16_t angle)
 void
 RC_Channel::set_default_dead_zone(int16_t dzone)
 {
-    if (!_dead_zone.load()) {
-        _dead_zone.set(abs(dzone));
-    }
+    _dead_zone.set_default(abs(dzone));
 }
 
 void

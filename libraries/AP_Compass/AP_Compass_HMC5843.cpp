@@ -23,7 +23,6 @@
  *
  */
 
-// AVR LibC Includes
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -276,17 +275,17 @@ AP_Compass_HMC5843::init()
     hal.scheduler->suspend_timer_procs();
 
     if (!_bus_sem || !_bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.console->printf_P(PSTR("HMC5843: Unable to get bus semaphore\n"));
+        hal.console->printf("HMC5843: Unable to get bus semaphore\n");
         goto fail_sem;
     }
 
     if (!_bus->configure()) {
-        hal.console->printf_P(PSTR("HMC5843: Could not configure the bus\n"));
+        hal.console->printf("HMC5843: Could not configure the bus\n");
         goto errout;
     }
 
     if (!_detect_version()) {
-        hal.console->printf_P(PSTR("HMC5843: Could not detect version\n"));
+        hal.console->printf("HMC5843: Could not detect version\n");
         goto errout;
     }
 
@@ -303,7 +302,7 @@ AP_Compass_HMC5843::init()
     }
 
     if (!_calibrate(calibration_gain, expected_x, expected_yz)) {
-        hal.console->printf_P(PSTR("HMC5843: Could not calibrate sensor\n"));
+        hal.console->printf("HMC5843: Could not calibrate sensor\n");
         goto errout;
     }
 
@@ -313,7 +312,7 @@ AP_Compass_HMC5843::init()
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf_P(PSTR("HMC5843: Could not start measurements on bus\n"));
+        hal.console->printf("HMC5843: Could not start measurements on bus\n");
         goto errout;
     }
     _initialised = true;
@@ -325,7 +324,7 @@ AP_Compass_HMC5843::init()
     read();
 
 #if 0
-    hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"),
+    hal.console->printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n",
                           _scaling[0], _scaling[1], _scaling[2]);
 #endif
 
@@ -376,13 +375,13 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
 
         float cal[3];
 
-        // hal.console->printf_P(PSTR("mag %d %d %d\n"), _mag_x, _mag_y, _mag_z);
+        // hal.console->printf("mag %d %d %d\n", _mag_x, _mag_y, _mag_z);
 
         cal[0] = fabsf(expected_x / (float)_mag_x);
         cal[1] = fabsf(expected_yz / (float)_mag_y);
         cal[2] = fabsf(expected_yz / (float)_mag_z);
 
-        // hal.console->printf_P(PSTR("cal=%.2f %.2f %.2f\n"), cal[0], cal[1], cal[2]);
+        // hal.console->printf("cal=%.2f %.2f %.2f\n", cal[0], cal[1], cal[2]);
 
         // we throw away the first two samples as the compass may
         // still be changing its state from the application of the
@@ -398,7 +397,7 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
         if (IS_CALIBRATION_VALUE_VALID(cal[0]) &&
             IS_CALIBRATION_VALUE_VALID(cal[1]) &&
             IS_CALIBRATION_VALUE_VALID(cal[2])) {
-            // hal.console->printf_P(PSTR("car=%.2f %.2f %.2f good\n"), cal[0], cal[1], cal[2]);
+            // hal.console->printf("car=%.2f %.2f %.2f good\n", cal[0], cal[1], cal[2]);
             good_count++;
 
             _scaling[0] += cal[0];
@@ -410,8 +409,8 @@ bool AP_Compass_HMC5843::_calibrate(uint8_t calibration_gain,
 
 #if 0
         /* useful for debugging */
-        hal.console->printf_P(PSTR("MagX: %d MagY: %d MagZ: %d\n"), (int)_mag_x, (int)_mag_y, (int)_mag_z);
-        hal.console->printf_P(PSTR("CalX: %.2f CalY: %.2f CalZ: %.2f\n"), cal[0], cal[1], cal[2]);
+        hal.console->printf("MagX: %d MagY: %d MagZ: %d\n", (int)_mag_x, (int)_mag_y, (int)_mag_z);
+        hal.console->printf("CalX: %.2f CalY: %.2f CalZ: %.2f\n", cal[0], cal[1], cal[2]);
 #endif
     }
 

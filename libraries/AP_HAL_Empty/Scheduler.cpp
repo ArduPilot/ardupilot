@@ -1,6 +1,8 @@
 
 #include "Scheduler.h"
 
+#include <stdarg.h>
+
 using namespace Empty;
 
 extern const AP_HAL::HAL& hal;
@@ -69,8 +71,15 @@ bool EmptyScheduler::system_initializing() {
 void EmptyScheduler::system_initialized()
 {}
 
-void EmptyScheduler::panic(const prog_char_t *errormsg) {
-    hal.console->println_P(errormsg);
+void EmptyScheduler::panic(const char *errormsg, ...)
+{
+    va_list ap;
+
+    va_start(ap, errormsg);
+    hal.console->vprintf(errormsg, ap);
+    va_end(ap);
+    hal.console->printf("\n");
+
     for(;;);
 }
 

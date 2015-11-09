@@ -78,7 +78,7 @@ private:
     // Buffer parse & GPS state update
     void        _parse_gps();
 
-    static const prog_char _initialisation_blob[];
+    static const char _initialisation_blob[];
 };
 
 #endif  // __AP_GPS_MTK_H__

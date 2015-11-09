@@ -315,55 +315,55 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
 {
     switch (mode) {
     case STABILIZE:
-        port->print_P(PSTR("STABILIZE"));
+        port->print("STABILIZE");
         break;
     case ACRO:
-        port->print_P(PSTR("ACRO"));
+        port->print("ACRO");
         break;
     case ALT_HOLD:
-        port->print_P(PSTR("ALT_HOLD"));
+        port->print("ALT_HOLD");
         break;
     case AUTO:
-        port->print_P(PSTR("AUTO"));
+        port->print("AUTO");
         break;
     case GUIDED:
-        port->print_P(PSTR("GUIDED"));
+        port->print("GUIDED");
         break;
     case LOITER:
-        port->print_P(PSTR("LOITER"));
+        port->print("LOITER");
         break;
     case RTL:
-        port->print_P(PSTR("RTL"));
+        port->print("RTL");
         break;
     case CIRCLE:
-        port->print_P(PSTR("CIRCLE"));
+        port->print("CIRCLE");
         break;
     case LAND:
-        port->print_P(PSTR("LAND"));
+        port->print("LAND");
         break;
     case OF_LOITER:
-        port->print_P(PSTR("OF_LOITER"));
+        port->print("OF_LOITER");
         break;
     case DRIFT:
-        port->print_P(PSTR("DRIFT"));
+        port->print("DRIFT");
         break;
     case SPORT:
-        port->print_P(PSTR("SPORT"));
+        port->print("SPORT");
         break;
     case FLIP:
-        port->print_P(PSTR("FLIP"));
+        port->print("FLIP");
         break;
     case AUTOTUNE:
-        port->print_P(PSTR("AUTOTUNE"));
+        port->print("AUTOTUNE");
         break;
     case POSHOLD:
-        port->print_P(PSTR("POSHOLD"));
+        port->print("POSHOLD");
         break;
     case BRAKE:
-        port->print_P(PSTR("BRAKE"));
+        port->print("BRAKE");
         break;
     default:
-        port->printf_P(PSTR("Mode(%u)"), (unsigned)mode);
+        port->printf("Mode(%u)", (unsigned)mode);
         break;
     }
 }

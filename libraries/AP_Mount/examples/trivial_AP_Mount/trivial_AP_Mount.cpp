@@ -1,6 +1,5 @@
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
@@ -32,8 +31,8 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup () {
-    hal.console->println_P(PSTR("Unit test for AP_Mount. This sketch"
-                "has no functionality, it only tests build."));
+    hal.console->println("Unit test for AP_Mount. This sketch"
+                "has no functionality, it only tests build.");
 }
 void loop () {}
 

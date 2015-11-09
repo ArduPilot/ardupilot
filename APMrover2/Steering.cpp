@@ -31,7 +31,7 @@ bool Rover::auto_check_trigger(void)
 
     // check for user pressing the auto trigger to off
     if (auto_triggered && g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 1) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("AUTO triggered off"));
+        gcs_send_text(MAV_SEVERITY_WARNING, "AUTO triggered off");
         auto_triggered = false;
         return false; 
     }
@@ -49,7 +49,7 @@ bool Rover::auto_check_trigger(void)
     }
  
     if (g.auto_trigger_pin != -1 && check_digital_pin(g.auto_trigger_pin) == 0) {
-        gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Triggered AUTO with pin"));
+        gcs_send_text(MAV_SEVERITY_WARNING, "Triggered AUTO with pin");
         auto_triggered = true;
         return true;            
     }
@@ -57,7 +57,7 @@ bool Rover::auto_check_trigger(void)
     if (!is_zero(g.auto_kickstart)) {
         float xaccel = ins.get_accel().x;
         if (xaccel >= g.auto_kickstart) {
-            gcs_send_text_fmt(PSTR("Triggered AUTO xaccel=%.1f"), (double)xaccel);
+            gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Triggered AUTO xaccel=%.1f", (double)xaccel);
             auto_triggered = true;
             return true;            
         }

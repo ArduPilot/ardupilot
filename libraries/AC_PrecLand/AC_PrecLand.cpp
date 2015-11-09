@@ -7,7 +7,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AC_PrecLand::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land enabled/disabled and behaviour
     // @Description: Precision Land enabled/disabled and behaviour
     // @Values: 0:Disabled, 1:Enabled Always Land, 2:Enabled Strict
@@ -124,7 +124,7 @@ Vector3f AC_PrecLand::get_target_shift(const Vector3f &orig_target)
 }
 
 // calc_angles_and_pos - converts sensor's body-frame angles to earth-frame angles and position estimate
-//  body-frame angles stored in _bf_angle_to_target
+//  raw sensor angles stored in _angle_to_target (might be in earth frame, or maybe body frame)
 //  earth-frame angles stored in _ef_angle_to_target
 //  position estimate is stored in _target_pos
 void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
@@ -135,15 +135,24 @@ void AC_PrecLand::calc_angles_and_pos(float alt_above_terrain_cm)
         return;
     }
 
-    // get body-frame angles to target from backend
-    if (!_backend->get_angle_to_target(_bf_angle_to_target.x, _bf_angle_to_target.y)) {
+    // get angles to target from backend
+    if (!_backend->get_angle_to_target(_angle_to_target.x, _angle_to_target.y)) {
         _have_estimate = false;
         return;
     }
 
-    // subtract vehicle lean angles
-    float x_rad = _bf_angle_to_target.x - _ahrs.roll;
-    float y_rad = -_bf_angle_to_target.y + _ahrs.pitch;
+    float x_rad;
+    float y_rad;
+
+    if(_backend->get_frame_of_reference() == MAV_FRAME_LOCAL_NED){
+        //don't subtract vehicle lean angles
+        x_rad = _angle_to_target.x;
+        y_rad = -_angle_to_target.y;
+    }else{ // assume MAV_FRAME_BODY_NED (i.e. a hard-mounted sensor)
+        // subtract vehicle lean angles
+        x_rad = _angle_to_target.x - _ahrs.roll;
+        y_rad = -_angle_to_target.y + _ahrs.pitch;
+    }
 
     // rotate to earth-frame angles
     _ef_angle_to_target.x = y_rad*_ahrs.cos_yaw() - x_rad*_ahrs.sin_yaw();

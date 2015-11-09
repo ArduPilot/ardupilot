@@ -4,13 +4,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("Calibrating barometer"));
+    gcs_send_text(MAV_SEVERITY_NOTICE, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text_P(MAV_SEVERITY_WARNING, PSTR("barometer calibration complete"));
+    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
 }
 
 // return barometric altitude in centimeters
@@ -87,7 +87,7 @@ void Copter::init_compass()
 {
     if (!compass.init() || !compass.read()) {
         // make sure we don't pass a broken compass to DCM
-        cliSerial->println_P(PSTR("COMPASS INIT ERROR"));
+        cliSerial->println("COMPASS INIT ERROR");
         Log_Write_Error(ERROR_SUBSYSTEM_COMPASS,ERROR_CODE_FAILED_TO_INITIALISE);
         return;
     }

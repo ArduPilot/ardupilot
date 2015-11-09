@@ -161,8 +161,8 @@ void AP_PerfMon::DisplayResults()
     hal.console->set_blocking_writes(true);
 
     // print table of results
-    hal.console->printf_P(PSTR("\nPerfMon elapsed:%lu(ms)\n"),(unsigned long)totalTime/1000);
-    hal.console->printf_P(PSTR("Fn:\t\tcpu\ttot(ms)\tavg(ms)\tmax(ms)\t#calls\tHz\n"));
+    hal.console->printf("\nPerfMon elapsed:%lu(ms)\n",(unsigned long)totalTime/1000);
+    hal.console->printf("Fn:\t\tcpu\ttot(ms)\tavg(ms)\tmax(ms)\t#calls\tHz\n");
     for( i=0; i<nextFuncNum; i++ ) {
         j=order[i];
         sumOfTime += time[j];
@@ -176,7 +176,7 @@ void AP_PerfMon::DisplayResults()
 
         hz = numCalls[j]/(totalTime/1000000);
         pct = ((float)time[j] / (float)totalTime) * 100.0f;
-        hal.console->printf_P(PSTR("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n"),
+        hal.console->printf("%-10s\t%4.2f\t%lu\t%4.3f\t%4.3f\t%lu\t%4.1f\n",
             functionNames[j],
             pct,
             (unsigned long)time[j]/1000,
@@ -192,7 +192,7 @@ void AP_PerfMon::DisplayResults()
         unExplainedTime = totalTime - sumOfTime;
     }
     pct = ((float)unExplainedTime / (float)totalTime) * 100.0f;
-    hal.console->printf_P(PSTR("unexpl:\t\t%4.2f\t%lu\n"),pct,(unsigned long)unExplainedTime/1000);
+    hal.console->printf("unexpl:\t\t%4.2f\t%lu\n",pct,(unsigned long)unExplainedTime/1000);
 
     // restore to blocking writes if necessary
     hal.console->set_blocking_writes(false);

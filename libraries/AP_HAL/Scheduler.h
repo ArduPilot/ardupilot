@@ -2,11 +2,13 @@
 #ifndef __AP_HAL_SCHEDULER_H__
 #define __AP_HAL_SCHEDULER_H__
 
-#include "AP_HAL_Namespace.h"
-#include "AP_HAL_Boards.h"
-
 #include <stdint.h>
-#include <AP_Progmem/AP_Progmem.h>
+
+#include <AP_Common/AP_Common.h>
+
+#include "AP_HAL_Boards.h"
+#include "AP_HAL_Namespace.h"
+
 
 class AP_HAL::Scheduler {
 public:
@@ -54,7 +56,7 @@ public:
     virtual bool     system_initializing() = 0;
     virtual void     system_initialized() = 0;
 
-    virtual void     panic(const prog_char_t *errormsg) NORETURN = 0;
+    virtual void     panic(const char *errormsg, ...) FORMAT(2, 3) NORETURN = 0;
     virtual void     reboot(bool hold_in_bootloader) = 0;
 
     /**
