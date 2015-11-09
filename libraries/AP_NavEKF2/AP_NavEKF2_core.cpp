@@ -165,7 +165,6 @@ void NavEKF2_core::InitialiseVariables()
     tiltAlignComplete = false;
     yawAlignComplete = false;
     stateIndexLim = 23;
-    imuDataNew.frame = 0;
     baroStoreIndex = 0;
     magStoreIndex = 0;
     gpsStoreIndex = 0;
