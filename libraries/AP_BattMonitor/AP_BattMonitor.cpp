@@ -1,4 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#include <math.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
@@ -13,7 +14,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:SMBus,6:Bebop
     // @User: Standard
     AP_GROUPINFO("_MONITOR", 0, AP_BattMonitor, _monitoring[0], BattMonitor_TYPE_NONE),
-
+    
     // @Param: _VOLT_PIN
     // @DisplayName: Battery Voltage sensing pin
     // @Description: Setting this to 0 ~ 13 will enable battery voltage sensing on pins A0 ~ A13. For the 3DR power brick on APM2.5 it should be set to 13. On the PX4 it should be set to 100. On the Pixhawk powered from the PM connector it should be set to 2.
@@ -59,6 +60,13 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // 7 & 8 were used for VOLT2_PIN and VOLT2_MULT
     // 9..10 left for future expansion
 
+    // @Param: _CUTOFF_FREQ
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: Cut-off frequency in Hertz
+    // @User: Standard
+    AP_GROUPINFO("_CUTOFF_FREQ", 7, AP_BattMonitor, _lpf_cutoff[0], 0),
+    
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
     // @Param: 2_MONITOR
     // @DisplayName: Battery monitoring
@@ -108,6 +116,13 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("2_CAPACITY", 17, AP_BattMonitor, _pack_capacity[1], AP_BATT_CAPACITY_DEFAULT),
+    
+    // @Param: _CUTOFF_FREQ
+    // @DisplayName: Battery monitoring
+    // @Description: Controls enabling monitoring of the battery's voltage and current
+    // @Values: Cut-off frequency in Hertz
+    // @User: Standard
+    AP_GROUPINFO("2_CUTOFF_FREQ", 18, AP_BattMonitor, _lpf_cutoff[1], 0),
 
 #endif // AP_BATT_MONITOR_MAX_INSTANCES > 1
 
@@ -170,6 +185,9 @@ AP_BattMonitor::init()
         if (drivers[instance] != NULL) {
             drivers[instance]->init();
         }
+        
+        // Config the low pass filter
+        _lpf_volt_curr[instance].set_cutoff_frequency(_lpf_cutoff[instance]);
     }
 }
 
@@ -183,8 +201,18 @@ AP_BattMonitor::read()
     }
 
     for (uint8_t i=0; i<AP_BATT_MONITOR_MAX_INSTANCES; i++) {
-        if (drivers[i] != NULL && _monitoring[i] != BattMonitor_TYPE_NONE) {
-            drivers[i]->read();
+        if (drivers[i] == NULL || _monitoring[i] == BattMonitor_TYPE_NONE) {
+            continue;
+        }
+        drivers[i]->read();
+        
+        // If a cut-off frequency was set then apply the filter
+        if(_lpf_cutoff[i] > 0) {
+            // apply low pass filter for the voltage and current read out whenever a sample has been taken
+            uint32_t _lpf_delta = hal.scheduler->millis() - _lpf_timer[i];
+            Vector2f sample(voltage_volt(i), current_amp(i) );
+            _lpf_volt_curr[i].apply(sample, _lpf_delta);
+            _lpf_timer[i] = hal.scheduler->millis();
         }
     }
 }
@@ -213,6 +241,24 @@ bool AP_BattMonitor::has_current(uint8_t instance) const
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
 {
+    if(_lpf_cutoff[instance] > 0) {
+        return _lpf_volt_curr[instance].get().x;
+    }
+    return voltage_volt(instance);
+}
+
+/// voltage - returns battery voltage in volts
+float AP_BattMonitor::current_amps(uint8_t instance) const
+{
+    if(_lpf_cutoff[instance] > 0) {
+        return _lpf_volt_curr[instance].get().y;
+    }
+    return current_amp(instance);
+}
+
+/// voltage - returns battery voltage in volts
+float AP_BattMonitor::voltage_volt(uint8_t instance) const
+{
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
         return _BattMonitor_STATE(instance).voltage;
     } else {
@@ -240,9 +286,12 @@ float AP_BattMonitor::voltage2() const
 }
 
 /// current_amps - returns the instantaneous current draw in amperes
-float AP_BattMonitor::current_amps(uint8_t instance) const {
+float AP_BattMonitor::current_amp(uint8_t instance) const {
     if (instance < AP_BATT_MONITOR_MAX_INSTANCES) {
-        return _BattMonitor_STATE(instance).current_amps;
+        // Noticed that for some sensor types like the AttoPilot 90/180 the reported current can be negative under low load conditions
+        // might be because of a parasitic current, if the sensor is connected by a UBEC to the sensor board or whatever
+        // However, the current draw cannot be lower than zero, even if motors are breaking 
+        return fabs(_BattMonitor_STATE(instance).current_amps);
     } else {
         return 0.0f;
     }
