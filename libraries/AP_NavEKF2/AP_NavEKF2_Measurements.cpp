@@ -192,8 +192,10 @@ void NavEKF2_core::readMagData()
     if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
 
         // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
+        // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
+        // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
         uint8_t maxCount = _ahrs->get_compass()->get_count();
-        if (magTimeout && (maxCount > 1)) {
+        if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
             // search through the list of magnetometers
             for (uint8_t i=1; i<maxCount; i++) {
                 uint8_t tempIndex = magSelectIndex + i;
