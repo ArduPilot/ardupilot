@@ -550,6 +550,28 @@ struct PACKED log_GYRO {
     float GyrX, GyrY, GyrZ;
 };
 
+struct PACKED log_DF_MAV_Stats {
+    LOG_PACKET_HEADER;
+    uint32_t timestamp;
+    uint32_t seqno;
+    uint32_t dropped;
+    uint32_t retries;
+    uint32_t resends;
+    uint8_t internal_errors; // uint8_t - wishful thinking?
+    uint8_t state_free_avg;
+    uint8_t state_free_min;
+    uint8_t state_free_max;
+    uint8_t state_pending_avg;
+    uint8_t state_pending_min;
+    uint8_t state_pending_max;
+    uint8_t state_sent_avg;
+    uint8_t state_sent_min;
+    uint8_t state_sent_max;
+    // uint8_t state_retry_avg;
+    // uint8_t state_retry_min;
+    // uint8_t state_retry_max;
+};
+
 struct PACKED log_ORGN {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -634,7 +656,9 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMB",         "TimeUS,Mode,ModeNum" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QCC",         "TimeUS,Dist1,Dist2" }
+            "RFND", "QCC",         "TimeUS,Dist1,Dist2" }, \
+    { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -839,6 +863,7 @@ enum LogMessages {
     LOG_NKF7_MSG,
     LOG_NKF8_MSG,
     LOG_NKF9_MSG,
+    LOG_DF_MAV_STATS,
 };
 
 enum LogOriginType {

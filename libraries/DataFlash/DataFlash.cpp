@@ -5,8 +5,8 @@
 const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _BACKEND_TYPES
     // @DisplayName: DataFlash Backend Storage type
-    // @Description: 0 for None, 1 for File
-    // @Values: 0:None,1:File
+    // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
+    // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, DataFlash_Class, _params.backend_types,       DATAFLASH_BACKEND_FILE),
     AP_GROUPEND
@@ -157,6 +157,13 @@ bool DataFlash_Class::logging_started(void) {
 void DataFlash_Class::EnableWrites(bool enable) {
     FOR_EACH_BACKEND(EnableWrites(enable));
 }
+
+// for DataFlash_MAVLink
+void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                  mavlink_message_t* msg) {
+    FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+}
+// end for DataFlash_MAVLink
 
 void DataFlash_Class::periodic_tasks() {
      FOR_EACH_BACKEND(periodic_tasks());

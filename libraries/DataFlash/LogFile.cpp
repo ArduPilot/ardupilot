@@ -15,6 +15,7 @@
 #include "DataFlash_SITL.h"
 #include "DataFlash_Block.h"
 #include "DataFlash_File.h"
+#include "DataFlash_MAVLink.h"
 #include "DFMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
@@ -22,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
     if (_next_backend == DATAFLASH_MAX_BACKENDS) {
-        hal.scheduler->panic("Too many backends");
+        AP_HAL::panic("Too many backends");
         return;
     }
     _num_types = num_types;
@@ -41,6 +42,27 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         }
         if (backends[_next_backend] == NULL) {
             hal.console->printf("Unable to open DataFlash_File");
+        } else {
+            _next_backend++;
+        }
+    }
+#endif
+
+#if DATAFLASH_MAVLINK_SUPPORT
+    if (_params.backend_types == DATAFLASH_BACKEND_MAVLINK ||
+        _params.backend_types == DATAFLASH_BACKEND_BOTH) {
+        if (_next_backend == DATAFLASH_MAX_BACKENDS) {
+            AP_HAL::panic("Too many backends");
+            return;
+        }
+        DFMessageWriter_DFLogStart *message_writer =
+            new DFMessageWriter_DFLogStart(_firmware_string);
+        if (message_writer != NULL)  {
+            backends[_next_backend] = new DataFlash_MAVLink(*this,
+                                                            message_writer);
+        }
+        if (backends[_next_backend] == NULL) {
+            hal.console->printf("Unable to open DataFlash_MAVLink");
         } else {
             _next_backend++;
         }
