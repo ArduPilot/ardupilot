@@ -152,8 +152,6 @@ void NavEKF2_core::SelectMagFusion()
     // wait until the EKF time horizon catches up with the measurement
     bool dataReady = (newMagDataAvailable && statesInitialised && use_compass() && yawAlignComplete);
     if (dataReady) {
-        // ensure that the covariance prediction is up to date before fusing data
-        if (!covPredStep) CovariancePrediction();
         // If we haven't performed the first airborne magnetic field update or have inhibited magnetic field learning, then we use the simple method of declination to maintain heading
         if(inhibitMagStates) {
             fuseCompass();
@@ -261,7 +259,7 @@ void NavEKF2_core::FuseMagnetometer()
         }
 
         // scale magnetometer observation error with total angular rate to allow for timing errors
-        R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / dtIMUavg);
+        R_MAG = sq(constrain_float(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / imuDataDelayed.delAngDT);
 
         // calculate common expressions used to calculate observation jacobians an innovation variance for each component
         SH_MAG[0] = sq(q0) - sq(q1) + sq(q2) - sq(q3);
