@@ -76,6 +76,11 @@ public:
     virtual void flush(void) { }
 #endif
 
+     // for Dataflash_MAVlink
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg) { }
+    // end for Dataflash_MAVlink
+
    virtual void periodic_tasks();
 
     uint8_t num_types() const;

@@ -34,6 +34,8 @@ class DataFlash_Backend;
 enum DataFlash_Backend_Type {
     DATAFLASH_BACKEND_NONE = 0,
     DATAFLASH_BACKEND_FILE = 1,
+    DATAFLASH_BACKEND_MAVLINK = 2,
+    DATAFLASH_BACKEND_BOTH = 3,
 };
 
 class DataFlash_Class
@@ -142,6 +144,11 @@ public:
     // currently only DataFlash_File support this:
     void flush(void);
 #endif
+
+    // for DataFlash_MAVLink:
+    void remote_log_block_status_msg(mavlink_channel_t chan,
+                                     mavlink_message_t* msg);
+    // end for DataFlash_MAVLink:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
