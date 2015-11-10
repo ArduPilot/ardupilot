@@ -57,7 +57,39 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS),
 
-    // IDs 8,9,10,11 RESERVED (in use on Solo)
+    // @Param: LEAD_ROLL_W
+    // @DisplayName: Roll lead omega
+    // @Description: Omega for roll lead filter (hz)
+    // @Units: Hz
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_RLL_W", 8, AC_AttitudeControl, _roll_lead_w, 0),
+
+    // @Param: LEAD_ROLL_R
+    // @DisplayName: Roll lead ratio
+    // @Description: Ratio for roll lead filter
+    // @Range: 1 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_RLL_R", 9, AC_AttitudeControl, _roll_lead_r, 1),
+
+    // @Param: LEAD_PIT_W
+    // @DisplayName: Pitch lead omega
+    // @Description: Omega for pitch lead filter (hz)
+    // @Units: Hz
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_PIT_W", 10, AC_AttitudeControl, _pitch_lead_w, 0),
+
+    // @Param: LEAD_PIT_R
+    // @DisplayName: Pitch lead ratio
+    // @Description: Ratio for pitch lead filter
+    // @Range: 1 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_PIT_R", 11, AC_AttitudeControl, _pitch_lead_r, 1),
 
     // @Param: ANGLE_BOOST
     // @DisplayName: Angle Boost
@@ -502,6 +534,9 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_rads)
     float current_rate_rads = _ahrs.get_gyro().x;
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
+    _roll_lead_filt.set_params(_roll_lead_w*2*M_PI, _roll_lead_r, 1.0f/_dt);
+    rate_error_rads = _roll_lead_filt.apply(rate_error_rads);
+
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
     _pid_rate_roll.set_input_filter_d(degrees(rate_error_rads)*100.0f);
     _pid_rate_roll.set_desired_rate(degrees(rate_target_rads)*100.0f);
@@ -524,6 +559,9 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_rads)
 {
     float current_rate_rads = _ahrs.get_gyro().y;
     float rate_error_rads = rate_target_rads - current_rate_rads;
+
+    _pitch_lead_filt.set_params(_pitch_lead_w*2*M_PI, _pitch_lead_r, 1.0f/_dt);
+    rate_error_rads = _pitch_lead_filt.apply(rate_error_rads);
 
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
     _pid_rate_pitch.set_input_filter_d(degrees(rate_error_rads)*100.0f);
