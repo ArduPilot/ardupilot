@@ -50,7 +50,7 @@
 // Note that if using more than 2 instances of the EKF, as set by EK2_IMU_MASK, this delay should be increased by 2 samples
 // for each additional instance to allow for the need to offset the fusion time horizon for each instance to avoid simultaneous fusion
 // of measurements by each instance
-#define IMU_BUFFER_LENGTH       104 // maximum 260 msec delay at 400 Hz
+#define IMU_BUFFER_LENGTH       26 // maximum 260 msec delay at 100 Hz fusion rate
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 #define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -75,7 +75,8 @@ public:
     bool InitialiseFilterBootstrap(void);
 
     // Update Filter States - this should be called whenever new IMU data is available
-    void UpdateFilter(void);
+    // The predict flag is set true when a new prediction cycle can be started
+    void UpdateFilter(bool predict);
 
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
@@ -271,6 +272,10 @@ public:
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const;
+
+    // report the number of frames lapsed since the last state prediction
+    // this is used by other instances to level load
+    uint8_t getFramesSincePredict(void) const;
 
 private:
     // Reference to the global EKF frontend for parameters
@@ -628,12 +633,8 @@ private:
     // using a simple observer
     void calcOutputStatesFast();
 
-    // Round to the nearest multiple of a integer
-    uint32_t roundToNearest(uint32_t dividend, uint32_t divisor );
-
     // Length of FIFO buffers used for non-IMU sensor data.
-    // Must be larger than the maximum number of sensor samples that will arrive during the time period defined by IMU_BUFFER_LENGTH
-    // OBS_BUFFER_LENGTH > IMU_BUFFER_LENGTH * dtIMUavg * 'max sensor rate'
+    // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;
 
     // Variables
@@ -665,13 +666,12 @@ private:
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
     Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
     Vector3f correctedDelVel;       // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
-    Vector3f summedDelAng;          // corrected & summed delta angles about the xyz body axes (rad)
-    Vector3f summedDelVel;          // corrected & summed delta velocities along the XYZ body axes (m/s)
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
     Vector3f earthRateNED;          // earths angular rate vector in NED (rad/s)
     ftype dtIMUavg;                 // expected time between IMU measurements (sec)
+    ftype dtEkfAvg;                 // expected time between EKF updates (sec)
     ftype dt;                       // time lapsed since the last covariance prediction (sec)
     ftype hgtRate;                  // state for rate of change of height filter
     bool onGround;                  // true when the flight vehicle is definitely on the ground
@@ -689,7 +689,6 @@ private:
     Vector3f varInnovMag;           // innovation variance output from fusion of X,Y,Z compass measurements
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
-    bool covPredStep;               // boolean set to true when a covariance prediction step has been performed
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
@@ -748,6 +747,8 @@ private:
     uint8_t stateIndexLim;          // Max state index used during matrix and array operations
     imu_elements imuDataDelayed;    // IMU data at the fusion time horizon
     imu_elements imuDataNew;        // IMU data at the current time horizon
+    imu_elements imuDataDownSampledNew; // IMU data at the current time horizon that has been downsampled to a 100Hz rate
+    Quaternion imuQuatDownSampleNew; // Quaternion obtained by rotating through the IMU delta angles since the start of the current down sampled frame
     uint8_t fifoIndexNow;           // Global index for inertial and output solution at current time horizon
     uint8_t fifoIndexDelayed;       // Global index for inertial and output solution at delayed/fusion time horizon
     baro_elements baroDataNew;      // Baro data at the current time horizon
@@ -786,9 +787,13 @@ private:
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     float yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     Quaternion prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
-    uint8_t fusionHorizonOffset;    // number of IMU samples that the fusion time horizon  has been shifted forward to prevent multiple EKF instances fusing data at the same time
+    uint8_t fusionHorizonOffset;    // number of IMU samples that the fusion time horizon  has been shifted to prevent multiple EKF instances fusing data at the same time
     float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
+    bool runUpdates;                // boolean true when the EKF updates can be run
+    uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
+    bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
+    uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.

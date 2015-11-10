@@ -190,8 +190,6 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // perform fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // ensure that the covariance prediction is up to date before fusing data
-        if (!covPredStep) CovariancePrediction();
         FuseVelPosNED();
         // clear the flags to prevent repeated fusion of the same data
         fuseVelData = false;
@@ -233,7 +231,6 @@ void NavEKF2_core::FuseVelPosNED()
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-
         // set the GPS data timeout depending on whether airspeed data is present
         uint32_t gpsRetryTime;
         if (useAirspeed()) gpsRetryTime = frontend->gpsRetryTimeUseTAS_ms;
@@ -401,7 +398,6 @@ void NavEKF2_core::FuseVelPosNED()
         if (fuseHgtData) {
             // calculate height innovations
             innovVelPos[5] = stateStruct.position.z - observation[5];
-
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
             hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend->_hgtInnovGate) * varInnovVelPos[5]);
@@ -516,7 +512,6 @@ void NavEKF2_core::FuseVelPosNED()
                 stateStruct.angErr.zero();
 
                 // calculate state corrections and re-normalise the quaternions for states predicted using the blended IMU data
-                // Don't apply corrections to Z bias state as this has been done already as part of the single IMU calculations
                 for (uint8_t i = 0; i<=stateIndexLim; i++) {
                     statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
                 }

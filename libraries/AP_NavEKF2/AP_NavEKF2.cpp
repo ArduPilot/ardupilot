@@ -434,7 +434,7 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gndEffectTimeout_ms(1000),      // time in msec that baro ground effect compensation will timeout after initiation
     gndEffectBaroScaler(4.0f),      // scaler applied to the barometer observation variance when operating in ground effect
     gndGradientSigma(2),            // RMS terrain gradient percentage assumed by the terrain height estimation
-    fusionTimeStep_ms(10)           // The nominal number of msec between covariance prediction and fusion operations
+    fusionTimeStep_ms(10)           // The minimum number of msec between covariance prediction and fusion operations
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -497,8 +497,20 @@ void NavEKF2::UpdateFilter(void)
     if (!core) {
         return;
     }
+
+    const AP_InertialSensor &ins = _ahrs->get_ins();
+
     for (uint8_t i=0; i<num_cores; i++) {
-        core[i].UpdateFilter();
+        // if the previous core has only recently finished a new state prediction cycle, then
+        // dont start a new cycle to allow time for fusion operations to complete if the update
+        // rate is higher than 200Hz
+        bool statePredictEnabled;
+        if ((i > 0) && (core[i-1].getFramesSincePredict() < 2) && (ins.get_sample_rate() > 200)) {
+            statePredictEnabled = false;
+        } else {
+            statePredictEnabled = true;
+        }
+        core[i].UpdateFilter(statePredictEnabled);
     }
 
     // If the current core selected has a bad fault score or is unhealthy, switch to a healthy core with the lowest fault score

@@ -104,11 +104,11 @@ void NavEKF2_core::getEulerAngles(Vector3f &euler) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMUavg < 1e-6f) {
+    if (dtEkfAvg < 1e-6f) {
         gyroBias.zero();
         return;
     }
-    gyroBias = stateStruct.gyro_bias / dtIMUavg;
+    gyroBias = stateStruct.gyro_bias / dtEkfAvg;
 }
 
 // return body axis gyro scale factor error as a percentage
@@ -198,8 +198,8 @@ void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
 
 // return the Z-accel bias estimate in m/s^2
 void NavEKF2_core::getAccelZBias(float &zbias) const {
-    if (dtIMUavg > 0) {
-        zbias = stateStruct.accel_zbias / dtIMUavg;
+    if (dtEkfAvg > 0) {
+        zbias = stateStruct.accel_zbias / dtEkfAvg;
     } else {
         zbias = 0;
     }
@@ -543,5 +543,12 @@ const char *NavEKF2_core::prearm_failure_reason(void) const
     return prearm_fail_string;
 }
 
+
+// report the number of frames lapsed since the last state prediction
+// this is used by other instances to level load
+uint8_t NavEKF2_core::getFramesSincePredict(void) const
+{
+    return framesSincePredict;
+}
 
 #endif // HAL_CPU_CLASS
