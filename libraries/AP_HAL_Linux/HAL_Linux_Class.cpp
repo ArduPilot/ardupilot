@@ -16,6 +16,12 @@
 
 using namespace Linux;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+static UtilRPI utilInstance;
+#else
+static Util utilInstance;
+#endif
+
 // 3 serial ports on Linux for now
 static UARTDriver uartADriver(true);
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
@@ -140,11 +146,6 @@ static Empty::EmptyRCOutput rcoutDriver;
 #endif
 
 static Scheduler schedulerInstance;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-static UtilRPI utilInstance;
-#else
-static Util utilInstance;
-#endif
 
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
