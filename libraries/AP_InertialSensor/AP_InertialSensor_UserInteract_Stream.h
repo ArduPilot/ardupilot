@@ -16,7 +16,7 @@ public:
         _s(s) {}
 
     bool blocking_read();
-    void printf(const char*, ...) FORMAT(2, 3);
+    void printf(const char*, ...) FMT_PRINTF(2, 3);
 private:
     AP_HAL::BetterStream *_s;
 };
