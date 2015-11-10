@@ -14,6 +14,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
+#include <Filter/LeadFilter.h>
 
 // TODO: change the name or move to AP_Math? eliminate in favor of degrees(100)?
 #define AC_ATTITUDE_CONTROL_DEGX100                           5729.57795f      // constant to convert from radians to centidegrees
@@ -298,6 +299,24 @@ protected:
 
     // Enable/Disable body frame rate feed forward
     AP_Int8             _rate_bf_ff_enabled;
+
+    // Roll lead filter omega
+    AP_Float _roll_lead_w;
+
+    // Roll lead filter ratio
+    AP_Float _roll_lead_r;
+
+    // Pitch lead filter omega
+    AP_Float _pitch_lead_w;
+
+    // Pitch lead filter ratio
+    AP_Float _pitch_lead_r;
+
+    // Lead-filtered roll error
+    LeadFilter _roll_lead_filt;
+
+    // Lead-filtered pitch error
+    LeadFilter _pitch_lead_filt;
 
     // Enable/Disable angle boost
     AP_Int8             _angle_boost_enabled;
