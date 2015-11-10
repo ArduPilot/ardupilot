@@ -1348,6 +1348,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         handle_gps_inject(msg, rover.gps);
         break;
 
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        rover.DataFlash.remote_log_block_status_msg(chan, msg);
+        break;
+
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         rover.gcs[chan-MAVLINK_COMM_0].send_autopilot_version(FIRMWARE_VERSION);
         break;
