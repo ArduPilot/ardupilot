@@ -14,6 +14,7 @@
 #include <AP_Motors.h>
 #include <AC_PID.h>
 #include <AC_P.h>
+#include <LeadFilter.h>
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                 // constant to convert from radians to centi-degrees
@@ -264,6 +265,14 @@ protected:
     AP_Float            _accel_pitch_max;          // maximum rotation acceleration for earth-frame pitch axis
     AP_Float            _accel_yaw_max;           // maximum rotation acceleration for earth-frame yaw axis
     AP_Int8             _rate_bf_ff_enabled;    // Enable/Disable body frame rate feed forward
+
+    AP_Float _roll_lead_w;
+    AP_Float _roll_lead_r;
+    AP_Float _pitch_lead_w;
+    AP_Float _pitch_lead_r;
+
+    LeadFilter _roll_lead_filt;
+    LeadFilter _pitch_lead_filt;
 
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?

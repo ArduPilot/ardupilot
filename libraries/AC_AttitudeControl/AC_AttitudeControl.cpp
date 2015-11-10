@@ -56,6 +56,41 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
+    // @Param: LEAD_ROLL_W
+    // @DisplayName: Roll lead omega
+    // @Description: Omega for roll lead filter (hz)
+    // @Units: Hz
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_RLL_W", 8, AC_AttitudeControl, _roll_lead_w, 0),
+
+    // @Param: LEAD_ROLL_R
+    // @DisplayName: Roll lead ratio
+    // @Description: Ratio for roll lead filter
+    // @Range: 1 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_RLL_R", 9, AC_AttitudeControl, _roll_lead_r, 1),
+
+    // @Param: LEAD_PIT_W
+    // @DisplayName: Pitch lead omega
+    // @Description: Omega for pitch lead filter (hz)
+    // @Units: Hz
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_PIT_W", 10, AC_AttitudeControl, _pitch_lead_w, 0),
+
+    // @Param: LEAD_PIT_R
+    // @DisplayName: Pitch lead ratio
+    // @Description: Ratio for pitch lead filter
+    // @Range: 1 2
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("LEAD_PIT_R", 11, AC_AttitudeControl, _pitch_lead_r, 1),
+
+
     AP_GROUPEND
 };
 
@@ -577,10 +612,14 @@ float AC_AttitudeControl::rate_bf_to_motor_roll(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ahrs.get_gyro_for_control().x * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = _ahrs.get_gyro_for_control().x * AC_ATTITUDE_CONTROL_DEGX100;
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
+
+    _roll_lead_filt.set_params(_roll_lead_w*2*M_PI, _roll_lead_r, 1.0f/_dt);
+    rate_error = _roll_lead_filt.apply(rate_error);
+
     _pid_rate_roll.set_input_filter_d(rate_error);
 
     // get p value
@@ -612,10 +651,14 @@ float AC_AttitudeControl::rate_bf_to_motor_pitch(float rate_target_cds)
 
     // get current rate
     // To-Do: make getting gyro rates more efficient?
-    current_rate = (_ahrs.get_gyro_for_control().y * AC_ATTITUDE_CONTROL_DEGX100);
+    current_rate = _ahrs.get_gyro_for_control().y * AC_ATTITUDE_CONTROL_DEGX100;
 
     // calculate error and call pid controller
     rate_error = rate_target_cds - current_rate;
+
+    _pitch_lead_filt.set_params(_pitch_lead_w*2*M_PI, _pitch_lead_r, 1.0f/_dt);
+    rate_error = _pitch_lead_filt.apply(rate_error);
+
     _pid_rate_pitch.set_input_filter_d(rate_error);
 
     // get p value
