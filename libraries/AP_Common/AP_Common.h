@@ -43,7 +43,7 @@
 // sometimes we need to prevent inlining to prevent large stack usage
 #define NOINLINE __attribute__((noinline))
 
-#define FORMAT(a,b) __attribute__((format(printf, a, b)))
+#define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
 // Make some dire warnings into errors

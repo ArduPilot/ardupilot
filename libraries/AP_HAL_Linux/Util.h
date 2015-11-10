@@ -47,7 +47,7 @@ public:
      * should not be used on hot path since it will open, write and close the
      * file for each call.
      */
-    int write_file(const char *path, const char *fmt, ...) FORMAT(3, 4);
+    int write_file(const char *path, const char *fmt, ...) FMT_PRINTF(3, 4);
 
     /*
      * Read a string as specified by @fmt from the file in @path. Note this
