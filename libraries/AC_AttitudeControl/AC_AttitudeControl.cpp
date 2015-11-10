@@ -57,6 +57,8 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT),
 
+    // IDs 8,9,10,11 RESERVED (in use on Solo)
+
     AP_GROUPEND
 };
 
