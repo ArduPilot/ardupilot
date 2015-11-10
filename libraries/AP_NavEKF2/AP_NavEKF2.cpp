@@ -823,7 +823,9 @@ bool NavEKF2::use_compass(void) const
 void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas)
 {
     if (core) {
-        core[primary].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas);
+        }
     }
 }
 
