@@ -153,26 +153,6 @@ void Scheduler::delay(uint16_t ms)
     }
 }
 
-uint64_t Scheduler::millis64()
-{
-    return AP_HAL::millis64();
-}
-
-uint64_t Scheduler::micros64()
-{
-    return AP_HAL::micros64();
-}
-
-uint32_t Scheduler::millis()
-{
-    return AP_HAL::millis();
-}
-
-uint32_t Scheduler::micros()
-{
-    return AP_HAL::micros();
-}
-
 void Scheduler::delay_microseconds(uint16_t us)
 {
     if (_stopped_clock_usec) {
@@ -388,20 +368,6 @@ void *Scheduler::_io_thread(void* arg)
         sched->_run_io();
     }
     return NULL;
-}
-
-void Scheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    vdprintf(1, errormsg, ap);
-    va_end(ap);
-    write(1, "\n", 1);
-
-    hal.rcin->deinit();
-    hal.scheduler->delay_microseconds(10000);
-    exit(1);
 }
 
 bool Scheduler::in_timerprocess()

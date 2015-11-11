@@ -85,26 +85,6 @@ void PX4Scheduler::init(void *unused)
     pthread_create(&_storage_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_storage_thread, this);
 }
 
-uint64_t PX4Scheduler::micros64() 
-{
-    return AP_HAL::micros64();
-}
-
-uint64_t PX4Scheduler::millis64() 
-{
-    return AP_HAL::millis64();
-}
-
-uint32_t PX4Scheduler::micros() 
-{
-    return AP_HAL::micros();
-}
-
-uint32_t PX4Scheduler::millis() 
-{
-    return AP_HAL::millis();
-}
-
 /**
    delay for a specified number of microseconds using a semaphore wait
  */
@@ -372,20 +352,6 @@ void *PX4Scheduler::_storage_thread(void)
         perf_end(_perf_storage_timer);
     }
     return NULL;
-}
-
-void PX4Scheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    vdprintf(1, errormsg, ap);
-    va_end(ap);
-    write(1, "\n", 1);
-
-    hal.scheduler->delay_microseconds(10000);
-    _px4_thread_should_exit = true;
-    exit(1);
 }
 
 bool PX4Scheduler::in_timerprocess() 

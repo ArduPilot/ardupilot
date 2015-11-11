@@ -37,31 +37,6 @@ void SITLScheduler::init(void *unused)
 {
 }
 
-uint64_t SITLScheduler::_micros64()
-{
-    return AP_HAL::micros64();
-}
-
-uint64_t SITLScheduler::micros64()
-{
-    return AP_HAL::micros64();
-}
-
-uint32_t SITLScheduler::micros()
-{
-    return AP_HAL::micros();
-}
-
-uint64_t SITLScheduler::millis64()
-{
-    return AP_HAL::millis64();
-}
-
-uint32_t SITLScheduler::millis()
-{
-    return AP_HAL::millis();
-}
-
 void SITLScheduler::delay_microseconds(uint16_t usec)
 {
     uint64_t start = AP_HAL::micros64();
@@ -238,18 +213,6 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
     }
 
     _in_io_proc = false;
-}
-
-void SITLScheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    hal.console->vprintf(errormsg, ap);
-    va_end(ap);
-    hal.console->printf("\n");
-
-    for(;;);
 }
 
 /*
