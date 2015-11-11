@@ -86,7 +86,7 @@ void AP_EPM::grab()
     _flags.active = true;
 
     // capture time
-    _last_grab_or_release = hal.scheduler->millis();
+    _last_grab_or_release = AP_HAL::millis();
 
     // move the servo to the release position
     RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, _grab_pwm);
@@ -105,7 +105,7 @@ void AP_EPM::release()
     _flags.active = true;
 
     // capture time
-    _last_grab_or_release = hal.scheduler->millis();
+    _last_grab_or_release = AP_HAL::millis();
 
     // move the servo to the release position
     RC_Channel_aux::set_radio(RC_Channel_aux::k_epm, _release_pwm);
@@ -131,12 +131,12 @@ void AP_EPM::neutral()
 void AP_EPM::update()
 {
     // move EPM PWM output back to neutral 2 seconds after the last grab or release
-    if (_flags.active && (hal.scheduler->millis() - _last_grab_or_release > EPM_RETURN_TO_NEUTRAL_MS)) {
+    if (_flags.active && (AP_HAL::millis() - _last_grab_or_release > EPM_RETURN_TO_NEUTRAL_MS)) {
         neutral();
     }
 
     // re-grab the cargo intermittently
-    if (_flags.grab && (_regrab_interval > 0) && (hal.scheduler->millis() - _last_grab_or_release > ((uint32_t)_regrab_interval * 1000))) {
+    if (_flags.grab && (_regrab_interval > 0) && (AP_HAL::millis() - _last_grab_or_release > ((uint32_t)_regrab_interval * 1000))) {
         grab();
     }
 }

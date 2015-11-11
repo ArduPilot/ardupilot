@@ -27,7 +27,7 @@ void Copter::motor_test_output()
     }
 
     // check for test timeout
-    if ((hal.scheduler->millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
+    if ((AP_HAL::millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
         // stop motor test
         motor_test_stop();
     } else {
@@ -128,7 +128,7 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
     }
 
     // set timeout
-    motor_test_start_ms = hal.scheduler->millis();
+    motor_test_start_ms = AP_HAL::millis();
     motor_test_timeout_ms = min(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output

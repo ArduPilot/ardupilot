@@ -52,32 +52,32 @@ HeatPwm::HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint32_t period
     char *run_path;
 
     if (asprintf(&duty_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_DUTY) == -1) {
-        hal.scheduler->panic("HeatPwm not enough memory\n");
+        AP_HAL::panic("HeatPwm not enough memory\n");
     }
     _duty_fd = open(duty_path, O_RDWR);
     if (_duty_fd == -1) {
         perror("opening duty");
-        hal.scheduler->panic("Error Initializing Pwm heat\n");
+        AP_HAL::panic("Error Initializing Pwm heat\n");
     }
     free(duty_path);
 
     if (asprintf(&period_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_PERIOD) == -1) {
-        hal.scheduler->panic("HeatPwm not enough memory\n");
+        AP_HAL::panic("HeatPwm not enough memory\n");
     }
     _period_fd = open(period_path, O_RDWR);
     if (_period_fd == -1) {
         perror("opening period");
-        hal.scheduler->panic("Error Initializing Pwm heat\n");
+        AP_HAL::panic("Error Initializing Pwm heat\n");
     }
     free(period_path);
 
     if (asprintf(&run_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_RUN) == -1) {
-        hal.scheduler->panic("HeatPwm not enough memory\n");
+        AP_HAL::panic("HeatPwm not enough memory\n");
     }
     _run_fd = open(run_path, O_RDWR);
     if (_run_fd == -1) {
         perror("opening run");
-        hal.scheduler->panic("Error Initializing Pwm heat\n");
+        AP_HAL::panic("Error Initializing Pwm heat\n");
     }
     free(run_path);
 
@@ -90,7 +90,7 @@ void HeatPwm::set_imu_temp(float current)
 {
     float error, output;
 
-    if (hal.scheduler->millis() - _last_temp_update < 5) {
+    if (AP_HAL::millis() - _last_temp_update < 5) {
         return;
     }
 
@@ -112,7 +112,7 @@ void HeatPwm::set_imu_temp(float current)
     }
 
     _set_duty(output);
-    _last_temp_update = hal.scheduler->millis();
+    _last_temp_update = AP_HAL::millis();
 }
 
 void HeatPwm::_set_duty(uint32_t duty)

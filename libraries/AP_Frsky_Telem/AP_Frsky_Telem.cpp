@@ -156,7 +156,7 @@ void AP_Frsky_Telem::init_uart_for_sport()
 */
 void AP_Frsky_Telem::send_hub_frame()
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     // send frame1 every 200ms
     if (now - _last_frame1_ms > 200) {

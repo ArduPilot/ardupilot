@@ -32,7 +32,7 @@ void GPIO_BBB::init()
     uint8_t bank_enable[3] = { 5, 65, 105 };
     int export_fd = open("/sys/class/gpio/export", O_WRONLY);
     if (export_fd == -1) {
-        hal.scheduler->panic("unable to open /sys/class/gpio/export");
+        AP_HAL::panic("unable to open /sys/class/gpio/export");
     }
     for (uint8_t i=0; i<3; i++) {
         dprintf(export_fd, "%u\n", (unsigned)bank_enable[i]);
@@ -51,7 +51,7 @@ void GPIO_BBB::init()
     for (uint8_t i=0; i<LINUX_GPIO_NUM_BANKS; i++) {
         gpio_bank[i].base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, offsets[i]);
         if ((char *)gpio_bank[i].base == MAP_FAILED) {
-            hal.scheduler->panic("unable to map GPIO bank");
+            AP_HAL::panic("unable to map GPIO bank");
         }
         gpio_bank[i].oe = gpio_bank[i].base + GPIO_OE;
         gpio_bank[i].in = gpio_bank[i].base + GPIO_IN;

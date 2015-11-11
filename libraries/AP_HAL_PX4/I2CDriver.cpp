@@ -45,7 +45,7 @@ PX4I2CDriver::PX4I2CDriver(void)
 {
     px4_i2c = new PX4_I2C(PX4_I2C_BUS_EXPANSION);
     if (px4_i2c == nullptr) {
-        hal.scheduler->panic("Unable to allocate PX4 I2C driver");
+        AP_HAL::panic("Unable to allocate PX4 I2C driver");
     }
 }
 

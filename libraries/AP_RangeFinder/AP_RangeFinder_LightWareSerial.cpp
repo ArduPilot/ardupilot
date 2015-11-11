@@ -91,9 +91,9 @@ void AP_RangeFinder_LightWareSerial::update(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
-        last_reading_ms = hal.scheduler->millis();
+        last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (hal.scheduler->millis() - last_reading_ms > 200) {
+    } else if (AP_HAL::millis() - last_reading_ms > 200) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

@@ -67,7 +67,7 @@ void DataFlashTest::setup(void)
     uint16_t i;
 
     for (i = 0; i < NUM_PACKETS; i++) {
-        uint32_t start = hal.scheduler->micros();
+        uint32_t start = AP_HAL::micros();
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
         struct log_Test pkt = {
@@ -80,7 +80,7 @@ void DataFlashTest::setup(void)
             l2    : (int32_t)(i * 16268)
         };
         dataflash.WriteBlock(&pkt, sizeof(pkt));
-        total_micros += hal.scheduler->micros() - start;
+        total_micros += AP_HAL::micros() - start;
         hal.scheduler->delay(20);
     }
 

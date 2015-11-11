@@ -51,7 +51,7 @@ FLYMAPLERCInput::FLYMAPLERCInput()
 // This interrupt triggers on a negative transiution of the PPM-SIM pin
 void FLYMAPLERCInput::_timer_capt_cb(void)
 {
-    _last_input_interrupt_time = hal.scheduler->millis();
+    _last_input_interrupt_time = AP_HAL::millis();
 
     static uint16 previous_count;
     static uint8  channel_ctr;
@@ -128,7 +128,7 @@ void FLYMAPLERCInput::init(void* machtnichts)
 }
 
 bool FLYMAPLERCInput::new_input() {
-    if ((hal.scheduler->millis() - _last_input_interrupt_time) > 50)
+    if ((AP_HAL::millis() - _last_input_interrupt_time) > 50)
 	_valid_channels = 0; // Lost RC Input?
     return _valid_channels != 0;
 }

@@ -27,11 +27,9 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
 void RCOutput_AioPRU::init(void* machtnicht)
 {

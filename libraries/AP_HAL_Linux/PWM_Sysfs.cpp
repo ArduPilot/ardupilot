@@ -57,7 +57,7 @@ PWM_Sysfs::PWM_Sysfs(uint8_t chip, uint8_t channel)
 
     r = snprintf(path, sizeof(path), PWM_BASE_PATH "%u/export", _chip);
     if (r < 0 || r >= (int)sizeof(path)) {
-        hal.scheduler->panic("LinuxPWM_Sysfs: chip=%u channel=%u "
+        AP_HAL::panic("LinuxPWM_Sysfs: chip=%u channel=%u "
                                 "Error formatting pwm export: %s",
                                 _chip, _channel, strerror(errno));
     }
@@ -72,14 +72,14 @@ PWM_Sysfs::PWM_Sysfs(uint8_t chip, uint8_t channel)
     r = snprintf(path, sizeof(path), PWM_BASE_PATH "%u/pwm%u/duty_cycle",
                  _chip, _channel);
     if (r < 0 || r >= (int)sizeof(path)) {
-        hal.scheduler->panic("LinuxPWM_Sysfs: chip=%u channel=%u "
+        AP_HAL::panic("LinuxPWM_Sysfs: chip=%u channel=%u "
                              "Error formatting channel duty cycle: %s",
                              _chip, _channel, strerror(errno));
     }
 
     _duty_cycle_fd = ::open(path, O_RDWR | O_CLOEXEC);
     if (_duty_cycle_fd < 0) {
-        hal.scheduler->panic("LinuxPWM_Sysfs: chip=%u channel=%u "
+        AP_HAL::panic("LinuxPWM_Sysfs: chip=%u channel=%u "
                              "Unable to open file %s: %s",
                              _chip, _channel, path, strerror(errno));
     }

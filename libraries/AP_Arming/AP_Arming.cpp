@@ -175,9 +175,9 @@ bool AP_Arming::ins_checks(bool report)
                     threshold *= 3;
                 }
                 if (vec_diff.length() <= threshold) {
-                    last_accel_pass_ms[i] = hal.scheduler->millis();
+                    last_accel_pass_ms[i] = AP_HAL::millis();
                 }
-                if (hal.scheduler->millis() - last_accel_pass_ms[i] > 10000) {
+                if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
                     if (report) {
                         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent Accelerometers");
                     }
@@ -196,9 +196,9 @@ bool AP_Arming::ins_checks(bool report)
                 // allow for up to 5 degrees/s difference. Pass if its
                 // been OK in last 10 seconds
                 if (vec_diff.length() <= radians(5)) {
-                    last_gyro_pass_ms[i] = hal.scheduler->millis();
+                    last_gyro_pass_ms[i] = AP_HAL::millis();
                 }
-                if (hal.scheduler->millis() - last_gyro_pass_ms[i] > 10000) {
+                if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
                     if (report) {
                         GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent gyros");
                     }

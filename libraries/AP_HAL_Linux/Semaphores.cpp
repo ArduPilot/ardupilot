@@ -21,13 +21,13 @@ bool Semaphore::take(uint32_t timeout_ms)
     if (take_nonblocking()) {
         return true;
     }
-    uint64_t start = hal.scheduler->micros64();
+    uint64_t start = AP_HAL::micros64();
     do {
         hal.scheduler->delay_microseconds(200);
         if (take_nonblocking()) {
             return true;
         }
-    } while ((hal.scheduler->micros64() - start) < timeout_ms*1000);
+    } while ((AP_HAL::micros64() - start) < timeout_ms*1000);
     return false;
 }
 

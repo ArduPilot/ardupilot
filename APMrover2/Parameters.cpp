@@ -563,7 +563,7 @@ void Rover::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf("Bad var table\n");
-        hal.scheduler->panic("Bad var table");
+        AP_HAL::panic("Bad var table");
     }
 
 	if (!g.format_version.load() ||

@@ -43,7 +43,7 @@ uint16_t SITL_State::_airspeed_sensor(float airspeed)
         return 0xFFFF;
     }
     // add delay
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     uint32_t best_time_delta_wind = 200; // initialise large time representing buffer entry closest to current time - delay.
     uint8_t best_index_wind = 0; // initialise number representing the index of the entry in buffer closest to delay.
 

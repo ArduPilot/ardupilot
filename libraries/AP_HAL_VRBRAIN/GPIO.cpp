@@ -33,7 +33,7 @@ void VRBRAINGPIO::init()
 {
     _led_fd = open(LED_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
-        hal.scheduler->panic("Unable to open " LED_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " LED_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
@@ -63,7 +63,7 @@ void VRBRAINGPIO::init()
 #if defined(BUZZER_EXT)
     _buzzer_fd = open(BUZZER_DEVICE_PATH, O_RDWR);
     if (_buzzer_fd == -1) {
-        hal.scheduler->panic("Unable to open " BUZZER_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " BUZZER_DEVICE_PATH);
     }
     if (ioctl(_buzzer_fd, BUZZER_OFF, BUZZER_EXT) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO BUZZER\n");

@@ -131,7 +131,7 @@ GCS_MAVLINK::queued_param_send()
 
     uint16_t bytes_allowed;
     uint8_t count;
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
 
     // use at most 30% of bandwidth on parameters. The constant 26 is
     // 1/(1000 * 1/8 * 0.001 * 0.3)
@@ -193,7 +193,7 @@ GCS_MAVLINK::queued_waypoint_send()
 }
 
 void GCS_MAVLINK::reset_cli_timeout() {
-      _cli_timeout = hal.scheduler->millis();
+    _cli_timeout = AP_HAL::millis();
 }
 
 void GCS_MAVLINK::send_meminfo(void)
@@ -355,7 +355,7 @@ void GCS_MAVLINK::handle_mission_count(AP_Mission &mission, mavlink_message_t *m
     mission.truncate(packet.count);
 
     // set variables to help handle the expected receiving of commands from the GCS
-    waypoint_timelast_receive = hal.scheduler->millis();    // set time we last received commands to now
+    waypoint_timelast_receive = AP_HAL::millis();    // set time we last received commands to now
     waypoint_receiving = true;              // record that we expect to receive commands
     waypoint_request_i = 0;                 // reset the next expected command number to zero
     waypoint_request_last = packet.count;   // record how many commands we expect to receive
@@ -398,7 +398,7 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
         return;
     }
 
-    waypoint_timelast_receive = hal.scheduler->millis();
+    waypoint_timelast_receive = AP_HAL::millis();
     waypoint_timelast_request = 0;
     waypoint_receiving   = true;
     waypoint_request_i   = packet.start_index;
@@ -623,7 +623,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
     // record if the GCS has been receiving radio messages from
     // the aircraft
     if (packet.remrssi != 0) {
-        last_radio_status_remrssi_ms = hal.scheduler->millis();
+        last_radio_status_remrssi_ms = AP_HAL::millis();
     }
 
     // use the state of the transmit buffer in the radio to
@@ -724,7 +724,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     }
     
     // update waypoint receiving state machine
-    waypoint_timelast_receive = hal.scheduler->millis();
+    waypoint_timelast_receive = AP_HAL::millis();
     waypoint_request_i++;
     
     if (waypoint_request_i >= waypoint_request_last) {
@@ -741,7 +741,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         // XXX ignores waypoint radius for individual waypoints, can
         // only set WP_RADIUS parameter
     } else {
-        waypoint_timelast_request = hal.scheduler->millis();
+        waypoint_timelast_request = AP_HAL::millis();
         // if we have enough space, then send the next WP immediately
         if (comm_get_txspace(chan) >= 
             MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_MISSION_ITEM_LEN) {
@@ -841,7 +841,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         if (run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
              *  heartbeat packets have been received */
-            if ((mavlink_active==0) && (hal.scheduler->millis() - _cli_timeout) < 20000 && 
+            if ((mavlink_active==0) && (AP_HAL::millis() - _cli_timeout) < 20000 && 
                 comm_is_idle(chan)) {
                 if (c == '\n' || c == '\r') {
                     crlf_count++;
@@ -875,7 +875,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli)
         return;
     }
 
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
     if (waypoint_receiving &&
@@ -940,7 +940,7 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
     mavlink_msg_system_time_send(
         chan,
         gps.time_epoch_usec(),
-        hal.scheduler->millis());
+        AP_HAL::millis());
 }
 
 
@@ -949,7 +949,7 @@ void GCS_MAVLINK::send_system_time(AP_GPS &gps)
  */
 void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     uint16_t values[8];
     memset(values, 0, sizeof(values));
@@ -1010,7 +1010,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
 
     mavlink_msg_raw_imu_send(
         chan,
-        hal.scheduler->micros(),
+        AP_HAL::micros(),
         accel.x * 1000.0f / GRAVITY_MSS,
         accel.y * 1000.0f / GRAVITY_MSS,
         accel.z * 1000.0f / GRAVITY_MSS,
@@ -1035,7 +1035,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     }
     mavlink_msg_scaled_imu2_send(
         chan,
-        hal.scheduler->millis(),
+        AP_HAL::millis(),
         accel2.x * 1000.0f / GRAVITY_MSS,
         accel2.y * 1000.0f / GRAVITY_MSS,
         accel2.z * 1000.0f / GRAVITY_MSS,
@@ -1060,7 +1060,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     }
     mavlink_msg_scaled_imu3_send(
         chan,
-        hal.scheduler->millis(),
+        AP_HAL::millis(),
         accel3.x * 1000.0f / GRAVITY_MSS,
         accel3.y * 1000.0f / GRAVITY_MSS,
         accel3.z * 1000.0f / GRAVITY_MSS,
@@ -1074,7 +1074,7 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
 
 void GCS_MAVLINK::send_scaled_pressure(AP_Baro &barometer)
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     float pressure = barometer.get_pressure(0);
     mavlink_msg_scaled_pressure_send(
         chan,
@@ -1253,7 +1253,7 @@ void GCS_MAVLINK::send_opticalflow(AP_AHRS_NavEKF &ahrs, const OpticalFlow &optf
     // populate and send message
     mavlink_msg_optical_flow_send(
         chan,
-        hal.scheduler->millis(),
+        AP_HAL::millis(),
         0, // sensor id is zero
         flowRate.x,
         flowRate.y,
@@ -1334,7 +1334,7 @@ void GCS_MAVLINK::send_local_position(const AP_AHRS &ahrs) const
 
     mavlink_msg_local_position_ned_send(
         chan,
-        hal.scheduler->millis(),
+        AP_HAL::millis(),
         local_position.x,
         local_position.y,
         local_position.z,
@@ -1352,7 +1352,7 @@ void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
 
     mavlink_msg_vibration_send(
         chan,
-        hal.scheduler->micros64(),
+        AP_HAL::micros64(),
         vibration.x,
         vibration.y,
         vibration.z,

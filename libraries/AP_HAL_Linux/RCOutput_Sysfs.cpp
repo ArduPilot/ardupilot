@@ -27,8 +27,6 @@
 
 namespace Linux {
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
-
 RCOutput_Sysfs::RCOutput_Sysfs(uint8_t chip, uint8_t channel_count)
     : _chip(chip)
     , _channel_count(channel_count)
@@ -50,7 +48,7 @@ void RCOutput_Sysfs::init(void *machtnichts)
     for (uint8_t i = 0; i < _channel_count; i++) {
         _pwm_channels[i] = new PWM_Sysfs(_chip, i);
         if (!_pwm_channels[i]) {
-            hal.scheduler->panic("RCOutput_Sysfs_PWM: Unable to setup PWM pin.");
+            AP_HAL::panic("RCOutput_Sysfs_PWM: Unable to setup PWM pin.");
         }
         _pwm_channels[i]->enable(false);
 

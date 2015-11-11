@@ -756,9 +756,9 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     if (cmd.content.altitude_wait.wiggle_time != 0) {
         static uint32_t last_wiggle_ms;
         if (auto_state.idle_wiggle_stage == 0 &&
-            hal.scheduler->millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
+            AP_HAL::millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
             auto_state.idle_wiggle_stage = 1;
-            last_wiggle_ms = hal.scheduler->millis();
+            last_wiggle_ms = AP_HAL::millis();
         }
         // idle_wiggle_stage is updated in set_servos_idle()
     }

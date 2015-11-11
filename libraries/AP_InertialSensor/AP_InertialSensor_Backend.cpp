@@ -98,7 +98,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     DataFlash_Class *dataflash = get_dataflash();
     if (dataflash != NULL) {
-        uint64_t now = hal.scheduler->micros64();
+        uint64_t now = AP_HAL::micros64();
         struct log_GYRO pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
             time_us   : now,
@@ -153,7 +153,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     DataFlash_Class *dataflash = get_dataflash();
     if (dataflash != NULL) {
-        uint64_t now = hal.scheduler->micros64();
+        uint64_t now = AP_HAL::micros64();
         struct log_ACCEL pkt = {
             LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
             time_us   : now,

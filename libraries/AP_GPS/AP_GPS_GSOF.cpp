@@ -50,7 +50,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     // baud request for port 3
     requestBaud(3);
 
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 }
 
@@ -59,7 +59,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
         if (now > gsofmsg_time) {
@@ -349,7 +349,7 @@ AP_GPS_GSOF::inject_data(uint8_t *data, uint8_t len)
 {
 
     if (port->txspace() > len) {
-        last_injected_data_ms = hal.scheduler->millis();
+        last_injected_data_ms = AP_HAL::millis();
         port->write(data, len);
     } else {
         Debug("GSOF: Not enough TXSPACE");

@@ -184,7 +184,7 @@ AP_GPS::detect_instance(uint8_t instance)
 {
     AP_GPS_Backend *new_gps = NULL;
     struct detect_state *dstate = &detect_state[instance];
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     if (_type[instance] == GPS_TYPE_PX4) {
@@ -347,7 +347,7 @@ AP_GPS::update_instance(uint8_t instance)
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 1.2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
@@ -401,7 +401,7 @@ AP_GPS::update(void)
 
             if (state[i].status == state[primary_instance].status && another_gps_has_1_or_more_sats) {
 
-                uint32_t now = hal.scheduler->millis();
+                uint32_t now = AP_HAL::millis();
                 bool another_gps_has_2_or_more_sats = (state[i].num_sats >= state[primary_instance].num_sats + 2);
 
                 if ( (another_gps_has_1_or_more_sats && (now - _last_instance_swap_ms) >= 20000) ||
@@ -435,7 +435,7 @@ AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms,
     if (instance >= GPS_MAX_INSTANCES) {
         return;
     }
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
@@ -507,7 +507,7 @@ AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         last_send_time_ms[chan] = last_message_time_ms(0);
     } else {
         // when we don't have a GPS then send at 1Hz
-        uint32_t now = hal.scheduler->millis();
+        uint32_t now = AP_HAL::millis();
         if (now - last_send_time_ms[chan] < 1000) {
             return;
         }

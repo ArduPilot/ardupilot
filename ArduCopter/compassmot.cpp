@@ -221,8 +221,8 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
             current_amps_max = max(current_amps_max, battery.current_amps());
 
         }
-        if (hal.scheduler->millis() - last_send_time > 500) {
-            last_send_time = hal.scheduler->millis();
+        if (AP_HAL::millis() - last_send_time > 500) {
+            last_send_time = AP_HAL::millis();
             mavlink_msg_compassmot_status_send(chan, 
                                                channel_throttle->control_in,
                                                battery.current_amps(),

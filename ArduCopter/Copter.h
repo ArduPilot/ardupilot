@@ -680,8 +680,6 @@ private:
     void log_picture();
     uint8_t mavlink_compassmot(mavlink_channel_t chan);
     void delay(uint32_t ms);
-    uint32_t millis();
-    uint32_t micros();
     bool acro_init(bool ignore_checks);
     void acro_run();
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
@@ -1023,5 +1021,8 @@ public:
 
 extern const AP_HAL::HAL& hal;
 extern Copter copter;
+
+using AP_HAL::millis;
+using AP_HAL::micros;
 
 #endif // _COPTER_H_

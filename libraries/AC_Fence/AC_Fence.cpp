@@ -124,7 +124,7 @@ uint8_t AC_Fence::check_fence(float curr_alt)
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
-        if ((hal.scheduler->millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+        if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
             return AC_FENCE_TYPE_NONE;
         } else {
             // recovery period has passed so reset manual recovery time and continue with fence breach checks
@@ -202,7 +202,7 @@ void AC_Fence::record_breach(uint8_t fence_type)
 {
     // if we haven't already breached a limit, update the breach time
     if (_breached_fences == AC_FENCE_TYPE_NONE) {
-        _breach_time = hal.scheduler->millis();
+        _breach_time = AP_HAL::millis();
     }
 
     // update breach count
@@ -254,5 +254,5 @@ void AC_Fence::manual_recovery_start()
     }
 
     // record time pilot began manual recovery
-    _manual_recovery_start_ms = hal.scheduler->millis();
+    _manual_recovery_start_ms = AP_HAL::millis();
 }

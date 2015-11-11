@@ -16,7 +16,7 @@ void DataFlash_Backend::periodic_fullrate(const uint32_t now)
 
 void DataFlash_Backend::periodic_tasks()
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
         periodic_1Hz(now);
         _last_periodic_1Hz = now;

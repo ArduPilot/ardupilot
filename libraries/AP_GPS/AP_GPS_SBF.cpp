@@ -53,7 +53,7 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {
-	uint32_t now = hal.scheduler->millis();
+	uint32_t now = AP_HAL::millis();
 	
 	if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
 		if (now > _init_blob_time) {
@@ -156,7 +156,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         return;
     }
 
-    uint64_t now = hal.scheduler->micros64();
+    uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_SBF_EVENT header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_SBF_EVENT_MSG),
@@ -199,7 +199,7 @@ AP_GPS_SBF::process_message(void)
             state.time_week_ms = (uint32_t)(temp.TOW);
         }
 		
-		state.last_gps_time_ms = hal.scheduler->millis();
+		state.last_gps_time_ms = AP_HAL::millis();
 
         state.hdop = last_hdop;
 
@@ -289,7 +289,7 @@ AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
 {
 
     if (port->txspace() > len) {
-        last_injected_data_ms = hal.scheduler->millis();
+        last_injected_data_ms = AP_HAL::millis();
         port->write(data, len);
     } else {
         Debug("SBF: Not enough TXSPACE");
