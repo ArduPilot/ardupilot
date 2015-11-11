@@ -59,12 +59,13 @@ public:
         _run_io_procs(true);
     }
 
+    uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
+
 private:
     SITL_State *_sitlState;
     uint8_t _nested_atomic_ctr;
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
-    static struct timeval _sketch_start_time;
     static AP_HAL::Proc _failsafe;
 
     static void _run_timer_procs(bool called_from_isr);
@@ -82,7 +83,7 @@ private:
     void stop_clock(uint64_t time_usec);
 
     bool _initialized;
-    uint64_t stopped_clock_usec;
+    uint64_t _stopped_clock_usec;
 };
 #endif
 #endif // __AP_HAL_SITL_SCHEDULER_H__
