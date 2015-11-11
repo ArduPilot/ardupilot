@@ -42,7 +42,7 @@ private:
     float terminal_rotation_rate = 4*radians(360.0f);
     float hover_throttle = 0.65f;
     float terminal_velocity = 40;
-    float hover_lean = 8.0f;
+    float hover_lean = 3.0f;
     float yaw_zero = 0.1f;
     float rotor_rot_accel = radians(20);
     float roll_rate_max = radians(1400);
