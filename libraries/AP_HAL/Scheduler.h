@@ -60,11 +60,6 @@ public:
     virtual void     reboot(bool hold_in_bootloader) = 0;
 
     /**
-       optional function to set timer speed in Hz
-     */
-    virtual void     set_timer_speed(uint16_t speed_hz) {}
-
-    /**
        optional function to stop clock at a given time, used by log replay
      */
     virtual void     stop_clock(uint64_t time_usec) {}
