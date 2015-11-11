@@ -76,22 +76,22 @@ void VRBRAINScheduler::init(void *unused)
 
 uint64_t VRBRAINScheduler::micros64() 
 {
-    return hrt_absolute_time();
+    return AP_HAL::micros64();
 }
 
 uint64_t VRBRAINScheduler::millis64() 
 {
-    return micros64() / 1000;
+    return AP_HAL::millis64();
 }
 
 uint32_t VRBRAINScheduler::micros() 
 {
-    return micros64() & 0xFFFFFFFF;
+    return AP_HAL::micros();
 }
 
 uint32_t VRBRAINScheduler::millis() 
 {
-    return millis64() & 0xFFFFFFFF;
+    return AP_HAL::millis();
 }
 
 /**
@@ -114,9 +114,9 @@ void VRBRAINScheduler::delay_microseconds(uint16_t usec)
         perf_end(_perf_delay);
         return;
     }
-	uint64_t start = micros64();
+	uint64_t start = AP_HAL::micros64();
     uint64_t dt;
-	while ((dt=(micros64() - start)) < usec) {
+	while ((dt=(AP_HAL::micros64() - start)) < usec) {
 		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
@@ -129,9 +129,9 @@ void VRBRAINScheduler::delay(uint16_t ms)
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = micros64();
+	uint64_t start = AP_HAL::micros64();
     
-    while ((micros64() - start)/1000 < ms && 
+    while ((AP_HAL::micros64() - start)/1000 < ms && 
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -260,8 +260,8 @@ void *VRBRAINScheduler::_timer_thread(void)
         // process any pending RC input requests
         ((VRBRAINRCInput *)hal.rcin)->_timer_tick();
 
-        if (vrbrain_ran_overtime && millis() - last_ran_overtime > 2000) {
-            last_ran_overtime = millis();
+        if (vrbrain_ran_overtime && AP_HAL::millis() - last_ran_overtime > 2000) {
+            last_ran_overtime = AP_HAL::millis();
 //            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
 //            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
         }
@@ -350,7 +350,7 @@ bool VRBRAINScheduler::system_initializing() {
 
 void VRBRAINScheduler::system_initialized() {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
                    "more than once");
     }
     _initialized = true;
