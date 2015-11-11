@@ -134,7 +134,7 @@ void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
         _samples_collected++;
 
         if (_samples_collected >= _conf_num_samples) {
-            run_fit(50, _fitness);
+            run_fit(MAX_ITERATIONS, _fitness);
 
             if (_fitness < _conf_tolerance) {
                 set_status(ACCEL_CAL_SUCCESS);

@@ -34,11 +34,11 @@ void AP_AccelCal::update()
         update_status();
 
         AccelCalibrator *cal;
-        uint8_t num_calibrators = 0;
+        uint8_t num_active_calibrators = 0;
         for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
-            num_calibrators++;
+            num_active_calibrators++;
         }
-        if (num_calibrators != _num_calibrators) {
+        if (num_active_calibrators != _num_active_calibrators) {
             fail();
             return;
         }
@@ -154,13 +154,13 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
         return;
     }
     _start_collect_sample = false;
-    _num_calibrators = 0;
+    _num_active_calibrators = 0;
 
     AccelCalibrator *cal;
     for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
         cal->clear();
         cal->start(ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID, 6, 0.5f);
-        _num_calibrators++;
+        _num_active_calibrators++;
     }
 
     _started = true;

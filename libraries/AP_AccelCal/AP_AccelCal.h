@@ -59,7 +59,7 @@ private:
     bool _started;
     bool _saving;
 
-    uint8_t _num_calibrators;
+    uint8_t _num_active_calibrators;
 
     AccelCalibrator* get_calibrator(uint8_t i);
     void _printf(const char*, ...);
