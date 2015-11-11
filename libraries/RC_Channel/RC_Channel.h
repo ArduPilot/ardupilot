@@ -135,6 +135,8 @@ public:
 
     static RC_Channel *rc_channel(uint8_t i);
 
+    bool in_trim_dz();
+
 private:
     AP_Int8         _reverse;
     AP_Int16        _dead_zone;

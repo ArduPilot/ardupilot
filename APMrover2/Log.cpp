@@ -337,6 +337,23 @@ void Rover::Log_Write_Current()
     DataFlash.Log_Write_Power();
 }
 
+struct PACKED log_Arm_Disarm {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  arm_state;
+    uint16_t arm_checks;
+};
+
+void Rover::Log_Arm_Disarm() {
+    struct log_Arm_Disarm pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
+        time_us                 : hal.scheduler->micros64(),
+        arm_state               : arming.is_armed(),
+        arm_checks              : arming.get_enabled_checks()
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 void Rover::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
@@ -363,7 +380,7 @@ void Rover::Log_Write_Home_And_Origin()
 #endif
 
     // log ahrs home if set
-    if (home_is_set) {
+    if (home_is_set != HOME_UNSET) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }
@@ -380,6 +397,8 @@ const LogStructure Rover::log_structure[] = {
       "NTUN", "QHfHHb",     "TimeUS,Yaw,WpDist,TargBrg,NavBrg,Thr" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QfHHHbHCb",  "TimeUS,LatAcc,S1Dist,S2Dist,DCnt,TAng,TTim,Spd,Thr" },
+    { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
+      "ARM", "QBH", "TimeUS,ArmState,ArmChecks" },
     { LOG_STEERING_MSG, sizeof(log_Steering),             
       "STER", "Qff",   "TimeUS,Demanded,Achieved" },
 };
@@ -402,6 +421,8 @@ void Rover::log_init(void)
 	if (g.log_bitmask != 0) {
 		start_logging();
 	}
+
+    arming.set_logging_available(DataFlash.CardInserted());
 }
 
 #if CLI_ENABLED == ENABLED

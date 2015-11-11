@@ -13,7 +13,12 @@ void Rover::set_control_channels(void)
 
 	// set rc channel ranges
 	channel_steer->set_angle(SERVO_MAX);
-	channel_throttle->set_angle(100);
+    channel_throttle->set_angle(100);
+
+    // For a rover safety is TRIM throttle
+    if (!arming.is_armed() && arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1), channel_throttle->radio_trim);
+    }
 
     // setup correct scaling for ESCs like the UAVCAN PX4ESC which
     // take a proportion of speed. 
@@ -34,10 +39,83 @@ void Rover::init_rc_out()
 {
     RC_Channel::rc_channel(CH_1)->enable_out();
     RC_Channel::rc_channel(CH_3)->enable_out();
+
+    if (arming.arming_required() != AP_Arming::YES_ZERO_PWM) {
+        channel_throttle->enable_out();
+    }
+
     RC_Channel::output_trim_all();    
 
     // setup PWM values to send if the FMU firmware dies
     RC_Channel::setup_failsafe_trim_all();  
+
+    // output throttle trim when safety off if arming
+    // is setup for min on disarm.  MIN is from plane where MIN is effectively no throttle.
+    // For Rover's no throttle means TRIM as rovers can go backwards i.e. MIN throttle is
+    // full speed backward.
+    if (arming.arming_required() == AP_Arming::YES_MIN_PWM) {
+        hal.rcout->set_safety_pwm(1UL<<(rcmap.throttle()-1),  channel_throttle->radio_trim);
+    }
+}
+
+/*
+  check for driver input on rudder/steering stick for arming/disarming
+*/
+void Rover::rudder_arm_disarm_check()
+{
+    // In Rover we need to check that its set to the throttle trim and within the DZ
+    // if throttle is not within trim dz, then pilot cannot rudder arm/disarm
+    if (!channel_throttle->in_trim_dz()) {
+        rudder_arm_timer = 0;
+        return;
+    }
+
+    // if not in a manual throttle mode then disallow rudder arming/disarming
+    if (auto_throttle_mode) {
+        rudder_arm_timer = 0;
+        return;
+    }
+
+	if (!arming.is_armed()) {
+		// when not armed, full right rudder starts arming counter
+		if (channel_steer->control_in > 4000) {
+			uint32_t now = millis();
+
+			if (rudder_arm_timer == 0 ||
+				now - rudder_arm_timer < 3000) {
+
+				if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
+			} else {
+				//time to arm!
+				arm_motors(AP_Arming::RUDDER);
+				rudder_arm_timer = 0;
+			}
+		} else {
+			// not at full right rudder
+			rudder_arm_timer = 0;
+		}
+	} else if (!motor_active()) {
+		// when armed and motor not active (not moving), full left rudder starts disarming counter
+		if (channel_steer->control_in < -4000) {
+			uint32_t now = millis();
+
+			if (rudder_arm_timer == 0 ||
+				now - rudder_arm_timer < 3000) {
+				if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
+			} else {
+				//time to disarm!
+				disarm_motors();
+				rudder_arm_timer = 0;
+			}
+		} else {
+			// not at full left rudder
+			rudder_arm_timer = 0;
+		}
+	}
 }
 
 void Rover::read_radio()
@@ -95,6 +173,9 @@ void Rover::read_radio()
         channel_steer->set_pwm(steer);
         channel_throttle->set_pwm(thr);
     }
+
+    rudder_arm_disarm_check();
+
 }
 
 void Rover::control_failsafe(uint16_t pwm)

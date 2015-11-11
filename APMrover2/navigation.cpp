@@ -13,7 +13,7 @@ void Rover::navigate()
 		return;
 	}
 
-	if ((next_WP.lat == 0)||(home_is_set==false)){
+	if ((next_WP.lat == 0) || (home_is_set==HOME_UNSET)){
 		return;
 	}
 

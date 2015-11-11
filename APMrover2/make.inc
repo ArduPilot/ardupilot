@@ -46,4 +46,5 @@ LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_RSSI
 LIBRARIES += AP_Declination
 LIBRARIES += AP_RPM
+LIBRARIES += AP_Arming
 
