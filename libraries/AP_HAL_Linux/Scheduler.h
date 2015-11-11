@@ -18,6 +18,11 @@ typedef void *(*pthread_startroutine_t)(void *);
 
 public:
     Scheduler();
+
+    static Scheduler *from(AP_HAL::Scheduler *scheduler) {
+        return static_cast<Scheduler*>(scheduler);
+    }
+
     void     init(void* machtnichts);
     void     delay(uint16_t ms);
     uint32_t millis();
@@ -48,8 +53,9 @@ public:
 
     void     stop_clock(uint64_t time_usec);
 
+    uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
+
 private:
-    struct timespec _sketch_start_time;    
     void _timer_handler(int signum);
     void _microsleep(uint32_t usec);
 
@@ -88,7 +94,7 @@ private:
     void _create_realtime_thread(pthread_t *ctx, int rtprio, const char *name,
                                  pthread_startroutine_t start_routine);
 
-    uint64_t stopped_clock_usec;
+    uint64_t _stopped_clock_usec;
 
     Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
