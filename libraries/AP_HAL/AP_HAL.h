@@ -30,5 +30,7 @@
 /* HAL Class definition */
 #include "HAL.h"
 
+#include "platform.h"
+
 #endif // __AP_HAL_H__
 
