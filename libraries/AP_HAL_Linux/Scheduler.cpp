@@ -9,7 +9,6 @@
 #include "Util.h"
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
-#include <sys/time.h>
 #include <poll.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -69,7 +68,7 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     if (r != 0) {
         hal.console->printf("Error creating thread '%s': %s\n",
                             name, strerror(r));
-        panic("Failed to create thread");
+        AP_HAL::panic("Failed to create thread");
     }
     pthread_attr_destroy(&attr);
 
@@ -81,8 +80,6 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
 void Scheduler::init(void* machtnichts)
 {
     mlockall(MCL_CURRENT|MCL_FUTURE);
-
-    clock_gettime(CLOCK_MONOTONIC, &_sketch_start_time);
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
     sched_setscheduler(0, SCHED_FIFO, &param);
@@ -140,12 +137,12 @@ void Scheduler::_microsleep(uint32_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    if (stopped_clock_usec) {
+    if (_stopped_clock_usec) {
         return;
     }
-    uint64_t start = millis64();
+    uint64_t start = AP_HAL::millis64();
 
-    while ((millis64() - start) < ms) {
+    while ((AP_HAL::millis64() - start) < ms) {
         // this yields the CPU to other apps
         _microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -158,41 +155,27 @@ void Scheduler::delay(uint16_t ms)
 
 uint64_t Scheduler::millis64()
 {
-    if (stopped_clock_usec) {
-        return stopped_clock_usec/1000;
-    }
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_nsec*1.0e-9)));
+    return AP_HAL::millis64();
 }
 
 uint64_t Scheduler::micros64()
 {
-    if (stopped_clock_usec) {
-        return stopped_clock_usec;
-    }
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
-                  (_sketch_start_time.tv_sec +
-                   (_sketch_start_time.tv_nsec*1.0e-9)));
+    return AP_HAL::micros64();
 }
 
 uint32_t Scheduler::millis()
 {
-    return millis64() & 0xFFFFFFFF;
+    return AP_HAL::millis();
 }
 
 uint32_t Scheduler::micros()
 {
-    return micros64() & 0xFFFFFFFF;
+    return AP_HAL::micros();
 }
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    if (stopped_clock_usec) {
+    if (_stopped_clock_usec) {
         return;
     }
     _microsleep(us);
@@ -300,12 +283,12 @@ void *Scheduler::_timer_thread(void* arg)
       this aims to run at an average of 1kHz, so that it can be used
       to drive 1kHz processes without drift
      */
-    uint64_t next_run_usec = sched->micros64() + 1000;
+    uint64_t next_run_usec = AP_HAL::micros64() + 1000;
     while (true) {
-        uint64_t dt = next_run_usec - sched->micros64();
+        uint64_t dt = next_run_usec - AP_HAL::micros64();
         if (dt > 2000) {
             // we've lost sync - restart
-            next_run_usec = sched->micros64();
+            next_run_usec = AP_HAL::micros64();
         } else {
             sched->_microsleep(dt);
         }
@@ -439,7 +422,7 @@ bool Scheduler::system_initializing() {
 void Scheduler::system_initialized()
 {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called more than once");
+        AP_HAL::panic("PANIC: scheduler::system_initialized called more than once");
     }
     _initialized = true;
 }
@@ -451,8 +434,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
 void Scheduler::stop_clock(uint64_t time_usec)
 {
-    if (time_usec >= stopped_clock_usec) {
-        stopped_clock_usec = time_usec;
+    if (time_usec >= _stopped_clock_usec) {
+        _stopped_clock_usec = time_usec;
         _run_io();
     }
 }
