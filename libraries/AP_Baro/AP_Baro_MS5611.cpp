@@ -233,36 +233,22 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
 /**
  * MS5611 crc4 method based on PX4Firmware code
  */
-bool AP_Baro_MS56XX::_check_crc(void)
+static uint16_t calculate_crc(uint16_t *data)
 {
-    int16_t cnt;
-    uint16_t n_rem;
-    uint16_t crc_read;
+    uint16_t n_rem = 0;
     uint8_t n_bit;
-    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
-                           _C1, _C2, _C3, _C4, _C5, _C6,
-                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
-    n_rem = 0x00;
 
-    /* save the read crc */
-    crc_read = n_prom[7];
-
-    /* remove CRC byte */
-    n_prom[7] = (0xFF00 & (n_prom[7]));
-
-    for (cnt = 0; cnt < 16; cnt++) {
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
         /* uneven bytes */
         if (cnt & 1) {
-            n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
-
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
         } else {
-            n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
         }
 
         for (n_bit = 8; n_bit > 0; n_bit--) {
             if (n_rem & 0x8000) {
                 n_rem = (n_rem << 1) ^ 0x3000;
-
             } else {
                 n_rem = (n_rem << 1);
             }
@@ -270,13 +256,24 @@ bool AP_Baro_MS56XX::_check_crc(void)
     }
 
     /* final 4 bit remainder is CRC value */
-    n_rem = (0x000F & (n_rem >> 12));
-    n_prom[7] = crc_read;
-
-    /* return true if CRCs match */
-    return (0x000F & crc_read) == (n_rem ^ 0x00);
+    return (n_rem >> 12) & 0xF;
 }
 
+bool AP_Baro_MS56XX::_check_crc(void)
+{
+    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
+                           _C1, _C2, _C3, _C4, _C5, _C6,
+                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
+
+    /* save the read crc */
+    const uint16_t crc_read = n_prom[7] & 0xF;
+
+    /* remove CRC byte */
+    n_prom[7] &= ~0xF;
+
+    /* return true if CRCs match */
+    return crc_read == calculate_crc(n_prom);
+}
 
 /*
   Read the sensor. This is a state machine
