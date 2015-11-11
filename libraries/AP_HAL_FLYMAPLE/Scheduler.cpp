@@ -17,11 +17,7 @@
 
 #include <stdarg.h>
 
-#define millis libmaple_millis
-#define micros libmaple_micros
 #include "FlymapleWirish.h"
-#undef millis
-#undef micros
 
 // Flymaple: Force init to be called *first*, i.e. before static object allocation.
 // Otherwise, statically allocated objects (eg SerialUSB) that need libmaple may fail.
@@ -81,10 +77,10 @@ void FLYMAPLEScheduler::init(void* machtnichts)
 // This function may calls the _delay_cb to use up time
 void FLYMAPLEScheduler::delay(uint16_t ms)
 {    
-    uint32_t start = libmaple_micros();
+    uint32_t start = AP_HAL::micros();
     
     while (ms > 0) {
-        while ((libmaple_micros() - start) >= 1000) {
+        while ((AP_HAL::micros() - start) >= 1000) {
             ms--;
             if (ms == 0) break;
             start += 1000;
@@ -98,23 +94,19 @@ void FLYMAPLEScheduler::delay(uint16_t ms)
 }
 
 uint32_t FLYMAPLEScheduler::millis() {
-    return libmaple_millis();
+    return AP_HAL::millis();
 }
 
 uint32_t FLYMAPLEScheduler::micros() {
-    return libmaple_micros();
+    return AP_HAL::micros();
 }
 
 uint64_t FLYMAPLEScheduler::millis64() {
-    return millis();
+    return AP_HAL::millis64();
 }
 
 uint64_t FLYMAPLEScheduler::micros64() {
-    // this is slow, but solves the problem with logging uint64_t timestamps
-    uint64_t ret = millis();
-    ret *= 1000ULL;
-    ret += micros() % 1000;
-    return ret;
+    return AP_HAL::micros64();
 }
 
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
@@ -224,7 +216,7 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
                    "more than once");
     }
     _initialized = true;
