@@ -414,11 +414,11 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
     //         ;
     //     }
     //     else {
-    //         hal.scheduler->panic("AP_InertialSensor_MPU9150: Unsupported software product rev.\n");
+    //         platform::panic("AP_InertialSensor_MPU9150: Unsupported software product rev.\n");
     //         goto failed;
     //     }
     // } else {
-    //         hal.scheduler->panic("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n");
+    //         platform::panic("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n");
     //         goto failed;            
     // }
 
@@ -984,7 +984,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
         }
     }
 
-    *timestamp = hal.scheduler->millis();    
+    *timestamp = platform::millis();
     // read the data
     hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
     more[0] = fifo_count / packet_size - 1;

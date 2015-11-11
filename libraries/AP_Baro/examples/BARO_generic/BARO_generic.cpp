@@ -21,21 +21,21 @@ void setup()
     barometer.init();
     barometer.calibrate();
 
-    timer = hal.scheduler->micros();
+    timer = platform::micros();
 }
 
 void loop()
 {
     // run accumulate() at 50Hz and update() at 10Hz
-    if((hal.scheduler->micros() - timer) > 20*1000UL) {
-        timer = hal.scheduler->micros();
+    if((platform::micros() - timer) > 20*1000UL) {
+        timer = platform::micros();
         barometer.accumulate();
         if (counter++ < 5) {
             return;
         }
         counter = 0;
         barometer.update();
-        uint32_t read_time = hal.scheduler->micros() - timer;
+        uint32_t read_time = platform::micros() - timer;
         float alt = barometer.get_altitude();
         if (!barometer.healthy()) {
             hal.console->println("not healthy");

@@ -41,7 +41,7 @@ void setup()
     }
     hal.console->println("initialisation complete.");
     hal.scheduler->delay(1000);
-    timer = hal.scheduler->micros();
+    timer = platform::micros();
 }
 
 void loop()
@@ -50,17 +50,17 @@ void loop()
     static uint32_t last_print;
 
     // accumulate values at 100Hz
-    if ((hal.scheduler->micros()- timer) > 20000L) {
+    if ((platform::micros()- timer) > 20000L) {
 	    bmp085.accumulate();
-	    timer = hal.scheduler->micros();
+	    timer = platform::micros();
     }
 
     // print at 10Hz
-    if ((hal.scheduler->millis()- last_print) >= 100) {
-	uint32_t start = hal.scheduler->micros();
-        last_print = hal.scheduler->millis();
+    if ((platform::millis()- last_print) >= 100) {
+	uint32_t start = platform::micros();
+        last_print = platform::millis();
         bmp085.read();
-        uint32_t read_time = hal.scheduler->micros() - start;
+        uint32_t read_time = platform::micros() - start;
         if (! bmp085.healthy) {
             hal.console->println("not healthy");
             return;

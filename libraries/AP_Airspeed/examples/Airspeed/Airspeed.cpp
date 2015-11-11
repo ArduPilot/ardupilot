@@ -45,8 +45,8 @@ void setup()
 void loop(void)
 {
     static uint32_t timer;
-    if((hal.scheduler->millis() - timer) > 100) {
-        timer = hal.scheduler->millis();
+    if((platform::millis() - timer) > 100) {
+        timer = platform::millis();
         airspeed.read();
         hal.console->printf("airspeed %.2f healthy=%u\n", airspeed.get_airspeed(), airspeed.healthy());
     }

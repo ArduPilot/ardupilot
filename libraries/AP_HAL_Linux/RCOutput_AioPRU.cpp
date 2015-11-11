@@ -31,7 +31,7 @@ static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
+    platform::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
 void RCOutput_AioPRU::init(void* machtnicht)
 {

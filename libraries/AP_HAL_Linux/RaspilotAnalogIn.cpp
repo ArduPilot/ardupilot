@@ -91,7 +91,7 @@ void RaspilotAnalogIn::init(void* implspecific)
     _spi_sem = _spi->get_semaphore();
     
     if (_spi_sem == NULL) {
-        hal.scheduler->panic("PANIC: RCIutput_Raspilot did not get "
+        platform::panic("PANIC: RCIutput_Raspilot did not get "
                                   "valid SPI semaphore!");
         return; // never reached
     }
@@ -103,7 +103,7 @@ void RaspilotAnalogIn::init(void* implspecific)
 
 void RaspilotAnalogIn::_update()
 {
-    if (hal.scheduler->micros() - _last_update_timestamp < 100000) {
+    if (platform::micros() - _last_update_timestamp < 100000) {
         return;
     }
     
@@ -141,7 +141,7 @@ void RaspilotAnalogIn::_update()
 
     }
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = platform::micros();
 }
 
 #endif

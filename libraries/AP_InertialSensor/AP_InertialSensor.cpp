@@ -322,7 +322,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _dataflash(NULL)
 {
     if (_s_instance) {
-        hal.scheduler->panic("Too many inertial sensors");
+        platform::panic("Too many inertial sensors");
     }
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);        
@@ -371,7 +371,7 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 uint8_t AP_InertialSensor::register_gyro(void)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many gyros");
+        platform::panic("Too many gyros");
     }
     return _gyro_count++;
 }
@@ -382,7 +382,7 @@ uint8_t AP_InertialSensor::register_gyro(void)
 uint8_t AP_InertialSensor::register_accel(void)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many accels");
+        platform::panic("Too many accels");
     }
     return _accel_count++;
 }
@@ -401,7 +401,7 @@ void AP_InertialSensor::_start_backends()
     }
 
     if (_gyro_count == 0 || _accel_count == 0) {
-        hal.scheduler->panic("INS needs at least 1 gyro and 1 accel");
+        platform::panic("INS needs at least 1 gyro and 1 accel");
     }
 }
 
@@ -478,7 +478,7 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
     if (!backend)
         return;
     if (_backend_count == INS_MAX_BACKENDS)
-        hal.scheduler->panic("Too many INS backends");
+        platform::panic("Too many INS backends");
     _backends[_backend_count++] = backend;
 }
 
@@ -526,7 +526,7 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     if (_backend_count == 0) {
-        hal.scheduler->panic("No INS backends available");
+        platform::panic("No INS backends available");
     }
 
     // set the product ID to the ID of the first backend
@@ -1348,7 +1348,7 @@ void AP_InertialSensor::wait_for_sample(void)
         return;
     }
 
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = platform::micros();
 
     if (_next_sample_usec == 0 && _delta_time <= 0) {
         // this is the first call to wait_for_sample()
@@ -1362,7 +1362,7 @@ void AP_InertialSensor::wait_for_sample(void)
         // we're ahead on time, schedule next sample at expected period
         uint32_t wait_usec = _next_sample_usec - now;
         hal.scheduler->delay_microseconds_boost(wait_usec);
-        uint32_t now2 = hal.scheduler->micros();
+        uint32_t now2 = platform::micros();
         if (now2+100 < _next_sample_usec) {
             timing_printf("shortsleep %u\n", (unsigned)(_next_sample_usec-now2));
         }
@@ -1401,7 +1401,7 @@ check_sample:
         }
     }
 
-    now = hal.scheduler->micros();
+    now = platform::micros();
     if (_hil_mode && _hil.delta_time > 0) {
         _delta_time = _hil.delta_time;
         _hil.delta_time = 0;
