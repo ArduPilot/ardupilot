@@ -74,26 +74,6 @@ void VRBRAINScheduler::init(void *unused)
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&VRBRAIN::VRBRAINScheduler::_io_thread, this);
 }
 
-uint64_t VRBRAINScheduler::micros64() 
-{
-    return platform::micros64();
-}
-
-uint64_t VRBRAINScheduler::millis64() 
-{
-    return platform::millis64();
-}
-
-uint32_t VRBRAINScheduler::micros() 
-{
-    return platform::micros();
-}
-
-uint32_t VRBRAINScheduler::millis() 
-{
-    return platform::millis();
-}
-
 /**
    delay for a specified number of microseconds using a semaphore wait
  */
@@ -323,20 +303,6 @@ void *VRBRAINScheduler::_io_thread(void)
         perf_end(_perf_io_timers);
     }
     return NULL;
-}
-
-void VRBRAINScheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    vdprintf(1, errormsg, ap);
-    va_end(ap);
-    write(1, "\n", 1);
-
-    hal.scheduler->delay_microseconds(10000);
-    _vrbrain_thread_should_exit = true;
-    exit(1);
 }
 
 bool VRBRAINScheduler::in_timerprocess()
