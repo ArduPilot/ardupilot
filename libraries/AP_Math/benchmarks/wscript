@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import ardupilotwaf
+
+def build(bld):
+    ardupilotwaf.find_benchmarks(
+        bld,
+        use='ap',
+    )
