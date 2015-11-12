@@ -196,10 +196,10 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary height source
-    // @Description: This parameter controls which height sensor is used by the EKF during optical flow navigation (when EKF_GPS_TYPE = 3). A value of will 0 cause it to always use baro altitude. A value of 1 will casue it to use range finder if available.
-    // @Values: 0:Use Baro, 1:Use Range Finder
+    // @Description: This parameter controls which height sensor is used by the EKF. If the selected optionn cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK2_GPS_TYPE = 3). Setting 2 uses GPS.
+    // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS
     // @User: Advanced
-    AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 1),
+    AP_GROUPINFO("ALT_SOURCE", 9, NavEKF2, _altSource, 0),
 
     // @Param: ALT_NOISE
     // @DisplayName: Altitude measurement noise (m)
