@@ -200,6 +200,7 @@ enum RTLState {
 // Alt_Hold states
 enum AltHoldModeState {
     AltHold_Disarmed,
+    AltHold_MotorStop,
     AltHold_Takeoff,
     AltHold_Flying,
     AltHold_Landed
@@ -208,6 +209,7 @@ enum AltHoldModeState {
 // Loiter states
 enum LoiterModeState {
     Loiter_Disarmed,
+    Loiter_MotorStop,
     Loiter_Takeoff,
     Loiter_Flying,
     Loiter_Landed
