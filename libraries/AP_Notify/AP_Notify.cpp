@@ -29,6 +29,7 @@
 #include "ToshibaLED_I2C.h"
 #include "ToshibaLED_PX4.h"
 #include "VRBoard_LED.h"
+#include "Navio2LED.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
