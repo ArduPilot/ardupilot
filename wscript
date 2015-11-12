@@ -163,6 +163,13 @@ def configure(cfg):
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
+    cfg.load('gbenchmark')
+
+    cfg.start_msg('Benchmarks')
+    if cfg.env.HAS_GBENCHMARK:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
 
     cfg.env.HAS_GTEST = cfg.check_cxx(
         lib='gtest',
@@ -234,11 +241,17 @@ def build(bld):
     board_tests = ['libraries/%s/**/tests' % l for l in bld.env.AP_LIBRARIES]
     tests.extend(collect_dirs_to_recurse(bld, board_tests))
 
+    benchmarks = collect_dirs_to_recurse(bld,
+                                         '**/benchmarks',
+                                         excl='modules Tools libraries/AP_HAL_* libraries/SITL')
+    board_benchmarks = ['libraries/%s/**/benchmarks' % l for l in bld.env.AP_LIBRARIES]
+    benchmarks.extend(collect_dirs_to_recurse(bld, board_benchmarks))
+
     hal_examples = []
     for l in bld.env.AP_LIBRARIES:
         hal_examples.extend(collect_dirs_to_recurse(bld, 'libraries/' + l + '/examples/*'))
 
-    for d in vehicles + tools + examples + hal_examples + tests:
+    for d in vehicles + tools + examples + hal_examples + tests + benchmarks:
         bld.recurse(d)
 
     if bld.cmd == 'check':

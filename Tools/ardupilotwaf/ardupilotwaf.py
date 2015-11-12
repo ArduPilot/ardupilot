@@ -156,6 +156,22 @@ def find_tests(bld, use=[]):
             use=use,
         )
 
+def find_benchmarks(bld, use=[]):
+    if not bld.env.HAS_GBENCHMARK:
+        return
+
+    includes = [bld.srcnode.abspath() + '/benchmarks/']
+
+    for f in bld.path.ant_glob(incl='*.cpp'):
+        target = f.change_ext('.' + bld.env.BOARD)
+        bld.program(
+            features=['gbenchmark'],
+            target=target,
+            includes=includes,
+            source=[f],
+            use=use,
+        )
+
 def test_summary(bld):
     from io import BytesIO
     import sys
