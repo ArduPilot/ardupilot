@@ -34,6 +34,7 @@
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
+#define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
 // rover defaults
@@ -57,6 +58,7 @@
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
+#define CHECK_SCALER_DEFAULT    100
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -80,6 +82,7 @@
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
+#define CHECK_SCALER_DEFAULT    150
 
 #else
 // build type not specified, use copter defaults
@@ -103,6 +106,7 @@
 #define FLOW_NOISE_DEFAULT      0.25f
 #define FLOW_GATE_DEFAULT       3
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
+#define CHECK_SCALER_DEFAULT    100
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -407,6 +411,14 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 1),
     
+    // @Param: CHECK_SCALE
+    // @DisplayName: GPS accuracy check scaler (%)
+    // @Description: This scales the thresholds that are used to check GPS accuracy before it is used by the EKF. A value of 100 is the default. Values greater than 100 increase and values less than 100 reduce the maximum GPS error the EKF will accept. A value of 200 will double the allowable GPS error.
+    // @Range: 50 200
+    // @User: Advanced
+    // @Units: %
+    AP_GROUPINFO("CHECK_SCALE", 34, NavEKF2, _gpsCheckScaler, CHECK_SCALER_DEFAULT),
+
     AP_GROUPEND
 };
 
