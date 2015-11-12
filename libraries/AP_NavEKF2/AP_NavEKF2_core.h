@@ -367,6 +367,11 @@ private:
         uint32_t    time_ms;     // 1
     };
 
+    struct range_elements {
+        float       rng;         // 0
+        uint32_t    time_ms;     // 1
+    };
+
     struct tas_elements {
         float       tas;         // 0
         uint32_t    time_ms;     // 1
@@ -444,6 +449,13 @@ private:
     // recall altimeter data at the fusion time horizon
     // return true if data found
     bool RecallBaro();
+
+    // store range finder data
+    void StoreRange();
+
+    // recall range finder data at the fusion time horizon
+    // return true if data found
+    bool RecallRange();
 
     // store magnetometer data
     void StoreMag();
@@ -645,6 +657,7 @@ private:
     gps_elements storedGPS[OBS_BUFFER_LENGTH];      // GPS data buffer
     mag_elements storedMag[OBS_BUFFER_LENGTH];      // Magnetometer data buffer
     baro_elements storedBaro[OBS_BUFFER_LENGTH];    // Baro data buffer
+    range_elements storedRange[OBS_BUFFER_LENGTH];  // Rang finder data buffer
     tas_elements storedTAS[OBS_BUFFER_LENGTH];      // TAS data buffer
     output_elements *storedOutput;  // output state buffer [imu_buffer_length]
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
@@ -737,6 +750,9 @@ private:
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     uint8_t baroStoreIndex;         // Baro data storage index
+    range_elements rangeDataNew;    // Range finder data at the current time horizon
+    range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
+    uint8_t rangeStoreIndex;        // Range finder data storage index
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
     uint8_t tasStoreIndex;          // TAS data storage index
