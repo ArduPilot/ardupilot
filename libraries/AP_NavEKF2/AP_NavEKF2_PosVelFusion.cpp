@@ -85,10 +85,8 @@ void NavEKF2_core::ResetPosition(void)
 // reset the vertical position state using the last height measurement
 void NavEKF2_core::ResetHeight(void)
 {
-    // read the altimeter
-    readHgtData();
     // write to the state vector
-    stateStruct.position.z = -baroDataNew.hgt; // down position from blended accel data
+    stateStruct.position.z = -hgtMea;
     terrainState = stateStruct.position.z + rngOnGnd;
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
@@ -137,11 +135,12 @@ void NavEKF2_core::SelectVelPosFusion()
         posVelFusionDelayed = false;
     }
 
-    // check for and read new GPS data
+    // read GPS data from the sensor and check for new data in the buffer
     readGpsData();
+    gpsDataToFuse = RecallGPS();
 
     // Determine if we need to fuse position and velocity data on this time step
-    if (RecallGPS() && PV_AidingMode == AID_ABSOLUTE) {
+    if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // Don't fuse velocity data if GPS doesn't support it
         if (frontend->_fusionModeGPS <= 1) {
             fuseVelData = true;
@@ -154,22 +153,8 @@ void NavEKF2_core::SelectVelPosFusion()
         fusePosData = false;
     }
 
-    // check for and read new height data
-    readHgtData();
-
-    // If we haven't received height data for a while, then declare the height data as being timed out
-    // set timeout period based on whether we have vertical GPS velocity available to constrain drift
-    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
-    if (imuSampleTime_ms - lastHgtReceived_ms > hgtRetryTime_ms) {
-        hgtTimeout = true;
-    }
-
-    // command fusion of height data
-    // wait until the EKF time horizon catches up with the measurement
-    if (RecallBaro()) {
-        // enable fusion
-        fuseHgtData = true;
-    }
+    // Select height data to be fused from the available baro, range finder and GPS sources
+    selectHeightForFusion();
 
     // If we are operating without any aiding, fuse in the last known position and zero velocity
     // to constrain tilt drift. This assumes a non-manoeuvring vehicle
@@ -242,7 +227,7 @@ void NavEKF2_core::FuseVelPosNED()
         observation[2] = gpsDataDelayed.vel.z;
         observation[3] = gpsDataDelayed.pos.x;
         observation[4] = gpsDataDelayed.pos.y;
-        observation[5] = -baroDataDelayed.hgt;
+        observation[5] = -hgtMea;
 
         // calculate additional error in GPS position caused by manoeuvring
         posErr = frontend->gpsPosVarAccScale * accNavMag;
@@ -274,12 +259,7 @@ void NavEKF2_core::FuseVelPosNED()
             R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
             R_OBS[4] = R_OBS[3];
         }
-        R_OBS[5] = sq(constrain_float(frontend->_baroAltNoise, 0.1f, 10.0f));
-
-        // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
-        if (getTakeoffExpected() || getTouchdownExpected()) {
-            R_OBS[5] *= frontend->gndEffectBaroScaler;
-        }
+        R_OBS[5] = posDownObsNoise;
 
         // For data integrity checks we use the same measurement variances as used to calculate the Kalman gains for all measurements except GPS horizontal velocity
         // For horizontal GPs velocity we don't want the acceptance radius to increase with reported GPS accuracy so we use a value based on best GPs perfomrance
@@ -287,11 +267,10 @@ void NavEKF2_core::FuseVelPosNED()
         for (uint8_t i=0; i<=1; i++) R_OBS_DATA_CHECKS[i] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
         for (uint8_t i=2; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
-
-        // if vertical GPS velocity data is being used, check to see if the GPS vertical velocity and barometer
+        // if vertical GPS velocity data and an independant height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (imuSampleTime_ms - lastHgtReceived_ms) <  (2 * frontend->hgtAvg_ms)) {
+        if (useGpsVertVel && fuseVelData && (frontend->_altSource != 2)) {
             // calculate innovations for height and vertical GPS vel measurements
             float hgtErr  = stateStruct.position.z - observation[5];
             float velDErr = stateStruct.velocity.z - observation[2];
@@ -403,9 +382,8 @@ void NavEKF2_core::FuseVelPosNED()
             hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend->_hgtInnovGate) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
-            hgtTimeout = (imuSampleTime_ms - lastHgtPassTime_ms) > hgtRetryTime_ms;
             // Fuse height data if healthy or timed out or in constant position mode
-            if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE)) {
+            if (hgtHealth || hgtTimeout || (PV_AidingMode == AID_NONE && onGround)) {
                 // Calculate a filtered value to be used by pre-flight health checks
                 // We need to filter because wind gusts can generate significant baro noise and we want to be able to detect bias errors in the inertial solution
                 if (onGround) {
@@ -416,16 +394,16 @@ void NavEKF2_core::FuseVelPosNED()
                 } else {
                     hgtInnovFiltState = 0.0f;
                 }
-                hgtHealth = true;
-                lastHgtPassTime_ms = imuSampleTime_ms;
-                // if timed out, reset the height, but do not fuse data on this time step
+
+                // if timed out, reset the height
                 if (hgtTimeout) {
                     ResetHeight();
-                    fuseHgtData = false;
+                    hgtTimeout = false;
                 }
-            }
-            else {
-                hgtHealth = false;
+
+                // If we have got this far then declare the height data as healthy and reset the timeout counter
+                hgtHealth = true;
+                lastHgtPassTime_ms = imuSampleTime_ms;
             }
         }
 
@@ -461,23 +439,21 @@ void NavEKF2_core::FuseVelPosNED()
                 else if (obsIndex == 3 || obsIndex == 4) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - observation[obsIndex];
                     R_OBS[obsIndex] *= sq(gpsNoiseScaler);
-                } else {
+                } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - observation[obsIndex];
-                    if (obsIndex == 5) {
-                        const float gndMaxBaroErr = 4.0f;
-                        const float gndBaroInnovFloor = -0.5f;
+                    const float gndMaxBaroErr = 4.0f;
+                    const float gndBaroInnovFloor = -0.5f;
 
-                        if(getTouchdownExpected()) {
-                            // when a touchdown is expected, floor the barometer innovation at gndBaroInnovFloor
-                            // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
-                            // this function looks like this:
-                            //         |/
-                            //---------|---------
-                            //    ____/|
-                            //   /     |
-                            //  /      |
-                            innovVelPos[5] += constrain_float(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
-                        }
+                    if(getTouchdownExpected()) {
+                        // when a touchdown is expected, floor the barometer innovation at gndBaroInnovFloor
+                        // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
+                        // this function looks like this:
+                        //         |/
+                        //---------|---------
+                        //    ____/|
+                        //   /     |
+                        //  /      |
+                        innovVelPos[5] += constrain_float(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
                     }
                 }
 
@@ -554,5 +530,84 @@ void NavEKF2_core::FuseVelPosNED()
 /********************************************************
 *                   MISC FUNCTIONS                      *
 ********************************************************/
+
+// select the height measurement to be fused from the available baro, range finder and GPS sources
+void NavEKF2_core::selectHeightForFusion()
+{
+    // Read range finder data and check for new data in the buffer
+    // This data is used by both height and optical flow fusion processing
+    readRangeFinder();
+    rangeDataToFuse = RecallRange();
+
+    // read baro height data from the sensor and check for new data in the buffer
+    readBaroData();
+    baroDataToFuse = RecallBaro();
+
+    // determine if we should be using a height source other than baro
+    bool usingRangeForHgt = (frontend->_altSource == 1 && imuSampleTime_ms - rngValidMeaTime_ms < 500);
+    bool usingGpsForHgt = (frontend->_altSource == 2 && imuSampleTime_ms - lastTimeGpsReceived_ms < 500);
+
+    // if there is new baro data to fuse, calculate filterred baro data required by other processes
+    if (baroDataToFuse) {
+        // calculate offset to baro data that enables baro to be used as a backup if we are using other height sources
+        if  (usingRangeForHgt || usingGpsForHgt) {
+            calcFiltBaroOffset();
+        }
+        // filtered baro data used to provide a reference for takeoff
+        // it is is reset to last height measurement on disarming in performArmingChecks()
+        if (!getTakeoffExpected()) {
+            const float gndHgtFiltTC = 0.5f;
+            const float dtBaro = frontend->hgtAvg_ms*1.0e-3f;
+            float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
+            meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
+        }
+    }
+
+    // Select the height measurement source
+    if (rangeDataToFuse && usingRangeForHgt) {
+        // using range finder data
+        // correct for tilt using a flat earth model
+        if (prevTnb.c.z >= 0.7) {
+            hgtMea  = max(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // enable fusion
+            fuseHgtData = true;
+            // set the observation noise
+            posDownObsNoise = sq(constrain_float(frontend->_rngNoise, 0.1f, 10.0f));
+        } else {
+            // disable fusion if tilted too far
+            fuseHgtData = false;
+        }
+    } else if  (gpsDataToFuse && usingGpsForHgt) {
+        // using GPS data
+        hgtMea = gpsDataDelayed.hgt;
+        // enable fusion
+        fuseHgtData = true;
+        // set the observation noise to the horizontal GPS noise plus a scaler becasue GPS vertical position is usually less accurate
+        // TODO use VDOP/HDOP, reported accuracy or a separate parameter
+        posDownObsNoise = sq(constrain_float(frontend->_gpsHorizPosNoise * 1.5f, 0.1f, 10.0f));
+    } else if (baroDataToFuse && !usingRangeForHgt && !usingGpsForHgt) {
+        // using Baro data
+        hgtMea = baroDataDelayed.hgt - baroHgtOffset;
+        // enable fusion
+        fuseHgtData = true;
+        // set the observation noise
+        posDownObsNoise = sq(constrain_float(frontend->_baroAltNoise, 0.1f, 10.0f));
+        // reduce weighting (increase observation noise) on baro if we are likely to be in ground effect
+        if (getTakeoffExpected() || getTouchdownExpected()) {
+            posDownObsNoise *= frontend->gndEffectBaroScaler;
+        }
+    } else {
+        fuseHgtData = false;
+    }
+
+    // If we haven't fused height data for a while, then declare the height data as being timed out
+    // set timeout period based on whether we have vertical GPS velocity available to constrain drift
+    hgtRetryTime_ms = (useGpsVertVel && !velTimeout) ? frontend->hgtRetryTimeMode0_ms : frontend->hgtRetryTimeMode12_ms;
+    if (imuSampleTime_ms - lastHgtPassTime_ms > hgtRetryTime_ms) {
+        hgtTimeout = true;
+    } else {
+        hgtTimeout = false;
+    }
+}
 
 #endif // HAL_CPU_CLASS
