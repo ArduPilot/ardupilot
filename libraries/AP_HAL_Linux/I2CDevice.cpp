@@ -23,7 +23,21 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <linux/i2c-dev.h>
+/*
+ * linux/i2c-dev.h is a kernel header, but some distros rename it to
+ * linux/i2c-dev.h.kernel when i2c-tools is installed.  The header provided by
+ * i2c-tools is old/broken and contains some symbols defined in
+ * linux/i2c.h. The i2c.h will be only included if a well-known symbol is not
+ * defined. This is a workaround while distros propagate the real fix like
+ * http://lists.opensuse.org/archive/opensuse-commit/2015-10/msg00918.html (or
+ * do like Archlinux that installs only the kernel header).
+ */
+#ifndef I2C_SMBUS_BLOCK_MAX
+#include <linux/i2c.h>
+#endif
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
@@ -101,8 +115,43 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    // TODO: implement I2C transfer
-    return false;
+    struct i2c_msg msgs[2] = { };
+    unsigned nmsgs = 0;
+
+    assert(_bus.fd >= 0);
+
+    if (send && send_len != 0) {
+        msgs[nmsgs].addr = _address;
+        msgs[nmsgs].flags = 0;
+        msgs[nmsgs].buf = const_cast<uint8_t*>(send);
+        msgs[nmsgs].len = send_len;
+        nmsgs++;
+    }
+
+    if (recv && recv_len != 0) {
+        msgs[nmsgs].addr = _address;
+        msgs[nmsgs].flags = I2C_M_RD;
+        msgs[nmsgs].buf = recv;
+        msgs[nmsgs].len = recv_len;
+        nmsgs++;
+    }
+
+    if (!nmsgs) {
+        return false;
+    }
+
+    struct i2c_rdwr_ioctl_data i2c_data = { };
+
+    i2c_data.msgs = msgs;
+    i2c_data.nmsgs = nmsgs;
+
+    int r = -EINVAL;
+    unsigned retries = _retries;
+    do {
+        r = ::ioctl(_bus.fd, I2C_RDWR, &i2c_data);
+    } while (r < 0 && retries-- > 0);
+
+    return r >= 0;
 }
 
 AP_HAL::Semaphore *I2CDevice::get_semaphore()
