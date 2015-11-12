@@ -752,7 +752,45 @@ bool NavEKF2_core::RecallBaro()
     }
 }
 
+// store baro in a history array
+void NavEKF2_core::StoreRange()
+{
+    if (rangeStoreIndex >= OBS_BUFFER_LENGTH) {
+        rangeStoreIndex = 0;
+    }
+    storedRange[rangeStoreIndex] = rangeDataNew;
+    rangeStoreIndex += 1;
+}
 
+// return newest un-used range finder data that has fallen behind the fusion time horizon
+// if no un-used data is available behind the fusion horizon, return false
+bool NavEKF2_core::RecallRange()
+{
+    range_elements dataTemp;
+    range_elements dataTempZero;
+    dataTempZero.time_ms = 0;
+    uint32_t temp_ms = 0;
+    uint8_t bestIndex = 0;
+    for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
+        dataTemp = storedRange[i];
+        // find a measurement older than the fusion time horizon that we haven't checked before
+        if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
+            // Find the most recent non-stale measurement that meets the time horizon criteria
+            if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
+                rangeDataDelayed = dataTemp;
+                temp_ms = dataTemp.time_ms;
+                bestIndex = i;
+            }
+        }
+    }
+    if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedRange[bestIndex]=dataTempZero;
+        return true;
+    } else {
+        return false;
+    }
+}
 
 /********************************************************
 *                Air Speed Measurements                 *
