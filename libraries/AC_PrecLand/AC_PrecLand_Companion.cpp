@@ -6,7 +6,11 @@ extern const AP_HAL::HAL& hal;
 
 // Constructor
 AC_PrecLand_Companion::AC_PrecLand_Companion(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
-    : AC_PrecLand_Backend(frontend, state)
+    : AC_PrecLand_Backend(frontend, state),
+      _frame(MAV_FRAME_BODY_NED),
+      _distance_to_target(0.0f),
+      _timestamp_us(0),
+      _new_estimate(false)
 {
 }
 
@@ -16,7 +20,6 @@ void AC_PrecLand_Companion::init()
     // set healthy
     _state.healthy = true;
     _new_estimate = false;
-    _frame = MAV_FRAME_BODY_NED; // assume body until we get our first message that says otherwise
 }
 
 // update - give chance to driver to get updates from sensor
