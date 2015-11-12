@@ -121,9 +121,9 @@ void NavEKF2_core::EstimateTerrainOffset()
         prevPosN = stateStruct.position[0];
         prevPosE = stateStruct.position[1];
 
-        // in addition to a terrain gradient error model, we also have a time based error growth that is scaled using the gradient parameter
+        // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
         float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
-        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend->gndGradientSigma))) + sq(float(frontend->gndGradientSigma) * timeLapsed);
+        float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend->gndGradientSigma))) + sq(timeLapsed)*P[5][5];
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
