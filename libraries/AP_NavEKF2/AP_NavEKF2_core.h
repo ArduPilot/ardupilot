@@ -864,6 +864,7 @@ private:
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
     bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
+    bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     Vector2f heldVelNE;             // velocity held when no aiding is available
     enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
