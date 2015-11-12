@@ -68,26 +68,22 @@ void NavEKF2_core::SelectFlowFusion()
 
     // if we do have valid flow measurements, fuse data into a 1-state EKF to estimate terrain height
     // we don't do terrain height estimation in optical flow only mode as the ground becomes our zero height reference
-    if ((newDataFlow || newDataRng) && tiltOK) {
-        // fuse range data into the terrain estimator if available
-        fuseRngData = newDataRng;
+    if ((flowDataToFuse || rangeDataToFuse) && tiltOK) {
         // fuse optical flow data into the terrain estimator if available and if there is no range data (range data is better)
-        fuseOptFlowData = (newDataFlow && !fuseRngData);
+        fuseOptFlowData = (flowDataToFuse && !rangeDataToFuse);
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset();
-        // Indicate we have used the range data
-        newDataRng = false;
     }
 
     // Fuse optical flow data into the main filter if not excessively tilted and we are in the correct mode
-    if (newDataFlow && tiltOK && PV_AidingMode == AID_RELATIVE)
+    if (flowDataToFuse && tiltOK && PV_AidingMode == AID_RELATIVE)
     {
         // Set the flow noise used by the fusion processes
         R_LOS = sq(max(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
         FuseOptFlow();
         // reset flag to indicate that no new flow data is available for fusion
-        newDataFlow = false;
+        flowDataToFuse = false;
     }
 
     // stop the performance timer
@@ -111,7 +107,7 @@ void NavEKF2_core::EstimateTerrainOffset()
     float losRateSq = velHorizSq / sq(heightAboveGndEst);
 
     // don't update terrain offset state if there is no range finder and not generating enough LOS rate, or without GPS, as it is poorly observable
-    if (!fuseRngData && (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f)) {
+    if (!rangeDataToFuse && (gpsNotAvailable || PV_AidingMode == AID_RELATIVE || velHorizSq < 25.0f || losRateSq < 0.01f)) {
         inhibitGndState = true;
     } else {
         inhibitGndState = false;
@@ -132,7 +128,7 @@ void NavEKF2_core::EstimateTerrainOffset()
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
         // fuse range finder data
-        if (fuseRngData) {
+        if (rangeDataToFuse) {
             // predict range
             float predRngMeas = max((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
 
@@ -156,7 +152,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             terrainState = max(terrainState, stateStruct.position[2] + rngOnGnd);
 
             // Calculate the measurement innovation
-            innovRng = predRngMeas - rngMea;
+            innovRng = predRngMeas - rangeDataDelayed.rng;
 
             // calculate the innovation consistency test ratio
             auxRngTestRatio = sq(innovRng) / (sq(frontend->_rngInnovGate) * varInnovRng);

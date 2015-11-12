@@ -103,7 +103,7 @@ void NavEKF2_core::InitialiseVariables()
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
     lastMagUpdate_us = 0;
-    lastHgtReceived_ms = imuSampleTime_ms;
+    lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = imuSampleTime_ms;
     lastPosPassTime_ms = imuSampleTime_ms;
     lastHgtPassTime_ms = imuSampleTime_ms;
@@ -145,13 +145,12 @@ void NavEKF2_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     memset(&processNoise[0], 0, sizeof(processNoise));
     flowDataValid = false;
-    newDataRng  = false;
+    rangeDataToFuse  = false;
     fuseOptFlowData = false;
     Popt = 0.0f;
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
-    fuseRngData = false;
     inhibitGndState = true;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
@@ -187,6 +186,7 @@ void NavEKF2_core::InitialiseVariables()
     yawAlignComplete = false;
     stateIndexLim = 23;
     baroStoreIndex = 0;
+    rangeStoreIndex = 0;
     magStoreIndex = 0;
     gpsStoreIndex = 0;
     tasStoreIndex = 0;
@@ -297,7 +297,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     ResetPosition();
 
     // read the barometer and set the height state
-    readHgtData();
+    readBaroData();
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame
@@ -408,9 +408,6 @@ void NavEKF2_core::UpdateFilter(bool predict)
 
         // Predict the covariance growth
         CovariancePrediction();
-
-        // Read range finder data which is used by both position and optical flow fusion
-        readRangeFinder();
 
         // Update states using  magnetometer data
         SelectMagFusion();
