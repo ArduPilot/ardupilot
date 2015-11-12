@@ -629,6 +629,9 @@ private:
     // using a simple observer
     void calcOutputStatesFast();
 
+    // calculate a filtered offset between baro height measurement and EKF height estimate
+    void calcFiltBaroOffset();
+
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;
