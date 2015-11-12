@@ -712,6 +712,15 @@ void NavEKF2_core::readHgtData()
     }
 }
 
+// calculate filtered offset between baro height measurement and EKF height estimate
+// offset should be subtracted from baro measurement to match filter estimate
+// offset is used to enable reversion to baro if alternate height data sources fail
+void NavEKF2_core::calcFiltBaroOffset()
+{
+    // Apply a first order LPF with spike protection
+    baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
+}
+
 // store baro in a history array
 void NavEKF2_core::StoreBaro()
 {
