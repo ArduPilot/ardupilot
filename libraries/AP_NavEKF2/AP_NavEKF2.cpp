@@ -490,7 +490,9 @@ bool NavEKF2::InitialiseFilter(void)
         num_cores = 0;
         for (uint8_t i=0; i<7; i++) {
             if (_imuMask & (1U<<i)) {
-                core[num_cores].setup_core(this, i, num_cores);
+                if(!core[num_cores].setup_core(this, i, num_cores)) {
+                    return false;
+                }
                 num_cores++;
             }
         }
