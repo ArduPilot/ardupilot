@@ -93,6 +93,19 @@ void NavEKF2_core::ResetHeight(void)
     }
     outputDataNew.position.z = stateStruct.position.z;
     outputDataDelayed.position.z = stateStruct.position.z;
+
+    // Reset the vertical velocity state using GPS vertical velocity if we are airborne
+    // Check that GPS vertical velocity data is available and can be used
+    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0) {
+        stateStruct.velocity.z =  gpsDataNew.vel.z;
+    } else if (onGround) {
+        stateStruct.velocity.z = 0.0f;
+    }
+    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+        storedOutput[i].velocity.z = stateStruct.velocity.z;
+    }
+    outputDataNew.velocity.z = stateStruct.velocity.z;
+    outputDataDelayed.velocity.z = stateStruct.velocity.z;
 }
 
 // Reset the baro so that it reads zero at the current height
