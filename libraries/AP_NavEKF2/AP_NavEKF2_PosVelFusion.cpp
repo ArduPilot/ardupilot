@@ -150,8 +150,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // read GPS data from the sensor and check for new data in the buffer
     readGpsData();
-    gpsDataToFuse = RecallGPS();
-
+    gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
     // Determine if we need to fuse position and velocity data on this time step
     if (gpsDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
         // Don't fuse velocity data if GPS doesn't support it
@@ -550,11 +549,11 @@ void NavEKF2_core::selectHeightForFusion()
     // Read range finder data and check for new data in the buffer
     // This data is used by both height and optical flow fusion processing
     readRangeFinder();
-    rangeDataToFuse = RecallRange();
+    rangeDataToFuse = storedRange.recall(rangeDataDelayed,imuDataDelayed.time_ms);
 
     // read baro height data from the sensor and check for new data in the buffer
     readBaroData();
-    baroDataToFuse = RecallBaro();
+    baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
     // determine if we should be using a height source other than baro
     bool usingRangeForHgt = (frontend->_altSource == 1 && imuSampleTime_ms - rngValidMeaTime_ms < 500 && frontend->_fusionModeGPS == 3);

@@ -222,43 +222,6 @@ void NavEKF2_core::SelectTasFusion()
     }
 }
 
-// store TAS in a history array
-void NavEKF2_core::StoreTAS()
-{
-    if (tasStoreIndex >= OBS_BUFFER_LENGTH) {
-        tasStoreIndex = 0;
-    }
-    storedTAS[tasStoreIndex] = tasDataNew;
-    tasStoreIndex += 1;
-}
-
-// return newest un-used true airspeed data that has fallen behind the fusion time horizon
-// if no un-used data is available behind the fusion horizon, return false
-bool NavEKF2_core::RecallTAS()
-{
-    tas_elements dataTemp;
-    tas_elements dataTempZero;
-    dataTempZero.time_ms = 0;
-    uint32_t temp_ms = 0;
-    for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
-        dataTemp = storedTAS[i];
-        // find a measurement older than the fusion time horizon that we haven't checked before
-        if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
-            // zero the time stamp so we won't use it again
-            storedTAS[i]=dataTempZero;
-            // Find the most recent non-stale measurement that meets the time horizon criteria
-            if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
-                tasDataDelayed = dataTemp;
-                temp_ms = dataTemp.time_ms;
-            }
-        }
-    }
-    if (temp_ms != 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 // select fusion of synthetic sideslip measurements
 // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero

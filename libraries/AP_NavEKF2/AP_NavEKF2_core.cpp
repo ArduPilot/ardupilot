@@ -55,7 +55,7 @@ NavEKF2_core::NavEKF2_core(void) :
 }
 
 // setup this core backend
-void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
+bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _core_index)
 {
     frontend = _frontend;
     imu_index = _imu_index;
@@ -79,9 +79,32 @@ void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
         imu_buffer_length = 26;
         break;
     }
+    if(!storedGPS.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedMag.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedBaro.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    } 
+    if(!storedTAS.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedOF.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedRange.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    if(!storedIMU.init(imu_buffer_length)) {
+        return false;
+    }
+    if(!storedOutput.init(imu_buffer_length)) {
+        return false;
+    }
 
-    storedIMU    = new imu_elements[imu_buffer_length];
-    storedOutput = new output_elements[imu_buffer_length];
+    return true;
 }
     
 
@@ -250,7 +273,8 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
     dtEkfAvg = min(0.01f,dtIMUavg);
     readIMUData();
-    StoreIMU_reset();
+    storedIMU.reset_history(imuDataNew, imuSampleTime_ms);
+    imuDataDelayed = imuDataNew;
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3f initAccVec;
@@ -556,11 +580,11 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // store the output in the FIFO buffer if this is a filter update step
     if (runUpdates) {
-        StoreOutput();
+        storedOutput[storedIMU.get_head()] = outputDataNew;
     }
 
     // extract data at the fusion time horizon from the FIFO buffer
-    RecallOutput();
+    outputDataDelayed = storedOutput[storedIMU.get_tail()];
 
     // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
 
@@ -1133,12 +1157,6 @@ void NavEKF2_core::zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last)
     }
 }
 
-// store output data in the FIFO
-void NavEKF2_core::StoreOutput()
-{
-    storedOutput[fifoIndexNow] = outputDataNew;
-}
-
 // reset the output data to the current EKF state
 void NavEKF2_core::StoreOutputReset()
 {
@@ -1175,12 +1193,6 @@ void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
-}
-
-// recall output data from the FIFO
-void NavEKF2_core::RecallOutput()
-{
-    outputDataDelayed = storedOutput[fifoIndexDelayed];
 }
 
 // calculate nav to body quaternions from body to nav rotation matrix
