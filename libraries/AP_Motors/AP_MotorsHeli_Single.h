@@ -83,6 +83,9 @@ public:
     // allow_arming - returns true if main rotor is spinning and it is ok to arm
     bool allow_arming() const;
 
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check() const;
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(int16_t desired_speed);
 
