@@ -885,7 +885,7 @@ const AP_Param::Info Copter::var_info[] = {
 
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: IM_
-    // @Path: ../libraries/AC_InputManager_Heli.cpp
+    // @Path: ../libraries/AC_InputManager/AC_InputManager_Heli.cpp
     GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
 #endif
 
