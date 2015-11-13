@@ -1487,6 +1487,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {
             result = MAV_RESULT_ACCEPTED;
 
+            // don't do anything if there is a radio failsafe
+            if (failsafe.radio) {
+                break;
+            }
+
             if (set_mode(LOITER)) {
                 send_heartbeat_immediately = true;
             } else if (set_mode(ALT_HOLD)) {
@@ -1497,6 +1502,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_SOLO_BTN_FLY_HOLD: {
             result = MAV_RESULT_ACCEPTED;
+
+            // don't do anything if there is a radio failsafe
+            if (failsafe.radio) {
+                break;
+            }
 
             if (!motors.armed()) {
                 init_arm_motors(true);
@@ -1515,6 +1525,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
             result = MAV_RESULT_ACCEPTED;
+
+            // don't do anything if there is a radio failsafe
+            if (failsafe.radio) {
+                break;
+            }
 
             if (motors.armed()) {
                 if (ap.land_complete) {
