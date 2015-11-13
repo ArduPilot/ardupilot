@@ -46,7 +46,7 @@ public:
         _ahrs(ahrs),
         _state(GIMBAL_STATE_NOT_PRESENT),
         _gimbalParams(parameters),
-        yaw_rate_ff_filt(0.0f),
+        _yaw_rate_ff_ef_filt(0.0f),
         lockedToBody(false),
         vehicle_delta_angles(),
         vehicle_to_gimbal_quat(),
@@ -86,7 +86,8 @@ public:
 private:
     gimbal_state_t _state;
 
-    float yaw_rate_ff_filt;
+    float _yaw_rate_ff_ef_filt;
+    float _vehicle_yaw_rate_ef_filt;
 
     static const uint8_t _compid = MAV_COMP_ID_GIMBAL;
 

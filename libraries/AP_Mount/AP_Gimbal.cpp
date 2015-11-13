@@ -260,9 +260,8 @@ void AP_Gimbal::update_joint_angle_est()
 
 Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
 {
-    // Get filtered vehicle turn rate in body frame
-    static const float tc = 0.05f;
-    static const float yawErrorLimit = radians(5);
+    static const float tc = 0.1f;
+    static const float yawErrorLimit = radians(5.7f);
     float dt = _measurement.delta_time;
     float alpha = dt/(dt+tc);
 
@@ -270,18 +269,26 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
     Matrix3f Teg;
     quatEst.inverse().rotation_matrix(Teg);
 
-    // calculate the maximum steady state rate error corresponding to the maximum permitted yaw angle error
+
+    //_vehicle_yaw_rate_ef_filt = _ahrs.get_yaw_rate_earth();
+
+    // filter the vehicle yaw rate to remove noise
+    _vehicle_yaw_rate_ef_filt += (_ahrs.get_yaw_rate_earth() - _vehicle_yaw_rate_ef_filt) * alpha;
+
     float yaw_rate_ff = 0;
-    if (_ahrs.get_yaw_rate_earth() > _gimbalParams.get_K_rate()*yawErrorLimit) {
-        yaw_rate_ff = _ahrs.get_yaw_rate_earth()-_gimbalParams.get_K_rate()*yawErrorLimit;
-    } else if (_ahrs.get_yaw_rate_earth() < -_gimbalParams.get_K_rate()*yawErrorLimit) {
-        yaw_rate_ff = _ahrs.get_yaw_rate_earth()+_gimbalParams.get_K_rate()*yawErrorLimit;
+
+    // calculate an earth-frame yaw rate feed-forward that prevents gimbal from exceeding the maximum yaw error
+    if (_vehicle_yaw_rate_ef_filt > _gimbalParams.get_K_rate()*yawErrorLimit) {
+        yaw_rate_ff = _vehicle_yaw_rate_ef_filt-_gimbalParams.get_K_rate()*yawErrorLimit;
+    } else if (_vehicle_yaw_rate_ef_filt < -_gimbalParams.get_K_rate()*yawErrorLimit) {
+        yaw_rate_ff = _vehicle_yaw_rate_ef_filt+_gimbalParams.get_K_rate()*yawErrorLimit;
     }
 
-    yaw_rate_ff_filt += (yaw_rate_ff - yaw_rate_ff_filt) * alpha;
+    // filter the feed-forward to remove noise
+    //_yaw_rate_ff_ef_filt += (yaw_rate_ff - _yaw_rate_ff_ef_filt) * alpha;
 
     Vector3f gimbalRateDemVecYaw;
-    gimbalRateDemVecYaw.z = yaw_rate_ff_filt - _gimbalParams.get_K_rate() * filtered_joint_angles.z / constrain_float(Tve.c.z,0.5f,1.0f);
+    gimbalRateDemVecYaw.z = yaw_rate_ff - _gimbalParams.get_K_rate() * filtered_joint_angles.z / constrain_float(Tve.c.z,0.5f,1.0f);
     gimbalRateDemVecYaw.z /= constrain_float(Tve.c.z,0.5f,1.0f);
 
     // rotate the rate demand into gimbal frame
