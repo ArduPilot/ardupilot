@@ -107,7 +107,6 @@ void Util::perf_begin(perf_counter_t perf)
     struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
 
     if (perf_elapsed == NULL) {
-        hal.console->printf("Trying to begin uninitialized perf counter\n");
         return;
     }
     if (perf_elapsed->base.type != PC_ELAPSED) {
@@ -127,7 +126,6 @@ void Util::perf_end(perf_counter_t perf)
     struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
 
     if (perf_elapsed == NULL) {
-	    hal.console->printf("Trying to end uninitialized perf counter\n");
         return;
     }
 
@@ -175,7 +173,6 @@ void Util::perf_count(perf_counter_t perf)
     struct perf_counter_count_t *perf_counter = (struct perf_counter_count_t *)perf;
 
     if (perf_counter == NULL) {
-        hal.console->printf("Trying to count uninitialized perf counter\n");
         return;
     }
 
