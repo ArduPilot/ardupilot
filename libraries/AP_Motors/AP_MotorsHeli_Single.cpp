@@ -219,6 +219,18 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(int16_t desired_speed)
 }
 
 // calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli_Single::calculate_armed_scalars()
+{
+    _main_rotor.set_ramp_time(_rsc_ramp_time);
+    _main_rotor.set_runup_time(_rsc_runup_time);
+    _main_rotor.set_critical_speed(_rsc_critical);
+    _main_rotor.set_idle_output(_rsc_idle_output);
+    _main_rotor.set_power_output_range(_rsc_power_low, _rsc_power_high);
+    _main_rotor.recalc_scalers();
+}
+
+
+// calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_scalars()
 {
     // range check collective min, max and mid
@@ -244,13 +256,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
-    _main_rotor.set_ramp_time(_rsc_ramp_time);
-    _main_rotor.set_runup_time(_rsc_runup_time);
-    _main_rotor.set_critical_speed(_rsc_critical);
-    _main_rotor.set_idle_output(_rsc_idle_output);
-    _main_rotor.set_power_output_range(_rsc_power_low, _rsc_power_high);
-    _main_rotor.recalc_scalers();
-
+    calculate_armed_scalars();
+    
     // send setpoints to tail rotor controller and trigger recalculation of scalars
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);

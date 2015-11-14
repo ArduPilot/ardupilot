@@ -204,6 +204,7 @@ void AP_MotorsHeli::output()
     update_throttle_filter();
 
     if (_flags.armed) {
+        calculate_armed_scalars();
         if (!_flags.interlock) {
             output_armed_zero_throttle();
         } else if (_flags.stabilizing) {

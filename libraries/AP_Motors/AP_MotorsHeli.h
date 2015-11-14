@@ -136,6 +136,9 @@ public:
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 
+    // calculate_armed_scalars - must be implemented by child classes
+    virtual void calculate_armed_scalars() = 0;
+    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
