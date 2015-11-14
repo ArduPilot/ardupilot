@@ -85,7 +85,7 @@ void Copter::auto_disarm_check()
 #if FRAME_CONFIG == HELI_FRAME
     // if the rotor is still spinning, don't initiate auto disarm
     if (motors.rotor_speed_above_critical()) {
-        auto_disarming_counter = 0;
+        auto_disarm_begin = tnow_ms;
         return;
     }
 #endif
