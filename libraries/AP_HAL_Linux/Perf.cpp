@@ -105,6 +105,11 @@ static inline uint64_t timespec_to_nsec(const struct timespec *ts)
 void Util::perf_begin(perf_counter_t perf)
 {
     struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
+
+    if (perf_elapsed == NULL) {
+        hal.console->printf("Trying to begin uninitialized perf counter\n");
+        return;
+    }
     if (perf_elapsed->base.type != PC_ELAPSED) {
         hal.console->printf("perf_begin() called over a perf_counter_t(%s) that"
                             " is not of the PC_ELAPSED type.\n",
@@ -120,6 +125,11 @@ void Util::perf_begin(perf_counter_t perf)
 void Util::perf_end(perf_counter_t perf)
 {
     struct perf_counter_elapsed_t *perf_elapsed = (struct perf_counter_elapsed_t *)perf;
+
+    if (perf_elapsed == NULL) {
+	    hal.console->printf("Trying to end uninitialized perf counter\n");
+        return;
+    }
 
     if (perf_elapsed->base.type != PC_ELAPSED) {
         hal.console->printf("perf_end() called over a perf_counter_t(%s) "
@@ -162,16 +172,21 @@ void Util::perf_end(perf_counter_t perf)
 
 void Util::perf_count(perf_counter_t perf)
 {
-    struct perf_counter_count_t *perf_count = (struct perf_counter_count_t *)perf;
+    struct perf_counter_count_t *perf_counter = (struct perf_counter_count_t *)perf;
 
-    if (perf_count->base.type != PC_COUNT) {
-        hal.console->printf("perf_count() called over a perf_counter_t(%s) "
-                            "that is not of the PC_COUNT type.\n",
-                            perf_count->base.name);
+    if (perf_counter == NULL) {
+        hal.console->printf("Trying to count uninitialized perf counter\n");
         return;
     }
 
-    perf_count->count++;
+    if (perf_counter->base.type != PC_COUNT) {
+        hal.console->printf("perf_count() called over a perf_counter_t(%s) "
+                            "that is not of the PC_COUNT type.\n",
+                            perf_counter->base.name);
+        return;
+    }
+
+    perf_counter->count++;
 }
 
 #endif

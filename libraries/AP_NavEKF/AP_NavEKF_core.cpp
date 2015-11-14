@@ -4373,7 +4373,8 @@ void NavEKF_core::InitialiseVariables()
         _perf_FuseMagnetometer = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseMagnetometer");
         _perf_FuseAirspeed = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseAirspeed");
         _perf_FuseSideslip = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseSideslip");
-        _perf_OpticalFlowEKF = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseOptFlow");
+        _perf_OpticalFlowEKF = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_OpticalFlowEKF");
+        _perf_FuseOptFlow = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EKF_FuseOptFlow");
     }
 
     // initialise time stamps
