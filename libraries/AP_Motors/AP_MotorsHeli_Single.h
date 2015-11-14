@@ -95,6 +95,9 @@ public:
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars();
 
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    void calculate_armed_scalars();
+    
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask();
