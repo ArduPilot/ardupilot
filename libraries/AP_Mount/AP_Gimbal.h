@@ -47,6 +47,7 @@ public:
         _state(GIMBAL_STATE_NOT_PRESENT),
         _gimbalParams(parameters),
         _yaw_rate_ff_ef_filt(0.0f),
+        _vehicle_yaw_rate_ef_filt(0.0f),
         lockedToBody(false),
         vehicle_delta_angles(),
         vehicle_to_gimbal_quat(),
