@@ -120,7 +120,7 @@ Copter::Copter(void) :
 #if PARACHUTE == ENABLED
     parachute(relay),
 #endif
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain(ahrs, mission, rally),
 #endif
 #if PRECISION_LANDING == ENABLED

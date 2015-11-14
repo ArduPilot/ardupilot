@@ -1056,7 +1056,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(sonar,   "RNGFND", RangeFinder),
 #endif
 
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),

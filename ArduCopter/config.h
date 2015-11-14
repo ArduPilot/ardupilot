@@ -738,6 +738,13 @@
  #define AC_RALLY   ENABLED
 #endif
 
+#ifndef AC_TERRAIN
+ #define AC_TERRAIN ENABLED
+ #if !AC_RALLY
+  #error Terrain relies on Rally which is disabled
+ #endif
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //

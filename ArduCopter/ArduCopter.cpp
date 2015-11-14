@@ -502,7 +502,7 @@ void Copter::one_hz_loop()
 
     check_usb_mux();
 
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain.update();
 
     // tell the rangefinder our height, so it can go into power saving
