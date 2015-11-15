@@ -19,12 +19,12 @@
 #define POSNE_NOISE_DEFAULT     1.0f
 #define ALT_NOISE_DEFAULT       5.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.005f
+#define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        2
 #define POS_GATE_DEFAULT        3
 #define HGT_GATE_DEFAULT        3
 #define MAG_GATE_DEFAULT        3
@@ -43,12 +43,12 @@
 #define POSNE_NOISE_DEFAULT     1.0f
 #define ALT_NOISE_DEFAULT       2.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.005f
+#define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        2
 #define POS_GATE_DEFAULT        3
 #define HGT_GATE_DEFAULT        3
 #define MAG_GATE_DEFAULT        3
@@ -67,15 +67,15 @@
 #define POSNE_NOISE_DEFAULT     1.0f
 #define ALT_NOISE_DEFAULT       5.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.005f
+#define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        5
-#define POS_GATE_DEFAULT        5
+#define VEL_GATE_DEFAULT        2
+#define POS_GATE_DEFAULT        3
 #define HGT_GATE_DEFAULT        4
-#define MAG_GATE_DEFAULT        3
+#define MAG_GATE_DEFAULT        2
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
@@ -91,12 +91,12 @@
 #define POSNE_NOISE_DEFAULT     1.0f
 #define ALT_NOISE_DEFAULT       5.0f
 #define MAG_NOISE_DEFAULT       0.05f
-#define GYRO_PNOISE_DEFAULT     0.005f
+#define GYRO_PNOISE_DEFAULT     0.001f
 #define ACC_PNOISE_DEFAULT      0.25f
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        2
 #define POS_GATE_DEFAULT        3
 #define HGT_GATE_DEFAULT        3
 #define MAG_GATE_DEFAULT        3
@@ -333,8 +333,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: GYRO_PNOISE
     // @DisplayName: Rate gyro noise (rad/s)
     // @Description: This control disturbance noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more.
-    // @Range: 0.001 0.05
-    // @Increment: 0.001
+    // @Range: 0.0001 0.01
+    // @Increment: 0.0001
     // @User: Advanced
     // @Units: rad/s
     AP_GROUPINFO("GYRO_PNOISE", 24, NavEKF2, _gyrNoise, GYRO_PNOISE_DEFAULT),
@@ -342,7 +342,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: ACC_PNOISE
     // @DisplayName: Accelerometer noise (m/s^2)
     // @Description: This control disturbance noise controls the growth of estimated error due to accelerometer measurement errors excluding bias. Increasing it makes the flter trust the accelerometer measurements less and other measurements more.
-    // @Range: 0.05 1.0
+    // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
     // @Units: m/s/s

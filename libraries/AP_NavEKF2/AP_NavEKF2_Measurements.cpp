@@ -186,15 +186,22 @@ bool NavEKF2_core::getMagOffsets(Vector3f &magOffsets) const
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
+    // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
+    // magnetometer, then declare the magnetometers as failed for this flight
+    uint8_t maxCount = _ahrs->get_compass()->get_count();
+    if (allMagSensorsFailed || (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight)) {
+        allMagSensorsFailed = true;
+        return;
+    }
+
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
-
         // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
         // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
         // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
-        uint8_t maxCount = _ahrs->get_compass()->get_count();
         if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
+
             // search through the list of magnetometers
             for (uint8_t i=1; i<maxCount; i++) {
                 uint8_t tempIndex = magSelectIndex + i;
