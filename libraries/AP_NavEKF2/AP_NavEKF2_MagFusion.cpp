@@ -28,10 +28,11 @@ void NavEKF2_core::controlMagYawReset()
     deltaQuat.to_axis_angle(deltaRotVec);
     float deltaRot = deltaRotVec.length();
 
+    // In-Flight reset for vehicle that cannot use a zero sideslip assumption
     // Monitor the gain in height and reset the magnetic field states and heading when initial altitude has been gained
     // This is done to prevent magnetic field distoration from steel roofs and adjacent structures causing bad earth field and initial yaw values
     // Delay if rotated too far since the last check as rapid rotations will produce errors in the magnetic field states
-    if (inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && deltaRot < 0.1745f) {
+    if (!assume_zero_sideslip() && inFlight && !firstMagYawInit && (stateStruct.position.z  - posDownAtTakeoff) < -5.0f && deltaRot < 0.1745f) {
         firstMagYawInit = true;
         // reset the timer used to prevent magnetometer fusion from affecting attitude until initial field learning is complete
         magFuseTiltInhibit_ms =  imuSampleTime_ms;
@@ -46,10 +47,11 @@ void NavEKF2_core::controlMagYawReset()
         StoreQuatRotate(tempQuat);
     }
 
-    // perform a yaw alignment check against GPS if exiting on-ground mode for fly forward type vehicle (plane)
+    // In-Flight reset for vehicles that can use a zero sideslip assumption (Planes)
     // this is done to protect against unrecoverable heading alignment errors due to compass faults
-    if (!onGround && prevOnGround && assume_zero_sideslip()) {
+    if (assume_zero_sideslip() && inFlight && !firstMagYawInit) {
         alignYawGPS();
+        firstMagYawInit = true;
     }
 
     // inhibit the 3-axis mag fusion from modifying the tilt states for the first few seconds after a mag field reset
@@ -66,53 +68,49 @@ void NavEKF2_core::controlMagYawReset()
 // vector from GPS. It is used to align the yaw angle after launch or takeoff.
 void NavEKF2_core::alignYawGPS()
 {
+    // get quaternion from existing filter states and calculate roll, pitch and yaw angles
+    Vector3f eulerAngles;
+    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+
     if ((sq(gpsDataDelayed.vel.x) + sq(gpsDataDelayed.vel.y)) > 25.0f) {
-        float roll;
-        float pitch;
-        float oldYaw;
-        float newYaw;
-        float yawErr;
-        // get quaternion from existing filter states and calculate roll, pitch and yaw angles
-        stateStruct.quat.to_euler(roll, pitch, oldYaw);
+
         // calculate course yaw angle
-        oldYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
-        // calculate yaw angle from GPS velocity
-        newYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
-        // estimate the yaw error
-        yawErr = wrap_PI(newYaw - oldYaw);
-        // If the inertial course angle disagrees with the GPS by more than 45 degrees, we declare the compass as bad
-        badMag = (fabsf(yawErr) > 0.7854f);
+        float velYaw = atan2f(stateStruct.velocity.y,stateStruct.velocity.x);
+
+        // calculate course yaw angle from GPS velocity
+        float gpsYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
+
+        // Check the yaw angles for consistency
+        float yawErr = max(fabsf(wrap_PI(gpsYaw - velYaw)),max(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
+
+        // If the angles disagree by more than 45 degrees and GPS innovations are large, we declare the magnetic yaw as bad
+        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f));
+
         // correct yaw angle using GPS ground course compass failed or if not previously aligned
-        if (badMag || !yawAligned) {
-            // correct the yaw angle
-            newYaw = oldYaw + yawErr;
+        if (badMagYaw) {
+
             // calculate new filter quaternion states from Euler angles
-            stateStruct.quat.from_euler(roll, pitch, newYaw);
-            // the yaw angle is now aligned so update its status
-            yawAligned =  true;
-            // reset the position and velocity states
-            ResetPosition();
-            ResetVelocity();
-            // reset the covariance for the quaternion, velocity and position states
-            // zero the matrix entries
-            zeroRows(P,0,9);
-            zeroCols(P,0,9);
-            // velocities - we could have a big error coming out of constant position mode due to GPS lag
-            P[3][3]   = 400.0f;
-            P[4][4]   = P[3][3];
-            P[5][5]   = sq(0.7f);
-            // positions - we could have a big error coming out of constant position mode due to GPS lag
-            P[6][6]   = 400.0f;
-            P[7][7]   = P[6][6];
-            P[8][8]   = sq(5.0f);
-        }
-        // Update magnetic field states if the magnetometer is bad
-        if (badMag) {
-            Vector3f eulerAngles;
-            getEulerAngles(eulerAngles);
-            calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+            stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
+
+            // The correlations between attitude errors and positon and velocity errors in the covariance matrix
+            // are invalid becasue og the changed yaw angle, so reset the corresponding row and columns
+            zeroCols(P,0,2);
+            zeroRows(P,0,2);
+
+            // Set the initial attitude error covariances
+            P[1][1] = P[0][0] = sq(radians(5.0f));
+            P[2][2] = sq(radians(45.0f));
+
+            // reset tposition fusion timer to casue the states to be reset to the GPS on the next GPS fusion cycle
+            lastPosPassTime_ms = 0;
         }
     }
+    // reset the magnetometer field states - we could have got bad external interference when initialising on-ground
+    calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+    // We shoud retry the primary magnetoemter if previously switched or failed
+    magSelectIndex = 0;
+    allMagSensorsFailed = false;
 }
 
 /********************************************************
