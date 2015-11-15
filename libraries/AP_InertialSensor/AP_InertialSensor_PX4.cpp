@@ -120,7 +120,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate gyro sample time
         int samplerate = ioctl(fd,  GYROIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid gyro sample rate");
+            platform::panic("Invalid gyro sample rate");
         }
         _set_gyro_raw_sample_rate(_gyro_instance[i], (uint32_t)samplerate);
         _gyro_sample_time[i] = 1.0f / samplerate;
@@ -160,7 +160,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate accel sample time
         int samplerate = ioctl(fd,  ACCELIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid accel sample rate");
+            platform::panic("Invalid accel sample rate");
         }
         _set_accel_raw_sample_rate(_accel_instance[i], (uint32_t) samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
@@ -271,7 +271,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     _accel_meas_count[i] ++;
 
     if(_accel_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = platform::micros();
 
         ::printf("a%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_accel_meas_count_start_us[i])*1.0e-6f),_accel_dt_max[i]);
 
@@ -309,7 +309,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     _gyro_meas_count[i] ++;
 
     if(_gyro_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = platform::micros();
 
         ::printf("g%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_gyro_meas_count_start_us[i])*1.0e-6f), _gyro_dt_max[i]);
 
@@ -350,7 +350,7 @@ void AP_InertialSensor_PX4::_get_sample()
             }
         }
     }
-    _last_get_sample_timestamp = hal.scheduler->micros64();
+    _last_get_sample_timestamp = platform::micros64();
 }
 
 bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) 
@@ -363,7 +363,7 @@ bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &ac
         if (dataflash != NULL) {
             struct log_ACCEL pkt = {
                 LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
+                time_us   : platform::micros64(),
                 sample_us : accel_report.timestamp,
                 AccX      : accel_report.x,
                 AccY      : accel_report.y,
@@ -386,7 +386,7 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         if (dataflash != NULL) {
             struct log_GYRO pkt = {
                 LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
+                time_us   : platform::micros64(),
                 sample_us : gyro_report.timestamp,
                 GyrX      : gyro_report.x,
                 GyrY      : gyro_report.y,

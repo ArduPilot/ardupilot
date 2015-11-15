@@ -524,7 +524,7 @@ void Copter::guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_m
 void Copter::guided_limit_init_time_and_pos()
 {
     // initialise start time
-    guided_limit.start_time = hal.scheduler->millis();
+    guided_limit.start_time = platform::millis();
 
     // initialise start position from current position
     guided_limit.start_pos = inertial_nav.get_position();

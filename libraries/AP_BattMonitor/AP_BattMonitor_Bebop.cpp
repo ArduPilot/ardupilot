@@ -144,7 +144,7 @@ void AP_BattMonitor_Bebop::read(void)
     float remaining, vbat, vbat_raw;
 
     auto rcout = Linux::RCOutput_Bebop::from(hal.rcout);
-    tnow = hal.scheduler->micros();
+    tnow = platform::micros();
 
     ret = rcout->read_obs_data(data);
     if (ret < 0) {

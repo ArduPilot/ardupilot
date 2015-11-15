@@ -1133,7 +1133,7 @@ void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf("Bad var table\n");
-        hal.scheduler->panic("Bad var table");
+        platform::panic("Bad var table");
     }
 
     // disable centrifugal force correction, it will be enabled as part of the arming process
