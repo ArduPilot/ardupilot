@@ -3799,6 +3799,10 @@ bool NavEKF_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dV
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
         dVel_dt = ins.get_delta_velocity_dt(ins_index);
+        // catch invalid delta time
+        if (dVel_dt <= 0.0f) {
+            dVel_dt = dtIMUavg;
+        }
         return true;
     }
     return false;
@@ -3819,8 +3823,15 @@ void NavEKF_core::readIMUData()
 {
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
-    dtIMUavg = 1.0f/ins.get_sample_rate();
-    dtDelAng = max(ins.get_delta_time(),1.0e-4f);
+    // calculate the average time between IMU updates
+    dtIMUavg = 1.0f/max(ins.get_sample_rate(),1E-5f);
+
+    // calculate the most recent time between gyro delta angle updates
+    if (ins.get_delta_time() > 0.0f) {
+        dtDelAng = ins.get_delta_time();
+    } else {
+        dtDelAng = dtIMUavg;
+    }
 
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = hal.scheduler->millis();
