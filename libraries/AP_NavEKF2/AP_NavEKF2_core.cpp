@@ -109,8 +109,9 @@ void NavEKF2_core::InitialiseVariables()
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
     magTimeout = false;
+    allMagSensorsFailed = false;
     tasTimeout = true;
-    badMag = false;
+    badMagYaw = false;
     badIMUdata = false;
     firstMagYawInit = false;
     dtIMUavg = 0.0025f;
@@ -148,7 +149,6 @@ void NavEKF2_core::InitialiseVariables()
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
-    yawAligned = false;
     inhibitWindStates = true;
     inhibitMagStates = true;
     gndOffsetValid =  false;
@@ -1277,10 +1277,10 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
 
         // calculate yaw angle rel to true north
         yaw = magDecAng - magHeading;
-        yawAligned = true;
+        yawAlignComplete = true;
         // calculate initial filter quaternion states using yaw from magnetometer if mag heading healthy
         // otherwise use existing heading
-        if (!badMag) {
+        if (!badMagYaw) {
             // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
             Vector3f tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
@@ -1316,11 +1316,11 @@ Quaternion NavEKF2_core::calcQuatAndFieldStates(float roll, float pitch)
         P[20][20] = P[19][19];
         P[21][21] = P[19][19];
 
-        // clear bad magnetometer status
-        badMag = false;
+        // clear bad magnetic yaw status
+        badMagYaw = false;
     } else {
         initQuat.from_euler(roll, pitch, 0.0f);
-        yawAligned = false;
+        yawAlignComplete = false;
     }
 
     // return attitude quaternion
