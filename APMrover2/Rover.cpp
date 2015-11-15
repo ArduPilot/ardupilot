@@ -46,9 +46,10 @@ Rover::Rover(void) :
     ground_start_count(20),
     throttle(500),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery),
+    frsky_telemetry(inertial_nav, ahrs, battery, sonar),
 #endif
     home(ahrs.get_home()),
     G_Dt(0.02)
+    inertial_nav(ahrs)
 {
 }

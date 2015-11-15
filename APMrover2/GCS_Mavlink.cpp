@@ -181,7 +181,10 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
 
-    mavlink_msg_sys_status_send(
+    // give frsky library our current control sensor information
+    frsky_telemetry.set_control_sensors(control_sensors_present, control_sensors_enabled, control_sensors_health);
+		
+	mavlink_msg_sys_status_send(
         chan,
         control_sensors_present,
         control_sensors_enabled,
