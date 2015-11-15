@@ -1,2 +1,3 @@
 LIBRARIES += StorageManager
 LIBRARIES += AP_Menu
+LIBRARIES += AP_ADC
