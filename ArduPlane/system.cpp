@@ -351,7 +351,10 @@ void Plane::set_mode(enum FlightMode mode)
     previous_mode = control_mode;
     control_mode = mode;
 
-    if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
+    // give frsky library our current control mode
+    frsky_telemetry.set_control_mode(control_mode);
+	
+	if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
         // restore last gains
         autotune_restore();
     }

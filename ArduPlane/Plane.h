@@ -243,7 +243,10 @@ private:
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
 
-    // selected navigation controller
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav {ahrs};
+	
+	// selected navigation controller
     AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Analog Inputs
@@ -367,7 +370,7 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry {ahrs, battery};
+    AP_Frsky_Telem frsky_telemetry {inertial_nav, ahrs, battery, rangefinder};
 #endif
 
     // Airspeed Sensors
@@ -701,6 +704,12 @@ private:
     void load_parameters(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
+    void calc_home_distance_and_bearing(void);
+    Vector3f pv_location_to_vector(const Location& loc);
+    float pv_alt_above_origin(float alt_above_home_cm);
+    float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
+    float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
+    void set_land_complete(bool b);
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);

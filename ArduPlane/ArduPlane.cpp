@@ -512,7 +512,7 @@ void Plane::handle_auto_mode(void)
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
         steer_state.hold_course_cd = -1;
-        auto_state.land_complete = false;
+        set_land_complete(false);
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
