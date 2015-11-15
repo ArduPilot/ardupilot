@@ -122,7 +122,11 @@ public:
 	// messages don't block the CPU
     mavlink_statustext_t pending_status;
 
-    // call to reset the timeout window for entering the cli
+    // added variables to pass mav statustext msgs data to other libraries
+    static mavlink_statustext_t gcs_message_data;
+    static bool gcs_message_flag;
+	
+	// call to reset the timeout window for entering the cli
     void reset_cli_timeout();
 
     uint32_t        last_heartbeat_time; // milliseconds

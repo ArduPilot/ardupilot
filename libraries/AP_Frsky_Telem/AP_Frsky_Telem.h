@@ -17,16 +17,17 @@
 #ifndef __AP_FRSKY_TELEM_H__
 #define __AP_FRSKY_TELEM_H__
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_GPS/AP_GPS.h>
+#include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Baro/AP_Baro.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Notify/AP_Notify.h>
+#include <GCS_MAVLink/GCS.h>
 
-/* FrSky sensor hub data IDs */
+#define TEXT_NUM_BUFFERS	10
+
+/* FrSky sensor hub data IDs for D-receiver */
 #define FRSKY_ID_GPS_ALT_BP     0x01
 #define FRSKY_ID_TEMP1          0x02
 #define FRSKY_ID_RPM            0x03
@@ -59,129 +60,132 @@
 #define FRSKY_ID_VOLTS_BP       0x3A
 #define FRSKY_ID_VOLTS_AP       0x3B
 
-// Default sensor data IDs (Physical IDs + CRC)
-#define DATA_ID_VARIO            0x00 // 0
-#define DATA_ID_FLVSS            0xA1 // 1
-#define DATA_ID_FAS              0x22 // 2
-#define DATA_ID_GPS              0x83 // 3
-#define DATA_ID_RPM              0xE4 // 4
-#define DATA_ID_SP2UH            0x45 // 5
-#define DATA_ID_SP2UR            0xC6 // 6
+/* The X-receiver sends the following bytes on the Smart.Port to poll sensors:
+	0x7E 0xA1 0x7E 0x22 0x7E 0x83 0x7E 0xE4 0x7E 0x45 0x7E 0xC6 0x7E 0x67
+	0x7E 0x48 0x7E 0xE9 0x7E 0x6A 0x7E 0xCB 0x7E 0xAC 0x7E 0x0D 0x7E 0x8E
+	0x7E 0x2F 0x7E 0xD0 0x7E 0x71 0x7E 0xF2 0x7E 0x53 0x7E 0x34 0x7E 0x95
+	0x7E 0x16 0x7E 0xB7 0x7E 0x98 0x7E 0x39 0x7E 0xBA 0x7E 0x1B 0x7E 0x00
+	The fist byte (0x7E) is the header of the poll request,
+	the second byte is the sensor ID for the sensor being polled.
+*/
+// Standard FrSky SENSOR IDs
+enum SPortSensors {
+	SENSOR_VARIO	= 0x00, // seen as sensor ID 1
+	SENSOR_FLVSS	= 0xA1, // seen as sensor ID 2 (reserved for FLVS-01)
+	SENSOR_FAS		= 0x22, // sensor ID 3
+	SENSOR_GPS		= 0x83, 
+	SENSOR_RPM		= 0xE4,
+	SENSOR_SP2UH	= 0x45,
+	SENSOR_SP2UR	= 0xC6,
+	// some other polled IDs
+	SENSOR_8		= 0x67,
+	SENSOR_9		= 0x48,
+	SENSOR_10		= 0xE9,
+	SENSOR_11		= 0x6A,
+	SENSOR_12		= 0xCB,
+	SENSOR_13		= 0xAC,
+	SENSOR_14		= 0x0D,
+	SENSOR_15		= 0x8E,
+	SENSOR_16		= 0x2F,
+	SENSOR_17		= 0xD0,
+	SENSOR_18		= 0x71,
+	SENSOR_19		= 0xF2,
+	SENSOR_20		= 0x53,
+	SENSOR_21		= 0x34,
+	SENSOR_22		= 0x95,
+	SENSOR_23		= 0x16,
+	SENSOR_24		= 0xB7,
+	SENSOR_25		= 0x98,
+	SENSOR_26		= 0x39,
+	SENSOR_27		= 0xBA,
+	SENSOR_28		= 0x1B,
+	SENSOR_UNKNOWN	= 0xFE,
+	SENSOR_ENUM_END
+};
 
-#define SPORT_START_FRAME 0x7E
 
 class AP_Frsky_Telem
 {
 public:
     //constructor
-    AP_Frsky_Telem(AP_AHRS &ahrs, AP_BattMonitor &battery);
+    AP_Frsky_Telem(const AP_InertialNav &inav, const AP_AHRS &ahrs, const AP_BattMonitor &battery, const RangeFinder &rng);
 
-    // supported protocols
-    enum FrSkyProtocol {
-        FrSkyUnknown = 0,
-        FrSkyDPORT = 2,
-        FrSkySPORT = 3
-    };
-
-    // init - perform require initialisation including detecting which protocol to use
+    // init - perform required initialisation including detecting which protocol to use
     void init(const AP_SerialManager& serial_manager);
 
-    // send_frames - sends updates down telemetry link for both DPORT and SPORT protocols
-    //  should be called by main program at 50hz to allow poll for serial bytes
-    //  coming from the receiver for the SPort protocol
-    void send_frames(uint8_t control_mode);
+	void set_home_distance(float distance) { _home_distance = (uint16_t)roundf(distance*0.01f); }
+	void set_home_bearing(float bearing) { _home_bearing = (uint16_t)roundf(bearing*0.0033f); }
+	void set_control_mode(int8_t mode) { _control_mode = (uint8_t)mode; }
+	void set_simple_mode(uint8_t simple_mode) { _simple_mode = simple_mode; }
+	void set_land_complete(uint8_t land_complete) { _land_complete = (bool)land_complete; }
+	void set_control_sensors(uint32_t control_sensors_present, uint32_t control_sensors_enabled, uint32_t control_sensors_health) { _control_sensors_present = control_sensors_present; _control_sensors_enabled = control_sensors_enabled; _control_sensors_health = control_sensors_health; }
 
 private:
+	// tick - main call to send updates to transmitter (called by scheduler at 1kHz)
+    void tick(void);
 
-    // init_uart_for_sport - initialise uart for use by sport
-    void init_uart_for_sport();
-
-    // send_hub_frame - main transmission function when protocol is FrSkyDPORT
-    void send_hub_frame();
-
-    // sport_tick - main call to send updates to transmitter when protocol is FrSkySPORT
-    //  called by scheduler at a high rate
-    void sport_tick();
-
+	// methods for packetizing messages for transmission through FrSky link
+	uint32_t get_next_msg_chunk();
+	uint8_t get_next_msg_byte();
+	
+	// methods for collecting what is essentially status_text, sys_status, and ekf_status_report mavlink messages for transmission through FrSky link
+	void mavlink_statustext_check(void);
+	void control_sensors_check(void);
+	void ekf_status_check(void);
+	
     // methods related to the nuts-and-bolts of sending data
     void calc_crc(uint8_t byte);
-    void send_crc();
-    void frsky_send_byte(uint8_t value);
-    void frsky_send_hub_startstop();
-    void frsky_send_sport_prim();
-    void frsky_send_data(uint8_t id, int16_t data);
+    void send_crc(void);
+    void frsky_send_byte(uint8_t byte);
+    void frsky_send_data(uint16_t id, uint32_t value);
 
-    // methods to convert flight controller data to frsky telemetry format
-    void calc_baro_alt();
-    float frsky_format_gps(float dec);
-    void calc_gps_position();
-    void calc_battery();
-    void calc_gps_sats();
-
-    // methods to send individual pieces of data down telemetry link
-    void send_gps_sats(void);
-    void send_mode(void);
-    void send_baro_alt_m(void);
-    void send_baro_alt_cm(void);
-    void send_batt_remain(void);
-    void send_batt_volts(void);
-    void send_current(void);
-    void send_prearm_error(void);
-    void send_heading(void);
-    void send_gps_lat_dd(void);
-    void send_gps_lat_mm(void);
-    void send_gps_lat_ns(void);
-    void send_gps_lon_dd(void);
-    void send_gps_lon_mm(void);
-    void send_gps_lon_ew(void);
-    void send_gps_speed_meter(void);
-    void send_gps_speed_cm(void);
-    void send_gps_alt_meter(void);
-    void send_gps_alt_cm(void);
-
-    AP_AHRS &_ahrs;                         // reference to attitude estimate
-    AP_BattMonitor &_battery;               // reference to battery monitor object
-    AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
-    bool _initialised_uart;                 // true when we have detected the protocol and UART has been initialised
-    enum FrSkyProtocol _protocol;           // protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
-
+	const AP_InertialNav &_inav;
+	const AP_AHRS &_ahrs;
+	const RangeFinder &_rng;
+    const AP_BattMonitor &_battery;
+    AP_HAL::UARTDriver *_port;					// UART used to send data to receiver
+	AP_SerialManager::SerialProtocol _protocol;	// protocol used - detected using SerialManager's SERIALX_PROTOCOL parameter
     uint16_t _crc;
-    uint32_t _last_frame1_ms;
-    uint32_t _last_frame2_ms;
-
-    bool _battery_data_ready;
-    uint16_t _batt_remaining;
-    uint16_t _batt_volts;
-    uint16_t _batt_amps;
-
-    bool _sats_data_ready;
-    uint16_t gps_sats;
-
-    bool _gps_data_ready;
-    bool _pos_gps_ok;
-    uint16_t _course_in_degrees;
-    char _lat_ns, _lon_ew;
-    uint16_t _latdddmm;
-    uint16_t _latmmmm;
-    uint16_t _londddmm;
-    uint16_t _lonmmmm;	
-    uint16_t _alt_gps_meters;
-    uint16_t _alt_gps_cm;
-    int16_t _speed_in_meter;
-    uint16_t _speed_in_centimeter;
-
-    bool _baro_data_ready;
-    int16_t _baro_alt_meters;
-    uint16_t _baro_alt_cm;
-
-    bool _mode_data_ready;
-    uint8_t _mode; 
-
-    uint8_t _fas_call;
-    uint8_t _gps_call;
-    uint8_t _vario_call;
-    uint8_t _various_call;
-
-    uint8_t _sport_status;
+	
+	struct
+	{
+	char lat_ns, lon_ew;
+    uint16_t latdddmm;
+    uint16_t latmmmm;
+    uint16_t londddmm;
+    uint16_t lonmmmm;	
+    uint16_t alt_gps_meters;
+    uint16_t alt_gps_cm;
+    int16_t speed_in_meter;
+    uint16_t speed_in_centimeter;
+	} _gps;
+	
+	struct
+	{
+	mavlink_statustext_t msg_data[TEXT_NUM_BUFFERS];
+	uint8_t msgNum_current;
+	uint8_t msgNum_sent;
+	} _mav;
+	
+	uint32_t _control_sensors_present;
+	uint32_t _control_sensors_enabled;
+	uint32_t _control_sensors_health;
+	
+	uint16_t _home_distance;
+	uint16_t _home_bearing;
+	uint8_t _control_mode;
+	uint8_t _simple_mode;
+	bool _land_complete;
+	
+	uint32_t calc_gps(void);
+	uint32_t calc_status(void);
+	uint32_t calc_home(void);
+	uint32_t calc_batt(void);
+	uint32_t calc_velandrng(void);
+	uint32_t calc_attitude(void);
+	
+	void send_hub_frame(void);
+	float frsky_format_gps(float dec);
+	void calc_gps_position(void);
 };
 #endif

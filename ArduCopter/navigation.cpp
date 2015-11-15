@@ -69,7 +69,12 @@ void Copter::calc_home_distance_and_bearing()
         home_distance = pv_get_horizontal_distance_cm(curr, home);
         home_bearing = pv_get_bearing_cd(curr,home);
 
-        // update super simple bearing (if required) because it relies on home_bearing
+        // give frsky library our current distance from home
+        frsky_telemetry.set_home_distance(home_distance);
+        // give frsky library our current bearing from home
+        frsky_telemetry.set_home_bearing(home_bearing);
+		
+		// update super simple bearing (if required) because it relies on home_bearing
         update_super_simple_bearing(false);
     }
 }
