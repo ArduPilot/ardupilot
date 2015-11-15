@@ -154,8 +154,26 @@ void Copter::init_ardupilot()
 #endif
 
 #if FRSKY_TELEM_ENABLED == ENABLED
-    // setup frsky
-    frsky_telemetry.init(serial_manager);
+    // setup frsky, and pass a number of parameters to the library
+    frsky_telemetry.init(serial_manager,
+#if (FRAME_CONFIG == QUAD_FRAME)
+        MAV_TYPE_QUADROTOR,
+#elif (FRAME_CONFIG == TRI_FRAME)
+        MAV_TYPE_TRICOPTER,
+#elif (FRAME_CONFIG == HEXA_FRAME || FRAME_CONFIG == Y6_FRAME)
+        MAV_TYPE_HEXAROTOR,
+#elif (FRAME_CONFIG == OCTA_FRAME || FRAME_CONFIG == OCTA_QUAD_FRAME)
+        MAV_TYPE_OCTOROTOR,
+#elif (FRAME_CONFIG == HELI_FRAME)
+        MAV_TYPE_HELICOPTER,
+#elif (FRAME_CONFIG == SINGLE_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
+        MAV_TYPE_ROCKET,
+#elif (FRAME_CONFIG == COAX_FRAME)  //because mavlink did not define a singlecopter, we use a rocket
+        MAV_TYPE_ROCKET,
+#else
+  #error Unrecognised frame type
+#endif
+        FIRMWARE_STRING, FRAME_CONFIG_STRING, g.fs_batt_voltage, g.fs_batt_mah);
 #endif
 
     // identify ourselves correctly with the ground station
@@ -165,6 +183,11 @@ void Copter::init_ardupilot()
     log_init();
 #endif
 
+#if FRAME_CONFIG == HELI_FRAME
+    // trad heli specific initialisation
+    heli_init();
+#endif
+    
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
 
@@ -251,11 +274,6 @@ void Copter::init_ardupilot()
     reset_control_switch();
     init_aux_switches();
 
-#if FRAME_CONFIG == HELI_FRAME
-    // trad heli specific initialisation
-    heli_init();
-#endif
-
     startup_ground(true);
 
     // we don't want writes to the serial port to cause us to pause
@@ -317,7 +335,7 @@ bool Copter::position_ok()
     }
 
     // check ekf position estimate
-    return ekf_position_ok();
+    return (ekf_position_ok() || optflow_position_ok());
 }
 
 // ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
@@ -411,15 +429,6 @@ void Copter::check_usb_mux(void)
     // the user has switched to/from the telemetry port
     ap.usb_connected = usb_check;
 }
-
-// frsky_telemetry_send - sends telemetry data using frsky telemetry
-//  should be called at 5Hz by scheduler
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Copter::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
 
 /*
   should we log a message type now?

@@ -70,9 +70,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(compass_save),        3000,   2500 },
     { SCHED_TASK(update_logging1),        5,   1700 },
     { SCHED_TASK(update_logging2),        5,   1700 },
-#if FRSKY_TELEM_ENABLED == ENABLED
-    { SCHED_TASK(frsky_telemetry_send),  10,    100 },
-#endif
     { SCHED_TASK(terrain_update),         5,    500 },
 };
 
@@ -512,7 +509,7 @@ void Plane::handle_auto_mode(void)
         // we are doing normal AUTO flight, the special cases
         // are for takeoff and landing
         steer_state.hold_course_cd = -1;
-        auto_state.land_complete = false;
+        set_land_complete(false);
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();

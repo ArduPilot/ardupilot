@@ -107,6 +107,11 @@ bool Copter::set_mode(uint8_t mode)
         control_mode = mode;
         DataFlash.Log_Write_Mode(control_mode);
 
+#if FRSKY_TELEM_ENABLED == ENABLED
+        // give frsky library our current control mode
+        frsky_telemetry.set_control_mode(control_mode);
+#endif
+ 
 #if AC_FENCE == ENABLED
         // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
         // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)

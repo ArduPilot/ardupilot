@@ -127,6 +127,9 @@ AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
 
+    // get a EKF_STATUS_REPORT
+    void get_ekf_status_report(mavlink_ekf_status_report_t &ekf_status_report) const;
+
 private:
     bool using_EKF(void) const;
 

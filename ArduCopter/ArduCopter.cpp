@@ -129,9 +129,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] PROGMEM = {
     { SCHED_TASK(perf_update),        4000,     75 },
     { SCHED_TASK(read_receiver_rssi),   40,     75 },
     { SCHED_TASK(rpm_update),           40,    200 },
-#if FRSKY_TELEM_ENABLED == ENABLED
-    { SCHED_TASK(frsky_telemetry_send), 80,     75 },
-#endif
 #if EPM_ENABLED == ENABLED
     { SCHED_TASK(epm_update),           40,     75 },
 #endif
@@ -504,6 +501,9 @@ void Copter::one_hz_loop()
 
     // enable/disable raw gyro/accel logging
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
+
+    // update status of control sensors (usually passed in sys_status mavlink messages)
+    control_sensors_check();
 }
 
 // called at 50hz

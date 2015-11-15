@@ -32,8 +32,8 @@
 
 #define POSCONTROL_LEASH_LENGTH_MIN             100.0f  // minimum leash lengths in cm
 
-#define POSCONTROL_DT_10HZ                      0.10f   // time difference in seconds for 10hz update rate
 #define POSCONTROL_DT_50HZ                      0.02f   // time difference in seconds for 50hz update rate
+#define POSCONTROL_DT_400HZ                     0.0025f // time difference in seconds for 400hz update rate
 
 #define POSCONTROL_ACTIVE_TIMEOUT_MS            200     // position controller is considered active if it has been called within the past 0.2 seconds
 
@@ -42,6 +42,8 @@
 #define POSCONTROL_JERK_LIMIT_CMSSS             1700.0f // jerk limit on horizontal acceleration (unit: m/s/s/s)
 #define POSCONTROL_ACCEL_FILTER_HZ              2.0f    // low-pass filter on acceleration (unit: hz)
 #define POSCONTROL_JERK_RATIO                   1.0f    // Defines the time it takes to reach the requested acceleration
+
+#define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
 class AC_PosControl
 {
@@ -126,6 +128,13 @@ public:
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
     void set_alt_target_from_climb_rate(float climb_rate_cms, float dt, bool force_descend);
 
+    /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
+    ///     should be called continuously (with dt set to be the expected time between calls)
+    ///     actual position target will be moved no faster than the speed_down and speed_up
+    ///     target will also be stopped if the motors hit their limits or leash length is exceeded
+    ///     set force_descend to true during landing to allow target to move low enough to slow the motors
+    void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend);
+
     /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
     ///     should be called continuously (with dt set to be the expected time between calls)
     ///     almost no checks are performed on the input
@@ -198,6 +207,9 @@ public:
 
     /// get_desired_velocity - returns xy desired velocity (i.e. feed forward) in cm/s in lat and lon direction
     const Vector3f& get_desired_velocity() { return _vel_desired; }
+
+    /// set_desired_velocity_z - sets desired velocity in cm/s in z axis
+    void set_desired_velocity_z(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
     /// set_desired_velocity_xy - sets desired velocity in cm/s in lat and lon directions
     ///     when update_xy_controller is next called the position target is moved based on the desired velocity and
@@ -282,7 +294,8 @@ private:
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
             uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
             uint16_t freeze_ff_xy       : 1;    // 1 use to freeze feed forward during step updates
-            uint16_t freeze_ff_z        : 1;    // 1 use to freeze feed forward during step updates
+            uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
+            uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
     } _flags;
 
     // limit flags structure

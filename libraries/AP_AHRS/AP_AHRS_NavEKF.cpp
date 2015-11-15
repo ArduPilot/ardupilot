@@ -422,5 +422,10 @@ const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
     return nullptr;
 }
 
+// get the EKF_STATUS_REPORT
+void AP_AHRS_NavEKF::get_ekf_status_report(mavlink_ekf_status_report_t &ekf_status_report) const
+{
+    return EKF.get_ekf_status_report(ekf_status_report);
+}
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 

@@ -1,7 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#define THISFIRMWARE "APM:Copter V3.3.2-rc1"
-#define FIRMWARE_VERSION 3,3,2,FIRMWARE_VERSION_TYPE_RC
+#define THISFIRMWARE "APM:Copter V3.3.2"
+#define FIRMWARE_VERSION 3,3,2,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 /*
    This program is free software: you can redistribute it and/or modify
@@ -173,7 +173,7 @@ private:
     AP_InertialSensor ins;
 
 #if CONFIG_SONAR == ENABLED
-    RangeFinder sonar;
+    RangeFinder sonar{serial_manager};
     bool sonar_enabled; // enable user switch for sonar
 #endif
 
@@ -367,6 +367,11 @@ private:
 #if FRSKY_TELEM_ENABLED == ENABLED
     AP_Frsky_Telem frsky_telemetry;
 #endif
+
+    // control_sensors (usually passed in sys_status mavlink messages)
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -798,6 +803,8 @@ private:
     void failsafe_disable();
     void fence_check();
     void fence_send_mavlink_status(mavlink_channel_t chan);
+    void control_sensors_check();
+    void control_sensors_send_mavlink_status(mavlink_channel_t chan);
     bool set_mode(uint8_t mode);
     void update_flight_mode();
     void exit_mode(uint8_t old_control_mode, uint8_t new_control_mode);
@@ -908,7 +915,6 @@ private:
     bool optflow_position_ok();
     void update_auto_armed();
     void check_usb_mux(void);
-    void frsky_telemetry_send(void);
     bool should_log(uint32_t mask);
     bool current_mode_has_user_takeoff(bool must_navigate);
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);

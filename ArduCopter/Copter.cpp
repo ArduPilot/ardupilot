@@ -66,7 +66,7 @@ Copter::Copter(void) :
     loiter_time_max(0),
     loiter_time(0),
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry(ahrs, battery),
+    frsky_telemetry(inertial_nav, ahrs, battery, sonar),
 #endif
     climb_rate(0),
     sonar_alt(0),
@@ -126,7 +126,7 @@ Copter::Copter(void) :
 #endif
     in_mavlink_delay(false),
     gcs_out_of_time(false),
-    param_loader(var_info)
+    param_loader(var_info)    
 {
     memset(&current_loc, 0, sizeof(current_loc));
 

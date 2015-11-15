@@ -65,12 +65,62 @@ void Plane::navigate()
     auto_state.wp_proportion = location_path_proportion(current_loc, 
                                                         prev_WP_loc, next_WP_loc);
 
+    calc_home_distance_and_bearing();
+	
     // update total loiter angle
     loiter_angle_update();
 
     // control mode specific updates to navigation demands
     // ---------------------------------------------------
     update_navigation();
+}
+
+// calc_home_distance_and_bearing - calculate distance and bearing to home for reporting and autopilot decisions
+void Plane::calc_home_distance_and_bearing()
+{
+    // calculate home distance and bearing
+    Vector3f home_v = pv_location_to_vector(ahrs.get_home());
+    Vector3f curr_v = inertial_nav.get_position();
+    int32_t home_distance = pv_get_horizontal_distance_cm(curr_v, home_v);
+    int32_t home_bearing = pv_get_bearing_cd(curr_v,home_v);
+
+    // give frsky library our current distance from home
+    frsky_telemetry.set_home_distance(home_distance);
+    // give frsky library our current bearing from home
+    frsky_telemetry.set_home_bearing(home_bearing);
+}
+
+// pv_location_to_vector - convert lat/lon coordinates to a position vector
+Vector3f Plane::pv_location_to_vector(const Location& loc)
+{
+    const struct Location &origin = inertial_nav.get_origin();
+    float alt_above_origin = pv_alt_above_origin(loc.alt);  // convert alt-relative-to-home to alt-relative-to-origin
+	// update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
+    float scaleLongDown = longitude_scale(loc);
+    return Vector3f((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
+}
+
+// pv_alt_above_origin - convert altitude above home to altitude above EKF origin
+float Plane::pv_alt_above_origin(float alt_above_home_cm)
+{
+    const struct Location &origin = inertial_nav.get_origin();
+    return alt_above_home_cm + (ahrs.get_home().alt - origin.alt);
+}
+
+// pv_get_horizontal_distance_cm - return distance between two positions in cm
+float Plane::pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination)
+{
+    return pythagorous2(destination.x-origin.x,destination.y-origin.y);
+}
+
+// pv_get_bearing_cd - return bearing in centi-degrees between two positions
+float Plane::pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination)
+{
+    float bearing = atan2f(destination.y-origin.y, destination.x-origin.x) * DEGX100;
+    if (bearing < 0) {
+        bearing += 36000;
+    }
+    return bearing;
 }
 
 void Plane::calc_airspeed_errors()

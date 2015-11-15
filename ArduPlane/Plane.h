@@ -1,4 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+ /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
 #define THISFIRMWARE "ArduPlane V3.4.0beta1"
 #define FIRMWARE_VERSION 3,4,0,FIRMWARE_VERSION_TYPE_BETA
@@ -240,6 +240,9 @@ private:
     const uint8_t num_gcs = MAVLINK_COMM_NUM_BUFFERS;
     GCS_MAVLINK gcs[MAVLINK_COMM_NUM_BUFFERS];
 
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav {ahrs};
+	
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
 
@@ -367,7 +370,7 @@ private:
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
-    AP_Frsky_Telem frsky_telemetry {ahrs, battery};
+    AP_Frsky_Telem frsky_telemetry {inertial_nav, ahrs, battery, rangefinder};
 #endif
 
     // Airspeed Sensors
@@ -701,6 +704,12 @@ private:
     void load_parameters(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
+    void calc_home_distance_and_bearing(void);
+    Vector3f pv_location_to_vector(const Location& loc);
+    float pv_alt_above_origin(float alt_above_home_cm);
+    float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
+    float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
+    void set_land_complete(bool b);
     int32_t get_RTL_altitude();
     float relative_altitude(void);
     int32_t relative_altitude_abs_cm(void);
@@ -832,7 +841,6 @@ private:
     void print_comma(void);
     void servo_write(uint8_t ch, uint16_t pwm);
     bool should_log(uint32_t mask);
-    void frsky_telemetry_send(void);
     uint8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);

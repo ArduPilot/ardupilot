@@ -93,6 +93,11 @@ void Copter::set_land_complete(bool b)
         Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+    // give frsky library our current land complete status
+    frsky_telemetry.set_land_complete(ap.land_complete);
+#endif
 }
 
 // set land complete maybe flag

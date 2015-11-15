@@ -351,6 +351,9 @@ void Plane::set_mode(enum FlightMode mode)
     previous_mode = control_mode;
     control_mode = mode;
 
+    // give frsky library our current control mode
+    frsky_telemetry.set_control_mode(control_mode);
+	
     if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
         // restore last gains
         autotune_restore();
@@ -720,17 +723,6 @@ bool Plane::should_log(uint32_t mask)
     }
     return ret;
 }
-
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Plane::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
-
 
 /*
   return throttle percentage from 0 to 100

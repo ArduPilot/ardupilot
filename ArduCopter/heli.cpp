@@ -19,6 +19,19 @@ void Copter::heli_init()
     // helicopters are always using motor interlock
     set_using_interlock(true);
 
+    /*
+      automatically set H_RSC_MIN and H_RSC_MAX from RC8_MIN and
+      RC8_MAX so that when users upgrade from tradheli version 3.2 to
+      3.3 they get the same throttle range as in previous versions of
+      the code
+     */
+    if (!g.heli_servo_rsc.radio_min.load()) {
+        g.heli_servo_rsc.radio_min.set_and_save(g.rc_8.radio_min.get());
+    }
+    if (!g.heli_servo_rsc.radio_max.load()) {
+        g.heli_servo_rsc.radio_max.set_and_save(g.rc_8.radio_max.get());
+    }
+
     // pre-load stab col values as mode is initialized as Stabilize, but stabilize_init() function is not run on start-up.
     input_manager.set_use_stab_col(true);
     input_manager.set_stab_col_ramp(1.0);

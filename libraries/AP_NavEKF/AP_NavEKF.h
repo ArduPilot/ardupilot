@@ -253,6 +253,9 @@ public:
     // send an EKF_STATUS_REPORT message to GCS
     void send_status_report(mavlink_channel_t chan);
 
+    // generate an ekf_status_report
+    void get_ekf_status_report(mavlink_ekf_status_report_t &ekf_status_report) const;
+
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -634,7 +637,7 @@ private:
     uint32_t lastVelPassTime;       // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime;       // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastPosFailTime;       // time stamp when GPS position measurement last failed innovation consistency check (msec)
-    uint32_t lastHgtPassTime;       // time stamp when height measurement last passed innovation consistency check (msec)
+    uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime;       // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint8_t storeIndex;             // State vector storage index
     uint32_t lastStateStoreTime_ms; // time of last state vector storage
@@ -687,6 +690,7 @@ private:
     bool yawResetAngleWaiting;      // true when the yaw reset angle has been updated and has not been retrieved via the getLastYawResetAngle() function
     uint32_t magYawResetTimer_ms;   // timer in msec used to track how long good magnetometer data is failing innovation consistency checks
     bool consistentMagData;         // true when the magnetometers are passing consistency checks
+    float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
 
     // Used by smoothing of state corrections
     Vector10 gpsIncrStateDelta;    // vector of corrections to attitude, velocity and position to be applied over the period between the current and next GPS measurement

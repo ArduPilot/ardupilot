@@ -57,7 +57,7 @@ bool Plane::verify_land()
                         (double)height, (double)auto_state.sink_rate, (double)gps.ground_speed());
             }
         }
-        auto_state.land_complete = true;
+        set_land_complete(true);
 
         if (gps.ground_speed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
@@ -98,6 +98,20 @@ bool Plane::verify_land()
       mission item or reset the mission, or a go-around is commanded
      */
     return false;
+}
+
+/*
+    used to set the land_complete flag
+ */
+void Plane::set_land_complete(bool b)
+{
+    // if no change, exit immediately
+    if( auto_state.land_complete == b )
+        return;
+
+	auto_state.land_complete = b;
+	// give frsky library our current land complete status
+	frsky_telemetry.set_land_complete(auto_state.land_complete);
 }
 
 /*

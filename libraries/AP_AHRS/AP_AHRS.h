@@ -364,6 +364,9 @@ public:
     // time that the AHRS has been up
     virtual uint32_t uptime_ms(void) const = 0;
 
+    // get a EKF_STATUS_REPORT for current EKF
+    virtual void get_ekf_status_report(mavlink_ekf_status_report_t &ekf_status_report) const = 0;
+
 protected:
     AHRS_VehicleClass _vehicle_class;
 

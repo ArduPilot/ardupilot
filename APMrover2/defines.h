@@ -10,6 +10,7 @@
 #define FALSE 0
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
+#define DEGX100 5729.57795f // Centi-degrees to radians
 
 #define DEBUG 0
 #define SERVO_MAX 4500	// This value represents 45 degrees and is just an arbitrary representation of servo max travel.
