@@ -333,8 +333,8 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: GYRO_PNOISE
     // @DisplayName: Rate gyro noise (rad/s)
     // @Description: This control disturbance noise controls the growth of estimated error due to gyro measurement errors excluding bias. Increasing it makes the flter trust the gyro measurements less and other measurements more.
-    // @Range: 0.001 0.05
-    // @Increment: 0.001
+    // @Range: 0.0001 0.01
+    // @Increment: 0.0001
     // @User: Advanced
     // @Units: rad/s
     AP_GROUPINFO("GYRO_PNOISE", 24, NavEKF2, _gyrNoise, GYRO_PNOISE_DEFAULT),
@@ -342,7 +342,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: ACC_PNOISE
     // @DisplayName: Accelerometer noise (m/s^2)
     // @Description: This control disturbance noise controls the growth of estimated error due to accelerometer measurement errors excluding bias. Increasing it makes the flter trust the accelerometer measurements less and other measurements more.
-    // @Range: 0.05 1.0
+    // @Range: 0.01 1.0
     // @Increment: 0.01
     // @User: Advanced
     // @Units: m/s/s
