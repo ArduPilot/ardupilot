@@ -145,8 +145,8 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     // give back i2c semaphore
     i2c_sem->give();
 
-    _gyro_instance = _imu.register_gyro();
-    _accel_instance = _imu.register_accel();
+    _gyro_instance = _imu.register_gyro(raw_sample_rate_hz);
+    _accel_instance = _imu.register_accel(raw_sample_rate_hz);
 
     _product_id = AP_PRODUCT_ID_FLYMAPLE;
 
@@ -166,22 +166,11 @@ void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 // This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
 {
-    Vector3f accel, gyro;
-
-    hal.scheduler->suspend_timer_procs();
-    accel = _accel_filtered;
-    gyro = _gyro_filtered;
     _have_gyro_sample = false;
     _have_accel_sample = false;
-    hal.scheduler->resume_timer_procs();
 
-    _publish_accel(_accel_instance, accel);
-    _publish_gyro(_gyro_instance, gyro);
-
-    if (_last_filter_hz != _accel_filter_cutoff()) {
-        _set_filter_frequency(_accel_filter_cutoff());
-        _last_filter_hz = _accel_filter_cutoff();
-    }
+    update_accel(_accel_instance);
+    update_gyro(_gyro_instance);
 
     return true;
 }
@@ -226,7 +215,6 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
         _rotate_and_correct_accel(_accel_instance, accel);
         _notify_new_accel_raw_sample(_accel_instance, accel);
-        _accel_filtered = _accel_filter.apply(accel);
         _have_accel_sample = true;
         _last_accel_timestamp = now;
     }
@@ -246,7 +234,6 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         gyro *= FLYMAPLE_GYRO_SCALE_R_S;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-        _gyro_filtered = _gyro_filter.apply(gyro);
         _have_gyro_sample = true;
         _last_gyro_timestamp = now;
     }

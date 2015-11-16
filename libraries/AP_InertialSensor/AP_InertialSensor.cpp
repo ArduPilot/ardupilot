@@ -368,22 +368,24 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 /*
   register a new gyro instance
  */
-uint8_t AP_InertialSensor::register_gyro(void)
+uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
         hal.scheduler->panic("Too many gyros");
     }
+    _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     return _gyro_count++;
 }
 
 /*
   register a new accel instance
  */
-uint8_t AP_InertialSensor::register_accel(void)
+uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
         hal.scheduler->panic("Too many accels");
     }
+    _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
     return _accel_count++;
 }
 
