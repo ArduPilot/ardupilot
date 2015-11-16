@@ -97,21 +97,6 @@ private:
     void                            _read_data_transaction_a();
     void                            _read_data_transaction_g();
 
-    /* support for updating filter at runtime */
-    int16_t         _last_gyro_filter_hz;
-    int16_t         _last_accel_filter_hz;
-
-    /* change the filter frequency */
-    void            _set_accel_filter(uint8_t filter_hz);
-    void            _set_gyro_filter(uint8_t filter_hz);
-
-    Vector3f        _accel_filtered;
-    Vector3f        _gyro_filtered;
-
-    /* Low Pass filters for gyro and accel */
-    LowPassFilter2pVector3f         _accel_filter;
-    LowPassFilter2pVector3f         _gyro_filter;
-
 #if LSM9DS0_DEBUG
     void        _dump_registers();
 #endif

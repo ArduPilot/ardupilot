@@ -101,14 +101,12 @@ protected:
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);
 
-    // set accelerometer raw sample rate
-    void _set_accel_raw_sample_rate(uint8_t instance, uint32_t rate);
+    // get accelerometer raw sample rate
     uint32_t _accel_raw_sample_rate(uint8_t instance) const {
         return _imu._accel_raw_sample_rates[instance];
     }
 
-    // set gyroscope raw sample rate
-    void _set_gyro_raw_sample_rate(uint8_t instance, uint32_t rate);
+    // get gyroscope raw sample rate
     uint32_t _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
     }
@@ -142,6 +140,16 @@ protected:
         return _imu._log_raw_data? _imu._dataflash : NULL; 
     }
 
+    // common gyro update function for all backends
+    void update_gyro(uint8_t instance);
+
+    // common accel update function for all backends
+    void update_accel(uint8_t instance);
+    
+    // support for updating filter at runtime
+    int8_t _last_accel_filter_hz;
+    int8_t _last_gyro_filter_hz;
+    
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available

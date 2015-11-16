@@ -73,11 +73,9 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         if (_accel_fd[i] >= 0) {
             _num_accel_instances = i+1;
-            _accel_instance[i] = _imu.register_accel();
         }
         if (_gyro_fd[i] >= 0) {
             _num_gyro_instances = i+1;
-            _gyro_instance[i] = _imu.register_gyro();
         }
     }
     if (_num_accel_instances == 0) {
@@ -122,7 +120,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             hal.scheduler->panic("Invalid gyro sample rate");
         }
-        _set_gyro_raw_sample_rate(_gyro_instance[i], (uint32_t)samplerate);
+        _gyro_instance[i] = _imu.register_gyro(samplerate);
         _gyro_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -162,7 +160,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         if (samplerate < 100 || samplerate > 10000) {
             hal.scheduler->panic("Invalid accel sample rate");
         }
-        _set_accel_raw_sample_rate(_accel_instance[i], (uint32_t) samplerate);
+        _accel_instance[i] = _imu.register_accel(samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
     }
 
@@ -209,33 +207,11 @@ bool AP_InertialSensor_PX4::update(void)
     _get_sample();
 
     for (uint8_t k=0; k<_num_accel_instances; k++) {
-        Vector3f accel = _accel_in[k];
-        // calling _publish_accel sets the sensor healthy,
-        // so we only want to do this if we have new data from it
-        if (_last_accel_timestamp[k] != _last_accel_update_timestamp[k]) {
-            _publish_accel(_accel_instance[k], accel);
-            _last_accel_update_timestamp[k] = _last_accel_timestamp[k];
-        }
+        update_accel(_accel_instance[k]);
     }
 
     for (uint8_t k=0; k<_num_gyro_instances; k++) {
-        Vector3f gyro = _gyro_in[k];
-        // calling _publish_accel sets the sensor healthy,
-        // so we only want to do this if we have new data from it
-        if (_last_gyro_timestamp[k] != _last_gyro_update_timestamp[k]) {
-            _publish_gyro(_gyro_instance[k], gyro);
-            _last_gyro_update_timestamp[k] = _last_gyro_timestamp[k];
-        }
-    }
-
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        _set_accel_filter_frequency(_accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
-    }
-
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
-        _set_gyro_filter_frequency(_gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
+        update_gyro(_gyro_instance[k]);
     }
     
     return true;
@@ -249,9 +225,6 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     // apply corrections
     _rotate_and_correct_accel(frontend_instance, accel);
     _notify_new_accel_raw_sample(frontend_instance, accel);
-
-    // apply filter for control path
-    _accel_in[i] = _accel_filter[i].apply(accel);
 
     // save last timestamp
     _last_accel_timestamp[i] = accel_report.timestamp;
@@ -290,9 +263,6 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     // apply corrections
     _rotate_and_correct_gyro(frontend_instance, gyro);
     _notify_new_gyro_raw_sample(frontend_instance, gyro);
-
-    // apply filter for control path
-    _gyro_in[i] = _gyro_filter[i].apply(gyro);
 
     // save last timestamp
     _last_gyro_timestamp[i] = gyro_report.timestamp;

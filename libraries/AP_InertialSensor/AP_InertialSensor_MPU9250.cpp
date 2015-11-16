@@ -362,11 +362,6 @@ bool AP_MPU9250_BusDriver_I2C::has_auxiliary_bus()
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
 	AP_InertialSensor_Backend(imu),
-    _last_accel_filter_hz(-1),
-    _last_gyro_filter_hz(-1),
-    _shared_data_idx(0),
-    _accel_filter(DEFAULT_SAMPLE_RATE, 15),
-    _gyro_filter(DEFAULT_SAMPLE_RATE, 15),
     _have_sample_available(false),
     _bus(bus),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
@@ -437,16 +432,13 @@ bool AP_InertialSensor_MPU9250::_init_sensor()
     if (!_hardware_init())
         return false;
 
-    _gyro_instance = _imu.register_gyro();
-    _accel_instance = _imu.register_accel();
+    _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE);
+    _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE);
 
     _product_id = AP_PRODUCT_ID_MPU9250;
 
     // start the timer process to read samples
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9250::_poll_data, void));
-
-    _set_accel_raw_sample_rate(_accel_instance, DEFAULT_SAMPLE_RATE);
-    _set_gyro_raw_sample_rate(_gyro_instance, DEFAULT_SAMPLE_RATE);
 
 #if MPU9250_DEBUG
     _dump_registers();
@@ -459,25 +451,10 @@ bool AP_InertialSensor_MPU9250::_init_sensor()
  */
 bool AP_InertialSensor_MPU9250::update( void )
 {
-    // pull the data from the timer shared data buffer
-    uint8_t idx = _shared_data_idx;
-    Vector3f gyro = _shared_data[idx]._gyro_filtered;
-    Vector3f accel = _shared_data[idx]._accel_filtered;
-
     _have_sample_available = false;
 
-    _publish_gyro(_gyro_instance, gyro);
-    _publish_accel(_accel_instance, accel);
-
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        _set_accel_filter(_accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
-    }
-
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
-        _set_gyro_filter(_gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
-    }
+    update_gyro(_gyro_instance);
+    update_accel(_accel_instance);
 
     return true;
 }
@@ -534,13 +511,6 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
     _rotate_and_correct_gyro(_gyro_instance, gyro);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
-
-    // update the shared buffer
-    uint8_t idx = _shared_data_idx ^ 1;
-    _shared_data[idx]._accel_filtered = _accel_filter.apply(accel);
-    _shared_data[idx]._gyro_filtered = _gyro_filter.apply(gyro);
-    _shared_data_idx = idx;
-
     _have_sample_available = true;
 }
 
@@ -561,23 +531,6 @@ void AP_InertialSensor_MPU9250::_register_write(uint8_t reg, uint8_t val)
 {
     _bus->write8(reg, val);
 }
-
-/*
-  set the accel filter frequency
- */
-void AP_InertialSensor_MPU9250::_set_accel_filter(uint8_t filter_hz)
-{
-    _accel_filter.set_cutoff_frequency(DEFAULT_SAMPLE_RATE, filter_hz);
-}
-
-/*
-  set the gyro filter frequency
- */
-void AP_InertialSensor_MPU9250::_set_gyro_filter(uint8_t filter_hz)
-{
-    _gyro_filter.set_cutoff_frequency(DEFAULT_SAMPLE_RATE, filter_hz);
-}
-
 
 /*
   initialise the sensor configuration registers

@@ -35,25 +35,12 @@ private:
     bool            _init_sensor(void);
     void            _accumulate(void);
 
-    struct {
-        Vector3f accel_filtered;
-        Vector3f gyro_filtered;
-    } _data[2];
     int _data_idx;
     pthread_spinlock_t _data_lock;
 
     bool _have_gyro_sample;
     bool _have_accel_sample;
     volatile bool _have_sample;
-
-    // support for updating filter at runtime
-    uint8_t         _last_filter_hz;
-
-    void _set_filter_frequency(uint8_t filter_hz);
-
-    // Low Pass filters for gyro and accel 
-    LowPassFilter2pVector3f _accel_filter;
-    LowPassFilter2pVector3f _gyro_filter;
 
     // gyro and accel instances
     uint8_t _gyro_instance;

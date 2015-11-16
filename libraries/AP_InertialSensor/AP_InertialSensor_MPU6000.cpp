@@ -439,12 +439,7 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _drdy_pin(NULL),
     _bus(bus),
     _bus_sem(NULL),
-    _last_accel_filter_hz(-1),
-    _last_gyro_filter_hz(-1),
-    _accel_filter(1000, 15),
-    _gyro_filter(1000, 15),
     _temp_filter(1000, 1),
-    _sum_count(0),
     _samples(NULL)
 {
 
@@ -590,11 +585,8 @@ void AP_InertialSensor_MPU6000::start()
     _bus_sem->give();
 
     // grab the used instances
-    _gyro_instance = _imu.register_gyro();
-    _accel_instance = _imu.register_accel();
-
-    _set_accel_raw_sample_rate(_accel_instance, 1000);
-    _set_gyro_raw_sample_rate(_gyro_instance, 1000);
+    _gyro_instance = _imu.register_gyro(1000);
+    _accel_instance = _imu.register_accel(1000);
 
     hal.scheduler->resume_timer_procs();
 
@@ -608,38 +600,13 @@ void AP_InertialSensor_MPU6000::start()
  */
 bool AP_InertialSensor_MPU6000::update( void )
 {    
-    // we have a full set of samples
-    uint16_t num_samples;
-    Vector3f accel, gyro;
-    float temp;
+    update_accel(_accel_instance);
+    update_gyro(_gyro_instance);
 
-    hal.scheduler->suspend_timer_procs();
-    gyro = _gyro_filtered;
-    accel = _accel_filtered;
-    temp = _temp_filtered;
-    num_samples = 1;
-    _sum_count = 0;
-    hal.scheduler->resume_timer_procs();
-
-    gyro /= num_samples;
-    accel /= num_samples;
-    temp /= num_samples;
-
-    _publish_accel(_accel_instance, accel);
-    _publish_gyro(_gyro_instance, gyro);
-    _publish_temperature(_accel_instance, temp);
+    _publish_temperature(_accel_instance, _temp_filtered);
+    
     /* give the temperature to the control loop in order to keep it constant*/
-    hal.util->set_imu_temp(temp);
-
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        _accel_filter.set_cutoff_frequency(1000, _accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
-    }
-
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
-        _gyro_filter.set_cutoff_frequency(1000, _gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
-    }
+    hal.util->set_imu_temp(_temp_filtered);
 
     return true;
 }
@@ -724,10 +691,7 @@ void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)
         _notify_new_accel_raw_sample(_accel_instance, accel);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
-        _accel_filtered = _accel_filter.apply(accel);
-        _gyro_filtered = _gyro_filter.apply(gyro);
         _temp_filtered = _temp_filter.apply(temp);
-        _sum_count++;
     }
 }
 
