@@ -270,7 +270,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("EAS_GATE", 17, NavEKF2, _tasInnovGate, 1000),
+    AP_GROUPINFO("EAS_GATE", 17, NavEKF2, _tasInnovGate, 400),
 
     // Rangefinder measurement parameters
 
