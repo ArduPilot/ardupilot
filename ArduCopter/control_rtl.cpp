@@ -72,6 +72,11 @@ void Copter::rtl_run()
         rtl_land_run();
         break;
     }
+
+    // update speed from RTL_SPEED
+    if (!is_zero(g.rtl_speed_cms)) {
+        wp_nav.set_speed_xy(g.rtl_speed_cms);
+    }
 }
 
 // rtl_climb_start - initialise climb to RTL altitude
