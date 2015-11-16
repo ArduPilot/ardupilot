@@ -65,8 +65,6 @@ const uint32_t  raw_sample_interval_us = (1000000 / raw_sample_rate_hz);
 
 AP_InertialSensor_Flymaple::AP_InertialSensor_Flymaple(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
-    _have_gyro_sample(false),
-    _have_accel_sample(false),
     _accel_filter(raw_sample_rate_hz, 10),
     _gyro_filter(raw_sample_rate_hz, 10),
     _last_gyro_timestamp(0),
@@ -166,9 +164,6 @@ void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
 // This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
 {
-    _have_gyro_sample = false;
-    _have_accel_sample = false;
-
     update_accel(_accel_instance);
     update_gyro(_gyro_instance);
 
@@ -215,7 +210,6 @@ void AP_InertialSensor_Flymaple::accumulate(void)
         accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
         _rotate_and_correct_accel(_accel_instance, accel);
         _notify_new_accel_raw_sample(_accel_instance, accel);
-        _have_accel_sample = true;
         _last_accel_timestamp = now;
     }
 
@@ -234,8 +228,6 @@ void AP_InertialSensor_Flymaple::accumulate(void)
         gyro *= FLYMAPLE_GYRO_SCALE_R_S;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-        _have_gyro_sample = true;
-        _last_gyro_timestamp = now;
     }
 
     // give back i2c semaphore

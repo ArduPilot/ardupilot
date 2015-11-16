@@ -35,12 +35,8 @@ private:
     void     _get_sample(void);
     uint64_t _last_accel_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
-    uint64_t _last_accel_update_timestamp[INS_MAX_INSTANCES];
-    uint64_t _last_gyro_update_timestamp[INS_MAX_INSTANCES];
     float    _accel_sample_time[INS_MAX_INSTANCES];
     float    _gyro_sample_time[INS_MAX_INSTANCES];
-    uint64_t _last_get_sample_timestamp;
-    uint64_t _last_sample_timestamp;
 
     void _new_accel_sample(uint8_t i, accel_report &accel_report);
     void _new_gyro_sample(uint8_t i, gyro_report &gyro_report);

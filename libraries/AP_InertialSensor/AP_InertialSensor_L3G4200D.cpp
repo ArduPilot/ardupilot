@@ -113,9 +113,7 @@ const extern AP_HAL::HAL& hal;
 
 // constructor
 AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _have_gyro_sample(false),
-    _have_accel_sample(false)
+    AP_InertialSensor_Backend(imu)
 {
 }
 
@@ -289,7 +287,6 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                 gyro *= L3G4200D_GYRO_SCALE_R_S;
                 _rotate_and_correct_gyro(_gyro_instance, gyro);
                 _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-                _have_gyro_sample = true;
             }
         }
     }
@@ -313,18 +310,12 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
                 accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
                 _rotate_and_correct_accel(_accel_instance, accel);
                 _notify_new_accel_raw_sample(_accel_instance, accel);
-                _have_accel_sample = true;
             }
         }
     }
 
     // give back i2c semaphore
     i2c_sem->give();
-
-    if (_have_accel_sample && _have_gyro_sample) {
-        _have_gyro_sample = false;
-        _have_accel_sample = false;
-    }
 }
 
 #endif // CONFIG_HAL_BOARD
