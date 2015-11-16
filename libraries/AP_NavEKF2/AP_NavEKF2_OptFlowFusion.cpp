@@ -155,7 +155,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             innovRng = predRngMeas - rangeDataDelayed.rng;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(innovRng) / (sq(frontend->_rngInnovGate) * varInnovRng);
+            auxRngTestRatio = sq(innovRng) / (sq(max(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
             // Check the innovation for consistency and don't fuse if > 5Sigma
             if ((sq(innovRng)*SK_RNG) < 25.0f)
@@ -243,7 +243,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             K_OPT = Popt*H_OPT/auxFlowObsInnovVar;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend->_flowInnovGate) * auxFlowObsInnovVar);
+            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(max(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
             if (max(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
@@ -627,7 +627,7 @@ void NavEKF2_core::FuseOptFlow()
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(frontend->_flowInnovGate) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(max(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
         if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {

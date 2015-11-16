@@ -304,7 +304,7 @@ void NavEKF2_core::FuseVelPosNED()
             varInnovVelPos[3] = P[6][6] + R_OBS_DATA_CHECKS[3];
             varInnovVelPos[4] = P[7][7] + R_OBS_DATA_CHECKS[4];
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
-            float maxPosInnov2 = sq(frontend->_gpsPosInnovGate)*(varInnovVelPos[3] + varInnovVelPos[4]);
+            float maxPosInnov2 = sq(max(0.01f * (float)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
             // declare a timeout condition if we have been too long without data or not aiding
@@ -362,7 +362,7 @@ void NavEKF2_core::FuseVelPosNED()
             }
             // apply an innovation consistency threshold test, but don't fail if bad IMU data
             // calculate the test ratio
-            velTestRatio = innovVelSumSq / (varVelSum * sq(frontend->_gpsVelInnovGate));
+            velTestRatio = innovVelSumSq / (varVelSum * sq(max(0.01f * (float)frontend->_gpsVelInnovGate, 1.0f)));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
             // declare a timeout if we have not fused velocity data for too long or not aiding
@@ -392,7 +392,7 @@ void NavEKF2_core::FuseVelPosNED()
             innovVelPos[5] = stateStruct.position.z - observation[5];
             varInnovVelPos[5] = P[8][8] + R_OBS_DATA_CHECKS[5];
             // calculate the innovation consistency test ratio
-            hgtTestRatio = sq(innovVelPos[5]) / (sq(frontend->_hgtInnovGate) * varInnovVelPos[5]);
+            hgtTestRatio = sq(innovVelPos[5]) / (sq(max(0.01f * (float)frontend->_hgtInnovGate, 1.0f)) * varInnovVelPos[5]);
             // fail if the ratio is > 1, but don't fail if bad IMU data
             hgtHealth = ((hgtTestRatio < 1.0f) || badIMUdata);
             // Fuse height data if healthy or timed out or in constant position mode
