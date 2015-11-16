@@ -19,16 +19,12 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return _have_sample_available; }
-    bool accel_sample_available(void) { return _have_sample_available; }
-
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
     bool            _init_sensor();
     void             _accumulate(void);
-    bool            _have_sample_available;
 
     int16_t mpu_set_gyro_fsr(uint16_t fsr);
     int16_t mpu_set_accel_fsr(uint8_t fsr);

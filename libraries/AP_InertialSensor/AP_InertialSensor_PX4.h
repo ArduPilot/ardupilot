@@ -27,13 +27,12 @@ public:
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
-    bool gyro_sample_available(void);
-    bool accel_sample_available(void);
+    // accumulate more samples
+    void accumulate(void) override { _get_sample(); }
 
 private:
     bool     _init_sensor(void);
     void     _get_sample(void);
-    bool     _sample_available(void);
     uint64_t _last_accel_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_gyro_timestamp[INS_MAX_INSTANCES];
     uint64_t _last_accel_update_timestamp[INS_MAX_INSTANCES];

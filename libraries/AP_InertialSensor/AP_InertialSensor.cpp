@@ -1394,8 +1394,11 @@ check_sample:
         bool accel_available = false;
         while (!gyro_available || !accel_available) {
             for (uint8_t i=0; i<_backend_count; i++) {
-                gyro_available |= _backends[i]->gyro_sample_available();
-                accel_available |= _backends[i]->accel_sample_available();
+                _backends[i]->accumulate();
+            }
+            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+                gyro_available |= _new_gyro_data[i];
+                accel_available |= _new_accel_data[i];
             }
             if (!gyro_available || !accel_available) {
                 hal.scheduler->delay_microseconds(100);

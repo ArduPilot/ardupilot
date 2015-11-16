@@ -44,9 +44,6 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return _have_sample_available; }
-    bool accel_sample_available(void) { return _have_sample_available; }
-
     AuxiliaryBus *get_auxiliary_bus();
 
     static AP_InertialSensor_MPU9250 &from(AP_InertialSensor_Backend &backend) {
@@ -71,14 +68,10 @@ private:
     uint8_t              _register_read( uint8_t reg );
     void                 _register_write( uint8_t reg, uint8_t val );
     bool                 _hardware_init(void);
-    bool                 _sample_available();
 
     AP_MPU9250_BusDriver *_bus;
     AP_HAL::Semaphore *_bus_sem;
     AP_MPU9250_AuxiliaryBus *_auxiliar_bus = nullptr;
-
-    // do we currently have a sample pending?
-    bool _have_sample_available;
 
     // gyro and accel instances
     uint8_t _gyro_instance;

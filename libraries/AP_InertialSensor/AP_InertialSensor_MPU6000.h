@@ -63,9 +63,6 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return _sum_count >= _sample_count; }
-    bool accel_sample_available(void) { return _sum_count >= _sample_count; }
-
     /*
      * Return an AuxiliaryBus if the bus driver allows it
      */
@@ -88,7 +85,6 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
     bool    _init_sensor(void);
-    bool    _sample_available();
     void    _read_data_transaction();
     bool    _data_ready();
     void    _poll_data(void);
@@ -108,14 +104,10 @@ private:
 
     void _set_filter_register(uint16_t filter_hz);
 
-    // how many hardware samples before we report a sample to the caller
-    uint8_t _sample_count;
-
     float    _temp_filtered;
 
     LowPassFilter2pFloat    _temp_filter;
 
-    volatile uint16_t _sum_count;
     bool _fifo_mode;
     uint8_t *_samples = nullptr;
 };

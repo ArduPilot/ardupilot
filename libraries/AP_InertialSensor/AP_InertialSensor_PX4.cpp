@@ -23,9 +23,7 @@ const extern AP_HAL::HAL& hal;
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
     _last_get_sample_timestamp(0),
-    _last_sample_timestamp(0),
-    _last_gyro_filter_hz(-1),
-    _last_accel_filter_hz(-1)
+    _last_sample_timestamp(0)
 {
 }
 
@@ -164,9 +162,6 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         _accel_sample_time[i] = 1.0f / samplerate;
     }
 
-    _set_accel_filter_frequency(_accel_filter_cutoff());
-    _set_gyro_filter_frequency(_gyro_filter_cutoff());
-
 #if  CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     _product_id = AP_PRODUCT_ID_VRBRAIN;
 #else
@@ -177,28 +172,6 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
 #endif
 #endif
     return true;
-}
-
-/*
-  set the accel filter frequency
- */
-void AP_InertialSensor_PX4::_set_accel_filter_frequency(uint8_t filter_hz)
-{
-    for (uint8_t i=0; i<_num_accel_instances; i++) {
-        float samplerate = _accel_raw_sample_rate(_accel_instance[i]);
-        _accel_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-    }
-}
-
-/*
-  set the gyro filter frequency
- */
-void AP_InertialSensor_PX4::_set_gyro_filter_frequency(uint8_t filter_hz)
-{
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        float samplerate = _gyro_raw_sample_rate(_gyro_instance[i]);
-        _gyro_filter[i].set_cutoff_frequency(samplerate, filter_hz);
-    }
 }
 
 bool AP_InertialSensor_PX4::update(void) 
@@ -366,28 +339,6 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         }
         return true;
     }
-    return false;
-}
-
-bool AP_InertialSensor_PX4::gyro_sample_available(void)
-{
-    _get_sample();
-    for (uint8_t i=0; i<_num_gyro_instances; i++) {
-        if (_last_gyro_timestamp[i] != _last_gyro_update_timestamp[i]) {
-            return true;
-        }
-    }    
-    return false;
-}
-
-bool AP_InertialSensor_PX4::accel_sample_available(void)
-{
-    _get_sample();
-    for (uint8_t i=0; i<_num_accel_instances; i++) {
-        if (_last_accel_timestamp[i] != _last_accel_update_timestamp[i]) {
-            return true;
-        }
-    }    
     return false;
 }
 

@@ -43,17 +43,10 @@ public:
      */
     virtual bool update() = 0;
 
-    /* 
-     * return true if at least one accel sample is available in the backend
-     * since the last call to update()
+    /*
+     * optional function to accumulate more samples. This is needed for drivers that don't use a timer to gather samples
      */
-    virtual bool accel_sample_available() = 0;
-
-    /* 
-     * return true if at least one gyro sample is available in the backend
-     * since the last call to update()
-     */
-    virtual bool gyro_sample_available() = 0;
+    virtual void accumulate() {}
 
     /*
      * Configure and start all sensors. The empty implementation allows

@@ -537,8 +537,6 @@ void AP_InertialSensor_MPU6000::start()
     _samples = new uint8_t[max_samples * MPU6000_SAMPLE_SIZE];
     hal.scheduler->delay(1);
 
-    _sample_count = 1;
-
     // disable sensor filtering
     _set_filter_register(256);
 

@@ -362,7 +362,6 @@ bool AP_MPU9250_BusDriver_I2C::has_auxiliary_bus()
 
 AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
 	AP_InertialSensor_Backend(imu),
-    _have_sample_available(false),
     _bus(bus),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _default_rotation(ROTATION_ROLL_180_YAW_270)
@@ -451,8 +450,6 @@ bool AP_InertialSensor_MPU9250::_init_sensor()
  */
 bool AP_InertialSensor_MPU9250::update( void )
 {
-    _have_sample_available = false;
-
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
 
@@ -508,10 +505,9 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
                     -int16_val(rx, 6));
     gyro *= GYRO_SCALE;
     gyro.rotate(_default_rotation);
+
     _rotate_and_correct_gyro(_gyro_instance, gyro);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-
-    _have_sample_available = true;
 }
 
 /*
