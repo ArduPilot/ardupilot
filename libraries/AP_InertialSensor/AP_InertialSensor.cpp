@@ -499,7 +499,9 @@ AP_InertialSensor::detect_backends(void)
         _add_backend(AP_InertialSensor_HIL::detect(*this));
         return;
     }
-#if HAL_INS_DEFAULT == HAL_INS_HIL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _add_backend(AP_InertialSensor_SITL::detect(*this));    
+#elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
     _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
