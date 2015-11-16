@@ -178,7 +178,7 @@ void Plane::Log_Write_Attitude(void)
     DataFlash.Log_Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE(DataFlash);
+    sitl.Log_Write_SIMSTATE(&DataFlash);
 #endif
     DataFlash.Log_Write_POS(ahrs);
 }
