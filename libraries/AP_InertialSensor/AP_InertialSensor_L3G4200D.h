@@ -32,9 +32,6 @@ private:
     bool            _init_sensor(void);
     void            _accumulate(void);
 
-    bool _have_gyro_sample;
-    bool _have_accel_sample;
-
     // gyro and accel instances
     uint8_t _gyro_instance;
     uint8_t _accel_instance;

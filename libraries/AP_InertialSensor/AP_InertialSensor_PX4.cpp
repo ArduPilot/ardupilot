@@ -7,8 +7,6 @@
 
 const extern AP_HAL::HAL& hal;
 
-#include <DataFlash/DataFlash.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -21,9 +19,7 @@ const extern AP_HAL::HAL& hal;
 #include <stdio.h>
 
 AP_InertialSensor_PX4::AP_InertialSensor_PX4(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _last_get_sample_timestamp(0),
-    _last_sample_timestamp(0)
+    AP_InertialSensor_Backend(imu)
 {
 }
 
@@ -197,7 +193,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
 
     // apply corrections
     _rotate_and_correct_accel(frontend_instance, accel);
-    _notify_new_accel_raw_sample(frontend_instance, accel);
+    _notify_new_accel_raw_sample(frontend_instance, accel, accel_report.timestamp);
 
     // save last timestamp
     _last_accel_timestamp[i] = accel_report.timestamp;
@@ -235,7 +231,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
 
     // apply corrections
     _rotate_and_correct_gyro(frontend_instance, gyro);
-    _notify_new_gyro_raw_sample(frontend_instance, gyro);
+    _notify_new_gyro_raw_sample(frontend_instance, gyro, gyro_report.timestamp);
 
     // save last timestamp
     _last_gyro_timestamp[i] = gyro_report.timestamp;
@@ -293,7 +289,6 @@ void AP_InertialSensor_PX4::_get_sample()
             }
         }
     }
-    _last_get_sample_timestamp = hal.scheduler->micros64();
 }
 
 bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &accel_report) 
@@ -302,18 +297,6 @@ bool AP_InertialSensor_PX4::_get_accel_sample(uint8_t i, struct accel_report &ac
         _accel_fd[i] != -1 && 
         ::read(_accel_fd[i], &accel_report, sizeof(accel_report)) == sizeof(accel_report) && 
         accel_report.timestamp != _last_accel_timestamp[i]) {
-        DataFlash_Class *dataflash = get_dataflash();
-        if (dataflash != NULL) {
-            struct log_ACCEL pkt = {
-                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
-                sample_us : accel_report.timestamp,
-                AccX      : accel_report.x,
-                AccY      : accel_report.y,
-                AccZ      : accel_report.z
-            };
-            dataflash->WriteBlock(&pkt, sizeof(pkt));
-        }
         return true;
     }
     return false;
@@ -325,18 +308,6 @@ bool AP_InertialSensor_PX4::_get_gyro_sample(uint8_t i, struct gyro_report &gyro
         _gyro_fd[i] != -1 && 
         ::read(_gyro_fd[i], &gyro_report, sizeof(gyro_report)) == sizeof(gyro_report) && 
         gyro_report.timestamp != _last_gyro_timestamp[i]) {
-        DataFlash_Class *dataflash = get_dataflash();
-        if (dataflash != NULL) {
-            struct log_GYRO pkt = {
-                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                time_us   : hal.scheduler->micros64(),
-                sample_us : gyro_report.timestamp,
-                GyrX      : gyro_report.x,
-                GyrY      : gyro_report.y,
-                GyrZ      : gyro_report.z
-            };
-            dataflash->WriteBlock(&pkt, sizeof(pkt));
-        }
         return true;
     }
     return false;

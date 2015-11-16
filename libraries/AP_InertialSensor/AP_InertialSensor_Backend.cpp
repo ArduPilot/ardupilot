@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
+#include <DataFlash/DataFlash.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -57,7 +58,8 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
-                                                            const Vector3f &gyro)
+                                                            const Vector3f &gyro,
+                                                            uint64_t sample_us)
 {
     float dt;
 
@@ -93,6 +95,20 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
 
     _imu._new_gyro_data[instance] = true;
+
+    DataFlash_Class *dataflash = get_dataflash();
+    if (dataflash != NULL) {
+        uint64_t now = hal.scheduler->micros64();
+        struct log_GYRO pkt = {
+            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
+            time_us   : now,
+            sample_us : sample_us?sample_us:now,
+            GyrX      : gyro.x,
+            GyrY      : gyro.y,
+            GyrZ      : gyro.z
+        };
+        dataflash->WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 /*
@@ -114,7 +130,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
-                                                             const Vector3f &accel)
+                                                             const Vector3f &accel,
+                                                             uint64_t sample_us)
 {
     float dt;
 
@@ -133,6 +150,20 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     _imu._accel_filtered[instance] = _imu._accel_filter[instance].apply(accel);
 
     _imu._new_accel_data[instance] = true;
+
+    DataFlash_Class *dataflash = get_dataflash();
+    if (dataflash != NULL) {
+        uint64_t now = hal.scheduler->micros64();
+        struct log_ACCEL pkt = {
+            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
+            time_us   : now,
+            sample_us : sample_us?sample_us:now,
+            AccX      : accel.x,
+            AccY      : accel.y,
+            AccZ      : accel.z
+        };
+        dataflash->WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
