@@ -24,15 +24,15 @@
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        3
-#define HGT_GATE_DEFAULT        3
-#define MAG_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        200
+#define POS_GATE_DEFAULT        300
+#define HGT_GATE_DEFAULT        300
+#define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       3
+#define FLOW_GATE_DEFAULT       300
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
@@ -48,15 +48,15 @@
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        3
-#define HGT_GATE_DEFAULT        3
-#define MAG_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        200
+#define POS_GATE_DEFAULT        300
+#define HGT_GATE_DEFAULT        300
+#define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         2
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       3
+#define FLOW_GATE_DEFAULT       300
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
@@ -72,15 +72,15 @@
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        3
-#define HGT_GATE_DEFAULT        4
-#define MAG_GATE_DEFAULT        2
+#define VEL_GATE_DEFAULT        200
+#define POS_GATE_DEFAULT        300
+#define HGT_GATE_DEFAULT        400
+#define MAG_GATE_DEFAULT        200
 #define MAG_CAL_DEFAULT         0
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       3
+#define FLOW_GATE_DEFAULT       300
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    150
 
@@ -96,15 +96,15 @@
 #define GBIAS_PNOISE_DEFAULT    7.0E-05f
 #define ABIAS_PNOISE_DEFAULT    1.0E-04f
 #define MAG_PNOISE_DEFAULT      2.5E-02f
-#define VEL_GATE_DEFAULT        2
-#define POS_GATE_DEFAULT        3
-#define HGT_GATE_DEFAULT        3
-#define MAG_GATE_DEFAULT        3
+#define VEL_GATE_DEFAULT        200
+#define POS_GATE_DEFAULT        300
+#define HGT_GATE_DEFAULT        300
+#define MAG_GATE_DEFAULT        300
 #define MAG_CAL_DEFAULT         3
 #define GLITCH_RADIUS_DEFAULT   25
 #define FLOW_MEAS_DELAY         10
 #define FLOW_NOISE_DEFAULT      0.25f
-#define FLOW_GATE_DEFAULT       3
+#define FLOW_GATE_DEFAULT       300
 #define GSCALE_PNOISE_DEFAULT   3.0E-03f
 #define CHECK_SCALER_DEFAULT    100
 
@@ -151,9 +151,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: VEL_GATE
     // @DisplayName: GPS velocity innovation gate size
-    // @Description: This sets the number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("VEL_GATE", 4, NavEKF2, _gpsVelInnovGate, VEL_GATE_DEFAULT),
 
@@ -168,9 +168,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: POS_GATE
     // @DisplayName: GPS position measurement gate size
-    // @Description: This sets the number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("POS_GATE", 6, NavEKF2, _gpsPosInnovGate, POS_GATE_DEFAULT),
 
@@ -212,9 +212,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: HGT_GATE
     // @DisplayName: Height measurement gate size
-    // @Description: This sets the number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("HGT_GATE", 11, NavEKF2, _hgtInnovGate, HGT_GATE_DEFAULT),
 
@@ -247,9 +247,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: MAG_GATE
     // @DisplayName: Magnetometer measurement gate size
-    // @Description: This parameter sets the number of standard deviations applied to the magnetometer measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the magnetometer measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("MAG_GATE", 15, NavEKF2, _magInnovGate, MAG_GATE_DEFAULT),
 
@@ -266,11 +266,11 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: EAS_GATE
     // @DisplayName: Airspeed measurement gate size
-    // @Description: This is the RMS value of noise in equivalent airspeed measurements used by planes. Increasing it reduces the weighting of airspeed measurements and will make wind speed estimates less noisy and slower to converge. Increasing also increases navigation errors when dead-reckoning without GPS measurements.
-    // @Range: 1 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the airspeed measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("EAS_GATE", 17, NavEKF2, _tasInnovGate, 10),
+    AP_GROUPINFO("EAS_GATE", 17, NavEKF2, _tasInnovGate, 1000),
 
     // Rangefinder measurement parameters
 
@@ -285,11 +285,11 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
-    // @Description: This sets the number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 - 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 - 1000
+    // @Increment: 25
     // @User: Advanced
-    AP_GROUPINFO("RNG_GATE", 19, NavEKF2, _rngInnovGate, 5),
+    AP_GROUPINFO("RNG_GATE", 19, NavEKF2, _rngInnovGate, 500),
 
     // Optical flow measurement parameters
 
@@ -313,9 +313,9 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
-    // @Description: This sets the number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 - 100
-    // @Increment: 1
+    // @Description: This sets the percentage number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 - 1000
+    // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("FLOW_GATE", 22, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
 

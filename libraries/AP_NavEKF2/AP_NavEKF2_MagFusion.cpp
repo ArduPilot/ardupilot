@@ -321,7 +321,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // calculate the innovation test ratios
         for (uint8_t i = 0; i<=2; i++) {
-            magTestRatio[i] = sq(innovMag[i]) / (sq(max(frontend->_magInnovGate,1)) * varInnovMag[i]);
+            magTestRatio[i] = sq(innovMag[i]) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
         }
 
         // check the last values from all components and set magnetometer health accordingly
@@ -701,7 +701,7 @@ void NavEKF2_core::fuseCompass()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(max(frontend->_magInnovGate,1)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {
