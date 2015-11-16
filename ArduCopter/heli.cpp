@@ -16,9 +16,6 @@ static int8_t heli_dynamic_flight_counter;
 // heli_init - perform any special initialisation required for the tradheli
 void Copter::heli_init()
 {
-    // helicopters are always using motor interlock
-    set_using_interlock(true);
-
     /*
       automatically set H_RSC_MIN and H_RSC_MAX from RC8_MIN and
       RC8_MAX so that when users upgrade from tradheli version 3.3 to

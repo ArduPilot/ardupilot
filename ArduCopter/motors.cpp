@@ -231,7 +231,6 @@ bool Copter::pre_arm_checks(bool display_failure)
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.  This check to be repeated, 
     // as state can change at any time.
-    set_using_interlock(check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK));
     if (ap.using_interlock && motors.get_interlock()){
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock Enabled");

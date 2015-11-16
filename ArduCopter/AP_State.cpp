@@ -114,11 +114,15 @@ void Copter::set_pre_arm_rc_check(bool b)
     }
 }
 
-void Copter::set_using_interlock(bool b)
+void Copter::update_using_interlock()
 {
-    if(ap.using_interlock != b) {
-        ap.using_interlock = b;
-    }
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters are always using motor interlock
+    ap.using_interlock = true;
+#else
+    // check if we are using motor interlock control on an aux switch
+    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK);
+#endif
 }
 
 void Copter::set_motor_emergency_stop(bool b)

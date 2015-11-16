@@ -576,7 +576,7 @@ private:
     void set_land_complete_maybe(bool b);
     void set_pre_arm_check(bool b);
     void set_pre_arm_rc_check(bool b);
-    void set_using_interlock(bool b);
+    void update_using_interlock();
     void set_motor_emergency_stop(bool b);
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
