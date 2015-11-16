@@ -398,6 +398,7 @@ private:
 #include "AP_InertialSensor_MPU9150.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_HIL.h"
+#include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 
