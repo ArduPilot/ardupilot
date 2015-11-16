@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+
+class DataFlash_Class;
 
 namespace SITL {
 
@@ -26,7 +27,6 @@ struct PACKED sitl_fdm {
 // number of rc output channels
 #define SITL_NUM_CHANNELS 14
 
-
 class SITL {
 public:
 
@@ -48,6 +48,12 @@ public:
     };
 
     struct sitl_fdm state;
+
+    // loop update rate in Hz
+    uint16_t update_rate_hz;
+
+    // true when motors are active
+    bool motors_on;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -105,7 +111,7 @@ public:
 
     void simstate_send(mavlink_channel_t chan);
 
-    void Log_Write_SIMSTATE(DataFlash_Class &dataflash);
+    void Log_Write_SIMSTATE(DataFlash_Class *dataflash);
 
     // convert a set of roll rates from earth frame to body frame
     static void convert_body_frame(double rollDeg, double pitchDeg,

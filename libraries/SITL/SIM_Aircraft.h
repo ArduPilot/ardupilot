@@ -72,6 +72,9 @@ public:
     /* fill a sitl_fdm structure from the simulator state */
     void fill_fdm(struct sitl_fdm &fdm) const;
 
+    // get frame rate of model in Hz
+    float get_rate_hz(void) const { return rate_hz; }       
+    
 protected:
     Location home;
     Location location;

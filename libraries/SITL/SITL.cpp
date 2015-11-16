@@ -23,6 +23,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -104,7 +105,7 @@ void SITL::simstate_send(mavlink_channel_t chan)
 }
 
 /* report SITL state to DataFlash */
-void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
+void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
 {
     float yaw;
 
@@ -124,7 +125,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class &DataFlash)
         lat     : (int32_t)(state.latitude*1.0e7),
         lng     : (int32_t)(state.longitude*1.0e7)
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
