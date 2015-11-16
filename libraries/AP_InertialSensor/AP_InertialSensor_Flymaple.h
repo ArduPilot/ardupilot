@@ -18,15 +18,14 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { _accumulate(); return _have_gyro_sample; }
-    bool accel_sample_available(void) { _accumulate(); return _have_accel_sample; }
+    // accumulate samples
+    void accumulate(void) override;
 
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
 private:
     bool        _init_sensor(void);
-    void        _accumulate(void);
     bool        _have_gyro_sample;
     bool        _have_accel_sample;
 

@@ -32,14 +32,6 @@ public:
 
     bool        update();
 
-    bool        gyro_sample_available() {
-        return _gyro_sample_available;
-    };
-
-    bool        accel_sample_available() {
-        return _accel_sample_available;
-    };
-
     static AP_InertialSensor_Backend *      detect(AP_InertialSensor &imu);
 
 private:
@@ -63,9 +55,6 @@ private:
     AP_HAL::DigitalSource *         _drdy_pin_a;
     int                             _drdy_pin_num_g;
     AP_HAL::DigitalSource *         _drdy_pin_g;
-
-    bool                            _gyro_sample_available;
-    bool                            _accel_sample_available;
 
     bool                            _accel_data_ready();
     bool                            _gyro_data_ready();

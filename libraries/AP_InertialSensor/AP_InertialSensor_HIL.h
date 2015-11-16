@@ -13,9 +13,6 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return true; }
-    bool accel_sample_available(void) { return true; }
-
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 

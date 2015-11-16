@@ -325,8 +325,7 @@ static struct gyro_state_s st = {
  *  @brief      Constructor
  */
 AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _have_sample_available(false)
+    AP_InertialSensor_Backend(imu)
 {
 }
 
@@ -1076,8 +1075,6 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
         gyro *= MPU9150_GYRO_SCALE_2000;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-
-        _have_sample_available = true;
     }
 
     // give back i2c semaphore
@@ -1086,7 +1083,6 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
 
 bool AP_InertialSensor_MPU9150::update(void) 
 {
-    _have_sample_available = false;
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
 

@@ -22,9 +22,6 @@ public:
     /* update accel and gyro state */
     bool update();
 
-    bool gyro_sample_available(void) { return _have_sample; }
-    bool accel_sample_available(void) { return _have_sample; }
-
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
 
@@ -35,12 +32,8 @@ private:
     bool            _init_sensor(void);
     void            _accumulate(void);
 
-    int _data_idx;
-    pthread_spinlock_t _data_lock;
-
     bool _have_gyro_sample;
     bool _have_accel_sample;
-    volatile bool _have_sample;
 
     // gyro and accel instances
     uint8_t _gyro_instance;

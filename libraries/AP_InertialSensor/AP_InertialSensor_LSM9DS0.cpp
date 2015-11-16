@@ -376,8 +376,6 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     AP_InertialSensor_Backend(imu),
     _drdy_pin_a(NULL),
     _drdy_pin_g(NULL),
-    _gyro_sample_available(false),
-    _accel_sample_available(false),
     _drdy_pin_num_a(drdy_pin_num_a),
     _drdy_pin_num_g(drdy_pin_num_g)
 {
@@ -736,9 +734,9 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
 
     Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
     accel_data *= _accel_scale;
+
     _rotate_and_correct_accel(_accel_instance, accel_data);
     _notify_new_accel_raw_sample(_accel_instance, accel_data);
-    _accel_sample_available = true;
 }
 
 /*
@@ -751,16 +749,13 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
 
     Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
     gyro_data *= _gyro_scale;
+
     _rotate_and_correct_gyro(_gyro_instance, gyro_data);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
-    _gyro_sample_available = true;
 }
 
 bool AP_InertialSensor_LSM9DS0::update()
 {
-    _accel_sample_available = false;
-    _gyro_sample_available = false;
-
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
 

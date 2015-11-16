@@ -114,17 +114,13 @@ const extern AP_HAL::HAL& hal;
 // constructor
 AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D(AP_InertialSensor &imu) :
     AP_InertialSensor_Backend(imu),
-    _data_idx(0),
     _have_gyro_sample(false),
-    _have_accel_sample(false),
-    _have_sample(false)
+    _have_accel_sample(false)
 {
-    pthread_spin_init(&_data_lock, PTHREAD_PROCESS_PRIVATE);
 }
 
 AP_InertialSensor_L3G4200D::~AP_InertialSensor_L3G4200D()
 {
-    pthread_spin_destroy(&_data_lock);
 }
 
 /*
@@ -232,13 +228,12 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
     // give back i2c semaphore
     i2c_sem->give();
 
-    // start the timer process to read samples
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, void));
-
     _gyro_instance = _imu.register_gyro(800);
     _accel_instance = _imu.register_accel(800);
-
     _product_id = AP_PRODUCT_ID_L3G4200D;
+
+    // start the timer process to read samples
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_L3G4200D::_accumulate, void));
 
     return true;
 }
@@ -248,14 +243,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
  */
 bool AP_InertialSensor_L3G4200D::update(void) 
 {
-    pthread_spin_lock(&_data_lock);
-    unsigned int idx = !_data_idx;
-
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
-
-    _have_sample = false;
-    pthread_spin_unlock(&_data_lock);
 
     return true;
 }
@@ -335,11 +324,6 @@ void AP_InertialSensor_L3G4200D::_accumulate(void)
     if (_have_accel_sample && _have_gyro_sample) {
         _have_gyro_sample = false;
         _have_accel_sample = false;
-
-        pthread_spin_lock(&_data_lock);
-        _data_idx = !_data_idx;
-        _have_sample = true;
-        pthread_spin_unlock(&_data_lock);
     }
 }
 

@@ -186,7 +186,7 @@ bool AP_InertialSensor_Flymaple::update(void)
 // operations take too long
 // So we are stuck with a suboptimal solution. The results are not so
 // good in terms of timing. It may be better with the FIFOs enabled
-void AP_InertialSensor_Flymaple::_accumulate(void)
+void AP_InertialSensor_Flymaple::accumulate(void)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
