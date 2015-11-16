@@ -130,9 +130,6 @@ private:
 
     void wait_clock(uint64_t wait_time_usec);
 
-    pthread_t _fdm_thread_ctx;
-    void _fdm_thread(void);
-
     // internal state
     enum vehicle_type _vehicle;
     uint16_t _framerate;
