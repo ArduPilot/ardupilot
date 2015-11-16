@@ -29,7 +29,9 @@ private:
 
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
-};
 
+    uint32_t _last_gyro_timestamp;
+    uint32_t _last_accel_timestamp;
+};
 #endif
 #endif // __AP_INERTIAL_SENSOR_FLYMAPLE_H__

@@ -64,11 +64,7 @@ const uint32_t  raw_sample_interval_us = (1000000 / raw_sample_rate_hz);
 #define FLYMAPLE_GYRO_SCALE_R_S (1.0f / 14.375f) * (3.1415926f / 180.0f)
 
 AP_InertialSensor_Flymaple::AP_InertialSensor_Flymaple(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _accel_filter(raw_sample_rate_hz, 10),
-    _gyro_filter(raw_sample_rate_hz, 10),
-    _last_gyro_timestamp(0),
-    _last_accel_timestamp(0)
+    AP_InertialSensor_Backend(imu)
 {}
 
 /*
@@ -137,9 +133,6 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_INT_CFG, 0x00);
     hal.scheduler->delay(1);
 
-    // Set up the filter desired
-    _set_filter_frequency(_accel_filter_cutoff());
-
     // give back i2c semaphore
     i2c_sem->give();
 
@@ -150,16 +143,6 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
 
     return true;
 }
-
-/*
-  set the filter frequency
- */
-void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
-{
-    _accel_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _gyro_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-}
-
 
 // This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
