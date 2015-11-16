@@ -212,9 +212,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
     }
 
     // possibly update filter frequency
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
+    if (_last_gyro_filter_hz[instance] != _gyro_filter_cutoff()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
+        _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
     }
 
     hal.scheduler->resume_timer_procs();
@@ -233,9 +233,9 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
     }
     
     // possibly update filter frequency
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
+    if (_last_accel_filter_hz[instance] != _accel_filter_cutoff()) {
         _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
+        _last_accel_filter_hz[instance] = _accel_filter_cutoff();
     }
 
     hal.scheduler->resume_timer_procs();
