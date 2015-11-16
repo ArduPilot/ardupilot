@@ -315,6 +315,7 @@ void SITL_State::_fdm_input_local(void)
 
     // get FDM output from the model
     sitl_model->fill_fdm(_sitl->state);
+    _sitl->update_rate_hz = sitl_model->get_rate_hz();
 
     if (gimbal != NULL) {
         gimbal->update();
@@ -418,7 +419,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
             input.servos[2] = ((input.servos[2]-1000) * _sitl->engine_mul) + 1000;
             if (input.servos[2] > 2000) input.servos[2] = 2000;
         }
-        _motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
+        _sitl->motors_on = ((input.servos[2]-1000)/1000.0f) > 0;
     } else if (_vehicle == APMrover2) {
         // add in engine multiplier
         if (input.servos[2] != 1500) {
@@ -426,9 +427,9 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
             if (input.servos[2] > 2000) input.servos[2] = 2000;
             if (input.servos[2] < 1000) input.servos[2] = 1000;
         }
-        _motors_on = ((input.servos[2]-1500)/500.0f) != 0;
+        _sitl->motors_on = ((input.servos[2]-1500)/500.0f) != 0;
     } else {
-        _motors_on = false;
+        _sitl->motors_on = false;
         // apply engine multiplier to first motor
         input.servos[0] = ((input.servos[0]-1000) * _sitl->engine_mul) + 1000;
         // run checks on each motor
@@ -438,12 +439,12 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
             if (input.servos[i] < 1000) input.servos[i] = 1000;
             // update motor_on flag
             if ((input.servos[i]-1000)/1000.0f > 0) {
-                _motors_on = true;
+                _sitl->motors_on = true;
             }
         }
     }
 
-    float throttle = _motors_on?(input.servos[2]-1000) / 1000.0f:0;
+    float throttle = _sitl->motors_on?(input.servos[2]-1000) / 1000.0f:0;
     // lose 0.7V at full throttle
     float voltage = _sitl->batt_voltage - 0.7f*throttle;
 

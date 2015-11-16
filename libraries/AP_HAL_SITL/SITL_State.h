@@ -123,7 +123,6 @@ private:
     void _apply_servo_filter(float deltat);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
-    float _gyro_drift(void);
     float _rand_float(void);
     Vector3f _rand_vec3f(void);
     void _fdm_input_step(void);
@@ -138,7 +137,6 @@ private:
     struct sockaddr_in _rcout_addr;
     pid_t _parent_pid;
     uint32_t _update_count;
-    bool _motors_on;
 
     AP_Baro *_barometer;
     AP_InertialSensor *_ins;
