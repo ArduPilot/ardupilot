@@ -367,6 +367,11 @@ private:
         uint32_t    time_ms;     // 1
     };
 
+    struct range_elements {
+        float       rng;         // 0
+        uint32_t    time_ms;     // 1
+    };
+
     struct tas_elements {
         float       tas;         // 0
         uint32_t    time_ms;     // 1
@@ -445,6 +450,13 @@ private:
     // return true if data found
     bool RecallBaro();
 
+    // store range finder data
+    void StoreRange();
+
+    // recall range finder data at the fusion time horizon
+    // return true if data found
+    bool RecallRange();
+
     // store magnetometer data
     void StoreMag();
 
@@ -493,7 +505,7 @@ private:
     void readGpsData();
 
     // check for new altitude measurement data and update stored measurement if available
-    void readHgtData();
+    void readBaroData();
 
     // check for new magnetometer data and update store measurements if available
     void readMagData();
@@ -617,6 +629,12 @@ private:
     // using a simple observer
     void calcOutputStatesFast();
 
+    // calculate a filtered offset between baro height measurement and EKF height estimate
+    void calcFiltBaroOffset();
+
+    // Select height data to be fused from the available baro, range finder and GPS sources
+    void selectHeightForFusion();
+
     // Length of FIFO buffers used for non-IMU sensor data.
     // Must be larger than the time period defined by IMU_BUFFER_LENGTH
     static const uint32_t OBS_BUFFER_LENGTH = 5;
@@ -645,6 +663,7 @@ private:
     gps_elements storedGPS[OBS_BUFFER_LENGTH];      // GPS data buffer
     mag_elements storedMag[OBS_BUFFER_LENGTH];      // Magnetometer data buffer
     baro_elements storedBaro[OBS_BUFFER_LENGTH];    // Baro data buffer
+    range_elements storedRange[OBS_BUFFER_LENGTH];  // Rang finder data buffer
     tas_elements storedTAS[OBS_BUFFER_LENGTH];      // TAS data buffer
     output_elements *storedOutput;  // output state buffer [imu_buffer_length]
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
@@ -683,7 +702,7 @@ private:
     uint32_t imuSampleTime_ms;      // time that the last IMU value was taken
     bool newDataTas;                // true when new airspeed data has arrived
     bool tasDataWaiting;            // true when new airspeed data is waiting to be fused
-    uint32_t lastHgtReceived_ms;    // time last time we received height data
+    uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
     uint32_t lastPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
@@ -737,6 +756,9 @@ private:
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     uint8_t baroStoreIndex;         // Baro data storage index
+    range_elements rangeDataNew;    // Range finder data at the current time horizon
+    range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
+    uint8_t rangeStoreIndex;        // Range finder data storage index
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
     uint8_t tasStoreIndex;          // TAS data storage index
@@ -777,6 +799,7 @@ private:
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
     bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycele
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
+    float posDownObsNoise;          // observationn noise on the vertical position used by the state and covariance update step (m)
 
     // variables used to calulate a vertical velocity that is kinematically consistent with the verical position
     float posDownDerivative;        // Rate of chage of vertical position (dPosD/dt) in m/s. This is the first time derivative of PosD.
@@ -808,7 +831,7 @@ private:
     of_elements ofDataNew;          // OF data at the current time horizon
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
     uint8_t ofStoreIndex;           // OF data storage index
-    bool newDataFlow;               // true when new optical flow data has arrived
+    bool flowDataToFuse;            // true when optical flow data has is ready for fusion
     bool flowDataValid;             // true while optical flow data is still fresh
     bool fuseOptFlowData;           // this boolean causes the last optical flow measurement to be fused
     float auxFlowObsInnov;          // optical flow rate innovation from 1-state terrain offset estimator
@@ -828,10 +851,9 @@ private:
     float terrainState;             // terrain position state (m)
     float prevPosN;                 // north position at last measurement
     float prevPosE;                 // east position at last measurement
-    bool fuseRngData;               // true when fusion of range data is demanded
     float varInnovRng;              // range finder observation innovation variance (m^2)
     float innovRng;                 // range finder observation innovation (m)
-    float rngMea;                   // range finder measurement (m)
+    float hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
@@ -839,7 +861,10 @@ private:
     float R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     float auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2f flowGyroBias;          // bias error of optical flow sensor gyro output
-    bool newDataRng;                // true when new valid range finder data has arrived.
+    bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
+    bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
+    bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
+    bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     Vector2f heldVelNE;             // velocity held when no aiding is available
     enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.

@@ -298,7 +298,7 @@ void NavEKF2_core::detectFlight()
         }
 
         // trigger if more than 10m away from initial height
-        if (fabsf(baroDataDelayed.hgt) > 10.0f) {
+        if (fabsf(hgtMea) > 10.0f) {
             largeHgtChange = true;
         }
 
@@ -337,7 +337,7 @@ void NavEKF2_core::detectFlight()
         }
 
         // If rangefinder has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((rngMea - rngAtStartOfFlight) > 0.5f)) {
+        if (!onGround && ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f)) {
             inFlight = true;
         }
 
@@ -352,7 +352,7 @@ void NavEKF2_core::detectFlight()
         // store vertical position at start of flight to use as a reference for ground relative checks
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
-        rngAtStartOfFlight = rngMea;
+        rngAtStartOfFlight = rangeDataNew.rng;
     }
 
 }
@@ -411,7 +411,7 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
             angRateVec = ins.get_gyro() - gyroBias;
         }
 
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rngAtStartOfFlight + 0.1f)));
+        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
     } else if (onGround) {
         // we are confidently on the ground so set the takeoff detected status to false
         takeOffDetected = false;

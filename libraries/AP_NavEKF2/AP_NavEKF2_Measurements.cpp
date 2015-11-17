@@ -18,7 +18,7 @@ extern const AP_HAL::HAL& hal;
 ********************************************************/
 
 // Read the range finder and take new measurements if available
-// Read at 20Hz and apply a median filter
+// Apply a median filter
 void NavEKF2_core::readRangeFinder(void)
 {
     uint8_t midIndex;
@@ -26,19 +26,31 @@ void NavEKF2_core::readRangeFinder(void)
     uint8_t minIndex;
     // get theoretical correct range when the vehicle is on the ground
     rngOnGnd = frontend->_rng.ground_clearance_cm() * 0.01f;
-    if (frontend->_rng.status() == RangeFinder::RangeFinder_Good && (imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
-        // store samples and sample time into a ring buffer
-        rngMeasIndex ++;
-        if (rngMeasIndex > 2) {
-            rngMeasIndex = 0;
+
+    // read range finder at 20Hz
+    // TODO better way of knowing if it has new data
+    if ((imuSampleTime_ms - lastRngMeasTime_ms) > 50) {
+
+        // reset the timer used to control the measurement rate
+        lastRngMeasTime_ms =  imuSampleTime_ms;
+
+        // store samples and sample time into a ring buffer if valid
+        if (frontend->_rng.status() == RangeFinder::RangeFinder_Good) {
+            rngMeasIndex ++;
+            if (rngMeasIndex > 2) {
+                rngMeasIndex = 0;
+            }
+            storedRngMeasTime_ms[rngMeasIndex] = imuSampleTime_ms - 25;
+            storedRngMeas[rngMeasIndex] = frontend->_rng.distance_cm() * 0.01f;
         }
-        storedRngMeasTime_ms[rngMeasIndex] = imuSampleTime_ms;
-        storedRngMeas[rngMeasIndex] = frontend->_rng.distance_cm() * 0.01f;
-        // check for three fresh samples and take median
+
+        // check for three fresh samples
         bool sampleFresh[3];
         for (uint8_t index = 0; index <= 2; index++) {
             sampleFresh[index] = (imuSampleTime_ms - storedRngMeasTime_ms[index]) < 500;
         }
+
+        // find the median value if we have three fresh samples
         if (sampleFresh[0] && sampleFresh[1] && sampleFresh[2]) {
             if (storedRngMeas[0] > storedRngMeas[1]) {
                 minIndex = 1;
@@ -54,18 +66,20 @@ void NavEKF2_core::readRangeFinder(void)
             } else {
                 midIndex = 2;
             }
-            rngMea = max(storedRngMeas[midIndex],rngOnGnd);
-            newDataRng = true;
+            rangeDataNew.time_ms = storedRngMeasTime_ms[midIndex];
+            // limit the measured range to be no less than the on-ground range
+            rangeDataNew.rng = max(storedRngMeas[midIndex],rngOnGnd);
             rngValidMeaTime_ms = imuSampleTime_ms;
-        } else if (onGround) {
-            // if on ground and no return, we assume on ground range
-            rngMea = rngOnGnd;
-            newDataRng = true;
+            // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
+            StoreRange();
+        } else if (!takeOffDetected) {
+            // before takeoff we assume on-ground range value if there is no data
+            rangeDataNew.time_ms = imuSampleTime_ms;
+            rangeDataNew.rng = rngOnGnd;
             rngValidMeaTime_ms = imuSampleTime_ms;
-        } else {
-            newDataRng = false;
+            // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
+            StoreRange();
         }
-        lastRngMeasTime_ms =  imuSampleTime_ms;
     }
 }
 
@@ -119,7 +133,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // Save data to buffer
         StoreOF();
         // Check for data at the fusion time horizon
-        newDataFlow = RecallOF();
+        flowDataToFuse = RecallOF();
     }
 }
 
@@ -243,6 +257,7 @@ void NavEKF2_core::readMagData()
         StoreMag();
     }
 }
+
 // store magnetometer data in a history array
 void NavEKF2_core::StoreMag()
 {
@@ -526,6 +541,7 @@ void NavEKF2_core::readGpsData()
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
+                gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
                 StoreGPS();
                 // declare GPS available for use
                 gpsNotAvailable = false;
@@ -652,54 +668,26 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 *                  Height Measurements                  *
 ********************************************************/
 
-// check for new altitude measurement data and update stored measurement if available
-void NavEKF2_core::readHgtData()
+// check for new pressure altitude measurement data and update stored measurement if available
+void NavEKF2_core::readBaroData()
 {
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    if (frontend->_baro.get_last_update() - lastHgtReceived_ms > 70) {
-        // Don't use Baro height if operating in optical flow mode as we use range finder instead
-        if (frontend->_fusionModeGPS == 3 && frontend->_altSource == 1) {
-            if ((imuSampleTime_ms - rngValidMeaTime_ms) < 2000) {
-                // adjust range finder measurement to allow for effect of vehicle tilt and height of sensor
-                baroDataNew.hgt = max(rngMea * Tnb_flow.c.z, rngOnGnd);
-                // calculate offset to baro data that enables baro to be used as a backup
-                // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (frontend->_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
-            } else if (isAiding && takeOffDetected) {
-                // we have lost range finder measurements and are in optical flow flight
-                // use baro measurement and correct for baro offset - failsafe use only as baro will drift
-                baroDataNew.hgt = max(frontend->_baro.get_altitude() - baroHgtOffset, rngOnGnd);
-            } else {
-                // If we are on ground and have no range finder reading, assume the nominal on-ground height
-                baroDataNew.hgt = rngOnGnd;
-                // calculate offset to baro data that enables baro to be used as a backup
-                // filter offset to reduce effect of baro noise and other transient errors on estimate
-                baroHgtOffset = 0.1f * (frontend->_baro.get_altitude() + stateStruct.position.z) + 0.9f * baroHgtOffset;
-            }
-        } else {
-            // Normal operation is to use baro measurement
-            baroDataNew.hgt = frontend->_baro.get_altitude();
-        }
+    if (frontend->_baro.get_last_update() - lastBaroReceived_ms > 70) {
 
-        // filtered baro data used to provide a reference for takeoff
-        // it is is reset to last height measurement on disarming in performArmingChecks()
-        if (!getTakeoffExpected()) {
-            const float gndHgtFiltTC = 0.5f;
-            const float dtBaro = frontend->hgtAvg_ms*1.0e-3f;
-            float alpha = constrain_float(dtBaro / (dtBaro+gndHgtFiltTC),0.0f,1.0f);
-            meaHgtAtTakeOff += (baroDataDelayed.hgt-meaHgtAtTakeOff)*alpha;
-        } else if (isAiding && getTakeoffExpected()) {
-            // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
-            // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
+        baroDataNew.hgt = frontend->_baro.get_altitude();
+
+        // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
+        // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
+        if (isAiding && getTakeoffExpected()) {
             baroDataNew.hgt = max(baroDataNew.hgt, meaHgtAtTakeOff);
         }
 
         // time stamp used to check for new measurement
-        lastHgtReceived_ms = frontend->_baro.get_last_update();
+        lastBaroReceived_ms = frontend->_baro.get_last_update();
 
         // estimate of time height measurement was taken, allowing for delays
-        baroDataNew.time_ms = lastHgtReceived_ms - frontend->_hgtDelay_ms;
+        baroDataNew.time_ms = lastBaroReceived_ms - frontend->_hgtDelay_ms;
 
         // Correct for the average intersampling delay due to the filter updaterate
         baroDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -710,6 +698,15 @@ void NavEKF2_core::readHgtData()
         // save baro measurement to buffer to be fused later
         StoreBaro();
     }
+}
+
+// calculate filtered offset between baro height measurement and EKF height estimate
+// offset should be subtracted from baro measurement to match filter estimate
+// offset is used to enable reversion to baro if alternate height data sources fail
+void NavEKF2_core::calcFiltBaroOffset()
+{
+    // Apply a first order LPF with spike protection
+    baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
 }
 
 // store baro in a history array
@@ -752,7 +749,45 @@ bool NavEKF2_core::RecallBaro()
     }
 }
 
+// store baro in a history array
+void NavEKF2_core::StoreRange()
+{
+    if (rangeStoreIndex >= OBS_BUFFER_LENGTH) {
+        rangeStoreIndex = 0;
+    }
+    storedRange[rangeStoreIndex] = rangeDataNew;
+    rangeStoreIndex += 1;
+}
 
+// return newest un-used range finder data that has fallen behind the fusion time horizon
+// if no un-used data is available behind the fusion horizon, return false
+bool NavEKF2_core::RecallRange()
+{
+    range_elements dataTemp;
+    range_elements dataTempZero;
+    dataTempZero.time_ms = 0;
+    uint32_t temp_ms = 0;
+    uint8_t bestIndex = 0;
+    for (uint8_t i=0; i<OBS_BUFFER_LENGTH; i++) {
+        dataTemp = storedRange[i];
+        // find a measurement older than the fusion time horizon that we haven't checked before
+        if (dataTemp.time_ms != 0 && dataTemp.time_ms <= imuDataDelayed.time_ms) {
+            // Find the most recent non-stale measurement that meets the time horizon criteria
+            if (((imuDataDelayed.time_ms - dataTemp.time_ms) < 500) && dataTemp.time_ms > temp_ms) {
+                rangeDataDelayed = dataTemp;
+                temp_ms = dataTemp.time_ms;
+                bestIndex = i;
+            }
+        }
+    }
+    if (temp_ms != 0) {
+        // zero the time stamp for that piece of data so we won't use it again
+        storedRange[bestIndex]=dataTempZero;
+        return true;
+    } else {
+        return false;
+    }
+}
 
 /********************************************************
 *                Air Speed Measurements                 *

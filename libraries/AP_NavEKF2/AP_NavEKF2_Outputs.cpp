@@ -74,7 +74,7 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     auxInnov = auxFlowObsInnov;
     HAGL = terrainState - stateStruct.position.z;
     rngInnov = innovRng;
-    range = rngMea;
+    range = rangeDataDelayed.rng;
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
@@ -87,6 +87,10 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     if (frontend->_fusionModeGPS == 3) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
         height = max(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
+        if (frontend->_altSource != 1) {
+            height -= terrainState;
+        }
         return true;
     } else {
         return false;
@@ -443,6 +447,8 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     bool optFlowNavPossible = flowDataValid && (frontend->_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (PV_AidingMode == AID_ABSOLUTE) && gpsGoodToAlign;
     bool filterHealthy = healthy() && tiltAlignComplete && yawAlignComplete;
+    // If GPS height useage is specified, height is considered to be inaccurate until the GPS passes all checks
+    bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
 
     // set individual flags
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -450,7 +456,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && filterHealthy;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
-    status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
+    status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode

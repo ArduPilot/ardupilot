@@ -139,16 +139,16 @@ void NavEKF2_core::SelectMagFusion()
     }
 
     // check for availability of magnetometer data to fuse
-    bool newMagDataAvailable = RecallMag();
+    magDataToFuse = RecallMag();
 
-    if (newMagDataAvailable) {
+    if (magDataToFuse) {
         // Control reset of yaw and magnetic field states
         controlMagYawReset();
     }
 
     // determine if conditions are right to start a new fusion cycle
     // wait until the EKF time horizon catches up with the measurement
-    bool dataReady = (newMagDataAvailable && statesInitialised && use_compass() && yawAlignComplete);
+    bool dataReady = (magDataToFuse && statesInitialised && use_compass() && yawAlignComplete);
     if (dataReady) {
         // If we haven't performed the first airborne magnetic field update or have inhibited magnetic field learning, then we use the simple method of declination to maintain heading
         if(inhibitMagStates) {
