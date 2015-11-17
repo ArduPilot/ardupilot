@@ -589,7 +589,7 @@ void NavEKF2_core::FuseMagnetometer()
     ForceSymmetry();
     ConstrainVariances();
 
-    hal.util->perf_end(_perf_test[4]);
+    hal.util->perf_end(_perf_test[5]);
 
 }
 
