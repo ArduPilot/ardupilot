@@ -693,10 +693,12 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update_xy_ms) / 1000.0f;
+    float dt = (now - _last_update_xy_ms)*0.001f;
 
-    // sanity check dt - expect to be called faster than ~5hz
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
+    // call xy controller
+    if (dt >= get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
         dt = 0.0f;
     }
 
@@ -715,14 +717,15 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     // run acceleration to lean angle step
     accel_to_lean_angles(dt, ekfNavVelGainScaler);
 
+        // update xy update time
+        _last_update_xy_ms = now;
+    }
+
     // update altitude target
-    set_alt_target_from_climb_rate_ff(_vel_desired.z, dt, false);
+    set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);
 
     // run z-axis position controller
     update_z_controller();
-
-    // record update time
-    _last_update_xy_ms = now;
 }
 
 ///
