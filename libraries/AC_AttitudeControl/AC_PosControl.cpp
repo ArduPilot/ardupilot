@@ -689,13 +689,14 @@ void AC_PosControl::init_vel_controller_xyz()
     _flags.reset_rate_to_accel_xy = true;
     _flags.reset_accel_to_lean_xy = true;
 
-    // set target position in xy axis
+    // set target position
     const Vector3f& curr_pos = _inav.get_position();
     set_xy_target(curr_pos.x, curr_pos.y);
+    set_alt_target(curr_pos.z);
 
     // move current vehicle velocity into feed forward velocity
     const Vector3f& curr_vel = _inav.get_velocity();
-    set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+    set_desired_velocity(curr_vel);
 }
 
 /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
@@ -729,7 +730,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     accel_to_lean_angles(dt, ekfNavVelGainScaler, false);
 
     // update altitude target
-    set_alt_target_from_climb_rate(_vel_desired.z, dt, false);
+    set_alt_target_from_climb_rate_ff(_vel_desired.z, dt, false);
 
     // run z-axis position controller
     update_z_controller();
