@@ -57,7 +57,7 @@ float NavEKF2_core::faultScore(void) const
         score += hgtTestRatio-1.0f;
     }
     // If the tilt error is excessive this adds to the score
-    const float tiltErrThreshold = 0.1f;
+    const float tiltErrThreshold = 0.05f;
     if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
         score += tiltErrFilt / tiltErrThreshold;
     }
