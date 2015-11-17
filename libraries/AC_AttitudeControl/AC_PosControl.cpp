@@ -707,36 +707,39 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
     uint32_t now = hal.scheduler->millis();
-    float dt = (now - _last_update_xy_ms) / 1000.0f;
+    float dt = (now - _last_update_xy_ms)*0.001f;
 
-    // sanity check dt - expect to be called faster than ~5hz
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
-        dt = 0.0f;
+    // call xy controller
+    if (dt >= get_dt_xy()) {
+        // sanity check dt
+        if (dt >= 0.2f) {
+            dt = 0.0f;
+        }
+
+        // check if xy leash needs to be recalculated
+        calc_leash_length_xy();
+
+        // apply desired velocity request to position target
+        desired_vel_to_pos(dt);
+
+        // run position controller's position error to desired velocity step
+        pos_to_rate_xy(XY_MODE_POS_LIMITED_AND_VEL_FF, dt, ekfNavVelGainScaler);
+
+        // run velocity to acceleration step
+        rate_to_accel_xy(dt, ekfNavVelGainScaler);
+
+        // run acceleration to lean angle step
+        accel_to_lean_angles(dt, ekfNavVelGainScaler, false);
+
+        // update xy update time
+        _last_update_xy_ms = now;
     }
 
-    // check if xy leash needs to be recalculated
-    calc_leash_length_xy();
-
-    // apply desired velocity request to position target
-    desired_vel_to_pos(dt);
-
-    // run position controller's position error to desired velocity step
-    pos_to_rate_xy(XY_MODE_POS_LIMITED_AND_VEL_FF, dt, ekfNavVelGainScaler);
-
-    // run velocity to acceleration step
-    rate_to_accel_xy(dt, ekfNavVelGainScaler);
-
-    // run acceleration to lean angle step
-    accel_to_lean_angles(dt, ekfNavVelGainScaler, false);
-
     // update altitude target
-    set_alt_target_from_climb_rate_ff(_vel_desired.z, dt, false);
+    set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);
 
     // run z-axis position controller
     update_z_controller();
-
-    // record update time
-    _last_update_xy_ms = now;
 }
 
 ///
