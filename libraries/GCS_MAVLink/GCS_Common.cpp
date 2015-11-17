@@ -193,12 +193,10 @@ void GCS_MAVLINK::send_meminfo(void)
 // report power supply status
 void GCS_MAVLINK::send_power_status(void)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     mavlink_msg_power_status_send(chan,
                                   hal.analogin->board_voltage() * 1000,
                                   hal.analogin->servorail_voltage() * 1000,
                                   hal.analogin->power_status_flags());
-#endif
 }
 
 // report AHRS2 state
