@@ -61,6 +61,27 @@ void NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     imu_index = _imu_index;
     core_index = _core_index;
     _ahrs = frontend->_ahrs;
+
+    /*
+      the imu_buffer_length needs to cope with a 260ms delay at a
+      maximum fusion rate of 100Hz. Non-imu data coming in at faster
+      than 100Hz is downsampled. For 50Hz main loop rate we need a
+      shorter buffer.
+     */
+    switch (_ahrs->get_ins().get_sample_rate()) {
+    case AP_InertialSensor::RATE_50HZ:
+        imu_buffer_length = 13;
+        break;
+    case AP_InertialSensor::RATE_100HZ:
+    case AP_InertialSensor::RATE_200HZ:
+    case AP_InertialSensor::RATE_400HZ:
+        // maximum 260 msec delay at 100 Hz fusion rate
+        imu_buffer_length = 26;
+        break;
+    }
+
+    storedIMU    = new imu_elements[imu_buffer_length];
+    storedOutput = new output_elements[imu_buffer_length];
 }
     
 
@@ -1128,7 +1149,7 @@ void NavEKF2_core::StoreOutputReset()
     outputDataNew.velocity = stateStruct.velocity;
     outputDataNew.position = stateStruct.position;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i] = outputDataNew;
     }
     outputDataDelayed = outputDataNew;
@@ -1142,7 +1163,7 @@ void NavEKF2_core::StoreQuatReset()
 {
     outputDataNew.quat = stateStruct.quat;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].quat = outputDataNew.quat;
     }
     outputDataDelayed.quat = outputDataNew.quat;
@@ -1153,7 +1174,7 @@ void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;

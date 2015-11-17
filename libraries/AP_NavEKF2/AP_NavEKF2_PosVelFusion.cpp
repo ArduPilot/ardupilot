@@ -32,7 +32,7 @@ void NavEKF2_core::ResetVelocity(void)
         stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
         stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
     }
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].velocity.x = stateStruct.velocity.x;
         storedOutput[i].velocity.y = stateStruct.velocity.y;
     }
@@ -65,7 +65,7 @@ void NavEKF2_core::ResetPosition(void)
         stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
         stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
     }
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.x = stateStruct.position.x;
         storedOutput[i].position.y = stateStruct.position.y;
     }
@@ -90,7 +90,7 @@ void NavEKF2_core::ResetHeight(void)
     // write to the state vector
     stateStruct.position.z = -baroDataNew.hgt; // down position from blended accel data
     terrainState = stateStruct.position.z + rngOnGnd;
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
     }
     outputDataNew.position.z = stateStruct.position.z;

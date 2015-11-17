@@ -392,14 +392,14 @@ void NavEKF2_core::StoreIMU()
 {
     // increment the index and write new data
     fifoIndexNow = fifoIndexNow + 1;
-    if (fifoIndexNow >= IMU_BUFFER_LENGTH) {
+    if (fifoIndexNow >= imu_buffer_length) {
         fifoIndexNow = 0;
     }
     storedIMU[fifoIndexNow] = imuDataDownSampledNew;
     // set the index required to access the oldest data, applying an offset to the fusion time horizon that is used to
     // prevent the same fusion operation being performed on the same frame across multiple EKF's
     fifoIndexDelayed = fifoIndexNow + 1;
-    if (fifoIndexDelayed >= IMU_BUFFER_LENGTH) {
+    if (fifoIndexDelayed >= imu_buffer_length) {
         fifoIndexDelayed = 0;
     }
 }
@@ -408,12 +408,12 @@ void NavEKF2_core::StoreIMU()
 void NavEKF2_core::StoreIMU_reset()
 {
     // write current measurement to entire table
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedIMU[i] = imuDataNew;
     }
     imuDataDelayed = imuDataNew;
     fifoIndexDelayed = fifoIndexNow+1;
-    if (fifoIndexDelayed >= IMU_BUFFER_LENGTH) {
+    if (fifoIndexDelayed >= imu_buffer_length) {
         fifoIndexDelayed = 0;
     }
 }

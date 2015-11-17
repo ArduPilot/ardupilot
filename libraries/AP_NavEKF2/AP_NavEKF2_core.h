@@ -42,23 +42,6 @@
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
 
-/*
- * IMU FIFO buffer length depends on the IMU update rate being used and the maximum sensor delay
- * Samples*delta_time must be > max sensor delay
-*/
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-// Note that if using more than 2 instances of the EKF, as set by EK2_IMU_MASK, this delay should be increased by 2 samples
-// for each additional instance to allow for the need to offset the fusion time horizon for each instance to avoid simultaneous fusion
-// of measurements by each instance
-#define IMU_BUFFER_LENGTH       26 // maximum 260 msec delay at 100 Hz fusion rate
-#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define IMU_BUFFER_LENGTH       13 // maximum 260 msec delay at 50 Hz
-#else
-#define IMU_BUFFER_LENGTH       104 // unknown so use max buffer length
-#endif
-
 class AP_AHRS;
 
 class NavEKF2_core
@@ -282,6 +265,7 @@ private:
     NavEKF2 *frontend;
     uint8_t imu_index;
     uint8_t core_index;
+    uint8_t imu_buffer_length;
 
     typedef float ftype;
 #if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
@@ -657,12 +641,12 @@ private:
     Matrix24 KH;                    // intermediate result used for covariance updates
     Matrix24 KHP;                   // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
-    imu_elements storedIMU[IMU_BUFFER_LENGTH];      // IMU data buffer
+    imu_elements *storedIMU;        // IMU data buffer [imu_buffer_length]
     gps_elements storedGPS[OBS_BUFFER_LENGTH];      // GPS data buffer
     mag_elements storedMag[OBS_BUFFER_LENGTH];      // Magnetometer data buffer
     baro_elements storedBaro[OBS_BUFFER_LENGTH];    // Baro data buffer
     tas_elements storedTAS[OBS_BUFFER_LENGTH];      // TAS data buffer
-    output_elements storedOutput[IMU_BUFFER_LENGTH];// output state buffer
+    output_elements *storedOutput;  // output state buffer [imu_buffer_length]
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
     Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
     Vector3f correctedDelVel;       // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
