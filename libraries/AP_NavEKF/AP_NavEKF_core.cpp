@@ -3824,7 +3824,7 @@ void NavEKF_core::readIMUData()
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     // calculate the average time between IMU updates
-    dtIMUavg = 1.0f/max(ins.get_sample_rate(),1E-5f);
+    dtIMUavg = 1.0f/(float)ins.get_sample_rate();
 
     // calculate the most recent time between gyro delta angle updates
     if (ins.get_delta_time() > 0.0f) {
