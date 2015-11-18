@@ -448,7 +448,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
         // ensure ch7 and ch8 have different functions
         if (check_duplicate_auxsw()) {
-            if (display_failure)
+            if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Duplicate Aux switch options");
             }
             return false;
