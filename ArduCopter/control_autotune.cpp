@@ -262,6 +262,10 @@ void Copter::autotune_run()
     float target_yaw_rate;
     int16_t target_climb_rate;
 
+    // initialize vertical speeds and leash lengths
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the autotune_init() checks
     if (!ap.auto_armed || !motors.get_interlock()) {
