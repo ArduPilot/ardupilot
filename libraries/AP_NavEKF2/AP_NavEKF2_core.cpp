@@ -98,7 +98,7 @@ void NavEKF2_core::InitialiseVariables()
     localFilterTimeStep_ms = max(localFilterTimeStep_ms,10);
 
     // initialise time stamps
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
@@ -393,7 +393,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     // TODO - in-flight restart method
 
     //get starting time for update step
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
 
     // Check arm status and perform required checks and mode changes
     controlFilterModes();

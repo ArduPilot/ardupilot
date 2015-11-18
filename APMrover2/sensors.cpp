@@ -59,7 +59,7 @@ void Rover::read_sonars(void)
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar1 obstacle %u cm",
                                   (unsigned)obstacle.sonar1_distance_cm);
             }
-            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;
         } else if (obstacle.sonar2_distance_cm <= (uint16_t)g.sonar_trigger_cm) {
             // we have an object on the right
@@ -70,7 +70,7 @@ void Rover::read_sonars(void)
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar2 obstacle %u cm",
                                   (unsigned)obstacle.sonar2_distance_cm);
             }
-            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = -g.sonar_turn_angle;
         }
     } else {
@@ -86,7 +86,7 @@ void Rover::read_sonars(void)
                 gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Sonar obstacle %u cm",
                                   (unsigned)obstacle.sonar1_distance_cm);
             }
-            obstacle.detected_time_ms = hal.scheduler->millis();
+            obstacle.detected_time_ms = AP_HAL::millis();
             obstacle.turn_angle = g.sonar_turn_angle;
         }
     }
@@ -95,7 +95,7 @@ void Rover::read_sonars(void)
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.sonar_debounce &&
-        hal.scheduler->millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
+        AP_HAL::millis() > obstacle.detected_time_ms + g.sonar_turn_time*1000) { 
         gcs_send_text_fmt(MAV_SEVERITY_INFO, "Obstacle passed");
         obstacle.detected_count = 0;
         obstacle.turn_angle = 0;

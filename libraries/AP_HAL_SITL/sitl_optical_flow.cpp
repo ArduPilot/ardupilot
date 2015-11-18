@@ -42,7 +42,7 @@ void SITL_State::_update_flow(void)
     }
 
     // update at the requested rate
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     if (now - last_flow_ms < 1000*(1.0f/_sitl->flow_rate)) {
         return;
     }

@@ -457,8 +457,6 @@ private:
     void update_commands(void);
     void delay(uint32_t ms);
     void mavlink_delay(uint32_t ms);
-    uint32_t millis();
-    uint32_t micros();
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
@@ -565,5 +563,8 @@ public:
 
 extern const AP_HAL::HAL& hal;
 extern Rover rover;
+
+using AP_HAL::millis;
+using AP_HAL::micros;
 
 #endif // _ROVER_H_

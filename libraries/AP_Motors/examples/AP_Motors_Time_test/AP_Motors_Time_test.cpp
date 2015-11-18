@@ -96,9 +96,9 @@ void motor_order_test()
     for (int8_t i=1; i <= 4; i++) {
 		hal.console->printf("Motor %d\n",(int)i);
         int elapsed =0,stop;
-		int start = hal.scheduler->micros();                                                   //Time Test
+		int start = AP_HAL::micros();                                                   //Time Test
         motors.output_test(i, 1150);
-        stop = hal.scheduler->micros();
+        stop = AP_HAL::micros();
         elapsed = stop - start;
         hal.console->printf("  Elapsed Time: %dus\n",elapsed);
         hal.scheduler->delay(300);

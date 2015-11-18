@@ -85,26 +85,6 @@ void PX4Scheduler::init(void *unused)
     pthread_create(&_storage_thread_ctx, &thread_attr, (pthread_startroutine_t)&PX4::PX4Scheduler::_storage_thread, this);
 }
 
-uint64_t PX4Scheduler::micros64() 
-{
-    return hrt_absolute_time();
-}
-
-uint64_t PX4Scheduler::millis64() 
-{
-    return micros64() / 1000;
-}
-
-uint32_t PX4Scheduler::micros() 
-{
-    return micros64() & 0xFFFFFFFF;
-}
-
-uint32_t PX4Scheduler::millis() 
-{
-    return millis64() & 0xFFFFFFFF;
-}
-
 /**
    delay for a specified number of microseconds using a semaphore wait
  */
@@ -165,9 +145,9 @@ void PX4Scheduler::delay(uint16_t ms)
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = micros64();
+	uint64_t start = AP_HAL::micros64();
     
-    while ((micros64() - start)/1000 < ms && 
+    while ((AP_HAL::micros64() - start)/1000 < ms && 
            !_px4_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -296,8 +276,8 @@ void *PX4Scheduler::_timer_thread(void)
         // process any pending RC input requests
         ((PX4RCInput *)hal.rcin)->_timer_tick();
 
-        if (px4_ran_overtime && millis() - last_ran_overtime > 2000) {
-            last_ran_overtime = millis();
+        if (px4_ran_overtime && AP_HAL::millis() - last_ran_overtime > 2000) {
+            last_ran_overtime = AP_HAL::millis();
             printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
             hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
         }
@@ -374,20 +354,6 @@ void *PX4Scheduler::_storage_thread(void)
     return NULL;
 }
 
-void PX4Scheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    vdprintf(1, errormsg, ap);
-    va_end(ap);
-    write(1, "\n", 1);
-
-    hal.scheduler->delay_microseconds(10000);
-    _px4_thread_should_exit = true;
-    exit(1);
-}
-
 bool PX4Scheduler::in_timerprocess() 
 {
     return getpid() != _main_task_pid;
@@ -399,7 +365,7 @@ bool PX4Scheduler::system_initializing() {
 
 void PX4Scheduler::system_initialized() {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
                    "more than once");
     }
     _initialized = true;

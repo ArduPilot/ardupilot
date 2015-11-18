@@ -43,7 +43,7 @@ void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint32_t time_us
 {
     Compass::mag_state &state = _compass._state[instance];
 
-    state.last_update_ms = hal.scheduler->millis();
+    state.last_update_ms = AP_HAL::millis();
 
     // note that we do not set last_update_usec here as otherwise the
     // EKF and DCM would end up consuming compass data at the full
@@ -110,8 +110,8 @@ void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t ins
 
     state.field = mag;
 
-    state.last_update_ms = hal.scheduler->millis();
-    state.last_update_usec = hal.scheduler->micros();
+    state.last_update_ms = AP_HAL::millis();
+    state.last_update_usec = AP_HAL::micros();
 
     state.has_raw_field = state.updated_raw_field;
     state.updated_raw_field = false;

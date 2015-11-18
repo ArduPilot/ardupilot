@@ -71,7 +71,7 @@ uint64_t AP_GPS::time_epoch_usec(uint8_t instance)
     const uint64_t unix_offset = 17000ULL*86400ULL + 52*10*7000ULL*86400ULL - 15000ULL;
     uint64_t fix_time_ms = unix_offset + istate.time_week*ms_per_week + istate.time_week_ms;
     // add in the milliseconds since the last fix
-    return (fix_time_ms + (hal.scheduler->millis() - istate.last_gps_time_ms)) * 1000ULL;
+    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
 }
 
 

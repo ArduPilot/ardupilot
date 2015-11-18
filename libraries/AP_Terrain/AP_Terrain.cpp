@@ -357,7 +357,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
 
     struct log_TERRAIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_TERRAIN_MSG),
-        time_us        : hal.scheduler->micros64(),
+        time_us        : AP_HAL::micros64(),
         status         : (uint8_t)status(),
         lat            : loc.lat,
         lng            : loc.lng,

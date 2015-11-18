@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 // Temp conversion time is 4.5ms
 // Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
 #define BMP085_EOC -1
-#define BMP_DATA_READY() (BMP085_State == 0 ? hal.scheduler->millis() > (_last_temp_read_command_time + 5) : hal.scheduler->millis() > (_last_press_read_command_time + 26))
+#define BMP_DATA_READY() (BMP085_State == 0 ? AP_HAL::millis() > (_last_temp_read_command_time + 5) : AP_HAL::millis() > (_last_press_read_command_time + 26))
 #else
 #define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
 #endif
@@ -64,7 +64,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     // take i2c bus sempahore
     if (!i2c_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        hal.scheduler->panic("BMP085: unable to get semaphore");
+        AP_HAL::panic("BMP085: unable to get semaphore");
     }
 
     // End Of Conversion (PC7) input
@@ -74,7 +74,7 @@ AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro) :
 
     // We read the calibration data registers
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xAA, 22, buff) != 0) {
-        hal.scheduler->panic("BMP085: bad calibration registers");
+        AP_HAL::panic("BMP085: bad calibration registers");
     }
 
     ac1 = ((int16_t)buff[0] << 8) | buff[1];
@@ -164,7 +164,7 @@ void AP_Baro_BMP085::Command_ReadPress()
     // Mode 0x34+(OVERSAMPLING << 6) is osrs=3 when OVERSAMPLING=3 => 25.5ms conversion time
     hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4,
                            0x34+(OVERSAMPLING << 6));
-    _last_press_read_command_time = hal.scheduler->millis();
+    _last_press_read_command_time = AP_HAL::millis();
 }
 
 // Read Raw Pressure values
@@ -173,7 +173,7 @@ bool AP_Baro_BMP085::ReadPress()
     uint8_t buf[3];
 
     if (hal.i2c->readRegisters(BMP085_ADDRESS, 0xF6, 3, buf) != 0) {
-        _retry_time = hal.scheduler->millis() + 1000;
+        _retry_time = AP_HAL::millis() + 1000;
         hal.i2c->setHighSpeed(false);
         return false;
     }
@@ -188,7 +188,7 @@ bool AP_Baro_BMP085::ReadPress()
 void AP_Baro_BMP085::Command_ReadTemp()
 {
     hal.i2c->writeRegister(BMP085_ADDRESS, 0xF4, 0x2E);
-    _last_temp_read_command_time = hal.scheduler->millis();
+    _last_temp_read_command_time = AP_HAL::millis();
 }
 
 // Read Raw Temperature values

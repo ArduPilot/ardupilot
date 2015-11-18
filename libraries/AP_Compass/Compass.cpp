@@ -400,7 +400,7 @@ Compass::init()
 uint8_t Compass::register_compass(void)
 {
     if (_compass_count == COMPASS_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many compass instances");
+        AP_HAL::panic("Too many compass instances");
     }
     return _compass_count++;
 }
@@ -410,7 +410,7 @@ void Compass::_add_backend(AP_Compass_Backend *backend)
     if (!backend)
         return;
     if (_backend_count == COMPASS_MAX_BACKEND)
-        hal.scheduler->panic("Too many compass backends");
+        AP_HAL::panic("Too many compass backends");
     _backends[_backend_count++] = backend;
 }
 
@@ -476,7 +476,7 @@ Compass::read(void)
         _backends[i]->read();
     }    
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
-        _state[i].healthy = (hal.scheduler->millis() - _state[i].last_update_ms < 500);
+        _state[i].healthy = (AP_HAL::millis() - _state[i].last_update_ms < 500);
     }
     return healthy();
 }
@@ -724,7 +724,7 @@ void Compass::setHIL(uint8_t instance, const Vector3f &mag)
 {
     _hil.field[instance] = mag;
     _hil.healthy[instance] = true;
-    _state[instance].last_update_usec = hal.scheduler->micros();
+    _state[instance].last_update_usec = AP_HAL::micros();
 }
 
 const Vector3f& Compass::getHIL(uint8_t instance) const 

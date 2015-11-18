@@ -380,7 +380,7 @@ void NavEKF_core::UpdateFilter()
     hal.util->perf_begin(_perf_UpdateFilter);
 
     //get starting time for update step
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
 
     // read IMU data and convert to delta angles and velocities
     readIMUData();
@@ -3834,7 +3834,7 @@ void NavEKF_core::readIMUData()
     }
 
     // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
 
     // dual accel mode - require both IMU's to be able to provide delta velocity outputs
     if (ins.use_accel(0) && ins.use_accel(1) && readDeltaVelocity(0, dVelIMU1, dtDelVel1) && readDeltaVelocity(1, dVelIMU2, dtDelVel2)) {
@@ -4389,7 +4389,7 @@ void NavEKF_core::InitialiseVariables()
     }
 
     // initialise time stamps
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
     lastHealthyMagTime_ms = imuSampleTime_ms;
     TASmsecPrev = imuSampleTime_ms;
     BETAmsecPrev = imuSampleTime_ms;

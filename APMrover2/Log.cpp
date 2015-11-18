@@ -172,7 +172,7 @@ void Rover::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         loop_time       : millis()- perf_mon_timer,
         main_loop_count : mainLoop_count,
         g_dt_max        : G_Dt_max,
@@ -197,7 +197,7 @@ void Rover::Log_Write_Steering()
 {
     struct log_Steering pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
-        time_us        : hal.scheduler->micros64(),
+        time_us        : AP_HAL::micros64(),
         demanded_accel : lateral_acceleration,
         achieved_accel : gps.ground_speed() * ins.get_gyro().z,
     };
@@ -216,7 +216,7 @@ bool Rover::Log_Write_Startup(uint8_t type)
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         startup_type    : type,
         command_total   : mission.num_commands()
     };
@@ -239,7 +239,7 @@ void Rover::Log_Write_Control_Tuning()
     Vector3f accel = ins.get_accel();
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CTUN_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         steer_out       : (int16_t)channel_steer->servo_out,
         roll            : (int16_t)ahrs.roll_sensor,
         pitch           : (int16_t)ahrs.pitch_sensor,
@@ -264,7 +264,7 @@ void Rover::Log_Write_Nav_Tuning()
 {
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
-        time_us             : hal.scheduler->micros64(),
+        time_us             : AP_HAL::micros64(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : wp_distance,
         target_bearing_cd   : (uint16_t)nav_controller->target_bearing_cd(),
@@ -312,11 +312,11 @@ void Rover::Log_Write_Sonar()
 {
     uint16_t turn_time = 0;
     if (!is_zero(obstacle.turn_angle)) {
-        turn_time = hal.scheduler->millis() - obstacle.detected_time_ms;
+        turn_time = AP_HAL::millis() - obstacle.detected_time_ms;
     }
     struct log_Sonar pkt = {
         LOG_PACKET_HEADER_INIT(LOG_SONAR_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         lateral_accel   : lateral_acceleration,
         sonar1_distance : (uint16_t)sonar.distance_cm(0),
         sonar2_distance : (uint16_t)sonar.distance_cm(1),
@@ -347,7 +347,7 @@ struct PACKED log_Arm_Disarm {
 void Rover::Log_Arm_Disarm() {
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
-        time_us                 : hal.scheduler->micros64(),
+        time_us                 : AP_HAL::micros64(),
         arm_state               : arming.is_armed(),
         arm_checks              : arming.get_enabled_checks()
     };

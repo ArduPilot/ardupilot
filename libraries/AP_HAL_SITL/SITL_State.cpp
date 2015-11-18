@@ -177,8 +177,8 @@ void SITL_State::_fdm_input_step(void)
     }
 
     // simulate RC input at 50Hz
-    if (hal.scheduler->millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
-        last_pwm_input = hal.scheduler->millis();
+    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl->rc_fail == 0) {
+        last_pwm_input = AP_HAL::millis();
         new_rc_input = true;
     }
 
@@ -214,7 +214,7 @@ void SITL_State::_fdm_input_step(void)
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
-    while (hal.scheduler->micros64() < wait_time_usec) {
+    while (AP_HAL::micros64() < wait_time_usec) {
         _fdm_input_step();
     }
 }
@@ -270,10 +270,10 @@ void SITL_State::_fdm_input(void)
         _update_count++;
 
         count++;
-        if (hal.scheduler->millis() - last_report > 1000) {
+        if (AP_HAL::millis() - last_report > 1000) {
             //fprintf(stdout, "SIM %u FPS\n", count);
             count = 0;
-            last_report = hal.scheduler->millis();
+            last_report = AP_HAL::millis();
         }
         break;
 
@@ -385,7 +385,7 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
     }
 
     // output at chosen framerate
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float deltat = (now - last_update_usec) * 1.0e-6f;
     last_update_usec = now;
 
@@ -494,7 +494,7 @@ void SITL_State::_simulator_output(bool synthetic_clock_mode)
     control.turbulance = _sitl->wind_turbulance * 100;
 
     // zero the wind for the first 15s to allow pitot calibration
-    if (hal.scheduler->millis() < 15000) {
+    if (AP_HAL::millis() < 15000) {
         control.speed = 0;
     }
 

@@ -50,7 +50,7 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
 void Gimbal::update(void)
 {
     // calculate delta time in seconds
-    uint32_t now_us = hal.scheduler->micros();
+    uint32_t now_us = AP_HAL::micros();
 
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
@@ -230,7 +230,7 @@ void Gimbal::send_report(void)
     if (!seen_heartbeat) {
         return;
     }
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     mavlink_message_t msg;
     uint16_t len;
 
@@ -262,7 +262,7 @@ void Gimbal::send_report(void)
     /*
       send a GIMBAL_REPORT message
      */
-    uint32_t now_us = hal.scheduler->micros();
+    uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us > reporting_period_ms*1000UL) {
         mavlink_gimbal_report_t gimbal_report;
         float delta_time = (now_us - last_report_us) * 1.0e-6f;

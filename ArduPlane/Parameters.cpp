@@ -1252,7 +1252,7 @@ void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf("Bad parameter table\n");
-        hal.scheduler->panic("Bad parameter table");
+        AP_HAL::panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

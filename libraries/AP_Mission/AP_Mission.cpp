@@ -43,10 +43,10 @@ void AP_Mission::init()
 
     // prevent an easy programming error, this will be optimised out
     if (sizeof(union Content) != 12) {
-        hal.scheduler->panic("AP_Mission Content must be 12 bytes");
+        AP_HAL::panic("AP_Mission Content must be 12 bytes");
     }
 
-    _last_change_time_ms = hal.scheduler->millis();
+    _last_change_time_ms = AP_HAL::millis();
 }
 
 /// start - resets current commands to point to the beginning of the mission
@@ -454,7 +454,7 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
     _storage.write_block(pos_in_storage+3, cmd.content.bytes, 12);
 
     // remember when the mission last changed
-    _last_change_time_ms = hal.scheduler->millis();
+    _last_change_time_ms = AP_HAL::millis();
 
     // return success
     return true;

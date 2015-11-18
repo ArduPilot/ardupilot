@@ -37,7 +37,7 @@ void AP_BattMonitor_SMBus_I2C::read()
 {
     uint16_t data;
     uint8_t buff[4];
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
 
     // read voltage
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {

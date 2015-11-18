@@ -33,7 +33,7 @@ I2CDriver::I2CDriver(AP_HAL::Semaphore* semaphore, const char *device) :
 
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     if (!((Util*)hal.util)->is_chardev_node(_device))
-        hal.scheduler->panic("I2C device is not a chardev node");
+        AP_HAL::panic("I2C device is not a chardev node");
 #endif
 }
 
@@ -51,7 +51,7 @@ I2CDriver::I2CDriver(AP_HAL::Semaphore* semaphore,
 
     d = opendir(dirname);
     if (!d)
-        hal.scheduler->panic("Could not get list of I2C buses");
+        AP_HAL::panic("Could not get list of I2C buses");
 
     for (de = readdir(d); de; de = readdir(d)) {
         const char *p, * const *t;
@@ -85,7 +85,7 @@ I2CDriver::I2CDriver(AP_HAL::Semaphore* semaphore,
     closedir(d);
 
     if (!((Util*)hal.util)->is_chardev_node(_device))
-        hal.scheduler->panic("I2C device is not a chardev node");
+        AP_HAL::panic("I2C device is not a chardev node");
 }
 
 I2CDriver::~I2CDriver()

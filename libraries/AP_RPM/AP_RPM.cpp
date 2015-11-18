@@ -118,7 +118,7 @@ bool AP_RPM::healthy(uint8_t instance) const
         return false;
     }
     // assume we get readings at at least 1Hz
-    if (hal.scheduler->millis() - state[instance].last_reading_ms > 1000) {
+    if (AP_HAL::millis() - state[instance].last_reading_ms > 1000) {
         return false;
     }
     return true;

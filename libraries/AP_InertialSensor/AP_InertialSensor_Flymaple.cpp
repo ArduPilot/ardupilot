@@ -96,7 +96,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     uint8_t data;
     hal.i2c->readRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DEVID, &data);
     if (data != FLYMAPLE_ACCELEROMETER_XL345_DEVID)
-        hal.scheduler->panic("AP_InertialSensor_Flymaple: could not find ADXL345 accelerometer sensor");
+        AP_HAL::panic("AP_InertialSensor_Flymaple: could not find ADXL345 accelerometer sensor");
     hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00);
     hal.scheduler->delay(5);
     hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff);
@@ -118,7 +118,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     // Expect to read the same as the Gyro I2C adress:
     hal.i2c->readRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_WHO_AM_I, &data);
     if (data != FLYMAPLE_GYRO_ADDRESS)
-        hal.scheduler->panic("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor");
+        AP_HAL::panic("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor");
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_PWR_MGM, 0x00);
     hal.scheduler->delay(1);
     // Sample rate divider: with 8kHz internal clock (see FLYMAPLE_GYRO_DLPF_FS), 
@@ -176,7 +176,7 @@ void AP_InertialSensor_Flymaple::accumulate(void)
     // Read accelerometer
     // ADXL345 is in the default FIFO bypass mode, so the FIFO is not used
     uint8_t buffer[6];
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_accel_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
@@ -197,7 +197,7 @@ void AP_InertialSensor_Flymaple::accumulate(void)
     }
 
     // Read gyro
-    now = hal.scheduler->micros();
+    now = AP_HAL::micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_gyro_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)

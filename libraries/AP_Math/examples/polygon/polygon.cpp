@@ -92,7 +92,7 @@ void setup(void)
     hal.console->println(all_passed ? "TEST PASSED" : "TEST FAILED");
 
     hal.console->println("Speed test:");
-    start_time = hal.scheduler->micros();
+    start_time = AP_HAL::micros();
     for (count=0; count<1000; count++) {
         for (i=0; i<ARRAY_SIZE(test_points); i++) {
             bool result;
@@ -103,7 +103,7 @@ void setup(void)
             }
         }
     }
-    hal.console->printf("%u usec/call\n", (unsigned)((hal.scheduler->micros() 
+    hal.console->printf("%u usec/call\n", (unsigned)((AP_HAL::micros()
                     - start_time)/(count*ARRAY_SIZE(test_points))));
     hal.console->println(all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }

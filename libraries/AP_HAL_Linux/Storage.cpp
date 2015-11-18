@@ -35,12 +35,12 @@ void Storage::_storage_create(void)
     unlink(STORAGE_FILE);
     int fd = open(STORAGE_FILE, O_RDWR|O_CREAT, 0666);
     if (fd == -1) {
-        hal.scheduler->panic("Failed to create " STORAGE_FILE);
+        AP_HAL::panic("Failed to create " STORAGE_FILE);
     }
     for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
         if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
             perror("write");
-            hal.scheduler->panic("Error filling " STORAGE_FILE);            
+            AP_HAL::panic("Error filling " STORAGE_FILE);
         }
     }
     // ensure the directory is updated with the new size
@@ -60,7 +60,7 @@ void Storage::_storage_open(void)
         _storage_create();
         fd = open(STORAGE_FILE, O_RDWR);
         if (fd == -1) {
-            hal.scheduler->panic("Failed to open " STORAGE_FILE);
+            AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
     }
     memset(_buffer, 0, sizeof(_buffer));
@@ -71,7 +71,7 @@ void Storage::_storage_open(void)
     ssize_t ret = read(fd, _buffer, sizeof(_buffer));
     if (ret == 4096 && ret != sizeof(_buffer)) {
         if (ftruncate(fd, sizeof(_buffer)) != 0) {
-            hal.scheduler->panic("Failed to expand " STORAGE_FILE);            
+            AP_HAL::panic("Failed to expand " STORAGE_FILE);
         }
         ret = sizeof(_buffer);
     }
@@ -80,10 +80,10 @@ void Storage::_storage_open(void)
         _storage_create();
         fd = open(STORAGE_FILE, O_RDONLY);
         if (fd == -1) {
-            hal.scheduler->panic("Failed to open " STORAGE_FILE);
+            AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
         if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            hal.scheduler->panic("Failed to read " STORAGE_FILE);
+            AP_HAL::panic("Failed to read " STORAGE_FILE);
         }
     }
     close(fd);

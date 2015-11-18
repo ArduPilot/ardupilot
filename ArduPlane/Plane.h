@@ -969,8 +969,6 @@ private:
     void run_cli(AP_HAL::UARTDriver *port);
     bool restart_landing_sequence();
     void log_init();
-    uint32_t millis() const;
-    uint32_t micros() const;
     void init_capabilities(void);
     void dataflash_periodic(void);
     uint16_t throttle_min(void) const;
@@ -1016,5 +1014,8 @@ public:
 
 extern const AP_HAL::HAL& hal;
 extern Plane plane;
+
+using AP_HAL::millis;
+using AP_HAL::micros;
 
 #endif // _PLANE_H_

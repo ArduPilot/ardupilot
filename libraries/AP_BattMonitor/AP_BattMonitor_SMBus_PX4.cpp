@@ -66,7 +66,7 @@ void AP_BattMonitor_SMBus_PX4::read()
         if (OK == orb_copy(ORB_ID(battery_status), _batt_sub, &batt_status)) {
             _state.voltage = batt_status.voltage_v;
             _state.current_amps = batt_status.current_a;
-            _state.last_time_micros = hal.scheduler->micros();
+            _state.last_time_micros = AP_HAL::micros();
             _state.current_total_mah = batt_status.discharged_mah;
             _state.healthy = true;
 
@@ -81,7 +81,7 @@ void AP_BattMonitor_SMBus_PX4::read()
         }
     } else if (_state.healthy) {
         // timeout after 5 seconds
-        if ((hal.scheduler->micros() - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
+        if ((AP_HAL::micros() - _state.last_time_micros) > AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) {
             _state.healthy = false;
         }
     }

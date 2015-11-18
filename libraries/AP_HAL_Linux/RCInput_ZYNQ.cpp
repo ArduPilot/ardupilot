@@ -25,7 +25,7 @@ void RCInput_ZYNQ::init(void*)
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/mem");
+        AP_HAL::panic("Unable to open /dev/mem");
     }
     pulse_input = (volatile uint32_t*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, 
                                                       MAP_SHARED, mem_fd, RCIN_ZYNQ_PULSE_INPUT_BASE);

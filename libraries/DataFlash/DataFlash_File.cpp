@@ -918,7 +918,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
 void DataFlash_File::flush(void)
 {
     uint16_t _tail;
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
     hal.scheduler->suspend_timer_procs();
     while (_write_fd != -1 && _initialised && !_open_error &&
            BUF_AVAILABLE(_writebuf)) {
@@ -945,7 +945,7 @@ void DataFlash_File::_io_timer(void)
     if (nbytes == 0) {
         return;
     }
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
     if (nbytes < _writebuf_chunk && 
         tnow - _last_write_time < 2000000UL) {
         // write in _writebuf_chunk-sized chunks, but always write at

@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 */
 int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;

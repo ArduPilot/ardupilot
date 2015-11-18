@@ -125,7 +125,7 @@ void Rover::read_radio()
         return;
     }
 
-    failsafe.last_valid_rc_ms = hal.scheduler->millis();
+    failsafe.last_valid_rc_ms = AP_HAL::millis();
 
     RC_Channel::set_pwm_all();
 
@@ -190,7 +190,7 @@ void Rover::control_failsafe(uint16_t pwm)
         failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
 	} else if (g.fs_throttle_enabled) {
         bool failed = pwm < (uint16_t)g.fs_throttle_value;
-        if (hal.scheduler->millis() - failsafe.last_valid_rc_ms > 2000) {
+        if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
             failed = true;
         }
         failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);

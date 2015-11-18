@@ -66,13 +66,13 @@ bool AP_IRLock_PX4::update()
         _target_info[count].size_y = report.size_y;
         count++;
         _last_timestamp = report.timestamp;
-        _last_update = hal.scheduler->millis();
+        _last_update = AP_HAL::millis();
     }
 
     // update num_blocks and implement timeout
     if (count > 0) {
         _num_targets = count;
-    } else if ((hal.scheduler->millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
+    } else if ((AP_HAL::millis() - _last_update) > IRLOCK_TIMEOUT_MS) {
         _num_targets = 0;
     }
 

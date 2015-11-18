@@ -86,7 +86,7 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == NULL) {
-                hal.scheduler->panic("Invalid tcp client path: %s", path);                
+                AP_HAL::panic("Invalid tcp client path: %s", path);
             }
             uint16_t port = atoi(args2);
             _tcp_start_client(args1, port);
@@ -95,7 +95,7 @@ void SITLUARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             ::printf("UART connection %s:%u\n", args1, baudrate);
             _uart_start_connection(args1, baudrate);
         } else {
-            hal.scheduler->panic("Invalid device path: %s", path);
+            AP_HAL::panic("Invalid device path: %s", path);
         }
         free(s);
     }
@@ -363,7 +363,7 @@ void SITLUARTDriver::_uart_start_connection(const char *path, uint32_t baudrate)
     }
 
     if (_fd == -1) {
-        hal.scheduler->panic("Unable to open UART %s", path);
+        AP_HAL::panic("Unable to open UART %s", path);
     }
 
     // set non-blocking

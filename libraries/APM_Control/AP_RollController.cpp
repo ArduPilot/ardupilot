@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 */
 int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;

@@ -61,7 +61,7 @@ void AP_Scheduler::tick(void)
  */
 void AP_Scheduler::run(uint16_t time_available)
 {
-    uint32_t run_started_usec = hal.scheduler->micros();
+    uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;
 
     for (uint8_t i=0; i<_num_tasks; i++) {
@@ -97,7 +97,7 @@ void AP_Scheduler::run(uint16_t time_available)
                 _last_run[i] = _tick_counter;
                 
                 // work out how long the event actually took
-                now = hal.scheduler->micros();
+                now = AP_HAL::micros();
                 uint32_t time_taken = now - _task_time_started;
                 
                 if (time_taken > _task_time_allowed) {
@@ -134,7 +134,7 @@ update_spare_ticks:
  */
 uint16_t AP_Scheduler::time_available_usec(void)
 {
-    uint32_t dt = hal.scheduler->micros() - _task_time_started;
+    uint32_t dt = AP_HAL::micros() - _task_time_started;
     if (dt > _task_time_allowed) {
         return 0;
     }

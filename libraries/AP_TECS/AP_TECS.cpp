@@ -225,7 +225,7 @@ void AP_TECS::update_50hz(float hgt_afe)
     }
 
     // Calculate time in seconds since last update
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
     if (DT > 1.0f) {
         _climb_rate = 0.0f;
@@ -283,7 +283,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 void AP_TECS::_update_speed(float load_factor)
 {
     // Calculate time in seconds since last update
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float DT = max((now - _update_speed_last_usec),0)*1.0e-6f;
     _update_speed_last_usec = now;
 
@@ -793,7 +793,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     float load_factor)
 {
     // Calculate time in seconds since last update
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     _DT = max((now - _update_pitch_throttle_last_usec),0)*1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
@@ -907,7 +907,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     log_tuning.thr      = _throttle_dem;
     log_tuning.ptch     = _pitch_dem;
     log_tuning.dspd_dem = _TAS_rate_dem;
-    log_tuning.time_us  = hal.scheduler->micros64();
+    log_tuning.time_us  = AP_HAL::micros64();
 }
 
 // log the contents of the log_tuning structure to dataflash

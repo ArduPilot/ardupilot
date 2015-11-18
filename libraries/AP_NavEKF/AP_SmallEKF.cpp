@@ -47,7 +47,7 @@ SmallEKF::SmallEKF(const AP_AHRS_NavEKF &ahrs) :
 // run a 9-state EKF used to calculate orientation
 void SmallEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles)
 {
-    imuSampleTime_ms = hal.scheduler->millis();
+    imuSampleTime_ms = AP_HAL::millis();
     dtIMU = delta_time;
 
     // initialise variables and constants
@@ -882,7 +882,7 @@ void SmallEKF::getQuat(Quaternion &quat) const
 // get filter status - true is aligned
 bool SmallEKF::getStatus() const
 {
-    float run_time = hal.scheduler->millis() - StartTime_ms;
+    float run_time = AP_HAL::millis() - StartTime_ms;
     return  YawAligned && (run_time > 30000);
 }
 

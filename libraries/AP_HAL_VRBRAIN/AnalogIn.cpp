@@ -194,7 +194,7 @@ void VRBRAINAnalogIn::init(void* machtnichts)
 {
 	_adc_fd = open(ADC_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
-        hal.scheduler->panic("Unable to open " ADC_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " ADC_DEVICE_PATH);
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
@@ -215,7 +215,7 @@ void VRBRAINAnalogIn::next_stop_pin(void)
         VRBRAIN::VRBRAINAnalogSource *c = _channels[idx];
         if (c && c->_stop_pin != -1) {
             // found another stop pin
-            _stop_pin_change_time = hal.scheduler->millis();
+            _stop_pin_change_time = AP_HAL::millis();
             _current_stop_pin_i = idx;
 
             // set that pin high
@@ -241,7 +241,7 @@ void VRBRAINAnalogIn::next_stop_pin(void)
 void VRBRAINAnalogIn::_timer_tick(void)
 {
     // read adc at 100Hz
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     uint32_t delta_t = now - _last_run;
     if (delta_t < 10000) {
         return;
@@ -271,7 +271,7 @@ void VRBRAINAnalogIn::_timer_tick(void)
                     // the stop pin has been settling for enough time
                     if (c->_stop_pin == -1 || 
                         (_current_stop_pin_i == j &&
-                         hal.scheduler->millis() - _stop_pin_change_time > c->_settle_time_ms)) {
+                         AP_HAL::millis() - _stop_pin_change_time > c->_settle_time_ms)) {
                         c->_add_value(buf_adc[i].am_data, _board_voltage);
                         if (c->_stop_pin != -1 && _current_stop_pin_i == j) {
                             next_stop_pin();

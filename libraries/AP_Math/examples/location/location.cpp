@@ -66,10 +66,10 @@ static void test_one_offset(const struct Location &loc,
     float dist2, bearing2;
 
     loc2 = loc;
-    uint32_t t1 = hal.scheduler->micros();
+    uint32_t t1 = AP_HAL::micros();
     location_offset(loc2, ofs_north, ofs_east);
     hal.console->printf("location_offset took %u usec\n",
-                        (unsigned)(hal.scheduler->micros() - t1));
+                        (unsigned)(AP_HAL::micros() - t1));
     dist2 = get_distance(loc, loc2);
     bearing2 = get_bearing_cd(loc, loc2) * 0.01f;
     float brg_error = bearing2-bearing;

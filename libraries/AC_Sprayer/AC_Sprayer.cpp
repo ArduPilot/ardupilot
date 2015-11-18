@@ -116,7 +116,7 @@ AC_Sprayer::update()
     ground_speed = pythagorous2(velocity.x,velocity.y);
 
     // get the current time
-    now = hal.scheduler->millis();
+    now = AP_HAL::millis();
 
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
