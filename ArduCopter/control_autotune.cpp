@@ -243,7 +243,7 @@ bool Copter::autotune_start(bool ignore_checks)
         return false;
     }
 
-    // initialize vertical speeds and acceleration
+    // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
 
@@ -1023,7 +1023,7 @@ void Copter::autotune_update_gcs(uint8_t message_id)
             gcs_send_text(MAV_SEVERITY_NOTICE,"AutoTune: Failed");
             break;
         case AUTOTUNE_MESSAGE_SAVED_GAINS:
-            gcs_send_text(MAV_SEVERITY_INFO,"AutoTune: Saved Gains");
+            gcs_send_text(MAV_SEVERITY_INFO,"AutoTune: Saved gains");
             break;
     }
 }

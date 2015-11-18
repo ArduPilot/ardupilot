@@ -86,7 +86,7 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety Switch");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
         return false;
     }
 
