@@ -342,6 +342,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     // reset crash detection
     crash_state.is_crashed = false;
+    crash_state.impact_detected = false;
 
     // set mode
     previous_mode = control_mode;
