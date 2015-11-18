@@ -56,7 +56,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool report)
         plane.g.throttle_fs_value < 
         plane.channel_throttle->radio_max) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: invalid THR_FS_VALUE for rev throttle");        
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Invalid THR_FS_VALUE for rev throttle");
         }
         ret = false;
     }

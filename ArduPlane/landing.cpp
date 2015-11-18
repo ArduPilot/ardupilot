@@ -139,7 +139,7 @@ void Plane::disarm_if_autoland_complete()
         /* we have auto disarm enabled. See if enough time has passed */
         if (millis() - auto_state.last_flying_ms >= g.land_disarm_delay*1000UL) {
             if (disarm_motors()) {
-                gcs_send_text(MAV_SEVERITY_INFO,"Auto-Disarmed");
+                gcs_send_text(MAV_SEVERITY_INFO,"Auto disarmed");
             }
         }
     }
@@ -260,7 +260,7 @@ bool Plane::restart_landing_sequence()
             mission.set_current_cmd(current_index+1))
     {
         // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence climbing to %dm", cmd.content.location.alt/100);
+        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
         success =  true;
     }
     else if (do_land_start_index != 0 &&
@@ -278,7 +278,7 @@ bool Plane::restart_landing_sequence()
         gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
         success =  true;
     } else {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence!");
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
         success =  false;
     }
     return success;
@@ -301,12 +301,12 @@ bool Plane::jump_to_landing_sequence(void)
                 mission.resume();
             }
 
-            gcs_send_text(MAV_SEVERITY_INFO, "Landing sequence begun.");
+            gcs_send_text(MAV_SEVERITY_INFO, "Landing sequence start");
             return true;
         }            
     }
 
-    gcs_send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence.");
+    gcs_send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
     return false;
 }
 
