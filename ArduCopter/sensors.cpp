@@ -4,13 +4,13 @@
 
 void Copter::init_barometer(bool full_calibration)
 {
-    gcs_send_text(MAV_SEVERITY_NOTICE, "Calibrating barometer");
+    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     if (full_calibration) {
         barometer.calibrate();
     }else{
         barometer.update_calibration();
     }
-    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
+    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 // return barometric altitude in centimeters

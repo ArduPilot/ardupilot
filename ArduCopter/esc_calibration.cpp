@@ -39,7 +39,7 @@ void Copter::esc_calibration_startup_check()
                 // we will enter esc_calibrate mode on next reboot
                 g.esc_calibrate.set_and_save(ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
                 // send message to gcs
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"ESC Calibration: restart board");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"ESC calibration: Restart board");
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
@@ -85,7 +85,7 @@ void Copter::esc_calibration_passthrough()
     motors.set_update_rate(50);
 
     // send message to GCS
-    gcs_send_text(MAV_SEVERITY_INFO,"ESC Calibration: passing pilot throttle to ESCs");
+    gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
     while(1) {
         // arm motors
@@ -115,7 +115,7 @@ void Copter::esc_calibration_auto()
     motors.set_update_rate(50);
 
     // send message to GCS
-    gcs_send_text(MAV_SEVERITY_INFO,"ESC Calibration: auto calibration");
+    gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
 
     // arm and enable motors
     motors.armed(true);
@@ -131,7 +131,7 @@ void Copter::esc_calibration_auto()
     // wait for safety switch to be pressed
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (!printed_msg) {
-            gcs_send_text(MAV_SEVERITY_INFO,"ESC Calibration: push safety switch");
+            gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
             printed_msg = true;
         }
         delay(10);
