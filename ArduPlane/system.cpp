@@ -342,6 +342,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     // reset crash detection
     crash_state.is_crashed = false;
+    crash_state.impact_detected = false;
 
     // always reset this because we don't know who called set_mode. In evasion
     // behavior you should set this flag after set_mode so you know the evasion
