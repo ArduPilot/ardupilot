@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
     // @Param: MAX_ROLL
     // @DisplayName: Maximum photo roll angle.
-    // @Description: Postpone shooting if roll is greater than limit.
+    // @Description: Postpone shooting if roll is greater than limit. (0=Disable, will shoot regardless of roll).
     // @User: Standard
     // @Units: Degrees
     // @Range: 0 180
@@ -264,7 +264,7 @@ bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
         return false;
     }
 
-    if ((unsigned) ahrs.roll_sensor/100.0f > _max_roll) {
+    if (_max_roll > 0 && ((unsigned) ahrs.roll_sensor/100.0f > _max_roll)) {
         return false;
     }
 
