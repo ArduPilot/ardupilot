@@ -6,7 +6,7 @@ void Rover::init_barometer(void)
 {
     gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
     barometer.calibrate();
-    gcs_send_text(MAV_SEVERITY_INFO, "barometer calibration complete");
+    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 }
 
 void Rover::init_sonar(void)
@@ -83,7 +83,7 @@ void Rover::read_sonars(void)
                 obstacle.detected_count++;
             }
             if (obstacle.detected_count == g.sonar_debounce) {
-                gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Sonar obstacle %u cm",
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Sonar obstacle %u cm",
                                   (unsigned)obstacle.sonar1_distance_cm);
             }
             obstacle.detected_time_ms = AP_HAL::millis();
