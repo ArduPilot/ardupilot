@@ -1,5 +1,13 @@
 APM:Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.3.2-rc2 18-Nov-2015
+Changes from 3.3.2-rc1
+1) Bug fix for desired climb rate initialisation that could lead to drop when entering AltHold, Loiter, PosHold
+2) Fix to hard landings when WPNAV_SPEED_DN set high in RTL, Auto (resolved by using non-feedforward alt hold)
+3) Reduce Bad AHRS by filtering innovations
+4) Allow arming without GPS if using Optical Flow
+5) Smoother throttle output in Guided mode's velocity control (z-axis now 400hz) 
+------------------------------------------------------------------
 Copter 3.3.2-rc1 4-Nov-2015
 Changes from 3.3.1
 1) Helicopter Improvements:
