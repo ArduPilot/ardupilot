@@ -13,6 +13,9 @@ bool Copter::acro_init(bool ignore_checks)
    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
        return false;
    }
+   // set target altitude to zero for reporting
+   pos_control.set_alt_target(0);
+
    return true;
 }
 
