@@ -224,9 +224,9 @@ void Plane::crash_detection_update(void)
 
         if (g.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected - no action taken");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected - no action taken");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
             }
         }
         else {
@@ -235,9 +235,9 @@ void Plane::crash_detection_update(void)
             }
             auto_state.land_complete = true;
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
             }
         }
     }
