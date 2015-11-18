@@ -129,3 +129,18 @@ bool AP_RPM::healthy(uint8_t instance) const
     }
     return true;
 }
+
+/*
+  check if an instance is activated
+ */
+bool AP_RPM::enabled(uint8_t instance) const
+{
+    if (instance >= num_instances) {
+        return false;
+    }
+    // if no sensor type is selected, the sensor is not activated.
+    if (_type[instance] == RPM_TYPE_NONE) {
+        return false;
+    }
+    return true;
+}
