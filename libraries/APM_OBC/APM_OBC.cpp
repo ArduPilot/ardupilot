@@ -131,7 +131,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     // we always check for fence breach
     if (geofence_breached || check_altlimit()) {
         if (!_terminate) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence TERMINATE");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Fence terminate");
             _terminate.set(1);
         }
     }
@@ -206,7 +206,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // losing GPS lock when data link is lost
             // leads to termination
             if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss TERMINATE");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Dual loss terminate");
                 _terminate.set(1);
             }
         } else if (gcs_link_ok) {
@@ -227,7 +227,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
             // losing GCS link when GPS lock lost
             // leads to termination
             if (!_terminate) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss TERMINATE");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Dual loss terminate");
                 _terminate.set(1);
             }
         } else if (gps_lock_ok) {
