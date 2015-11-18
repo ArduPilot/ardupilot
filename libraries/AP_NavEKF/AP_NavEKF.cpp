@@ -5003,6 +5003,12 @@ void NavEKF::performArmingChecks()
             meaHgtAtTakeOff = hgtMea;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             state.position.z = -hgtMea;
+            // Reset the Z delta velocity bias  covariance.
+            // This is necessary becasue vertical GPS speed errors can offset the bias state, causing a
+            // vertical innovation offset after disarming, failing health checks and delaying re-arming.
+            zeroRows(P,13,13);
+            zeroCols(P,13,13);
+            P[13][13] = 0.5f * sq(INIT_ACCEL_BIAS_UNCERTAINTY * dtIMUavg);
             // record the time we disarmed
             timeAtDisarm_ms = imuSampleTime_ms;
             // if the GPS is not glitching when we land, we reset the timer used to check GPS quality
