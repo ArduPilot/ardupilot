@@ -878,7 +878,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             uint8_t result = MAV_RESULT_UNSUPPORTED;
 
             // do command
-            send_text(MAV_SEVERITY_INFO,"command received: ");
+            send_text(MAV_SEVERITY_INFO,"Command received: ");
 
             switch(packet.command) {
 
@@ -1382,7 +1382,7 @@ void Rover::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM...");
+        gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     check_usb_mux();
 
