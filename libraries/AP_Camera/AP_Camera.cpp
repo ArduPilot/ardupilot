@@ -70,7 +70,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @User: Standard
     // @Units: Degrees
     // @Range: 0 180
-    AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 45),
+    AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
 
     AP_GROUPEND
 };
