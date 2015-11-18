@@ -101,7 +101,7 @@ void NavEKF2_core::ResetHeight(void)
     } else if (onGround) {
         stateStruct.velocity.z = 0.0f;
     }
-    for (uint8_t i=0; i<IMU_BUFFER_LENGTH; i++) {
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].velocity.z = stateStruct.velocity.z;
     }
     outputDataNew.velocity.z = stateStruct.velocity.z;
