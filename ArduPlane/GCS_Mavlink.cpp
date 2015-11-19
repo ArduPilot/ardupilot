@@ -1899,6 +1899,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                                 (uint32_t)(new_home_loc.alt*0.01f));
         break;
     }
+
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+        plane.adsb.update_vehicle(msg);
+        break;
     } // end switch
 } // end handle mavlink
 

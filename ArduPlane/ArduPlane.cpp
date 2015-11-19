@@ -84,6 +84,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(terrain_update,          5,    500),
     SCHED_TASK(update_is_flying_5Hz,   10,    100),
     SCHED_TASK(dataflash_periodic,      1,    300),
+    SCHED_TASK(adsb_update,            50,    500),
 };
 
 void Plane::setup() 
@@ -359,6 +360,7 @@ void Plane::terrain_update(void)
     terrain.update();
 #endif
 }
+
 
 void Plane::dataflash_periodic(void)
 {
