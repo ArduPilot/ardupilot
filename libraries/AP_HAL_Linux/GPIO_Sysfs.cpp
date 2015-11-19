@@ -78,8 +78,8 @@ void GPIO_Sysfs::pinMode(uint8_t vpin, uint8_t output)
 {
     assert_vpin(vpin, n_pins);
 
-    unsigned pin = pin_table[vpin];
-    _pinMode(pin, output);
+    _export_pin(vpin);
+    _pinMode(pin_table[vpin], output);
 }
 
 void GPIO_Sysfs::_pinMode(unsigned int pin, uint8_t output)
@@ -178,7 +178,7 @@ AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
     unsigned pin = pin_table[vpin];
     int value_fd = -1;
 
-    if (export_pin(vpin)) {
+    if (_export_pin(vpin)) {
         char value_path[PATH_MAX];
         snprintf(value_path, PATH_MAX, GPIO_PATH_FORMAT "/value", pin);
 
@@ -205,13 +205,13 @@ bool GPIO_Sysfs::usb_connected(void)
     return false;
 }
 
-bool GPIO_Sysfs::export_pin(uint8_t vpin)
+bool GPIO_Sysfs::_export_pin(uint8_t vpin)
 {
     uint8_t vpins[] = { vpin };
-    return export_pins(vpins, 1);
+    return _export_pins(vpins, 1);
 }
 
-bool GPIO_Sysfs::export_pins(uint8_t vpins[], size_t len)
+bool GPIO_Sysfs::_export_pins(uint8_t vpins[], size_t len)
 {
     int fd = open("/sys/class/gpio/export", O_WRONLY | O_CLOEXEC);
     if (fd < 0) {
