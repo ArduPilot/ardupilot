@@ -55,6 +55,14 @@ extern const AP_HAL::HAL& hal;
 #define ADDR_CMD_CONVERT_D1			ADDR_CMD_CONVERT_D1_OSR1024
 #define ADDR_CMD_CONVERT_D2			ADDR_CMD_CONVERT_D2_OSR1024
 
+/* MS5611 and MS5607 CRC location */
+#define MS56XX_CRC_INDEX 7
+#define MS56XX_CRC_MASK 0x000F
+
+/* MS5637 CRC location */
+#define MS5637_CRC_INDEX 0
+#define MS5637_CRC_MASK 0xF000
+
 // SPI Device //////////////////////////////////////////////////////////////////
 
 AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDevice device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
@@ -174,7 +182,7 @@ void AP_SerialBus_I2C::sem_give()
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer) :
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer, uint8_t crc_index, uint16_t crc_mask) :
     AP_Baro_Backend(baro),
     _serial(serial),
     _updated(false),
@@ -207,8 +215,8 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
     _C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
 
-    if (!_check_crc()) {
-        hal.scheduler->panic("Bad CRC on MS5611");
+    if (!_check_crc(crc_index, crc_mask)) {
+        hal.scheduler->panic("Bad CRC on MS56XX");
     }
 
     // Send a command to read Temp first
@@ -233,36 +241,22 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
 /**
  * MS5611 crc4 method based on PX4Firmware code
  */
-bool AP_Baro_MS56XX::_check_crc(void)
+static uint16_t calculate_crc(uint16_t *data)
 {
-    int16_t cnt;
-    uint16_t n_rem;
-    uint16_t crc_read;
+    uint16_t n_rem = 0;
     uint8_t n_bit;
-    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
-                           _C1, _C2, _C3, _C4, _C5, _C6,
-                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
-    n_rem = 0x00;
 
-    /* save the read crc */
-    crc_read = n_prom[7];
-
-    /* remove CRC byte */
-    n_prom[7] = (0xFF00 & (n_prom[7]));
-
-    for (cnt = 0; cnt < 16; cnt++) {
+    for (uint8_t cnt = 0; cnt < 16; cnt++) {
         /* uneven bytes */
         if (cnt & 1) {
-            n_rem ^= (uint8_t)((n_prom[cnt >> 1]) & 0x00FF);
-
+            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
         } else {
-            n_rem ^= (uint8_t)(n_prom[cnt >> 1] >> 8);
+            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
         }
 
         for (n_bit = 8; n_bit > 0; n_bit--) {
             if (n_rem & 0x8000) {
                 n_rem = (n_rem << 1) ^ 0x3000;
-
             } else {
                 n_rem = (n_rem << 1);
             }
@@ -270,13 +264,25 @@ bool AP_Baro_MS56XX::_check_crc(void)
     }
 
     /* final 4 bit remainder is CRC value */
-    n_rem = (0x000F & (n_rem >> 12));
-    n_prom[7] = crc_read;
-
-    /* return true if CRCs match */
-    return (0x000F & crc_read) == (n_rem ^ 0x00);
+    return (n_rem >> 12) & 0xF;
 }
 
+bool AP_Baro_MS56XX::_check_crc(const uint8_t crc_reg_index, const uint16_t crc_mask_on_reg)
+{
+    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
+                           _C1, _C2, _C3, _C4, _C5, _C6,
+                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
+
+    const uint8_t shift = sizeof(unsigned int) * 8 - __builtin_clz(crc_mask_on_reg) - 4;
+    /* save the read crc */
+    const uint16_t crc_read = (n_prom[crc_reg_index] >> shift) & 0xF;
+
+    /* remove CRC byte */
+    n_prom[crc_reg_index] &= ~crc_mask_on_reg;
+
+    /* return true if CRCs match */
+    return crc_read == calculate_crc(n_prom);
+}
 
 /*
   Read the sensor. This is a state machine
@@ -388,7 +394,7 @@ void AP_Baro_MS56XX::update()
 
 /* MS5611 class */
 AP_Baro_MS5611::AP_Baro_MS5611(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
+    :AP_Baro_MS56XX(baro, serial, use_timer, MS56XX_CRC_INDEX, MS56XX_CRC_MASK)
 {}
 
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
@@ -428,7 +434,7 @@ void AP_Baro_MS5611::_calculate()
 
 /* MS5607 Class */
 AP_Baro_MS5607::AP_Baro_MS5607(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    :AP_Baro_MS56XX(baro, serial, use_timer)
+    :AP_Baro_MS56XX(baro, serial, use_timer, MS56XX_CRC_INDEX, MS56XX_CRC_MASK)
 {}
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5607::_calculate()
@@ -467,7 +473,7 @@ void AP_Baro_MS5607::_calculate()
 
 /* MS563 Class */
 AP_Baro_MS5637::AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer)
-    : AP_Baro_MS56XX(baro, serial, use_timer)
+    : AP_Baro_MS56XX(baro, serial, use_timer, MS5637_CRC_INDEX, MS5637_CRC_MASK)
 {
 }
 

@@ -75,7 +75,7 @@ private:
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
-    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
+    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer, uint8_t crc_index, uint16_t crc_mask);
     void update();
     void accumulate();
 
@@ -83,7 +83,7 @@ private:
     virtual void _calculate() = 0;
     AP_SerialBus *_serial;
 
-    bool _check_crc();
+    bool _check_crc(const uint8_t crc_reg_index, const uint16_t crc_mask_on_reg);
 
     void _timer();
 
