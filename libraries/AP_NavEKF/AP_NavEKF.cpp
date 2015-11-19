@@ -455,7 +455,7 @@ bool NavEKF::healthy(void) const
     }
     // barometer and position innovations must be within limits when on-ground
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
-    if (!vehicleArmed && (!hgtHealth || fabsf(hgtInnovFiltState) > 1.0f || horizErrSq > 2.0f)) {
+    if (!vehicleArmed && ((fabsf(hgtInnovFiltState) > 1.0f) || (horizErrSq > 2.0f))) {
         return false;
     }
 
