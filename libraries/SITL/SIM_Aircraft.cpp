@@ -55,22 +55,13 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     min_sleep_time(5000)
 #endif
 {
-    char *saveptr=NULL;
-    char *s = strdup(home_str);
-    char *lat_s = strtok_r(s, ",", &saveptr);
-    char *lon_s = strtok_r(NULL, ",", &saveptr);
-    char *alt_s = strtok_r(NULL, ",", &saveptr);
-    char *yaw_s = strtok_r(NULL, ",", &saveptr);
+    float yaw_degrees;
 
-    memset(&home, 0, sizeof(home));
-    home.lat = atof(lat_s) * 1.0e7;
-    home.lng = atof(lon_s) * 1.0e7;
-    home.alt = atof(alt_s) * 1.0e2;
+    parse_home(home_str, home, yaw_degrees);
     location = home;
     ground_level = home.alt*0.01;
 
-    dcm.from_euler(0, 0, radians(atof(yaw_s)));
-    free(s);
+    dcm.from_euler(0, 0, radians(yaw_degrees));
 
     set_speedup(1);
 
@@ -78,6 +69,45 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     frame_counter = 0;
 }
 
+
+/*
+  parse a home string into a location and yaw
+ */
+bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degrees)
+{
+    char *saveptr=NULL;
+    char *s = strdup(home_str);
+    if (!s) {
+        return false;
+    }
+    char *lat_s = strtok_r(s, ",", &saveptr);
+    if (!lat_s) {
+        return false;
+    }
+    char *lon_s = strtok_r(NULL, ",", &saveptr);
+    if (!lon_s) {
+        return false;
+    }
+    char *alt_s = strtok_r(NULL, ",", &saveptr);
+    if (!alt_s) {
+        return false;
+    }
+    char *yaw_s = strtok_r(NULL, ",", &saveptr);
+    if (!yaw_s) {
+        return false;
+    }
+
+    memset(&loc, 0, sizeof(loc));
+    loc.lat = atof(lat_s) * 1.0e7;
+    loc.lng = atof(lon_s) * 1.0e7;
+    loc.alt = atof(alt_s) * 1.0e2;
+
+    yaw_degrees = atof(yaw_s);
+    free(s);
+
+    return true;
+}
+    
 /*
    return true if we are on the ground
 */
