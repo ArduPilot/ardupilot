@@ -32,6 +32,8 @@
 #include <errno.h>
 #include <math.h>
 
+#define PWM_LOGGING 0
+
 extern const AP_HAL::HAL& hal;
 
 /* 
@@ -53,6 +55,10 @@ AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
         _fd = -1;
         return;
     }
+
+#if PWM_LOGGING
+    _logfd = open("/fs/microsd/pwm.log", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+#endif
 }
 
 /* 
@@ -88,6 +94,14 @@ void AP_RPM_PX4_PWM::update(void)
             sum += rpm;
             count++;
         }
+#if PWM_LOGGING
+        if (_logfd != -1) {
+            dprintf(_logfd, "%u %u %u\n",
+                    (unsigned)pwm.timestamp/1000,
+                    (unsigned)pwm.period,
+                    (unsigned)pwm.pulse_width);
+        }
+#endif
     }
 
     if (count != 0) {

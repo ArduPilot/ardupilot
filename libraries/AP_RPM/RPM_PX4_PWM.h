@@ -34,6 +34,7 @@ public:
 
 private:
     int _fd = -1;
+    int _logfd = -1;
     uint64_t _last_timestamp = 0;
 };
 
