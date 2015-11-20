@@ -73,12 +73,12 @@ void setup (void) {
     AP_HAL::SPIDeviceDriver *dataflash = hal.spi->device(AP_HAL::SPIDevice_Dataflash); // not really
 
     if (dataflash == NULL) {
-        hal.scheduler->panic("Error: No SPIDeviceDriver!");
+        AP_HAL::panic("Error: No SPIDeviceDriver!");
     }
    
     sem = dataflash->get_semaphore();
     if (sem == NULL) {
-        hal.scheduler->panic("Error: No SPIDeviceDriver semaphore!");
+        AP_HAL::panic("Error: No SPIDeviceDriver semaphore!");
     }
 
     hal.scheduler->register_timer_process(async_blinker);
