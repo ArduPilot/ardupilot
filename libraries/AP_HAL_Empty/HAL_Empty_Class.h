@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_CLASS_H__
-#define __AP_HAL_EMPTY_CLASS_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -14,8 +12,3 @@ public:
 private:
     Empty::EmptyPrivateMember *_member;
 };
-
-extern const HAL_Empty AP_HAL_Empty;
-
-#endif // __AP_HAL_EMPTY_CLASS_H__
-
