@@ -254,6 +254,15 @@ void NavEKF2_core::InitialiseVariables()
     imuDataDownSampledNew.delVelDT = 0.0f;
     runUpdates = false;
     framesSincePredict = 0;
+
+    // zero data buffers
+    storedIMU.reset();
+    storedGPS.reset();
+    storedMag.reset();
+    storedBaro.reset();
+    storedTAS.reset();
+    storedRange.reset();
+    storedOutput.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -273,7 +282,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
     dtEkfAvg = min(0.01f,dtIMUavg);
     readIMUData();
-    storedIMU.reset_history(imuDataNew, imuSampleTime_ms);
+    storedIMU.reset_history(imuDataNew);
     imuDataDelayed = imuDataNew;
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
@@ -580,11 +589,11 @@ void  NavEKF2_core::calcOutputStatesFast() {
 
     // store the output in the FIFO buffer if this is a filter update step
     if (runUpdates) {
-        storedOutput[storedIMU.get_head()] = outputDataNew;
+        storedOutput[storedIMU.get_youngest_index()] = outputDataNew;
     }
 
     // extract data at the fusion time horizon from the FIFO buffer
-    outputDataDelayed = storedOutput[storedIMU.get_tail()];
+    outputDataDelayed = storedOutput[storedIMU.get_oldest_index()];
 
     // compare quaternion data with EKF quaternion at the fusion time horizon and calculate correction
 

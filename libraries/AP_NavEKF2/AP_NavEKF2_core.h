@@ -31,6 +31,7 @@
 #include "AP_NavEKF2.h"
 #include <stdio.h>
 #include <AP_Math/vectorN.h>
+#include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -41,119 +42,6 @@
 #define MASK_GPS_POS_DRIFT  (1<<5)
 #define MASK_GPS_VERT_SPD   (1<<6)
 #define MASK_GPS_HORIZ_SPD  (1<<7)
-
-
-template <typename element_type>
-class timed_ring_buffer_t
-{
-public:
-    struct element_t{
-        element_type element;
-        uint32_t sample_time;
-    } *buffer;
-
-    bool init(uint32_t size)
-    {
-        buffer = new element_t[size];
-        memset(buffer,0,_size*sizeof(element_t));
-        if(buffer == NULL)
-        {
-            return false;
-        }
-        _size = size;
-        _head = 0;
-        _tail = 0;
-        return true;
-    }
-
-    void sorted_store(element_type element, uint32_t sample_time)
-    {
-        uint8_t head = _head;    
-        //will drop the element if older than tail i.e. recently fetched data
-        while(head != _tail) {
-            if(buffer[(head - 1)%_size].sample_time < sample_time) {
-                buffer[head].element = element;
-            } else {
-                buffer[head] = buffer[(head - 1)%_size];
-                head = (head-1)%_size;
-            }
-        }
-        _head = (_head+1)%_size;
-        return;
-    }
-
-    bool recall(element_type &element,uint32_t sample_time)
-    {
-        bool success = false;
-        uint8_t tail = _tail, bestIndex;
-        while (_head != tail) {
-            // find a measurement older than the fusion time horizon that we haven't checked before
-            if (buffer[tail].sample_time != 0 && buffer[tail].sample_time <= sample_time) {
-                // Find the most recent non-stale measurement that meets the time horizon criteria
-                if (((sample_time - buffer[tail].sample_time) < 500)) {
-                    bestIndex = tail;
-                    success = true;
-                }
-            } else if(buffer[tail].sample_time > sample_time){
-                break;
-            }
-            tail = (tail+1)%_size;
-        }
-        if (success) {
-            // zero the time stamp for that piece of data so we won't use it again
-            element = buffer[bestIndex].element;
-            element.time_ms = buffer[bestIndex].sample_time;
-            _tail=(bestIndex+1)%_size;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    inline void push(element_type element, uint32_t sample_time)
-    {
-        buffer[_head].element = element;
-        buffer[_head].sample_time = sample_time;
-        _head = (_head+1)%_size;
-    }
-
-    inline void push(element_type element)
-    {
-        buffer[_head].element = element;
-        _head = (_head+1)%_size;
-    }
-
-    inline element_type pop() {
-        element_type ret = buffer[_tail].element;
-        if(_head != _tail) {
-            _tail = (_tail+1)%_size;
-        }
-        return ret;
-    }
-
-    inline void reset_history(element_type element, uint32_t sample_time) {
-        _head = (_tail+1)%_size;
-        buffer[_tail].sample_time = sample_time;
-        buffer[_tail].element = element;
-    }
-
-    inline void reset() {
-        _head=_tail=0;
-        memset(buffer,0,_size*sizeof(element_t));
-    }
-
-    inline element_type& operator[](uint32_t index) {
-        return buffer[index].element;
-    }
-    inline uint8_t get_tail(){
-        return _tail;
-    }
-    inline uint8_t get_head(){
-        return _head;
-    }
-private:
-    uint8_t _size,_head,_tail;
-};
 
 class AP_AHRS;
 
@@ -750,13 +638,13 @@ private:
     Matrix24 KH;                    // intermediate result used for covariance updates
     Matrix24 KHP;                   // intermediate result used for covariance updates
     Matrix24 P;                     // covariance matrix
-    timed_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
-    timed_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
-    timed_ring_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
-    timed_ring_buffer_t<baro_elements> storedBaro;    // Baro data buffer
-    timed_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
-    timed_ring_buffer_t<range_elements> storedRange;
-    timed_ring_buffer_t<output_elements> storedOutput;// output state buffer
+    imu_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
+    obs_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
+    obs_ring_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
+    obs_ring_buffer_t<baro_elements> storedBaro;    // Baro data buffer
+    obs_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
+    obs_ring_buffer_t<range_elements> storedRange;
+    imu_ring_buffer_t<output_elements> storedOutput;// output state buffer
     Vector3f correctedDelAng;       // delta angles about the xyz body axes corrected for errors (rad)
     Quaternion correctedDelAngQuat; // quaternion representation of correctedDelAng
     Vector3f correctedDelVel;       // delta velocities along the XYZ body axes for weighted average of IMU1 and IMU2 corrected for errors (m/s)
@@ -918,7 +806,7 @@ private:
     float lastInnovation;
 
     // variables added for optical flow fusion
-    timed_ring_buffer_t<of_elements> storedOF;    // OF data buffer
+    obs_ring_buffer_t<of_elements> storedOF;    // OF data buffer
     of_elements ofDataNew;          // OF data at the current time horizon
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
     uint8_t ofStoreIndex;           // OF data storage index
