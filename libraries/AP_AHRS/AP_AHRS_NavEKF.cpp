@@ -101,9 +101,9 @@ void AP_AHRS_NavEKF::update_EKF1(void)
     }
     if (ekf1_started) {
         EKF1.UpdateFilter();
-        EKF1.getRotationBodyToNED(_dcm_matrix);
         if (active_EKF_type() == EKF_TYPE1) {
             Vector3f eulers;
+            EKF1.getRotationBodyToNED(_dcm_matrix);
             EKF1.getEulerAngles(eulers);
             roll  = eulers.x;
             pitch = eulers.y;
@@ -171,9 +171,9 @@ void AP_AHRS_NavEKF::update_EKF2(void)
     }
     if (ekf2_started) {
         EKF2.UpdateFilter();
-        EKF2.getRotationBodyToNED(_dcm_matrix);
         if (active_EKF_type() == EKF_TYPE2) {
             Vector3f eulers;
+            EKF2.getRotationBodyToNED(_dcm_matrix);
             EKF2.getEulerAngles(-1,eulers);
             roll  = eulers.x;
             pitch = eulers.y;
