@@ -47,7 +47,7 @@ void loop(void)
 {
     static uint16_t counter;
     static uint32_t last_t, last_print, last_compass;
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float heading = 0;
 
     if (last_t == 0) {
