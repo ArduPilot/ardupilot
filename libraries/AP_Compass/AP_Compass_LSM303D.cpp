@@ -302,7 +302,7 @@ AP_Compass_LSM303D::init()
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
     if (whoami != WHO_I_AM) {
         hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
-        hal.scheduler->panic("LSM303D: bad WHOAMI");
+        AP_HAL::panic("LSM303D: bad WHOAMI");
     }
 
     uint8_t tries = 0;
@@ -312,7 +312,7 @@ AP_Compass_LSM303D::init()
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_spi_sem->take(100)) {
-                hal.scheduler->panic("LSM303D: Unable to get semaphore");
+                AP_HAL::panic("LSM303D: Unable to get semaphore");
             }
             if (_data_ready()) {
                 _spi_sem->give();
@@ -324,7 +324,7 @@ AP_Compass_LSM303D::init()
             _spi_sem->give();
         }
         if (tries++ > 5) {
-            hal.scheduler->panic("PANIC: failed to boot LSM303D 5 times");
+            AP_HAL::panic("PANIC: failed to boot LSM303D 5 times");
         }
     } while (1);
 
@@ -356,7 +356,7 @@ uint32_t AP_Compass_LSM303D::get_dev_id()
 bool AP_Compass_LSM303D::_hardware_init(void)
 {
     if (!_spi_sem->take(100)) {
-        hal.scheduler->panic("LSM303D: Unable to get semaphore");
+        AP_HAL::panic("LSM303D: Unable to get semaphore");
     }
 
     // initially run the bus at low speed
@@ -385,7 +385,7 @@ bool AP_Compass_LSM303D::_hardware_init(void)
 
 void AP_Compass_LSM303D::_update()
 {
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
+    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
         return;
     }
 
@@ -395,7 +395,7 @@ void AP_Compass_LSM303D::_update()
 
     _collect_samples();
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = AP_HAL::micros();
     _spi_sem->give();
 }
 
@@ -409,7 +409,7 @@ void AP_Compass_LSM303D::_collect_samples()
         error("_read_raw() failed\n");
     } else {
         Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
-        uint32_t time_us = hal.scheduler->micros();
+        uint32_t time_us = AP_HAL::micros();
 
         // rotate raw_field from sensor frame to body frame
         rotate_field(raw_field, _compass_instance);

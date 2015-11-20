@@ -228,10 +228,10 @@ void AP_Compass_AK8963::_update()
     float mag_x, mag_y, mag_z;
     // get raw_field - sensor frame, uncorrected
     Vector3f raw_field;
-    uint32_t time_us = hal.scheduler->micros();
+    uint32_t time_us = AP_HAL::micros();
 
 
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
+    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
         goto end;
     }
 
@@ -284,7 +284,7 @@ void AP_Compass_AK8963::_update()
         _accum_count = 5;
     }
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = AP_HAL::micros();
 fail:
     _sem_give();
 end:
@@ -356,7 +356,7 @@ bool AP_Compass_AK8963::_sem_take_nonblocking()
     if (!hal.scheduler->system_initializing() ) {
         _sem_failure_count++;
         if (_sem_failure_count > 100) {
-            hal.scheduler->panic("PANIC: failed to take _bus->sem "
+            AP_HAL::panic("PANIC: failed to take _bus->sem "
                                  "100 times in a row, in "
                                  "AP_Compass_AK8963");
         }
@@ -393,7 +393,7 @@ AP_AK8963_SerialBus_MPU9250::AP_AK8963_SerialBus_MPU9250(AP_InertialSensor &ins,
     // getting the semaphore
     _bus = ins.get_auxiliary_bus(HAL_INS_MPU9250, mpu9250_instance);
     if (!_bus)
-        hal.scheduler->panic("Cannot get MPU9250 auxiliary bus");
+        AP_HAL::panic("Cannot get MPU9250 auxiliary bus");
 
     _slave = _bus->request_next_slave(addr);
 }
