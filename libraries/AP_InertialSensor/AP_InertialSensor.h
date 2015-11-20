@@ -241,6 +241,12 @@ public:
     // Returns newly calculated trim values if calculated
     bool get_new_trim(float& trim_roll, float &trim_pitch);
 
+    // initialise and register accel calibrator
+    // called during the startup of accel cal
+    void acal_init();
+
+    // update accel calibrator
+    void acal_update();
 private:
 
     // load backend drivers

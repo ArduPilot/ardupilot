@@ -181,13 +181,12 @@ void Copter::compass_cal_update()
     }
 }
 
-void Copter::accel_cal_update() {
-
-    AP_AccelCal *acal = ins.get_acal();
-    acal->update();
-    if (motors.armed() && acal->get_status() != ACCEL_CAL_NOT_STARTED) {
-        acal->clear();
+void Copter::accel_cal_update()
+{
+    if (!hal.util->get_soft_armed()) {
+        ins.acal_update();
     }
+    // check if new trim values, and set them
     float trim_roll, trim_pitch;
     if(ins.get_new_trim(trim_roll, trim_pitch)) {
         ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));

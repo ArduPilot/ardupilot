@@ -448,9 +448,6 @@ AP_InertialSensor::init(Sample_rate sample_rate)
     // remember the sample rate
     _sample_rate = sample_rate;
 
-    _acal = new AP_AccelCal;
-    _acal->register_client(this);
-
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
     }
@@ -1244,6 +1241,26 @@ bool AP_InertialSensor::is_still()
     return (vibe.x < _still_threshold) &&
            (vibe.y < _still_threshold) &&
            (vibe.z < _still_threshold);
+}
+
+// initialise and register accel calibrator
+// called during the startup of accel cal
+void AP_InertialSensor::acal_init()
+{
+    _acal = new AP_AccelCal;
+    _acal->register_client(this);
+}
+
+// update accel calibrator
+void AP_InertialSensor::acal_update() 
+{
+    if(_acal == NULL) {
+        return;
+    }
+    _acal->update();
+    if (_acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+        _acal->clear();
+    }
 }
 
 /*
