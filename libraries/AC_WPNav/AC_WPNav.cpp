@@ -424,7 +424,7 @@ void AC_WPNav::set_wp_destination(const Vector3f& destination)
 	Vector3f origin;
 
     // if waypoint controller is active use the existing position target as the origin
-    if ((hal.scheduler->millis() - _wp_last_update) < 1000) {
+    if ((AP_HAL::millis() - _wp_last_update) < 1000) {
         origin = _pos_control.get_pos_target();
     } else {
         // if waypoint controller is not active, set origin to reasonable stopping point (using curr pos and velocity)
@@ -692,7 +692,7 @@ void AC_WPNav::update_wpnav()
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
         check_wp_leash_length();
 
-        _wp_last_update = hal.scheduler->millis();
+        _wp_last_update = AP_HAL::millis();
     }
 }
 
@@ -762,7 +762,7 @@ void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_
     Vector3f origin;
 
     // if waypoint controller is active and copter has reached the previous waypoint use current pos target as the origin
-    if ((hal.scheduler->millis() - _wp_last_update) < 1000) {
+    if ((AP_HAL::millis() - _wp_last_update) < 1000) {
         origin = _pos_control.get_pos_target();
     }else{
         // otherwise calculate origin from the current position and velocity
@@ -779,7 +779,7 @@ void AC_WPNav::set_spline_destination(const Vector3f& destination, bool stopped_
 void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination)
 {
     // mission is "active" if wpnav has been called recently and vehicle reached the previous waypoint
-    bool prev_segment_exists = (_flags.reached_destination && ((hal.scheduler->millis() - _wp_last_update) < 1000));
+    bool prev_segment_exists = (_flags.reached_destination && ((AP_HAL::millis() - _wp_last_update) < 1000));
     float dt = _pos_control.get_dt_xy();
 
     // check _wp_accel_cms is reasonable to avoid divide by zero
@@ -906,7 +906,7 @@ void AC_WPNav::update_spline()
         // run horizontal position controller
         _pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
 
-        _wp_last_update = hal.scheduler->millis();
+        _wp_last_update = AP_HAL::millis();
     }
 }
 
