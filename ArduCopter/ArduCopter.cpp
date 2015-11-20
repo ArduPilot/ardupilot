@@ -181,7 +181,7 @@ void Copter::setup()
 
     // setup initial performance counters
     perf_info_reset();
-    fast_loopTimer = hal.scheduler->micros();
+    fast_loopTimer = AP_HAL::micros();
 }
 
 /*

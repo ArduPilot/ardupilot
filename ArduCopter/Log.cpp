@@ -172,7 +172,7 @@ void Copter::Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_targ
 {
     struct log_AutoTune pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNE_MSG),
-        time_us     : hal.scheduler->micros64(),
+        time_us     : AP_HAL::micros64(),
         axis        : axis,
         tune_step   : tune_step,
         meas_target : meas_target,
@@ -198,7 +198,7 @@ void Copter::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
     struct log_AutoTuneDetails pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AUTOTUNEDETAILS_MSG),
-        time_us     : hal.scheduler->micros64(),
+        time_us     : AP_HAL::micros64(),
         angle_cd    : angle_cd,
         rate_cds    : rate_cds
     };
@@ -237,7 +237,7 @@ void Copter::Log_Write_Optflow()
     const Vector2f &bodyRate = optflow.bodyRate();
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         surface_quality : optflow.quality(),
         flow_x          : flowRate.x,
         flow_y          : flowRate.y,
@@ -274,7 +274,7 @@ void Copter::Log_Write_Nav_Tuning()
 
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NAV_TUNING_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         desired_pos_x   : pos_target.x,
         desired_pos_y   : pos_target.y,
         pos_x           : position.x,
@@ -309,7 +309,7 @@ void Copter::Log_Write_Control_Tuning()
 {
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        time_us             : hal.scheduler->micros64(),
+        time_us             : AP_HAL::micros64(),
         throttle_in         : channel_throttle->control_in,
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
@@ -340,7 +340,7 @@ void Copter::Log_Write_Performance()
 {
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
-        time_us          : hal.scheduler->micros64(),
+        time_us          : AP_HAL::micros64(),
         num_long_running : perf_info_get_num_long_running(),
         num_loops        : perf_info_get_num_loops(),
         max_time         : perf_info_get_max_time(),
@@ -394,7 +394,7 @@ void Copter::Log_Write_Rate()
     const Vector3f &accel_target = pos_control.get_accel_target();
     struct log_Rate pkt_rate = {
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         control_roll    : (float)rate_targets.x,
         roll            : (float)(ahrs.get_gyro().x * AC_ATTITUDE_CONTROL_DEGX100),
         roll_out        : motors.get_roll(),
@@ -426,7 +426,7 @@ void Copter::Log_Write_MotBatt()
 #if FRAME_CONFIG != HELI_FRAME
     struct log_MotBatt pkt_mot = {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         lift_max        : (float)(motors.get_lift_max()),
         bat_volt        : (float)(motors.get_batt_voltage_filt()),
         bat_res         : (float)(motors.get_batt_resistance()),
@@ -446,7 +446,7 @@ void Copter::Log_Write_Startup()
 {
     struct log_Startup pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
-        time_us         : hal.scheduler->micros64()
+        time_us         : AP_HAL::micros64()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -463,7 +463,7 @@ void Copter::Log_Write_Event(uint8_t id)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Event pkt = {
             LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
-            time_us  : hal.scheduler->micros64(),
+            time_us  : AP_HAL::micros64(),
             id       : id
         };
         DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -484,7 +484,7 @@ void Copter::Log_Write_Data(uint8_t id, int16_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT16_MSG),
-            time_us     : hal.scheduler->micros64(),
+            time_us     : AP_HAL::micros64(),
             id          : id,
             data_value  : value
         };
@@ -506,7 +506,7 @@ void Copter::Log_Write_Data(uint8_t id, uint16_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt16t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT16_MSG),
-            time_us     : hal.scheduler->micros64(),
+            time_us     : AP_HAL::micros64(),
             id          : id,
             data_value  : value
         };
@@ -527,7 +527,7 @@ void Copter::Log_Write_Data(uint8_t id, int32_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Int32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_INT32_MSG),
-            time_us  : hal.scheduler->micros64(),
+            time_us  : AP_HAL::micros64(),
             id          : id,
             data_value  : value
         };
@@ -548,7 +548,7 @@ void Copter::Log_Write_Data(uint8_t id, uint32_t value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_UInt32t pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_UINT32_MSG),
-            time_us     : hal.scheduler->micros64(),
+            time_us     : AP_HAL::micros64(),
             id          : id,
             data_value  : value
         };
@@ -570,7 +570,7 @@ void Copter::Log_Write_Data(uint8_t id, float value)
     if (should_log(MASK_LOG_ANY)) {
         struct log_Data_Float pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_FLOAT_MSG),
-            time_us     : hal.scheduler->micros64(),
+            time_us     : AP_HAL::micros64(),
             id          : id,
             data_value  : value
         };
@@ -590,7 +590,7 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
 {
     struct log_Error pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ERROR_MSG),
-        time_us       : hal.scheduler->micros64(),
+        time_us       : AP_HAL::micros64(),
         sub_system    : sub_system,
         error_code    : error_code,
     };
@@ -616,7 +616,7 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
 {
     struct log_ParameterTuning pkt_tune = {
         LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : hal.scheduler->micros64(),
+        time_us        : AP_HAL::micros64(),
         parameter      : param,
         tuning_value   : tuning_val,
         control_in     : control_in,
@@ -671,7 +671,7 @@ void Copter::Log_Write_Heli()
 {
     struct log_Heli pkt_heli = {
         LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
-        time_us                 : hal.scheduler->micros64(),
+        time_us                 : AP_HAL::micros64(),
         desired_rotor_speed     : motors.get_desired_rotor_speed(),
         main_rotor_speed        : motors.get_main_rotor_speed(),
     };
@@ -706,7 +706,7 @@ void Copter::Log_Write_Precland()
     const Vector3f &target_pos_ofs = precland.last_target_pos_offset();
     struct log_Precland pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
-        time_us         : hal.scheduler->micros64(),
+        time_us         : AP_HAL::micros64(),
         healthy         : precland.healthy(),
         bf_angle_x      : degrees(bf_angle.x),
         bf_angle_y      : degrees(bf_angle.y),
