@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SITL_CLASS_H__
-#define __AP_HAL_SITL_CLASS_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -19,8 +17,4 @@ private:
     HALSITL::SITL_State *_sitl_state;
 };
 
-extern const HAL_SITL AP_HAL_SITL;
-
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#endif // __AP_HAL_SITL_CLASS_H__
-
