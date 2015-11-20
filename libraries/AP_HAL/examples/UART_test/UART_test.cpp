@@ -48,7 +48,7 @@ static void test_uart(AP_HAL::UARTDriver *uart, const char *name)
         return;
     }
     uart->printf("Hello on UART %s at %.3f seconds\n",
-                 name, hal.scheduler->millis()*0.001f);
+                 name, AP_HAL::millis()*0.001f);
 }
 
 void loop(void) 
@@ -62,7 +62,7 @@ void loop(void)
     // also do a raw printf() on some platforms, which prints to the
     // debug console
 #if HAL_OS_POSIX_IO
-    ::printf("Hello on debug console at %.3f seconds\n", hal.scheduler->millis()*0.001f);
+    ::printf("Hello on debug console at %.3f seconds\n", AP_HAL::millis()*0.001f);
 #endif
 
     hal.scheduler->delay(1000);
