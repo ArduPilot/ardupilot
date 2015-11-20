@@ -88,7 +88,7 @@ bool ToneAlarm_PX4::init()
 // play_tune - play one of the pre-defined tunes
 void ToneAlarm_PX4::play_tone(const uint8_t tone_index)
 {
-    uint32_t tnow_ms = hal.scheduler->millis();
+    uint32_t tnow_ms = AP_HAL::millis();
     const Tone &tone_requested = _tones[tone_index];
 
     if(tone_requested.continuous) {
@@ -114,7 +114,7 @@ void ToneAlarm_PX4::stop_cont_tone() {
 }
 
 void ToneAlarm_PX4::check_cont_tone() {
-    uint32_t tnow_ms = hal.scheduler->millis();
+    uint32_t tnow_ms = AP_HAL::millis();
     // if we are supposed to be playing a continuous tone,
     // and it was interrupted, and the interrupting tone has timed out,
     // resume the continuous tone
