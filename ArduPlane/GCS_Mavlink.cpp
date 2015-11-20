@@ -612,7 +612,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        plane.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = plane.millis();
+        plane.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
         plane.send_heartbeat(chan);
         return true;
 
@@ -1724,12 +1724,12 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         v[7] = packet.chan8_raw;
 
         if (hal.rcin->set_overrides(v, 8)) {
-            plane.failsafe.last_valid_rc_ms = plane.millis();
+            plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
         }
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = plane.millis();
+        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
         break;
     }
 
@@ -1738,7 +1738,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         // We keep track of the last time we received a heartbeat from
         // our GCS for failsafe purposes
         if (msg->sysid != plane.g.sysid_my_gcs) break;
-        plane.failsafe.last_heartbeat_ms = plane.millis();
+        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
         break;
     }
 
