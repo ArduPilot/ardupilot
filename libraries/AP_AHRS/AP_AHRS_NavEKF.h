@@ -25,6 +25,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
 #if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -43,14 +47,7 @@ public:
 
     // Constructor
     AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE
-        ) :
-        AP_AHRS_DCM(ins, baro, gps),
-        EKF1(_EKF1),
-        EKF2(_EKF2),
-        _flags(flags)
-    {
-    }
+                   NavEKF &_EKF1, NavEKF2 &_EKF2, Flags flags = FLAG_NONE);
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const;
@@ -201,7 +198,13 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
 private:
-    enum EKF_TYPE {EKF_TYPE_NONE, EKF_TYPE1, EKF_TYPE2};
+    enum EKF_TYPE {EKF_TYPE_NONE=0,
+                   EKF_TYPE1=1,
+                   EKF_TYPE2=2
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                   ,EKF_TYPE_SITL=10
+#endif
+    };
     EKF_TYPE active_EKF_type(void) const;
 
     bool always_use_EKF() const {
@@ -226,6 +229,11 @@ private:
     void update_DCM(void);
     void update_EKF1(void);
     void update_EKF2(void);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *_sitl;
+    void update_SITL(void);
+#endif    
 };
 #endif
 
