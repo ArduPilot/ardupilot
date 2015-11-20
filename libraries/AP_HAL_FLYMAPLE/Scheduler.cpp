@@ -93,22 +93,6 @@ void FLYMAPLEScheduler::delay(uint16_t ms)
     }
 }
 
-uint32_t FLYMAPLEScheduler::millis() {
-    return AP_HAL::millis();
-}
-
-uint32_t FLYMAPLEScheduler::micros() {
-    return AP_HAL::micros();
-}
-
-uint64_t FLYMAPLEScheduler::millis64() {
-    return AP_HAL::millis64();
-}
-
-uint64_t FLYMAPLEScheduler::micros64() {
-    return AP_HAL::micros64();
-}
-
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
 { 
     delay_us(us);
@@ -220,22 +204,6 @@ void FLYMAPLEScheduler::system_initialized()
                    "more than once");
     }
     _initialized = true;
-}
-
-void FLYMAPLEScheduler::panic(const char *errormsg, ...) {
-    /* Suspend timer processes. We still want the timer event to go off
-     * to run the _failsafe code, however. */
-    // REVISIT: not tested on FLYMAPLE
-    va_list ap;
-
-    _timer_suspended = true;
-
-    va_start(ap, errormsg);
-    hal.console->vprintf(errormsg, ap);
-    va_end(ap);
-    hal.console->printf("\n");
-
-    for(;;);
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
