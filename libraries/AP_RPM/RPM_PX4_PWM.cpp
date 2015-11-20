@@ -82,6 +82,7 @@ void AP_RPM_PX4_PWM::update(void)
     uint16_t count = 0;
     const float scaling = ap_rpm._scaling[state.instance];
     float maximum = ap_rpm._maximum[state.instance];
+    float minimum = ap_rpm._minimum[state.instance];
     float quality = 0;
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
@@ -91,7 +92,7 @@ void AP_RPM_PX4_PWM::update(void)
         }
         float rpm = scaling * (1.0e6f * 60) / pwm.period;
         float filter_value = signal_quality_filter.get();
-        if (maximum <= 0 || rpm <= maximum) {
+        if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
             state.rate_rpm = signal_quality_filter.apply(rpm);
             if (is_zero(filter_value)){
                 quality = 0;
