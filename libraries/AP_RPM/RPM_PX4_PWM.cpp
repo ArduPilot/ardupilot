@@ -92,8 +92,8 @@ void AP_RPM_PX4_PWM::update(void)
         }
         float rpm = scaling * (1.0e6f * 60) / pwm.period;
         float filter_value = signal_quality_filter.get();
+        state.rate_rpm = signal_quality_filter.apply(rpm);
         if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
-            state.rate_rpm = signal_quality_filter.apply(rpm);
             if (is_zero(filter_value)){
                 quality = 0;
             } else {
