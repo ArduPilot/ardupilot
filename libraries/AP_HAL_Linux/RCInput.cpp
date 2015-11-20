@@ -285,7 +285,7 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
             }
             uint16_t values[8];
             uint16_t num_values=0;
-            if (dsm_decode(hal.scheduler->micros64(), bytes, values, &num_values, 8) && 
+            if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) && 
                 num_values >= 5) {
                 for (i=0; i<num_values; i++) {
                     _pwm_values[i] = values[i];

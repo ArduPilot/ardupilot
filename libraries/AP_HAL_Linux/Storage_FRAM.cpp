@@ -34,11 +34,11 @@ void Storage_FRAM::_storage_create(void)
     hal.console->println("Storage: FRAM is getting reset to default values");
     
     if (fd == -1) {
-        hal.scheduler->panic("Failed to load FRAM");
+        AP_HAL::panic("Failed to load FRAM");
     }
     for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
         if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
-            hal.scheduler->panic("Error filling FRAM");            
+            AP_HAL::panic("Error filling FRAM");
         }
     }
 
@@ -60,7 +60,7 @@ void Storage_FRAM::_storage_open(void)
         _storage_create();
         fd = open();
         if (fd == -1) {
-            hal.scheduler->panic("Failed to access FRAM");
+            AP_HAL::panic("Failed to access FRAM");
         }
     }
     
@@ -68,10 +68,10 @@ void Storage_FRAM::_storage_open(void)
         _storage_create();
         fd = open();
         if (fd == -1) {
-            hal.scheduler->panic("Failed to access FRAM");
+            AP_HAL::panic("Failed to access FRAM");
         }
         if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            hal.scheduler->panic("Failed to read FRAM");
+            AP_HAL::panic("Failed to read FRAM");
         }
     }
     _initialised = true;
@@ -150,7 +150,7 @@ int8_t Storage_FRAM::open()
             hal.scheduler->delay(1000);
         }
         if(i==4){
-            hal.scheduler->panic("FRAM: Failed to receive Manufacturer ID 5 times");
+            AP_HAL::panic("FRAM: Failed to receive Manufacturer ID 5 times");
         }
     }
     

@@ -84,7 +84,7 @@ void ADS1115AnalogIn::init(void* implspecific)
 
 void ADS1115AnalogIn::_update()
 {
-    if (hal.scheduler->micros() - _last_update_timestamp < 100000) {
+    if (AP_HAL::micros() - _last_update_timestamp < 100000) {
         return;
     }
 
@@ -108,7 +108,7 @@ void ADS1115AnalogIn::_update()
         }
     }
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = AP_HAL::micros();
 }
 
 #endif
