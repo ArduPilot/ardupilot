@@ -1251,10 +1251,15 @@ bool AP_InertialSensor::is_still()
 */
 void AP_InertialSensor::_acal_save_calibrations()
 {
+    Vector3f bias, gain;
     for (uint8_t i=0; i<_accel_count; i++) {
         if (_accel_calibrator[i].get_status() == ACCEL_CAL_SUCCESS) {
-            Vector3f bias, gain;
             _accel_calibrator[i].get_calibration(bias, gain);
+            _accel_offset[i].set_and_save(bias);
+            _accel_scale[i].set_and_save(gain);
+        } else {
+            bias(0,0,0);
+            gain(0,0,0);
             _accel_offset[i].set_and_save(bias);
             _accel_scale[i].set_and_save(gain);
         }
