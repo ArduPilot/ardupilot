@@ -427,7 +427,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        rover.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = hal.scheduler->millis();        
+        rover.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();        
         rover.send_heartbeat(chan);
         return true;
 
@@ -1232,7 +1232,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         hal.rcin->set_overrides(v, 8);
 
-        rover.failsafe.rc_override_timer = hal.scheduler->millis();
+        rover.failsafe.rc_override_timer = AP_HAL::millis();
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
@@ -1241,7 +1241,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         {
             // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
 			if(msg->sysid != rover.g.sysid_my_gcs) break;
-            rover.last_heartbeat_ms = rover.failsafe.rc_override_timer = hal.scheduler->millis();
+            rover.last_heartbeat_ms = rover.failsafe.rc_override_timer = AP_HAL::millis();
             rover.failsafe_trigger(FAILSAFE_EVENT_GCS, false);
             break;
         }
