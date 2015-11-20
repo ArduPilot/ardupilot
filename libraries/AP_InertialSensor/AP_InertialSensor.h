@@ -80,11 +80,6 @@ public:
     uint8_t register_gyro(uint16_t raw_sample_rate_hz);
     uint8_t register_accel(uint16_t raw_sample_rate_hz);
 
-    // perform accelerometer calibration including providing user instructions
-    // and feedback
-    bool calibrate_accel(AP_InertialSensor_UserInteract *interact,
-                         float& trim_roll,
-                         float& trim_pitch);
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
@@ -260,17 +255,6 @@ private:
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
-    // _calibrate_accel - perform low level accel calibration
-    bool _calibrate_accel(const Vector3f accel_sample[6],
-                          Vector3f& accel_offsets,
-                          Vector3f& accel_scale,
-                          float max_abs_offsets,
-                          enum Rotation rotation);
-    bool _check_sample_range(const Vector3f accel_sample[6], enum Rotation rotation, 
-                             AP_InertialSensor_UserInteract* interact);
-    void _calibrate_update_matrices(float dS[6], float JS[6][6], float beta[6], float data[3]);
-    void _calibrate_reset_matrices(float dS[6], float JS[6][6]);
-    void _calibrate_find_delta(float dS[6], float JS[6][6], float delta[6]);
     bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
 
     // save parameters to eeprom
