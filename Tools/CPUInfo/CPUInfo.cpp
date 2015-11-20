@@ -36,11 +36,11 @@ static void show_sizes(void)
 
 #define TIMEIT(name, op, count) do { \
 	uint32_t us_end, us_start; \
-	us_start = hal.scheduler->micros(); \
+	us_start = AP_HAL::micros(); \
 	for (uint8_t i=0; i<count; i++) { \
 		FIFTYTIMES(op);				\
 	} \
-	us_end = hal.scheduler->micros(); \
+	us_end = AP_HAL::micros(); \
 	hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end-us_start)/(count*50.0)); \
 } while (0)
 
@@ -61,17 +61,17 @@ volatile uint64_t v_out_64 = 1;
 static void show_timings(void)
 {
 
-	v_f = 1+(hal.scheduler->micros() % 5);
-	v_out = 1+(hal.scheduler->micros() % 3);
+	v_f = 1+(AP_HAL::micros() % 5);
+	v_out = 1+(AP_HAL::micros() % 3);
 
-	v_32 = 1+(hal.scheduler->micros() % 5);
-	v_out_32 = 1+(hal.scheduler->micros() % 3);
+	v_32 = 1+(AP_HAL::micros() % 5);
+	v_out_32 = 1+(AP_HAL::micros() % 3);
 
-	v_16 = 1+(hal.scheduler->micros() % 5);
-	v_out_16 = 1+(hal.scheduler->micros() % 3);
+	v_16 = 1+(AP_HAL::micros() % 5);
+	v_out_16 = 1+(AP_HAL::micros() % 3);
 
-	v_8 = 1+(hal.scheduler->micros() % 5);
-	v_out_8 = 1+(hal.scheduler->micros() % 3);
+	v_8 = 1+(AP_HAL::micros() % 5);
+	v_out_8 = 1+(AP_HAL::micros() % 3);
 
 
 	hal.console->println("Operation timings:");
@@ -79,8 +79,8 @@ static void show_timings(void)
 
 	TIMEIT("nop", asm volatile("nop"::), 255);
 
-	TIMEIT("micros()", hal.scheduler->micros(), 200);
-	TIMEIT("millis()", hal.scheduler->millis(), 200);
+	TIMEIT("micros()", AP_HAL::micros(), 200);
+	TIMEIT("millis()", AP_HAL::millis(), 200);
 
 	TIMEIT("fadd", v_out += v_f, 100);
 	TIMEIT("fsub", v_out -= v_f, 100);
