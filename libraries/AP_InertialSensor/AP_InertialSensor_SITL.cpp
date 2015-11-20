@@ -118,7 +118,7 @@ float AP_InertialSensor_SITL::gyro_drift(void)
         return 0;
     }
     double period  = sitl->drift_time * 2;
-    double minutes = fmod(hal.scheduler->micros64() / 60.0e6, period);
+    double minutes = fmod(AP_HAL::micros64() / 60.0e6, period);
     if (minutes < period/2) {
         return minutes * ToRad(sitl->drift_speed);
     }

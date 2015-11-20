@@ -112,7 +112,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate gyro sample time
         int samplerate = ioctl(fd,  GYROIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid gyro sample rate");
+            AP_HAL::panic("Invalid gyro sample rate");
         }
         _gyro_instance[i] = _imu.register_gyro(samplerate);
         _gyro_sample_time[i] = 1.0f / samplerate;
@@ -152,7 +152,7 @@ bool AP_InertialSensor_PX4::_init_sensor(void)
         // calculate accel sample time
         int samplerate = ioctl(fd,  ACCELIOCGSAMPLERATE, 0);
         if (samplerate < 100 || samplerate > 10000) {
-            hal.scheduler->panic("Invalid accel sample rate");
+            AP_HAL::panic("Invalid accel sample rate");
         }
         _accel_instance[i] = _imu.register_accel(samplerate);
         _accel_sample_time[i] = 1.0f / samplerate;
@@ -213,7 +213,7 @@ void AP_InertialSensor_PX4::_new_accel_sample(uint8_t i, accel_report &accel_rep
     _accel_meas_count[i] ++;
 
     if(_accel_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
 
         ::printf("a%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_accel_meas_count_start_us[i])*1.0e-6f),_accel_dt_max[i]);
 
@@ -248,7 +248,7 @@ void AP_InertialSensor_PX4::_new_gyro_sample(uint8_t i, gyro_report &gyro_report
     _gyro_meas_count[i] ++;
 
     if(_gyro_meas_count[i] >= 10000) {
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
 
         ::printf("g%d %.2f Hz max %.8f s\n", frontend_instance, 10000.0f/((tnow-_gyro_meas_count_start_us[i])*1.0e-6f), _gyro_dt_max[i]);
 

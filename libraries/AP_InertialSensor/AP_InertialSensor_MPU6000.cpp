@@ -521,7 +521,7 @@ void AP_InertialSensor_MPU6000::start()
     hal.scheduler->suspend_timer_procs();
 
     if (!_bus_sem->take(100)) {
-        hal.scheduler->panic("MPU6000: Unable to get semaphore");
+        AP_HAL::panic("MPU6000: Unable to get semaphore");
     }
 
     // initially run the bus at low speed
@@ -765,7 +765,7 @@ void AP_InertialSensor_MPU6000::_set_filter_register(uint16_t filter_hz)
 bool AP_InertialSensor_MPU6000::_hardware_init(void)
 {
     if (!_bus_sem->take(100)) {
-        hal.scheduler->panic("MPU6000: Unable to get semaphore");
+        AP_HAL::panic("MPU6000: Unable to get semaphore");
     }
 
     // initially run the bus at low speed
