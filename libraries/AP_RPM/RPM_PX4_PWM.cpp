@@ -92,7 +92,7 @@ void AP_RPM_PX4_PWM::update(void)
 
     if (count != 0) {
         state.rate_rpm = sum / count;
-        state.last_reading_ms = hal.scheduler->millis();
+        state.last_reading_ms = AP_HAL::millis();
     }
 }
 
