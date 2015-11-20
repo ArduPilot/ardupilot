@@ -54,13 +54,13 @@ public:
     void check_for_timeout();
 
     // get diag,offset or offdiag parameters as per the selected fitting surface or request
-    void get_calibration(Vector3f& offset);
-    void get_calibration(Vector3f& offset, Vector3f& diag);
-    void get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag);
+    void get_calibration(Vector3f& offset) const;
+    void get_calibration(Vector3f& offset, Vector3f& diag) const;
+    void get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag) const;
 
 
     // collect and avg sample to be passed onto LSQ estimator after all requisite orientations are done
-    void new_sample(Vector3f delta_velocity, float dt);
+    void new_sample(const Vector3f delta_velocity, float dt);
 
     // interface for LSq estimator to read sample buffer sent after conversion from delta velocity
     // to averaged acc over time
@@ -80,7 +80,7 @@ public:
     uint8_t get_num_samples_collected() const { return _samples_collected; }
 
     // returns mean squared fitness of sample points to the selected surface
-    float get_fitness() { return _fitness; }
+    float get_fitness() const { return _fitness; }
 
     struct param_t {
         Vector3f offset;
@@ -121,7 +121,7 @@ private:
     void set_status(enum accel_cal_status_t);
 
     // returns number of paramters are required for selected Fit type
-    uint8_t get_num_params();
+    uint8_t get_num_params() const;
 
     // Function related to Gauss Newton Least square regression process
     float calc_residual(const Vector3f& sample, const struct param_t& params) const;

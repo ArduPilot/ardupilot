@@ -109,7 +109,7 @@ void AccelCalibrator::collect_sample() {
 }
 
 // collect and avg sample to be passed onto LSQ estimator after all requisite orientations are done
-void AccelCalibrator::new_sample(Vector3f delta_velocity, float dt) {
+void AccelCalibrator::new_sample(const Vector3f delta_velocity, float dt) {
     if (_status != ACCEL_CAL_COLLECTING_SAMPLE) {
         return;
     }
@@ -184,18 +184,18 @@ void AccelCalibrator::check_for_timeout() {
 }
 
 // returns spherical fit paramteters
-void AccelCalibrator::get_calibration(Vector3f& offset) {
+void AccelCalibrator::get_calibration(Vector3f& offset) const {
     offset = -_param_struct.offset;
 }
 
 // returns axis aligned ellipsoidal fit parameters
-void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag) {
+void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag) const {
     offset = -_param_struct.offset;
     diag = _param_struct.diag;
 }
 
 // returns generic ellipsoidal fit parameters
-void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag) {
+void AccelCalibrator::get_calibration(Vector3f& offset, Vector3f& diag, Vector3f& offdiag) const {
     offset = -_param_struct.offset;
     diag = _param_struct.diag;
     offdiag = _param_struct.offdiag;
@@ -452,7 +452,7 @@ void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& p
 }
 
 // returns number of paramters are required for selected Fit type
-uint8_t AccelCalibrator::get_num_params() {
+uint8_t AccelCalibrator::get_num_params() const {
     switch (_conf_fit_type) {
         case ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID:
             return 6;
