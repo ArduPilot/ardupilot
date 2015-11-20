@@ -9,7 +9,7 @@
 void Tracker::update_vehicle_pos_estimate()
 {
     // calculate time since last actual position update
-    float dt = (hal.scheduler->micros() - vehicle.last_update_us) * 1.0e-6f;
+    float dt = (AP_HAL::micros() - vehicle.last_update_us) * 1.0e-6f;
 
     // if less than 5 seconds since last position update estimate the position
     if (dt < TRACKING_TIMEOUT_SEC) {
@@ -80,7 +80,7 @@ void Tracker::update_tracking(void)
 
     // do not perform any servo updates until startup delay has passed
     if (g.startup_delay > 0 &&
-        hal.scheduler->millis() - start_time_ms < g.startup_delay*1000) {
+        AP_HAL::millis() - start_time_ms < g.startup_delay*1000) {
         return;
     }
 
@@ -119,8 +119,8 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.location.alt = msg.alt/10;
     vehicle.heading      = msg.hdg * 0.01f;
     vehicle.ground_speed = pythagorous2(msg.vx, msg.vy) * 0.01f;
-    vehicle.last_update_us = hal.scheduler->micros();    
-    vehicle.last_update_ms = hal.scheduler->millis();
+    vehicle.last_update_us = AP_HAL::micros();    
+    vehicle.last_update_ms = AP_HAL::millis();
 }
 
 
@@ -165,7 +165,7 @@ void Tracker::tracking_manual_control(const mavlink_manual_control_t &msg)
  */
 void Tracker::update_armed_disarmed()
 {
-    if (vehicle.last_update_ms != 0 && (hal.scheduler->millis() - vehicle.last_update_ms) < TRACKING_TIMEOUT_MS) {
+    if (vehicle.last_update_ms != 0 && (AP_HAL::millis() - vehicle.last_update_ms) < TRACKING_TIMEOUT_MS) {
         AP_Notify::flags.armed = true;
     } else {
         AP_Notify::flags.armed = false;
