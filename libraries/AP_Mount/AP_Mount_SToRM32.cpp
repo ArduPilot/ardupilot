@@ -75,7 +75,7 @@ void AP_Mount_SToRM32::update()
     }
 
     // resend target angles at least once per second
-    if (resend_now || ((hal.scheduler->millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
+    if (resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
         send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
     }
 }
@@ -115,7 +115,7 @@ void AP_Mount_SToRM32::find_gimbal()
     }
 
     // return if search time has has passed
-    if (hal.scheduler->millis() > AP_MOUNT_STORM32_SEARCH_MS) {
+    if (AP_HAL::millis() > AP_MOUNT_STORM32_SEARCH_MS) {
         return;
     }
 
@@ -154,5 +154,5 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
                                   mount_mode);
 
     // store time of send
-    _last_send = hal.scheduler->millis();
+    _last_send = AP_HAL::millis();
 }
