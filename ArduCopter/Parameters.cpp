@@ -121,7 +121,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
-    // @Description: The minimum altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
     // @Units: Centimeters
     // @Range: 0 8000
     // @Increment: 1
