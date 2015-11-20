@@ -140,7 +140,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
     if (_state != STATE_PREFLIGHT && 
         (mode == OBC_MANUAL || mode == OBC_FBW) && 
         _rc_fail_time != 0 && 
-        (hal.scheduler->millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
+        (AP_HAL::millis() - last_valid_rc_ms) > (unsigned)_rc_fail_time.get()) {
         if (!_terminate) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "RC failure terminate");
             _terminate.set(1);
@@ -155,7 +155,7 @@ APM_OBC::check(APM_OBC::control_mode mode, uint32_t last_heartbeat_ms, bool geof
         hal.gpio->write(_manual_pin, mode==OBC_MANUAL);
     }
 
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
     bool gps_lock_ok = ((now - gps.last_fix_time_ms()) < 3000);
 
@@ -290,7 +290,7 @@ APM_OBC::check_altlimit(void)
     }
 
     // see if the barometer is dead
-    if (hal.scheduler->millis() - baro.get_last_update() > 5000) {
+    if (AP_HAL::millis() - baro.get_last_update() > 5000) {
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
         if (_amsl_margin_gps != -1 &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
