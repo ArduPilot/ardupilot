@@ -71,14 +71,14 @@ void NavEKF2_core::readRangeFinder(void)
             rangeDataNew.rng = max(storedRngMeas[midIndex],rngOnGnd);
             rngValidMeaTime_ms = imuSampleTime_ms;
             // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
-            storedRange.push(rangeDataNew,imuSampleTime_ms);
+            storedRange.push(rangeDataNew);
         } else if (!takeOffDetected) {
             // before takeoff we assume on-ground range value if there is no data
             rangeDataNew.time_ms = imuSampleTime_ms;
             rangeDataNew.rng = rngOnGnd;
             rngValidMeaTime_ms = imuSampleTime_ms;
             // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
-            storedRange.push(rangeDataNew,imuSampleTime_ms);
+            storedRange.push(rangeDataNew);
         }
     }
 }
@@ -131,7 +131,7 @@ void NavEKF2_core::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRa
         // Prevent time delay exceeding age of oldest IMU data in the buffer
         ofDataNew.time_ms = max(ofDataNew.time_ms,imuDataDelayed.time_ms);
         // Save data to buffer
-        storedOF.push(ofDataNew, ofDataNew.time_ms);
+        storedOF.push(ofDataNew);
         // Check for data at the fusion time horizon
         flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
     }
@@ -213,7 +213,7 @@ void NavEKF2_core::readMagData()
         consistentMagData = _ahrs->get_compass()->consistent();
 
         // save magnetometer measurement to buffer to be fused later
-        storedMag.push(magDataNew, magDataNew.time_ms);
+        storedMag.push(magDataNew);
     }
 }
 
@@ -296,7 +296,7 @@ void NavEKF2_core::readIMUData()
         // Time stamp the data
         imuDataDownSampledNew.time_ms = imuSampleTime_ms;
         // Write data to the FIFO IMU buffer
-        storedIMU.push(imuDataDownSampledNew, imuSampleTime_ms);
+        storedIMU.push_youngest_element(imuDataDownSampledNew);
         // zero the accumulated IMU data and quaternion
         imuDataDownSampledNew.delAng.zero();
         imuDataDownSampledNew.delVel.zero();
@@ -314,7 +314,7 @@ void NavEKF2_core::readIMUData()
     }
 
     // extract the oldest available data from the FIFO buffer
-    imuDataDelayed = storedIMU.pop();
+    imuDataDelayed = storedIMU.pop_oldest_element();
     float minDT = 0.1f*dtEkfAvg;
     imuDataDelayed.delAngDT = max(imuDataDelayed.delAngDT,minDT);
     imuDataDelayed.delVelDT = max(imuDataDelayed.delVelDT,minDT);
@@ -419,7 +419,7 @@ void NavEKF2_core::readGpsData()
             if (validOrigin) {
                 gpsDataNew.pos = location_diff(EKF_origin, gpsloc);
                 gpsDataNew.hgt = 0.01f * (gpsloc.alt - EKF_origin.alt);
-                storedGPS.push(gpsDataNew, gpsDataNew.time_ms);
+                storedGPS.push(gpsDataNew);
                 // declare GPS available for use
                 gpsNotAvailable = false;
             }
@@ -532,7 +532,7 @@ void NavEKF2_core::readBaroData()
         baroDataNew.time_ms = max(baroDataNew.time_ms,imuDataDelayed.time_ms);
 
         // save baro measurement to buffer to be fused later
-        storedBaro.push(baroDataNew,baroDataNew.time_ms);
+        storedBaro.push(baroDataNew);
     }
 }
 
@@ -564,7 +564,7 @@ void NavEKF2_core::readAirSpdData()
         // Correct for the average intersampling delay due to the filter update rate
         tasDataNew.time_ms -= localFilterTimeStep_ms/2;
         newDataTas = true;
-        storedTAS.push(tasDataNew, tasDataNew.time_ms);
+        storedTAS.push(tasDataNew);
         storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
     } else {
         newDataTas = false;
