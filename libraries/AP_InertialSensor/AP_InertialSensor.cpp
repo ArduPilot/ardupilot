@@ -1322,7 +1322,7 @@ bool AP_InertialSensor::get_new_trim(float& trim_roll, float &trim_pitch)
 */
 bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vector3f& ret) const
 {
-    if (_accel_count != 3 || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
+    if (_accel_count <= _acc_body_aligned || _accel_calibrator[2].get_status() != ACCEL_CAL_SUCCESS || sample_num>=_accel_calibrator[2].get_num_samples_collected()) {
         return false;
     }
     _accel_calibrator[_acc_body_aligned].get_sample_corrected(sample_num, ret);
