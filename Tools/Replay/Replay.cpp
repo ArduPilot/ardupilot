@@ -146,7 +146,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 void ReplayVehicle::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        hal.scheduler->panic("Bad parameter table");
+        AP_HAL::panic("Bad parameter table");
     }
 }
 
@@ -697,7 +697,7 @@ void Replay::read_sensors(const char *type)
                      loc.lat * 1.0e-7f, 
                      loc.lng * 1.0e-7f,
                      loc.alt * 0.01f,
-                     hal.scheduler->millis()*0.001f);
+                     AP_HAL::millis()*0.001f);
             _vehicle.ahrs.set_home(loc);
             _vehicle.compass.set_initial_location(loc.lat, loc.lng);
             done_home_init = true;
@@ -772,7 +772,7 @@ void Replay::read_sensors(const char *type)
             ahrs_healthy = _vehicle.ahrs.healthy();
             printf("AHRS health: %u at %lu\n", 
                    (unsigned)ahrs_healthy,
-                   (unsigned long)hal.scheduler->millis());
+                   (unsigned long)AP_HAL::millis());
         }
         if (check_generate) {
             log_check_generate();
@@ -798,7 +798,7 @@ void Replay::log_check_generate(void)
 
     struct log_Chek packet = {
         LOG_PACKET_HEADER_INIT(LOG_CHEK_MSG),
-        time_us : hal.scheduler->micros64(),
+        time_us : AP_HAL::micros64(),
         roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
         pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
         yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
@@ -847,15 +847,15 @@ void Replay::loop()
     while (true) {
         char type[5];
 
-        if (arm_time_ms >= 0 && hal.scheduler->millis() > (uint32_t)arm_time_ms) {
+        if (arm_time_ms >= 0 && AP_HAL::millis() > (uint32_t)arm_time_ms) {
             if (!hal.util->get_soft_armed()) {
                 hal.util->set_soft_armed(true);
-                ::printf("Arming at %u ms\n", (unsigned)hal.scheduler->millis());
+                ::printf("Arming at %u ms\n", (unsigned)AP_HAL::millis());
             }
         }
 
         if (!logreader.update(type)) {
-            ::printf("End of log at %.1f seconds\n", hal.scheduler->millis()*0.001f);
+            ::printf("End of log at %.1f seconds\n", AP_HAL::millis()*0.001f);
             fclose(plotf);
             break;
         }
@@ -906,7 +906,7 @@ void Replay::loop()
 
             if (temp < 0.0f) temp = temp + 360.0f;
             fprintf(plotf, "%.3f %.1f %.1f %.1f %.2f %.1f %.1f %.1f %.2f %.2f %.2f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %.2f %.2f %.2f %.2f\n",
-                    hal.scheduler->millis() * 0.001f,
+                    AP_HAL::millis() * 0.001f,
                     logreader.get_sim_attitude().x,
                     logreader.get_sim_attitude().y,
                     logreader.get_sim_attitude().z,
@@ -933,7 +933,7 @@ void Replay::loop()
                     ekf_relpos.y,
                     -ekf_relpos.z);
             fprintf(plotf2, "%.3f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",
-                    hal.scheduler->millis() * 0.001f,
+                    AP_HAL::millis() * 0.001f,
                     degrees(ekf_euler.x),
                     degrees(ekf_euler.y),
                     temp,
@@ -974,8 +974,8 @@ void Replay::loop()
 
             // print EKF1 data packet
             fprintf(ekf1f, "%.3f %u %d %d %u %.2f %.2f %.2f %.2f %.2f %.2f %.0f %.0f %.0f\n",
-                    hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
+                    AP_HAL::millis() * 0.001f,
+                    AP_HAL::millis(),
                     roll, 
                     pitch, 
                     yaw, 
@@ -1004,8 +1004,8 @@ void Replay::loop()
 
             // print EKF2 data packet
             fprintf(ekf2f, "%.3f %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                    hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
+                    AP_HAL::millis() * 0.001f,
+                    AP_HAL::millis(),
                     accWeight, 
                     acc1, 
                     acc2, 
@@ -1032,8 +1032,8 @@ void Replay::loop()
 
             // print EKF3 data packet
             fprintf(ekf3f, "%.3f %d %d %d %d %d %d %d %d %d %d %d\n",
-                    hal.scheduler->millis() * 0.001f,
-                    hal.scheduler->millis(),
+                    AP_HAL::millis() * 0.001f,
+                    AP_HAL::millis(),
                     innovVN, 
                     innovVE, 
                     innovVD, 
@@ -1058,8 +1058,8 @@ void Replay::loop()
 
             // print EKF4 data packet
             fprintf(ekf4f, "%.3f %u %d %d %d %d %d %d %d %d %d %d\n",
-                    hal.scheduler->millis() * 0.001f,
-                    (unsigned)hal.scheduler->millis(),
+                    AP_HAL::millis() * 0.001f,
+                    (unsigned)AP_HAL::millis(),
                     (int)sqrtvarV,
                     (int)sqrtvarP,
                     (int)sqrtvarH,
