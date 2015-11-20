@@ -185,10 +185,10 @@ void PX4UARTDriver::try_initialise(void)
     if (_initialised) {
         return;
     }
-    if ((hal.scheduler->millis() - _last_initialise_attempt_ms) < 2000) {
+    if ((AP_HAL::millis() - _last_initialise_attempt_ms) < 2000) {
         return;
     }
-    _last_initialise_attempt_ms = hal.scheduler->millis();
+    _last_initialise_attempt_ms = AP_HAL::millis();
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED || !hal.util->get_soft_armed()) {
         begin(0);
     }
@@ -394,7 +394,7 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 }
             } else {
                 if (_os_start_auto_space - nwrite + 1 >= _total_written &&
-                    (hal.scheduler->micros64() - _first_write_time) > 500*1000UL) {
+                    (AP_HAL::micros64() - _first_write_time) > 500*1000UL) {
                     // it doesn't look like hw flow control is working
                     ::printf("disabling flow control on %s _total_written=%u\n", 
                              _devpath, (unsigned)_total_written);
@@ -412,7 +412,7 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
 
     if (ret > 0) {
         BUF_ADVANCEHEAD(_writebuf, ret);
-        _last_write_time = hal.scheduler->micros64();
+        _last_write_time = AP_HAL::micros64();
         _total_written += ret;
         if (! _first_write_time && _total_written > 5) {
             _first_write_time = _last_write_time;
@@ -420,12 +420,12 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
         return ret;
     }
 
-    if (hal.scheduler->micros64() - _last_write_time > 2000 &&
+    if (AP_HAL::micros64() - _last_write_time > 2000 &&
         _flow_control == FLOW_CONTROL_DISABLE) {
 #if 0
         // this trick is disabled for now, as it sometimes blocks on
         // re-opening the ttyACM0 port, which would cause a crash
-        if (hal.scheduler->micros64() - _last_write_time > 2000000) {
+        if (AP_HAL::micros64() - _last_write_time > 2000000) {
             // we haven't done a successful write for 2 seconds - try
             // reopening the port        
             _initialised = false;
@@ -438,11 +438,11 @@ int PX4UARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 return n;
             }
             
-            _last_write_time = hal.scheduler->micros64();
+            _last_write_time = AP_HAL::micros64();
             _initialised = true;
         }
 #else
-        _last_write_time = hal.scheduler->micros64();
+        _last_write_time = AP_HAL::micros64();
 #endif
         // we haven't done a successful write for 2ms, which means the 
         // port is running at less than 500 bytes/sec. Start
