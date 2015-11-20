@@ -53,6 +53,14 @@ void Copter::heli_acro_run()
     if (!motors.has_flybar()){
         // convert the input to the desired body frame rate
         get_pilot_desired_angle_rates(channel_roll->control_in, channel_pitch->control_in, channel_yaw->control_in, target_roll, target_pitch, target_yaw);
+
+        if (motors.supports_yaw_passthrough()) {
+            // if the tail on a flybar heli has an external gyro then
+            // also use no deadzone for the yaw control and
+            // pass-through the input direct to output.
+            target_yaw = channel_yaw->pwm_to_angle_dz(0);
+        }
+
         // run attitude controller
         attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
     }else{
