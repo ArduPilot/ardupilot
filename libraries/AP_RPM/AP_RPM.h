@@ -45,6 +45,7 @@ public:
         uint8_t                instance;        // the instance number of this RPM
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
+        float                  signal_quality;  // synthetic quality metric 
     };
 
     // parameters for each instance
@@ -73,6 +74,13 @@ public:
             return -1;
         }
         return state[instance].rate_rpm;
+    }
+
+    /*
+      return signal quality for a sensor.
+     */
+    float get_signal_quality(uint8_t instance) const {
+        return state[instance].signal_quality;
     }
 
     bool healthy(uint8_t instance) const;
