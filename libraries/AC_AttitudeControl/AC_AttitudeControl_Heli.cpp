@@ -86,6 +86,14 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _rate_bf_target.z += _rate_bf_desired.z;
 }
 
+// subclass non-passthrough too, for external gyro, no flybar
+void AC_AttitudeControl_Heli::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf)
+{
+    _passthrough_yaw = yaw_rate_bf;
+
+    AC_AttitudeControl::rate_bf_roll_pitch_yaw(roll_rate_bf, pitch_rate_bf, yaw_rate_bf);
+}
+
 //
 // rate controller (body-frame) methods
 //
