@@ -52,7 +52,7 @@ AP_GPS_PX4::read(void)
 
     if (updated) {
         if (OK == orb_copy(ORB_ID(vehicle_gps_position), _gps_sub, &_gps_pos)) {
-            state.last_gps_time_ms = hal.scheduler->millis();
+            state.last_gps_time_ms = AP_HAL::millis();
             state.status  = (AP_GPS::GPS_Status) (_gps_pos.fix_type | AP_GPS::NO_FIX);
             state.num_sats = _gps_pos.satellites_used;
             state.hdop = uint16_t(_gps_pos.eph*100.0f + .5f);
