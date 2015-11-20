@@ -21,7 +21,7 @@ void VRBRAINRCOutput::init(void* unused)
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, O_RDWR);
     if (_pwm_fd == -1) {
-        hal.scheduler->panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " PWM_OUTPUT_DEVICE_PATH);
     }
     if (ioctl(_pwm_fd, PWM_SERVO_ARM, 0) != 0) {
         hal.console->printf("RCOutput: Unable to setup IO arming\n");
@@ -199,7 +199,7 @@ void VRBRAINRCOutput::read(uint16_t* period_us, uint8_t len)
 
 void VRBRAINRCOutput::_timer_tick(void)
 {
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
 
     // always send at least at 20Hz, otherwise the IO board may think
     // we are dead
