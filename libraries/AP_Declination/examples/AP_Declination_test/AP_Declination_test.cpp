@@ -91,9 +91,9 @@ void setup(void)
     {
         for(int16_t j = -180; j <= 180; j+=5)
         {
-            uint32_t t1 = hal.scheduler->micros();
+            uint32_t t1 = AP_HAL::micros();
             declination = AP_Declination::get_declination(i, j);
-            total_time += hal.scheduler->micros() - t1;
+            total_time += AP_HAL::micros() - t1;
             declination_test = get_declination(i, j);
             if(declination == declination_test)
             {
