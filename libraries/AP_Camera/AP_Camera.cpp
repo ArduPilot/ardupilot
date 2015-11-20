@@ -264,7 +264,7 @@ bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
         return false;
     }
 
-    if (_max_roll > 0 && ((unsigned) ahrs.roll_sensor/100.0f > _max_roll)) {
+    if (_max_roll > 0 && labs(ahrs.roll_sensor/100) > _max_roll) {
         return false;
     }
 
