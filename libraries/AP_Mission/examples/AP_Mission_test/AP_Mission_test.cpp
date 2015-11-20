@@ -768,8 +768,8 @@ void MissionTest::run_resume_test()
     mission.stop();
 
     // update the mission for 5 seconds (nothing should happen)
-    uint32_t start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 5000) {
+    uint32_t start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 5000) {
         mission.update();
     }
 
@@ -991,8 +991,8 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     mission.set_current_cmd(2);
 
     // update the mission for 2 seconds (nothing should happen)
-    uint32_t start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 2000) {
+    uint32_t start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 2000) {
         mission.update();
     }
 
@@ -1006,8 +1006,8 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     }
 
     // pause for two seconds
-    start_time = hal.scheduler->millis();
-    while(hal.scheduler->millis() - start_time < 2000) {
+    start_time = AP_HAL::millis();
+    while(AP_HAL::millis() - start_time < 2000) {
         mission.update();
     }
 
