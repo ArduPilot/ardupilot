@@ -62,6 +62,7 @@ public:
     float get_cutoff_freq(void) const;
     float get_sample_freq(void) const;
     T apply(const T &sample);
+    void reset(void);
 
 protected:
     struct DigitalBiquadFilter<T>::biquad_params _params;
