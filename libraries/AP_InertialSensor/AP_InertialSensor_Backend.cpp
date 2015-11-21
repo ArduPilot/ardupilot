@@ -93,6 +93,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     _imu._last_raw_gyro[instance] = gyro;
 
     _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
+    if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
+        _imu._gyro_filter[instance].reset();
+    }
 
     _imu._new_gyro_data[instance] = true;
 
@@ -148,6 +151,9 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     _imu._delta_velocity_acc_dt[instance] += dt;
 
     _imu._accel_filtered[instance] = _imu._accel_filter[instance].apply(accel);
+    if (_imu._accel_filtered[instance].is_nan() || _imu._accel_filtered[instance].is_inf()) {
+        _imu._accel_filter[instance].reset();
+    }
 
     _imu._new_accel_data[instance] = true;
 
