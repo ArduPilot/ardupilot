@@ -268,11 +268,7 @@ bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
         return false;
     }
 
-<<<<<<< HEAD
     uint32_t tnow = AP_HAL::millis();
-=======
-    uint32_t tnow = hal.scheduler->millis();
->>>>>>> 6a9ef361aef3fb67d0b94474b2753df20006a45d
     if (tnow - _last_photo_time < (unsigned) _min_interval) {
         return false;
     }  else {
