@@ -9,6 +9,7 @@
 #include "UARTDriver.h"
 #include "SPIUARTDriver.h"
 #include "RPIOUARTDriver.h"
+#include "I2CDevice.h"
 #include "I2CDriver.h"
 #include "SPIDriver.h"
 #include "AnalogIn.h"
