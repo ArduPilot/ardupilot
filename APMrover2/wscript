@@ -11,6 +11,7 @@ def build(bld):
         vehicle=vehicle,
         libraries=ardupilotwaf.COMMON_VEHICLE_DEPENDENT_LIBRARIES + [
             'APM_Control',
+            'AP_Arming',
             'AP_Camera',
             'AP_Frsky_Telem',
             'AP_L1_Control',
