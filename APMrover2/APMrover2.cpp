@@ -381,7 +381,7 @@ void Rover::update_GPS_10Hz(void)
         }
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc) == true) {
+        if (camera.update_location(current_loc, rover.ahrs) == true) {
             do_take_picture();
         }
 #endif
