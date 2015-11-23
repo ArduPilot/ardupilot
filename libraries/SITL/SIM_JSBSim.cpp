@@ -421,6 +421,9 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * FEET_TO_METERS;
 
+    rpm1 = fdm.rpm[0];
+    rpm2 = fdm.rpm[1];
+    
     // assume 1kHz for now
     time_now_us += 1000;
 }
