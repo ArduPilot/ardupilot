@@ -60,7 +60,7 @@ void SITL_State::_set_param_default(const char *parm)
 /*
   setup for SITL handling
  */
-void SITL_State::_sitl_setup(void)
+void SITL_State::_sitl_setup(const char *home_str)
 {
 #ifndef __CYGWIN__
     _parent_pid = getppid();
@@ -92,6 +92,9 @@ void SITL_State::_sitl_setup(void)
 #endif
         if (enable_gimbal) {
             gimbal = new Gimbal(_sitl->state);
+        }
+        if (enable_ADSB) {
+            adsb = new ADSB(_sitl->state, home_str);
         }
     }
 
@@ -251,6 +254,9 @@ void SITL_State::_fdm_input_local(void)
 
     if (gimbal != NULL) {
         gimbal->update();
+    }
+    if (adsb != NULL) {
+        adsb->update();
     }
 
     // update simulation time
