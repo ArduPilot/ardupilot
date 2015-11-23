@@ -35,6 +35,7 @@ using namespace VRBRAIN;
 static Empty::Semaphore  i2cSemaphore;
 static Empty::I2CDriver  i2cDriver(&i2cSemaphore);
 static Empty::SPIDeviceManager spiDeviceManager;
+static Empty::OpticalFlow optflowDriver;
 //static Empty::GPIO gpioDriver;
 
 static VRBRAINScheduler schedulerInstance;
@@ -116,7 +117,8 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
-        &utilInstance) /* util */
+        &utilInstance, /* util */
+        &optflowDriver) /* optflow */
 {}
 
 bool _vrbrain_thread_should_exit = false;        /**< Daemon exit flag */
