@@ -88,6 +88,10 @@ protected:
     float mass; // kg
     Vector3f accel_body; // m/s/s NED, body frame
     float airspeed; // m/s, apparent airspeed
+    float battery_voltage = -1;
+    float battery_current = 0;
+    float rpm1 = 0;
+    float rpm2 = 0;
 
     uint64_t time_now_us;
 
