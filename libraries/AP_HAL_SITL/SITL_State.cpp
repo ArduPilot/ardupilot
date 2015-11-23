@@ -149,23 +149,7 @@ void SITL_State::_fdm_input_step(void)
     fd_set fds;
     struct timeval tv;
 
-    if (sitl_model != NULL) {
-        _fdm_input_local();
-    } else {
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-
-        FD_ZERO(&fds);
-        FD_SET(_sitl_fd, &fds);
-        if (select(_sitl_fd+1, &fds, NULL, NULL, &tv) != 1) {
-            // internal error
-            _simulator_output(true);
-            return;
-        }
-
-        /* check for packet from flight sim */
-        _fdm_input();
-    }
+    _fdm_input_local();
 
     /* make sure we die if our parent dies */
     if (kill(_parent_pid, 0) != 0) {
@@ -228,71 +212,21 @@ void SITL_State::_fdm_input(void)
     ssize_t size;
     struct pwm_packet {
         uint16_t pwm[8];
-    };
-    union {
-        struct sitl_fdm fg_pkt;
-        struct pwm_packet pwm_pkt;
-    } d;
-    bool got_fg_input = false;
+    } pwm_pkt;
 
-    size = recv(_sitl_fd, &d, sizeof(d), MSG_DONTWAIT);
+    size = recv(_sitl_fd, &pwm_pkt, sizeof(pwm_pkt), MSG_DONTWAIT);
     switch (size) {
-    case 148:
-        static uint32_t last_report;
-        static uint32_t count;
-
-        if (d.fg_pkt.magic != 0x4c56414f) {
-            fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
-            return;
-        }
-
-        if (d.fg_pkt.latitude == 0 ||
-                d.fg_pkt.longitude == 0 ||
-                d.fg_pkt.altitude <= 0) {
-            // garbage input
-            return;
-        }
-
-        hal.scheduler->stop_clock(d.fg_pkt.timestamp_us);
-        _synthetic_clock_mode = true;
-        got_fg_input = true;
-
-        if (_sitl != NULL) {
-            _sitl->state = d.fg_pkt;
-            // prevent bad inputs from SIM from corrupting our state
-            double *v = &_sitl->state.latitude;
-            for (uint8_t i=0; i<17; i++) {
-                if (isinf(v[i]) || isnan(v[i]) || fabs(v[i]) > 1.0e10) {
-                    v[i] = 0;
-                }
-            }
-        }
-        _update_count++;
-
-        count++;
-        if (AP_HAL::millis() - last_report > 1000) {
-            //fprintf(stdout, "SIM %u FPS\n", count);
-            count = 0;
-            last_report = AP_HAL::millis();
-        }
-        break;
-
-    case 16: {
+    case sizeof(pwm_pkt): {
         // a packet giving the receiver PWM inputs
         uint8_t i;
         for (i=0; i<8; i++) {
             // setup the pwn input for the RC channel inputs
-            if (d.pwm_pkt.pwm[i] != 0) {
-                pwm_input[i] = d.pwm_pkt.pwm[i];
+            if (pwm_pkt.pwm[i] != 0) {
+                pwm_input[i] = pwm_pkt.pwm[i];
             }
         }
         break;
     }
-    }
-
-    if (got_fg_input) {
-        // send RC output to flight sim
-        _simulator_output(_synthetic_clock_mode);
     }
 }
 
@@ -456,50 +390,6 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
     current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
 }
 
-
-/*
-  send RC outputs to simulator
- */
-void SITL_State::_simulator_output(bool synthetic_clock_mode)
-{
-    struct {
-        uint16_t pwm[SITL_NUM_CHANNELS];
-        uint16_t speed, direction, turbulance;
-    } control;
-    Aircraft::sitl_input input;
-
-    _simulator_servos(input);
-
-    if (_sitl == NULL) {
-        return;
-    }
-
-    memcpy(control.pwm, input.servos, sizeof(control.pwm));
-
-    // setup wind control
-    float wind_speed = _sitl->wind_speed * 100;
-    float altitude = _barometer?_barometer->get_altitude():0;
-    if (altitude < 0) {
-        altitude = 0;
-    }
-    if (altitude < 60) {
-        wind_speed *= altitude / 60.0f;
-    }
-    control.speed      = wind_speed;
-    float direction = _sitl->wind_direction;
-    if (direction < 0) {
-        direction += 360;
-    }
-    control.direction  = direction * 100;
-    control.turbulance = _sitl->wind_turbulance * 100;
-
-    // zero the wind for the first 15s to allow pitot calibration
-    if (AP_HAL::millis() < 15000) {
-        control.speed = 0;
-    }
-
-    sendto(_sitl_fd, (void*)&control, sizeof(control), MSG_DONTWAIT, (const sockaddr *)&_rcout_addr, sizeof(_rcout_addr));
-}
 
 // generate a random float between -1 and 1
 float SITL_State::_rand_float(void)
