@@ -28,7 +28,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 #define VEHICLE_THREAT_RADIUS_M         200
-#define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember. Additional ones are ignored
+#define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember at any given time
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
 
 class AP_ADSB
@@ -40,9 +40,15 @@ public:
         ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2
     };
 
+    enum ADSB_THREAT_LEVEL {
+        ADSB_THREAT_LOW = 0,
+        ADSB_THREAT_HIGH = 1
+    };
+
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 42
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
+        ADSB_THREAT_LEVEL threat_level;   // basic threat level
     };
 
 
@@ -98,9 +104,15 @@ private:
     AP_Int8     _behavior;
     adsb_vehicle_t *_vehicle_list;
     uint16_t    _vehicle_count = 0;
-    uint16_t    _furthest_vehicle_index = 0;
-    float       _furthest_vehicle_distance = 0;
     bool        _another_vehicle_within_radius = false;
     bool        _is_evading_threat = false;
+
+    // index of and distance to vehicle with lowest threat
+    uint16_t    _lowest_threat_index = 0;
+    float       _lowest_threat_distance = 0;
+
+    // index of and distance to vehicle with highest threat
+    uint16_t    _highest_threat_index = 0;
+    float       _highest_threat_distance = 0;
 };
 #endif // AP_ADSB_H
