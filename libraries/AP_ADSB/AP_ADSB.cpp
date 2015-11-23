@@ -148,7 +148,7 @@ void AP_ADSB::perform_threat_detection(void)
  */
 Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location loc;
+    Location loc {};
     loc.alt = vehicle.info.altitude * 100;
     loc.lat = vehicle.info.lat * 1e7;
     loc.lng = vehicle.info.lon * 1e7;
