@@ -19,6 +19,10 @@ struct sitl_fdm {
     double rollRate, pitchRate, yawRate; // degrees/s/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     double airspeed; // m/s
+    double battery_voltage; // Volts
+    double battery_current; // Amps
+    double rpm1;            // main prop RPM
+    double rpm2;            // secondary RPM
 };
 
 // number of rc output channels
