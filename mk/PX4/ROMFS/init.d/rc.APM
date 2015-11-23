@@ -411,10 +411,15 @@ then
     fi
 fi
 
-# optional oreo leds
-if oreoled start autoupdate
+# Solo OreoLEDs
+if oreoledbl -t auto update
 then
-    echo "oreoled started OK"
+    echo "oreoledbl update complete"
+
+    if oreoled start
+    then
+        echo "oreoled started OK"
+    fi
 fi
 
 # optional smbus battery monitor

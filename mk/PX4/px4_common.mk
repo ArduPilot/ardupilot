@@ -21,6 +21,7 @@ MODULES		+= drivers/px4io
 MODULES		+= drivers/px4flow
 MODULES		+= drivers/rgbled
 MODULES		+= drivers/oreoled
+MODULES		+= drivers/oreoled/oreoled_bootloader
 MODULES		+= drivers/mpu6000
 MODULES		+= drivers/hmc5883
 MODULES		+= drivers/ms5611
