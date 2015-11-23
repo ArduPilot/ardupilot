@@ -768,6 +768,7 @@ void Plane::set_flight_stage(AP_SpdHgtControl::FlightStage fs)
 
     switch (fs) {
     case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude());
 #if GEOFENCE_ENABLED == ENABLED 
         if (g.fence_autoenable == 1) {
             if (! geofence_set_enabled(false, AUTO_TOGGLED)) {
