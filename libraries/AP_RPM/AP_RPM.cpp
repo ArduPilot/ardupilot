@@ -16,6 +16,7 @@
 
 #include "AP_RPM.h"
 #include "RPM_PX4_PWM.h"
+#include "RPM_SITL.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -84,6 +85,11 @@ void AP_RPM::init(void)
             state[instance].instance = instance;
             drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
         }
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        uint8_t instance = num_instances;
+        state[instance].instance = instance;
+        drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
 #endif
         if (drivers[i] != NULL) {
             // we loaded a driver for this instance, so it must be
