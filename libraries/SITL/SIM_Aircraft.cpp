@@ -258,7 +258,6 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
     fdm.airspeed = airspeed;
-    fdm.magic = 0x4c56414f;
 }
 
 uint64_t Aircraft::get_wall_time_us() const

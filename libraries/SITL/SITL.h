@@ -8,10 +8,8 @@ class DataFlash_Class;
 
 namespace SITL {
 
-struct PACKED sitl_fdm {
-    // this is the packet sent by the simulator
-    // to the APM executable to update the simulator state
-    // All values are little-endian
+struct sitl_fdm {
+    // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
     double latitude, longitude; // degrees
     double altitude;  // MSL
@@ -21,7 +19,6 @@ struct PACKED sitl_fdm {
     double rollRate, pitchRate, yawRate; // degrees/s/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     double airspeed; // m/s
-    uint32_t magic; // 0x4c56414f
 };
 
 // number of rc output channels
