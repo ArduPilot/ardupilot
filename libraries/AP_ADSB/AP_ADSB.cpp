@@ -56,7 +56,7 @@ void AP_ADSB::init(void)
         if (_vehicle_list == NULL) {
             // dynamic RAM allocation of _vehicle_list[] failed, disable gracefully
             hal.console->printf("Unable to initialize ADS-B vehicle list\n");
-            _enabled.set_and_save(0);
+            _enabled.set(0);
         }
     }
     _vehicle_count = 0;
