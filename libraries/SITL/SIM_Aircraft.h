@@ -98,6 +98,7 @@ protected:
     Location location;
 
     float ground_level;
+    float home_yaw;
     float frame_height;
     Matrix3f dcm;  // rotation matrix, APM conventions, from body to earth
     Vector3f gyro; // rad/s

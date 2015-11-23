@@ -55,13 +55,11 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     min_sleep_time(5000)
 #endif
 {
-    float yaw_degrees;
-
-    parse_home(home_str, home, yaw_degrees);
+    parse_home(home_str, home, home_yaw);
     location = home;
     ground_level = home.alt*0.01;
 
-    dcm.from_euler(0, 0, radians(yaw_degrees));
+    dcm.from_euler(0, 0, radians(home_yaw));
 
     set_speedup(1);
 
