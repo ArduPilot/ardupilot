@@ -19,6 +19,7 @@ private:
     bool _read_pressure();
     void _read_temp();
     void _calculate();
+    bool _data_ready();
 
     uint8_t _instance;
     float _temp_sum;

@@ -24,14 +24,7 @@ extern const AP_HAL::HAL &hal;
 #define BMP085_ADDRESS 0x77
 
 #ifndef BMP085_EOC
-// No EOC connection from Baro
-// Use times instead.
-// Temp conversion time is 4.5ms
-// Pressure conversion time is 25.5ms (for OVERSAMPLING=3)
 #define BMP085_EOC -1
-#define BMP_DATA_READY() (BMP085_State == 0 ? AP_HAL::millis() > (_last_temp_read_command_time + 5) : AP_HAL::millis() > (_last_press_read_command_time + 26))
-#else
-#define BMP_DATA_READY() hal.gpio->read(BMP085_EOC)
 #endif
 
 // oversampling 3 gives 26ms conversion time. We then average
@@ -93,7 +86,7 @@ void AP_Baro_BMP085::accumulate(void)
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *i2c_sem = hal.i2c->get_semaphore();
 
-    if (!BMP_DATA_READY()) {
+    if (!_data_ready()) {
         return;
     }
 
@@ -124,7 +117,7 @@ void AP_Baro_BMP085::accumulate(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_count == 0 && BMP_DATA_READY()) {
+    if (_count == 0 && _data_ready()) {
         accumulate();
     }
     if (_count == 0) {
@@ -233,4 +226,18 @@ void AP_Baro_BMP085::_calculate()
         _press_sum *= 0.5f;
         _count /= 2;
     }
+}
+
+bool AP_Baro_BMP085::_data_ready()
+{
+    if (BMP085_EOC >= 0) {
+        return hal.gpio->read(BMP085_EOC);
+    }
+
+    // No EOC pin: use time from last read instead.
+    if (BMP085_State == 0) {
+        return AP_HAL::millis() > _last_temp_read_command_time + 5;
+    }
+
+    return AP_HAL::millis() > _last_press_read_command_time + 26;
 }
