@@ -22,6 +22,7 @@ static RCInput rcinDriver;
 static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
 static Util utilInstance;
+static OpticalFlow opticalFlowDriver;
 
 HAL_Empty::HAL_Empty() :
     AP_HAL::HAL(
@@ -41,8 +42,9 @@ HAL_Empty::HAL_Empty() :
         &rcinDriver,
         &rcoutDriver,
         &schedulerInstance,
-        &utilInstance),
-    _member(new PrivateMember(123))
+        &utilInstance,
+        &opticalFlowDriver),
+    _member(new EmptyPrivateMember(123))
 {}
 
 void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
