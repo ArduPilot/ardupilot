@@ -146,8 +146,6 @@ void SITL_State::_setup_fdm(void)
 void SITL_State::_fdm_input_step(void)
 {
     static uint32_t last_pwm_input = 0;
-    fd_set fds;
-    struct timeval tv;
 
     _fdm_input_local();
 
@@ -378,12 +376,21 @@ void SITL_State::_simulator_servos(Aircraft::sitl_input &input)
         }
     }
 
-    float throttle = _sitl->motors_on?(input.servos[2]-1000) / 1000.0f:0;
-    // lose 0.7V at full throttle
-    float voltage = _sitl->batt_voltage - 0.7f*throttle;
+    float voltage;
+    
+    if (_sitl->state.battery_voltage <= 0) {
+        // simulate simple battery setup
+        float throttle = _sitl->motors_on?(input.servos[2]-1000) / 1000.0f:0;
+        // lose 0.7V at full throttle
+        voltage = _sitl->batt_voltage - 0.7f*throttle;
 
-    // assume 50A at full throttle
-    _current = 50.0f * throttle;
+        // assume 50A at full throttle
+        _current = 50.0f * throttle;
+    } else {
+        // FDM provides voltage and current
+        voltage = _sitl->state.battery_voltage;
+        _current = _sitl->state.battery_current;
+    }
 
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
