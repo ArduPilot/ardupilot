@@ -42,6 +42,8 @@ static UARTDriver uartCDriver(false);
 static UARTDriver uartDDriver(false);
 static UARTDriver uartEDriver(false);
 
+static I2CDeviceManager i2c_mgr_instance;
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static Semaphore  i2cSemaphore0;
 static I2CDriver  i2cDriver0(&i2cSemaphore0, "/dev/i2c-0");
@@ -194,6 +196,7 @@ HAL_Linux::HAL_Linux() :
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
+        &i2c_mgr_instance,
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
         &i2cDriver0,
         &i2cDriver1,
