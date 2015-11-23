@@ -6,6 +6,7 @@ namespace Empty {
     class DigitalSource;
     class GPIO;
     class I2CDriver;
+    class OpticalFlow;
     class PrivateMember;
     class RCInput;
     class RCOutput;
