@@ -55,10 +55,27 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:Low,1:High
     // @User: Standard
     AP_GROUPINFO("RELAY_ON",    5, AP_Camera, _relay_on, 1),
-    
+
+    // @Param: MIN_INTERVAL
+    // @DisplayName: Minimum time between photos
+    // @Description: Postpone shooting if previous picture was taken less than preset time(ms) ago.
+    // @User: Standard
+    // @Units: milliseconds
+    // @Range: 0 10000
+    AP_GROUPINFO("MIN_INTERVAL",  6, AP_Camera, _min_interval, 0),
+
+    // @Param: MAX_ROLL
+    // @DisplayName: Maximum photo roll angle.
+    // @Description: Postpone shooting if roll is greater than limit. (0=Disable, will shoot regardless of roll).
+    // @User: Standard
+    // @Units: Degrees
+    // @Range: 0 180
+    AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
+
     AP_GROUPEND
 };
 
+extern const AP_HAL::HAL& hal;
 
 /// Servo operated camera
 void
@@ -228,7 +245,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS
     The caller is responsible for taking the picture based on the return value of this function.
     The caller is also responsible for logging the details about the photo
 */
-bool AP_Camera::update_location(const struct Location &loc)
+bool AP_Camera::update_location(const struct Location &loc, const AP_AHRS &ahrs)
 {
     if (is_zero(_trigg_dist)) {
         return false;
@@ -242,9 +259,21 @@ bool AP_Camera::update_location(const struct Location &loc)
         // be called without a new GPS fix
         return false;
     }
+
     if (get_distance(loc, _last_location) < _trigg_dist) {
         return false;
     }
-    _last_location = loc;
-    return true;
+
+    if (_max_roll > 0 && labs(ahrs.roll_sensor/100) > _max_roll) {
+        return false;
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - _last_photo_time < (unsigned) _min_interval) {
+        return false;
+    }  else {
+        _last_location = loc;
+        _last_photo_time = tnow;
+        return true;
+    }
 }

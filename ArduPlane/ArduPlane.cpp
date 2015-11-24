@@ -456,7 +456,7 @@ void Plane::update_GPS_10Hz(void)
         geofence_check(false);
 
 #if CAMERA == ENABLED
-        if (camera.update_location(current_loc) == true) {
+        if (camera.update_location(current_loc, plane.ahrs ) == true) {
             do_take_picture();
         }
 #endif        
