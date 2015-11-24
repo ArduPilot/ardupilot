@@ -1,10 +1,45 @@
 language: cpp
-sudo: required
+sudo: false
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - build-essential
+    - g++-4.8
+    - gcc-4.8
+    - genromfs
+    - libc6-i386
+    - python-argparse
+    - python-empy
+    - python-serial
+    - zlib1g-dev
+  coverity_scan:
+    project:
+      name: "diydrones/ardupilot"
+      description: "Build submitted via Travis CI"
+    notification_email: andrew-scan@tridgell.net
+    build_command_prepend: "make clean"
+    build_command:   "make"
+    branch_pattern: coverity_scan
 
 before_install:
-  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
+  - pushd .
+    && cd ~
+    && wget http://firmware.diydrones.com/Tools/PX4-tools/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+    && tar -xf gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+    && wget http://firmware.diydrones.com/Tools/Travis/NavIO/master.tar.gz
+    && tar -xf master.tar.gz
+    && mkdir -p $HOME/bin
+    && ln -sf /usr/bin/gcc-4.8 $HOME/bin/gcc
+    && ln -sf /usr/bin/g++-4.8 $HOME/bin/g++
+    && exportline="export PATH=$HOME/bin:$HOME/gcc-arm-none-eabi-4_9-2015q3/bin:$HOME/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH"
+    && if grep -Fxq "$exportline" ~/.profile; then echo nothing to do ; else echo $exportline >> ~/.profile; fi
+    && . ~/.profile
+    && popd
 
-script: 
+script:
   - Tools/scripts/build_all_travis.sh
 
 notifications:
@@ -23,13 +58,3 @@ env:
   matrix:
     - TRAVIS_BUILD_TARGET="px4-v2"
     - TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure"
-
-addons:
-  coverity_scan:
-    project:
-      name: "diydrones/ardupilot"
-      description: "Build submitted via Travis CI"
-    notification_email: andrew-scan@tridgell.net
-    build_command_prepend: "make clean"
-    build_command:   "make"
-    branch_pattern: coverity_scan
