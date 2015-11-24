@@ -327,7 +327,7 @@ void DataFlash_File::Prep_MinSpace()
         }
         if (file_exists(filename_to_remove)) {
             hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
-                                filename_to_remove, avail, min_avail_space_percent);
+                                filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
