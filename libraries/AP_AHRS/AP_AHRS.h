@@ -31,8 +31,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Param/AP_Param.h>
 
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-
+class OpticalFlow;
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
 #define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
