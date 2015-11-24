@@ -147,6 +147,12 @@ static Empty::RCOutput rcoutDriver;
 
 static Scheduler schedulerInstance;
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static OpticalFlow_Onboard opticalFlow;
+#else
+static Empty::OpticalFlow opticalFlow;
+#endif
+
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
         &uartADriver,
@@ -175,7 +181,8 @@ HAL_Linux::HAL_Linux() :
         &rcinDriver,
         &rcoutDriver,
         &schedulerInstance,
-        &utilInstance)
+        &utilInstance,
+        &opticalFlow)
 {}
 
 void _usage(void)
