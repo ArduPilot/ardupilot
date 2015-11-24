@@ -1383,9 +1383,17 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
             //if plane is close to the ground a go around coudld be dangerous.
             if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
-                //Just tell the autopilot we're done landing so it will 
-                //proceed to the next mission item.  If there is no next mission
-                //item the plane will head to home point and loiter.
+                // Initiate an aborted landing. This will trigger a pitch-up and
+                // climb-out to a safe altitude holding heading then one of the
+                // following actions will occur, check for in this order:
+                // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
+                //      increment mission index to execute it
+                // - else if DO_LAND_START is available, jump to it
+                // - else decrement the mission index to repeat the landing approach
+
+                if (!is_zero(packet.param1)) {
+                    plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
+                }
                 plane.auto_state.commanded_go_around = true;
                
                 result = MAV_RESULT_ACCEPTED;

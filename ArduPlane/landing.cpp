@@ -16,15 +16,6 @@ bool Plane::verify_land()
     // so we don't verify command completion. Instead we use this to
     // adjust final landing parameters
 
-    // If a go around has been commanded, we are done landing.  This will send
-    // the mission to the next mission item, which presumably is a mission
-    // segment with operations to perform when a landing is called off.
-    // If there are no commands after the land waypoint mission item then
-    // the plane will proceed to loiter about its home point.
-    if (auto_state.commanded_go_around) {
-        return true;
-    }
-
     // when aborting a landing, mimic the verify_takeoff with steering hold. Once
     // the altitude has been reached, restart the landing sequence
     if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
