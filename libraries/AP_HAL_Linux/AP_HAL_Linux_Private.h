@@ -36,6 +36,11 @@
 #include "Util_RPI.h"
 #include "Heat.h"
 #include "Heat_Pwm.h"
+#include "CameraSensor.h"
+#include "CameraSensor_Mt9v117.h"
+#include "VideoIn.h"
+#include "OpticalFlow_Onboard.h"
+#include "Flow_PX4.h"
 
 #endif // __AP_HAL_LINUX_PRIVATE_H__
 
