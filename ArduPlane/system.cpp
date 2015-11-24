@@ -233,6 +233,8 @@ void Plane::init_ardupilot()
 
     startup_ground();
 
+    quadplane.setup();
+    
     // choose the nav controller
     set_nav_controller();
 
@@ -396,7 +398,7 @@ void Plane::set_mode(enum FlightMode mode)
         acro_state.locked_roll = false;
         acro_state.locked_pitch = false;
         break;
-
+        
     case CRUISE:
         auto_throttle_mode = true;
         cruise_state.locked_heading = false;
@@ -443,6 +445,10 @@ void Plane::set_mode(enum FlightMode mode)
         guided_WP_loc = current_loc;
         set_guided_WP();
         break;
+
+    case HOVER:
+        auto_throttle_mode = false;
+        break;
     }
 
     // start with throttle suppressed in auto_throttle modes
@@ -477,6 +483,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case AUTO:
     case RTL:
     case LOITER:
+    case HOVER:
         set_mode((enum FlightMode)mode);
         return true;
     }
@@ -743,6 +750,7 @@ void Plane::change_arm_state(void)
     Log_Arm_Disarm();
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    quadplane.set_armed(hal.util->get_soft_armed());
 }
 
 /*

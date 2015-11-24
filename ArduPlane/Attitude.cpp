@@ -140,6 +140,7 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
+        control_mode == HOVER ||
         control_mode == TRAINING) {
         return;
     }
@@ -159,6 +160,7 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == AUTOTUNE ||
         control_mode == FLY_BY_WIRE_B ||
         control_mode == CRUISE ||
+        control_mode == HOVER ||
         control_mode == TRAINING ||
         (control_mode == AUTO && g.auto_fbw_steer)) {
         return;
@@ -354,6 +356,8 @@ void Plane::stabilize()
         stabilize_training(speed_scaler);
     } else if (control_mode == ACRO) {
         stabilize_acro(speed_scaler);
+    } else if (control_mode == HOVER) {
+        quadplane.stabilize_hover();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
             stabilize_stick_mixing_fbw();
@@ -760,6 +764,9 @@ void Plane::set_servos(void)
 {
     int16_t last_throttle = channel_throttle->radio_out;
 
+    // do any transition updates for quadplane
+    quadplane.update();    
+
     if (control_mode == AUTO && auto_state.idle_mode) {
         // special handling for balloon launch
         set_servos_idle();
@@ -915,6 +922,10 @@ void Plane::set_servos(void)
                    guided_throttle_passthru) {
             // manual pass through of throttle while in GUIDED
             channel_throttle->radio_out = channel_throttle->radio_in;
+        } else if (control_mode == HOVER) {
+            // no forward throttle for now
+            channel_throttle->servo_out = 0;
+            channel_throttle->calc_pwm();
         } else {
             // normal throttle calculation based on servo_out
             channel_throttle->calc_pwm();

@@ -96,6 +96,8 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 
+#include "quadplane.h"
+
 // Configuration
 #include "config.h"
 
@@ -135,6 +137,7 @@ public:
     friend class GCS_MAVLINK;
     friend class Parameters;
     friend class AP_Arming_Plane;
+    friend class QuadPlane;
 
     Plane(void);
 
@@ -712,7 +715,9 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
-
+    // support for quadcopter-plane
+    QuadPlane quadplane{ahrs};
+    
     void demo_servos(uint8_t i);
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);

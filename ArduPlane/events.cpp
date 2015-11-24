@@ -13,6 +13,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     case MANUAL:
     case STABILIZE:
     case ACRO:
+    case HOVER:
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
@@ -61,6 +62,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     case MANUAL:
     case STABILIZE:
     case ACRO:
+    case HOVER:
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
