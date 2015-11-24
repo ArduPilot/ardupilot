@@ -215,7 +215,7 @@ int8_t Rover::test_wp(uint8_t argc, const Menu::arg *argv)
 	delay(1000);
 
 	cliSerial->printf("%u waypoints\n", (unsigned)mission.num_commands());
-	cliSerial->printf("Hit radius: %f\n", g.waypoint_radius.get());
+	cliSerial->printf("Hit radius: %f\n", (double)g.waypoint_radius.get());
 
 	for(uint8_t i = 0; i < mission.num_commands(); i++){
         AP_Mission::Mission_Command temp_cmd;
