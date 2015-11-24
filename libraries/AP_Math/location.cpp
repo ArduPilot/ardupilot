@@ -219,6 +219,20 @@ float wrap_PI(float angle_in_radians)
 }
 
 /*
+ * wrap an angle in radians to 0..2PI
+ */
+float wrap_2PI(float angle)
+{
+    if (angle > 10*PI || angle < -10*PI) {
+        // for very large numbers use modulus
+        angle = fmodf(angle, 2*PI);
+    }
+    while (angle > 2*PI) angle -= 2*PI;
+    while (angle < 0) angle += 2*PI;
+    return angle;
+}
+
+/*
   return true if lat and lng match. Ignores altitude and options
  */
 bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {

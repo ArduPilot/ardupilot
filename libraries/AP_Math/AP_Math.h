@@ -158,6 +158,11 @@ float wrap_180_cd_float(float angle);
 float wrap_PI(float angle_in_radians);
 
 /*
+  wrap an angle defined in radians to the interval [0,2*PI)
+ */
+float wrap_2PI(float angle);
+
+/*
  * check if lat and lng match. Ignore altitude and options
  */
 bool locations_are_same(const struct Location &loc1, const struct Location &loc2);
