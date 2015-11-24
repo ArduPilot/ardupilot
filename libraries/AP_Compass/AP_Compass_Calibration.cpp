@@ -286,10 +286,10 @@ uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
         }
 
         uint8_t mag_mask = packet.param1;
-        bool retry = packet.param2;
-        bool autosave = packet.param3;
+        bool retry = !is_zero(packet.param2);
+        bool autosave = !is_zero(packet.param3);
         float delay = packet.param4;
-        bool autoreboot = packet.param5;
+        bool autoreboot = !is_zero(packet.param5);
 
         if (mag_mask == 0) { // 0 means all
             if (!start_calibration_all(retry, autosave, delay, autoreboot)) {
