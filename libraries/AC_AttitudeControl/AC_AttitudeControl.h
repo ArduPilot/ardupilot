@@ -17,13 +17,14 @@
 
 // To-Do: change the name or move to AP_Math?
 #define AC_ATTITUDE_CONTROL_DEGX100 5729.57795f                   // constant to convert from radians to centi-degrees
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN             36000.0f  // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX             72000.0f  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN              9000.0f   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX              36000.0f  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT            1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
-#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT        110000.0f // default maximum acceleration for roll/pitch axis in centi-degrees/sec/sec
-#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT         27000.0f  // default maximum acceleration for yaw axis in centi-degrees/sec/sec
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS             radians(360.0f)  // minimum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS             radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS              radians(90.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
+#define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS              radians(360.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
+// BUG: SLEW_YAW's behavior does not match its parameter documentation
+#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS              1000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sed * Stab Rate P so by default will be 45deg/sec.
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS         110000.0f // default maximum acceleration for roll/pitch axis in centi-degrees/sec/sec
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS          27000.0f  // default maximum acceleration for yaw axis in centi-degrees/sec/sec
 
 #define AC_ATTITUDE_RATE_CONTROLLER_TIMEOUT             1.0f    // body-frame rate controller timeout in seconds
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          5000.0f // body-frame rate controller maximum output (for roll-pitch axis)
@@ -31,10 +32,10 @@
 #define AC_ATTITUDE_ANGLE_YAW_CONTROLLER_OUT_MAX        4500.0f // earth-frame angle controller maximum output (for yaw axis)
 #define AC_ATTITUDE_ANGLE_CONTROLLER_ANGLE_MAX          4500.0f // earth-frame angle controller maximum input angle (To-Do: replace with reference to aparm.angle_max)
 
-#define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX  30000.0f // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX 30000.0f // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
-#define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX   1000.0f // earth-frame rate stabilize controller's maximum overshoot angle
-#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX  3000.0f // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX_RAD  radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
+#define AC_ATTITUDE_RATE_STAB_PITCH_OVERSHOOT_ANGLE_MAX_RAD radians(300.0f) // earth-frame rate stabilize controller's maximum overshoot angle (never limited)
+#define AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX_RAD   radians(10.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
+#define AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD  radians(30.0f)  // earth-frame rate stabilize controller's maximum overshoot angle
 
 #define AC_ATTITUDE_100HZ_DT                            0.0100f // delta time in seconds for 100hz update rate
 #define AC_ATTITUDE_400HZ_DT                            0.0025f // delta time in seconds for 400hz update rate
@@ -62,7 +63,7 @@ public:
         _pid_rate_yaw(pid_rate_yaw),
         _dt(AC_ATTITUDE_100HZ_DT),
         _angle_boost(0),
-        _acro_angle_switch(0),
+        _acro_angle_switch_rad(0),
 	    _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ)
 		{
 			AP_Param::setup_object_defaults(this, var_info);
@@ -81,40 +82,40 @@ public:
     // set_dt - sets time delta in seconds for all controllers (i.e. 100hz = 0.01, 400hz = 0.0025)
     void set_dt(float delta_sec);
 
-    // get_accel_roll_max - gets the roll acceleration limit
+    // get_accel_roll_max - gets the roll acceleration limit in centidegrees/s/s
     float get_accel_roll_max() { return _accel_roll_max; }
 
-    // set_accel_roll_max - sets the roll acceleration limit
+    // set_accel_roll_max - sets the roll acceleration limit in centidegrees/s/s
     void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
 
-    // save_accel_roll_max - sets and saves the roll acceleration limit
+    // save_accel_roll_max - sets and saves the roll acceleration limit in centidegrees/s/s
     void save_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; _accel_roll_max.save(); }
 
-    // get_accel_pitch_max - gets the pitch acceleration limit
+    // get_accel_pitch_max - gets the pitch acceleration limit in centidegrees/s/s
     float get_accel_pitch_max() { return _accel_pitch_max; }
 
-    // set_accel_pitch_max - sets the pitch acceleration limit
+    // set_accel_pitch_max - sets the pitch acceleration limit in centidegrees/s/s
     void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
 
-    // save_accel_pitch_max - sets and saves the pitch acceleration limit
+    // save_accel_pitch_max - sets and saves the pitch acceleration limit in centidegrees/s/s
     void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; _accel_pitch_max.save(); }
 
-    // get_accel_yaw_max - gets the yaw acceleration limit
+    // get_accel_yaw_max - gets the yaw acceleration limit in centidegrees/s/s
     float get_accel_yaw_max() { return _accel_yaw_max; }
 
-    // set_accel_yaw_max - sets the yaw acceleration limit
+    // set_accel_yaw_max - sets the yaw acceleration limit in centidegrees/s/s
     void set_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
 
-    // save_accel_yaw_max - sets and saves the yaw acceleration limit
+    // save_accel_yaw_max - sets and saves the yaw acceleration limit in centidegrees/s/s
     void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; _accel_yaw_max.save(); }
 
     // relax_bf_rate_controller - ensure body-frame rate controller has zero errors to relax rate controller output
     void relax_bf_rate_controller();
 
     // set_yaw_target_to_current_heading - sets yaw target to current heading
-    void set_yaw_target_to_current_heading() { _angle_ef_target.z = _ahrs.yaw_sensor; }
+    void set_yaw_target_to_current_heading() { _angle_ef_target_rad.z = _ahrs.yaw; }
 
-    // shifts earth frame yaw target by yaw_shift_cd.  yaw_shift_cd should be in centi-degreesa and is added to the current target heading
+    // shifts earth frame yaw target by yaw_shift_cd.  yaw_shift_cd should be in centi-degrees and is added to the current target heading
     void shift_ef_yaw_target(float yaw_shift_cd);
 
     //
@@ -123,20 +124,20 @@ public:
 
     // angle_ef_roll_pitch_rate_ef_yaw_smooth - attempts to maintain a roll and pitch angle and yaw rate (all earth frame) while smoothing the attitude based on the feel parameter
     //      smoothing_gain : a number from 1 to 50 with 1 being sluggish and 50 being very crisp
-    void angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef, float smoothing_gain);
+    void angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle_ef_cd, float pitch_angle_ef_cd, float yaw_rate_ef_cds, float smoothing_gain);
 
     // angle_ef_roll_pitch_rate_ef_yaw - attempts to maintain a roll and pitch angle and yaw rate (all earth frame)
-    void angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef, float pitch_angle_ef, float yaw_rate_ef);
+    void angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef_cd, float pitch_angle_ef_cd, float yaw_rate_ef_cds);
 
     // angle_ef_roll_pitch_yaw - attempts to maintain a roll, pitch and yaw angle (all earth frame)
     //  if yaw_slew is true then target yaw movement will be gradually moved to the new target based on the YAW_SLEW parameter
-    void angle_ef_roll_pitch_yaw(float roll_angle_ef, float pitch_angle_ef, float yaw_angle_ef, bool slew_yaw);
+    void angle_ef_roll_pitch_yaw(float roll_angle_ef_cd, float pitch_angle_ef_cd, float yaw_angle_ef_cd, bool slew_yaw);
 
     // rate_ef_roll_pitch_yaw - attempts to maintain a roll, pitch and yaw rate (all earth frame)
-    void rate_ef_roll_pitch_yaw(float roll_rate_ef, float pitch_rate_ef, float yaw_rate_ef);
+    void rate_ef_roll_pitch_yaw(float roll_rate_ef_cds, float pitch_rate_ef_cds, float yaw_rate_ef_cds);
 
     // rate_bf_roll_pitch_yaw - attempts to maintain a roll, pitch and yaw rate (all body frame)
-    virtual void rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
+    virtual void rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     //
     // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
@@ -162,32 +163,36 @@ public:
     void limit_angle_to_rate_request(bool limit_request) { _flags.limit_angle_to_rate_request = limit_request; }
 
     // angle_ef_targets - returns angle controller earth-frame targets (for reporting)
-    const Vector3f& angle_ef_targets() const { return _angle_ef_target; }
+    // convert from radians to centi-degrees on public interface
+    Vector3f angle_ef_targets() const { return _angle_ef_target_rad*degrees(100.0f); }
 
     // angle_bf_error - returns angle controller body-frame errors (for stability checking)
-    const Vector3f& angle_bf_error() const { return _angle_bf_error; }
+    // convert from radians to centi-degrees on public interface
+    Vector3f angle_bf_error() const { return _angle_bf_error_rad*degrees(100.0f); }
 
     // rate_bf_targets - sets rate controller body-frame targets
-    void rate_bf_roll_target(float rate_cds) { _rate_bf_target.x = rate_cds; }
-    void rate_bf_pitch_target(float rate_cds) { _rate_bf_target.y = rate_cds; }
-    void rate_bf_yaw_target(float rate_cds) { _rate_bf_target.z = rate_cds; }
+    // convert from centi-degrees on public interface to radians
+    void rate_bf_roll_target(float rate_cds) { _rate_bf_target_rads.x = radians(rate_cds*0.01f); }
+    void rate_bf_pitch_target(float rate_cds) { _rate_bf_target_rads.y = radians(rate_cds*0.01f); }
+    void rate_bf_yaw_target(float rate_cds) { _rate_bf_target_rads.z = radians(rate_cds*0.01f); }
 
-    // Maximum roll rate step size that results in maximum output after 4 time steps
+    // Maximum roll rate step size in centi-degrees/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
-    // Maximum pitch rate step size that results in maximum output after 4 time steps
+    // Maximum pitch rate step size in centi-degrees/s that results in maximum output after 4 time steps
     float max_rate_step_bf_pitch();
-    // Maximum yaw rate step size that results in maximum output after 4 time steps
+    // Maximum yaw rate step size in centi-degrees/s that results in maximum output after 4 time steps
     float max_rate_step_bf_yaw();
 
-    // Maximum roll step size that results in maximum output after 4 time steps
+    // Maximum roll step size in centi-degrees that results in maximum output after 4 time steps
     float max_angle_step_bf_roll() { return max_rate_step_bf_roll()/_p_angle_roll.kP(); }
-    // Maximum pitch step size that results in maximum output after 4 time steps
+    // Maximum pitch step size in centi-degrees that results in maximum output after 4 time steps
     float max_angle_step_bf_pitch() { return max_rate_step_bf_pitch()/_p_angle_pitch.kP(); }
-    // Maximum yaw step size that results in maximum output after 4 time steps
+    // Maximum yaw step size in centi-degrees that results in maximum output after 4 time steps
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw()/_p_angle_yaw.kP(); }
 
     // rate_ef_targets - returns rate controller body-frame targets (for reporting)
-    const Vector3f& rate_bf_targets() const { return _rate_bf_target; }
+    // convert from radians/s to centi-degrees/s on public interface
+    Vector3f rate_bf_targets() const { return _rate_bf_target_rads*degrees(100.0f); }
 
     // bf_feedforward - enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
@@ -238,31 +243,31 @@ protected:
     } _flags;
     
     // update_ef_roll_angle_and_error - update _angle_ef_target.x using an earth frame roll rate request
-    void update_ef_roll_angle_and_error(float roll_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
+    void update_ef_roll_angle_and_error(float roll_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
 
     // update_ef_pitch_angle_and_error - update _angle_ef_target.y using an earth frame pitch rate request
-    void update_ef_pitch_angle_and_error(float pitch_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
+    void update_ef_pitch_angle_and_error(float pitch_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
 
     // update_ef_yaw_angle_and_error - update _angle_ef_target.z using an earth frame yaw rate request
-    void update_ef_yaw_angle_and_error(float yaw_rate_ef, Vector3f &angle_ef_error, float overshoot_max);
+    void update_ef_yaw_angle_and_error(float yaw_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
 
     // integrate_bf_rate_error_to_angle_errors - calculates body frame angle errors
-    //   body-frame feed forward rates (centi-degrees / second) taken from _angle_bf_error
-    //   angle errors in centi-degrees placed in _angle_bf_error
+    //   body-frame feed forward rates (radians/s) taken from _angle_bf_error
+    //   angle errors in radians placed in _angle_bf_error
     void integrate_bf_rate_error_to_angle_errors();
 
     // update_rate_bf_targets - converts body-frame angle error to body-frame rate targets for roll, pitch and yaw axis
-    //   targets rates in centi-degrees taken from _angle_bf_error
-    //   results in centi-degrees/sec put into _rate_bf_target
+    //   targets rates in radians taken from _angle_bf_error
+    //   results in radians/s put into _rate_bf_target
     void update_rate_bf_targets();
 
     //
     // body-frame rate controller
     //
-	// rate_bf_to_motor_roll - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in centi-degrees/sec) for roll, pitch and yaw
-    float rate_bf_to_motor_roll(float rate_target_cds);
-    float rate_bf_to_motor_pitch(float rate_target_cds);
-    virtual float rate_bf_to_motor_yaw(float rate_target_cds);
+	// rate_bf_to_motor_roll - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/s) for roll, pitch and yaw
+    float rate_bf_to_motor_roll(float rate_target_rads);
+    float rate_bf_to_motor_pitch(float rate_target_rads);
+    virtual float rate_bf_to_motor_yaw(float rate_target_rads);
 
     //
     // throttle methods
@@ -273,7 +278,13 @@ protected:
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
     // Overloaded by AC_Attitude_Heli to return angle.  Should be left to return zero for multirotors.
-    virtual int16_t get_roll_trim() { return 0;}
+    virtual int16_t get_roll_trim_rad() { return 0;}
+
+    float get_accel_roll_max_radss() { return radians(_accel_roll_max*0.01f); }
+    float get_accel_pitch_max_radss() { return radians(_accel_pitch_max*0.01f); }
+    float get_accel_yaw_max_radss() { return radians(_accel_yaw_max*0.01f); }
+    float get_slew_yaw_rads() { return radians(_slew_yaw*0.01f); }
+    float get_tilt_limit_rad() { return radians(_aparm.angle_max*0.01f); }
 
     // references to external libraries
     const AP_AHRS&      _ahrs;
@@ -296,13 +307,13 @@ protected:
     // internal variables
     // To-Do: make rate targets a typedef instead of Vector3f?
     float               _dt;                    // time delta in seconds
-    Vector3f            _angle_ef_target;       // angle controller earth-frame targets
-    Vector3f            _angle_bf_error;        // angle controller body-frame error
-    Vector3f            _rate_bf_target;        // rate controller body-frame targets
-    Vector3f            _rate_ef_desired;       // earth-frame feed forward rates
-    Vector3f            _rate_bf_desired;       // body-frame feed forward rates
-    int16_t             _angle_boost;           // used only for logging
-    int16_t             _acro_angle_switch;           // used only for logging
+    Vector3f            _angle_ef_target_rad;       // angle controller earth-frame targets
+    Vector3f            _angle_bf_error_rad;        // angle controller body-frame error
+    Vector3f            _rate_bf_target_rads;        // rate controller body-frame targets
+    Vector3f            _rate_ef_desired_rads;       // earth-frame feed forward rates
+    Vector3f            _rate_bf_desired_rads;       // body-frame feed forward rates
+    int16_t             _angle_boost;                // used only for logging
+    float               _acro_angle_switch_rad;
 
     // throttle based angle limits
     LowPassFilterFloat  _throttle_in_filt;      // throttle input from pilot or alt hold controller
