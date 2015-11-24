@@ -169,7 +169,7 @@ private:
     // Mission library
     AP_Mission mission;
 
-    OpticalFlow optflow;
+    OpticalFlow optflow{ahrs};
     
     // RSSI 
     AP_RSSI rssi;          
