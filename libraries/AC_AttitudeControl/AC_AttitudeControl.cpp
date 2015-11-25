@@ -364,54 +364,32 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pi
         _att_target_ang_vel_rads.z = yaw_rate_bf_rads;
     }
 
-    // HACK: Because the attitude controller works on euler angles, things break down near 90 degrees of pitch. So, a different type of
-    // controller is selected based on tilt angle.
-    if (fabsf(_ahrs.pitch)<_acro_angle_switch_rad) {
-        _acro_angle_switch_rad = radians(60.0f);
+    // Compute quaternion target attitude
+    Quaternion att_target_quat;
+    att_target_quat.from_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
 
-        // Convert body-frame demanded angular velocity into 321-intrinsic euler angle derivatives
-        // NOTE: A rotation from vehicle body frame to demanded body frame is possibly omitted here
-        // NOTE: This will never return false, since _ahrs.pitch cannot be +/- 90deg within this else statement
-        ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_ang_vel_rads, _att_target_euler_deriv_rads);
+    // Rotate quaternion target attitude using computed rate
+    att_target_quat.rotate(_att_target_ang_vel_rads*_dt);
+    att_target_quat.normalize();
 
-        // Update the attitude target from the computed euler rates
-        update_att_target_and_error_roll(_att_target_euler_deriv_rads.x, att_error_euler_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
-        update_att_target_and_error_pitch(_att_target_euler_deriv_rads.y, att_error_euler_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
-        update_att_target_and_error_yaw(_att_target_euler_deriv_rads.z, att_error_euler_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
+    // Update euler attitude target
+    att_target_quat.to_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
 
-        // Convert 321-intrinsic euler angle errors to a body-frame rotation vector
-        // NOTE: This results in an approximation of the attitude error based on a linearization about the current attitude
-        euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), att_error_euler_rad, _att_error_rot_vec_rad);
-    } else {
-        _acro_angle_switch_rad = radians(45.0f);
+    // Retrieve quaternion vehicle attitude
+    Quaternion att_vehicle_quat;
+    att_vehicle_quat.from_rotation_matrix(_ahrs.get_dcm_matrix());
 
-        // Integrate the angular velocity error into the attitude error
-        integrate_bf_rate_error_to_angle_errors();
-
-        // Convert angle error rotation vector into 321-intrinsic euler angle difference
-        // NOTE: This results an an approximation linearized about the vehicle's attitude
-        if(ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_error_rot_vec_rad, att_error_euler_rad)) {
-            _att_target_euler_rad.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
-            _att_target_euler_rad.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
-            _att_target_euler_rad.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
-        }
-        if (_att_target_euler_rad.y > M_PI/2.0f) {
-            _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
-            _att_target_euler_rad.y = wrap_PI(M_PI - _att_target_euler_rad.y);
-            _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
-        }
-        if (_att_target_euler_rad.y < -M_PI/2.0f) {
-            _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
-            _att_target_euler_rad.y = wrap_PI(-M_PI - _att_target_euler_rad.y);
-            _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
-        }
-    }
+    // Compute attitude error
+    (att_vehicle_quat.inverse()*att_target_quat).to_axis_angle(_att_error_rot_vec_rad);
 
     // Compute the angular velocity target from the attitude error
     update_ang_vel_target_from_att_error();
 
     // Add the angular velocity feedforward
     _ang_vel_target_rads += _att_target_ang_vel_rads;
+
+    // Keep euler derivative updated
+    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_ang_vel_rads, _att_target_euler_deriv_rads);
 }
 
 void AC_AttitudeControl::rate_controller_run()
