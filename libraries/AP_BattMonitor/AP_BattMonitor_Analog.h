@@ -23,7 +23,7 @@
  # define AP_BATT_CURR_PIN                  101
  # define AP_BATT_VOLTDIVIDER_DEFAULT       1.1f
  # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4 && (defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4))
  // pixhawk
  # define AP_BATT_VOLT_PIN                  2
  # define AP_BATT_CURR_PIN                  3
