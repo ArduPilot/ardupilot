@@ -42,55 +42,55 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
     _flags_heli.flybar_passthrough = true;
 
     // set bf rate targets to current body frame rates (i.e. relax and be ready for vehicle to switch out of acro)
-    _rate_bf_desired_rads.x = _ahrs.get_gyro().x;
-    _rate_bf_desired_rads.y = _ahrs.get_gyro().y;
+    _att_target_ang_vel_rads.x = _ahrs.get_gyro().x;
+    _att_target_ang_vel_rads.y = _ahrs.get_gyro().y;
 
     // accel limit desired yaw rate
     if (get_accel_yaw_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
-        float rate_change_rads = yaw_rate_bf_rads - _rate_bf_desired_rads.z;
+        float rate_change_rads = yaw_rate_bf_rads - _att_target_ang_vel_rads.z;
         rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
-        _rate_bf_desired_rads.z += rate_change_rads;
+        _att_target_ang_vel_rads.z += rate_change_rads;
     } else {
-        _rate_bf_desired_rads.z = yaw_rate_bf_rads;
+        _att_target_ang_vel_rads.z = yaw_rate_bf_rads;
     }
 
     integrate_bf_rate_error_to_angle_errors();
-    _angle_bf_error_rad.x = 0;
-    _angle_bf_error_rad.y = 0;
+    _att_error_rot_vec_rad.x = 0;
+    _att_error_rot_vec_rad.y = 0;
 
     // update our earth-frame angle targets
     Vector3f angle_ef_error_rad;
 
     // convert angle error rotation vector into 321-intrinsic euler angle difference
     // NOTE: this results an an approximation linearized about the vehicle's attitude
-    if (ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _angle_bf_error_rad, angle_ef_error_rad)) {
-        _angle_ef_target_rad.x = wrap_PI(angle_ef_error_rad.x + _ahrs.roll);
-        _angle_ef_target_rad.y = wrap_PI(angle_ef_error_rad.y + _ahrs.pitch);
-        _angle_ef_target_rad.z = wrap_2PI(angle_ef_error_rad.z + _ahrs.yaw);
+    if (ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_error_rot_vec_rad, angle_ef_error_rad)) {
+        _att_target_euler_rad.x = wrap_PI(angle_ef_error_rad.x + _ahrs.roll);
+        _att_target_euler_rad.y = wrap_PI(angle_ef_error_rad.y + _ahrs.pitch);
+        _att_target_euler_rad.z = wrap_2PI(angle_ef_error_rad.z + _ahrs.yaw);
     }
 
     // handle flipping over pitch axis
-    if (_angle_ef_target_rad.y > M_PI/2.0f) {
-        _angle_ef_target_rad.x = wrap_PI(_angle_ef_target_rad.x + M_PI);
-        _angle_ef_target_rad.y = wrap_PI(M_PI - _angle_ef_target_rad.x);
-        _angle_ef_target_rad.z = wrap_2PI(_angle_ef_target_rad.z + M_PI);
+    if (_att_target_euler_rad.y > M_PI/2.0f) {
+        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
+        _att_target_euler_rad.y = wrap_PI(M_PI - _att_target_euler_rad.x);
+        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
     }
-    if (_angle_ef_target_rad.y < -M_PI/2.0f) {
-        _angle_ef_target_rad.x = wrap_PI(_angle_ef_target_rad.x + M_PI);
-        _angle_ef_target_rad.y = wrap_PI(-M_PI - _angle_ef_target_rad.x);
-        _angle_ef_target_rad.z = wrap_2PI(_angle_ef_target_rad.z + M_PI);
+    if (_att_target_euler_rad.y < -M_PI/2.0f) {
+        _att_target_euler_rad.x = wrap_PI(_att_target_euler_rad.x + M_PI);
+        _att_target_euler_rad.y = wrap_PI(-M_PI - _att_target_euler_rad.x);
+        _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + M_PI);
     }
 
     // convert body-frame angle errors to body-frame rate targets
-    update_rate_bf_targets();
+    update_ang_vel_target_from_att_error();
 
     // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
-    _rate_bf_target_rads.x = _rate_bf_desired_rads.x;
-    _rate_bf_target_rads.y = _rate_bf_desired_rads.y;
+    _ang_vel_target_rads.x = _att_target_ang_vel_rads.x;
+    _ang_vel_target_rads.y = _att_target_ang_vel_rads.y;
 
     // add desired target to yaw
-    _rate_bf_target_rads.z += _rate_bf_desired_rads.z;
+    _ang_vel_target_rads.z += _att_target_ang_vel_rads.z;
 }
 
 // subclass non-passthrough too, for external gyro, no flybar
@@ -115,12 +115,12 @@ void AC_AttitudeControl_Heli::rate_controller_run()
         _motors.set_roll(_passthrough_roll);
         _motors.set_pitch(_passthrough_pitch);
     } else {
-        rate_bf_to_motor_roll_pitch(_rate_bf_target_rads.x, _rate_bf_target_rads.y);
+        rate_bf_to_motor_roll_pitch(_ang_vel_target_rads.x, _ang_vel_target_rads.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw);
     } else {
-        _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target_rads.z));
+        _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
     }
 }
 
