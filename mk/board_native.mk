@@ -19,7 +19,7 @@ WARNFLAGSCXX    = -Wno-reorder \
 	-Werror=uninitialized \
 	-Werror=init-self \
 	-Wno-missing-field-initializers
-DEPFLAGS        =   -MD -MT $@
+DEPFLAGS        =   -MD -MP -MT $@
 
 CXXOPTS         =   -ffunction-sections -fdata-sections -fno-exceptions -fsigned-char
 COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
