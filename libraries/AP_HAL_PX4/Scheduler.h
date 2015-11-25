@@ -88,10 +88,10 @@ private:
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
 
-    void *_timer_thread(void);
-    void *_io_thread(void);
-    void *_storage_thread(void);
-    void *_uart_thread(void);
+    static void *_timer_thread(void *arg);
+    static void *_io_thread(void *arg);
+    static void *_storage_thread(void *arg);
+    static void *_uart_thread(void *arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);

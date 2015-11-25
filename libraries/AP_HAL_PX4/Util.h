@@ -25,7 +25,7 @@ private:
     bool showed_armed_warning = false;
 
     void start_shell(void);
-    void shell_thread(void);
+    static void shell_thread(void *arg);
 };
 
 class PX4::PX4Util : public AP_HAL::Util {
