@@ -82,7 +82,9 @@ void AC_AttitudeControl::relax_bf_rate_controller()
 {
     // ensure zero error in body frame rate controllers
     _rate_bf_target_rads = _ahrs.get_gyro();
-    frame_conversion_bf_to_ef(_rate_bf_target_rads, _rate_ef_desired_rads);
+
+    // write euler derivatives to _rate_ef_desired_rads so that the input shapers are properly initialized
+    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _rate_bf_target_rads, _rate_ef_desired_rads);
 
     _pid_rate_roll.reset_I();
     _pid_rate_pitch.reset_I();
@@ -181,8 +183,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
         update_ef_yaw_angle_and_error(_rate_ef_desired_rads.z, angle_ef_error_rad, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX_RAD);
     }
 
-    // convert earth-frame angle errors to body-frame angle errors
-    frame_conversion_ef_to_bf(angle_ef_error_rad, _angle_bf_error_rad);
+    // convert 321-intrinsic euler angle errors to a body-frame rotation vector
+    // NOTE: this results in an approximation of the attitude error based on a linearization about the current attitude
+    euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), angle_ef_error_rad, _angle_bf_error_rad);
 
 
     // convert body-frame angle errors to body-frame rate targets
@@ -190,12 +193,14 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw_smooth(float roll_angle
 
     // add body frame rate feed forward
     if (_rate_bf_ff_enabled) {
-        // convert earth-frame feed forward rates to body-frame feed forward rates
-        frame_conversion_ef_to_bf(_rate_ef_desired_rads, _rate_bf_desired_rads);
+        // convert euler angle derivative of desired attitude into a body-frame angular velocity vector
+        euler_derivative_to_ang_vel(_angle_ef_target_rad, _rate_ef_desired_rads, _rate_bf_desired_rads);
+        // NOTE: rotation of _rate_bf_desired_rads from desired body frame to estimated body frame is possibly omitted here
         _rate_bf_target_rads += _rate_bf_desired_rads;
     } else {
-        // convert earth-frame feed forward rates to body-frame feed forward rates
-        frame_conversion_ef_to_bf(Vector3f(0,0,_rate_ef_desired_rads.z), _rate_bf_desired_rads);
+        // convert euler angle derivatives of desired attitude into a body-frame angular velocity vector
+        euler_derivative_to_ang_vel(_angle_ef_target_rad, Vector3f(0,0,_rate_ef_desired_rads.z), _rate_bf_desired_rads);
+        // NOTE: rotation of _rate_bf_desired_rads from desired body frame to estimated body frame is possibly omitted here
         _rate_bf_target_rads += _rate_bf_desired_rads;
     }
 
@@ -242,8 +247,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef_cd,
         update_ef_yaw_angle_and_error(_rate_ef_desired_rads.z, angle_ef_error_rad, AC_ATTITUDE_RATE_STAB_YAW_OVERSHOOT_ANGLE_MAX_RAD);
     }
 
-    // convert earth-frame angle errors to body-frame angle errors
-    frame_conversion_ef_to_bf(angle_ef_error_rad, _angle_bf_error_rad);
+    // convert 321-intrinsic euler angle errors to a body-frame rotation vector
+    // NOTE: this results in an approximation of the attitude error based on a linearization about the current attitude
+    euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), angle_ef_error_rad, _angle_bf_error_rad);
 
     // convert body-frame angle errors to body-frame rate targets
     update_rate_bf_targets();
@@ -251,8 +257,10 @@ void AC_AttitudeControl::angle_ef_roll_pitch_rate_ef_yaw(float roll_angle_ef_cd,
     // set roll and pitch feed forward to zero
     _rate_ef_desired_rads.x = 0;
     _rate_ef_desired_rads.y = 0;
-    // convert earth-frame feed forward rates to body-frame feed forward rates
-    frame_conversion_ef_to_bf(_rate_ef_desired_rads, _rate_bf_desired_rads);
+
+    // convert euler angle derivatives of desired attitude into a body-frame angular velocity vector
+    euler_derivative_to_ang_vel(_angle_ef_target_rad, _rate_ef_desired_rads, _rate_bf_desired_rads);
+    // NOTE: rotation of _rate_bf_desired_rads from desired body frame to estimated body frame is possibly omitted here
     _rate_bf_target_rads += _rate_bf_desired_rads;
 
     // body-frame to motor outputs should be called separately
@@ -288,8 +296,9 @@ void AC_AttitudeControl::angle_ef_roll_pitch_yaw(float roll_angle_ef_cd, float p
         angle_ef_error_rad.z = constrain_float(angle_ef_error_rad.z,-get_slew_yaw_rads(),get_slew_yaw_rads());
     }
 
-    // convert earth-frame angle errors to body-frame angle errors
-    frame_conversion_ef_to_bf(angle_ef_error_rad, _angle_bf_error_rad);
+    // convert 321-intrinsic euler angle errors to a body-frame rotation vector
+    // NOTE: this results in an approximation of the attitude error based on a linearization about the current attitude
+    euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), angle_ef_error_rad, _angle_bf_error_rad);
 
     // convert body-frame angle errors to body-frame rate targets
     update_rate_bf_targets();
@@ -350,14 +359,16 @@ void AC_AttitudeControl::rate_ef_roll_pitch_yaw(float roll_rate_ef_cds, float pi
     _angle_ef_target_rad.x = constrain_float(_angle_ef_target_rad.x, -get_tilt_limit_rad(), get_tilt_limit_rad());
     _angle_ef_target_rad.y = constrain_float(_angle_ef_target_rad.y, -get_tilt_limit_rad(), get_tilt_limit_rad());
 
-    // convert earth-frame angle errors to body-frame angle errors
-    frame_conversion_ef_to_bf(angle_ef_error_rad, _angle_bf_error_rad);
+    // convert 321-intrinsic euler angle errors to a body-frame rotation vector
+    // NOTE: this results in an approximation of the attitude error based on a linearization about the current attitude
+    euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), angle_ef_error_rad, _angle_bf_error_rad);
 
     // convert body-frame angle errors to body-frame rate targets
     update_rate_bf_targets();
 
-    // convert earth-frame rates to body-frame rates
-    frame_conversion_ef_to_bf(_rate_ef_desired_rads, _rate_bf_desired_rads);
+    // convert euler angle derivatives of desired attitude into a body-frame angular velocity vector
+    euler_derivative_to_ang_vel(_angle_ef_target_rad, _rate_ef_desired_rads, _rate_bf_desired_rads);
+    // NOTE: rotation of _rate_bf_desired_rads from desired body frame to estimated body frame is possibly omitted here
 
     // add body frame rate feed forward
     _rate_bf_target_rads += _rate_bf_desired_rads;
@@ -412,20 +423,27 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pi
     // Update angle error
     if (fabsf(_ahrs.pitch)<_acro_angle_switch_rad) {
         _acro_angle_switch_rad = radians(60.0f);
-        // convert body-frame rates to earth-frame rates
-        frame_conversion_bf_to_ef(_rate_bf_desired_rads, _rate_ef_desired_rads);
+
+        // convert body-frame demanded angular velocity into 321-intrinsic euler angle derivatives
+        // NOTE: a rotation from vehicle body frame to demanded body frame is possibly omitted here
+        // NOTE: this will never return false, since _ahrs.pitch cannot be +/- 90deg within this else statement
+        ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _rate_bf_desired_rads, _rate_ef_desired_rads);
 
         // update earth frame angle targets and errors
         update_ef_roll_angle_and_error(_rate_ef_desired_rads.x, angle_ef_error_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
         update_ef_pitch_angle_and_error(_rate_ef_desired_rads.y, angle_ef_error_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
         update_ef_yaw_angle_and_error(_rate_ef_desired_rads.z, angle_ef_error_rad, AC_ATTITUDE_RATE_STAB_ACRO_OVERSHOOT_ANGLE_MAX_RAD);
 
-        // convert earth-frame angle errors to body-frame angle errors
-        frame_conversion_ef_to_bf(angle_ef_error_rad, _angle_bf_error_rad);
+        // convert 321-intrinsic euler angle errors to a body-frame rotation vector
+        // NOTE: this results in an approximation of the attitude error based on a linearization about the current attitude
+        euler_derivative_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), angle_ef_error_rad, _angle_bf_error_rad);
     } else {
         _acro_angle_switch_rad = radians(45.0f);
         integrate_bf_rate_error_to_angle_errors();
-        if (frame_conversion_bf_to_ef(_angle_bf_error_rad, angle_ef_error_rad)) {
+
+        // convert angle error rotation vector into 321-intrinsic euler angle difference
+        // NOTE: this results an an approximation linearized about the vehicle's attitude
+        if(ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _angle_bf_error_rad, angle_ef_error_rad)) {
             _angle_ef_target_rad.x = wrap_PI(angle_ef_error_rad.x + _ahrs.roll);
             _angle_ef_target_rad.y = wrap_PI(angle_ef_error_rad.y + _ahrs.pitch);
             _angle_ef_target_rad.z = wrap_2PI(angle_ef_error_rad.z + _ahrs.yaw);
@@ -463,29 +481,38 @@ void AC_AttitudeControl::rate_controller_run()
     _motors.set_yaw(rate_bf_to_motor_yaw(_rate_bf_target_rads.z));
 }
 
-//
-// earth-frame <-> body-frame conversion functions
-//
-// frame_conversion_ef_to_bf - converts earth frame vector to body frame vector
-void AC_AttitudeControl::frame_conversion_ef_to_bf(const Vector3f& ef_vector, Vector3f& bf_vector)
+// converts a 321-intrinsic euler angle derivative to an angular velocity vector
+void AC_AttitudeControl::euler_derivative_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_dot_rads, Vector3f& ang_vel_rads)
 {
-    // convert earth frame rates to body frame rates
-    bf_vector.x = ef_vector.x - _ahrs.sin_pitch() * ef_vector.z;
-    bf_vector.y = _ahrs.cos_roll()  * ef_vector.y + _ahrs.sin_roll() * _ahrs.cos_pitch() * ef_vector.z;
-    bf_vector.z = -_ahrs.sin_roll() * ef_vector.y + _ahrs.cos_pitch() * _ahrs.cos_roll() * ef_vector.z;
+    float sin_theta = sinf(euler_rad.y);
+    float cos_theta = cosf(euler_rad.y);
+    float sin_phi = sinf(euler_rad.x);
+    float cos_phi = cosf(euler_rad.x);
+
+    ang_vel_rads.x = euler_dot_rads.x - sin_theta * euler_dot_rads.z;
+    ang_vel_rads.y = cos_phi  * euler_dot_rads.y + sin_phi * cos_theta * euler_dot_rads.z;
+    ang_vel_rads.z = -sin_phi * euler_dot_rads.y + cos_theta * cos_phi * euler_dot_rads.z;
 }
 
-// frame_conversion_bf_to_ef - converts body frame vector to earth frame vector
-bool AC_AttitudeControl::frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f& ef_vector)
+// converts an angular velocity vector to a 321-intrinsic euler angle derivative
+// returns false if the vehicle is pitched all the way up or all the way down
+bool AC_AttitudeControl::ang_vel_to_euler_derivative(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_dot_rads)
 {
-    // avoid divide by zero
-    if (is_zero(_ahrs.cos_pitch())) {
+    float sin_theta = sinf(euler_rad.y);
+    float cos_theta = cosf(euler_rad.y);
+    float sin_phi = sinf(euler_rad.x);
+    float cos_phi = cosf(euler_rad.x);
+
+    // when the vehicle pitches all the way up or all the way down, the euler angles become discontinuous
+    // in this case, we return false
+    if (is_zero(cos_theta)) {
         return false;
     }
+
     // convert body frame angle or rates to earth frame
-    ef_vector.x = bf_vector.x + _ahrs.sin_roll() * (_ahrs.sin_pitch()/_ahrs.cos_pitch()) * bf_vector.y + _ahrs.cos_roll() * (_ahrs.sin_pitch()/_ahrs.cos_pitch()) * bf_vector.z;
-    ef_vector.y = _ahrs.cos_roll()  * bf_vector.y - _ahrs.sin_roll() * bf_vector.z;
-    ef_vector.z = (_ahrs.sin_roll() / _ahrs.cos_pitch()) * bf_vector.y + (_ahrs.cos_roll() / _ahrs.cos_pitch()) * bf_vector.z;
+    euler_dot_rads.x = ang_vel_rads.x + sin_phi * (sin_theta/cos_theta) * ang_vel_rads.y + cos_phi * (sin_theta/cos_theta) * ang_vel_rads.z;
+    euler_dot_rads.y = cos_phi  * ang_vel_rads.y - sin_phi * ang_vel_rads.z;
+    euler_dot_rads.z = (sin_phi / cos_theta) * ang_vel_rads.y + (cos_phi / cos_theta) * ang_vel_rads.z;
     return true;
 }
 

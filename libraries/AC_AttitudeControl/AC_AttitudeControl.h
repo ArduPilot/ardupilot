@@ -145,15 +145,12 @@ public:
     //
     virtual void rate_controller_run();
 
-    //
-    // earth-frame <-> body-frame conversion functions
-    //
-    // frame_conversion_ef_to_bf - converts earth frame angles or rates to body frame
-    void frame_conversion_ef_to_bf(const Vector3f& ef_vector, Vector3f &bf_vector);
+    // converts a 321-intrinsic euler angle derivative to an angular velocity vector
+    void euler_derivative_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_dot_rads, Vector3f& ang_vel_rads);
 
-    // frame_conversion_bf_to_ef - converts body frame angles or rates to earth frame
-    //  returns false if conversion fails due to gimbal lock
-    bool frame_conversion_bf_to_ef(const Vector3f& bf_vector, Vector3f &ef_vector);
+    // converts an angular velocity vector to a 321-intrinsic euler angle derivative
+    // returns false if the vehicle is pitched all the way up or all the way down
+    bool ang_vel_to_euler_derivative(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_dot_rads);
 
     //
     // public accessor functions
