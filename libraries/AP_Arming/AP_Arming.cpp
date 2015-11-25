@@ -103,7 +103,7 @@ bool AP_Arming::airspeed_checks(bool report)
         }
         if (airspeed->enabled() && airspeed->use() && !airspeed->healthy()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: airspeed not healthy");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Airspeed not healthy");
             }
             return false;
         }
@@ -118,7 +118,7 @@ bool AP_Arming::logging_checks(bool report)
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
         if (!logging_available) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: logging not available");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging not available");
             }
             return false;
         }
@@ -133,25 +133,25 @@ bool AP_Arming::ins_checks(bool report)
         const AP_InertialSensor &ins = ahrs.get_ins();
         if (!ins.get_gyro_health_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: gyros not healthy");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not healthy");
             }
             return false;
         }
         if (!ins.gyro_calibrated_ok_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: gyros not calibrated");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros not calibrated");
             }
             return false;
         }
         if (!ins.get_accel_health_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: accels not healthy");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers not healthy");
             }
             return false;
         }
         if (!ins.accel_calibrated_ok_all()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D accel cal needed");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: 3D accelerometers calibration needed");
             }
             return false;
         }
@@ -179,7 +179,7 @@ bool AP_Arming::ins_checks(bool report)
                 }
                 if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
                     if (report) {
-                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent Accelerometers");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Accelerometers inconsistent");
                     }
                     return false;
                 }
@@ -200,7 +200,7 @@ bool AP_Arming::ins_checks(bool report)
                 }
                 if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
                     if (report) {
-                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: inconsistent gyros");
+                        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Gyros inconsistent");
                     }
                     return false;
                 }
@@ -272,7 +272,7 @@ bool AP_Arming::compass_checks(bool report)
         // check all compasses point in roughly same direction
         if (!_compass.consistent()) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Compasses inconsistent");
     }
             return false;
         }
@@ -321,7 +321,7 @@ bool AP_Arming::hardware_safety_check(bool report)
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (report) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Hardware safety switch");
         }
         return false;
     }
@@ -356,7 +356,7 @@ bool AP_Arming::board_voltage_checks(bool report)
         if(!is_zero(hal.analogin->board_voltage()) &&
            ((hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN) || (hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX))) {
             if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Check Board Voltage");
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL,"PreArm: Check board voltage");
             }
             return false;
         }
@@ -398,7 +398,7 @@ bool AP_Arming::arm(uint8_t method)
     if (checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
         arming_method = NONE;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle armed!");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle armed");
         return true;
     }
 
@@ -406,7 +406,7 @@ bool AP_Arming::arm(uint8_t method)
         armed = true;
         arming_method = method;
 
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle armed!");
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle armed");
 
         //TODO: Log motor arming to the dataflash
         //Can't do this from this class until there is a unified logging library
@@ -427,7 +427,7 @@ bool AP_Arming::disarm()
     }
     armed = false;
 
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle disarmed!");
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
