@@ -110,10 +110,10 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float eule
         // When roll acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler roll-axis
         // angular velocity that will cause the euler roll angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by smoothing_gain at the end.
-        float rate_change_limit_rads = get_accel_roll_max_radss() * _dt;
         float euler_rate_desired_rads = sqrt_controller(euler_roll_angle_rad-_att_target_euler_rad.x, smoothing_gain, get_accel_roll_max_radss());
 
         // Acceleration is limited directly to smooth the beginning of the curve.
+        float rate_change_limit_rads = get_accel_roll_max_radss() * _dt;
         _att_target_euler_deriv_rads.x = constrain_float(euler_rate_desired_rads, _att_target_euler_deriv_rads.x-rate_change_limit_rads, _att_target_euler_deriv_rads.x+rate_change_limit_rads);
 
         // The output rate is used to update the attitude target euler angles and is fed forward into the rate controller.
@@ -131,10 +131,10 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float eule
         // When pitch acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler pitch-axis
         // angular velocity that will cause the euler pitch angle to smoothly stop at the input angle with limited deceleration
         // and an exponential decay specified by smoothing_gain at the end.
-        float rate_change_limit_rads = get_accel_pitch_max_radss() * _dt;
         float euler_rate_desired_rads = sqrt_controller(euler_pitch_angle_rad-_att_target_euler_rad.y, smoothing_gain, get_accel_pitch_max_radss());
 
         // Acceleration is limited directly to smooth the beginning of the curve.
+        float rate_change_limit_rads = get_accel_pitch_max_radss() * _dt;
         _att_target_euler_deriv_rads.y = constrain_float(euler_rate_desired_rads, _att_target_euler_deriv_rads.y-rate_change_limit_rads, _att_target_euler_deriv_rads.y+rate_change_limit_rads);
 
         // The output rate is used to update the attitude target euler angles and is fed forward into the rate controller.
@@ -340,7 +340,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pi
 
     Vector3f    att_error_euler_rad;
 
-    // Compute acceleration-limited euler roll rate
+    // Compute acceleration-limited body-frame roll rate
     if (get_accel_roll_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_roll_max_radss() * _dt;
         _att_target_ang_vel_rads.x += constrain_float(roll_rate_bf_rads - _att_target_ang_vel_rads.x, -rate_change_limit_rads, rate_change_limit_rads);
@@ -348,7 +348,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pi
         _att_target_ang_vel_rads.x = roll_rate_bf_rads;
     }
 
-    // Compute acceleration-limited euler pitch rate
+    // Compute acceleration-limited body-frame pitch rate
     if (get_accel_pitch_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_pitch_max_radss() * _dt;
         _att_target_ang_vel_rads.y += constrain_float(pitch_rate_bf_rads - _att_target_ang_vel_rads.y, -rate_change_limit_rads, rate_change_limit_rads);
@@ -356,7 +356,7 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pi
         _att_target_ang_vel_rads.y = pitch_rate_bf_rads;
     }
 
-    // Compute acceleration-limited euler yaw rate
+    // Compute acceleration-limited body-frame yaw rate
     if (get_accel_yaw_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt;
         _att_target_ang_vel_rads.z += constrain_float(yaw_rate_bf_rads - _att_target_ang_vel_rads.z, -rate_change_limit_rads, rate_change_limit_rads);
