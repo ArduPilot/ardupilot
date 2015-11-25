@@ -150,8 +150,8 @@ Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
     Location loc {};
     loc.alt = vehicle.info.altitude * 100;
-    loc.lat = vehicle.info.lat * 1e7;
-    loc.lng = vehicle.info.lon * 1e7;
+    loc.lat = vehicle.info.lat;
+    loc.lng = vehicle.info.lon;
     loc.flags.relative_alt = false;
     return loc;
 }
