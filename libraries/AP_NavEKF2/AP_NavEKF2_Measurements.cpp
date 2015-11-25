@@ -544,6 +544,7 @@ void NavEKF2_core::calcFiltBaroOffset()
     // Apply a first order LPF with spike protection
     baroHgtOffset += 0.1f * constrain_float(baroDataDelayed.hgt + stateStruct.position.z - baroHgtOffset, -5.0f, 5.0f);
 }
+
 /********************************************************
 *                Air Speed Measurements                 *
 ********************************************************/
@@ -561,14 +562,15 @@ void NavEKF2_core::readAirSpdData()
         tasDataNew.tas = aspeed->get_airspeed() * aspeed->get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
+
         // Correct for the average intersampling delay due to the filter update rate
         tasDataNew.time_ms -= localFilterTimeStep_ms/2;
-        newDataTas = true;
+
+        // Save data into the buffer to be fused when the fusion time horizon catches up with it
         storedTAS.push(tasDataNew);
-        storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else {
-        newDataTas = false;
     }
+    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
+    tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }
 
 #endif // HAL_CPU_CLASS

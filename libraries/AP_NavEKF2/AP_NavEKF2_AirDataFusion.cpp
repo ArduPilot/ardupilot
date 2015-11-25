@@ -195,7 +195,7 @@ void NavEKF2_core::SelectTasFusion()
 {
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
-    // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
+    // Only allow one time slip to prevent high rate magnetometer data locking out fusion of other measurements
     if (magFusePerformed && dtIMUavg < 0.005f && !airSpdFusionDelayed) {
         airSpdFusionDelayed = true;
         return;
@@ -212,13 +212,9 @@ void NavEKF2_core::SelectTasFusion()
     }
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
-    tasDataWaiting = (statesInitialised && !inhibitWindStates && newDataTas);
-    if (tasDataWaiting)
-    {
+    if (tasDataToFuse && statesInitialised && !inhibitWindStates) {
         FuseAirspeed();
         prevTasStep_ms = imuSampleTime_ms;
-        tasDataWaiting = false;
-        newDataTas = false;
     }
 }
 
