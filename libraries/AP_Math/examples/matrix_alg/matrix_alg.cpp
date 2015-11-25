@@ -5,62 +5,113 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-
+#include <stdio.h>
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+static uint16_t get_random(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+    m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+    return ((m_z << 16) + m_w) & 0xF;
+}
+
+
+void show_matrix(float *A, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++)
+            printf("%2.5f  ", A[i * n + j]);
+        printf("\n");
+    }
+}
+
+bool compare_mat(float *A, float *B, uint8_t n)
+{
+    for(uint8_t i = 0; i < n; i++) {
+        for(uint8_t j = 0; j < n; j++) {
+            if(fabsf(A[i*n + j] - B[i*n + j]) > 1e-4f) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 static void test_matrix_inverse(void)
 {
     //fast inverses
-    float mat5x5[] = {1.0f, 2.0f, 0.3f, 0.4f, 0.3f,   \
-                      0.5f, 6.0f, 0.7f, 0.8f, 0.4f,   \
-                      0.9f, 1.0f, 1.1f, 1.2f, 0.5f,   \
-                      1.3f, 1.4f, 1.5f, 1.6f, 0.6f,   \
-                      0.5f, 0.7f, 0.7f, 0.8f, 0.4f};
-
+    float test_mat[25];
+    for(uint8_t i = 0;i<25;i++) {
+        test_mat[i] = pow(-1,i)*get_random()/0.7f;
+    }
     float mat[25];
-    if(inverse(mat5x5,mat,3)){
+    uint8_t l = 0;
+
+    //Test for 3x3 matrix
+    l = 0;
+    if(inverse(test_mat,mat,3)){
         inverse(mat,mat,3);
-        for(uint8_t i=0;i<9;i++) {
-            if(fabsf(mat5x5[i] - mat[i]) > 1.0f) {
-                hal.console->printf("Matrix Inverse Failed for 3x3 matrix %f,%f!\n",mat5x5[i],mat[i]);
-                return;
-            }
-        }
     } else {
         hal.console->printf("3x3 Matrix is Singular!\n");
         return;
 
     }
-    if(inverse(mat5x5,mat,4)){
+    printf("\n\n3x3 Test Matrix:\n");
+    show_matrix(test_mat,3);
+    printf("\nInverse of Inverse of matrix\n");
+    show_matrix(mat,3);
+    printf("\n");
+    //compare matrix
+    if(!compare_mat(test_mat,mat,3)) {
+        printf("Test Failed!!\n");
+        return;
+    }
+
+    //Test for 4x4 matrix
+    l = 0;
+    if(inverse(test_mat,mat,4)){
         inverse(mat,mat,4);
-        for(uint8_t i=0;i<16;i++) {
-            if(fabsf(mat5x5[i] - mat[i]) > 1.0f) {
-                hal.console->printf("Matrix Inverse Failed for 4x4 matrix %f,%f!\n",mat5x5[i],mat[i]);
-                return;
-            }
-        }
     } else {
-        hal.console->printf("4x4 Matrix is Singular!\n");
+        hal.console->printf("3x3 Matrix is Singular!\n");
+        return;
+
+    }
+    printf("\n\n4x4 Test Matrix:\n");
+    show_matrix(test_mat,4);
+    printf("\nInverse of Inverse of matrix\n");
+    show_matrix(mat,4);
+    printf("\n");
+    if(!compare_mat(test_mat,mat,4)) {
+        printf("Test Failed!!\n");
         return;
     }
-    if(inverse(mat5x5,mat,5)){
+
+    //Test for 5x5 matrix
+    l = 0;
+    if(inverse(test_mat,mat,5)) {
         inverse(mat,mat,5);
-        for(uint8_t i=0;i<25;i++) {
-            if(fabsf(mat5x5[i] - mat[i]) > 1.0f) {
-                hal.console->printf("Matrix Inverse Failed for 5x5 matrix %f,%f!\n",mat5x5[i],mat[i]);
-                return;
-            }
-        }
     } else {
-        hal.console->printf("5x5 Matrix is Singular!\n");
+        hal.console->printf("3x3 Matrix is Singular!\n");
+        return;
+
+    }
+
+    printf("\n\n5x5 Test Matrix:\n");
+    show_matrix(test_mat,5);
+    printf("\nInverse of Inverse of matrix\n");
+    show_matrix(mat,5);
+    printf("\n");
+    if(!compare_mat(test_mat,mat,5)) {
+        printf("Test Failed!!\n");
         return;
     }
+
+
     hal.console->printf("All tests succeeded!!\n");
 }
 
-/*
- *  rotation tests
- */
+
 void setup(void)
 {
     hal.console->println("Matrix Algebra test\n");
