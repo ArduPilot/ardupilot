@@ -58,6 +58,22 @@ def configure(cfg):
     # use a different variant for each board
     cfg.setenv(cfg.env.BOARD)
 
+    cfg.msg('Setting board to', cfg.options.board)
+    cfg.env.BOARD = cfg.options.board
+    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
+
+    # Always prepend so that arguments passed in the command line get
+    # the priority.
+    for k in board_dict:
+        val = board_dict[k]
+        # Dictionaries (like 'DEFINES') are converted to lists to
+        # conform to waf conventions.
+        if isinstance(val, dict):
+            for item in val.items():
+                cfg.env.prepend_value(k, '%s=%s' % item)
+        else:
+            cfg.env.prepend_value(k, val)
+
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
@@ -75,22 +91,6 @@ def configure(cfg):
         uselib_store='GTEST',
         errmsg='not found, unit tests disabled',
     )
-
-    cfg.msg('Setting board to', cfg.options.board)
-    cfg.env.BOARD = cfg.options.board
-    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
-
-    # Always prepend so that arguments passed in the command line get
-    # the priority.
-    for k in board_dict:
-        val = board_dict[k]
-        # Dictionaries (like 'DEFINES') are converted to lists to
-        # conform to waf conventions.
-        if isinstance(val, dict):
-            for item in val.items():
-                cfg.env.prepend_value(k, '%s=%s' % item)
-        else:
-            cfg.env.prepend_value(k, val)
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/'
