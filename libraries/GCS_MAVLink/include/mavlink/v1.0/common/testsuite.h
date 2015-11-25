@@ -5620,7 +5620,7 @@ static void mavlink_test_adsb_vehicle(uint8_t system_id, uint8_t component_id, m
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_adsb_vehicle_t packet_in = {
-		963497464,45.0,73.0,101.0,129.0,157.0,18483,18587,89,"DEFGHIJK",247,58
+		963497464,963497672,963497880,101.0,129.0,157.0,18483,18587,89,"DEFGHIJK",247,58
     };
 	mavlink_adsb_vehicle_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
