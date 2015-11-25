@@ -1087,6 +1087,10 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 
+    // @Group: ADSB_
+    // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
+    GOBJECT(adsb,                "ADSB_", AP_ADSB),
+
     // @Param: AUTOTUNE_AXES
     // @DisplayName: Autotune axis bitmask
     // @Description: 1-byte bitmap of axes to autotune
