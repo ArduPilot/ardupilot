@@ -4,6 +4,7 @@ sudo: false
 cache:
   directories:
     - $HOME/opt
+    - $HOME/.ccache
 
 addons:
   apt:
@@ -11,6 +12,7 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - build-essential
+    - ccache
     - g++-4.8
     - gcc-4.8
     - genromfs
@@ -53,6 +55,21 @@ before_install:
     && if grep -Fxq "$exportline" ~/.profile; then echo nothing to do ; else echo $exportline >> ~/.profile; fi
     && . ~/.profile
   - popd
+
+before_script:
+  - mkdir -p $HOME/ccache-bin
+  - ln -s /usr/bin/ccache ~/bin/g++-4.8
+  - ln -s /usr/bin/ccache ~/bin/gcc-4.8
+  - ln -s /usr/bin/ccache ~/bin/gcc-4.8-size
+  - ln -s /usr/bin/ccache ~/bin/gcc-4.8-objcopy
+  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-g++
+  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-gcc
+  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-size
+  - ln -s /usr/bin/ccache ~/bin/arm-none-eabi-objcopy
+  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-g++
+  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-gcc
+  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-size
+  - ln -s /usr/bin/ccache ~/bin/arm-linux-gnueabihf-objcopy
 
 script:
   - Tools/scripts/build_all_travis.sh
