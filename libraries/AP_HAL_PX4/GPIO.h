@@ -50,10 +50,10 @@ public:
     void set_usb_connected(void) { _usb_connected = true; }
 
 private:
-    int _led_fd;
-    int _tone_alarm_fd;
-    int _gpio_fmu_fd;
-    int _gpio_io_fd;
+    int _led_fd = -1;
+    int _tone_alarm_fd = -1;
+    int _gpio_fmu_fd = -1;
+    int _gpio_io_fd = -1;
     bool _usb_connected = false;
 };
 
