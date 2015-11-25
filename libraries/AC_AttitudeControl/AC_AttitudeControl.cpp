@@ -269,6 +269,9 @@ void AC_AttitudeControl::euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, f
 
     // Compute the angular velocity target from the attitude error
     update_ang_vel_target_from_att_error();
+
+    // Keep euler derivative updated
+    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _ang_vel_target_rads, _att_target_euler_deriv_rads);
 }
 
 void AC_AttitudeControl::euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
