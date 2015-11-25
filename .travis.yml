@@ -1,6 +1,10 @@
 language: cpp
 sudo: false
 
+cache:
+  directories:
+    - $HOME/opt
+
 addons:
   apt:
     sources:
@@ -25,19 +29,30 @@ addons:
     branch_pattern: coverity_scan
 
 before_install:
-  - pushd .
-    && cd ~
-    && wget http://firmware.diydrones.com/Tools/PX4-tools/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
-    && tar -xf gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
-    && wget http://firmware.diydrones.com/Tools/Travis/NavIO/master.tar.gz
-    && tar -xf master.tar.gz
-    && mkdir -p $HOME/bin
+  - pushd $HOME
+  - pushd $HOME/opt
+  # PX4 toolchain
+  - compiler="gcc-arm-none-eabi-4_9-2015q3"
+  - if [ ! -d "$HOME/opt/$compiler" ]; then
+      wget http://firmware.diydrones.com/Tools/PX4-tools/gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+      && tar -xf gcc-arm-none-eabi-4_9-2015q3-20150921-linux.tar.bz2
+      ;
+    fi
+  # RPi toolchain
+  - compiler="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
+  - if [ ! -d "$HOME/opt/$compiler" ]; then
+      wget http://firmware.diydrones.com/Tools/Travis/NavIO/master.tar.gz
+      && tar -xf master.tar.gz
+      ;
+    fi
+  - popd
+  - mkdir -p $HOME/bin
     && ln -sf /usr/bin/gcc-4.8 $HOME/bin/gcc
     && ln -sf /usr/bin/g++-4.8 $HOME/bin/g++
-    && exportline="export PATH=$HOME/bin:$HOME/gcc-arm-none-eabi-4_9-2015q3/bin:$HOME/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH"
+    && exportline="export PATH=$HOME/bin:$HOME/opt/gcc-arm-none-eabi-4_9-2015q3/bin:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin:\$PATH"
     && if grep -Fxq "$exportline" ~/.profile; then echo nothing to do ; else echo $exportline >> ~/.profile; fi
     && . ~/.profile
-    && popd
+  - popd
 
 script:
   - Tools/scripts/build_all_travis.sh
