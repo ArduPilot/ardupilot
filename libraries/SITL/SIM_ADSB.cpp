@@ -170,8 +170,8 @@ void ADSB::send_report(void)
             last_report_us = now_us;
 
             adsb_vehicle.ICAO_address = vehicle.ICAO_address;
-            adsb_vehicle.lat = loc.lat*1.0e-7f;
-            adsb_vehicle.lon = loc.lng*1.0e-7f;
+            adsb_vehicle.lat = loc.lat;
+            adsb_vehicle.lon = loc.lng;
             adsb_vehicle.altitude_type = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
             adsb_vehicle.altitude = -vehicle.position.z;
             adsb_vehicle.heading = wrap_360_cd(100*degrees(atan2f(vehicle.velocity_ef.y, vehicle.velocity_ef.x))) / 100;
