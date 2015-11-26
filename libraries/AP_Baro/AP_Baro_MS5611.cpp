@@ -26,14 +26,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define CMD_MS5611_RESET 0x1E
-#define CMD_MS5611_PROM_Setup 0xA0
-#define CMD_MS5611_PROM_C1 0xA2
-#define CMD_MS5611_PROM_C2 0xA4
-#define CMD_MS5611_PROM_C3 0xA6
-#define CMD_MS5611_PROM_C4 0xA8
-#define CMD_MS5611_PROM_C5 0xAA
-#define CMD_MS5611_PROM_C6 0xAC
-#define CMD_MS5611_PROM_CRC 0xAE
+#define CMD_MS56XX_PROM 0xA0
 
 #define ADDR_CMD_CONVERT_D1_OSR256  0x40 /* write to this address to start pressure conversion */
 #define ADDR_CMD_CONVERT_D1_OSR512  0x42 /* write to this address to start pressure conversion */
@@ -202,18 +195,18 @@ void AP_Baro_MS56XX::_init()
     _serial->write(CMD_MS5611_RESET);
     hal.scheduler->delay(4);
 
-    // We read the factory calibration
-    // The on-chip CRC is not used
-    _C1 = _serial->read_16bits(CMD_MS5611_PROM_C1);
-    _C2 = _serial->read_16bits(CMD_MS5611_PROM_C2);
-    _C3 = _serial->read_16bits(CMD_MS5611_PROM_C3);
-    _C4 = _serial->read_16bits(CMD_MS5611_PROM_C4);
-    _C5 = _serial->read_16bits(CMD_MS5611_PROM_C5);
-    _C6 = _serial->read_16bits(CMD_MS5611_PROM_C6);
-
-    if (!_check_crc()) {
-        AP_HAL::panic("Bad CRC on MS5611");
+    uint16_t prom[8];
+    if (!_read_prom(prom)) {
+        AP_HAL::panic("Can't read PROM");
     }
+
+    // Save factory calibration coefficients
+    _C1 = prom[1];
+    _C2 = prom[2];
+    _C3 = prom[3];
+    _C4 = prom[4];
+    _C5 = prom[5];
+    _C6 = prom[6];
 
     // Send a command to read Temp first
     _serial->write(ADDR_CMD_CONVERT_D2);
@@ -235,9 +228,9 @@ void AP_Baro_MS56XX::_init()
 }
 
 /**
- * MS5611 crc4 method based on PX4Firmware code
+ * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
  */
-static uint16_t calculate_crc(uint16_t *data)
+static uint16_t crc4(uint16_t *data)
 {
     uint16_t n_rem = 0;
     uint8_t n_bit;
@@ -259,24 +252,54 @@ static uint16_t calculate_crc(uint16_t *data)
         }
     }
 
-    /* final 4 bit remainder is CRC value */
     return (n_rem >> 12) & 0xF;
 }
 
-bool AP_Baro_MS56XX::_check_crc(void)
+bool AP_Baro_MS56XX::_read_prom(uint16_t prom[8])
 {
-    uint16_t n_prom[8] = { _serial->read_16bits(CMD_MS5611_PROM_Setup),
-                           _C1, _C2, _C3, _C4, _C5, _C6,
-                           _serial->read_16bits(CMD_MS5611_PROM_CRC) };
+    /*
+     * MS5611-01BA datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5611-01BA
+     * contains a PROM memory with 128-Bit. A 4-bit CRC has been implemented
+     * to check the data validity in memory."
+     *
+     * CRC field must me removed for CRC-4 calculation.
+     */
+    for (uint8_t i = 0; i < 8; i++) {
+        prom[i] = _serial->read_16bits(CMD_MS56XX_PROM + (i << 1));
+    }
 
     /* save the read crc */
-    const uint16_t crc_read = n_prom[7] & 0xF;
+    const uint16_t crc_read = prom[7] & 0xf;
 
     /* remove CRC byte */
-    n_prom[7] &= ~0xF;
+    prom[7] &= 0xff00;
 
-    /* return true if CRCs match */
-    return crc_read == calculate_crc(n_prom);
+    return crc_read == crc4(prom);
+}
+
+bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
+{
+    /*
+     * MS5637-02BA03 datasheet, CYCLIC REDUNDANCY CHECK (CRC): "MS5637
+     * contains a PROM memory with 112-Bit. A 4-bit CRC has been implemented
+     * to check the data validity in memory."
+     *
+     * 8th PROM word must be zeroed and CRC field removed for CRC-4
+     * calculation.
+     */
+    for (uint8_t i = 0; i < 7; i++) {
+        prom[i] = _serial->read_16bits(CMD_MS56XX_PROM + (i << 1));
+    }
+
+    prom[7] = 0;
+
+    /* save the read crc */
+    const uint16_t crc_read = (prom[0] & 0xf000) >> 12;
+
+    /* remove CRC byte */
+    prom[0] &= ~0xf000;
+
+    return crc_read == crc4(prom);
 }
 
 /*

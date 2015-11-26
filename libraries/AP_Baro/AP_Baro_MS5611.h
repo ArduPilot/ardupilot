@@ -78,14 +78,15 @@ public:
     void update();
     void accumulate();
 
-private:
+protected:
+    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
+    void _init();
+
     virtual void _calculate() = 0;
+    virtual bool _read_prom(uint16_t prom[8]);
+    void _timer();
 
     AP_SerialBus *_serial;
-
-    bool _check_crc();
-
-    void _timer();
 
     /* Asynchronous state: */
     volatile bool            _updated;
@@ -96,10 +97,6 @@ private:
     uint32_t                 _last_timer;
 
     bool _use_timer;
-
-protected:
-    AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
-    void _init();
 
     // Internal calibration registers
     uint16_t                 _C1,_C2,_C3,_C4,_C5,_C6;
@@ -129,5 +126,6 @@ public:
     AP_Baro_MS5637(AP_Baro &baro, AP_SerialBus *serial, bool use_timer);
 private:
     void _calculate();
+    bool _read_prom(uint16_t prom[8]) override;
 };
 #endif //  __AP_BARO_MS5611_H__
