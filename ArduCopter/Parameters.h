@@ -145,6 +145,9 @@ public:
         k_param_gps_glitch,             // deprecated
         k_param_baro_glitch,            // 71 - deprecated
 
+        // AP_ADSB Library
+        k_param_adsb,                   // 72
+
         // 74: precision landing object
         k_param_precland = 74,
 

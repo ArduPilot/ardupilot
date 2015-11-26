@@ -1933,6 +1933,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_ADSB_VEHICLE:
+        copter.adsb.update_vehicle(msg);
+        break;
+
     }     // end switch
 } // end handle mavlink
 
