@@ -64,7 +64,6 @@ public:
         _pid_rate_yaw(pid_rate_yaw),
         _dt(AC_ATTITUDE_100HZ_DT),
         _angle_boost(0),
-        _acro_angle_switch_rad(0),
         _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ)
         {
             AP_Param::setup_object_defaults(this, var_info);
@@ -306,10 +305,6 @@ protected:
     // This represents the throttle increase applied for tilt compensation.
     // Used only for logging.
     int16_t             _angle_boost;
-
-    // This provides hysteresis on the attitude controller switching used to account
-    // for deficiencies in the euler angle based attitude control.
-    float               _acro_angle_switch_rad;
 
     // Specifies whether the attitude controller should use the acceleration limit
     bool _att_ctrl_use_accel_limit;
