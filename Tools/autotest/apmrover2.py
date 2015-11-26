@@ -66,7 +66,7 @@ def drive_mission(mavproxy, mav, filename):
     global homeloc
     print("Driving mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('flight plan received')
+    mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 4\n') # auto mode

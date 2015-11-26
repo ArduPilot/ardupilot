@@ -880,7 +880,7 @@ def load_mission_from_file(mavproxy, mav, filename):
     '''Load a mission from a file to flight controller'''
     global num_wp
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('flight plan received')
+    mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
 
