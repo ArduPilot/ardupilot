@@ -120,6 +120,11 @@ void AP_RPM_PX4_PWM::update(void)
     if (count != 0) {
         state.last_reading_ms = AP_HAL::millis();
     }
+
+    // assume we get readings at at least 1Hz, otherwise reset quality to zero
+    if (AP_HAL::millis() - state.last_reading_ms > 1000) {
+        state.signal_quality = 0;
+    }
 }
 
 #endif // CONFIG_HAL_BOARD
