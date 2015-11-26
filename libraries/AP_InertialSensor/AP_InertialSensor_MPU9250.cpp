@@ -79,6 +79,11 @@ extern const AP_HAL::HAL& hal;
 #define MPUREG_ZRMOT_THR                                0x21    // detection threshold for Zero Motion interrupt generation.
 #define MPUREG_ZRMOT_DUR                                0x22    // duration counter threshold for Zero Motion interrupt generation. The duration counter ticks at 16 Hz, therefore ZRMOT_DUR has a unit of 1 LSB = 64 ms.
 #define MPUREG_FIFO_EN                                  0x23
+#       define BIT_FIFO_ACCEL_OUT                               0x08
+#       define BIT_FIFO_GYRO_ZOUT                               0x10
+#       define BIT_FIFO_GYRO_YOUT                               0x20
+#       define BIT_FIFO_GYRO_XOUT                               0x40
+#       define BIT_FIFO_TEMP_OUT                                0x80
 #define MPUREG_INT_PIN_CFG                              0x37
 #       define BIT_INT_RD_CLEAR                                 0x10    // clear the interrupt when any read occurs
 #       define BIT_LATCH_INT_EN                                 0x20    // latch data ready pin
@@ -183,6 +188,10 @@ extern const AP_HAL::HAL& hal;
 #define DEFAULT_SMPLRT_DIV MPUREG_SMPLRT_1000HZ
 #define DEFAULT_SAMPLE_RATE (1000 / (DEFAULT_SMPLRT_DIV + 1))
 
+#define GYROSCOPE_SAMPLE_RATE 8000
+#define ACCELEROMETER_SAMPLE_RATE 4000
+
+#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 /*
  *  PS-MPU-9250A-00.pdf, page 8, lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
@@ -202,6 +211,20 @@ extern const AP_HAL::HAL& hal;
  * and GYRO_Z
  */
 #define MPU9250_SAMPLE_SIZE 14
+
+/*
+ *  PS-MPU-9250A-00.pdf, page 6, 512 byte FIFO buffer
+ */
+#define MPU9250_FIFO_MAX_SIZE 512
+/*
+ *  2 bytes for each in this order: ACC_X, ACC_Y, ACC_Z, GYRO_X, GYRO_Y and GYRO_Z
+ */
+#define MPU9250_FIFO_SAMPLE_SIZE 12
+/*
+ *  maximum count of accelerometer or gyroscope 256 (512/2)
+ *  and maximum size for Vector3f (X,Y,Z) 86 ~= 256 / 3
+ */
+#define MPU9250_FIFO_MAX_VECTOR3F_SIZE 86
 
 /* SPI bus driver implementation */
 AP_MPU9250_BusDriver_SPI::AP_MPU9250_BusDriver_SPI(AP_HAL::SPIDeviceDriver *spi)
@@ -281,6 +304,43 @@ bool AP_MPU9250_BusDriver_SPI::read_data_transaction(uint8_t *samples, uint8_t &
     return true;
 }
 
+bool AP_MPU9250_BusDriver_SPI::read_fifo_data_transaction(uint8_t *samples, uint8_t &n_bytes)
+{
+    uint16_t fifo_count;
+    // structure for reading count of fifo
+    struct PACKED {
+        uint8_t cmd;
+        uint8_t v[2];
+    } rcx, tcx = { cmd : MPUREG_FIFO_COUNTH | 0x80 };
+
+    // structure for reading fifo
+    struct PACKED {
+        uint8_t cmd;
+        uint8_t v[MPU9250_FIFO_MAX_SIZE];
+    } rx, tx = { cmd : MPUREG_FIFO_R_W | 0x80 };
+
+    _spi->transaction((const uint8_t *)&tcx, (uint8_t *)&rcx, 3);
+    fifo_count = int16_val(rcx.v, 0);
+
+    //  If count of FIFO less than sample size or more than it half of max size, need reset
+    if (fifo_count < MPU9250_FIFO_SAMPLE_SIZE || fifo_count > MPU9250_FIFO_MAX_SIZE / 2) {
+        hal.console->printf("MPU9250: Bad FIFO count: %d.\n", fifo_count);
+        n_bytes = 0;
+        return false;
+    }
+
+    if (fifo_count % MPU9250_FIFO_SAMPLE_SIZE) {
+        fifo_count = (fifo_count / MPU9250_FIFO_SAMPLE_SIZE) * MPU9250_FIFO_SAMPLE_SIZE;
+    }
+
+    _spi->transaction((const uint8_t *)&tx, (uint8_t *)&rx, fifo_count + 1);
+
+    n_bytes = fifo_count;
+    memcpy(&samples[0], &rx.v[0], fifo_count);
+
+    return true;
+}
+
 AP_HAL::Semaphore* AP_MPU9250_BusDriver_SPI::get_semaphore()
 {
     return _spi->get_semaphore();
@@ -352,6 +412,44 @@ bool AP_MPU9250_BusDriver_I2C::read_data_transaction(uint8_t *samples,
     return true;
 }
 
+bool AP_MPU9250_BusDriver_I2C::read_fifo_data_transaction(uint8_t *samples, uint8_t &n_bytes)
+{
+    uint8_t ret = 0;
+    uint8_t buffer_count[2];
+    uint16_t fifo_count = 0;
+
+    // FIFO count consist of 2 bytes
+    ret = _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, (uint8_t *)&buffer_count);
+    if (ret != 0) {
+        hal.console->printf("MPU9250: error in I2C read\n");
+        n_bytes = 0;
+        return false;
+    }
+
+    fifo_count = ((int16_t)(((uint16_t)buffer_count[0] << 8) | buffer_count[1]));
+
+    if (fifo_count < MPU9250_FIFO_SAMPLE_SIZE || fifo_count > 256) {
+        hal.console->printf("MPU9250: Bad FIFO count: %d.\n", fifo_count);
+        n_bytes = 0;
+        return false;
+    }
+
+    if (fifo_count % MPU9250_FIFO_SAMPLE_SIZE) {
+        fifo_count = (fifo_count / MPU9250_FIFO_SAMPLE_SIZE) * MPU9250_FIFO_SAMPLE_SIZE;
+    }
+
+    ret = _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, fifo_count, (uint8_t *)&samples);
+    if (ret != 0) {
+        hal.console->printf("MPU9250: error in I2C read\n");
+        n_bytes = 0;
+        return false;
+    }
+
+    n_bytes = fifo_count;
+
+    return true;
+}
+
 AP_HAL::Semaphore* AP_MPU9250_BusDriver_I2C::get_semaphore()
 {
     return _i2c->get_semaphore();
@@ -362,9 +460,10 @@ bool AP_MPU9250_BusDriver_I2C::has_auxiliary_bus()
     return false;
 }
 
-AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus) :
-	AP_InertialSensor_Backend(imu),
+AP_InertialSensor_MPU9250::AP_InertialSensor_MPU9250(AP_InertialSensor &imu, AP_MPU9250_BusDriver *bus, bool use_fifo) :
+    AP_InertialSensor_Backend(imu),
     _bus(bus),
+    _use_fifo(use_fifo),
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
     _default_rotation(ROTATION_ROLL_180_YAW_270)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
@@ -433,8 +532,17 @@ bool AP_InertialSensor_MPU9250::_init_sensor()
     if (!_hardware_init())
         return false;
 
-    _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE);
-    _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE);
+    if (_use_fifo) {
+        _configure_fifo();
+    }
+
+    if (_use_fifo) {
+        _gyro_instance = _imu.register_gyro(GYROSCOPE_SAMPLE_RATE);
+        _accel_instance = _imu.register_accel(ACCELEROMETER_SAMPLE_RATE);
+    } else {
+        _gyro_instance = _imu.register_gyro(DEFAULT_SAMPLE_RATE);
+        _accel_instance = _imu.register_accel(DEFAULT_SAMPLE_RATE);
+    }
 
     _product_id = AP_PRODUCT_ID_MPU9250;
 
@@ -474,7 +582,13 @@ void AP_InertialSensor_MPU9250::_poll_data(void)
         */
         return;
     }
-    _read_data_transaction();
+
+    if (_use_fifo) {
+        _read_fifo_data_transaction();
+    } else {
+        _read_data_transaction();
+    }
+
     _bus_sem->give();
 }
 
@@ -492,8 +606,6 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
         return;
     }
 
-#define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
-
     accel = Vector3f(int16_val(rx, 1),
                      int16_val(rx, 0),
                      -int16_val(rx, 2));
@@ -510,6 +622,50 @@ void AP_InertialSensor_MPU9250::_read_data_transaction()
 
     _rotate_and_correct_gyro(_gyro_instance, gyro);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+}
+
+/*
+  read data from FIFO and update filtered data
+ */
+void AP_InertialSensor_MPU9250::_read_fifo_data_transaction()
+{
+    uint8_t n_bytes, n_samples;
+    uint8_t rx[MPU9250_FIFO_MAX_SIZE];
+    int i = 0;
+
+    Vector3f accel, gyro;
+    Vector3f data_accel[MPU9250_FIFO_MAX_VECTOR3F_SIZE],
+             data_gyro[MPU9250_FIFO_MAX_VECTOR3F_SIZE];
+
+    if (!_bus->read_fifo_data_transaction(rx, n_bytes)) {
+        _reset_fifo();
+        return;
+    }
+
+    n_samples = n_bytes / MPU9250_FIFO_SAMPLE_SIZE;
+    for (i = 0; i < n_samples; i++) {
+        data_accel[i] = Vector3f(int16_val(rx, (1 + 6 * i)),
+                         int16_val(rx, (0 + 6 * i)),
+                         -int16_val(rx, (2 + 6 * i)));
+        data_gyro[i] = Vector3f(int16_val(rx, (4 + 6 * i)),
+                        int16_val(rx, (3 + 6 * i)),
+                        -int16_val(rx, (5 + 6 * i)));
+
+        if (_fifo_count_even) {
+            accel = data_accel[i];
+            accel *= MPU9250_ACCEL_SCALE_1G;
+            accel.rotate(_default_rotation);
+            _rotate_and_correct_accel(_accel_instance, accel);
+            _notify_new_accel_raw_sample(_accel_instance, accel);
+        }
+        _fifo_count_even = !_fifo_count_even;
+
+        gyro = data_gyro[i];
+        gyro *= GYRO_SCALE;
+        gyro.rotate(_default_rotation);
+        _rotate_and_correct_gyro(_gyro_instance, gyro);
+        _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+    }
 }
 
 /*
@@ -635,6 +791,30 @@ fail_whoami:
     hal.scheduler->resume_timer_procs();
     _bus->set_bus_speed(AP_HAL::SPIDeviceDriver::SPI_SPEED_HIGH);
     return false;
+}
+
+void AP_InertialSensor_MPU9250::_configure_fifo()
+{
+    uint8_t user_ctrl = 0;
+    user_ctrl = _register_read(MPUREG_USER_CTRL);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
+    _register_write(MPUREG_FIFO_EN, BIT_FIFO_ACCEL_OUT |
+                    BIT_FIFO_GYRO_ZOUT | BIT_FIFO_GYRO_YOUT | BIT_FIFO_GYRO_XOUT);
+}
+
+void AP_InertialSensor_MPU9250::_reset_fifo()
+{
+    uint8_t user_ctrl = 0;
+    user_ctrl = _register_read(MPUREG_USER_CTRL);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+    _register_read(MPUREG_FIFO_COUNTH);
+    _register_read(MPUREG_FIFO_COUNTL);
+    _register_write(MPUREG_USER_CTRL, user_ctrl | BIT_USER_CTRL_FIFO_EN);
+}
+
+void AP_InertialSensor_MPU9250::_disable_fifo()
+{
+    _register_write(MPUREG_FIFO_EN, 0x00);
 }
 
 AuxiliaryBus *AP_InertialSensor_MPU9250::get_auxiliary_bus()
