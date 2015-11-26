@@ -184,12 +184,12 @@ uint8_t I2CDriver::writeRegisters(uint8_t addr, uint8_t reg,
 static inline __s32 _i2c_smbus_access(int file, char read_write, __u8 command, 
                                       int size, union i2c_smbus_data *data)
 {
-	struct i2c_smbus_ioctl_data args;
-	args.read_write = read_write;
-	args.command = command;
-	args.size = size;
-	args.data = data;
-	return ioctl(file,I2C_SMBUS,&args);
+    struct i2c_smbus_ioctl_data args;
+    args.read_write = read_write;
+    args.command = command;
+    args.size = size;
+    args.data = data;
+    return ioctl(file,I2C_SMBUS,&args);
 }
 
 uint8_t I2CDriver::writeRegister(uint8_t addr, uint8_t reg, uint8_t val)
