@@ -135,10 +135,6 @@ bool AP_RPM::healthy(uint8_t instance) const
     if (instance >= num_instances) {
         return false;
     }
-    // assume we get readings at at least 1Hz
-    if (AP_HAL::millis() - state[instance].last_reading_ms > 1000) {
-        return false;
-    }
 
     // check that data quality is above minimum required
     if (state[instance].signal_quality < _quality_min[0]) {
