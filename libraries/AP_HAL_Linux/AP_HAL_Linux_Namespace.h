@@ -20,6 +20,8 @@ namespace Linux {
     class DigitalSource;
     class DigitalSource_Sysfs;
     class PWM_Sysfs;
+    class PWM_Sysfs_Bebop;
+    class PWM_Sysfs_Base;
     class RCInput;
     class RCInput_PRU;
     class RCInput_AioPRU;
