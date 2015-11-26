@@ -8,6 +8,7 @@ import sys
 sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
+import boards
 import waflib
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
@@ -33,128 +34,15 @@ import waflib
 # contain the board extension so make it less convenient, maybe hook
 # to support automatic filling this extension?
 
-PROJECT_CONFIG = dict(
-    CFLAGS=[
-        '-ffunction-sections',
-        '-fdata-sections',
-        '-fsigned-char',
-
-        '-Wformat',
-        '-Wall',
-        '-Wshadow',
-        '-Wpointer-arith',
-        '-Wcast-align',
-        '-Wno-unused-parameter',
-        '-Wno-missing-field-initializers',
-    ],
-
-    CXXFLAGS=[
-        '-std=gnu++11',
-
-        '-fdata-sections',
-        '-ffunction-sections',
-        '-fno-exceptions',
-        '-fsigned-char',
-
-        '-Wformat',
-        '-Wall',
-        '-Wshadow',
-        '-Wpointer-arith',
-        '-Wcast-align',
-        '-Wno-unused-parameter',
-        '-Wno-missing-field-initializers',
-        '-Wno-reorder',
-        '-Werror=format-security',
-        '-Werror=array-bounds',
-        '-Wfatal-errors',
-        '-Werror=unused-but-set-variable',
-        '-Werror=uninitialized',
-        '-Werror=init-self',
-        '-Wno-missing-field-initializers',
-    ],
-
-    LINKFLAGS=[
-        '-Wl,--gc-sections',
-    ],
-)
-
-# NOTE: Keeping all the board definitions together so we can easily
-# identify opportunities to simplify how it works. In the future might
-# be worthy to keep board definitions in files of their own.
-BOARDS = {
-    'sitl': dict(
-        DEFINES=[
-            'CONFIG_HAL_BOARD=HAL_BOARD_SITL',
-            'CONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_NONE',
-        ],
-
-        CXXFLAGS=[
-            '-O3'
-        ],
-
-        LIB=[
-            'm',
-            'pthread',
-        ],
-
-        AP_LIBRARIES=[
-            'AP_HAL_SITL',
-            'SITL',
-        ],
-    ),
-
-    'linux': dict(
-        DEFINES=[
-            'CONFIG_HAL_BOARD=HAL_BOARD_LINUX',
-            'CONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_LINUX_NONE',
-        ],
-
-        CXXFLAGS=[
-            '-O3'
-        ],
-
-        LIB=[
-            'm',
-            'pthread',
-            'rt',
-        ],
-
-        AP_LIBRARIES=[
-            'AP_HAL_Linux',
-        ],
-    ),
-
-    'minlure': dict(
-        DEFINES=[
-            'CONFIG_HAL_BOARD=HAL_BOARD_LINUX',
-            'CONFIG_HAL_BOARD_SUBTYPE=HAL_BOARD_SUBTYPE_LINUX_MINLURE',
-        ],
-
-        CXXFLAGS=[
-            '-O3'
-        ],
-
-        LIB=[
-            'm',
-            'pthread',
-            'rt',
-        ],
-
-        AP_LIBRARIES=[
-            'AP_HAL_Linux',
-        ],
-    ),
-}
-
-BOARDS_NAMES = sorted(list(BOARDS.keys()))
-
 def options(opt):
+    boards_names = boards.get_boards_names()
+
     opt.load('compiler_cxx compiler_c waf_unit_test')
     opt.add_option('--board',
                    action='store',
-                   choices=BOARDS_NAMES,
+                   choices=boards_names,
                    default='sitl',
-                   help='Target board to build, choices are %s' % BOARDS_NAMES)
+                   help='Target board to build, choices are %s' % boards_names)
 
     g = opt.add_option_group('Check options')
     g.add_option('--check-verbose',
@@ -182,15 +70,19 @@ def configure(cfg):
 
     cfg.msg('Setting board to', cfg.options.board)
     cfg.env.BOARD = cfg.options.board
-    board = BOARDS[cfg.env.BOARD]
+    board_dict = boards.BOARDS[cfg.env.BOARD].get_merged_dict()
 
-    # Always prepend so that arguments passed in the command line get the
-    # priority. Board configuration gets priority over the project
-    # configuration.
-    for k in board.keys():
-        cfg.env.prepend_value(k, board[k])
-    for k in PROJECT_CONFIG.keys():
-        cfg.env.prepend_value(k, PROJECT_CONFIG[k])
+    # Always prepend so that arguments passed in the command line get
+    # the priority.
+    for k in board_dict:
+        val = board_dict[k]
+        # Dictionaries (like 'DEFINES') are converted to lists to
+        # conform to waf conventions.
+        if isinstance(val, dict):
+            for item in val.items():
+                cfg.env.prepend_value(k, '%s=%s' % item)
+        else:
+            cfg.env.prepend_value(k, val)
 
     cfg.env.prepend_value('INCLUDES', [
         cfg.srcnode.abspath() + '/libraries/'
@@ -211,7 +103,7 @@ def collect_dirs_to_recurse(bld, globs, **kw):
     return dirs
 
 def list_boards(ctx):
-    print(*BOARDS_NAMES)
+    print(*boards.get_boards_names())
 
 def build(bld):
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
