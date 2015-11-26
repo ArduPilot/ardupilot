@@ -72,6 +72,8 @@ extern const AP_HAL::HAL& hal;
 #       define BITS_GYRO_YGYRO_SELFTEST                 0x40
 #       define BITS_GYRO_XGYRO_SELFTEST                 0x80
 #define MPUREG_ACCEL_CONFIG                             0x1C
+#define MPUREG_ACCEL_CONFIG_2                           0x1D
+#       define BIT_ACCEL_FCHOICE_B                              0x08    // used to bypass accelerometer DLPF and sets 4kHz rate (BW = 1.13kHz)
 #define MPUREG_MOT_THR                                  0x1F    // detection threshold for Motion interrupt generation.  Motion is detected when the absolute value of any of the accelerometer measurements exceeds this
 #define MPUREG_MOT_DUR                                  0x20    // duration counter threshold for Motion interrupt generation. The duration counter ticks at 1 kHz, therefore MOT_DUR has a unit of 1 LSB = 1 ms
 #define MPUREG_ZRMOT_THR                                0x21    // detection threshold for Zero Motion interrupt generation.
@@ -606,10 +608,9 @@ bool AP_InertialSensor_MPU9250::_hardware_init(void)
     // desired rate
     _register_write(MPUREG_SMPLRT_DIV, DEFAULT_SMPLRT_DIV);
     _register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
-
-    // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g
+    // RM-MPU-9250A-00.pdf, pg. 15, select accel full scale 16g and bypass DLPF
     _register_write(MPUREG_ACCEL_CONFIG,3<<3);
-
+    _register_write(MPUREG_ACCEL_CONFIG_2, BIT_ACCEL_FCHOICE_B);
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
 
