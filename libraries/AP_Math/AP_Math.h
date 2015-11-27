@@ -220,9 +220,15 @@ static inline float pythagorous3(float a, float b, float c) {
 #error "Build is including Arduino base headers"
 #endif
 
-/* The following three functions used to be arduino core macros */
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#define MIN(a,b) ((a)<(b)?(a):(b))
+template<typename A, typename B>
+static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two) {
+    return one < two ? one : two;
+}
+
+template<typename A, typename B>
+static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one : two) {
+    return one > two ? one : two;
+}
 
 static inline float maxf(float a, float b)
 {
