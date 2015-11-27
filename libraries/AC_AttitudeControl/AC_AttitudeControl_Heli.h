@@ -115,7 +115,7 @@ private:
     int16_t _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    int16_t get_roll_trim_rad() { return radians(constrain_int16(_hover_roll_trim_scalar * _hover_roll_trim, -1000, 1000)*0.01f);}
+    float get_roll_trim_rad() { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
