@@ -222,7 +222,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // at the same time.  This cannot be allowed.
     if (check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Interlock/E-Stop Conflict");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Interlock/E-Stop conflict");
         }
         return false;
     }
@@ -233,7 +233,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // as state can change at any time.
     if (ap.using_interlock && motors.get_interlock()){
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock Enabled");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motor Interlock enabled");
         }
         return false;
     }
@@ -324,7 +324,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // check all compasses point in roughly same direction
         if (!compass.consistent()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent compasses");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compasses inconsistent");
             }
             return false;
         }
@@ -351,7 +351,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // check accelerometers have been calibrated
         if(!ins.accel_calibrated_ok_all()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accels not calibrated");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accelerometers not calibrated");
             }
             return false;
         }
@@ -382,7 +382,7 @@ bool Copter::pre_arm_checks(bool display_failure)
                 }
                 if (vec_diff.length() > threshold) {
                     if (display_failure) {
-                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Accelerometers");
+                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accelerometers inconsistent");
                     }
                     return false;
                 }
@@ -404,7 +404,7 @@ bool Copter::pre_arm_checks(bool display_failure)
                 Vector3f vec_diff = ins.get_gyro(i) - ins.get_gyro();
                 if (vec_diff.length() > PREARM_MAX_GYRO_VECTOR_DIFF) {
                     if (display_failure) {
-                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: inconsistent Gyros");
+                        gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Gyros inconsistent");
                     }
                     return false;
                 }
@@ -414,7 +414,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: gyros still settling");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Gyros still settling");
             }
             return false;
         }
@@ -425,7 +425,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if(hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Board Voltage");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check board voltage");
             }
             return false;
         }
@@ -437,7 +437,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Battery");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check battery");
             }
             return false;
         }
@@ -449,7 +449,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // ensure ch7 and ch8 have different functions
         if (check_duplicate_auxsw()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Duplicate Aux Switch Options");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Duplicate Aux switch options");
             }
             return false;
         }
@@ -485,7 +485,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         // check range finder if optflow enabled
         if (optflow.enabled() && !sonar.pre_arm_check()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check range finder");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check range finder");
             }
             return false;
         }
@@ -504,9 +504,9 @@ bool Copter::pre_arm_checks(bool display_failure)
         if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->radio_in < g.failsafe_throttle_value) {
             if (display_failure) {
     #if FRAME_CONFIG == HELI_FRAME
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Collective below Failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Collective below failsafe");
     #else
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Throttle below Failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Throttle below failsafe");
     #endif
             }
             return false;
@@ -567,7 +567,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav checks");
         }
         return false;
     }
@@ -595,7 +595,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
             if (reason) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
             } else {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D Fix");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Need 3D fix");
             }
         }
         AP_Notify::flags.pre_arm_gps_check = false;
@@ -617,7 +617,7 @@ bool Copter::pre_arm_gps_checks(bool display_failure)
     // check home and EKF origin are not too far
     if (far_from_EKF_origin(ahrs.get_home())) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF-home variance");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: EKF HOME variance");
         }
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
@@ -679,7 +679,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: gyros still settling");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Gyros still settling");
             }
             return false;
         }
@@ -688,7 +688,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // always check if inertial nav has started and is ready
     if(!ahrs.healthy()) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav checks");
         }
         return false;
     }
@@ -715,7 +715,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // if we are using motor interlock switch and it's enabled, fail to arm
     if (ap.using_interlock && motors.get_interlock()){
-        gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Interlock Enabled");
+        gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Interlock enabled");
         return false;
     }
 
@@ -760,7 +760,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // check vehicle is within fence
     if(!fence.pre_arm_check()) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: check fence");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Check fence");
         }
         return false;
     }
@@ -780,7 +780,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
         if (failsafe.battery || (!ap.usb_connected && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah))) {
             if (display_failure) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Check Battery");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Check battery");
             }
             return false;
         }
@@ -792,9 +792,9 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         if (g.failsafe_throttle != FS_THR_DISABLED && channel_throttle->radio_in < g.failsafe_throttle_value) {
             if (display_failure) {
 #if FRAME_CONFIG == HELI_FRAME
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective below Failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Collective below failsafe");
 #else
-                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle below Failsafe");
+                gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Throttle below failsafe");
 #endif
             }
             return false;
@@ -830,7 +830,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
         if (display_failure) {
-            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety Switch");
+            gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Safety switch");
         }
         return false;
     }
