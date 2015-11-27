@@ -221,8 +221,8 @@ static inline float pythagorous3(float a, float b, float c) {
 #endif
 
 /* The following three functions used to be arduino core macros */
-#define max(a,b) ((a)>(b)?(a):(b))
-#define min(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
 
 static inline float maxf(float a, float b)
 {

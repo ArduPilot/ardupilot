@@ -238,8 +238,8 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
 {
     // calculate a loiter speed limit which is the minimum of the value set by the WPNAV_LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
-    float gnd_speed_limit_cms = min(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
-    gnd_speed_limit_cms = max(gnd_speed_limit_cms, 10.0f);
+    float gnd_speed_limit_cms = MIN(_loiter_speed_cms,ekfGndSpdLimit*100.0f);
+    gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, 10.0f);
 
     // range check nav_dt
     if( nav_dt < 0 ) {
@@ -290,10 +290,10 @@ void AC_WPNav::calc_loiter_desired_velocity(float nav_dt, float ekfGndSpdLimit)
         float drag_speed_delta = -_loiter_accel_cmss*nav_dt*desired_speed/gnd_speed_limit_cms;
 
         if (_pilot_accel_fwd_cms == 0 && _pilot_accel_rgt_cms == 0) {
-            drag_speed_delta = min(drag_speed_delta,max(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
+            drag_speed_delta = MIN(drag_speed_delta,MAX(-_loiter_accel_min_cmss*nav_dt, -2.0f*desired_speed*nav_dt));
         }
 
-        desired_speed = max(desired_speed+drag_speed_delta,0.0f);
+        desired_speed = MAX(desired_speed+drag_speed_delta,0.0f);
         desired_vel = desired_vel_norm*desired_speed;
     }
 
@@ -551,7 +551,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-    track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+    track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
     if (track_leash_slack < 0) {
         track_desired_max = track_covered;
     }else{
@@ -595,7 +595,7 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
             }
             // if target is slowing down, limit the speed
             if (_flags.slowing_down) {
-                _limited_speed_xy_cms = min(_limited_speed_xy_cms, get_slow_down_speed(dist_to_dest, _track_accel));
+                _limited_speed_xy_cms = MIN(_limited_speed_xy_cms, get_slow_down_speed(dist_to_dest, _track_accel));
             }
         }
 
@@ -737,9 +737,9 @@ void AC_WPNav::calculate_wp_leash_length()
         _track_speed = speed_z/pos_delta_unit_z;
         _track_leash_length = leash_z/pos_delta_unit_z;
     }else{
-        _track_accel = min(_wp_accel_z_cms/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
-        _track_speed = min(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
-        _track_leash_length = min(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
+        _track_accel = MIN(_wp_accel_z_cms/pos_delta_unit_z, _wp_accel_cms/pos_delta_unit_xy);
+        _track_speed = MIN(speed_z/pos_delta_unit_z, _wp_speed_cms/pos_delta_unit_xy);
+        _track_leash_length = MIN(leash_z/pos_delta_unit_z, _pos_control.get_leash_xy()/pos_delta_unit_xy);
     }
 
     // calculate slow down distance (the distance from the destination when the target point should begin to slow down)
@@ -952,7 +952,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         }
 
         // calculate how far along the track we could move the intermediate target before reaching the end of the leash
-        float track_leash_slack = min(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
+        float track_leash_slack = MIN(_track_leash_length*(leash_z-track_error_z)/leash_z, _track_leash_length*(leash_xy-track_error_xy)/leash_xy);
         if (track_leash_slack < 0.0f) {
             track_leash_slack = 0.0f;
         }
@@ -961,7 +961,7 @@ void AC_WPNav::advance_spline_target_along_track(float dt)
         float spline_dist_to_wp = (_destination - target_pos).length();
         float vel_limit = _wp_speed_cms;
         if (!is_zero(dt)) {
-            vel_limit = min(vel_limit, track_leash_slack/dt);
+            vel_limit = MIN(vel_limit, track_leash_slack/dt);
         }
 
         // if within the stopping distance from destination, set target velocity to sqrt of distance * 2 * acceleration

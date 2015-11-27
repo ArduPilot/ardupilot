@@ -237,7 +237,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
             return _circle_breach_distance;
             break;
         case AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE:
-            return max(_alt_max_breach_distance,_circle_breach_distance);
+            return MAX(_alt_max_breach_distance,_circle_breach_distance);
     }
 
     // we don't recognise the fence type so just return 0

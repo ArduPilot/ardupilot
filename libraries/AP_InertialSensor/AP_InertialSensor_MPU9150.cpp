@@ -583,7 +583,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_sample_rate(uint16_t rate)
                                data);
     
     // sample_rate = 1000 / (1 + data);
-    // mpu_set_compass_sample_rate(min(sample_rate, MAX_COMPASS_SAMPLE_RATE), rate);
+    // mpu_set_compass_sample_rate(MIN(sample_rate, MAX_COMPASS_SAMPLE_RATE), rate);
 
     return 0;
 }

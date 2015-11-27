@@ -61,7 +61,7 @@ void AC_PI_2D::filt_hz(float hz)
     _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
-    _filt_hz = max(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
+    _filt_hz = MAX(_filt_hz, AC_PI_2D_FILT_HZ_MIN);
 
     // calculate the input filter alpha
     calc_filt_alpha();
@@ -110,7 +110,7 @@ Vector2f AC_PI_2D::get_i()
 Vector2f AC_PI_2D::get_i_shrink()
 {
     if (!is_zero(_ki) && !is_zero(_dt)) {
-        float integrator_length_orig = min(_integrator.length(),_imax);
+        float integrator_length_orig = MIN(_integrator.length(),_imax);
         _integrator += (_input * _ki) * _dt;
         float integrator_length_new = _integrator.length();
         if ((integrator_length_new > integrator_length_orig) && (integrator_length_new > 0)) {

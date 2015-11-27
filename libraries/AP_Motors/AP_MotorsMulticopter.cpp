@@ -268,7 +268,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
         return;
     }
 
-    _batt_voltage_min = max(_batt_voltage_min, _batt_voltage_max * 0.6f);
+    _batt_voltage_min = MAX(_batt_voltage_min, _batt_voltage_max * 0.6f);
 
     // add current based voltage sag to battery voltage
     float batt_voltage = _batt_voltage + _batt_current * _batt_resistance;
@@ -310,10 +310,10 @@ void AP_MotorsMulticopter::update_throttle_thr_mix()
     // slew _throttle_thr_mix to _throttle_thr_mix_desired
     if (_throttle_thr_mix < _throttle_thr_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_thr_mix += min(2.0f/_loop_rate, _throttle_thr_mix_desired-_throttle_thr_mix);
+        _throttle_thr_mix += MIN(2.0f/_loop_rate, _throttle_thr_mix_desired-_throttle_thr_mix);
     } else if (_throttle_thr_mix > _throttle_thr_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_thr_mix -= min(0.5f/_loop_rate, _throttle_thr_mix-_throttle_thr_mix_desired);
+        _throttle_thr_mix -= MIN(0.5f/_loop_rate, _throttle_thr_mix-_throttle_thr_mix_desired);
     }
     _throttle_thr_mix = constrain_float(_throttle_thr_mix, 0.1f, 1.0f);
 }
