@@ -18,26 +18,22 @@
 #define __HEAT_PWM_H__
 
 #include "AP_HAL_Linux.h"
+#include "PWM_Sysfs.h"
 #include "Heat.h"
 
 class Linux::HeatPwm : public Linux::Heat {
 public:
-    HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki,uint32_t period_ns, float target);
+    HeatPwm(uint8_t pwm_num, float Kp, float Ki,
+            uint32_t period_ns, float target);
     void set_imu_temp(float current)override;
 
 private:
-    int _duty_fd = -1;
-    int _period_fd = -1;
-    int _run_fd = -1;
+    PWM_Sysfs_Base *_pwm;
     uint32_t _last_temp_update = 0;
     float _Kp;
     float _Ki;
     uint32_t _period_ns;
     float _sum_error;
     float _target;
-
-    void _set_duty(uint32_t duty);
-    void _set_period(uint32_t period);
-    void _set_run();
 };
 #endif

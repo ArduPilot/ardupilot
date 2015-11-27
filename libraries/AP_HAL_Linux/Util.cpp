@@ -26,7 +26,7 @@ void Util::init(int argc, char * const *argv) {
 
 #ifdef HAL_UTILS_HEAT
 #if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
-    _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_SYSFS_DIR,
+    _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
                             HAL_LINUX_HEAT_KP,
                             HAL_LINUX_HEAT_KI,
                             HAL_LINUX_HEAT_PERIOD_NS,
