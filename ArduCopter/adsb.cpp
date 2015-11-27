@@ -19,6 +19,8 @@
 
 #include "Copter.h"
 
+#if ADSB_ENABLED == ENABLED
+
 /*
  *  this module deals with ADS-B handling for ArduPilot
  *  ADS-B is an RF based collision avoidance protocol to tell nearby aircraft your location
@@ -42,3 +44,4 @@ void Copter::adsb_handle_vehicle_threats(void)
 {
 }
 
+#endif // #ADSB_ENABLED
