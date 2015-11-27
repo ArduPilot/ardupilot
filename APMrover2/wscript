@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import ardupilotwaf
+
+def build(bld):
+    vehicle = bld.path.name
+    ardupilotwaf.vehicle_stlib(
+        bld,
+        name=vehicle + '_libs',
+        vehicle=vehicle,
+        libraries=ardupilotwaf.COMMON_VEHICLE_DEPENDENT_LIBRARIES + [
+            'APM_Control',
+            'AP_Arming',
+            'AP_Camera',
+            'AP_Frsky_Telem',
+            'AP_L1_Control',
+            'AP_Menu',
+            'AP_Mount',
+            'AP_Navigation',
+            'AP_RCMapper',
+            'AP_RSSI',
+            'AP_Relay',
+            'AP_ServoRelayEvents',
+            'PID',
+        ],
+    )
+
+    ardupilotwaf.program(
+        bld,
+        use=vehicle + '_libs',
+    )

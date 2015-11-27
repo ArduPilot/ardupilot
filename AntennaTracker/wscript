@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import ardupilotwaf
+
+def build(bld):
+    vehicle = bld.path.name
+    ardupilotwaf.vehicle_stlib(
+        bld,
+        name=vehicle + '_libs',
+        vehicle=vehicle,
+        libraries=ardupilotwaf.COMMON_VEHICLE_DEPENDENT_LIBRARIES + [
+            'PID',
+        ],
+    )
+
+    ardupilotwaf.program(
+        bld,
+        use=vehicle + '_libs',
+    )
