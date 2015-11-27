@@ -122,7 +122,7 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float eule
         // When acceleration limiting and feedforward are not enabled, the target roll euler angle is simply set to the
         // input value and the feedforward rate is zeroed.
         _att_target_euler_rad.x = euler_roll_angle_rad;
-        att_error_euler_rad.x = wrap_180_cd_float(_att_target_euler_rad.x - _ahrs.roll);
+        att_error_euler_rad.x = wrap_PI(_att_target_euler_rad.x - _ahrs.roll);
         _att_target_euler_deriv_rads.x = 0;
     }
     _att_target_euler_rad.x = constrain_float(_att_target_euler_rad.x, -get_tilt_limit_rad(), get_tilt_limit_rad());
@@ -141,7 +141,7 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float eule
         update_att_target_and_error_pitch(_att_target_euler_deriv_rads.y, att_error_euler_rad, AC_ATTITUDE_RATE_STAB_ROLL_OVERSHOOT_ANGLE_MAX_RAD);
     } else {
         _att_target_euler_rad.y = euler_pitch_angle_rad;
-        att_error_euler_rad.y = wrap_180_cd_float(_att_target_euler_rad.y - _ahrs.pitch);
+        att_error_euler_rad.y = wrap_PI(_att_target_euler_rad.y - _ahrs.pitch);
         _att_target_euler_deriv_rads.y = 0;
     }
     _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y, -get_tilt_limit_rad(), get_tilt_limit_rad());

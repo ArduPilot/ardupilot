@@ -204,7 +204,7 @@ public:
     virtual float get_althold_lean_angle_max() const = 0;
 
     // Return configured tilt angle limit in centidegrees/s
-    int16_t lean_angle_max() const { return _aparm.angle_max; }
+    float lean_angle_max() const { return _aparm.angle_max; }
 
     // Proportional controller with piecewise sqrt sections to constrain second derivative
     static float sqrt_controller(float error, float p, float second_ord_lim);
@@ -242,7 +242,7 @@ protected:
 
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
-    virtual int16_t get_roll_trim_rad() { return 0;}
+    virtual float get_roll_trim_rad() { return 0;}
 
     // Return the roll axis acceleration limit in radians/s/s
     float get_accel_roll_max_radss() { return radians(_accel_roll_max*0.01f); }
