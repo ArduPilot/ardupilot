@@ -1867,19 +1867,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
     //send a rally point to the GCS
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT: {
-        //send_text(MAV_SEVERITY_INFO, "## getting rally point in GCS_Mavlink.cpp 1"); // #### TEMP
-
         mavlink_rally_fetch_point_t packet;
         mavlink_msg_rally_fetch_point_decode(msg, &packet);
-
-        //send_text(MAV_SEVERITY_INFO, "## getting rally point in GCS_Mavlink.cpp 2"); // #### TEMP
 
         if (packet.idx > copter.rally.get_rally_total()) {
             send_text(MAV_SEVERITY_NOTICE, "Bad rally point index");
             break;
         }
-
-        //send_text(MAV_SEVERITY_INFO, "## getting rally point in GCS_Mavlink.cpp 3"); // #### TEMP
 
         RallyLocation rally_point;
         if (!copter.rally.get_rally_point_with_index(packet.idx, rally_point)) {
@@ -1887,16 +1881,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
            break;
         }
 
-        //send_text(MAV_SEVERITY_INFO, "## getting rally point in GCS_Mavlink.cpp 4"); // #### TEMP
-
         mavlink_msg_rally_point_send_buf(msg,
                                          chan, msg->sysid, msg->compid, packet.idx,
                                          copter.rally.get_rally_total(), rally_point.lat, rally_point.lng,
                                          rally_point.alt, rally_point.break_alt, rally_point.land_dir,
                                          rally_point.flags);
-
-        //send_text(MAV_SEVERITY_INFO, "## getting rally point in GCS_Mavlink.cpp 5"); // #### TEMP
-
         break;
     }
 #endif // AC_RALLY == ENABLED
