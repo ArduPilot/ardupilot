@@ -49,3 +49,11 @@ for t in $TRAVIS_BUILD_TARGET; do
         popd
     done
 done
+
+# WAF build
+# Currently we're only using waf build for board 'linux' here, we can loop over
+# TRAVIS_BUILD_TARGET when support is added for all boards that are currently
+# supported for the current "official" build system
+./waf configure --board linux
+./waf clean
+./waf -j2 build
