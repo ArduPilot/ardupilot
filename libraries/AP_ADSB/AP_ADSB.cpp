@@ -29,15 +29,15 @@ extern const AP_HAL::HAL& hal;
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: ENABLE
-    // @DisplayName: Enable
+    // @DisplayName: Enable ADSB
     // @Description: Enable ADS-B
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ENABLE",     0, AP_ADSB, _enabled,    0),
 
     // @Param: BEHAVIOR
-    // @DisplayName: Collision Avoidance Behavior
-    // @Description: Collision Avoidance Behavior selector
+    // @DisplayName: ADSB based Collision Avoidance Behavior
+    // @Description: ADSB based Collision Avoidance Behavior selector
     // @Values: 0:None,1:Loiter,2:LoiterAndDescend
     // @User: Advanced
     AP_GROUPINFO("BEHAVIOR",   1, AP_ADSB, _behavior, ADSB_BEHAVIOR_NONE),
@@ -98,7 +98,7 @@ void AP_ADSB::update(void)
     while (index < _vehicle_count) {
         // check list and drop stale vehicles. When disabled, the list will get flushed
         if (AP_HAL::millis() - _vehicle_list[index].last_update_ms > VEHICLE_TIMEOUT_MS) {
-             // don't increment index, we want to check this same index again because the contents changed
+            // don't increment index, we want to check this same index again because the contents changed
             // also, if we're disabled then clear the list
             delete_vehicle(index);
         } else {
