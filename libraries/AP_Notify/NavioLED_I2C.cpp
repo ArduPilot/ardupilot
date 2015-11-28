@@ -19,8 +19,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include "NavioLED_I2C.h"
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+#define PCA9685_ADDRESS 0x55
+#define PCA9685_PWM 0x3A // PCA9685 LED13,14,15 are used for rgbled control on BH
+#else
 #define PCA9685_ADDRESS 0x40
 #define PCA9685_PWM 0x6
+#endif // CONFIG_HAL_BOARD_SUBTYPE
 
 extern const AP_HAL::HAL& hal;
 

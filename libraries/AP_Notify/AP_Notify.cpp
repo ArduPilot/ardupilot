@@ -60,7 +60,7 @@ struct AP_Notify::notify_events_type AP_Notify::events;
         NotifyDevice *AP_Notify::_devices[] = {&boardled};
     #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
         AP_BoardLED boardled;
-        BHLED_I2C bhled;
+        NavioLED_I2C bhled;
         NotifyDevice *AP_Notify::_devices[] = {&boardled, &bhled};
     #else
         AP_BoardLED boardled;
