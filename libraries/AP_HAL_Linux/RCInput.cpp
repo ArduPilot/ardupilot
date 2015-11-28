@@ -319,8 +319,10 @@ reset:
 
 void RCInput::_process_pwm_pulse(uint16_t channel, uint16_t width_s0, uint16_t width_s1)
 {
-    _pwm_values[channel] = width_s1; // range: 700 ~ 2300
-    new_rc_input = true;
+    if (channel < _num_channels) {
+        _pwm_values[channel] = width_s1; // range: 700 ~ 2300
+        new_rc_input = true;
+    }
 }
 
 /*
