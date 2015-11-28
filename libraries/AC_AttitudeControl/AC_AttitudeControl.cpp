@@ -91,7 +91,7 @@ void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
     _att_target_euler_rad.z = wrap_2PI(_att_target_euler_rad.z + radians(yaw_shift_cd*0.01f));
 }
 
-void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain)
+void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle_rad = radians(euler_roll_angle_cd*0.01f);
@@ -180,7 +180,7 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw_smooth(float eule
     _ang_vel_target_rads += _att_target_ang_vel_rads;
 }
 
-void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
+void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle_rad = radians(euler_roll_angle_cd*0.01f);
@@ -235,7 +235,7 @@ void AC_AttitudeControl::euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_
     _ang_vel_target_rads += _att_target_ang_vel_rads;
 }
 
-void AC_AttitudeControl::euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
+void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle_rad = radians(euler_roll_angle_cd*0.01f);
@@ -274,7 +274,7 @@ void AC_AttitudeControl::euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, f
     ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _ang_vel_target_rads, _att_target_euler_deriv_rads);
 }
 
-void AC_AttitudeControl::euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
+void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_rate_rads = radians(euler_roll_rate_cds*0.01f);
@@ -331,7 +331,7 @@ void AC_AttitudeControl::euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, fl
     _ang_vel_target_rads += _att_target_ang_vel_rads;
 }
 
-void AC_AttitudeControl::rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
     float roll_rate_bf_rads = radians(roll_rate_bf_cds*0.01f);

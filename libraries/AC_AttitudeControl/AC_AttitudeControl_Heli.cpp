@@ -94,11 +94,11 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
 }
 
 // subclass non-passthrough too, for external gyro, no flybar
-void AC_AttitudeControl_Heli::rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf)
+void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
-    _passthrough_yaw = yaw_rate_bf;
+    _passthrough_yaw = yaw_rate_bf_cds;
 
-    AC_AttitudeControl::rate_bf_roll_pitch_yaw(roll_rate_bf, pitch_rate_bf, yaw_rate_bf);
+    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
 }
 
 //
