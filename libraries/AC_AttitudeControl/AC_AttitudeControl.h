@@ -114,19 +114,19 @@ public:
     void shift_ef_yaw_target(float yaw_shift_cd);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-    void euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
+    void input_euler_angle_roll_pitch_euler_rate_yaw_smooth(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds, float smoothing_gain);
 
     // Command an euler roll and pitch angle and an euler yaw rate
-    void euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
 
     // Command an euler roll, pitch and yaw angle
-    void euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_ef_cd, float euler_yaw_angle_cd, bool slew_yaw);
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_ef_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
     // Command an euler roll, pitch, and yaw rate
-    void euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
+    void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
     // Command an angular velocity
-    virtual void rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run();
