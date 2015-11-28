@@ -49,6 +49,12 @@
  # define HAL_GPIO_C_LED_PIN        16
  # define HAL_GPIO_LED_ON           LOW
  # define HAL_GPIO_LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+ # define HAL_GPIO_A_LED_PIN        17
+ # define HAL_GPIO_B_LED_PIN        18
+ # define HAL_GPIO_C_LED_PIN        22
+ # define HAL_GPIO_LED_ON           LOW
+ # define HAL_GPIO_LED_OFF          HIGH
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
  # define HAL_GPIO_A_LED_PIN        61
  # define HAL_GPIO_B_LED_PIN        48
