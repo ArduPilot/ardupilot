@@ -380,7 +380,7 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
 
     n_samples = bytes_read / MPU6000_SAMPLE_SIZE;
 
-    if(n_samples > 3) {
+    if(n_samples > MPU6000_MAX_FIFO_SAMPLES) {
         hal.console->printf("bytes_read = %d, n_samples %d > 3, dropping samples\n",
                                    bytes_read, n_samples);
 
