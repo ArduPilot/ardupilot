@@ -20,10 +20,12 @@
 #define AP_MOTORS_HELI_SINGLE_SERVO1_POS                       -60
 #define AP_MOTORS_HELI_SINGLE_SERVO2_POS                       60
 #define AP_MOTORS_HELI_SINGLE_SERVO3_POS                       180
+#define AP_MOTORS_HELI_SINGLE_SERVO4_POS                       0
 
 // swash type definitions
 #define AP_MOTORS_HELI_SINGLE_SWASH_CCPM                       0
 #define AP_MOTORS_HELI_SINGLE_SWASH_H1                         1
+#define AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO                2
 
 // tail types
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                   0
@@ -50,23 +52,28 @@ public:
     // constructor
     AP_MotorsHeli_Single(RC_Channel&    servo_aux,
                          RC_Channel&    servo_rsc,
-                         RC_Channel&    servo_1,
-                         RC_Channel&    servo_2,
-                         RC_Channel&    servo_3,
-                         RC_Channel&    servo_4,
+                         RC_Channel&    swash_servo_1,
+                         RC_Channel&    swash_servo_2,
+                         RC_Channel&    swash_servo_3,
+                         RC_Channel&    swash_servo_4,
+                         RC_Channel&    yaw_servo,
                          uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _servo_aux(servo_aux),
-        _swash_servo_1(servo_1),
-        _swash_servo_2(servo_2),
-        _swash_servo_3(servo_3),
-        _yaw_servo(servo_4),
+        _swash_servo_1(swash_servo_1),
+        _swash_servo_2(swash_servo_2),
+        _swash_servo_3(swash_servo_3),
+        _swash_servo_4(swash_servo_4),
+        _yaw_servo(yaw_servo),
         _main_rotor(servo_rsc, AP_MOTORS_HELI_SINGLE_RSC, loop_rate),
         _tail_rotor(servo_aux, AP_MOTORS_HELI_SINGLE_AUX, loop_rate)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
+
+    // init
+    void Init();
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
@@ -155,6 +162,7 @@ protected:
     RC_Channel&     _swash_servo_1;             // swash plate servo #1
     RC_Channel&     _swash_servo_2;             // swash plate servo #2
     RC_Channel&     _swash_servo_3;             // swash plate servo #3
+    RC_Channel&     _swash_servo_4;             // swash plate servo #4
     RC_Channel&     _yaw_servo;                 // tail servo
 
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
@@ -167,11 +175,13 @@ protected:
     float _roll_test = 0.0f;                    // over-ride for roll output, used by servo_test function
     float _pitch_test = 0.0f;                   // over-ride for pitch output, used by servo_test function
     float _yaw_test = 0.0f;                     // over-ride for yaw output, used by servo_test function
+    uint8_t _yaw_channel;                       // output channel for yaw servo
 
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1
     AP_Int16        _servo2_pos;                // Angular location of swash servo #2
-    AP_Int16        _servo3_pos;                // Angular location of swash servo #3    
+    AP_Int16        _servo3_pos;                // Angular location of swash servo #3
+    AP_Int16        _servo4_pos;                // Angular location of swash servo #4
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int8         _swash_type;                // Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro

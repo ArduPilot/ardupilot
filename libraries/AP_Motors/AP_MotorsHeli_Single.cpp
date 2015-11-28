@@ -60,8 +60,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SWASH_TYPE
     // @DisplayName: Swash Type
-    // @Description: Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing
+    // @Description: Swash Type Setting - either 3-servo CCPM, 4-servo CCPM or H1 Mechanical Mixing
+    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing, 2:4-Servo CCPM
     // @User: Standard
     AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_CCPM),
 
@@ -115,8 +115,31 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
     
+    // @Param: SV4_POS
+    // @DisplayName: Servo 4 Position
+    // @Degreesscription: Angular location of swash servo #4
+    // @Range: -180 180
+    // @Units: Degrees
+    // @User: Standard
+    // @Increment: 1
+    AP_GROUPINFO("SV4_POS", 12, AP_MotorsHeli_Single, _servo4_pos, AP_MOTORS_HELI_SINGLE_SERVO4_POS),
+
     AP_GROUPEND
 };
+
+void AP_MotorsHeli_Single::Init()
+{
+    AP_MotorsHeli::Init();
+
+    // select output channel for yaw based on the swash type, which
+    // will need a reboot for param changes to take effect
+
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO) {
+        _yaw_channel = AP_MOTORS_MOT_5;
+    } else {
+        _yaw_channel = AP_MOTORS_MOT_4;
+    }
+}
 
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
@@ -129,7 +152,8 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
         1U << AP_MOTORS_MOT_1 |
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4;
+        1U << AP_MOTORS_MOT_4 |
+        1U << AP_MOTORS_MOT_5;
     hal.rcout->set_freq(mask, _speed_hz);
 }
 
@@ -140,7 +164,13 @@ void AP_MotorsHeli_Single::enable()
     hal.rcout->enable_ch(AP_MOTORS_MOT_1);    // swash servo 1
     hal.rcout->enable_ch(AP_MOTORS_MOT_2);    // swash servo 2
     hal.rcout->enable_ch(AP_MOTORS_MOT_3);    // swash servo 3
-    hal.rcout->enable_ch(AP_MOTORS_MOT_4);    // yaw
+
+    // only enable the 4th swash servo if we're using a 4 servo swash
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO) {
+        hal.rcout->enable_ch(AP_MOTORS_MOT_4);
+    }
+
+    hal.rcout->enable_ch(_yaw_channel);                                              // output for yaw servo
     hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
     hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
 
@@ -156,6 +186,7 @@ void AP_MotorsHeli_Single::init_outputs()
     reset_swash_servo (_swash_servo_1);
     reset_swash_servo (_swash_servo_2);
     reset_swash_servo (_swash_servo_3);
+    reset_swash_servo (_swash_servo_4);
 
     _yaw_servo.set_angle(4500);
 
@@ -174,6 +205,11 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
         return;
     }
 
+    // offset output channels for the motor test if we're not using a 4 servo swash plate
+    if (_swash_type != AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO && motor_seq > 3) {
+        motor_seq++;
+    }
+
     // output to motors and servos
     switch (motor_seq) {
         case 1:
@@ -189,6 +225,10 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
             hal.rcout->write(AP_MOTORS_MOT_3, pwm);
             break;
         case 4:
+            // swash servo 4
+            hal.rcout->write(AP_MOTORS_MOT_4, pwm);
+            break;
+        case 5:
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
                 if (_acro_tail && _ext_gyro_gain_acro > 0) {
@@ -197,9 +237,9 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
                     write_aux(_ext_gyro_gain_std);
                 }
             }
-            hal.rcout->write(AP_MOTORS_MOT_4, pwm);
+            hal.rcout->write(_yaw_channel, pwm);
             break;
-        case 5:
+        case 6:
             // main rotor
             hal.rcout->write(AP_MOTORS_HELI_SINGLE_RSC, pwm);
             break;
@@ -278,39 +318,50 @@ void AP_MotorsHeli_Single::calculate_scalars()
 // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
 void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
 {
-    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM ||
+        _swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO) {
+
+        // 3 or 4 servo swashplate, perform control mixing
 
         // roll factors
         _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - (_phase_angle + _delta_phase_angle)));
         _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - (_phase_angle + _delta_phase_angle)));
         _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - (_phase_angle + _delta_phase_angle)));
+        _rollFactor[CH_4] = cosf(radians(_servo4_pos + 90 - (_phase_angle + _delta_phase_angle)));
 
         // pitch factors
         _pitchFactor[CH_1] = cosf(radians(_servo1_pos - (_phase_angle + _delta_phase_angle)));
         _pitchFactor[CH_2] = cosf(radians(_servo2_pos - (_phase_angle + _delta_phase_angle)));
         _pitchFactor[CH_3] = cosf(radians(_servo3_pos - (_phase_angle + _delta_phase_angle)));
+        _pitchFactor[CH_4] = cosf(radians(_servo4_pos - (_phase_angle + _delta_phase_angle)));
 
         // collective factors
         _collectiveFactor[CH_1] = 1;
         _collectiveFactor[CH_2] = 1;
         _collectiveFactor[CH_3] = 1;
+        _collectiveFactor[CH_4] = 1;
 
-    }else{              //H1 Swashplate, keep servo outputs seperated
+    } else { 
+
+        // H1 swashplate, keep servo outputs seperated
 
         // roll factors
         _rollFactor[CH_1] = 1;
         _rollFactor[CH_2] = 0;
         _rollFactor[CH_3] = 0;
+        _rollFactor[CH_4] = 0;
 
         // pitch factors
         _pitchFactor[CH_1] = 0;
         _pitchFactor[CH_2] = 1;
         _pitchFactor[CH_3] = 0;
+        _pitchFactor[CH_4] = 0;
 
         // collective factors
         _collectiveFactor[CH_1] = 0;
         _collectiveFactor[CH_2] = 0;
         _collectiveFactor[CH_3] = 1;
+        _collectiveFactor[CH_4] = 0;
     }
 }
 
@@ -319,7 +370,7 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
 uint16_t AP_MotorsHeli_Single::get_motor_mask()
 {
     // heli uses channels 1,2,3,4,7 and 8
-    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
+    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 4 | 1U << AP_MOTORS_HELI_SINGLE_AUX | 1U << AP_MOTORS_HELI_SINGLE_RSC);
 }
 
 // update_motor_controls - sends commands to motor controllers
@@ -432,11 +483,13 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
         _swash_servo_2.servo_out += 500;
     }
     _swash_servo_3.servo_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out)/10 + _collectiveFactor[CH_3] * coll_out_scaled + (_swash_servo_3.radio_trim-1500);
+    _swash_servo_4.servo_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out)/10 + _collectiveFactor[CH_4] * coll_out_scaled + (_swash_servo_4.radio_trim-1500);
 
     // use servo_out to calculate pwm_out and radio_out
     _swash_servo_1.calc_pwm();
     _swash_servo_2.calc_pwm();
     _swash_servo_3.calc_pwm();
+    _swash_servo_4.calc_pwm();
 
     hal.rcout->cork();
 
@@ -444,6 +497,11 @@ void AP_MotorsHeli_Single::move_actuators(int16_t roll_out, int16_t pitch_out, i
     hal.rcout->write(AP_MOTORS_MOT_1, _swash_servo_1.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_2, _swash_servo_2.radio_out);
     hal.rcout->write(AP_MOTORS_MOT_3, _swash_servo_3.radio_out);
+
+    // only output the 4th swash servo if we're using a 4 servo swash
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM_4SERVO) {
+        hal.rcout->write(AP_MOTORS_MOT_4, _swash_servo_4.radio_out);
+    }
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -462,7 +520,7 @@ void AP_MotorsHeli_Single::move_yaw(int16_t yaw_out)
 
     _yaw_servo.calc_pwm();
 
-    hal.rcout->write(AP_MOTORS_MOT_4, _yaw_servo.radio_out);
+    hal.rcout->write(_yaw_channel, _yaw_servo.radio_out);
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
