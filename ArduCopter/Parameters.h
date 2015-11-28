@@ -162,10 +162,11 @@ public:
         //
         // 80: Heli
         //
+        k_param_heli_servo_4 = 79,
         k_param_heli_servo_1 = 80,
         k_param_heli_servo_2,
         k_param_heli_servo_3,
-        k_param_heli_servo_4,
+        k_param_heli_servo_yaw,
         k_param_heli_pitch_ff,      // remove
         k_param_heli_roll_ff,       // remove
         k_param_heli_yaw_ff,        // remove
@@ -449,7 +450,8 @@ public:
 
 #if FRAME_CONFIG ==     HELI_FRAME
     // Heli
-    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
+    RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate
+    RC_Channel      heli_servo_yaw;                                             // servo for yaw control
     RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
 #endif
 #if FRAME_CONFIG ==     SINGLE_FRAME
@@ -531,6 +533,7 @@ public:
         heli_servo_2        (CH_2),
         heli_servo_3        (CH_3),
         heli_servo_4        (CH_4),
+        heli_servo_yaw      (CH_5),
         heli_servo_rsc      (CH_8),
 #endif
 #if FRAME_CONFIG ==     SINGLE_FRAME
