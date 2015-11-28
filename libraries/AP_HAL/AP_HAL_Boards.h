@@ -33,6 +33,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_RASPILOT 1007
 #define HAL_BOARD_SUBTYPE_LINUX_MINLURE  1008
 #define HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 1009
+#define HAL_BOARD_SUBTYPE_LINUX_BH       1010
 
 /**
    HAL PX4 sub-types, starting at 2000
@@ -62,6 +63,7 @@
 #define HAL_INS_LSM9DS0 11
 #define HAL_INS_RASPILOT 12
 #define HAL_INS_MPU9250_I2C 13
+#define HAL_INS_BH          14
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
@@ -83,6 +85,7 @@
 #define HAL_COMPASS_HMC5843_MPU6000 7
 #define HAL_COMPASS_RASPILOT  8
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
+#define HAL_COMPASS_BH                  10
 
 // Heat Types
 #define HAL_LINUX_HEAT_PWM 1
@@ -285,6 +288,23 @@
 #define HAL_GPIO_C_LED_PIN        117
 #define HAL_GPIO_LED_ON           LOW
 #define HAL_GPIO_LED_OFF          HIGH
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
+#define HAL_BARO_DEFAULT HAL_BARO_MS5611
+#define HAL_BARO_MS5611_I2C_BUS 0
+#define HAL_BARO_MS5611_I2C_ADDR 0x77
+#define HAL_INS_DEFAULT HAL_INS_BH
+#define HAL_INS_MPU60XX_I2C_ADDR 0x69
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_BH
+#define HAL_GPIO_A_LED_PIN        17
+#define HAL_GPIO_B_LED_PIN        18
+#define HAL_GPIO_C_LED_PIN        22
+#define HAL_GPIO_LED_ON           LOW
+#define HAL_GPIO_LED_OFF          HIGH
+#define HAL_RCOUT_RGBLED_RED      13
+#define HAL_RCOUT_RGBLED_GREEN    14
+#define HAL_RCOUT_RGBLED_BLUE     15
 #else
 #error "no Linux board subtype set"
 #endif
