@@ -280,6 +280,11 @@
 #define HAL_INS_DEFAULT HAL_INS_BH
 #define HAL_INS_MPU60XX_I2C_ADDR 0x69
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_BH
+#define HAL_GPIO_A_LED_PIN        17
+#define HAL_GPIO_B_LED_PIN        18
+#define HAL_GPIO_C_LED_PIN        22
+#define HAL_GPIO_LED_ON           LOW
+#define HAL_GPIO_LED_OFF          HIGH
 #else
 #error "no Linux board subtype set"
 #endif
