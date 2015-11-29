@@ -15,7 +15,7 @@
 #include "AP_MotorsHeli_RSC.h"
 
 // maximum number of swashplate servos
-#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    3
+#define AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS    4
 
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
@@ -73,7 +73,7 @@ public:
     };
 
     // init
-    void Init();
+    virtual void Init();
 
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
