@@ -152,6 +152,7 @@ enum tuning_func {
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
 #define ACRO_TRAINER_LIMITED    2
+#define ACRO_TRAINER_DIRECT     3
 
 // RC Feel roll/pitch definitions
 #define RC_FEEL_RP_VERY_SOFT        0

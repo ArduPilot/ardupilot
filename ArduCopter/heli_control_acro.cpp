@@ -18,6 +18,10 @@ bool Copter::heli_acro_init(bool ignore_checks)
     // set stab collective false to use full collective pitch range
     input_manager.set_use_stab_col(false);
 
+    if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
+        attitude_control.reset_angle_error_integrator();
+    }
+    
     // always successfully enter acro
     return true;
 }
@@ -61,8 +65,13 @@ void Copter::heli_acro_run()
             target_yaw = channel_yaw->pwm_to_angle_dz(0);
         }
 
-        // run attitude controller
-        attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+        if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
+            // run direct controller
+            attitude_control.rate_bf_roll_pitch_yaw_integrated(target_roll, target_pitch, target_yaw);
+        } else {
+            // run attitude controller
+            attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+        }
     }else{
         /*
           for fly-bar passthrough use control_in values with no

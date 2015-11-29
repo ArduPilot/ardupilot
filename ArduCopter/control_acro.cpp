@@ -13,10 +13,14 @@ bool Copter::acro_init(bool ignore_checks)
    if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (g.rc_3.control_in > get_non_takeoff_throttle())) {
        return false;
    }
+
+   if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
+       attitude_control.reset_angle_error_integrator();
+   }
+
    // set target altitude to zero for reporting
    pos_control.set_alt_target(0);
 
-   attitude_control.reset_angle_error_integrator();
    // successfully enter acro
    return true;
 }
@@ -30,7 +34,9 @@ void Copter::acro_run()
 
     // if motors not running reset angle targets
     if(!motors.armed() || ap.throttle_zero) {
-        attitude_control.reset_angle_error_integrator();
+        if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
+            attitude_control.reset_angle_error_integrator();
+        }
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // slow start if landed
         if (ap.land_complete) {
@@ -45,8 +51,13 @@ void Copter::acro_run()
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
-    // run attitude controller
-    attitude_control.rate_bf_roll_pitch_yaw_integrated(target_roll, target_pitch, target_yaw);
+    if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
+        // run direct controller
+        attitude_control.rate_bf_roll_pitch_yaw_integrated(target_roll, target_pitch, target_yaw);
+    } else {
+        // run attitude controller
+        attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    }
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
@@ -100,7 +111,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
-    if (g.acro_trainer != ACRO_TRAINER_DISABLED) {
+    if (g.acro_trainer != ACRO_TRAINER_DISABLED && g.acro_trainer != ACRO_TRAINER_DIRECT) {
         // Calculate trainer mode earth frame rate command for roll
         int32_t roll_angle = wrap_180_cd(ahrs.roll_sensor);
         rate_ef_level.x = -constrain_int32(roll_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_roll;
