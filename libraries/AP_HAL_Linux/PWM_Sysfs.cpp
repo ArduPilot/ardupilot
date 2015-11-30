@@ -44,8 +44,11 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
     , _duty_path(duty_path)
     , _period_path(period_path)
 {
-    if (_export_path == NULL) {
-        AP_HAL::panic("PWM_Sysfs : export path = NULL\n");
+    if (_export_path == NULL || _enable_path == NULL ||
+        _period_path == NULL || _duty_path == NULL) {
+        AP_HAL::panic("PWM_Sysfs: export=%p enable=%p period=%p duty=%p"
+                      " required path is NULL", _export_path, _enable_path,
+                      _period_path, _duty_path);
     }
     /* Not checking the return of write_file since it will fail if
      * the pwm has already been exported
@@ -53,19 +56,7 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
     Util::from(hal.util)->write_file(_export_path, "%u", channel);
     free(_export_path);
 
-    if (_enable_path == NULL) {
-        AP_HAL::panic("PWM_Sysfs : enable path = NULL\n");
-    }
-
-    if (_period_path == NULL) {
-        AP_HAL::panic("PWM_Sysfs : period path = NULL\n");
-    }
-
-    if (_duty_path == NULL) {
-        AP_HAL::panic("PWM_Sysfs : duty path = NULL");
-    }
     _duty_cycle_fd = ::open(_duty_path, O_RDWR | O_CLOEXEC);
-
     if (_duty_cycle_fd < 0) {
         AP_HAL::panic("LinuxPWM_Sysfs:Unable to open file %s: %s",
                       _duty_path, strerror(errno));
@@ -76,12 +67,8 @@ PWM_Sysfs_Base::PWM_Sysfs_Base(char* export_path, char* polarity_path,
 PWM_Sysfs_Base::~PWM_Sysfs_Base()
 {
     ::close(_duty_cycle_fd);
-    /* The only path that is supposed to be NULL with the current
-     * implementations is polarity
-     */
-    if (_polarity_path != NULL) {
-        free(_polarity_path);
-    }
+
+    free(_polarity_path);
     free(_enable_path);
     free(_period_path);
 }
@@ -153,8 +140,7 @@ uint32_t PWM_Sysfs_Base::get_duty_cycle()
 
 void PWM_Sysfs_Base::set_polarity(PWM_Sysfs_Base::Polarity polarity)
 {
-    if ((_polarity_path != NULL) &&
-        Util::from(hal.util)->write_file(_polarity_path, "%s",
+    if (Util::from(hal.util)->write_file(_polarity_path, "%s",
                                          polarity == NORMAL ?
                                          "normal" : "inversed") < 0) {
         hal.console->printf("LinuxPWM_Sysfs: %s Unable to set polarity\n",
@@ -165,10 +151,6 @@ void PWM_Sysfs_Base::set_polarity(PWM_Sysfs_Base::Polarity polarity)
 PWM_Sysfs_Base::Polarity PWM_Sysfs_Base::get_polarity()
 {
     char polarity[16];
-
-    if (_polarity_path == NULL) {
-        return NORMAL;
-    }
 
     if (Util::from(hal.util)->read_file(_polarity_path, "%s", polarity) < 0) {
         hal.console->printf("LinuxPWM_Sysfs: %s Unable to get polarity\n",
