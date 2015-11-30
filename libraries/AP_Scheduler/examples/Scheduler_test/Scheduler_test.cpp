@@ -30,12 +30,7 @@ private:
 
 static SchedTest schedtest;
 
-#define SCHED_TASK(func, _interval_ticks, _max_time_micros) {\
-    .function = FUNCTOR_BIND(&schedtest, &SchedTest::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
-    .interval_ticks = _interval_ticks,\
-    .max_time_micros = _max_time_micros,\
-}
+#define SCHED_TASK(func, _interval_ticks, _max_time_micros) SCHED_TASK_CLASS(SchedTest, &schedtest, func, _interval_ticks, _max_time_micros)
 
 /*
   scheduler table - all regular tasks are listed here, along with how
@@ -43,16 +38,15 @@ static SchedTest schedtest;
   they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
-    SCHED_TASK(ins_update,              1,   1000),
-    SCHED_TASK(one_hz_print,           50,   1000),
-    SCHED_TASK(five_second_call,      250,   1800),
+    SCHED_TASK(ins_update,             50,   1000),
+    SCHED_TASK(one_hz_print,            1,   1000),
+    SCHED_TASK(five_second_call,      0.2,   1800),
 };
 
 
 void SchedTest::setup(void)
 {
-    // we 
-    ins.init(AP_InertialSensor::RATE_50HZ);
+    ins.init(scheduler.get_loop_rate_hz());
 
     // initialise the scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
