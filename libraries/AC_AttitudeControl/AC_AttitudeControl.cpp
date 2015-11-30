@@ -338,8 +338,6 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     float pitch_rate_bf_rads = radians(pitch_rate_bf_cds*0.01f);
     float yaw_rate_bf_rads = radians(yaw_rate_bf_cds*0.01f);
 
-    Vector3f    att_error_euler_rad;
-
     // Compute acceleration-limited body-frame roll rate
     if (get_accel_roll_max_radss() > 0.0f) {
         float rate_change_limit_rads = get_accel_roll_max_radss() * _dt;
@@ -372,10 +370,19 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     att_target_quat.rotate(_att_target_ang_vel_rads*_dt);
     att_target_quat.normalize();
 
-    // Update euler attitude target
+    // Call quaternion attitude controller
+    input_att_quat_bf_ang_vel(att_target_quat, _att_target_ang_vel_rads);
+}
+
+void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& ang_vel_target_rads)
+{
+    // Update euler attitude target and angular velocity targets
     att_target_quat.to_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
+    _att_target_ang_vel_rads = ang_vel_target_rads;
+    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), ang_vel_target_rads, _att_target_euler_deriv_rads);
 
     // Retrieve quaternion vehicle attitude
+    // TODO add _ahrs.get_quaternion()
     Quaternion att_vehicle_quat;
     att_vehicle_quat.from_rotation_matrix(_ahrs.get_dcm_matrix());
 
@@ -386,11 +393,10 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     update_ang_vel_target_from_att_error();
 
     // Add the angular velocity feedforward
+    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
     _ang_vel_target_rads += _att_target_ang_vel_rads;
-
-    // Keep euler derivative updated
-    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_ang_vel_rads, _att_target_euler_deriv_rads);
 }
+
 
 void AC_AttitudeControl::rate_controller_run()
 {

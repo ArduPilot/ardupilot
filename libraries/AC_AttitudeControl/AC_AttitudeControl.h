@@ -125,6 +125,9 @@ public:
     // Command an euler roll, pitch, and yaw rate
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
+    // Command a quaternion attitude and a body-frame angular velocity
+    void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& ang_vel_target_rads);
+
     // Command an angular velocity
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
