@@ -226,7 +226,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    float DT = MAX((now - _update_50hz_last_usec),0)*1.0e-6f;
+    float DT = MAX((now - _update_50hz_last_usec), 0U) * 1.0e-6f;
     if (DT > 1.0f) {
         _climb_rate = 0.0f;
         _height_filter.dd_height = 0.0f;
@@ -284,7 +284,7 @@ void AP_TECS::_update_speed(float load_factor)
 {
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    float DT = MAX((now - _update_speed_last_usec),0)*1.0e-6f;
+    float DT = MAX((now - _update_speed_last_usec), 0U) * 1.0e-6f;
     _update_speed_last_usec = now;
 
     // Convert equivalent airspeeds to true airspeeds
@@ -794,7 +794,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 {
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    _DT = MAX((now - _update_pitch_throttle_last_usec),0)*1.0e-6f;
+    _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
     // Update the speed estimate using a 2nd order complementary filter
