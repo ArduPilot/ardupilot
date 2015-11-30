@@ -23,18 +23,6 @@
 #include <AP_Param/AP_Param.h>
 #include "NotifyDevice.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
- #define EXTERNAL_LED_GPS     28    // GPS LED - AN10
- #define EXTERNAL_LED_ARMED   29    // Armed LED - AN11
- #define EXTERNAL_LED_MOTOR1  30    // Motor1 LED - AN8
- #define EXTERNAL_LED_MOTOR2  31    // Motor2 LED - AN12
-#else
- #define EXTERNAL_LED_GPS     0     // pin definitions to allow this lib to build for
- #define EXTERNAL_LED_ARMED   0     // for other boards even though
- #define EXTERNAL_LED_MOTOR1  0     // they will never be used
- #define EXTERNAL_LED_MOTOR2  0
-#endif
-
 class ExternalLED: public NotifyDevice
 {
 public:

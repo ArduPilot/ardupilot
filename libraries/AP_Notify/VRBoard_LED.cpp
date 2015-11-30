@@ -20,6 +20,9 @@
 #include "VRBoard_LED.h"
 #include <AP_HAL/AP_HAL.h>
 
+#if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
+     defined(HAL_GPIO_C_LED_PIN))
+
 #define VRBRAIN_LED_BRIGHT  1    // full brightness
 #define VRBRAIN_LED_MEDIUM  1    // medium brightness
 #define VRBRAIN_LED_DIM     1    // dim
@@ -64,3 +67,5 @@ bool VRBoard_LED::hw_set_rgb(uint8_t r, uint8_t g, uint8_t b){
 
 	return true;
 }
+
+#endif

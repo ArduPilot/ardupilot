@@ -23,6 +23,8 @@ private:
 #include "GPIO_RPI.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "GPIO_Minnow.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#include "GPIO_Bebop.h"
 #endif
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
