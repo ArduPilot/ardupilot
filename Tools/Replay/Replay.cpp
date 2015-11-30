@@ -516,12 +516,16 @@ bool Replay::find_log_info(struct log_information &info)
         }
 
         if (strlen(clock_source) == 0) {
-            // if you want to add a clock source, also add it to
-            // handle_msg and handle_log_format_msg, above
-            if (streq(type, "IMU")) {
-                memcpy(clock_source, "IMU", 3);
-            } else if (streq(type, "IMT")) {
+            // If you want to add a clock source, also add it to
+            // handle_msg and handle_log_format_msg, above.  Note that
+            // ordering is important here.  For example, when we log
+            // IMT we may reduce the logging speed of IMU, so then
+            // using IMU as your clock source will lead to incorrect
+            // behaviour.
+            if (streq(type, "IMT")) {
                 memcpy(clock_source, "IMT", 3);
+            } else if (streq(type, "IMU")) {
+                memcpy(clock_source, "IMU", 3);
             } else {
                 continue;
             }
