@@ -1111,7 +1111,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Defines the minimum D gain
     // @Range: 0.001 0.006
     // @User: Standard
-    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.004f),
+    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
 
     AP_VAREND
 };
