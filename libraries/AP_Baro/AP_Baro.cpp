@@ -295,10 +295,9 @@ void AP_Baro::init(void)
     drivers[0] = new AP_Baro_HIL(*this);
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
-    {
-        drivers[0] = new AP_Baro_BMP085(*this);
-        _num_drivers = 1;
-    }
+    drivers[0] = new AP_Baro_BMP085(*this,
+        hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR));
+    _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5611 && HAL_BARO_MS5611_I2C_BUS == 0
     {
         drivers[0] = new AP_Baro_MS5611(*this, new AP_SerialBus_I2C(hal.i2c, HAL_BARO_MS5611_I2C_ADDR), false);
