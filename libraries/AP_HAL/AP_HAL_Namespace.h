@@ -13,6 +13,7 @@ namespace AP_HAL {
     /* Toplevel class names for drivers: */
     class UARTDriver;
     class I2CDriver;
+    class Device;
 
     class SPIDeviceDriver;
     class SPIDeviceManager;
