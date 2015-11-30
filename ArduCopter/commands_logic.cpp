@@ -767,7 +767,7 @@ bool Copter::verify_within_distance()
 {
     // update distance calculation
     calc_wp_distance();
-    if (wp_distance < MAX(condition_value,0)) {
+    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
