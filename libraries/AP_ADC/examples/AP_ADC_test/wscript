@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import ardupilotwaf
+
+def build(bld):
+    if bld.env.BOARD in ['sitl']:
+        return
+
+    ardupilotwaf.program(
+        bld,
+        use='ap',
+    )

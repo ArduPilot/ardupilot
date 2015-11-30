@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import ardupilotwaf
+
+def build(bld):
+    # TODO: Test code doesn't build. Fix or delete the test.
+    return
+
+    ardupilotwaf.program(
+        bld,
+        use='ap',
+    )
