@@ -82,10 +82,16 @@ class gbenchmark_build(Task.Task):
             if not my_build_node:
                 bld.bldnode.make_node(self.env.GBENCHMARK_BUILD_REL).mkdir()
 
-            cmds.append('%s %s -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH=%s %s' % (
+            cmake_vars = {
+                'CMAKE_BUILD_TYPE': 'Release',
+                'CMAKE_INSTALL_PREFIX:PATH': bld.bldnode.make_node(self.env.GBENCHMARK_PREFIX_REL).abspath(),
+            }
+            cmake_vars = ' '.join("-D%s='%s'" % v for v in cmake_vars.items())
+
+            cmds.append('%s %s %s %s' % (
                             self.env.CMAKE[0],
                             self.env.GBENCHMARK_SRC,
-                            bld.bldnode.make_node(self.env.GBENCHMARK_PREFIX_REL).abspath(),
+                            cmake_vars,
                             self.env.GBENCHMARK_GENERATOR_OPTION
                         ))
 
