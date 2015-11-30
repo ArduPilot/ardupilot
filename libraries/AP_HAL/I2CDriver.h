@@ -42,7 +42,7 @@ public:
 
     virtual bool do_transfer(uint8_t address, const uint8_t *send,
                              uint32_t send_len, uint8_t *recv,
-                             uint32_t recv_len) { return false;};
+                             uint32_t recv_len) { return false;}
     virtual uint8_t lockup_count() = 0;
     void ignore_errors(bool b) { _ignore_errors = b; }
     virtual AP_HAL::Semaphore* get_semaphore() = 0;
