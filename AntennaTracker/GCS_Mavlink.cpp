@@ -632,6 +632,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                         result = MAV_RESULT_FAILED;
                     }
                     // start accel cal
+                    tracker.ins.acal_init();
                     tracker.ins.get_acal()->start(this);
                 } else if (is_equal(packet.param5,2.0f)) {
                     // start with gyro calibration
