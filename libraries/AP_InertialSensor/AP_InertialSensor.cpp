@@ -1249,6 +1249,7 @@ void AP_InertialSensor::acal_init()
 {
     _acal = new AP_AccelCal;
     _acal->register_client(this);
+    _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
 }
 
 // update accel calibrator

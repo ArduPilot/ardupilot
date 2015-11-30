@@ -398,7 +398,7 @@ private:
     static AP_InertialSensor *_s_instance;
     AP_AccelCal* _acal;
 
-    AccelCalibrator _accel_calibrator[INS_MAX_INSTANCES];
+    AccelCalibrator *_accel_calibrator;
 
     //save accelerometer bias and scale factors
     void _acal_save_calibrations();
