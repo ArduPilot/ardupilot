@@ -38,9 +38,10 @@ void Rover::compass_cal_update() {
 // Accel calibration
 
 void Rover::accel_cal_update() {
-    if (!hal.util->get_soft_armed()) {
-        ins.acal_update();
-     }
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+    ins.acal_update();
     // check if new trim values, and set them    float trim_roll, trim_pitch;
     float trim_roll,trim_pitch;
     if(ins.get_new_trim(trim_roll, trim_pitch)) {
