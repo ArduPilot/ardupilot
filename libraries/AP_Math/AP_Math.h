@@ -230,11 +230,6 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
     return one > two ? one : two;
 }
 
-static inline float maxf(float a, float b)
-{
-    return (a>b?a:b);
-}
-
 #define NSEC_PER_SEC 1000000000ULL
 #define NSEC_PER_USEC 1000ULL
 
