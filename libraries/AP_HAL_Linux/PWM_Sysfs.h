@@ -34,8 +34,8 @@ public:
      */
     uint32_t get_duty_cycle();
 
-    void set_polarity(PWM_Sysfs_Base::Polarity polarity);
-    PWM_Sysfs_Base::Polarity get_polarity();
+    virtual void set_polarity(PWM_Sysfs_Base::Polarity polarity);
+    virtual PWM_Sysfs_Base::Polarity get_polarity();
 
 protected:
     PWM_Sysfs_Base(char *export_path, char *polarity_path,
@@ -74,4 +74,10 @@ private:
     char *_generate_duty_path(uint8_t channel);
     char *_generate_period_path(uint8_t channel);
 
+    void set_polarity(PWM_Sysfs_Base::Polarity polarity) override { }
+
+    PWM_Sysfs_Base::Polarity get_polarity() override
+    {
+        return PWM_Sysfs::NORMAL;
+    }
 };
