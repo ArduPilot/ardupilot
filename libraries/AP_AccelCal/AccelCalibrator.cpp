@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 const extern AP_HAL::HAL& hal;
-
 /*
  * TODO
  * - time out when not receiving samples
@@ -122,7 +121,7 @@ void AccelCalibrator::new_sample(const Vector3f delta_velocity, float dt) {
     _sample_buffer[_samples_collected].delta_velocity += delta_velocity;
     _sample_buffer[_samples_collected].delta_time += dt;
 
-    _last_samp_frag_collected_ms = hal.scheduler->millis();
+    _last_samp_frag_collected_ms = AP_HAL::millis();
 
     if (_sample_buffer[_samples_collected].delta_time > _conf_sample_time) {
         Vector3f sample = _sample_buffer[_samples_collected].delta_velocity/_sample_buffer[_samples_collected].delta_time;
@@ -178,7 +177,7 @@ bool AccelCalibrator::get_sample_corrected(uint8_t i, Vector3f& s) const {
 // checks if no new sample has been recieved for considerable amount of time
 void AccelCalibrator::check_for_timeout() {
     static const uint32_t timeout = _conf_sample_time*2*1000 + 500;
-    if (_status == ACCEL_CAL_COLLECTING_SAMPLE && hal.scheduler->millis() - _last_samp_frag_collected_ms > timeout) {
+    if (_status == ACCEL_CAL_COLLECTING_SAMPLE && AP_HAL::millis() - _last_samp_frag_collected_ms > timeout) {
         set_status(ACCEL_CAL_FAILED);
     }
 }
@@ -284,7 +283,7 @@ void AccelCalibrator::set_status(enum accel_cal_status_t status) {
             if (_status != ACCEL_CAL_WAITING_FOR_ORIENTATION) {
                 break;
             }
-            _last_samp_frag_collected_ms = hal.scheduler->millis();
+            _last_samp_frag_collected_ms = AP_HAL::millis();
             _status = ACCEL_CAL_COLLECTING_SAMPLE;
             break;
 
