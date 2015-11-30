@@ -74,6 +74,7 @@ def configure(cfg):
         else:
             cfg.env.prepend_value(k, val)
 
+    cfg.load('toolchain')
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
