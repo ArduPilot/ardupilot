@@ -235,11 +235,6 @@ static inline float maxf(float a, float b)
     return (a>b?a:b);
 }
 
-static inline float minf(float a, float b)
-{
-    return (a<b?a:b);
-}
-
 #define NSEC_PER_SEC 1000000000ULL
 #define NSEC_PER_USEC 1000ULL
 
