@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from __future__ import print_function
+
 import os.path
 import sys
 sys.path.insert(0, 'Tools/ardupilotwaf/')
@@ -207,6 +209,9 @@ def collect_dirs_to_recurse(bld, globs, **kw):
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
     return dirs
+
+def list_boards(ctx):
+    print(*BOARDS_NAMES)
 
 def build(bld):
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
