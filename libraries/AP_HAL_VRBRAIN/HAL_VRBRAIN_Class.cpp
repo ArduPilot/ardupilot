@@ -38,6 +38,8 @@ static Empty::SPIDeviceManager spiDeviceManager;
 static Empty::OpticalFlow optflowDriver;
 //static Empty::GPIO gpioDriver;
 
+static Empty::I2CDeviceManager i2c_mgr_instance;
+
 static VRBRAINScheduler schedulerInstance;
 static VRBRAINStorage storageDriver;
 static VRBRAINRCInput rcinDriver;
@@ -106,6 +108,7 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &uartCDriver,  /* uartC */
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
+        &i2c_mgr_instance,
         &i2cDriver, /* Empty i2c */
         &i2cDriver, /* Empty i2c */
         &i2cDriver, /* Empty i2c */
