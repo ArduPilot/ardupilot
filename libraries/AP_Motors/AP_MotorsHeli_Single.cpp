@@ -518,3 +518,24 @@ void AP_MotorsHeli_Single::servo_test()
     _pitch_control_input = _pitch_test;
     _yaw_control_input = _yaw_test;
 }
+
+// parameter_check - check if helicopter specific parameters are sensible
+bool AP_MotorsHeli_Single::parameter_check() const
+{
+    // returns false if Phase Angle is outside of range 
+    if ((_phase_angle > 90) || (_phase_angle < -90)){
+        return false;
+    }
+
+    // returns false if External Gyro Gain is outside of range
+    if ((_ext_gyro_gain < 0) || (_ext_gyro_gain > 1000)){
+        return false;
+    }
+
+    // check parent class parameters
+    if (AP_MotorsHeli::parameter_check()){
+        return true;
+    } else {
+        return false;
+    }    
+}
