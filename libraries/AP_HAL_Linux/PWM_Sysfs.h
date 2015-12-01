@@ -7,7 +7,7 @@
 
 class Linux::PWM_Sysfs_Base {
 public:
-    ~PWM_Sysfs_Base();
+    virtual ~PWM_Sysfs_Base();
 
     enum Polarity {
         NORMAL = 0,
