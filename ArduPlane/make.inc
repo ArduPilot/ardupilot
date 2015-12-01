@@ -10,6 +10,7 @@ LIBRARIES += AP_Math
 LIBRARIES += AP_ADC
 LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += AP_InertialSensor
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_AHRS
 LIBRARIES += RC_Channel
 LIBRARIES += AP_RangeFinder

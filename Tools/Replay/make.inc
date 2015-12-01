@@ -3,6 +3,7 @@ LIBRARIES += AP_Progmem
 LIBRARIES += AP_Param
 LIBRARIES += StorageManager
 LIBRARIES += AP_Math
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_ADC
 LIBRARIES += AP_Declination
 LIBRARIES += AP_ADC_AnalogSource
