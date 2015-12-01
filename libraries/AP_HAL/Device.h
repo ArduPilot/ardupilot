@@ -53,6 +53,12 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    bool write_register(uint8_t reg, uint8_t val)
+    {
+        uint8_t buf[2] = { reg, val };
+        return transfer(buf, sizeof(buf), nullptr, 0);
+    }
+
     /*
      * Get the semaphore for the bus this device is in.  This is intended for
      * drivers to use during initialization phase only.
