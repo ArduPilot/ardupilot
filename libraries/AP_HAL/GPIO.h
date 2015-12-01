@@ -37,7 +37,7 @@ public:
     virtual void    setPWMPeriod(uint8_t pin, uint32_t time_us) {};
     virtual void    setPWMDuty(uint8_t pin, uint8_t percent) {};
     virtual int8_t  analogPinToDigitalPin(uint8_t pin) = 0;
-
+    virtual void    set_heater(bool) {}
     /* Alternative interface: */
     virtual AP_HAL::DigitalSource* channel(uint16_t n) = 0;
 
