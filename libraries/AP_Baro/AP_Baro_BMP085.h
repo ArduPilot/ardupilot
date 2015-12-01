@@ -1,8 +1,7 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef __AP_BARO_BMP085_H__
-#define __AP_BARO_BMP085_H__
+#pragma once
 
-#include "AP_Baro.h"
+#include "AP_Baro_Backend.h"
 
 class AP_Baro_BMP085 : public AP_Baro_Backend
 {
@@ -23,7 +22,7 @@ private:
     // Flymaple has no EOC pin, so use times instead
     uint32_t        _last_press_read_command_time;
     uint32_t        _last_temp_read_command_time;
-    
+
     // State machine
     uint8_t                         BMP085_State;
 
@@ -41,5 +40,3 @@ private:
     void                            ReadTemp();
     void                            Calculate();
 };
-
-#endif // __AP_BARO_BMP085_H__

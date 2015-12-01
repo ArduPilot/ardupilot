@@ -18,11 +18,16 @@
  *       APM_Baro.cpp - barometer driver
  *
  */
-
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
 #include "AP_Baro.h"
+
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+#include "AP_Baro_BMP085.h"
+#include "AP_Baro_HIL.h"
+#include "AP_Baro_MS5611.h"
+#include "AP_Baro_PX4.h"
 
 extern const AP_HAL::HAL& hal;
 

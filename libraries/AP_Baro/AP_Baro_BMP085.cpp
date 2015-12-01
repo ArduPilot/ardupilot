@@ -19,11 +19,10 @@
 
   Substantially modified by Andrew Tridgell
 */
+#include "AP_Baro_BMP085.h"
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-
-#include "AP_Baro.h"
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
