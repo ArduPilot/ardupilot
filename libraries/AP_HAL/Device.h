@@ -53,6 +53,11 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    bool read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
+    {
+        return transfer(&first_reg, 1, recv, recv_len);
+    }
+
     bool write_register(uint8_t reg, uint8_t val)
     {
         uint8_t buf[2] = { reg, val };
