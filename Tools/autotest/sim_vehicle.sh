@@ -27,6 +27,7 @@ EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
 OVERRIDE_BUILD_TARGET=""
+DELAY_START=0
 
 usage()
 {
@@ -59,6 +60,7 @@ Options:
     -H               start HIL
     -e               use external simulator
     -S SPEEDUP       set simulation speedup (1 for wall clock time)
+    -d TIME          delays the start of mavproxy by the number of seconds
 
 mavproxy_options:
     --map            start with a map
@@ -75,7 +77,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:d:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -107,6 +109,9 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
       ;;
     D)
       DEBUG_BUILD=1
+      ;;
+    d)
+      DELAY_START="$OPTARG"
       ;;
     B)
       BREAKPOINT="$OPTARG"
@@ -446,6 +451,9 @@ if [ $START_HIL == 1 ]; then
 fi
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     options="$options --load-module=gimbal"
+fi
+if [ $DELAY_START != 0 ]; then
+  sleep $DELAY_START
 fi
 
 if [ -f /usr/bin/cygstart ]; then
