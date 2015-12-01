@@ -36,6 +36,7 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gp
     EKF2(_EKF2),
     _flags(flags)
 {
+    _dcm_matrix.identity();
 }
 
 // return the smoothed gyro vector corrected for drift
