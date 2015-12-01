@@ -214,7 +214,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     throttle_radio_output = apply_thrust_curve_and_volt_scaling(throttle_radio_output, out_min, _throttle_radio_max);
 
     // ensure motor doesn't drop below a minimum value and stop
-    throttle_radio_output = max(throttle_radio_output, out_min);
+    throttle_radio_output = MAX(throttle_radio_output, out_min);
 
     // TODO: set limits.roll_pitch and limits.yaw
 

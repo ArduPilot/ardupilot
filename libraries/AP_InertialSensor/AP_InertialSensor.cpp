@@ -567,7 +567,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                                         float &trim_roll,
                                         float &trim_pitch)
 {
-    uint8_t num_accels = min(get_accel_count(), INS_MAX_INSTANCES);
+    uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f samples[INS_MAX_INSTANCES][6];
     Vector3f new_offsets[INS_MAX_INSTANCES];
     Vector3f new_scaling[INS_MAX_INSTANCES];
@@ -914,7 +914,7 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
 void
 AP_InertialSensor::_init_gyro()
 {
-    uint8_t num_gyros = min(get_gyro_count(), INS_MAX_INSTANCES);
+    uint8_t num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
     Vector3f new_gyro_offset[INS_MAX_INSTANCES];
     float best_diff[INS_MAX_INSTANCES];

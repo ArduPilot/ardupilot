@@ -456,10 +456,10 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
             sonar_dist_cm_min = dist_cm;
             voltage_min = voltage;
         }
-        sonar_dist_cm_max = max(sonar_dist_cm_max, dist_cm);
-        sonar_dist_cm_min = min(sonar_dist_cm_min, dist_cm);
-        voltage_min = min(voltage_min, voltage);
-        voltage_max = max(voltage_max, voltage);
+        sonar_dist_cm_max = MAX(sonar_dist_cm_max, dist_cm);
+        sonar_dist_cm_min = MIN(sonar_dist_cm_min, dist_cm);
+        voltage_min = MIN(voltage_min, voltage);
+        voltage_max = MAX(voltage_max, voltage);
 
         dist_cm = sonar.distance_cm(1);
         voltage = sonar.voltage_mv(1);
@@ -467,10 +467,10 @@ int8_t Rover::test_sonar(uint8_t argc, const Menu::arg *argv)
             sonar2_dist_cm_min = dist_cm;
             voltage2_min = voltage;
         }
-        sonar2_dist_cm_max = max(sonar2_dist_cm_max, dist_cm);
-        sonar2_dist_cm_min = min(sonar2_dist_cm_min, dist_cm);
-        voltage2_min = min(voltage2_min, voltage);
-        voltage2_max = max(voltage2_max, voltage);
+        sonar2_dist_cm_max = MAX(sonar2_dist_cm_max, dist_cm);
+        sonar2_dist_cm_min = MIN(sonar2_dist_cm_min, dist_cm);
+        voltage2_min = MIN(voltage2_min, voltage);
+        voltage2_max = MAX(voltage2_max, voltage);
 
         if (now - last_print >= 200) {
             cliSerial->printf("sonar1 dist=%.1f:%.1fcm volt1=%.2f:%.2f   sonar2 dist=%.1f:%.1fcm volt2=%.2f:%.2f\n",

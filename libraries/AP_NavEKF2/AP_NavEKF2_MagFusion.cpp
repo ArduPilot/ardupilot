@@ -81,7 +81,7 @@ void NavEKF2_core::alignYawGPS()
         float gpsYaw = atan2f(gpsDataNew.vel.y,gpsDataNew.vel.x);
 
         // Check the yaw angles for consistency
-        float yawErr = max(fabsf(wrap_PI(gpsYaw - velYaw)),max(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
+        float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),MAX(fabsf(wrap_PI(gpsYaw - eulerAngles.z)),fabsf(wrap_PI(velYaw - eulerAngles.z))));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large, we declare the magnetic yaw as bad
         badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f));
@@ -321,7 +321,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // calculate the innovation test ratios
         for (uint8_t i = 0; i<=2; i++) {
-            magTestRatio[i] = sq(innovMag[i]) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
+            magTestRatio[i] = sq(innovMag[i]) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnovMag[i]);
         }
 
         // check the last values from all components and set magnetometer health accordingly
@@ -701,7 +701,7 @@ void NavEKF2_core::fuseCompass()
     }
 
     // calculate the innovation test ratio
-    yawTestRatio = sq(innovation) / (sq(max(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
+    yawTestRatio = sq(innovation) / (sq(MAX(0.01f * (float)frontend->_magInnovGate, 1.0f)) * varInnov);
 
     // Declare the magnetometer unhealthy if the innovation test fails
     if (yawTestRatio > 1.0f) {

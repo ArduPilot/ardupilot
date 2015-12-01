@@ -67,7 +67,7 @@ float NavEKF2_core::faultScore(void) const
 // return data for debugging optical flow fusion
 void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
-    varFlow = max(flowTestRatio[0],flowTestRatio[1]);
+    varFlow = MAX(flowTestRatio[0],flowTestRatio[1]);
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
@@ -86,7 +86,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->_fusionModeGPS == 3) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        height = max(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->_altSource != 1) {
             height -= terrainState;
@@ -314,9 +314,9 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 {
     if (PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = max((frontend->_maxFlowRate - 1.0f), 0.0f) * max((terrainState - stateStruct.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
         // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / max((terrainState - stateStruct.position[2]),4.0f);
+        ekfNavVelGainScaler = 4.0f / MAX((terrainState - stateStruct.position[2]),4.0f);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
@@ -376,9 +376,9 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     posVar   = sqrtf(posTestRatio);
     hgtVar   = sqrtf(hgtTestRatio);
     // If we are using simple compass yaw fusion, populate all three components with the yaw test ratio to provide an equivalent output
-    magVar.x = sqrtf(max(magTestRatio.x,yawTestRatio));
-    magVar.y = sqrtf(max(magTestRatio.y,yawTestRatio));
-    magVar.z = sqrtf(max(magTestRatio.z,yawTestRatio));
+    magVar.x = sqrtf(MAX(magTestRatio.x,yawTestRatio));
+    magVar.y = sqrtf(MAX(magTestRatio.y,yawTestRatio));
+    magVar.z = sqrtf(MAX(magTestRatio.z,yawTestRatio));
     tasVar   = sqrtf(tasTestRatio);
     offset   = posResetNE;
 }

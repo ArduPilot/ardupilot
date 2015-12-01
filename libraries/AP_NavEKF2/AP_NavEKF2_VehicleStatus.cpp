@@ -53,7 +53,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // Decay distance moved exponentially to zero
     gpsDriftNE *= (1.0f - deltaTime/posFiltTimeConst);
     // Clamp the fiter state to prevent excessive persistence of large transients
-    gpsDriftNE = min(gpsDriftNE,10.0f);
+    gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
     bool gpsDriftFail = (gpsDriftNE > 3.0f*checkScaler) && onGround && (frontend->_gpsCheck & MASK_GPS_POS_DRIFT);
@@ -233,7 +233,7 @@ void NavEKF2_core::calcGpsGoodForFlight(void)
     sAccFilterState1 = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
-    sAccFilterState2 = max(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
+    sAccFilterState2 = MAX(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
 
     // Apply a threshold test with hysteresis to the filtered GPS speed accuracy data
     if (sAccFilterState2 > 1.5f ) {

@@ -79,7 +79,7 @@ void NavEKF2_core::SelectFlowFusion()
     if (flowDataToFuse && tiltOK && PV_AidingMode == AID_RELATIVE)
     {
         // Set the flow noise used by the fusion processes
-        R_LOS = sq(max(frontend->_flowNoise, 0.05f));
+        R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
         FuseOptFlow();
         // reset flag to indicate that no new flow data is available for fusion
@@ -100,7 +100,7 @@ void NavEKF2_core::EstimateTerrainOffset()
     hal.util->perf_begin(_perf_TerrainOffset);
 
     // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = max((terrainState - stateStruct.position.z), rngOnGnd);
+    float heightAboveGndEst = MAX((terrainState - stateStruct.position.z), rngOnGnd);
 
     // calculate a predicted LOS rate squared
     float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
@@ -117,12 +117,12 @@ void NavEKF2_core::EstimateTerrainOffset()
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
         float distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
-        distanceTravelledSq = min(distanceTravelledSq, 100.0f);
+        distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = stateStruct.position[0];
         prevPosE = stateStruct.position[1];
 
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copters vertical velocity
-        float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
+        float timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
         float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend->gndGradientSigma))) + sq(timeLapsed)*P[5][5];
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -130,7 +130,7 @@ void NavEKF2_core::EstimateTerrainOffset()
         // fuse range finder data
         if (rangeDataToFuse) {
             // predict range
-            float predRngMeas = max((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float predRngMeas = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
 
             // Copy required states to local variable names
             float q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
@@ -149,13 +149,13 @@ void NavEKF2_core::EstimateTerrainOffset()
             varInnovRng = (R_RNG + Popt/sq(SK_RNG));
 
             // constrain terrain height to be below the vehicle
-            terrainState = max(terrainState, stateStruct.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
             // Calculate the measurement innovation
             innovRng = predRngMeas - rangeDataDelayed.rng;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(innovRng) / (sq(max(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
+            auxRngTestRatio = sq(innovRng) / (sq(MAX(0.01f * (float)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
             // Check the innovation for consistency and don't fuse if > 5Sigma
             if ((sq(innovRng)*SK_RNG) < 25.0f)
@@ -164,13 +164,13 @@ void NavEKF2_core::EstimateTerrainOffset()
                 terrainState -= K_RNG * innovRng;
 
                 // constrain the state
-                terrainState = max(terrainState, stateStruct.position[2] + rngOnGnd);
+                terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
                 // correct the covariance
                 Popt = Popt - sq(Popt)/(SK_RNG*(R_RNG + Popt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
 
                 // prevent the state variance from becoming negative
-                Popt = max(Popt,0.0f);
+                Popt = MAX(Popt,0.0f);
 
             }
         }
@@ -187,10 +187,10 @@ void NavEKF2_core::EstimateTerrainOffset()
             float H_OPT;
 
             // predict range to centre of image
-            float flowRngPred = max((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float flowRngPred = MAX((terrainState - stateStruct.position[2]),rngOnGnd) / Tnb_flow.c.z;
 
             // constrain terrain height to be below the vehicle
-            terrainState = max(terrainState, stateStruct.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
             // calculate relative velocity in sensor frame
             relVelSensor = Tnb_flow*stateStruct.velocity;
@@ -243,22 +243,22 @@ void NavEKF2_core::EstimateTerrainOffset()
             K_OPT = Popt*H_OPT/auxFlowObsInnovVar;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(max(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
+            auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (max(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
+            if (MAX(flowRadXY[0],flowRadXY[1]) < frontend->_maxFlowRate) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov;
 
                 // constrain the state
-                terrainState = max(terrainState, stateStruct.position[2] + rngOnGnd);
+                terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
                 // correct the covariance
                 Popt = Popt - K_OPT * H_OPT * Popt;
 
                 // prevent the state variances from becoming negative
-                Popt = max(Popt,0.0f);
+                Popt = MAX(Popt,0.0f);
             }
         }
     }
@@ -291,7 +291,7 @@ void NavEKF2_core::FuseOptFlow()
     float pd = stateStruct.position.z;
 
     // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = max((terrainState - pd), rngOnGnd);
+    float heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
     float ptd = pd + heightAboveGndEst;
 
     // Calculate common expressions for observation jacobians
@@ -627,7 +627,7 @@ void NavEKF2_core::FuseOptFlow()
         }
 
         // calculate the innovation consistency test ratio
-        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(max(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
+        flowTestRatio[obsIndex] = sq(innovOptFlow[obsIndex]) / (sq(MAX(0.01f * (float)frontend->_flowInnovGate, 1.0f)) * varInnovOptFlow[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds or flow is too fast to be reliable
         if ((flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {

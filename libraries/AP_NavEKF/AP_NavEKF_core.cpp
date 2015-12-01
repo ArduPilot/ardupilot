@@ -744,7 +744,7 @@ void NavEKF_core::SelectFlowFusion()
         memset(&flowIncrStateDelta[0], 0, sizeof(flowIncrStateDelta));
         flowUpdateCount = 0;
         // Set the flow noise used by the fusion processes
-        R_LOS = sq(max(frontend._flowNoise, 0.05f));
+        R_LOS = sq(MAX(frontend._flowNoise, 0.05f));
         // ensure that the covariance prediction is up to date before fusing data
         if (!covPredStep) CovariancePrediction();
         // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -2426,7 +2426,7 @@ void NavEKF_core::EstimateTerrainOffset()
     hal.util->perf_begin(_perf_OpticalFlowEKF);
 
     // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = max((terrainState - state.position.z), rngOnGnd);
+    float heightAboveGndEst = MAX((terrainState - state.position.z), rngOnGnd);
 
     // calculate a predicted LOS rate squared
     float velHorizSq = sq(state.velocity.x) + sq(state.velocity.y);
@@ -2443,12 +2443,12 @@ void NavEKF_core::EstimateTerrainOffset()
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
         float distanceTravelledSq = sq(statesAtRngTime.position[0] - prevPosN) + sq(statesAtRngTime.position[1] - prevPosE);
-        distanceTravelledSq = min(distanceTravelledSq, 100.0f);
+        distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = statesAtRngTime.position[0];
         prevPosE = statesAtRngTime.position[1];
 
         // in addition to a terrain gradient error model, we also have a time based error growth that is scaled using the gradient parameter
-        float timeLapsed = min(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
+        float timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
         float Pincrement = (distanceTravelledSq * sq(0.01f*float(frontend._gndGradientSigma))) + sq(float(frontend._gndGradientSigma) * timeLapsed);
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
@@ -2456,7 +2456,7 @@ void NavEKF_core::EstimateTerrainOffset()
         // fuse range finder data
         if (fuseRngData) {
             // predict range
-            float predRngMeas = max((terrainState - statesAtRngTime.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float predRngMeas = MAX((terrainState - statesAtRngTime.position[2]),rngOnGnd) / Tnb_flow.c.z;
 
             // Copy required states to local variable names
             float q0 = statesAtRngTime.quat[0]; // quaternion at optical flow measurement time
@@ -2475,7 +2475,7 @@ void NavEKF_core::EstimateTerrainOffset()
             varInnovRng = (R_RNG + Popt/sq(SK_RNG));
 
             // constrain terrain height to be below the vehicle
-            terrainState = max(terrainState, statesAtRngTime.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, statesAtRngTime.position[2] + rngOnGnd);
 
             // Calculate the measurement innovation
             innovRng = predRngMeas - rngMea;
@@ -2490,13 +2490,13 @@ void NavEKF_core::EstimateTerrainOffset()
                 terrainState -= K_RNG * innovRng;
 
                 // constrain the state
-                terrainState = max(terrainState, statesAtRngTime.position[2] + rngOnGnd);
+                terrainState = MAX(terrainState, statesAtRngTime.position[2] + rngOnGnd);
 
                 // correct the covariance
                 Popt = Popt - sq(Popt)/(SK_RNG*(R_RNG + Popt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
 
                 // prevent the state variance from becoming negative
-                Popt = max(Popt,0.0f);
+                Popt = MAX(Popt,0.0f);
 
             }
         }
@@ -2513,10 +2513,10 @@ void NavEKF_core::EstimateTerrainOffset()
             float H_OPT;
 
             // predict range to centre of image
-            float flowRngPred = max((terrainState - statesAtFlowTime.position[2]),rngOnGnd) / Tnb_flow.c.z;
+            float flowRngPred = MAX((terrainState - statesAtFlowTime.position[2]),rngOnGnd) / Tnb_flow.c.z;
 
             // constrain terrain height to be below the vehicle
-            terrainState = max(terrainState, statesAtFlowTime.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, statesAtFlowTime.position[2] + rngOnGnd);
 
             // calculate relative velocity in sensor frame
             relVelSensor = Tnb_flow*statesAtFlowTime.velocity;
@@ -2572,19 +2572,19 @@ void NavEKF_core::EstimateTerrainOffset()
             auxFlowTestRatio = sq(auxFlowObsInnov) / (sq(frontend._flowInnovGate) * auxFlowObsInnovVar);
 
             // don't fuse if optical flow data is outside valid range
-            if (max(flowRadXY[0],flowRadXY[1]) < frontend._maxFlowRate) {
+            if (MAX(flowRadXY[0],flowRadXY[1]) < frontend._maxFlowRate) {
 
             // correct the state
             terrainState -= K_OPT * auxFlowObsInnov;
 
             // constrain the state
-            terrainState = max(terrainState, statesAtFlowTime.position[2] + rngOnGnd);
+            terrainState = MAX(terrainState, statesAtFlowTime.position[2] + rngOnGnd);
 
             // correct the covariance
             Popt = Popt - K_OPT * H_OPT * Popt;
 
             // prevent the state variances from becoming negative
-            Popt = max(Popt,0.0f);
+            Popt = MAX(Popt,0.0f);
             }
         }
     }
@@ -2623,7 +2623,7 @@ void NavEKF_core::FuseOptFlow()
     pd       = statesAtFlowTime.position[2];
 
     // constrain height above ground to be above range measured on ground
-    float heightAboveGndEst = max((terrainState - pd), rngOnGnd);
+    float heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
     // Calculate observation jacobians and Kalman gains
     if (obsIndex == 0) {
         // calculate range from ground plain to centre of sensor fov assuming flat earth
@@ -3470,9 +3470,9 @@ void NavEKF_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGai
 {
     if (PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = max((frontend._maxFlowRate - 1.0f), 0.0f) * max((terrainState - state.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend._maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - state.position[2]), rngOnGnd);
         // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / max((terrainState - state.position[2]),4.0f);
+        ekfNavVelGainScaler = 4.0f / MAX((terrainState - state.position[2]),4.0f);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
@@ -3589,7 +3589,7 @@ bool NavEKF_core::getHAGL(float &HAGL) const
 // return data for debugging optical flow fusion
 void NavEKF_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
-    varFlow = max(flowTestRatio[0],flowTestRatio[1]);
+    varFlow = MAX(flowTestRatio[0],flowTestRatio[1]);
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
@@ -3790,7 +3790,7 @@ void NavEKF_core::ConstrainStates()
     // body magnetic field limit
     for (uint8_t i=19; i<=21; i++) states[i] = constrain_float(states[i],-0.5f,0.5f);
     // constrain the terrain offset state
-    terrainState = max(terrainState, state.position.z + rngOnGnd);
+    terrainState = MAX(terrainState, state.position.z + rngOnGnd);
 }
 
 bool NavEKF_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
@@ -3841,11 +3841,11 @@ void NavEKF_core::readIMUData()
 
         // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU1
         float alpha = 1.0f - 5.0f*dtDelVel1;
-        imuNoiseFiltState1 = maxf(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState1);
+        imuNoiseFiltState1 = MAX(ins.get_vibration_levels(0).length(), alpha*imuNoiseFiltState1);
 
         // apply a peak hold 0.2 second time constant decaying envelope filter to the noise length on IMU2
         alpha = 1.0f - 5.0f*dtDelVel2;
-        imuNoiseFiltState2 = maxf(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState2);
+        imuNoiseFiltState2 = MAX(ins.get_vibration_levels(1).length(), alpha*imuNoiseFiltState2);
 
         // calculate the filtered difference between acceleration vectors from IMU1 and 2
         // apply a LPF filter with a 1.0 second time constant
@@ -3954,7 +3954,7 @@ void NavEKF_core::readGpsData()
             if (!_ahrs->get_gps().speed_accuracy(gpsSpdAccRaw)) {
                 gpsSpdAccuracy = 0.0f;
             } else {
-                gpsSpdAccuracy = max(gpsSpdAccuracy,gpsSpdAccRaw);
+                gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
@@ -4028,7 +4028,7 @@ void NavEKF_core::readHgtData()
         if (frontend._fusionModeGPS == 3 && frontend._altSource == 1) {
             if ((imuSampleTime_ms - rngValidMeaTime_ms) < 2000) {
                 // adjust range finder measurement to allow for effect of vehicle tilt and height of sensor
-                hgtMea = max(rngMea * Tnb_flow.c.z, rngOnGnd);
+                hgtMea = MAX(rngMea * Tnb_flow.c.z, rngOnGnd);
                 // get states that were stored at the time closest to the measurement time, taking measurement delay into account
                 statesAtHgtTime = statesAtFlowTime;
                 // calculate offset to baro data that enables baro to be used as a backup
@@ -4036,7 +4036,7 @@ void NavEKF_core::readHgtData()
                 baroHgtOffset = 0.1f * (_baro.get_altitude() + state.position.z) + 0.9f * baroHgtOffset;
             } else if (vehicleArmed && takeOffDetected) {
                 // use baro measurement and correct for baro offset - failsafe use only as baro will drift
-                hgtMea = max(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
+                hgtMea = MAX(_baro.get_altitude() - baroHgtOffset, rngOnGnd);
                 // get states that were stored at the time closest to the measurement time, taking measurement delay into account
                 RecallStates(statesAtHgtTime, (imuSampleTime_ms - msecHgtDelay));
             } else {
@@ -4065,7 +4065,7 @@ void NavEKF_core::readHgtData()
         } else if (vehicleArmed && getTakeoffExpected()) {
             // If we are in takeoff mode, the height measurement is limited to be no less than the measurement at start of takeoff
             // This prevents negative baro disturbances due to copter downwash corrupting the EKF altitude during initial ascent
-            hgtMea = max(hgtMea, meaHgtAtTakeOff);
+            hgtMea = MAX(hgtMea, meaHgtAtTakeOff);
         }
 
         // set flag to let other functions know new data has arrived
@@ -5020,7 +5020,7 @@ bool NavEKF_core::calcGpsGoodToAlign(void)
     // Decay distance moved exponentially to zero
     gpsDriftNE *= (1.0f - deltaTime/posFiltTimeConst);
     // Clamp the fiter state to prevent excessive persistence of large transients
-    gpsDriftNE = min(gpsDriftNE,10.0f);
+    gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst pre-armed when the vehicle is supposed to be stationary
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
     bool gpsDriftFail = (gpsDriftNE > 3.0f) && !vehicleArmed && (frontend._gpsCheck & MASK_GPS_POS_DRIFT);
@@ -5151,7 +5151,7 @@ void NavEKF_core::readRangeFinder(void)
             } else {
                 midIndex = 2;
             }
-            rngMea = max(storedRngMeas[midIndex],rngOnGnd);
+            rngMea = MAX(storedRngMeas[midIndex],rngOnGnd);
             newDataRng = true;
             rngValidMeaTime_ms = imuSampleTime_ms;
             // recall vehicle states at mid sample time for range finder
@@ -5186,7 +5186,7 @@ bool NavEKF_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend._fusionModeGPS == 3) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        height = max(float(_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
         return true;
     } else {
         return false;
@@ -5293,7 +5293,7 @@ void NavEKF_core::calcGpsGoodForFlight(void)
     lpfFilterState = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * lpfFilterState),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
-    peakHoldFilterState = max(lpfFilterState,((1.0f - alpha2) * peakHoldFilterState));
+    peakHoldFilterState = MAX(lpfFilterState,((1.0f - alpha2) * peakHoldFilterState));
 
     // Apply a threshold test with hysteresis to the filtered GPS speed accuracy data
     if (peakHoldFilterState > 1.5f ) {

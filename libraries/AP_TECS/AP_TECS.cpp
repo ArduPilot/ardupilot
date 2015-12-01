@@ -226,7 +226,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    float DT = max((now - _update_50hz_last_usec),0)*1.0e-6f;
+    float DT = MAX((now - _update_50hz_last_usec), 0U) * 1.0e-6f;
     if (DT > 1.0f) {
         _climb_rate = 0.0f;
         _height_filter.dd_height = 0.0f;
@@ -284,7 +284,7 @@ void AP_TECS::_update_speed(float load_factor)
 {
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    float DT = max((now - _update_speed_last_usec),0)*1.0e-6f;
+    float DT = MAX((now - _update_speed_last_usec), 0U) * 1.0e-6f;
     _update_speed_last_usec = now;
 
     // Convert equivalent airspeeds to true airspeeds
@@ -333,13 +333,13 @@ void AP_TECS::_update_speed(float load_factor)
     float integ4_input = aspdErr * _spdCompFiltOmega * _spdCompFiltOmega;
     // Prevent state from winding up
     if (_integ5_state < 3.1f) {
-        integ4_input = max(integ4_input , 0.0f);
+        integ4_input = MAX(integ4_input , 0.0f);
     }
     _integ4_state = _integ4_state + integ4_input * DT;
     float integ5_input = _integ4_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
     _integ5_state = _integ5_state + integ5_input * DT;
     // limit the airspeed to a minimum of 3 m/s
-    _integ5_state = max(_integ5_state, 3.0f);
+    _integ5_state = MAX(_integ5_state, 3.0f);
 
 }
 
@@ -682,11 +682,11 @@ void AP_TECS::_update_pitch(void)
     float integ7_input = SEB_error * _integGain;
     if (_pitch_dem > _PITCHmaxf)
     {
-        integ7_input = min(integ7_input, _PITCHmaxf - _pitch_dem);
+        integ7_input = MIN(integ7_input, _PITCHmaxf - _pitch_dem);
     }
     else if (_pitch_dem < _PITCHminf)
     {
-        integ7_input = max(integ7_input, _PITCHminf - _pitch_dem);
+        integ7_input = MAX(integ7_input, _PITCHminf - _pitch_dem);
     }
     _integ7_state = _integ7_state + integ7_input * _DT;
 
@@ -794,7 +794,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 {
     // Calculate time in seconds since last update
     uint32_t now = AP_HAL::micros();
-    _DT = max((now - _update_pitch_throttle_last_usec),0)*1.0e-6f;
+    _DT = MAX((now - _update_pitch_throttle_last_usec), 0U) * 1.0e-6f;
     _update_pitch_throttle_last_usec = now;
 
     // Update the speed estimate using a 2nd order complementary filter
@@ -818,20 +818,20 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     if (_pitch_max <= 0) {
         _PITCHmaxf = aparm.pitch_limit_max_cd * 0.01f;
     } else {
-        _PITCHmaxf = min(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
+        _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
     }
     if (_pitch_min >= 0) {
         _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
     } else {
-        _PITCHminf = max(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
+        _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
     }
     if (flight_stage == FLIGHT_LAND_FINAL) {
         // in flare use min pitch from LAND_PITCH_CD
-        _PITCHminf = max(_PITCHminf, aparm.land_pitch_cd * 0.01f);
+        _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
 
         // and use max pitch from TECS_LAND_PMAX
         if (_land_pitch_max > 0) {
-            _PITCHmaxf = min(_PITCHmaxf, _land_pitch_max);
+            _PITCHmaxf = MIN(_PITCHmaxf, _land_pitch_max);
         }
 
         // and allow zero throttle
@@ -843,7 +843,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         float time_to_flare = (- hgt_afe / _climb_rate) - aparm.land_flare_sec;
         if (time_to_flare < 0) {
             // we should be flaring already
-            _PITCHminf = max(_PITCHminf, aparm.land_pitch_cd * 0.01f);
+            _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
         } else if (time_to_flare < timeConstant()*2) {
             // smoothly move the min pitch to the flare min pitch over
             // twice the time constant
@@ -853,7 +853,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             ::printf("ttf=%.1f hgt_afe=%.1f _PITCHminf=%.1f pitch_limit=%.1f climb=%.1f\n",
                      time_to_flare, hgt_afe, _PITCHminf, pitch_limit_cd*0.01f, _climb_rate);
 #endif
-            _PITCHminf = max(_PITCHminf, pitch_limit_cd*0.01f);
+            _PITCHminf = MAX(_PITCHminf, pitch_limit_cd*0.01f);
         }
     }
 

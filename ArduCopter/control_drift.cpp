@@ -68,7 +68,7 @@ void Copter::drift_run()
     float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
 
     // gain sceduling for Yaw
-    float pitch_vel2 = min(fabsf(pitch_vel), 2000);
+    float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
     target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
@@ -87,7 +87,7 @@ void Copter::drift_run()
     if(is_zero(target_pitch)){
         // .14/ (.03 * 100) = 4.6 seconds till full breaking
         breaker += .03f;
-        breaker = min(breaker, DRIFT_SPEEDGAIN);
+        breaker = MIN(breaker, DRIFT_SPEEDGAIN);
         target_pitch = pitch_vel * breaker;
     }else{
         breaker = 0.0f;
