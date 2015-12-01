@@ -371,6 +371,10 @@ private:
     bool _gyro_healthy[INS_MAX_INSTANCES];
     bool _accel_healthy[INS_MAX_INSTANCES];
 
+    bool _heater_was_on;
+    AP_Float _op_temp;
+    AP_Float _temp_deadzone;
+
     uint32_t _accel_error_count[INS_MAX_INSTANCES];
     uint32_t _gyro_error_count[INS_MAX_INSTANCES];
 

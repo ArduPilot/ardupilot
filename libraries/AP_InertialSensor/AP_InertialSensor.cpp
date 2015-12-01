@@ -9,7 +9,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Math/AP_Math.h>
-
+#include <stdio.h>
 /*
   enable TIMING_DEBUG to track down scheduling issues with the main
   loop. Output is on the debug console
@@ -314,6 +314,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
       parameters check for conflicts carefully
      */
 
+    AP_GROUPINFO("OP_TEMP", 27, AP_InertialSensor, _op_temp,65),
+    AP_GROUPINFO("TEMP_DZONE", 28, AP_InertialSensor, _temp_deadzone, 5),
     AP_GROUPEND
 };
 
@@ -911,6 +913,19 @@ void AP_InertialSensor::update(void)
             _backends[i]->update();
         }
 
+        if(_temperature[0] < _op_temp && !_heater_was_on) {
+            hal.gpio->set_heater(true);
+            _heater_was_on = true;
+        } else if(_temperature[0] < _op_temp - _temp_deadzone && _heater_was_on) {
+            hal.gpio->set_heater(true);
+            _heater_was_on = false;
+        }
+
+        if(_temperature[0] >= _op_temp) {
+            hal.gpio->set_heater(false);
+        }
+
+        //hal.console->printf("Temp: %f\n", _temperature[0]);
         // clear accumulators
         for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
             _delta_velocity_acc[i].zero();
@@ -1259,7 +1274,7 @@ void AP_InertialSensor::acal_update()
         return;
     }
     _acal->update();
-    if (_acal->get_status() != ACCEL_CAL_NOT_STARTED) {
+    if (hal.util->get_soft_armed() && _acal->get_status() != ACCEL_CAL_NOT_STARTED) {
         _acal->clear();
     }
 }
