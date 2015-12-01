@@ -5,6 +5,8 @@ namespace Empty {
     class AnalogSource;
     class DigitalSource;
     class GPIO;
+    class I2CDevice;
+    class I2CDeviceManager;
     class I2CDriver;
     class OpticalFlow;
     class PrivateMember;
