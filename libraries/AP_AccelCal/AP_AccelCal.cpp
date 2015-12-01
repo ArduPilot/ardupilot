@@ -356,7 +356,7 @@ void AP_AccelCal::_printf(const char* fmt, ...)
         hal.scheduler->delay(1);
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
     _gcs->send_text(MAV_SEVERITY_CRITICAL, msg);
 #endif
 }
