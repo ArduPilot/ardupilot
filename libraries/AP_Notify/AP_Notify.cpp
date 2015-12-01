@@ -16,6 +16,25 @@
 
 #include "AP_Notify.h"
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_Notify::var_info[] = {
+
+    // @Param: RGB_LED
+    // @DisplayName: RGB LED Brightness
+    // @Description: Select the RGB LED brightness level. When USB is connected brightness will always be low no matter the setting or OFF if that is configured.
+    // @Values: 0:Off,1:Low,2:Medium,3:High
+    // @User: Advanced
+    AP_GROUPINFO("LED_BRIGHT", 0, AP_Notify, _rgb_led_brightness, RGB_LED_HIGH),
+
+    AP_GROUPEND
+};
+
+// Default constructor
+AP_Notify::AP_Notify()
+{
+	AP_Param::setup_object_defaults(this, var_info);
+}
+
 // static flags, to allow for direct class update from device drivers
 struct AP_Notify::notify_flags_type AP_Notify::flags;
 struct AP_Notify::notify_events_type AP_Notify::events;
@@ -86,6 +105,7 @@ void AP_Notify::init(bool enable_external_leds)
     AP_Notify::flags.external_leds = enable_external_leds;
 
     for (uint8_t i = 0; i < CONFIG_NOTIFY_DEVICES_COUNT; i++) {
+        _devices[i]->pNotify = this;
         _devices[i]->init();
     }
 }
