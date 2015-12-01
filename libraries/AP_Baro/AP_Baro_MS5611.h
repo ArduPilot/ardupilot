@@ -1,10 +1,9 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#pragma once
 
-#ifndef __AP_BARO_MS5611_H__
-#define __AP_BARO_MS5611_H__
+#include "AP_Baro_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Baro.h"
 
 /** Abstract serial bus device driver for I2C/SPI. */
 class AP_SerialBus
@@ -128,4 +127,3 @@ private:
     void _calculate();
     bool _read_prom(uint16_t prom[8]) override;
 };
-#endif //  __AP_BARO_MS5611_H__

@@ -1,7 +1,5 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_BARO_H__
-#define __AP_BARO_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -160,14 +158,6 @@ private:
 
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
-    
+
     void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 };
-
-#include "AP_Baro_Backend.h"
-#include "AP_Baro_MS5611.h"
-#include "AP_Baro_BMP085.h"
-#include "AP_Baro_HIL.h"
-#include "AP_Baro_PX4.h"
-
-#endif // __AP_BARO_H__
