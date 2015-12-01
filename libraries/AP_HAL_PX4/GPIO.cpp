@@ -21,6 +21,7 @@
 
 #define LOW     0
 #define HIGH    1
+#define SET_HEATER_STATE        _IOC(0xff00, 4)
 
 extern const AP_HAL::HAL& hal;
 
@@ -65,6 +66,11 @@ void PX4GPIO::init()
         hal.console->printf("GPIO: Unable to open px4io\n");
     }
 #endif
+}
+
+void PX4GPIO::set_heater(bool val)
+{
+    ioctl(_gpio_io_fd, SET_HEATER_STATE, (uint32_t)val);
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)

@@ -36,6 +36,7 @@ public:
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
     void    toggle(uint8_t pin);
+    void    set_heater(bool val);
 
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n);
