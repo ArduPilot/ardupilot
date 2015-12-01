@@ -4,6 +4,8 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_Notify;
+
 class NotifyDevice {
 public:
     virtual ~NotifyDevice() {}
@@ -14,6 +16,9 @@ public:
     virtual void update() = 0;
     // handle a LED_CONTROL message, by default device ignore message
     virtual void handle_led_control(mavlink_message_t *msg) {}
+
+    // this pointer is used to read the parameters relative to devices
+    const AP_Notify *pNotify;
 };
 
 #endif

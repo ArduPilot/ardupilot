@@ -72,6 +72,22 @@ void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 void RGBLed::update_colours(void)
 {
     uint8_t brightness = _led_bright;
+
+    switch (pNotify->_rgb_led_brightness) {
+    case RGB_LED_OFF:
+        brightness = _led_off;
+        break;
+    case RGB_LED_LOW:
+        brightness = _led_dim;
+        break;
+    case RGB_LED_MEDIUM:
+        brightness = _led_medium;
+        break;
+    case RGB_LED_HIGH:
+        brightness = _led_bright;
+        break;
+    }
+
     // slow rate from 50Hz to 10hz
     counter++;
     if (counter < 5) {
@@ -88,7 +104,7 @@ void RGBLed::update_colours(void)
     }
 
     // use dim light when connected through USB
-    if (hal.gpio->usb_connected()) {
+    if (hal.gpio->usb_connected() && brightness > _led_dim) {
         brightness = _led_dim;
     }
 
