@@ -1,0 +1,2 @@
+BUILD_VEHICLE = plane
+include ../Makefile.waf
