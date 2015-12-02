@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_heartbeat_t
 {
- uint32_t custom_mode; ///< A bitfield for use for autopilot-specific flags.
- uint8_t type; ///< Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
- uint8_t autopilot; ///< Autopilot type / class. defined in MAV_AUTOPILOT ENUM
- uint8_t base_mode; ///< System mode bitfield, see MAV_MODE_FLAG ENUM in mavlink/include/mavlink_types.h
- uint8_t system_status; ///< System status flag, see MAV_STATE ENUM
- uint8_t mavlink_version; ///< MAVLink version, not writable by user, gets added by protocol because of magic data type: uint8_t_mavlink_version
+ uint32_t custom_mode; /*< A bitfield for use for autopilot-specific flags.*/
+ uint8_t type; /*< Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)*/
+ uint8_t autopilot; /*< Autopilot type / class. defined in MAV_AUTOPILOT ENUM*/
+ uint8_t base_mode; /*< System mode bitfield, see MAV_MODE_FLAG ENUM in mavlink/include/mavlink_types.h*/
+ uint8_t system_status; /*< System status flag, see MAV_STATE ENUM*/
+ uint8_t mavlink_version; /*< MAVLink version, not writable by user, gets added by protocol because of magic data type: uint8_t_mavlink_version*/
 } mavlink_heartbeat_t;
 
 #define MAVLINK_MSG_ID_HEARTBEAT_LEN 9

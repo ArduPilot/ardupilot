@@ -2,11 +2,13 @@
 #ifndef __AP_HAL_LINUX_I2CDRIVER_H__
 #define __AP_HAL_LINUX_I2CDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
-class Linux::LinuxI2CDriver : public AP_HAL::I2CDriver {
+class Linux::I2CDriver : public AP_HAL::I2CDriver {
 public:
-    LinuxI2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    I2CDriver(AP_HAL::Semaphore* semaphore, const char *device);
+    I2CDriver(AP_HAL::Semaphore* semaphore, const char * const devpaths[]);
+    ~I2CDriver();
 
     void begin();
     void end();
@@ -26,21 +28,28 @@ public:
     /* readRegister: read from a device register - writes the register,
      * then reads back an 8-bit value. */
     uint8_t readRegister(uint8_t addr, uint8_t reg, uint8_t* data);
+
     /* readRegister: read contigious device registers - writes the first 
      * register, then reads back multiple bytes */
     uint8_t readRegisters(uint8_t addr, uint8_t reg,
                                   uint8_t len, uint8_t* data);
+
+    uint8_t readRegistersMultiple(uint8_t addr, uint8_t reg,
+                                  uint8_t len, uint8_t count, 
+                                  uint8_t* data);
 
     uint8_t lockup_count();
 
     AP_HAL::Semaphore* get_semaphore() { return _semaphore; }
 
 private:
-    AP_HAL::Semaphore* _semaphore;
     bool set_address(uint8_t addr);
-    int _fd;
+
+    AP_HAL::Semaphore* _semaphore;
+    char *_device = NULL;
+    int _fd = -1;
     uint8_t _addr;
-    const char *_device;
+    bool _print_ioctl_error = true;
 };
 
 #endif // __AP_HAL_LINUX_I2CDRIVER_H__

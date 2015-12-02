@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_RCINPUT_H__
 #define __AP_HAL_FLYMAPLE_RCINPUT_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 #define FLYMAPLE_RC_INPUT_NUM_CHANNELS 8
 

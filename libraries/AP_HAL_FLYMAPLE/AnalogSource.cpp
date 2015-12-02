@@ -17,7 +17,7 @@
   Flymaple port by Mike McCauley
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
@@ -130,11 +130,11 @@ float FLYMAPLEAnalogSource::_read_average()
 void FLYMAPLEAnalogSource::setup_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 1);
     }
     if (_settle_time_ms != 0) {
-        _read_start_time_ms = hal.scheduler->millis();
+        _read_start_time_ms = AP_HAL::millis();
     }
     adc_reg_map *regs = ADC1->regs;
     adc_set_reg_seqlen(ADC1, 1);
@@ -151,14 +151,14 @@ void FLYMAPLEAnalogSource::setup_read() {
 void FLYMAPLEAnalogSource::stop_read() {
     if (_stop_pin != ANALOG_INPUT_NONE) {
         uint8_t digital_pin = hal.gpio->analogPinToDigitalPin(_stop_pin);
-        hal.gpio->pinMode(digital_pin, GPIO_OUTPUT);
+        hal.gpio->pinMode(digital_pin, HAL_GPIO_OUTPUT);
         hal.gpio->write(digital_pin, 0);
     }
 }
 
 bool FLYMAPLEAnalogSource::reading_settled() 
 {
-    if (_settle_time_ms != 0 && (hal.scheduler->millis() - _read_start_time_ms) < _settle_time_ms) {
+    if (_settle_time_ms != 0 && (AP_HAL::millis() - _read_start_time_ms) < _settle_time_ms) {
         return false;
     }
     return true;
@@ -170,7 +170,6 @@ bool FLYMAPLEAnalogSource::reading_settled()
 void FLYMAPLEAnalogSource::new_sample(uint16_t sample) {
     _sum += sample;
     _latest = sample;
-    // Copied from AVR code in ArduPlane-2.74b, but AVR code is wrong!
     if (_sum_count >= 15) { // Flymaple has a 12 bit ADC, so can only sum 16 in a uint16_t
         _sum >>= 1;
         _sum_count = 8;

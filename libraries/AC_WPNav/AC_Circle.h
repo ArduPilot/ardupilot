@@ -2,15 +2,16 @@
 #ifndef AC_CIRCLE_H
 #define AC_CIRCLE_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <AP_Math.h>
-#include <AP_InertialNav.h>     // Inertial Navigation library
-#include <AC_PosControl.h>      // Position control library
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InertialNav/AP_InertialNav.h>     // Inertial Navigation library
+#include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 
 // loiter maximum velocities and accelerations
 #define AC_CIRCLE_RADIUS_DEFAULT    1000.0f     // radius of the circle in cm that the vehicle will fly
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
+#define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
 #define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
 
@@ -41,7 +42,7 @@ public:
     void set_radius(float radius_cm) { _radius = radius_cm; }
 
     /// set_circle_rate - set circle rate in degrees per second
-    void set_rate(float deg_per_sec) { _rate = deg_per_sec; }
+    void set_rate(float deg_per_sec);
 
     /// get_angle_total - return total angle in radians that vehicle has circled
     float get_angle_total() const { return _angle_total; }
@@ -68,7 +69,8 @@ private:
     // calc_velocities - calculate angular velocity max and acceleration based on radius and rate
     //      this should be called whenever the radius or rate are changed
     //      initialises the yaw and current position around the circle
-    void calc_velocities();
+    //      init_velocity should be set true if vehicle is just starting circle
+    void calc_velocities(bool init_velocity);
 
     // init_start_angle - sets the starting angle around the circle and initialises the angle_total
     //  if use_heading is true the vehicle's heading will be used to init the angle causing minimum yaw movement
@@ -78,7 +80,6 @@ private:
     // flags structure
     struct circle_flags {
         uint8_t panorama    : 1;    // true if we are doing a panorama
-        uint8_t dir         : 1;    // 0 = clockwise, 1 = counter clockwise
     } _flags;
 
     // references to inertial nav and ahrs libraries

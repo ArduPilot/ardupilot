@@ -15,7 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
@@ -23,7 +23,7 @@
 
 using namespace AP_HAL_FLYMAPLE_NS;
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "FlymapleWirish.h"
@@ -44,8 +44,8 @@ bool FLYMAPLESemaphore::give() {
 
 bool FLYMAPLESemaphore::take(uint32_t timeout_ms) {
     if (hal.scheduler->in_timerprocess()) {
-        hal.scheduler->panic(PSTR("PANIC: FLYMAPLESemaphore::take used from "
-                    "inside timer process"));
+        AP_HAL::panic("PANIC: FLYMAPLESemaphore::take used from "
+                    "inside timer process");
         return false; /* Never reached - panic does not return */
     }
     return _take_from_mainloop(timeout_ms);

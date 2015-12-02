@@ -1,4 +1,4 @@
-#include <AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 

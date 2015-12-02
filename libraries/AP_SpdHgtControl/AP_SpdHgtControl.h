@@ -13,9 +13,9 @@
 #ifndef AP_SPDHGTCONTROL_H
 #define AP_SPDHGTCONTROL_H
 
-#include <AP_Common.h>
-#include <AP_Param.h>
-#include <DataFlash.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_SpdHgtControl {
 public:
@@ -32,7 +32,8 @@ public:
 		FLIGHT_NORMAL        = 1,
 		FLIGHT_TAKEOFF       = 2,
 		FLIGHT_LAND_APPROACH = 3,
-		FLIGHT_LAND_FINAL    = 4
+        FLIGHT_LAND_FINAL    = 4,
+        FLIGHT_LAND_ABORT    = 5
 	};
 
 	// Update of the pitch and throttle demands
@@ -42,7 +43,8 @@ public:
 										enum FlightStage flight_stage,
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,
-                                        float hgt_afe) = 0;
+                                        float hgt_afe,
+										float load_factor) = 0;
 
 	// demanded throttle in percentage
 	// should return 0 to 100
@@ -60,6 +62,12 @@ public:
 
 	// return current target airspeed
 	virtual float get_target_airspeed(void) const = 0;
+
+	// return maximum climb rate
+	virtual float get_max_climbrate(void) const = 0;
+
+	// return landing sink rate
+	virtual float get_land_sinkrate(void) const = 0;
 
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the

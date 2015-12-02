@@ -28,7 +28,7 @@
 //
 // XXX the bytes show up on the wire, but at least my test unit (EM-411) seems to ignore them.
 //
-const uint8_t AP_GPS_SIRF::_initialisation_blob[] PROGMEM = {
+const uint8_t AP_GPS_SIRF::_initialisation_blob[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0xb0, 0xb3,
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3 
 };
@@ -41,7 +41,7 @@ AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _payload_counter(0),
     _msg_id(0)
 {
-    gps.send_blob_start(state.instance, (const prog_char *)_initialisation_blob, sizeof(_initialisation_blob));
+    gps.send_blob_start(state.instance, (const char *)_initialisation_blob, sizeof(_initialisation_blob));
 }
 
 
@@ -186,7 +186,7 @@ AP_GPS_SIRF::_parse_gps(void)
         state.location.lng      = swap_int32(_buffer.nav.longitude);
         state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
         state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
-        state.ground_course_cd  = swap_int16(_buffer.nav.ground_course);
+        state.ground_course_cd  = wrap_360_cd(swap_int16(_buffer.nav.ground_course));
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;

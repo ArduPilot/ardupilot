@@ -6,8 +6,8 @@
 #ifndef __PID_H__
 #define __PID_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <math.h>               // for fabs()
 
@@ -16,9 +16,9 @@
 class PID {
 public:
 
-    PID(const float &   initial_p = 0.0,
-        const float &   initial_i = 0.0,
-        const float &   initial_d = 0.0,
+    PID(const float &   initial_p = 0.0f,
+        const float &   initial_i = 0.0f,
+        const float &   initial_d = 0.0f,
         const int16_t & initial_imax = 0)
     {
 		AP_Param::setup_object_defaults(this, var_info);

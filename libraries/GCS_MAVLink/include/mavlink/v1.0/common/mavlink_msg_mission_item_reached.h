@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_mission_item_reached_t
 {
- uint16_t seq; ///< Sequence
+ uint16_t seq; /*< Sequence*/
 } mavlink_mission_item_reached_t;
 
 #define MAVLINK_MSG_ID_MISSION_ITEM_REACHED_LEN 2

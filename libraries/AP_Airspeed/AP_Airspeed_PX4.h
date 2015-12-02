@@ -22,8 +22,8 @@
 #ifndef __AP_AIRSPEED_PX4_H__
 #define __AP_AIRSPEED_PX4_H__
 
-#include <AP_HAL.h>
-#include <AP_Airspeed_Backend.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_PX4 : public AP_Airspeed_Backend {
 public:

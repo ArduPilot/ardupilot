@@ -22,8 +22,8 @@
 #ifndef __AP_AIRSPEED_BACKEND_H__
 #define __AP_AIRSPEED_BACKEND_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 
 class AP_Airspeed_Backend {
 public:

@@ -4,16 +4,16 @@
 
 typedef struct __mavlink_servo_output_raw_t
 {
- uint32_t time_usec; ///< Timestamp (microseconds since system boot)
- uint16_t servo1_raw; ///< Servo output 1 value, in microseconds
- uint16_t servo2_raw; ///< Servo output 2 value, in microseconds
- uint16_t servo3_raw; ///< Servo output 3 value, in microseconds
- uint16_t servo4_raw; ///< Servo output 4 value, in microseconds
- uint16_t servo5_raw; ///< Servo output 5 value, in microseconds
- uint16_t servo6_raw; ///< Servo output 6 value, in microseconds
- uint16_t servo7_raw; ///< Servo output 7 value, in microseconds
- uint16_t servo8_raw; ///< Servo output 8 value, in microseconds
- uint8_t port; ///< Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.
+ uint32_t time_usec; /*< Timestamp (microseconds since system boot)*/
+ uint16_t servo1_raw; /*< Servo output 1 value, in microseconds*/
+ uint16_t servo2_raw; /*< Servo output 2 value, in microseconds*/
+ uint16_t servo3_raw; /*< Servo output 3 value, in microseconds*/
+ uint16_t servo4_raw; /*< Servo output 4 value, in microseconds*/
+ uint16_t servo5_raw; /*< Servo output 5 value, in microseconds*/
+ uint16_t servo6_raw; /*< Servo output 6 value, in microseconds*/
+ uint16_t servo7_raw; /*< Servo output 7 value, in microseconds*/
+ uint16_t servo8_raw; /*< Servo output 8 value, in microseconds*/
+ uint8_t port; /*< Servo output port (set of 8 outputs = 1 port). Most MAVs will just use one, but this allows to encode more than 8 servos.*/
 } mavlink_servo_output_raw_t;
 
 #define MAVLINK_MSG_ID_SERVO_OUTPUT_RAW_LEN 21

@@ -2,11 +2,18 @@
 #ifndef __AP_HAL_LINUX_UARTDRIVER_H__
 #define __AP_HAL_LINUX_UARTDRIVER_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
-class Linux::LinuxUARTDriver : public AP_HAL::UARTDriver {
+#include "SerialDevice.h"
+
+class Linux::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    LinuxUARTDriver(bool default_console);
+    UARTDriver(bool default_console);
+
+    static UARTDriver *from(AP_HAL::UARTDriver *uart) {
+        return static_cast<UARTDriver*>(uart);
+    }
+
     /* Linux implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -27,17 +34,42 @@ public:
 
     void set_device_path(const char *path);
 
-    void _timer_tick(void);
+    bool _write_pending_bytes(void);
+    virtual void _timer_tick(void);
+
+    enum flow_control get_flow_control(void) { return _flow_control; }
 
 private:
-    const char *device_path;
-    int _rd_fd;
-    int _wr_fd;
+    SerialDevice *_device = nullptr;
     bool _nonblocking_writes;
     bool _console;
-    volatile bool _initialised;
     volatile bool _in_timer;
+    uint16_t _base_port;
+    char *_ip;
+    char *_flag;
+    bool _connected; // true if a client has connected         
+    bool _packetise; // true if writes should try to be on mavlink boundaries
+    enum flow_control _flow_control;
 
+    void _allocate_buffers(uint16_t rxS, uint16_t txS);
+    void _deallocate_buffers();
+    void _udp_start_connection(void);
+    void _tcp_start_connection(void);
+    bool _serial_start_connection(void);
+
+    enum device_type {
+        DEVICE_TCP,
+        DEVICE_UDP,
+        DEVICE_SERIAL,
+        DEVICE_UNKNOWN
+    };
+
+    enum device_type _parseDevicePath(const char *arg);
+    uint64_t _last_write_time;    
+
+protected:
+    const char *device_path;
+    volatile bool _initialised;
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
     uint8_t *_readbuf;
@@ -53,9 +85,9 @@ private:
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
 
-    int _write_fd(const uint8_t *buf, uint16_t n);
-    int _read_fd(uint8_t *buf, uint16_t n);
-    uint64_t _last_write_time;
+    virtual int _write_fd(const uint8_t *buf, uint16_t n);
+    virtual int _read_fd(uint8_t *buf, uint16_t n);
+
 };
 
 #endif // __AP_HAL_LINUX_UARTDRIVER_H__

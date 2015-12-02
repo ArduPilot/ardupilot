@@ -4,6 +4,9 @@
 
 #include "AP_HAL_Namespace.h"
 
+#define RC_OUTPUT_MIN_PULSEWIDTH 400
+#define RC_OUTPUT_MAX_PULSEWIDTH 2100
+
 /* Define the CH_n names, indexed from 1, if we don't have them already */
 #ifndef CH_1
 #define CH_1 0
@@ -40,9 +43,30 @@ public:
     virtual void     enable_ch(uint8_t ch) = 0;
     virtual void     disable_ch(uint8_t ch) = 0;
 
-    /* Output, either single channel or bulk array of channels */
+    /*
+     * Output a single channel, possibly grouped with previous writes if
+     * cork() has been called before.
+     */
     virtual void     write(uint8_t ch, uint16_t period_us) = 0;
-    virtual void     write(uint8_t ch, uint16_t* period_us, uint8_t len) = 0;
+
+    /*
+     * Delay subsequent calls to write() going to the underlying hardware in
+     * order to group related writes together. When all the needed writes are
+     * done, call push() to commit the changes.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     cork() { }
+
+    /*
+     * Push pending changes to the underlying hardware. All changes between a
+     * call to cork() and push() are pushed together in a single transaction.
+     *
+     * This method is optional: if the subclass doesn't implement it all calls
+     * to write() are synchronous.
+     */
+    virtual void     push() { }
 
     /* Read back current output state, as either single channel or
      * array of channels. */
@@ -61,9 +85,24 @@ public:
     virtual void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us) {}
 
     /*
+      force the safety switch on, disabling PWM output from the IO board
+      return false (indicating failure) by default so that boards with no safety switch
+      do not need to implement this method
+     */
+    virtual bool     force_safety_on(void) { return false; }
+
+    /*
       force the safety switch off, enabling PWM output from the IO board
      */
     virtual void     force_safety_off(void) {}
+
+    /*
+      setup scaling of ESC output for ESCs that can output a
+      percentage of power (such as UAVCAN ESCs). The values are in
+      microseconds, and represent minimum and maximum PWM values which
+      will be used to convert channel writes into a percentage
+     */
+    virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
 };
 
 #endif // __AP_HAL_RC_OUTPUT_H__

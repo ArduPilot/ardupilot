@@ -15,7 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
@@ -95,13 +95,7 @@ void FLYMAPLERCOutput::write(uint8_t ch, uint16_t period_us)
     pwmWrite(pin, (period_us * _clocks_per_msecond[ch]) / 1000);
 }
 
-void FLYMAPLERCOutput::write(uint8_t ch, uint16_t* period_us, uint8_t len)
-{
-    for (int i = 0; i < len; i++)
-        write(i + ch, period_us[i]); 
-}
-
-uint16_t FLYMAPLERCOutput::read(uint8_t ch) 
+uint16_t FLYMAPLERCOutput::read(uint8_t ch)
 {
     if (ch >= FLYMAPLE_RC_OUTPUT_NUM_CHANNELS)
 	return 0;

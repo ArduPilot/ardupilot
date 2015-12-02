@@ -9,17 +9,15 @@
 // Please see the notes in FlymaplePortingNotes.txt in this directory for 
 // information about disabling interrupts on Flymaple
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
 #include "Scheduler.h"
 
-#define millis libmaple_millis
-#define micros libmaple_micros
+#include <stdarg.h>
+
 #include "FlymapleWirish.h"
-#undef millis
-#undef micros
 
 // Flymaple: Force init to be called *first*, i.e. before static object allocation.
 // Otherwise, statically allocated objects (eg SerialUSB) that need libmaple may fail.
@@ -79,10 +77,10 @@ void FLYMAPLEScheduler::init(void* machtnichts)
 // This function may calls the _delay_cb to use up time
 void FLYMAPLEScheduler::delay(uint16_t ms)
 {    
-    uint32_t start = libmaple_micros();
+    uint32_t start = AP_HAL::micros();
     
     while (ms > 0) {
-        while ((libmaple_micros() - start) >= 1000) {
+        while ((AP_HAL::micros() - start) >= 1000) {
             ms--;
             if (ms == 0) break;
             start += 1000;
@@ -93,14 +91,6 @@ void FLYMAPLEScheduler::delay(uint16_t ms)
             }
         }
     }
-}
-
-uint32_t FLYMAPLEScheduler::millis() {
-    return libmaple_millis();
-}
-
-uint32_t FLYMAPLEScheduler::micros() {
-    return libmaple_micros();
 }
 
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
@@ -192,7 +182,7 @@ void FLYMAPLEScheduler::_run_timer_procs(bool called_from_isr)
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -210,23 +200,14 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }
 
-void FLYMAPLEScheduler::panic(const prog_char_t *errormsg) {
-    /* Suspend timer processes. We still want the timer event to go off
-     * to run the _failsafe code, however. */
-    // REVISIT: not tested on FLYMAPLE
-    _timer_suspended = true;
-    hal.console->println_P(errormsg);
-    for(;;);
-}
-
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {
-    hal.uartA->println_P(PSTR("GOING DOWN FOR A REBOOT\r\n"));
+    hal.uartA->println("GOING DOWN FOR A REBOOT\r\n");
     hal.scheduler->delay(100);
     nvic_sys_reset();
 }

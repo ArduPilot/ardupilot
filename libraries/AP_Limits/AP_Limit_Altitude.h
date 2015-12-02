@@ -11,7 +11,7 @@
 
 #include "AP_Limits.h"
 #include "AP_Limit_Module.h"
-#include <AP_Param.h>
+#include <AP_Param/AP_Param.h>
 
 class AP_Limit_Altitude : public AP_Limit_Module {
 

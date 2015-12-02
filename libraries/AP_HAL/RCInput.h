@@ -16,11 +16,15 @@ public:
      * in the C++ type system.)
      */
     virtual void init(void* implspecific) = 0;
+    virtual void deinit() {};
 
     /**
-     * Return true if there has been new input since the last read() call
+     * Return true if there has been new input since the last read()
+     * call. This call also clears the new_input flag, so once it
+     * returns true it won't return true again until another frame is
+     * received.
      */
-    virtual bool  new_input() = 0;
+    virtual bool new_input() = 0;
 
     /**
      * Return the number of valid channels in the last read
@@ -49,6 +53,8 @@ public:
     /* clear_overrides: equivelant to setting all overrides to 0 */
     virtual void clear_overrides() = 0;
 
+    /* execute receiver bind */
+    virtual bool rc_bind(int dsmMode) { return false; };
 };
 
 #endif // __AP_HAL_RC_INPUT_H__

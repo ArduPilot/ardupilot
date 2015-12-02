@@ -18,9 +18,9 @@
  */
 
 
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_BoardConfig.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include <sys/types.h>
@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <drivers/drv_pwm_output.h>
+#include <drivers/drv_sbus.h>
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define BOARD_PWM_COUNT_DEFAULT 2
@@ -37,19 +38,13 @@
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <drivers/drv_pwm_output.h>
 
-#define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: PWM_COUNT
     // @DisplayName: PWM Count
@@ -74,16 +69,37 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] PROGMEM = {
     // @Description: Disabling this option will disable the use of the safety switch on PX4 for arming. Use of the safety switch is highly recommended, so you should leave this option set to 1 except in unusual circumstances.
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, _safety_enable, 1),
+
+    // @Param: SBUS_OUT
+    // @DisplayName:  Enable use of SBUS output
+    // @Description: Enabling this option on a Pixhawk enables SBUS servo output from the SBUS output connector
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("SBUS_OUT",   4, AP_BoardConfig, _sbus_out_enable, 0),
+    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // @Param: PWM_COUNT
-    // @DisplayName: PWM Count
-    // @Description: Number of auxillary PWMs to enable
-    // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,8:Six PWMs
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, _pwm_count, BOARD_PWM_COUNT_DEFAULT),
 #endif
 
+    // @Param: SERIAL_NUM
+    // @DisplayName: User-defined serial number
+    // @Description: User-defined serial number of this vehicle, it can be any arbitrary number you want and has no effect on the autopilot
+    // @Range: -32767 to 32768 (any 16bit signed number)
+    // @User: Standard
+    AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    // @Param: CAN_ENABLE
+    // @DisplayName:  Enable use of UAVCAN devices
+    // @Description: Enabling this option on a Pixhawk enables UAVCAN devices. Note that this uses about 25k of memory
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("CAN_ENABLE", 6, AP_BoardConfig, _can_enable, 0),
+#endif
+    
     AP_GROUPEND
 };
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+extern "C" int uavcan_main(int argc, const char *argv[]);
+#endif
 
 void AP_BoardConfig::init()
 {
@@ -99,7 +115,7 @@ void AP_BoardConfig::init()
 
     int fd = open("/dev/px4fmu", 0);
     if (fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/px4fmu");
+        AP_HAL::panic("Unable to open /dev/px4fmu");
     }
     if (ioctl(fd, PWM_SERVO_SET_COUNT, _pwm_count.get()) != 0) {
         hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  
@@ -114,20 +130,33 @@ void AP_BoardConfig::init()
     if (_safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
     }
+
+    if (_sbus_out_enable.get() == 1) {
+        fd = open("/dev/px4io", 0);
+        if (fd == -1 || ioctl(fd, SBUS_SET_PROTO_VERSION, 1) != 0) {
+            hal.console->printf("SBUS: Unable to setup SBUS output\n");
+        }
+        if (fd != -1) {
+            close(fd);
+        }   
+    }
+
+#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+    if (_can_enable == 1) {
+        const char *args[] = { "uavcan", "start", NULL };
+        int ret = uavcan_main(3, args);
+        if (ret != 0) {
+            hal.console->printf("UAVCAN: failed to start\n");
+        } else {
+            hal.console->printf("UAVCAN: started\n");            
+            // give some time for CAN bus initialisation
+            hal.scheduler->delay(500);
+        }
+    }
+#endif
+    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     /* configure the VRBRAIN driver for the right number of PWMs */
 
-    // ensure only valid values are set, rounding up
-    if (_pwm_count > 8) _pwm_count.set(8);
-    if (_pwm_count < 0) _pwm_count.set(0);
-
-    int fd = open("/dev/vroutput", 0);
-    if (fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/vroutput");
-    }
-    if (ioctl(fd, PWM_SERVO_SET_COUNT, _pwm_count.get()) != 0) {
-        hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  
-    }   
-    close(fd);
 #endif    
 }

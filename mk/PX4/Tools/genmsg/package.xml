@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package>
+  <name>genmsg</name>
+  <version>0.5.6</version>
+  <description>
+    Standalone Python library for generating ROS message and service data structures for various languages.
+  </description>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url type="website">http://www.ros.org/wiki/genmsg</url>
+  <url type="bugtracker">https://github.com/ros/genmsg/issues</url>
+  <url type="repository">https://github.com/ros/genmsg</url>
+
+  <author>Troy Straszheim</author>
+  <author>Morten Kjaergaard</author>
+  <author>Ken Conley</author>
+
+  <buildtool_depend version_gte="0.5.74">catkin</buildtool_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>
+  </export>
+</package>

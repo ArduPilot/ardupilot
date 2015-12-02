@@ -18,7 +18,7 @@
   using the fork of libmaple from https://github.com/mikemccauley/libmaple.git 
  */
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 #include <stdlib.h>

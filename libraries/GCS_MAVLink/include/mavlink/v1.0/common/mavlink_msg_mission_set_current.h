@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_mission_set_current_t
 {
- uint16_t seq; ///< Sequence
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint16_t seq; /*< Sequence*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_mission_set_current_t;
 
 #define MAVLINK_MSG_ID_MISSION_SET_CURRENT_LEN 4

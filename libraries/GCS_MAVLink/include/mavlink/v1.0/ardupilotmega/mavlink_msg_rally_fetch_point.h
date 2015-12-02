@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_rally_fetch_point_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
- uint8_t idx; ///< point index (first point is 0)
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
+ uint8_t idx; /*< point index (first point is 0)*/
 } mavlink_rally_fetch_point_t;
 
 #define MAVLINK_MSG_ID_RALLY_FETCH_POINT_LEN 3

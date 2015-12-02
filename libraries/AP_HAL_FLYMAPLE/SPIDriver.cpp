@@ -15,7 +15,7 @@
 /*
   Flymaple port by Mike McCauley
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
 
@@ -48,7 +48,7 @@ AP_HAL::Semaphore* FLYMAPLESPIDeviceDriver::get_semaphore()
     return &_semaphore;
 }
 
-void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
+bool FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16_t len)
 {
     cs_assert();
     if (rx == NULL) {
@@ -61,6 +61,7 @@ void FLYMAPLESPIDeviceDriver::transaction(const uint8_t *tx, uint8_t *rx, uint16
         }
     }
     cs_release();
+    return true;
 }
 
 
@@ -92,7 +93,7 @@ void FLYMAPLESPIDeviceManager::init(void *)
 {
 }
 
-AP_HAL::SPIDeviceDriver* FLYMAPLESPIDeviceManager::device(enum AP_HAL::SPIDevice)
+AP_HAL::SPIDeviceDriver* FLYMAPLESPIDeviceManager::device(enum AP_HAL::SPIDevice, uint8_t index)
 {
     _device.init(); // Defer this until GPIO pin 13 is set up else its a slave
     return &_device;

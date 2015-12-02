@@ -4,7 +4,7 @@
 
 typedef struct __mavlink_auth_key_t
 {
- char key[32]; ///< key
+ char key[32]; /*< key*/
 } mavlink_auth_key_t;
 
 #define MAVLINK_MSG_ID_AUTH_KEY_LEN 32

@@ -22,8 +22,8 @@
 #ifndef __AP_AIRSPEED_I2C_H__
 #define __AP_AIRSPEED_I2C_H__
 
-#include <AP_HAL.h>
-#include <AP_Airspeed_Backend.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_I2C : public AP_Airspeed_Backend 
 {

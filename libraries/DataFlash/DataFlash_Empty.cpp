@@ -10,7 +10,7 @@
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_Empty::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
 	df_PageSize = DF_PAGE_SIZE;
     // reserve last page for config information
     df_NumPages   = DF_NUM_PAGES - 1;
@@ -59,10 +59,6 @@ void DataFlash_Empty::BufferToPage (unsigned char BufferNum, uint16_t PageAdr, u
 void DataFlash_Empty::BufferWrite (unsigned char BufferNum,
         uint16_t IntPageAdr, unsigned char Data)
 { }
-
-unsigned char DataFlash_Empty::BufferRead (unsigned char BufferNum,
-        uint16_t IntPageAdr)
-{ return 0; }
 
 void DataFlash_Empty::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr, 
                     const void *pHeader, uint8_t hdr_size,

@@ -22,16 +22,20 @@
  *
  */
 
-#include <AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include <inttypes.h>
-#include <AP_Compass.h>
-#include <AP_Airspeed.h>
-#include <AP_GPS.h>
-#include <AP_InertialSensor.h>
-#include <AP_Baro.h>
-#include <AP_Param.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Param/AP_Param.h>
+
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
+#define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
+#define AP_AHRS_YAW_P_MIN  0.05f        // minimum value for AHRS_YAW_P parameter
 
 enum AHRS_VehicleClass {
     AHRS_VEHICLE_UNKNOWN,
@@ -46,8 +50,17 @@ class AP_AHRS
 public:
     // Constructor
     AP_AHRS(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+        roll(0.0f),
+        pitch(0.0f),
+        yaw(0.0f),
+        roll_sensor(0),
+        pitch_sensor(0),
+        yaw_sensor(0),
         _vehicle_class(AHRS_VEHICLE_UNKNOWN),
         _compass(NULL),
+        _optflow(NULL),
+        _airspeed(NULL),
+        _compass_last_update(0),
         _ins(ins),
         _baro(baro),
         _gps(gps),
@@ -63,17 +76,11 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
 
         // base the ki values by the sensors maximum drift
-        // rate. The APM2 has gyros which are much less drift
-        // prone than the APM1, so we should have a lower ki,
-        // which will make us less prone to increasing omegaI
-        // incorrectly due to sensor noise
+        // rate.
         _gyro_drift_limit = ins.get_gyro_drift_rate();
 
         // enable centrifugal correction by default
         _flags.correct_centrifugal = true;
-
-        // start off with armed flag true
-        _flags.armed = true;
 
         // initialise _home
         _home.options    = 0;
@@ -81,6 +88,9 @@ public:
         _home.lng        = 0;
         _home.lat        = 0;
     }
+
+    // empty virtual destructor
+    virtual ~AP_AHRS() {}
 
     // init sets up INS board orientation
     virtual void init() {
@@ -116,7 +126,15 @@ public:
     const Compass* get_compass() const {
         return _compass;
     }
-        
+
+    void set_optflow(const OpticalFlow *optflow) {
+        _optflow = optflow;
+    }
+
+    const OpticalFlow* get_optflow() const {
+        return _optflow;
+    }
+
     // allow for runtime change of orientation
     // this makes initial config easier
     void set_orientation() {
@@ -139,18 +157,38 @@ public:
     }
 
     const AP_InertialSensor &get_ins() const {
-	    return _ins;
+        return _ins;
     }
 
     const AP_Baro &get_baro() const {
-	    return _baro;
+        return _baro;
     }
 
     // accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef(void) const { return _accel_ef[_ins.get_primary_accel()]; }
+    virtual const Vector3f &get_accel_ef(uint8_t i) const {
+        return _accel_ef[i];
+    }
+    virtual const Vector3f &get_accel_ef(void) const {
+        return get_accel_ef(_ins.get_primary_accel());
+    }
+
+    // blended accelerometer values in the earth frame in m/s/s
+    virtual const Vector3f &get_accel_ef_blended(void) const {
+        return _accel_ef_blended;
+    }
+
+    // get yaw rate in earth frame in radians/sec
+    float get_yaw_rate_earth(void) const {
+        return get_gyro() * get_dcm_matrix().c;
+    }
 
     // Methods
     virtual void update(void) = 0;
+
+    // report any reason for why the backend is refusing to initialise
+    virtual const char *prearm_failure_reason(void) const {
+        return nullptr;
+    }
 
     // Euler angles (radians)
     float roll;
@@ -163,10 +201,14 @@ public:
     int32_t yaw_sensor;
 
     // return a smoothed and corrected gyro vector
-    virtual const Vector3f get_gyro(void) const = 0;
+    virtual const Vector3f &get_gyro(void) const = 0;
 
     // return the current estimate of the gyro drift
     virtual const Vector3f &get_gyro_drift(void) const = 0;
+
+    // reset the current gyro drift estimate
+    //  should be called if gyro offsets are recalculated
+    virtual void reset_gyro_drift(void) = 0;
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset(bool recover_eulers=false) = 0;
@@ -176,11 +218,11 @@ public:
 
     // return the average size of the roll/pitch error estimate
     // since last call
-    virtual float get_error_rp(void) = 0;
+    virtual float get_error_rp(void) const = 0;
 
     // return the average size of the yaw error estimate
     // since last call
-    virtual float get_error_yaw(void) = 0;
+    virtual float get_error_yaw(void) const = 0;
 
     // return a DCM rotation matrix representing our current
     // attitude
@@ -188,7 +230,7 @@ public:
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_position(struct Location &loc) = 0;
+    virtual bool get_position(struct Location &loc) const = 0;
 
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) = 0;
@@ -218,7 +260,7 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
-        return _airspeed != NULL && _airspeed->use();
+        return _airspeed != NULL && _airspeed->use() && _airspeed->healthy();
     }
 
     // return a ground vector estimate in meters/second, in North/East order
@@ -226,13 +268,17 @@ public:
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
-    // true 
-    virtual bool get_velocity_NED(Vector3f &vec) const { return false; }
+    // true
+    virtual bool get_velocity_NED(Vector3f &vec) const {
+        return false;
+    }
 
     // return a position relative to home in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
-    // true 
-    virtual bool get_relative_position_NED(Vector3f &vec) const { return false; }
+    // true
+    virtual bool get_relative_position_NED(Vector3f &vec) const {
+        return false;
+    }
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const {
@@ -243,16 +289,13 @@ public:
     }
 
     // return true if we will use compass for yaw
-    virtual bool use_compass(void) { return _compass && _compass->use_for_yaw(); }
+    virtual bool use_compass(void) {
+        return _compass && _compass->use_for_yaw();
+    }
 
     // return true if yaw has been initialised
     bool yaw_initialised(void) const {
         return _flags.have_initial_yaw;
-    }
-
-    // set the fast gains flag
-    void set_fast_gains(bool setting) {
-        _flags.fast_ground_gains = setting;
     }
 
     // set the correct centrifugal flag
@@ -266,19 +309,10 @@ public:
         return _flags.correct_centrifugal;
     }
 
-    // set the armed flag
-    // allows EKF enter static mode when disarmed
-    void set_armed(bool setting) {
-        _flags.armed = setting;
-    }
-
-    // get the armed flag
-    bool get_armed(void) const {
-        return _flags.armed;
-    }
-
     // get trim
-    const Vector3f &get_trim() const { return _trim.get(); }
+    const Vector3f &get_trim() const {
+        return _trim.get();
+    }
 
     // set trim
     virtual void            set_trim(Vector3f new_trim);
@@ -287,30 +321,43 @@ public:
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
 
     // helper trig value accessors
-    float cos_roll() const  { return _cos_roll; }
-    float cos_pitch() const { return _cos_pitch; }
-    float cos_yaw() const   { return _cos_yaw; }
-    float sin_roll() const  { return _sin_roll; }
-    float sin_pitch() const { return _sin_pitch; }
-    float sin_yaw() const   { return _sin_yaw; }
+    float cos_roll() const  {
+        return _cos_roll;
+    }
+    float cos_pitch() const {
+        return _cos_pitch;
+    }
+    float cos_yaw() const   {
+        return _cos_yaw;
+    }
+    float sin_roll() const  {
+        return _sin_roll;
+    }
+    float sin_pitch() const {
+        return _sin_pitch;
+    }
+    float sin_yaw() const   {
+        return _sin_yaw;
+    }
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    // these are public for ArduCopter
-	AP_Float _kp_yaw;
-    AP_Float _kp;
-    AP_Float gps_gain;
-
     // return secondary attitude solution if available, as eulers in radians
-    virtual bool get_secondary_attitude(Vector3f &eulers) { return false; }
+    virtual bool get_secondary_attitude(Vector3f &eulers) {
+        return false;
+    }
 
     // return secondary position solution if available
-    virtual bool get_secondary_position(struct Location &loc) { return false; }
+    virtual bool get_secondary_position(struct Location &loc) {
+        return false;
+    }
 
     // get the home location. This is const to prevent any changes to
-    // home without telling AHRS about the change    
-    const struct Location &get_home(void) const { return _home; }
+    // home without telling AHRS about the change
+    const struct Location &get_home(void) const {
+        return _home;
+    }
 
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
@@ -319,42 +366,90 @@ public:
 
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
-    virtual bool have_inertial_nav(void) const { return false; }
+    virtual bool have_inertial_nav(void) const {
+        return false;
+    }
 
     // return the active accelerometer instance
-    uint8_t get_active_accel_instance(void) const { return _active_accel_instance; }
+    uint8_t get_active_accel_instance(void) const {
+        return _active_accel_instance;
+    }
 
     // is the AHRS subsystem healthy?
-    virtual bool healthy(void) = 0;
+    virtual bool healthy(void) const = 0;
+
+    // true if the AHRS has completed initialisation
+    virtual bool initialised(void) const {
+        return true;
+    };
+
+    // return the amount of yaw angle change due to the last yaw angle reset in radians
+    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastYawResetAngle(float &yawAng) const {
+        return 0;
+    };
+
+    // return the amount of NE position change in metres due to the last reset
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const {
+        return 0;
+    };
+
+    // return the amount of NE velocity change in metres/sec due to the last reset
+    // returns the time of the last reset or 0 if no reset has ever occurred
+    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
+        return 0;
+    };
+
+    // Resets the baro so that it reads zero at the current height
+    // Resets the EKF height to zero
+    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Returns true if the height datum reset has been performed
+    // If using a range finder for height no reset is performed and it returns false
+    virtual bool resetHeightDatum(void) {
+        return false;
+    }
+    
+    // time that the AHRS has been up
+    virtual uint32_t uptime_ms(void) const = 0;
 
 protected:
     AHRS_VehicleClass _vehicle_class;
 
     // settable parameters
+    // these are public for ArduCopter
+    AP_Float _kp_yaw;
+    AP_Float _kp;
+    AP_Float gps_gain;
+
     AP_Float beta;
     AP_Int8 _gps_use;
     AP_Int8 _wind_max;
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
     AP_Int8 _gps_delay;
-    AP_Int8 _ekf_use;
+    AP_Int8 _ekf_type;
 
     // flags structure
     struct ahrs_flags {
         uint8_t have_initial_yaw        : 1;    // whether the yaw value has been intialised with a reference
-        uint8_t fast_ground_gains       : 1;    // should we raise the gain on the accelerometers for faster convergence, used when disarmed for ArduCopter
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t armed                   : 1;    // 1 if we are armed for flight
     } _flags;
 
     // update_trig - recalculates _cos_roll, _cos_pitch, etc based on latest attitude
     //      should be called after _dcm_matrix is updated
     void update_trig(void);
 
+    // update roll_sensor, pitch_sensor and yaw_sensor
+    void update_cd_values(void);
+
     // pointer to compass object, if available
     Compass         * _compass;
+
+    // pointer to OpticalFlow object, if available
+    const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
     AP_Airspeed     * _airspeed;
@@ -377,12 +472,13 @@ protected:
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
+    Vector3f        _accel_ef_blended;
 
-	// Declare filter states for HPF and LPF used by complementary
-	// filter in AP_AHRS::groundspeed_vector
-	Vector2f _lp; // ground vector low-pass filter
-	Vector2f _hp; // ground vector high-pass filter
-    Vector2f _lastGndVelADS; // previous HPF input		
+    // Declare filter states for HPF and LPF used by complementary
+    // filter in AP_AHRS::groundspeed_vector
+    Vector2f _lp; // ground vector low-pass filter
+    Vector2f _hp; // ground vector high-pass filter
+    Vector2f _lastGndVelADS; // previous HPF input
 
     // reference position for NED positions
     struct Location _home;
@@ -395,7 +491,13 @@ protected:
     uint8_t _active_accel_instance;
 };
 
-#include <AP_AHRS_DCM.h>
-#include <AP_AHRS_NavEKF.h>
+#include "AP_AHRS_DCM.h"
+#include "AP_AHRS_NavEKF.h"
+
+#if AP_AHRS_NAVEKF_AVAILABLE
+#define AP_AHRS_TYPE AP_AHRS_NavEKF
+#else
+#define AP_AHRS_TYPE AP_AHRS
+#endif
 
 #endif // __AP_AHRS_H__

@@ -4,17 +4,17 @@
 
 typedef struct __mavlink_simstate_t
 {
- float roll; ///< Roll angle (rad)
- float pitch; ///< Pitch angle (rad)
- float yaw; ///< Yaw angle (rad)
- float xacc; ///< X acceleration m/s/s
- float yacc; ///< Y acceleration m/s/s
- float zacc; ///< Z acceleration m/s/s
- float xgyro; ///< Angular speed around X axis rad/s
- float ygyro; ///< Angular speed around Y axis rad/s
- float zgyro; ///< Angular speed around Z axis rad/s
- int32_t lat; ///< Latitude in degrees * 1E7
- int32_t lng; ///< Longitude in degrees * 1E7
+ float roll; /*< Roll angle (rad)*/
+ float pitch; /*< Pitch angle (rad)*/
+ float yaw; /*< Yaw angle (rad)*/
+ float xacc; /*< X acceleration m/s/s*/
+ float yacc; /*< Y acceleration m/s/s*/
+ float zacc; /*< Z acceleration m/s/s*/
+ float xgyro; /*< Angular speed around X axis rad/s*/
+ float ygyro; /*< Angular speed around Y axis rad/s*/
+ float zgyro; /*< Angular speed around Z axis rad/s*/
+ int32_t lat; /*< Latitude in degrees * 1E7*/
+ int32_t lng; /*< Longitude in degrees * 1E7*/
 } mavlink_simstate_t;
 
 #define MAVLINK_MSG_ID_SIMSTATE_LEN 44

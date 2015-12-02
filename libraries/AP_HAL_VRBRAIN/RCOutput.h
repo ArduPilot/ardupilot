@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_VRBRAIN_RCOUTPUT_H__
 #define __AP_HAL_VRBRAIN_RCOUTPUT_H__
 
-#include <AP_HAL_VRBRAIN.h>
+#include "AP_HAL_VRBRAIN.h"
 #include <systemlib/perf_counter.h>
 
 #define VRBRAIN_NUM_OUTPUT_CHANNELS 16
@@ -16,17 +16,18 @@ public:
     void     enable_ch(uint8_t ch);
     void     disable_ch(uint8_t ch);
     void     write(uint8_t ch, uint16_t period_us);
-    void     write(uint8_t ch, uint16_t* period_us, uint8_t len);
     uint16_t read(uint8_t ch);
     void     read(uint16_t* period_us, uint8_t len);
     void     set_safety_pwm(uint32_t chmask, uint16_t period_us);
+    void     set_failsafe_pwm(uint32_t chmask, uint16_t period_us);
+    bool     force_safety_on(void);
     void     force_safety_off(void);
 
     void _timer_tick(void);
 
 private:
     int _pwm_fd;
-    int _alt_fd;
+
     uint16_t _freq_hz;
     uint16_t _period[VRBRAIN_NUM_OUTPUT_CHANNELS];
     volatile uint8_t _max_channel;
@@ -34,7 +35,7 @@ private:
     perf_counter_t  _perf_rcout;
     uint32_t _last_output;
     unsigned _servo_count;
-    unsigned _alt_servo_count;
+
     uint32_t _rate_mask;
     uint16_t _enabled_channels;
 

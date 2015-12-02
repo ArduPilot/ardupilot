@@ -1,0 +1,107 @@
+<?xml version='1.0'?>
+<!-- ASLUAV Mavlink Message Definition File -->
+<!-- Used for the ASLUAV fixed-wing autopilot (www.asl.ethz.ch), which implements extensions to the Pixhawk (www.pixhawk.org) autopilot -->
+<mavlink>
+     <include>common.xml</include>
+     <messages>
+          <message id="201" name="SENS_POWER">
+              <description>Voltage and current sensor data</description>
+              <field type="float" name="adc121_vspb_volt"> Power board voltage sensor reading in volts</field>
+              <field type="float" name="adc121_cspb_amp"> Power board current sensor reading in amps</field>
+              <field type="float" name="adc121_cs1_amp"> Board current sensor 1 reading in amps</field>
+              <field type="float" name="adc121_cs2_amp"> Board current sensor 2 reading in amps</field>
+          </message>     
+          <message id="202" name="SENS_MPPT">
+              <description>Maximum Power Point Tracker (MPPT) sensor data for solar module power performance tracking</description>
+              <field type="uint64_t" name="mppt_timestamp"> MPPT last timestamp </field>
+              <field type="float" name="mppt1_volt"> MPPT1 voltage </field>
+              <field type="float" name="mppt1_amp"> MPPT1 current </field>
+              <field type="uint16_t" name="mppt1_pwm"> MPPT1 pwm </field>
+              <field type="uint8_t" name="mppt1_status"> MPPT1 status </field>
+              <field type="float" name="mppt2_volt"> MPPT2 voltage </field>
+              <field type="float" name="mppt2_amp"> MPPT2 current </field>
+              <field type="uint16_t" name="mppt2_pwm"> MPPT2 pwm </field>
+              <field type="uint8_t" name="mppt2_status"> MPPT2 status </field>
+              <field type="float" name="mppt3_volt"> MPPT3 voltage </field>
+              <field type="float" name="mppt3_amp"> MPPT3 current </field>
+              <field type="uint16_t" name="mppt3_pwm"> MPPT3 pwm </field>
+              <field type="uint8_t" name="mppt3_status"> MPPT3 status </field>     
+          </message>
+          <message id="203" name="ASLCTRL_DATA">
+              <description>ASL-fixed-wing controller data</description>
+              <field type="uint64_t" name="timestamp"> Timestamp</field>
+              <field type="uint8_t" name="aslctrl_mode"> ASLCTRL control-mode (manual, stabilized, auto, etc...)</field>
+              <field type="float" name="h"> See sourcecode for a description of these values... </field>
+              <field type="float" name="hRef"> </field>
+              <field type="float" name="hRef_t"> </field>
+              <field type="float" name="PitchAngle">Pitch angle [deg]</field>
+              <field type="float" name="PitchAngleRef">Pitch angle reference[deg] </field>
+              <field type="float" name="q"> </field>
+              <field type="float" name="qRef"> </field>
+              <field type="float" name="uElev"> </field>
+              <field type="float" name="uThrot"> </field>
+              <field type="float" name="uThrot2"> </field>
+              <field type="float" name="aZ"> </field>
+              <field type="float" name="AirspeedRef">Airspeed reference [m/s]</field>
+              <field type="uint8_t" name="SpoilersEngaged"> </field>
+              <field type="float" name="YawAngle">Yaw angle [deg]</field>
+              <field type="float" name="YawAngleRef">Yaw angle reference[deg]</field>
+              <field type="float" name="RollAngle">Roll angle [deg]</field>
+              <field type="float" name="RollAngleRef">Roll angle reference[deg]</field>
+              <field type="float" name="p"> </field>
+              <field type="float" name="pRef"> </field>
+              <field type="float" name="r"> </field>
+              <field type="float" name="rRef"> </field>
+              <field type="float" name="uAil"> </field>
+              <field type="float" name="uRud"> </field> 
+          </message>
+          <message id="204" name="ASLCTRL_DEBUG">
+              <description>ASL-fixed-wing controller debug data</description>
+              <field type="uint32_t" name="i32_1"> Debug data</field>
+              <field type="uint8_t" name="i8_1"> Debug data</field>
+              <field type="uint8_t" name="i8_2"> Debug data</field>
+              <field type="float" name="f_1"> Debug data </field>
+              <field type="float" name="f_2"> Debug data</field>
+              <field type="float" name="f_3"> Debug data</field>
+              <field type="float" name="f_4"> Debug data</field>
+              <field type="float" name="f_5"> Debug data</field>
+              <field type="float" name="f_6"> Debug data</field>
+              <field type="float" name="f_7"> Debug data</field>
+              <field type="float" name="f_8"> Debug data</field>
+          </message>
+          <message id="205" name="ASLUAV_STATUS">
+              <description>Extended state information for ASLUAVs</description>
+              <field type="uint8_t" name="LED_status"> Status of the position-indicator LEDs</field>
+              <field type="uint8_t" name="SATCOM_status"> Status of the IRIDIUM satellite communication system</field>
+              <field type="uint8_t[8]" name="Servo_status"> Status vector for up to 8 servos</field>
+              <field type="float" name="Motor_rpm"> Motor RPM </field>
+              <!-- to be extended-->
+          </message>
+          <message id="206" name="EKF_EXT">
+              <description>Extended EKF state estimates for ASLUAVs</description>
+              <field type="uint64_t" name="timestamp"> Time since system start [us]</field>
+              <field type="float" name="Windspeed"> Magnitude of wind velocity (in lateral inertial plane) [m/s]</field>
+              <field type="float" name="WindDir"> Wind heading angle from North [rad]</field>
+              <field type="float" name="WindZ"> Z (Down) component of inertial wind velocity [m/s]</field>
+              <field type="float" name="Airspeed"> Magnitude of air velocity [m/s]</field>
+              <field type="float" name="beta"> Sideslip angle [rad]</field>
+              <field type="float" name="alpha"> Angle of attack [rad]</field>
+          </message>
+          <message id="207" name="ASL_OBCTRL">
+              <description>Off-board controls/commands for ASLUAVs</description>
+              <field type="uint64_t" name="timestamp"> Time since system start [us]</field>
+              <field type="float" name="uElev"> Elevator command [~]</field>
+              <field type="float" name="uThrot"> Throttle command [~]</field>
+              <field type="float" name="uThrot2"> Throttle 2 command [~]</field>
+              <field type="float" name="uAilL"> Left aileron command [~]</field>
+              <field type="float" name="uAilR"> Right aileron command [~]</field>
+              <field type="float" name="uRud"> Rudder command [~]</field>
+              <field type="uint8_t" name="obctrl_status"> Off-board computer status</field>
+          </message>
+          <message id="208" name="SENS_ATMOS">
+              <description>Atmospheric sensors (temperature, humidity, ...) </description>
+              <field type="float" name="TempAmbient"> Ambient temperature [degrees Celsius]</field>
+              <field type="float" name="Humidity"> Relative humidity [%]</field>
+          </message>
+     </messages>
+</mavlink>

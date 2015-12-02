@@ -3,9 +3,9 @@
 #ifndef __AP_AUTOTUNE_H__
 #define __AP_AUTOTUNE_H__
 
-#include <AP_HAL.h>
-#include <AP_Param.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_AutoTune {
 public:
@@ -14,6 +14,7 @@ public:
         AP_Float P;
         AP_Float I;
         AP_Float D;
+        AP_Float FF;
         AP_Int16 rmax;
         AP_Int16 imax;
     };
@@ -25,7 +26,7 @@ public:
 
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
-        uint32_t timestamp;
+        uint64_t time_us;
         uint8_t  type;
         uint8_t  state;
         int16_t  servo;
@@ -76,17 +77,17 @@ private:
     ATGains next_save;
 
     // time when we last saved
-    uint32_t last_save_ms;
+    uint32_t last_save_ms = 0;
 
     // the demanded/achieved state
     enum ATState {DEMAND_UNSATURATED,
                   DEMAND_UNDER_POS, 
                   DEMAND_OVER_POS,
                   DEMAND_UNDER_NEG,
-                  DEMAND_OVER_NEG} state;
+                  DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;
 
     // when we entered the current state
-    uint32_t state_enter_ms;
+    uint32_t state_enter_ms = 0;
 
     void check_save(void);
     void check_state_exit(uint32_t state_time_ms);
@@ -95,9 +96,9 @@ private:
     void write_log_headers(void);
     void write_log(float servo, float demanded, float achieved);
 
-    void log_param_change(float v, const prog_char_t *suffix);
-    void save_float_if_changed(AP_Float &v, float value, const prog_char_t *suffix);
-    void save_int16_if_changed(AP_Int16 &v, int16_t value, const prog_char_t *suffix);        
+    void log_param_change(float v, const char *suffix);
+    void save_float_if_changed(AP_Float &v, float value, const char *suffix);
+    void save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix);
 };
 
 #endif // __AP_AUTOTUNE_H__

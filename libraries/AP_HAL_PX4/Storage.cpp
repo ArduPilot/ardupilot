@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 
 #include <assert.h>
@@ -45,14 +45,14 @@ uint32_t PX4Storage::_mtd_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
     }
     uint32_t v;
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
     if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        hal.scheduler->panic("Failed to read signature from " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to read signature from " MTD_PARAMS_FILE);
     }
     close(mtd_fd);
     return v;
@@ -65,14 +65,14 @@ void PX4Storage::_mtd_write_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
     }
     uint32_t v = MTD_SIGNATURE;
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
     if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        hal.scheduler->panic("Failed to write signature in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to write signature in " MTD_PARAMS_FILE);
     }
     close(mtd_fd);
 }
@@ -92,7 +92,7 @@ void PX4Storage::_upgrade_to_mtd(void)
 
     int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Unable to open MTD for upgrade");
+        AP_HAL::panic("Unable to open MTD for upgrade");
     }
 
     if (::read(old_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
@@ -105,7 +105,7 @@ void PX4Storage::_upgrade_to_mtd(void)
     ssize_t ret;
     if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
         ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
-        hal.scheduler->panic("Unable to write MTD for upgrade");        
+        AP_HAL::panic("Unable to write MTD for upgrade");
     }
     close(mtd_fd);
 #if STORAGE_RENAME_OLD_FILE
@@ -126,7 +126,7 @@ void PX4Storage::_storage_open(void)
 
         // PX4 should always have /fs/mtd_params
         if (!_have_mtd) {
-            hal.scheduler->panic("Failed to find " MTD_PARAMS_FILE);
+            AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
         }
 
         /*
@@ -152,7 +152,7 @@ void PX4Storage::_storage_open(void)
 	_dirty_mask = 0;
 	int fd = open(MTD_PARAMS_FILE, O_RDONLY);
 	if (fd == -1) {
-            hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+            AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
 	}
         const uint16_t chunk_size = 128;
         for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
@@ -160,7 +160,7 @@ void PX4Storage::_storage_open(void)
             if (ret != chunk_size) {
                 ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
                          (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
-                hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+                AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
             }
 	}
 	close(fd);
@@ -176,43 +176,12 @@ void PX4Storage::_storage_open(void)
  */
 void PX4Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-	uint16_t end = loc + length;
-	while (loc < end) {
-		uint8_t line = (loc >> PX4_STORAGE_LINE_SHIFT);
-		_dirty_mask |= 1 << line;
-		loc += PX4_STORAGE_LINE_SIZE;
-	}
-}
-
-uint8_t PX4Storage::read_byte(uint16_t loc) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return 0;
-	}
-	_storage_open();
-	return _buffer[loc];
-}
-
-uint16_t PX4Storage::read_word(uint16_t loc) 
-{
-	uint16_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
-}
-
-uint32_t PX4Storage::read_dword(uint16_t loc) 
-{
-	uint32_t value;
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return 0;
-	}
-	_storage_open();
-	memcpy(&value, &_buffer[loc], sizeof(value));
-	return value;
+    uint16_t end = loc + length;
+    for (uint8_t line=loc>>PX4_STORAGE_LINE_SHIFT;
+         line <= end>>PX4_STORAGE_LINE_SHIFT;
+         line++) {
+        _dirty_mask |= 1U << line;
+    }
 }
 
 void PX4Storage::read_block(void *dst, uint16_t loc, size_t n) 
@@ -222,42 +191,6 @@ void PX4Storage::read_block(void *dst, uint16_t loc, size_t n)
 	}
 	_storage_open();
 	memcpy(dst, &_buffer[loc], n);
-}
-
-void PX4Storage::write_byte(uint16_t loc, uint8_t value) 
-{
-	if (loc >= sizeof(_buffer)) {
-		return;
-	}
-	if (_buffer[loc] != value) {
-		_storage_open();
-		_buffer[loc] = value;
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_word(uint16_t loc, uint16_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
-}
-
-void PX4Storage::write_dword(uint16_t loc, uint32_t value) 
-{
-	if (loc >= sizeof(_buffer)-(sizeof(value)-1)) {
-		return;
-	}
-	if (memcmp(&value, &_buffer[loc], sizeof(value)) != 0) {
-		_storage_open();
-		memcpy(&_buffer[loc], &value, sizeof(value));
-		_mark_dirty(loc, sizeof(value));
-	}
 }
 
 void PX4Storage::write_block(uint16_t loc, const void *src, size_t n) 
@@ -327,13 +260,6 @@ void PX4Storage::_timer_tick(void)
 			close(_fd);
 			_fd = -1;
 			perf_count(_perf_errors);
-		}
-		if (_dirty_mask == 0) {
-			if (fsync(_fd) != 0) {
-				close(_fd);
-				_fd = -1;
-				perf_count(_perf_errors);
-			}
 		}
 	}
 	perf_end(_perf_storage);

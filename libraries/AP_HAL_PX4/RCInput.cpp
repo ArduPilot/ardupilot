@@ -1,7 +1,10 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "RCInput.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <drivers/drv_pwm_output.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/uORB.h>
 
@@ -14,7 +17,7 @@ void PX4RCInput::init(void* unused)
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 	if (_rc_sub == -1) {
-		hal.scheduler->panic("Unable to subscribe to input_rc");		
+		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
         pthread_mutex_init(&rcin_mutex, NULL);
@@ -24,6 +27,8 @@ bool PX4RCInput::new_input()
 {
     pthread_mutex_lock(&rcin_mutex);
     bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
+    _last_read = _rcin.timestamp_last_signal;
+    _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
 }
@@ -42,8 +47,6 @@ uint16_t PX4RCInput::read(uint8_t ch)
 		return 0;
 	}
         pthread_mutex_lock(&rcin_mutex);
-	_last_read = _rcin.timestamp_last_signal;
-	_override_valid = false;
 	if (_override[ch]) {
             uint16_t v = _override[ch];
             pthread_mutex_unlock(&rcin_mutex);
@@ -112,6 +115,24 @@ void PX4RCInput::_timer_tick(void)
         // note, we rely on the vehicle code checking new_input() 
         // and a timeout for the last valid input to handle failsafe
 	perf_end(_perf_rcin);
+}
+
+bool PX4RCInput::rc_bind(int dsmMode)
+{
+    int fd = open("/dev/px4io", 0);
+    if (fd == -1) {
+        hal.console->printf("RCInput: failed to open /dev/px4io\n");
+        return false;
+    }
+    
+    uint32_t mode = (dsmMode == 0) ? DSM2_BIND_PULSES : ((dsmMode == 1) ? DSMX_BIND_PULSES : DSMX8_BIND_PULSES);
+    int ret = ioctl(fd, DSM_BIND_START, mode);
+    close(fd);
+    if (ret != 0) {
+        hal.console->printf("RCInput: Unable to start DSM bind\n");
+        return false;
+    }
+    return true;
 }
 
 #endif

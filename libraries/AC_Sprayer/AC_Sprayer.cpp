@@ -1,13 +1,13 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
-#include <AC_Sprayer.h>
+#include <AP_HAL/AP_HAL.h>
+#include "AC_Sprayer.h"
 
 extern const AP_HAL::HAL& hal;
 
 // ------------------------------
 
-const AP_Param::GroupInfo AC_Sprayer::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Sprayer enable/disable
     // @Description: Allows you to enable (1) or disable (0) the sprayer
@@ -58,12 +58,16 @@ AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
     AP_Param::setup_object_defaults(this, var_info);
 
     // check for silly parameter values
-    if (_pump_pct_1ms < 0 || _pump_pct_1ms > 100) {
+    if (_pump_pct_1ms < 0.0f || _pump_pct_1ms > 100.0f) {
         _pump_pct_1ms.set_and_save(AC_SPRAYER_DEFAULT_PUMP_RATE);
     }
     if (_spinner_pwm < 0) {
         _spinner_pwm.set_and_save(AC_SPRAYER_DEFAULT_SPINNER_PWM);
     }
+
+    // initialise flags
+    _flags.spraying = false;
+    _flags.testing = false;
 
     // To-Do: ensure that the pump and spinner servo channels are enabled
 }
@@ -112,7 +116,7 @@ AC_Sprayer::update()
     ground_speed = pythagorous2(velocity.x,velocity.y);
 
     // get the current time
-    now = hal.scheduler->millis();
+    now = AP_HAL::millis();
 
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
@@ -151,7 +155,7 @@ AC_Sprayer::update()
 
     // if testing pump output speed as if travelling at 1m/s
     if (_flags.testing) {
-        ground_speed = 100;
+        ground_speed = 100.0f;
     }
 
     // if spraying or testing update the pump servo position

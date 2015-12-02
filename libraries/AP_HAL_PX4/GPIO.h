@@ -3,7 +3,7 @@
 #ifndef __AP_HAL_PX4_GPIO_H__
 #define __AP_HAL_PX4_GPIO_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 
 #define PX4_GPIO_PIEZO_PIN              110
 #define PX4_GPIO_EXT_FMU_RELAY1_PIN     111
@@ -46,11 +46,15 @@ public:
     /* return true if USB cable is connected */
     bool usb_connected(void);
 
+    // used by UART code to avoid a hw bug in the AUAV-X2
+    void set_usb_connected(void) { _usb_connected = true; }
+
 private:
     int _led_fd;
     int _tone_alarm_fd;
     int _gpio_fmu_fd;
     int _gpio_io_fd;
+    bool _usb_connected = false;
 };
 
 class PX4::PX4DigitalSource : public AP_HAL::DigitalSource {

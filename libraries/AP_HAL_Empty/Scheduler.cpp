@@ -1,6 +1,8 @@
 
 #include "Scheduler.h"
 
+#include <stdarg.h>
+
 using namespace Empty;
 
 extern const AP_HAL::HAL& hal;
@@ -13,14 +15,6 @@ void EmptyScheduler::init(void* machtnichts)
 
 void EmptyScheduler::delay(uint16_t ms)
 {}
-
-uint32_t EmptyScheduler::millis() {
-    return 10000;
-}
-
-uint32_t EmptyScheduler::micros() {
-    return 200000;
-}
 
 void EmptyScheduler::delay_microseconds(uint16_t us)
 {}
@@ -60,11 +54,6 @@ bool EmptyScheduler::system_initializing() {
 
 void EmptyScheduler::system_initialized()
 {}
-
-void EmptyScheduler::panic(const prog_char_t *errormsg) {
-    hal.console->println_P(errormsg);
-    for(;;);
-}
 
 void EmptyScheduler::reboot(bool hold_in_bootloader) {
     for(;;);

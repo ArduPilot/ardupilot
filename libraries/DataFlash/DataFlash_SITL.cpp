@@ -3,9 +3,11 @@
   hacked up DataFlash library for Desktop support
 */
 
-#include <AP_HAL.h>
+#include "DataFlash_SITL.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#include <AP_HAL/AP_HAL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -14,7 +16,8 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <assert.h>
-#include "DataFlash.h"
+
+#pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DF_PAGE_SIZE 512
 #define DF_NUM_PAGES 16384
@@ -27,7 +30,7 @@ static uint8_t buffer[2][DF_PAGE_SIZE];
 // Public Methods //////////////////////////////////////////////////////////////
 void DataFlash_SITL::Init(const struct LogStructure *structure, uint8_t num_types)
 {
-    DataFlash_Class::Init(structure, num_types);
+    DataFlash_Backend::Init(structure, num_types);
 	if (flash_fd == 0) {
 		flash_fd = open("dataflash.bin", O_RDWR, 0777);
 		if (flash_fd == -1) {
@@ -119,11 +122,6 @@ void DataFlash_SITL::BlockWrite(uint8_t BufferNum, uint16_t IntPageAdr,
            size);
 }
 
-unsigned char DataFlash_SITL::BufferRead (unsigned char BufferNum, uint16_t IntPageAdr)
-{
-	return (unsigned char)buffer[BufferNum][IntPageAdr];
-}
-
 // read size bytes of data to a page. The caller must ensure that
 // the data fits within the page, otherwise it will wrap to the
 // start of the page
@@ -163,5 +161,3 @@ void DataFlash_SITL::ChipErase()
 
 
 #endif
-
-

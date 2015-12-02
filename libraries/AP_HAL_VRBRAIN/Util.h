@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_VRBRAIN_UTIL_H__
 #define __AP_HAL_VRBRAIN_UTIL_H__
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_VRBRAIN_Namespace.h"
 
 class VRBRAIN::VRBRAINUtil : public AP_HAL::Util {
@@ -22,7 +22,7 @@ public:
      */
     bool get_system_id(char buf[40]);
 
-    uint16_t available_memory(void);
+    uint32_t available_memory(void) override;
 
 private:
     int _safety_handle;

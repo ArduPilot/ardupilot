@@ -6,10 +6,10 @@
  *
  */
 
-#include <AP_HAL.h>
-#include <AP_Math.h>
-#include <AP_Common.h>
-#include <AP_Airspeed.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include "AP_Airspeed.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -31,14 +31,12 @@ Airspeed_Calibration::Airspeed_Calibration(const AP_Vehicle::FixedWing &parms) :
  */
 void Airspeed_Calibration::init(float initial_ratio)
 {
-    state.z = 1.0 / sqrtf(initial_ratio);
+    state.z = 1.0f / sqrtf(initial_ratio);
 }
 
 /*
   update the state of the airspeed calibration - needs to be called
   once a second
-
-  On an AVR2560 this costs 1.9 milliseconds per call
  */
 float Airspeed_Calibration::update(float airspeed, const Vector3f &vg)
 {
@@ -125,7 +123,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground)
     // very useful both for testing and to force a reasonable value. 
     float ratio = constrain_float(_ratio, 1.0f, 4.0f);
 
-    _calibration.state.z = 1.0 / sqrtf(ratio);
+    _calibration.state.z = 1.0f / sqrtf(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = get_differential_pressure();

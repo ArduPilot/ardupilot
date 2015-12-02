@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_named_value_int_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- int32_t value; ///< Signed integer value
- char name[10]; ///< Name of the debug variable
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ int32_t value; /*< Signed integer value*/
+ char name[10]; /*< Name of the debug variable*/
 } mavlink_named_value_int_t;
 
 #define MAVLINK_MSG_ID_NAMED_VALUE_INT_LEN 18

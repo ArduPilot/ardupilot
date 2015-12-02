@@ -18,35 +18,31 @@
 #ifndef __EXTERNALLED_H__
 #define __EXTERNALLED_H__
 
-#include <AP_Common.h>
-#include <AP_HAL.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
+#include "NotifyDevice.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #define EXTERNAL_LED_ARMED   61    // Armed LED - AN7
- #define EXTERNAL_LED_GPS     60    // GPS LED - AN6
- #define EXTERNAL_LED_MOTOR1  58    // Motor1 LED - AN4
- #define EXTERNAL_LED_MOTOR2  62    // Motor2 LED - AN8
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
- #define EXTERNAL_LED_GPS     64    // GPS LED - AN10
- #define EXTERNAL_LED_ARMED   65    // Armed LED - AN11
- #define EXTERNAL_LED_MOTOR1  62    // Motor1 LED - AN8
- #define EXTERNAL_LED_MOTOR2  66    // Motor2 LED - AN12
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ #define EXTERNAL_LED_GPS     28    // GPS LED - AN10
+ #define EXTERNAL_LED_ARMED   29    // Armed LED - AN11
+ #define EXTERNAL_LED_MOTOR1  30    // Motor1 LED - AN8
+ #define EXTERNAL_LED_MOTOR2  31    // Motor2 LED - AN12
 #else
  #define EXTERNAL_LED_GPS     0     // pin definitions to allow this lib to build for
- #define EXTERNAL_LED_ARMED   0     // for other boards besides APM1, APM2 even though
+ #define EXTERNAL_LED_ARMED   0     // for other boards even though
  #define EXTERNAL_LED_MOTOR1  0     // they will never be used
  #define EXTERNAL_LED_MOTOR2  0
 #endif
 
-class ExternalLED
+class ExternalLED: public NotifyDevice
 {
 public:
     // constructor
     ExternalLED() : _counter(0), _counter2(0), _pattern(NONE), _pattern_counter(0) {}
 
     // initialise the LED driver
-    void init(void);
+    bool init(void);
     
     // should be called at 50Hz
     void update(void);

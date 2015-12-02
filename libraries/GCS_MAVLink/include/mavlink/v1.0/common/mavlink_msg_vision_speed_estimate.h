@@ -4,10 +4,10 @@
 
 typedef struct __mavlink_vision_speed_estimate_t
 {
- uint64_t usec; ///< Timestamp (microseconds, synced to UNIX time or since system boot)
- float x; ///< Global X speed
- float y; ///< Global Y speed
- float z; ///< Global Z speed
+ uint64_t usec; /*< Timestamp (microseconds, synced to UNIX time or since system boot)*/
+ float x; /*< Global X speed*/
+ float y; /*< Global Y speed*/
+ float z; /*< Global Z speed*/
 } mavlink_vision_speed_estimate_t;
 
 #define MAVLINK_MSG_ID_VISION_SPEED_ESTIMATE_LEN 20

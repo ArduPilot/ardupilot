@@ -4,21 +4,21 @@
 
 typedef struct __mavlink_highres_imu_t
 {
- uint64_t time_usec; ///< Timestamp (microseconds, synced to UNIX time or since system boot)
- float xacc; ///< X acceleration (m/s^2)
- float yacc; ///< Y acceleration (m/s^2)
- float zacc; ///< Z acceleration (m/s^2)
- float xgyro; ///< Angular speed around X axis (rad / sec)
- float ygyro; ///< Angular speed around Y axis (rad / sec)
- float zgyro; ///< Angular speed around Z axis (rad / sec)
- float xmag; ///< X Magnetic field (Gauss)
- float ymag; ///< Y Magnetic field (Gauss)
- float zmag; ///< Z Magnetic field (Gauss)
- float abs_pressure; ///< Absolute pressure in millibar
- float diff_pressure; ///< Differential pressure in millibar
- float pressure_alt; ///< Altitude calculated from pressure
- float temperature; ///< Temperature in degrees celsius
- uint16_t fields_updated; ///< Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature
+ uint64_t time_usec; /*< Timestamp (microseconds, synced to UNIX time or since system boot)*/
+ float xacc; /*< X acceleration (m/s^2)*/
+ float yacc; /*< Y acceleration (m/s^2)*/
+ float zacc; /*< Z acceleration (m/s^2)*/
+ float xgyro; /*< Angular speed around X axis (rad / sec)*/
+ float ygyro; /*< Angular speed around Y axis (rad / sec)*/
+ float zgyro; /*< Angular speed around Z axis (rad / sec)*/
+ float xmag; /*< X Magnetic field (Gauss)*/
+ float ymag; /*< Y Magnetic field (Gauss)*/
+ float zmag; /*< Z Magnetic field (Gauss)*/
+ float abs_pressure; /*< Absolute pressure in millibar*/
+ float diff_pressure; /*< Differential pressure in millibar*/
+ float pressure_alt; /*< Altitude calculated from pressure*/
+ float temperature; /*< Temperature in degrees celsius*/
+ uint16_t fields_updated; /*< Bitmask for fields that have updated since last message, bit 0 = xacc, bit 12: temperature*/
 } mavlink_highres_imu_t;
 
 #define MAVLINK_MSG_ID_HIGHRES_IMU_LEN 62

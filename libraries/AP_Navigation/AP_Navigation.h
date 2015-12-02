@@ -13,7 +13,7 @@
 #ifndef AP_NAVIGATION_H
 #define AP_NAVIGATION_H
 
-#include <AP_Common.h>
+#include <AP_Common/AP_Common.h>
 
 class AP_Navigation {
 public:
@@ -51,8 +51,13 @@ public:
 	
 	// return the distance in meters at which a turn should commence
 	// to allow the vehicle to neatly move to the next track in the
-	// mission when approaching a waypoint
+	// mission when approaching a waypoint. Assumes 90 degree turn
 	virtual float turn_distance(float wp_radius) const = 0;
+
+	// return the distance in meters at which a turn should commence
+	// to allow the vehicle to neatly move to the next track in the
+	// mission when approaching a waypoint
+	virtual float turn_distance(float wp_radius, float turn_angle) const = 0;
 
 	// update the internal state of the navigation controller, given
 	// the previous and next waypoints. This is the step function for

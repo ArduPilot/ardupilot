@@ -2,7 +2,7 @@
 #ifndef __AP_HAL_PX4_RCINPUT_H__
 #define __AP_HAL_PX4_RCINPUT_H__
 
-#include <AP_HAL_PX4.h>
+#include "AP_HAL_PX4.h"
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
@@ -20,6 +20,8 @@ public:
     void clear_overrides();
 
     void _timer_tick(void);
+
+    bool rc_bind(int dsmMode);
 
 private:
     /* override state */

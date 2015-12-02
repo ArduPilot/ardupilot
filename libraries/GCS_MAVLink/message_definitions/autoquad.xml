@@ -56,7 +56,7 @@
 			    <description>Start/stop AutoQuad telemetry values stream.</description>
 			    <param index="1">Start or stop (1 or 0)</param>
 			    <param index="2">Stream frequency in us</param>
-			    <param index="3">Empty</param>
+			    <param index="3">Dataset ID (refer to aq_mavlink.h::mavlinkCustomDataSets enum in AQ flight controller code)</param>
 			    <param index="4">Empty</param>
 			    <param index="5">Empty</param>
 			    <param index="6">Empty</param>
@@ -81,6 +81,12 @@
 			    <param index="5">Empty</param>
 			    <param index="6">Empty</param>
 			    <param index="7">Empty</param>
+			</entry>
+		</enum>
+		<!-- extend MAV_DATA_STREAM -->
+		<enum name="MAV_DATA_STREAM">
+			<entry value="13" name="MAV_DATA_STREAM_PROPULSION">
+				<description>Motor/ESC telemetry data.</description>
 			</entry>
 		</enum>
 	</enums>
@@ -108,6 +114,29 @@
 			<field type="float" name="value18">value18</field>
 			<field type="float" name="value19">value19</field>
 			<field type="float" name="value20">value20</field>
+		</message>
+		<message id="152" name="AQ_ESC_TELEMETRY">
+			<description>Sends ESC32 telemetry data for up to 4 motors. Multiple messages may be sent in sequence when system has > 4 motors. Data is described as follows: 
+				// unsigned int state :   3;
+			    // unsigned int vin :	  12;  // x 100
+			    // unsigned int amps :	  14;  // x 100
+			    // unsigned int rpm :	  15;
+			    // unsigned int duty :	  8;   // x (255/100)
+			    // - Data Version 2 -
+			    //     unsigned int errors :    9;   // Bad detects error count
+			    // - Data Version 3 -
+			    //     unsigned int temp   :    9;   // (Deg C + 32) * 4
+			    // unsigned int errCode : 3;
+			</description>
+			<field type="uint32_t" name="time_boot_ms">Timestamp of the component clock since boot time in ms.</field>
+			<field type="uint8_t" name="seq">Sequence number of message (first set of 4 motors is #1, next 4 is #2, etc).</field>
+			<field type="uint8_t" name="num_motors">Total number of active ESCs/motors on the system.</field>
+			<field type="uint8_t" name="num_in_seq">Number of active ESCs in this sequence (1 through this many array members will be populated with data)</field>
+			<field type="uint8_t[4]" name="escid">ESC/Motor ID</field>
+			<field type="uint16_t[4]" name="status_age">Age of each ESC telemetry reading in ms compared to boot time. A value of 0xFFFF means timeout/no data.</field>
+			<field type="uint8_t[4]" name="data_version">Version of data structure (determines contents).</field>
+			<field type="uint32_t[4]" name="data0">Data bits 1-32 for each ESC.</field>
+			<field type="uint32_t[4]" name="data1">Data bits 33-64 for each ESC.</field>
 		</message>
 	</messages>
 </mavlink>

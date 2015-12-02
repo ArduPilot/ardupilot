@@ -16,10 +16,10 @@
 #ifndef AP_L1_CONTROL_H
 #define AP_L1_CONTROL_H
 
-#include <AP_Math.h>
-#include <AP_AHRS.h>
-#include <AP_Param.h>
-#include <AP_Navigation.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Param/AP_Param.h>
+#include <AP_Navigation/AP_Navigation.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
@@ -44,6 +44,7 @@ public:
 
 	int32_t target_bearing_cd(void) const;
 	float turn_distance(float wp_radius) const;
+	float turn_distance(float wp_radius, float turn_angle) const;
 	void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP);
 	void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction);
 	void update_heading_hold(int32_t navigation_heading_cd);
@@ -52,9 +53,7 @@ public:
 
     // set the default NAVL1_PERIOD
     void set_default_period(float period) {
-        if (!_L1_period.load()) {
-            _L1_period.set(period);
-        }
+        _L1_period.set_default(period);
     }
 
 	// this supports the NAVl1_* user settable parameters
@@ -99,6 +98,13 @@ private:
 
     // prevent indecision in waypoint tracking
     void _prevent_indecision(float &Nu);
+
+    // integral feedback to correct crosstrack error. Used to ensure xtrack converges to zero.
+    // For tuning purposes it's helpful to clear the integrator when it changes so a _prev is used
+    float _L1_xtrack_i = 0;
+    AP_Float _L1_xtrack_i_gain;
+    float _L1_xtrack_i_gain_prev = 0;
+
 };
 
 

@@ -4,12 +4,12 @@
 
 typedef struct __mavlink_gps_status_t
 {
- uint8_t satellites_visible; ///< Number of satellites visible
- uint8_t satellite_prn[20]; ///< Global satellite ID
- uint8_t satellite_used[20]; ///< 0: Satellite not used, 1: used for localization
- uint8_t satellite_elevation[20]; ///< Elevation (0: right on top of receiver, 90: on the horizon) of satellite
- uint8_t satellite_azimuth[20]; ///< Direction of satellite, 0: 0 deg, 255: 360 deg.
- uint8_t satellite_snr[20]; ///< Signal to noise ratio of satellite
+ uint8_t satellites_visible; /*< Number of satellites visible*/
+ uint8_t satellite_prn[20]; /*< Global satellite ID*/
+ uint8_t satellite_used[20]; /*< 0: Satellite not used, 1: used for localization*/
+ uint8_t satellite_elevation[20]; /*< Elevation (0: right on top of receiver, 90: on the horizon) of satellite*/
+ uint8_t satellite_azimuth[20]; /*< Direction of satellite, 0: 0 deg, 255: 360 deg.*/
+ uint8_t satellite_snr[20]; /*< Signal to noise ratio of satellite*/
 } mavlink_gps_status_t;
 
 #define MAVLINK_MSG_ID_GPS_STATUS_LEN 101

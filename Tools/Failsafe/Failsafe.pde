@@ -9,8 +9,8 @@ version 2.1 of the License, or (at your option) any later version.
 
 // Libraries
 #include <FastSerial.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include <Arduino_Mega_ISR_Registry.h>
 #include <APM_RC.h>         // ArduPilot Mega RC Library
 

@@ -4,16 +4,15 @@
 #ifndef __DATAFLASH_SITL_H__
 #define __DATAFLASH_SITL_H__
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL.h>
-#include "DataFlash.h"
+#include <AP_HAL/AP_HAL.h>
+#include "DataFlash_Block.h"
 
 class DataFlash_SITL : public DataFlash_Block
 {
 private:
     //Methods
-    uint8_t           BufferRead (uint8_t BufferNum, uint16_t IntPageAdr);
     void              BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_t Data);
     void              BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait);
     void              PageToBuffer(uint8_t BufferNum, uint16_t PageAdr);
@@ -41,12 +40,12 @@ private:
     AP_HAL::SPIDeviceDriver *_spi;
     AP_HAL::Semaphore *_spi_sem;
 public:
-
-    DataFlash_SITL() {}
+    DataFlash_SITL(DataFlash_Class &front) :
+        DataFlash_Block(front) { }
     void        Init(const struct LogStructure *structure, uint8_t num_types);
     void        ReadManufacturerID();
     bool        CardInserted();
 };
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #endif // __DATAFLASH_SITL_H__

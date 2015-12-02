@@ -25,7 +25,7 @@
 #ifndef __AP_GPS_MTK_H__
 #define __AP_GPS_MTK_H__
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 #include "AP_GPS_MTK_Common.h"
 
 class AP_GPS_MTK : public AP_GPS_Backend {
@@ -78,7 +78,7 @@ private:
     // Buffer parse & GPS state update
     void        _parse_gps();
 
-    static const prog_char _initialisation_blob[];
+    static const char _initialisation_blob[];
 };
 
 #endif  // __AP_GPS_MTK_H__

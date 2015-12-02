@@ -1,6 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #include "AP_HAL_VRBRAIN.h"
@@ -22,6 +22,7 @@
 #include "Storage.h"
 #include "RCOutput.h"
 #include "RCInput.h"
+#include <AP_Scheduler/AP_Scheduler.h>
 
 using namespace VRBRAIN;
 
@@ -37,8 +38,6 @@ VRBRAINScheduler::VRBRAINScheduler() :
 
 void VRBRAINScheduler::init(void *unused)
 {
-    _sketch_start_time = hrt_absolute_time();
-
     _main_task_pid = getpid();
 
     // setup the timer thread - this will call tasks at 1kHz
@@ -75,16 +74,6 @@ void VRBRAINScheduler::init(void *unused)
 	pthread_create(&_io_thread_ctx, &thread_attr, (pthread_startroutine_t)&VRBRAIN::VRBRAINScheduler::_io_thread, this);
 }
 
-uint32_t VRBRAINScheduler::micros()
-{
-    return (uint32_t)(hrt_absolute_time() - _sketch_start_time);
-}
-
-uint32_t VRBRAINScheduler::millis()
-{
-    return hrt_absolute_time() / 1000;
-}
-
 /**
    delay for a specified number of microseconds using a semaphore wait
  */
@@ -105,9 +94,9 @@ void VRBRAINScheduler::delay_microseconds(uint16_t usec)
         perf_end(_perf_delay);
         return;
     }
-	uint32_t start = micros();
-    uint32_t dt;
-	while ((dt=(micros() - start)) < usec) {
+	uint64_t start = AP_HAL::micros64();
+    uint64_t dt;
+	while ((dt=(AP_HAL::micros64() - start)) < usec) {
 		up_udelay(usec - dt);
 	}
     perf_end(_perf_delay);
@@ -120,9 +109,9 @@ void VRBRAINScheduler::delay(uint16_t ms)
         return;
     }
     perf_begin(_perf_delay);
-	uint64_t start = hrt_absolute_time();
+	uint64_t start = AP_HAL::micros64();
     
-    while ((hrt_absolute_time() - start)/1000 < ms && 
+    while ((AP_HAL::micros64() - start)/1000 < ms && 
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
@@ -210,7 +199,7 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     if (!_timer_suspended) {
         // now call the timer based drivers
         for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i] != NULL) {
+            if (_timer_proc[i]) {
                 _timer_proc[i]();
             }
         }
@@ -219,7 +208,7 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     }
 
     // and the failsafe, if one is setup
-    if (_failsafe != NULL) {
+    if (_failsafe) {
         _failsafe();
     }
 
@@ -229,8 +218,11 @@ void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
     _in_timer_proc = false;
 }
 
+extern bool vrbrain_ran_overtime;
+
 void *VRBRAINScheduler::_timer_thread(void)
 {
+    uint32_t last_ran_overtime = 0;
     while (!_hal_initialized) {
         poll(NULL, 0, 1);        
     }
@@ -247,6 +239,12 @@ void *VRBRAINScheduler::_timer_thread(void)
 
         // process any pending RC input requests
         ((VRBRAINRCInput *)hal.rcin)->_timer_tick();
+
+        if (vrbrain_ran_overtime && AP_HAL::millis() - last_ran_overtime > 2000) {
+            last_ran_overtime = AP_HAL::millis();
+//            printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+//            hal.console->printf("Overtime in task %d\n", (int)AP_Scheduler::current_task);
+        }
     }
     return NULL;
 }
@@ -261,7 +259,7 @@ void VRBRAINScheduler::_run_io(void)
     if (!_timer_suspended) {
         // now call the IO based drivers
         for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i] != NULL) {
+            if (_io_proc[i]) {
                 _io_proc[i]();
             }
         }
@@ -307,15 +305,6 @@ void *VRBRAINScheduler::_io_thread(void)
     return NULL;
 }
 
-void VRBRAINScheduler::panic(const prog_char_t *errormsg)
-{
-    write(1, errormsg, strlen(errormsg));
-    write(1, "\n", 1);
-    hal.scheduler->delay_microseconds(10000);
-    _vrbrain_thread_should_exit = true;
-    exit(1);
-}
-
 bool VRBRAINScheduler::in_timerprocess()
 {
     return getpid() != _main_task_pid;
@@ -327,8 +316,8 @@ bool VRBRAINScheduler::system_initializing() {
 
 void VRBRAINScheduler::system_initialized() {
     if (_initialized) {
-        panic(PSTR("PANIC: scheduler::system_initialized called"
-                   "more than once"));
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
+                   "more than once");
     }
     _initialized = true;
 }

@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_rangefinder_t
 {
- float distance; ///< distance in meters
- float voltage; ///< raw voltage if available, zero otherwise
+ float distance; /*< distance in meters*/
+ float voltage; /*< raw voltage if available, zero otherwise*/
 } mavlink_rangefinder_t;
 
 #define MAVLINK_MSG_ID_RANGEFINDER_LEN 8

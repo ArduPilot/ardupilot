@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_log_request_end_t
 {
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_log_request_end_t;
 
 #define MAVLINK_MSG_ID_LOG_REQUEST_END_LEN 2

@@ -59,12 +59,12 @@
 #include <unistd.h>
 
 #pragma pack(1)
-#include "mavlink_types.h"
+#include <GCS_MAVLink/include/mavlink/v1.0/mavlink_types.h>
 
 mavlink_system_t         mavlink_system;
 void                    comm_send_ch(mavlink_channel_t chan, uint8_t ch);
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
-#include "ardupilotmega/mavlink.h"
+#include <GCS_MAVLink/include/mavlink/v1.0/ardupilotmega/mavlink.h>
 
 #define TARGET_SYSTEM           7       /* XXX what should these really be? */
 #define TARGET_COMPONENT        1

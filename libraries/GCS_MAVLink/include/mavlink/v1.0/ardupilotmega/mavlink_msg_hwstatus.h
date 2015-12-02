@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_hwstatus_t
 {
- uint16_t Vcc; ///< board voltage (mV)
- uint8_t I2Cerr; ///< I2C error count
+ uint16_t Vcc; /*< board voltage (mV)*/
+ uint8_t I2Cerr; /*< I2C error count*/
 } mavlink_hwstatus_t;
 
 #define MAVLINK_MSG_ID_HWSTATUS_LEN 3

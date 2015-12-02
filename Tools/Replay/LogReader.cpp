@@ -1,507 +1,338 @@
-#include <AP_HAL.h>
-#include <AP_Common.h>
-#include <AP_Math.h>
-#include <AP_Airspeed.h>
-#include <AP_Compass.h>
-#include <AP_GPS.h>
-#include <AP_Compass.h>
-#include <AP_Baro.h>
-#include <AP_InertialSensor.h>
-#include <DataFlash.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <DataFlash/DataFlash.h>
 
 #include "LogReader.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+
+#include "MsgHandler.h"
+
+#define DEBUG 0
+#if DEBUG
+# define debug(fmt, args...)     printf(fmt "\n", ##args)
+#else
+# define debug(fmt, args...)
+#endif
+
+#define streq(x, y) (!strcmp(x, y))
 
 extern const AP_HAL::HAL& hal;
 
-LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro_HIL &_baro, AP_Compass_HIL &_compass, AP_GPS &_gps, AP_Airspeed &_airspeed) :
-    vehicle(VEHICLE_UNKNOWN),
-    fd(-1),
+LogReader::LogReader(AP_AHRS &_ahrs, AP_InertialSensor &_ins, AP_Baro &_baro, Compass &_compass, AP_GPS &_gps, 
+                     AP_Airspeed &_airspeed, DataFlash_Class &_dataflash, const struct LogStructure *_structure, 
+                     uint8_t _num_types, const char **&_nottypes):
+    vehicle(VehicleType::VEHICLE_UNKNOWN),
     ahrs(_ahrs),
     ins(_ins),
     baro(_baro),
     compass(_compass),
     gps(_gps),
     airspeed(_airspeed),
-    accel_mask(3),
-    gyro_mask(3)
-{}
-
-bool LogReader::open_log(const char *logfile)
+    dataflash(_dataflash),
+    structure(_structure),
+    num_types(_num_types),
+    accel_mask(7),
+    gyro_mask(7),
+    last_timestamp_usec(0),
+    installed_vehicle_specific_parsers(false),
+    nottypes(_nottypes)
 {
-    fd = ::open(logfile, O_RDONLY);
-    if (fd == -1) {
-        return false;
-    }
-    return true;
 }
 
+struct log_Format deferred_formats[LOGREADER_MAX_FORMATS];
 
-struct PACKED log_Plane_Compass {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-};
-
-struct PACKED log_Copter_Compass {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-    int16_t motor_offset_x;
-    int16_t motor_offset_y;
-    int16_t motor_offset_z;
-};
-
-struct PACKED log_Plane_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
-};
-
-struct PACKED log_AIRSPEED {
-    LOG_PACKET_HEADER;
-    uint32_t timestamp;
-    float   airspeed;
-    float   diffpressure;
-    int16_t temperature;
-};
-
-struct PACKED log_Copter_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t control_roll;
-    int16_t roll;
-    int16_t control_pitch;
-    int16_t pitch;
-    uint16_t control_yaw;
-    uint16_t yaw;
-};
-
-struct PACKED log_Copter_Nav_Tuning {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    float    desired_pos_x;
-    float    desired_pos_y;
-    float    pos_x;
-    float    pos_y;
-    float    desired_vel_x;
-    float    desired_vel_y;
-    float    vel_x;
-    float    vel_y;
-    float    desired_accel_x;
-    float    desired_accel_y;
-};
-
-struct PACKED log_Rover_Attitude {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-};
-
-struct PACKED log_Rover_Compass {
-    LOG_PACKET_HEADER;
-    uint32_t time_ms;
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-    int16_t offset_x;
-    int16_t offset_y;
-    int16_t offset_z;
-    int16_t motor_offset_x;
-    int16_t motor_offset_y;
-    int16_t motor_offset_z;
-};
-
-void LogReader::process_plane(uint8_t type, uint8_t *data, uint16_t length)
-{
-    switch (type) {
-    case LOG_PLANE_COMPASS_MSG: {
-        struct log_Plane_Compass msg;
-        if(sizeof(msg) != length) {
-            printf("Bad plane COMPASS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
-        break;
-    }
-
-    case LOG_PLANE_ATTITUDE_MSG: {
-        struct log_Plane_Attitude msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length %u should be %u\n", (unsigned)length, (unsigned)sizeof(msg));
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
-        break;
-    }
-
-    case LOG_PLANE_AIRSPEED_MSG: {
-        struct log_AIRSPEED msg;
-        if(sizeof(msg) != length) {
-            printf("Bad AIRSPEED length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        airspeed.setHIL(msg.airspeed, msg.diffpressure, msg.temperature);
-        break;
-    }
+// some log entries (e.g. "NTUN") are used by the different vehicle
+// types with wildy varying payloads.  We thus can't use the same
+// parser for just any e.g. NTUN message.  We defer the registration
+// of a parser for these messages until we know what model we're
+// dealing with.
+void LogReader::maybe_install_vehicle_specific_parsers() {
+    if (! installed_vehicle_specific_parsers &&
+	vehicle != VehicleType::VEHICLE_UNKNOWN) {
+	switch(vehicle) {
+	case VehicleType::VEHICLE_COPTER:
+	    for (uint8_t i = 0; i<LOGREADER_MAX_FORMATS; i++) {
+		if (deferred_formats[i].type != 0) {
+		    msgparser[i] = new LR_MsgHandler_NTUN_Copter
+			(deferred_formats[i], dataflash, last_timestamp_usec,
+                         inavpos);
+		}
+	    }
+	    break;
+	case VehicleType::VEHICLE_PLANE:
+	    break;
+	case VehicleType::VEHICLE_ROVER:
+	    break;
+	case VehicleType::VEHICLE_UNKNOWN:
+	    break;
+	}
+	installed_vehicle_specific_parsers = true;
     }
 }
 
-void LogReader::process_rover(uint8_t type, uint8_t *data, uint16_t length)
-{
-    switch (type) {
-    case LOG_ROVER_COMPASS_MSG: {
-        struct log_Rover_Compass msg;
-        if(sizeof(msg) != length) {
-            printf("Bad rover COMPASS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
-        break;
-    }
+LR_MsgHandler_PARM *parameter_handler;
 
-    case LOG_ROVER_ATTITUDE_MSG: {
-        struct log_Rover_Attitude msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length\n");
-            exit(1);
+/*
+  messages which we will be generating, so should be discarded
+ */
+static const char *generated_names[] = { "EKF1", "EKF2", "EKF3", "EKF4", "EKF5",
+                                         "NKF1", "NKF2", "NKF3", "NKF4", "NKF5",
+                                         "AHR2", "POS", "CHEK", NULL };
+
+/*
+  see if a type is in a list of types
+ */
+bool LogReader::in_list(const char *type, const char *list[])
+{
+    if (list == NULL) {
+        return false;
+    }
+    for (uint8_t i=0; list[i] != NULL; i++) {
+        if (strcmp(type, list[i]) == 0) {
+            return true;
         }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
-        break;
     }
-    }
+    return false;
 }
 
-void LogReader::process_copter(uint8_t type, uint8_t *data, uint16_t length)
+/*
+  map from an incoming format type to an outgoing format type
+ */
+uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
 {
-    switch (type) {
-    case LOG_COPTER_COMPASS_MSG: {
-        struct log_Copter_Compass msg;
-        if(sizeof(msg) != length) {
-            printf("Bad copter COMPASS length %u expected %u\n", (unsigned)length, (unsigned)sizeof(msg));
-            exit(1);
+    if (mapped_msgid[intype] != 0) {
+        // already mapped
+        return mapped_msgid[intype];
+    }
+    // see if it is in our structure list
+    for (uint8_t i=0; i<num_types; i++) {
+        if (strcmp(name, structure[i].name) == 0) {
+            mapped_msgid[intype] = structure[i].msg_type;
+            return mapped_msgid[intype];
         }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        compass.setHIL(Vector3f(msg.mag_x - msg.offset_x, msg.mag_y - msg.offset_y, msg.mag_z - msg.offset_z));
-        compass.set_offsets(msg.offset_x, msg.offset_y, msg.offset_z);
-        break;
     }
-
-    case LOG_COPTER_ATTITUDE_MSG: {
-        struct log_Copter_Attitude msg;
-        if(sizeof(msg) != length) {
-            printf("Bad ATTITUDE length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
-        break;
-    }
-
-    case LOG_COPTER_NAV_TUNING_MSG: {
-        struct log_Copter_Nav_Tuning msg;
-        if(sizeof(msg) != length) {
-            printf("Bad copter NAV_TUNING length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        inavpos = Vector3f(msg.pos_x * 0.01f, 
-                           msg.pos_y * 0.01f,
-                           0);
-        break;
-    }
-    }
+    // it is a new one, allocate an ID
+    mapped_msgid[intype] = next_msgid++;
+    return mapped_msgid[intype];    
 }
 
-bool LogReader::set_parameter(const char *name, float value)
+bool LogReader::save_message_type(const char *name)
 {
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(name, &var_type);
-    if (vp == NULL) {
-        return false;
+    bool save_message = !in_list(name, generated_names);
+    if (save_chek_messages && strcmp(name, "CHEK") == 0) {
+        save_message = true;
     }
-    if (var_type == AP_PARAM_FLOAT) {
-        ((AP_Float *)vp)->set(value);
-        ::printf("Set %s to %f\n", name, value);
-    } else if (var_type == AP_PARAM_INT32) {
-        ((AP_Int32 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
-    } else if (var_type == AP_PARAM_INT16) {
-        ((AP_Int16 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
-    } else if (var_type == AP_PARAM_INT8) {
-        ((AP_Int8 *)vp)->set(value);
-        ::printf("Set %s to %d\n", name, (int)value);
-    } else {
-        // we don't support mavlink set on this parameter
-        return false;
-    }            
-    return true;
+    return save_message;
 }
 
-bool LogReader::update(uint8_t &type)
+bool LogReader::handle_log_format_msg(const struct log_Format &f) 
 {
-    uint8_t hdr[3];
-    if (::read(fd, hdr, 3) != 3) {
-        return false;
-    }
-    if (hdr[0] != HEAD_BYTE1 || hdr[1] != HEAD_BYTE2) {
-        printf("bad log header\n");
-        return false;
-    }
+	char name[5];
+	memset(name, '\0', 5);
+	memcpy(name, f.name, 4);
+	debug("Defining log format for type (%d) (%s)\n", f.type, name);
 
-    if (hdr[2] == LOG_FORMAT_MSG) {
-        struct log_Format &f = formats[num_formats];
-        memcpy(&f, hdr, 3);
-        if (::read(fd, &f.type, sizeof(f)-3) != sizeof(f)-3) {
-            return false;
+        if (save_message_type(name)) {
+            /* 
+               any messages which we won't be generating internally in
+               replay should get the original FMT header
+               We need to remap the type in the FMT header to avoid
+               conflicts with our current table
+            */
+            struct log_Format f_mapped = f;
+            f_mapped.type = map_fmt_type(name, f.type);
+            dataflash.WriteBlock(&f_mapped, sizeof(f_mapped));
         }
-        if (num_formats < LOGREADER_MAX_FORMATS-1) {
-            num_formats++;
+
+        if (msgparser[f.type] != NULL) {
+            return true;
         }
-        type = f.type;
+
+	// map from format name to a parser subclass:
+	if (streq(name, "PARM")) {
+            parameter_handler = new LR_MsgHandler_PARM(formats[f.type], dataflash,
+                                                    last_timestamp_usec);
+	    msgparser[f.type] = parameter_handler;
+	} else if (streq(name, "GPS")) {
+	    msgparser[f.type] = new LR_MsgHandler_GPS(formats[f.type],
+						   dataflash,
+                                                   last_timestamp_usec,
+                                                   gps, ground_alt_cm,
+                                                   rel_altitude);
+	} else if (streq(name, "GPS2")) {
+	    msgparser[f.type] = new LR_MsgHandler_GPS2(formats[f.type], dataflash,
+                                                    last_timestamp_usec,
+						    gps, ground_alt_cm,
+						    rel_altitude);
+	} else if (streq(name, "MSG")) {
+	    msgparser[f.type] = new LR_MsgHandler_MSG(formats[f.type], dataflash,
+                                                   last_timestamp_usec,
+						   vehicle, ahrs);
+	} else if (streq(name, "IMU")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMU(formats[f.type], dataflash,
+                                                   last_timestamp_usec,
+						   accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMU2")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMU2(formats[f.type], dataflash,
+                                                    last_timestamp_usec,
+						    accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMU3")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMU3(formats[f.type], dataflash,
+                                                    last_timestamp_usec,
+						    accel_mask, gyro_mask, ins);
+	} else if (streq(name, "IMT")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT(formats[f.type], dataflash,
+                                                      last_timestamp_usec,
+                                                      accel_mask, gyro_mask, use_imt, ins);
+	} else if (streq(name, "IMT2")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT2(formats[f.type], dataflash,
+                                                       last_timestamp_usec,
+                                                       accel_mask, gyro_mask, use_imt, ins);
+	} else if (streq(name, "IMT3")) {
+	    msgparser[f.type] = new LR_MsgHandler_IMT3(formats[f.type], dataflash,
+                                                       last_timestamp_usec,
+                                                       accel_mask, gyro_mask, use_imt, ins);
+	} else if (streq(name, "SIM")) {
+	  msgparser[f.type] = new LR_MsgHandler_SIM(formats[f.type], dataflash,
+                                                 last_timestamp_usec,
+						 sim_attitude);
+	} else if (streq(name, "BARO")) {
+	  msgparser[f.type] = new LR_MsgHandler_BARO(formats[f.type], dataflash,
+                                                  last_timestamp_usec, baro);
+	} else if (streq(name, "ARM")) {
+	  msgparser[f.type] = new LR_MsgHandler_ARM(formats[f.type], dataflash,
+                                                  last_timestamp_usec);
+	} else if (streq(name, "EV")) {
+	  msgparser[f.type] = new LR_MsgHandler_Event(formats[f.type], dataflash,
+                                                  last_timestamp_usec);
+	} else if (streq(name, "AHR2")) {
+	  msgparser[f.type] = new LR_MsgHandler_AHR2(formats[f.type], dataflash,
+						  last_timestamp_usec,
+                                                  ahr2_attitude);
+	} else if (streq(name, "ATT")) {
+	  // this parser handles *all* attitude messages - the common one,
+	  // and also the rover/copter/plane-specific (old) messages
+	  msgparser[f.type] = new LR_MsgHandler_ATT(formats[f.type], dataflash,
+						 last_timestamp_usec,
+                                                 attitude);
+	} else if (streq(name, "MAG")) {
+	  msgparser[f.type] = new LR_MsgHandler_MAG(formats[f.type], dataflash,
+						 last_timestamp_usec, compass);
+	} else if (streq(name, "MAG2")) {
+	  msgparser[f.type] = new LR_MsgHandler_MAG2(formats[f.type], dataflash,
+						 last_timestamp_usec, compass);
+	} else if (streq(name, "NTUN")) {
+	    // the label "NTUN" is used by rover, copter and plane -
+	    // and they all look different!  creation of a parser is
+	    // deferred until we receive a MSG log entry telling us
+	    // which vehicle type to use.  Sucks.
+	    memcpy(&deferred_formats[f.type], &formats[f.type],
+                   sizeof(struct log_Format));
+	} else if (streq(name, "ARSP")) { // plane-specific(?!)
+	    msgparser[f.type] = new LR_MsgHandler_ARSP(formats[f.type], dataflash,
+                                                    last_timestamp_usec,
+                                                    airspeed);
+	} else if (streq(name, "FRAM")) {
+	    msgparser[f.type] = new LR_MsgHandler_FRAM(formats[f.type], dataflash,
+                                                    last_timestamp_usec);
+	} else if (streq(name, "CHEK")) {
+	  msgparser[f.type] = new LR_MsgHandler_CHEK(formats[f.type], dataflash,
+                                                     last_timestamp_usec,
+                                                     check_state);
+	} else {
+            debug("  No parser for (%s)\n", name);
+	}
+
         return true;
-    }
+}
 
-    uint8_t i;
-    for (i=0; i<num_formats; i++) {
-        if (formats[i].type == hdr[2]) break;
-    }
-    if (i == num_formats) {
-        return false;
-    }
-    const struct log_Format &f = formats[i];
-    
-    uint8_t data[f.length];
-    memcpy(data, hdr, 3);
-    if (::read(fd, &data[3], f.length-3) != f.length-3) {
-        return false;
-    }
+bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
+    char name[5];
+    memset(name, '\0', 5);
+    memcpy(name, f.name, 4);
 
-    switch (f.type) {
-    case LOG_MESSAGE_MSG: {
-        struct log_Message msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad MESSAGE length\n");
+    if (save_message_type(name)) {
+        if (mapped_msgid[msg[2]] == 0) {
+            printf("Unknown msgid %u\n", (unsigned)msg[2]);
             exit(1);
         }
-        memcpy(&msg, data, sizeof(msg));
-        if (strncmp(msg.msg, "ArduPlane", strlen("ArduPlane")) == 0) {
-            vehicle = VEHICLE_PLANE;
-            ::printf("Detected Plane\n");
-            ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
-            ahrs.set_fly_forward(true);
-        } else if (strncmp(msg.msg, "ArduCopter", strlen("ArduCopter")) == 0) {
-            vehicle = VEHICLE_COPTER;
-            ::printf("Detected Copter\n");
-            ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
-            ahrs.set_fly_forward(false);
-        } else if (strncmp(msg.msg, "ArduRover", strlen("ArduRover")) == 0) {
-            vehicle = VEHICLE_ROVER;
-            ::printf("Detected Rover\n");
-            ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
-            ahrs.set_fly_forward(true);
+        msg[2] = mapped_msgid[msg[2]];
+        if (!in_list(name, nottypes)) {
+            dataflash.WriteBlock(msg, f.length);        
         }
-        break;
+        // a MsgHandler would probably have found a timestamp and
+        // caled stop_clock.  This runs IO, clearing dataflash's
+        // buffer.
+        hal.scheduler->stop_clock(last_timestamp_usec);
     }
 
-    case LOG_IMU_MSG: {
-        struct log_IMU msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad IMU length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        if (gyro_mask & 1) {
-            ins.set_gyro(0, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        }
-        if (accel_mask & 1) {
-            ins.set_accel(0, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
-        }
-        break;
+    LR_MsgHandler *p = msgparser[f.type];
+    if (p == NULL) {
+	return true;
     }
 
-    case LOG_IMU2_MSG: {
-        struct log_IMU msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad IMU2 length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        if (gyro_mask & 2) {
-            ins.set_gyro(1, Vector3f(msg.gyro_x, msg.gyro_y, msg.gyro_z));
-        }
-        if (accel_mask & 2) {
-            ins.set_accel(1, Vector3f(msg.accel_x, msg.accel_y, msg.accel_z));
-        }
-        break;
-    }
+    p->process_message(msg);
 
-    case LOG_GPS_MSG: {
-        struct log_GPS msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad GPS length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.apm_time);
-        Location loc;
-        loc.lat = msg.latitude;
-        loc.lng = msg.longitude;
-        loc.alt = msg.altitude;
-        loc.options = 0;
-
-        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
-                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
-                     msg.vel_z);
-        gps.setHIL(0, (AP_GPS::GPS_Status)msg.status,
-                   msg.apm_time,
-                   loc,
-                   vel,
-                   msg.num_sats,
-                   msg.hdop,
-                   msg.vel_z != 0);
-        if (msg.status == 3 && ground_alt_cm == 0) {
-            ground_alt_cm = msg.altitude;
-        }
-        rel_altitude = msg.rel_altitude*0.01f;
-        break;
-    }
-
-    case LOG_GPS2_MSG: {
-        struct log_GPS2 msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad GPS2 length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.apm_time);
-        Location loc;
-        loc.lat = msg.latitude;
-        loc.lng = msg.longitude;
-        loc.alt = msg.altitude;
-        loc.options = 0;
-
-        Vector3f vel(msg.ground_speed*0.01f*cosf(radians(msg.ground_course*0.01f)),
-                     msg.ground_speed*0.01f*sinf(radians(msg.ground_course*0.01f)),
-                     msg.vel_z);
-        gps.setHIL(1, (AP_GPS::GPS_Status)msg.status,
-                   msg.apm_time,
-                   loc,
-                   vel,
-                   msg.num_sats,
-                   msg.hdop,
-                   msg.vel_z != 0);
-        if (msg.status == 3 && ground_alt_cm == 0) {
-            ground_alt_cm = msg.altitude;
-        }
-        break;
-    }
-
-    case LOG_SIMSTATE_MSG: {
-        struct log_AHRS msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad SIMSTATE length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.time_ms);
-        sim_attitude = Vector3f(msg.roll*0.01f, msg.pitch*0.01f, msg.yaw*0.01f);
-        break;
-    }
-
-    case LOG_BARO_MSG: {
-        struct log_BARO msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad LOG_BARO length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        wait_timestamp(msg.timestamp);
-        baro.setHIL(msg.pressure, msg.temperature*0.01f);
-        break;
-    }
-
-    case LOG_PARAMETER_MSG: {
-        struct log_Parameter msg;
-        if(sizeof(msg) != f.length) {
-            printf("Bad LOG_PARAMETER length\n");
-            exit(1);
-        }
-        memcpy(&msg, data, sizeof(msg));
-        set_parameter(msg.name, msg.value);
-        break;        
-    }
-        
-
-    default:
-        if (vehicle == VEHICLE_PLANE) {
-            process_plane(f.type, data, f.length);
-        } else if (vehicle == VEHICLE_COPTER) {
-            process_copter(f.type, data, f.length);
-        } else if (vehicle == VEHICLE_ROVER) {
-            process_rover(f.type, data, f.length);
-        }
-        break;
-    }
-
-    type = f.type;
+    maybe_install_vehicle_specific_parsers();
 
     return true;
 }
 
-void LogReader::wait_timestamp(uint32_t timestamp)
-{
-    hal.scheduler->stop_clock(timestamp*1000UL);
-}
-
-bool LogReader::wait_type(uint8_t wtype)
+bool LogReader::wait_type(const char *wtype)
 {
     while (true) {
-        uint8_t type;
+        char type[5];
         if (!update(type)) {
             return false;
         }
-        if (wtype == type) {
+        if (streq(type,wtype)) {
             break;
         }
     }
     return true;
+}
+
+
+bool LogReader::set_parameter(const char *name, float value)
+{
+    if (parameter_handler == NULL) {
+        ::printf("No parameter format message found");
+        return false;
+    }
+    return parameter_handler->set_parameter(name, value);
+}
+
+/*
+  called when the last FMT message has been processed
+ */
+void LogReader::end_format_msgs(void)
+{
+    // write out any formats we will be producing
+    for (uint8_t i=0; generated_names[i]; i++) {
+        for (uint8_t n=0; n<num_types; n++) {
+            if (strcmp(generated_names[i], structure[n].name) == 0) {
+                const struct LogStructure *s = &structure[n];
+                struct log_Format pkt {};
+                pkt.head1 = HEAD_BYTE1;
+                pkt.head2 = HEAD_BYTE2;
+                pkt.msgid = LOG_FORMAT_MSG;
+                pkt.type = s->msg_type;
+                pkt.length = s->msg_len;
+                strncpy(pkt.name, s->name, sizeof(pkt.name));
+                strncpy(pkt.format, s->format, sizeof(pkt.format));
+                strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
+                dataflash.WriteBlock(&pkt, sizeof(pkt));
+            }
+        }
+    }
 }

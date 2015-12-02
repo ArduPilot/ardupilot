@@ -17,6 +17,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("O3")
+
 #include "AP_Math.h"
 
 #define HALF_SQRT_2 0.70710678118654757f
@@ -32,8 +34,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     case ROTATION_MAX:
         return;
     case ROTATION_YAW_45: {
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -42,8 +44,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_135: {
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -51,8 +53,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         x = -x; y = -y;
         return;
     case ROTATION_YAW_225: {
-        tmp = HALF_SQRT_2*(y - x);
-        y   = -HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(y - x);
+        y   = -HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -61,8 +63,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_YAW_315: {
-        tmp = HALF_SQRT_2*(x + y);
-        y   = HALF_SQRT_2*(y - x);
+        tmp = HALF_SQRT_2*(float)(x + y);
+        y   = HALF_SQRT_2*(float)(y - x);
         x = tmp;
         return;
     }
@@ -71,8 +73,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_45: {
-        tmp = HALF_SQRT_2*(x + y);
-        y   = HALF_SQRT_2*(x - y);
+        tmp = HALF_SQRT_2*(float)(x + y);
+        y   = HALF_SQRT_2*(float)(x - y);
         x = tmp; z = -z;
         return;
     }
@@ -81,8 +83,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_135: {
-        tmp = HALF_SQRT_2*(y - x);
-        y   = HALF_SQRT_2*(y + x);
+        tmp = HALF_SQRT_2*(float)(y - x);
+        y   = HALF_SQRT_2*(float)(y + x);
         x = tmp; z = -z;
         return;
     }
@@ -91,8 +93,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_225: {
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(y - x);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(y - x);
         x = tmp; z = -z;
         return;
     }
@@ -101,8 +103,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_180_YAW_315: {
-        tmp =  HALF_SQRT_2*(x - y);
-        y   = -HALF_SQRT_2*(x + y);
+        tmp =  HALF_SQRT_2*(float)(x - y);
+        y   = -HALF_SQRT_2*(float)(x + y);
         x = tmp; z = -z;
         return;
     }
@@ -112,8 +114,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_45: {
         tmp = z; z = y; y = -tmp;
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -124,8 +126,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_90_YAW_135: {
         tmp = z; z = y; y = -tmp;
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -135,8 +137,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_45: {
         tmp = z; z = -y; y = tmp;
-        tmp = HALF_SQRT_2*(x - y);
-        y   = HALF_SQRT_2*(x + y);
+        tmp = HALF_SQRT_2*(float)(x - y);
+        y   = HALF_SQRT_2*(float)(x + y);
         x = tmp;
         return;
     }
@@ -147,8 +149,8 @@ void Vector3<T>::rotate(enum Rotation rotation)
     }
     case ROTATION_ROLL_270_YAW_135: {
         tmp = z; z = -y; y = tmp;
-        tmp = -HALF_SQRT_2*(x + y);
-        y   =  HALF_SQRT_2*(x - y);
+        tmp = -HALF_SQRT_2*(float)(x + y);
+        y   =  HALF_SQRT_2*(float)(x - y);
         x = tmp;
         return;
     }
@@ -219,6 +221,15 @@ void Vector3<T>::rotate(enum Rotation rotation)
     case ROTATION_ROLL_90_YAW_270: {
         tmp = z; z = y; y = -tmp;
         tmp = x; x = y; y = -tmp;
+        return;
+    }
+    case ROTATION_YAW_293_PITCH_68_ROLL_90: {
+        float tmpx = x;
+        float tmpy = y;
+        float tmpz = z;
+        x =  0.143039f * tmpx +  0.368776f * tmpy + -0.918446f * tmpz;
+        y = -0.332133f * tmpx + -0.856289f * tmpy + -0.395546f * tmpz;
+        z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
         return;
     }
     }
@@ -318,19 +329,19 @@ Vector3<T> Vector3<T>::operator -(void) const
 template <typename T>
 bool Vector3<T>::operator ==(const Vector3<T> &v) const
 {
-    return (x==v.x && y==v.y && z==v.z);
+    return (is_equal(x,v.x) && is_equal(y,v.y) && is_equal(z,v.z));
 }
 
 template <typename T>
 bool Vector3<T>::operator !=(const Vector3<T> &v) const
 {
-    return (x!=v.x && y!=v.y && z!=v.z);
+    return (!is_equal(x,v.x) || !is_equal(y,v.y) || !is_equal(z,v.z));
 }
 
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    return acosf(((*this)*v2) / (this->length()*v2.length()));
+    return acosf((*this)*v2) / (float)((this->length()*v2.length()));
 }
 
 // multiplication of transpose by a vector
@@ -374,7 +385,6 @@ template bool Vector3<float>::is_nan(void) const;
 template bool Vector3<float>::is_inf(void) const;
 template float Vector3<float>::angle(const Vector3<float> &v) const;
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Vector3<double>::rotate(enum Rotation);
 template float Vector3<double>::length(void) const;
 template Vector3<double> Vector3<double>::operator %(const Vector3<double> &v) const;
@@ -395,4 +405,3 @@ template bool Vector3<double>::operator !=(const Vector3<double> &v) const;
 template bool Vector3<double>::is_nan(void) const;
 template bool Vector3<double>::is_inf(void) const;
 template float Vector3<double>::angle(const Vector3<double> &v) const;
-#endif

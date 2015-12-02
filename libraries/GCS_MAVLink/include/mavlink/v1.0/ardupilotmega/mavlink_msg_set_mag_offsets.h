@@ -4,11 +4,11 @@
 
 typedef struct __mavlink_set_mag_offsets_t
 {
- int16_t mag_ofs_x; ///< magnetometer X offset
- int16_t mag_ofs_y; ///< magnetometer Y offset
- int16_t mag_ofs_z; ///< magnetometer Z offset
- uint8_t target_system; ///< System ID
- uint8_t target_component; ///< Component ID
+ int16_t mag_ofs_x; /*< magnetometer X offset*/
+ int16_t mag_ofs_y; /*< magnetometer Y offset*/
+ int16_t mag_ofs_z; /*< magnetometer Z offset*/
+ uint8_t target_system; /*< System ID*/
+ uint8_t target_component; /*< Component ID*/
 } mavlink_set_mag_offsets_t;
 
 #define MAVLINK_MSG_ID_SET_MAG_OFFSETS_LEN 8

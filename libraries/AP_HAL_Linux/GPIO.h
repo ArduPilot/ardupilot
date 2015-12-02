@@ -1,39 +1,29 @@
-
 #ifndef __AP_HAL_LINUX_GPIO_H__
 #define __AP_HAL_LINUX_GPIO_H__
 
-#include <AP_HAL_Linux.h>
+#include "AP_HAL_Linux.h"
 
-class Linux::LinuxGPIO : public AP_HAL::GPIO {
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
+class Linux::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    LinuxGPIO();
-    void    init();
-    void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
-    uint8_t read(uint8_t pin);
-    void    write(uint8_t pin, uint8_t value);
-    void    toggle(uint8_t pin);
-
-    /* Alternative interface: */
-    AP_HAL::DigitalSource* channel(uint16_t n);
-
-    /* Interrupt interface: */
-    bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-            uint8_t mode);
-
-    /* return true if USB cable is connected */
-    bool    usb_connected(void);
-};
-
-class Linux::LinuxDigitalSource : public AP_HAL::DigitalSource {
-public:
-    LinuxDigitalSource(uint8_t v);
+    DigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
     void    toggle();
 private:
     uint8_t _v;
+
 };
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#include "GPIO_BBB.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
+#include "GPIO_RPI.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+#include "GPIO_Minnow.h"
+#endif
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #endif // __AP_HAL_LINUX_GPIO_H__

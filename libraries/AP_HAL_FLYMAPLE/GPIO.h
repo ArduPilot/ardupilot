@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_GPIO_H__
 #define __AP_HAL_FLYMAPLE_GPIO_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLEGPIO : public AP_HAL::GPIO {
 public:

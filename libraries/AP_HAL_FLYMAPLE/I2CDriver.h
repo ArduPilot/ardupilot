@@ -19,7 +19,7 @@
 #ifndef __AP_HAL_FLYMAPLE_I2CDRIVER_H__
 #define __AP_HAL_FLYMAPLE_I2CDRIVER_H__
 
-#include <AP_HAL_FLYMAPLE.h>
+#include "AP_HAL_FLYMAPLE.h"
 
 #include <i2c.h>
 

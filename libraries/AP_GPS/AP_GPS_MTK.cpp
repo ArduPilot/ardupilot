@@ -21,12 +21,12 @@
 //	GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.1"
 //
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 #include "AP_GPS_MTK.h"
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const prog_char AP_GPS_MTK::_initialisation_blob[] PROGMEM = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
+const char AP_GPS_MTK::_initialisation_blob[] = MTK_OUTPUT_5HZ SBAS_ON WAAS_ON MTK_NAVTHRES_OFF;
 
 AP_GPS_MTK::AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
@@ -147,7 +147,7 @@ restart:
             state.location.lng  = swap_int32(_buffer.msg.longitude) * 10;
             state.location.alt  = swap_int32(_buffer.msg.altitude);
             state.ground_speed      = swap_int32(_buffer.msg.ground_speed) * 0.01f;
-            state.ground_course_cd  = swap_int32(_buffer.msg.ground_course) / 10000;
+            state.ground_course_cd  = wrap_360_cd(swap_int32(_buffer.msg.ground_course) / 10000);
             state.num_sats          = _buffer.msg.satellites;
 
             if (state.status >= AP_GPS::GPS_OK_FIX_2D) {

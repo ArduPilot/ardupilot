@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_data_stream_t
 {
- uint16_t message_rate; ///< The requested interval between two messages of this type
- uint8_t stream_id; ///< The ID of the requested data stream
- uint8_t on_off; ///< 1 stream is enabled, 0 stream is stopped.
+ uint16_t message_rate; /*< The requested interval between two messages of this type*/
+ uint8_t stream_id; /*< The ID of the requested data stream*/
+ uint8_t on_off; /*< 1 stream is enabled, 0 stream is stopped.*/
 } mavlink_data_stream_t;
 
 #define MAVLINK_MSG_ID_DATA_STREAM_LEN 4

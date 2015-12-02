@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#include <AP_Common/AP_Common.h>
+
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
@@ -49,15 +51,8 @@ public:
      * provided by AP_HAL to ensure consistency between ports to
      * different boards
      */
-    void print_P(const prog_char_t *s);
-    void println_P(const prog_char_t *s);
-    void printf(const char *s, ...)
-            __attribute__ ((format(__printf__, 2, 3)));
-    void _printf_P(const prog_char *s, ...)
-            __attribute__ ((format(__printf__, 2, 3)));
-
+    void printf(const char *s, ...) FORMAT(2, 3);
     void vprintf(const char *s, va_list ap);
-    void vprintf_P(const prog_char *s, va_list ap);
 };
 
 #endif // __AP_HAL_UART_DRIVER_H__

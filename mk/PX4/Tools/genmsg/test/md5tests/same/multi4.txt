@@ -1,0 +1,16 @@
+# short comment about a
+int32 a #a
+# short comment about log
+Log log #log
+# 
+# short comment about s
+string s #s
+# short comment about time
+Clock time #time
+# short comment about b
+int32 b #b
+# short comment about d
+duration d #d
+# short comment about t
+time t # t
+

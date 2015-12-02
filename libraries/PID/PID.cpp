@@ -6,12 +6,12 @@
 #include <math.h>
 
 #include "PID.h"
-#include <AP_HAL.h>
-#include <AP_Math.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
+const AP_Param::GroupInfo PID::var_info[] = {
     AP_GROUPINFO("P",    0, PID, _kp, 0),
     AP_GROUPINFO("I",    1, PID, _ki, 0),
     AP_GROUPINFO("D",    2, PID, _kd, 0),
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo PID::var_info[] PROGMEM = {
 
 float PID::get_pid(float error, float scaler)
 {
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
     float output            = 0;
     float delta_time;

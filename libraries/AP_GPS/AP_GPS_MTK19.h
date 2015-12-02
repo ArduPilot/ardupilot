@@ -23,7 +23,7 @@
 #ifndef AP_GPS_MTK19_h
 #define AP_GPS_MTK19_h
 
-#include <AP_GPS.h>
+#include "AP_GPS.h"
 #include "AP_GPS_MTK_Common.h"
 
 #define MTK_GPS_REVISION_V16  16

@@ -4,9 +4,9 @@
 
 typedef struct __mavlink_wind_t
 {
- float direction; ///< wind direction that wind is coming from (degrees)
- float speed; ///< wind speed in ground plane (m/s)
- float speed_z; ///< vertical wind speed (m/s)
+ float direction; /*< wind direction that wind is coming from (degrees)*/
+ float speed; /*< wind speed in ground plane (m/s)*/
+ float speed_z; /*< vertical wind speed (m/s)*/
 } mavlink_wind_t;
 
 #define MAVLINK_MSG_ID_WIND_LEN 12

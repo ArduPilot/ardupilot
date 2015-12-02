@@ -10,8 +10,8 @@
 #ifndef __AP_LIMIT_MODULE_H__
 #define __AP_LIMIT_MODULE_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 // The module IDs are defined as powers of 2, to make a bit-field
 enum moduleid {
@@ -25,7 +25,7 @@ enum moduleid {
     AP_LIMITS_ALTITUDE   = (1 << 2)
 };
 
-extern const prog_char_t *get_module_name(enum moduleid i);
+extern const char *get_module_name(enum moduleid i);
 
 // an integer type big enough to fit a bit field for all modules.
 // We have 3 modules, so 8-bit int is enough.

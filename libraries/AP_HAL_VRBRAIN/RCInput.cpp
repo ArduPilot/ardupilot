@@ -1,4 +1,4 @@
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include "RCInput.h"
@@ -14,7 +14,7 @@ void VRBRAINRCInput::init(void* unused)
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 	if (_rc_sub == -1) {
-		hal.scheduler->panic("Unable to subscribe to input_rc");		
+		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
         pthread_mutex_init(&rcin_mutex, NULL);
@@ -24,6 +24,8 @@ bool VRBRAINRCInput::new_input()
 {
     pthread_mutex_lock(&rcin_mutex);
     bool valid = _rcin.timestamp_last_signal != _last_read || _override_valid;
+    _last_read = _rcin.timestamp_last_signal;
+    _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
     return valid;
 }
@@ -42,8 +44,6 @@ uint16_t VRBRAINRCInput::read(uint8_t ch)
 		return 0;
 	}
         pthread_mutex_lock(&rcin_mutex);
-	_last_read = _rcin.timestamp_last_signal;
-	_override_valid = false;
 	if (_override[ch]) {
             uint16_t v = _override[ch];
             pthread_mutex_unlock(&rcin_mutex);

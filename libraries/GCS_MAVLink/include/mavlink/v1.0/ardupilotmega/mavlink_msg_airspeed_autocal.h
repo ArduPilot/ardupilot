@@ -4,18 +4,18 @@
 
 typedef struct __mavlink_airspeed_autocal_t
 {
- float vx; ///< GPS velocity north m/s
- float vy; ///< GPS velocity east m/s
- float vz; ///< GPS velocity down m/s
- float diff_pressure; ///< Differential pressure pascals
- float EAS2TAS; ///< Estimated to true airspeed ratio
- float ratio; ///< Airspeed ratio
- float state_x; ///< EKF state x
- float state_y; ///< EKF state y
- float state_z; ///< EKF state z
- float Pax; ///< EKF Pax
- float Pby; ///< EKF Pby
- float Pcz; ///< EKF Pcz
+ float vx; /*< GPS velocity north m/s*/
+ float vy; /*< GPS velocity east m/s*/
+ float vz; /*< GPS velocity down m/s*/
+ float diff_pressure; /*< Differential pressure pascals*/
+ float EAS2TAS; /*< Estimated to true airspeed ratio*/
+ float ratio; /*< Airspeed ratio*/
+ float state_x; /*< EKF state x*/
+ float state_y; /*< EKF state y*/
+ float state_z; /*< EKF state z*/
+ float Pax; /*< EKF Pax*/
+ float Pby; /*< EKF Pby*/
+ float Pcz; /*< EKF Pcz*/
 } mavlink_airspeed_autocal_t;
 
 #define MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN 48

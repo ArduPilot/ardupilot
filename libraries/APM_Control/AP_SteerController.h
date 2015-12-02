@@ -3,10 +3,10 @@
 #ifndef __AP_STEER_CONTROLLER_H__
 #define __AP_STEER_CONTROLLER_H__
 
-#include <AP_AHRS.h>
-#include <AP_Common.h>
-#include <AP_Vehicle.h>
-#include <math.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <DataFlash/DataFlash.h>
 
 class AP_SteerController {
 public:
@@ -45,8 +45,11 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
+    const DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
+
 private:
 	AP_Float _tau;
+	AP_Float _K_FF;
 	AP_Float _K_P;
 	AP_Float _K_I;
 	AP_Float _K_D;
@@ -55,7 +58,7 @@ private:
 	uint32_t _last_t;
 	float _last_out;
 
-	float _integrator;
+    DataFlash_Class::PID_Info _pid_info {};
 
 	AP_AHRS &_ahrs;
 };

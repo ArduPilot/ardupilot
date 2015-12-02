@@ -4,16 +4,16 @@
 
 typedef struct __mavlink_scaled_imu2_t
 {
- uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)
- int16_t xacc; ///< X acceleration (mg)
- int16_t yacc; ///< Y acceleration (mg)
- int16_t zacc; ///< Z acceleration (mg)
- int16_t xgyro; ///< Angular speed around X axis (millirad /sec)
- int16_t ygyro; ///< Angular speed around Y axis (millirad /sec)
- int16_t zgyro; ///< Angular speed around Z axis (millirad /sec)
- int16_t xmag; ///< X Magnetic field (milli tesla)
- int16_t ymag; ///< Y Magnetic field (milli tesla)
- int16_t zmag; ///< Z Magnetic field (milli tesla)
+ uint32_t time_boot_ms; /*< Timestamp (milliseconds since system boot)*/
+ int16_t xacc; /*< X acceleration (mg)*/
+ int16_t yacc; /*< Y acceleration (mg)*/
+ int16_t zacc; /*< Z acceleration (mg)*/
+ int16_t xgyro; /*< Angular speed around X axis (millirad /sec)*/
+ int16_t ygyro; /*< Angular speed around Y axis (millirad /sec)*/
+ int16_t zgyro; /*< Angular speed around Z axis (millirad /sec)*/
+ int16_t xmag; /*< X Magnetic field (milli tesla)*/
+ int16_t ymag; /*< Y Magnetic field (milli tesla)*/
+ int16_t zmag; /*< Z Magnetic field (milli tesla)*/
 } mavlink_scaled_imu2_t;
 
 #define MAVLINK_MSG_ID_SCALED_IMU2_LEN 22

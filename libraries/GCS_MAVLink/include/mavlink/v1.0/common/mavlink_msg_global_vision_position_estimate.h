@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_global_vision_position_estimate_t
 {
- uint64_t usec; ///< Timestamp (microseconds, synced to UNIX time or since system boot)
- float x; ///< Global X position
- float y; ///< Global Y position
- float z; ///< Global Z position
- float roll; ///< Roll angle in rad
- float pitch; ///< Pitch angle in rad
- float yaw; ///< Yaw angle in rad
+ uint64_t usec; /*< Timestamp (microseconds, synced to UNIX time or since system boot)*/
+ float x; /*< Global X position*/
+ float y; /*< Global Y position*/
+ float z; /*< Global Z position*/
+ float roll; /*< Roll angle in rad*/
+ float pitch; /*< Pitch angle in rad*/
+ float yaw; /*< Yaw angle in rad*/
 } mavlink_global_vision_position_estimate_t;
 
 #define MAVLINK_MSG_ID_GLOBAL_VISION_POSITION_ESTIMATE_LEN 32

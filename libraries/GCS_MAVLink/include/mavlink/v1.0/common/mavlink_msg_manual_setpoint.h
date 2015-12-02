@@ -4,13 +4,13 @@
 
 typedef struct __mavlink_manual_setpoint_t
 {
- uint32_t time_boot_ms; ///< Timestamp in milliseconds since system boot
- float roll; ///< Desired roll rate in radians per second
- float pitch; ///< Desired pitch rate in radians per second
- float yaw; ///< Desired yaw rate in radians per second
- float thrust; ///< Collective thrust, normalized to 0 .. 1
- uint8_t mode_switch; ///< Flight mode switch position, 0.. 255
- uint8_t manual_override_switch; ///< Override mode switch position, 0.. 255
+ uint32_t time_boot_ms; /*< Timestamp in milliseconds since system boot*/
+ float roll; /*< Desired roll rate in radians per second*/
+ float pitch; /*< Desired pitch rate in radians per second*/
+ float yaw; /*< Desired yaw rate in radians per second*/
+ float thrust; /*< Collective thrust, normalized to 0 .. 1*/
+ uint8_t mode_switch; /*< Flight mode switch position, 0.. 255*/
+ uint8_t manual_override_switch; /*< Override mode switch position, 0.. 255*/
 } mavlink_manual_setpoint_t;
 
 #define MAVLINK_MSG_ID_MANUAL_SETPOINT_LEN 22

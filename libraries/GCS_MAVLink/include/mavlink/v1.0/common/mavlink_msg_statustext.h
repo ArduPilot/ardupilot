@@ -4,8 +4,8 @@
 
 typedef struct __mavlink_statustext_t
 {
- uint8_t severity; ///< Severity of status. Relies on the definitions within RFC-5424. See enum MAV_SEVERITY.
- char text[50]; ///< Status text message, without null termination character
+ uint8_t severity; /*< Severity of status. Relies on the definitions within RFC-5424. See enum MAV_SEVERITY.*/
+ char text[50]; /*< Status text message, without null termination character*/
 } mavlink_statustext_t;
 
 #define MAVLINK_MSG_ID_STATUSTEXT_LEN 51

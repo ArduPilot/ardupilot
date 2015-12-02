@@ -6,9 +6,9 @@
 #include <iostream>
 #include <tr1/memory>
 
-#include <checksum.h>
-#include <common/mavlink.h>
-#include <mavlink_types.h>
+#include "checksum.h"
+#include "common/mavlink.h"
+#include "mavlink_types.h"
 #include <pixhawk/pixhawk.pb.h>
 
 namespace mavlink

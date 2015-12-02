@@ -6,8 +6,8 @@
 #ifndef __AC_P_H__
 #define __AC_P_H__
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -24,7 +24,7 @@ public:
     /// @param  initial_p       Initial value for the P term.
     ///
     AC_P(
-        const float &   initial_p = 0.0)
+        const float &   initial_p = 0.0f)
     {
 		AP_Param::setup_object_defaults(this, var_info);
         _kp = initial_p;

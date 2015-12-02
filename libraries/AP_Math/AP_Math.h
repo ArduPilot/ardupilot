@@ -5,12 +5,9 @@
 
 // Assorted useful math operations for ArduPilot(Mega)
 
-#include <AP_Common.h>
-#include <AP_Param.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 #include <math.h>
-#ifdef __AVR__
-# include <AP_Math_AVR_Compat.h>
-#endif
 #include <stdint.h>
 #include "rotations.h"
 #include "vector2.h"
@@ -19,9 +16,14 @@
 #include "quaternion.h"
 #include "polygon.h"
 #include "edc.h"
+#include "float.h"
+#include <AP_Param/AP_Param.h>
 
 #ifndef M_PI_F
  #define M_PI_F 3.141592653589793f
+#endif
+#ifndef M_2PI_F
+ #define M_2PI_F (2*M_PI_F)
 #endif
 #ifndef PI
  # define PI M_PI_F
@@ -35,11 +37,9 @@
 
 //GPS Specific double precision conversions
 //The precision here does matter when using the wsg* functions for converting
-//between LLH and ECEF coordinates. Test code in examlpes/location/location.pde
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-	#define DEG_TO_RAD_DOUBLE 0.0174532925199432954743716805978692718781530857086181640625  // equals to (M_PI / 180.0)
-	#define RAD_TO_DEG_DOUBLE 57.29577951308232286464772187173366546630859375               // equals to (180.0 / M_PI)
-#endif
+//between LLH and ECEF coordinates. Test code in examlpes/location/location.cpp
+#define DEG_TO_RAD_DOUBLE 0.0174532925199432954743716805978692718781530857086181640625  // equals to (M_PI / 180.0)
+#define RAD_TO_DEG_DOUBLE 57.29577951308232286464772187173366546630859375               // equals to (180.0 / M_PI)
 
 #define RadiansToCentiDegrees(x) ((x) * 5729.5779513082320876798154814105f)
 
@@ -71,14 +71,17 @@
 AP_PARAMDEFV(Matrix3f, Matrix3f, AP_PARAM_MATRIX3F);
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
+// are two floats equal
+static inline bool is_equal(const float fVal1, const float fVal2) { return fabsf(fVal1 - fVal2) < FLT_EPSILON ? true : false; }
+
+// is a float is zero
+static inline bool is_zero(const float fVal1) { return fabsf(fVal1) < FLT_EPSILON ? true : false; }
+
 // a varient of asin() that always gives a valid answer.
 float           safe_asin(float v);
 
 // a varient of sqrt() that always gives a valid answer.
 float           safe_sqrt(float v);
-
-// a faster varient of atan.  accurate to 6 decimal places for values between -1 ~ 1 but then diverges quickly
-float           fast_atan(float v);
 
 #if ROTATION_COMBINATION_SUPPORT
 // find a rotation that is the combination of two other
@@ -109,6 +112,14 @@ bool        location_passed_point(const struct Location & location,
                                   const struct Location & point1,
                                   const struct Location & point2);
 
+/*
+  return the proportion we are along the path from point1 to
+  point2. This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2);
+
 //  extrapolate latitude/longitude given bearing and distance
 void        location_update(struct Location &loc, float bearing, float distance);
 
@@ -135,33 +146,75 @@ float wrap_180_cd_float(float angle);
 float wrap_PI(float angle_in_radians);
 
 /*
+ * check if lat and lng match. Ignore altitude and options
+ */
+bool locations_are_same(const struct Location &loc1, const struct Location &loc2);
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon);
 
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
-//Convert between LLH and ECEF coordinate systems
+// Converts from WGS84 geodetic coordinates (lat, lon, height)
+// into WGS84 Earth Centered, Earth Fixed (ECEF) coordinates
+// (X, Y, Z)
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
+
+// Converts from WGS84 Earth Centered, Earth Fixed (ECEF)
+// coordinates (X, Y, Z), into WHS84 geodetic
+// coordinates (lat, lon, height)
 void wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
-#endif
 
 // constrain a value
-float   constrain_float(float amt, float low, float high);
-int16_t constrain_int16(int16_t amt, int16_t low, int16_t high);
-int32_t constrain_int32(int32_t amt, int32_t low, int32_t high);
+// constrain a value
+static inline float constrain_float(float amt, float low, float high)
+{
+	// the check for NaN as a float prevents propogation of
+	// floating point errors through any function that uses
+	// constrain_float(). The normal float semantics already handle -Inf
+	// and +Inf
+	if (isnan(amt)) {
+		return (low+high)*0.5f;
+	}
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+// constrain a int16_t value
+static inline int16_t constrain_int16(int16_t amt, int16_t low, int16_t high) {
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+
+// constrain a int32_t value
+static inline int32_t constrain_int32(int32_t amt, int32_t low, int32_t high) {
+	return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+
+//matrix algebra
+bool inverse(float x[], float y[], uint16_t dim);
 
 // degrees -> radians
-float radians(float deg);
+static inline float radians(float deg) {
+	return deg * DEG_TO_RAD;
+}
 
 // radians -> degrees
-float degrees(float rad);
+static inline float degrees(float rad) {
+	return rad * RAD_TO_DEG;
+}
 
 // square
-float sq(float v);
+static inline float sq(float v) {
+	return v*v;
+}
 
-// sqrt of sum of squares
-float pythagorous2(float a, float b);
-float pythagorous3(float a, float b, float c);
+// 2D vector length
+static inline float pythagorous2(float a, float b) {
+	return sqrtf(sq(a)+sq(b));
+}
+
+// 3D vector length
+static inline float pythagorous3(float a, float b, float c) {
+	return sqrtf(sq(a)+sq(b)+sq(c));
+}
 
 #ifdef radians
 #error "Build is including Arduino base headers"
@@ -171,6 +224,39 @@ float pythagorous3(float a, float b, float c);
 #define max(a,b) ((a)>(b)?(a):(b))
 #define min(a,b) ((a)<(b)?(a):(b))
 
+static inline float maxf(float a, float b)
+{
+    return (a>b?a:b);
+}
 
+static inline float minf(float a, float b)
+{
+    return (a<b?a:b);
+}
+
+#define NSEC_PER_SEC 1000000000ULL
+#define NSEC_PER_USEC 1000ULL
+
+inline uint32_t hz_to_nsec(uint32_t freq)
+{
+    return NSEC_PER_SEC / freq;
+}
+
+inline uint32_t nsec_to_hz(uint32_t usec)
+{
+    return NSEC_PER_SEC / usec;
+}
+
+inline uint32_t usec_to_nsec(uint32_t usec)
+{
+    return usec * NSEC_PER_USEC;
+}
+
+inline uint32_t nsec_to_usec(uint32_t nsec)
+{
+    return nsec / NSEC_PER_USEC;
+}
+
+#undef INLINE
 #endif // AP_MATH_H
 

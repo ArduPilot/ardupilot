@@ -4,20 +4,20 @@
 
 typedef struct __mavlink_hil_rc_inputs_raw_t
 {
- uint64_t time_usec; ///< Timestamp (microseconds since UNIX epoch or microseconds since system boot)
- uint16_t chan1_raw; ///< RC channel 1 value, in microseconds
- uint16_t chan2_raw; ///< RC channel 2 value, in microseconds
- uint16_t chan3_raw; ///< RC channel 3 value, in microseconds
- uint16_t chan4_raw; ///< RC channel 4 value, in microseconds
- uint16_t chan5_raw; ///< RC channel 5 value, in microseconds
- uint16_t chan6_raw; ///< RC channel 6 value, in microseconds
- uint16_t chan7_raw; ///< RC channel 7 value, in microseconds
- uint16_t chan8_raw; ///< RC channel 8 value, in microseconds
- uint16_t chan9_raw; ///< RC channel 9 value, in microseconds
- uint16_t chan10_raw; ///< RC channel 10 value, in microseconds
- uint16_t chan11_raw; ///< RC channel 11 value, in microseconds
- uint16_t chan12_raw; ///< RC channel 12 value, in microseconds
- uint8_t rssi; ///< Receive signal strength indicator, 0: 0%, 255: 100%
+ uint64_t time_usec; /*< Timestamp (microseconds since UNIX epoch or microseconds since system boot)*/
+ uint16_t chan1_raw; /*< RC channel 1 value, in microseconds*/
+ uint16_t chan2_raw; /*< RC channel 2 value, in microseconds*/
+ uint16_t chan3_raw; /*< RC channel 3 value, in microseconds*/
+ uint16_t chan4_raw; /*< RC channel 4 value, in microseconds*/
+ uint16_t chan5_raw; /*< RC channel 5 value, in microseconds*/
+ uint16_t chan6_raw; /*< RC channel 6 value, in microseconds*/
+ uint16_t chan7_raw; /*< RC channel 7 value, in microseconds*/
+ uint16_t chan8_raw; /*< RC channel 8 value, in microseconds*/
+ uint16_t chan9_raw; /*< RC channel 9 value, in microseconds*/
+ uint16_t chan10_raw; /*< RC channel 10 value, in microseconds*/
+ uint16_t chan11_raw; /*< RC channel 11 value, in microseconds*/
+ uint16_t chan12_raw; /*< RC channel 12 value, in microseconds*/
+ uint8_t rssi; /*< Receive signal strength indicator, 0: 0%, 255: 100%*/
 } mavlink_hil_rc_inputs_raw_t;
 
 #define MAVLINK_MSG_ID_HIL_RC_INPUTS_RAW_LEN 33

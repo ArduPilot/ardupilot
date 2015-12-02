@@ -1,19 +1,19 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include "AP_L1_Control.h"
 
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
-const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
+const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Param: PERIOD
     // @DisplayName: L1 control period
-    // @Description: Period in seconds of L1 tracking loop. This needs to be larger for less responsive airframes. The default of 30 is very conservative, and for most RC aircraft will lead to slow and lazy turns. For smaller more agile aircraft a value closer to 20 is appropriate. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
+    // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default of 20 is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
 	// @Units: seconds
 	// @Range: 1-60
 	// @Increment: 1
-    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 25),
+    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 20),
 	
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio
@@ -21,6 +21,13 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] PROGMEM = {
 	// @Range: 0.6-1.0
 	// @Increment: 0.05
     AP_GROUPINFO("DAMPING",   1, AP_L1_Control, _L1_damping, 0.75f),
+
+    // @Param: XTRACK_I
+    // @DisplayName: L1 control crosstrack integrator gain
+    // @Description: Crosstrack error integrator gain. This gain is applied to the crosstrack error to ensure it converges to zero. Set to zero to disable. Smaller values converge slower, higher values will cause crosstrack error oscillation.
+    // @Range: 0 to 0.1
+    // @Increment: 0.01
+    AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
     AP_GROUPEND
 };
@@ -70,10 +77,31 @@ int32_t AP_L1_Control::target_bearing_cd(void) const
 	return wrap_180_cd(_target_bearing_cd);
 }
 
+/*
+  this is the turn distance assuming a 90 degree turn
+ */
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
     wp_radius *= sq(_ahrs.get_EAS2TAS());
 	return min(wp_radius, _L1_dist);
+}
+
+/*
+  this approximates the turn distance for a given turn angle. If the
+  turn_angle is > 90 then a 90 degree turn distance is used, otherwise
+  the turn distance is reduced linearly. 
+  This function allows straight ahead mission legs to avoid thinking
+  they have reached the waypoint early, which makes things like camera
+  trigger and ball drop at exact positions under mission control much easier
+ */
+float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
+{
+    float distance_90 = turn_distance(wp_radius);
+    turn_angle = fabsf(turn_angle);
+    if (turn_angle >= 90) {
+        return distance_90;
+    }
+    return distance_90 * turn_angle / 90.0f;
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
@@ -93,9 +121,9 @@ float AP_L1_Control::crosstrack_error(void) const
  */
 void AP_L1_Control::_prevent_indecision(float &Nu)
 {
-    const float Nu_limit = 0.9f*M_PI;
-    if (fabs(Nu) > Nu_limit &&
-        fabs(_last_Nu) > Nu_limit &&
+    const float Nu_limit = 0.9f*M_PI_F;
+    if (fabsf(Nu) > Nu_limit &&
+        fabsf(_last_Nu) > Nu_limit &&
         fabsf(wrap_180_cd(_target_bearing_cd - _ahrs.yaw_sensor)) > 12000 &&
         Nu * _last_Nu < 0.0f) {
         // we are moving away from the target waypoint and pointing
@@ -107,7 +135,6 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
 }
 
 // update L1 control for waypoint navigation
-// this function costs about 3.5 milliseconds on a AVR2560
 void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct Location &next_WP)
 {
 
@@ -148,6 +175,9 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 	// if too small
 	if (AB.length() < 1.0e-6f) {
 		AB = location_diff(_current_loc, next_WP);
+        if (AB.length() < 1.0e-6f) {
+            AB = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+        }
 	}
 	AB.normalize();
 
@@ -155,7 +185,7 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
     Vector2f A_air = location_diff(prev_WP, _current_loc);
 
 	// calculate distance to target track, for reporting
-	_crosstrack_error = AB % A_air;
+	_crosstrack_error = A_air % AB;
 
 	//Determine if the aircraft is behind a +-135 degree degree arc centred on WP A
 	//and further than L1 distance from WP A. Then use WP A as the L1 reference point
@@ -169,9 +199,6 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		xtrackVel = _groundspeed_vector % (-A_air_unit); // Velocity across line
 		ltrackVel = _groundspeed_vector * (-A_air_unit); // Velocity along line
 		Nu = atan2f(xtrackVel,ltrackVel);
-
-        _prevent_indecision(Nu);
-
 		_nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
 
 	} else { //Calc Nu to fly along AB line
@@ -181,15 +208,34 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
 		ltrackVel = _groundspeed_vector * AB; // Velocity along track
 		float Nu2 = atan2f(xtrackVel,ltrackVel);
 		//Calculate Nu1 angle (Angle to L1 reference point)
-		float xtrackErr = A_air % AB;
-		float sine_Nu1 = xtrackErr/max(_L1_dist, 0.1f);
+		float sine_Nu1 = _crosstrack_error/max(_L1_dist, 0.1f);
 		//Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
 		sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
 		float Nu1 = asinf(sine_Nu1);
+
+        // compute integral error component to converge to a crosstrack of zero when traveling
+		// straight but reset it when disabled or if it changes. That allows for much easier
+		// tuning by having it re-converge each time it changes.
+		if (_L1_xtrack_i_gain <= 0 || !is_equal(_L1_xtrack_i_gain, _L1_xtrack_i_gain_prev)) {
+		    _L1_xtrack_i = 0;
+		    _L1_xtrack_i_gain_prev = _L1_xtrack_i_gain;
+		} else if (fabsf(Nu1) < radians(5)) {
+
+            const float dt = 0.1f; // 10Hz
+            _L1_xtrack_i += Nu1 * _L1_xtrack_i_gain * dt;
+
+            // an AHRS_TRIM_X=0.1 will drift to about 0.08 so 0.1 is a good worst-case to clip at
+            _L1_xtrack_i = constrain_float(_L1_xtrack_i, -0.1f, 0.1f);
+		}
+
+		// to converge to zero we must push Nu1 harder
+        Nu1 += _L1_xtrack_i;
+
 		Nu = Nu1 + Nu2;
 		_nav_bearing = atan2f(AB.y, AB.x) + Nu1; // bearing (radians) from AC to L1 point		
 	}	
 
+    _prevent_indecision(Nu);
     _last_Nu = Nu;
 			
 	//Limit Nu to +-pi
@@ -239,9 +285,21 @@ void AP_L1_Control::update_loiter(const struct Location &center_WP, float radius
 
 	//Calculate the NE position of the aircraft relative to WP A
     Vector2f A_air = location_diff(center_WP, _current_loc);
-	
-    //Calculate the unit vector from WP A to aircraft
-    Vector2f A_air_unit = A_air.normalized();
+
+    // Calculate the unit vector from WP A to aircraft
+    // protect against being on the waypoint and having zero velocity
+    // if too close to the waypoint, use the velocity vector
+    // if the velocity vector is too small, use the heading vector
+    Vector2f A_air_unit;
+    if (A_air.length() > 0.1f) {
+        A_air_unit = A_air.normalized();
+    } else {
+        if (_groundspeed_vector.length() < 0.1f) {
+            A_air_unit = Vector2f(cosf(_ahrs.yaw), sinf(_ahrs.yaw));
+        } else {
+            A_air_unit = _groundspeed_vector.normalized();
+        }
+    }
 
 	//Calculate Nu to capture center_WP
 	float xtrackVelCap = A_air_unit % _groundspeed_vector; // Velocity across line - perpendicular to radial inbound to WP

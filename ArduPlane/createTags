@@ -3,8 +3,7 @@
 
 ctags -RV --language-force=C++ --c++-kinds=+p --fields=+iaS --extra=+q  \
 	. \
-	../libraries/* \
-	/usr/lib/avr/include
+	../libraries/*
 
 # sample vimrc file
 # you'll need to have omnicpp plugin for vim

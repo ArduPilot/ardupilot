@@ -20,12 +20,9 @@
 /*
  *  this module deals with calculations involving struct Location
  */
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <stdlib.h>
 #include "AP_Math.h"
-
-// radius of earth in meters
-#define RADIUS_OF_EARTH 6378100
 
 // scaling factor from 1e-7 degrees to meters at equater
 // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH
@@ -35,8 +32,10 @@
 
 float longitude_scale(const struct Location &loc)
 {
+#if HAL_CPU_CLASS < HAL_CPU_CLASS_150
     static int32_t last_lat;
     static float scale = 1.0;
+    // don't optimise on faster CPUs. It causes some minor errors on Replay
     if (labs(last_lat - loc.lat) < 100000) {
         // we are within 0.01 degrees (about 1km) of the
         // same latitude. We can avoid the cos() and return
@@ -44,8 +43,13 @@ float longitude_scale(const struct Location &loc)
         return scale;
     }
     scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    scale = constrain_float(scale, 0.01f, 1.0f);
     last_lat = loc.lat;
     return scale;
+#else
+    float scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    return constrain_float(scale, 0.01f, 1.0f);
+#endif
 }
 
 
@@ -83,34 +87,28 @@ bool location_passed_point(const struct Location &location,
                            const struct Location &point1,
                            const struct Location &point2)
 {
-    // the 3 points form a triangle. If the angle between lines
-    // point1->point2 and location->point2 is greater than 90
-    // degrees then we have passed the waypoint
-    Vector2f loc1(location.lat, location.lng);
-    Vector2f pt1(point1.lat, point1.lng);
-    Vector2f pt2(point2.lat, point2.lng);
-    float angle = (loc1 - pt2).angle(pt1 - pt2);
-    if (isinf(angle)) {
-        // two of the points are co-located.
-        // If location is equal to point2 then say we have passed the
-        // waypoint, otherwise say we haven't
-        if (get_distance(location, point2) == 0) {
-            return true;
-        }
-        return false;
-    } else if (angle == 0) {
-        // if we are exactly on the line between point1 and
-        // point2 then we are past the waypoint if the
-        // distance from location to point1 is greater then
-        // the distance from point2 to point1
-        return get_distance(location, point1) >
-               get_distance(point2, point1);
+    return location_path_proportion(location, point1, point2) >= 1.0f;
+}
 
+
+/*
+  return the proportion we are along the path from point1 to
+  point2, along a line parallel to point1<->point2.
+
+  This will be less than >1 if we have passed point2
+ */
+float location_path_proportion(const struct Location &location,
+                               const struct Location &point1,
+                               const struct Location &point2)
+{
+    Vector2f vec1 = location_diff(point1, point2);
+    Vector2f vec2 = location_diff(point1, location);
+    float dsquared = sq(vec1.x) + sq(vec1.y);
+    if (dsquared < 0.001f) {
+        // the two points are very close together
+        return 1.0f;
     }
-    if (degrees(angle) > 90) {
-        return true;
-    }
-    return false;
+    return (vec1 * vec2) / dsquared;
 }
 
 /*
@@ -129,11 +127,10 @@ void location_update(struct Location &loc, float bearing, float distance)
 
 /*
  *  extrapolate latitude/longitude given distances north and east
- *  This function costs about 80 usec on an AVR2560
  */
 void location_offset(struct Location &loc, float ofs_north, float ofs_east)
 {
-    if (ofs_north != 0 || ofs_east != 0) {
+    if (!is_zero(ofs_north) || !is_zero(ofs_east)) {
         int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
         int32_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(loc);
         loc.lat += dlat;
@@ -222,6 +219,13 @@ float wrap_PI(float angle_in_radians)
 }
 
 /*
+  return true if lat and lng match. Ignores altitude and options
+ */
+bool locations_are_same(const struct Location &loc1, const struct Location &loc2) {
+    return (loc1.lat == loc2.lat) && (loc1.lng == loc2.lng);
+}
+
+/*
   print a int32_t lat/long in decimal degrees
  */
 void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
@@ -237,12 +241,10 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
 
     // print output including the minus sign
     if( lat_or_lon < 0 ) {
-        s->printf_P(PSTR("-"));
+        s->printf("-");
     }
-    s->printf_P(PSTR("%ld.%07ld"),(long)dec_portion,(long)frac_portion);
+    s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
-
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 
 void wgsllh2ecef(const Vector3d &llh, Vector3d &ecef) {
   double d = WGS84_E * sin(llh[0]);
@@ -259,7 +261,7 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   const double p = sqrt(ecef[0]*ecef[0] + ecef[1]*ecef[1]);
 
   /* Compute longitude first, this can be done exactly. */
-  if (p != 0)
+  if (!is_zero(p))
     llh[1] = atan2(ecef[1], ecef[0]);
   else
     llh[1] = 0;
@@ -345,6 +347,3 @@ void wgsecef2llh(const Vector3d &ecef, Vector3d &llh) {
   llh[0] = copysign(1.0, ecef[2]) * atan(S / (e_c*C));
   llh[2] = (p*e_c*C + fabs(ecef[2])*S - WGS84_A*e_c*A_n) / sqrt(e_c*e_c*C*C + S*S);
 }
-
-#endif
-

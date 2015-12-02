@@ -18,7 +18,6 @@ DO NOT EDIT
 -->
 
 
-<p style="text-align: right"><a title="Table of Contents" href="/wiki/table-of-contents/"><span style="font-size: medium"><strong>Reference Manual Table of Contents</strong></span></a></p>
 <h3 style="text-align: center">Complete Parameter List</h3>
 <hr />
 
@@ -43,7 +42,7 @@ DO NOT EDIT
         self.f.close()
     
     def start_libraries(self):
-        self.t += '\n\n<h1>Library Parameters</h1>\n\n'
+        pass
         
     def emit(self, g, f):    
         tag = '%s Parameters' % g.name

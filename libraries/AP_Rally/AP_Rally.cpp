@@ -4,23 +4,35 @@
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
 
-#include <AP_HAL.h>
+#include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
+
+// storage object
+StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
 // ArduCopter/defines.h sets this, and this definition will be moved into ArduPlane/defines.h when that is patched to use the lib
 #ifdef APM_BUILD_DIRECTORY
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    #define RALLY_LIMIT_KM_DEFAULT 2.0
+    #define RALLY_LIMIT_KM_DEFAULT 0.3f
+    #define RALLY_INCLUDE_HOME_DEFAULT 1
   #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    #define RALLY_LIMIT_KM_DEFAULT 5.0
+    #define RALLY_LIMIT_KM_DEFAULT 5.0f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-    #define RALLY_LIMIT_KM_DEFAULT 0.5
+    #define RALLY_LIMIT_KM_DEFAULT 0.5f
+    #define RALLY_INCLUDE_HOME_DEFAULT 0
   #endif
-#else 
-  #define RALLY_LIMIT_KM_DEFAULT 1.0
-#endif // APM_BUILD_DIRECTORY
+#endif  // APM_BUILD_DIRECTORY
 
-const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
+#ifndef RALLY_LIMIT_KM_DEFAULT
+#define RALLY_LIMIT_KM_DEFAULT 1.0f
+#endif
+
+#ifndef RALLY_INCLUDE_HOME_DEFAULT
+#define RALLY_INCLUDE_HOME_DEFAULT 0
+#endif
+
+const AP_Param::GroupInfo AP_Rally::var_info[] = {
     // @Param: TOTAL
     // @DisplayName: Rally Total
     // @Description: Number of rally points currently loaded
@@ -35,14 +47,20 @@ const AP_Param::GroupInfo AP_Rally::var_info[] PROGMEM = {
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
 
+    // @Param: INCL_HOME
+    // @DisplayName: Rally Include Home
+    // @Description: Controls if Home is included as a Rally point (i.e. as a safe landing place) for RTL
+    // @User: Standard
+    // @Values: 0:DoNotIncludeHome,1:IncludeHome
+    AP_GROUPINFO("INCL_HOME", 2, AP_Rally, _rally_incl_home, RALLY_INCLUDE_HOME_DEFAULT),
+
     AP_GROUPEND
 };
 
 // constructor
-AP_Rally::AP_Rally(AP_AHRS &ahrs, uint16_t max_rally_points, uint16_t rally_start_byte) 
+AP_Rally::AP_Rally(AP_AHRS &ahrs) 
     : _ahrs(ahrs)
-    , _max_rally_points(max_rally_points)
-    , _rally_start_byte(rally_start_byte)
+    , _last_change_time_ms(0xFFFFFFFF)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -54,7 +72,7 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
         return false;
     }
 
-    hal.storage->read_block(&ret, _rally_start_byte + (i * sizeof(RallyLocation)), sizeof(RallyLocation));
+    _storage.read_block(&ret, i * sizeof(RallyLocation), sizeof(RallyLocation));
 
     if (ret.lat == 0 && ret.lng == 0) {
         return false; // sanity check
@@ -70,11 +88,13 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
         return false;
     }
 
-    if (i >= (uint8_t) _max_rally_points) {
+    if (i >= get_rally_max()) {
         return false;
     }
 
-    hal.storage->write_block(_rally_start_byte + (i * sizeof(RallyLocation)), &rallyLoc, sizeof(RallyLocation));
+    _storage.write_block(i * sizeof(RallyLocation), &rallyLoc, sizeof(RallyLocation));
+
+    _last_change_time_ms = AP_HAL::millis();
 
     return true;
 }
@@ -118,10 +138,17 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         }
     }
 
+    // if home is included, return false (meaning use home) if it is closer than all rally points
+    if (_rally_incl_home && (get_distance(current_loc, home_loc) < min_dis)) {
+        return false;
+    }
+
+    // if a limit is defined and all rally points are beyond that limit, use home if it is closer
     if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f) && (get_distance(current_loc, home_loc) < min_dis)) {
         return false; // use home position
     }
 
+    // use home if no rally points found
     return min_dis >= 0;
 }
 
