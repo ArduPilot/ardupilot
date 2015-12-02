@@ -32,8 +32,7 @@
 
 class AP_HAL::RCOutput {
 public:
-    virtual void init(void* implspecific) { }
-    virtual void init() { }
+    virtual void init() = 0;
 
     /* Output freq (1/period) control */
     virtual void     set_freq(uint32_t chmask, uint16_t freq_hz) = 0;

@@ -41,8 +41,7 @@ public:
 
 class AP_HAL::AnalogIn {
 public:
-    virtual void init(void* implspecific) { }
-    virtual void init() { }
+    virtual void init() = 0;
     virtual AP_HAL::AnalogSource* channel(int16_t n) = 0;
 
     // board 5V rail voltage in volts

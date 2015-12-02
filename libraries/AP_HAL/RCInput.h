@@ -15,8 +15,7 @@ public:
      * known to the programmer. (Its too difficult to describe this dependency
      * in the C++ type system.)
      */
-    virtual void init(void* implspecific) { }
-    virtual void init() { }
+    virtual void init() = 0;
     virtual void deinit() {};
 
     /**
