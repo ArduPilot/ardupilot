@@ -20,7 +20,6 @@
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Mission/AP_Mission.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Terrain/AP_Terrain.h>
