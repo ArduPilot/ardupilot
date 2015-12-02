@@ -647,6 +647,43 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
     }
 }
 
+void AC_AttitudeControl::get_rotation_vehicle_to_ned(Matrix3f& m)
+{
+    m = _ahrs.get_dcm_matrix();
+}
+
+void AC_AttitudeControl::get_rotation_ned_to_vehicle(Matrix3f& m)
+{
+    get_rotation_vehicle_to_ned(m);
+    m = m.transposed();
+}
+
+void AC_AttitudeControl::get_rotation_reference_to_ned(Matrix3f& m)
+{
+    m.from_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
+}
+
+void AC_AttitudeControl::get_rotation_ned_to_reference(Matrix3f& m)
+{
+    get_rotation_reference_to_ned(m);
+    m = m.transposed();
+}
+
+void AC_AttitudeControl::get_rotation_vehicle_to_reference(Matrix3f& m)
+{
+    Matrix3f Tvn;
+    Matrix3f Tnr;
+    get_rotation_vehicle_to_ned(Tvn);
+    get_rotation_ned_to_reference(Tnr);
+    m = Tnr * Tvn;
+}
+
+void AC_AttitudeControl::get_rotation_reference_to_vehicle(Matrix3f& m)
+{
+    get_rotation_vehicle_to_reference(m);
+    m = m.transposed();
+}
+
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
     float alpha = _pid_rate_roll.get_filt_alpha();
