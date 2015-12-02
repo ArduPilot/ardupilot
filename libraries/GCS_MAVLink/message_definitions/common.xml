@@ -1583,6 +1583,7 @@
               <entry value="8" name="ADSB_FLAGS_VALID_VELOCITY"></entry>
               <entry value="16" name="ADSB_FLAGS_VALID_CALLSIGN"></entry>
               <entry value="32" name="ADSB_FLAGS_SIMULATED"></entry>
+              <entry value="64" name="ADSB_FLAGS_VALID_SQUAWK"></entry>
           </enum>
      </enums>
      <messages>
@@ -2784,6 +2785,7 @@
           <field type="uint8_t" name="emitter_type" enum="ADSB_EMITTER_TYPE">Type from ADSB_EMITTER_TYPE enum</field>
           <field type="uint8_t" name="tslc">Time since last communication in seconds</field>
           <field type="uint16_t" name="flags" enum="ADSB_FLAGS">Flags to indicate various statuses including valid data fields</field>
+          <field type="uint16_t" name="squawk">Squawk code</field>
         </message>
         <message id="248" name="V2_EXTENSION">
             <description>Message implementing parts of the V2 payload specs in V1 frames for transitional support.</description>
