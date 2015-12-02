@@ -120,13 +120,13 @@ public:
     void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
 
     // Command an euler roll, pitch and yaw angle
-    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_ef_cd, float euler_yaw_angle_cd, bool slew_yaw);
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
     // Command an euler roll, pitch, and yaw rate
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
     // Command a quaternion attitude and a body-frame angular velocity
-    void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& ang_vel_target_rads);
+    void input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads);
 
     // Command an angular velocity
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
@@ -217,13 +217,13 @@ public:
 
 protected:
     // Update _att_target_euler_rad.x by integrating a 321-intrinsic euler roll angle derivative
-    void update_att_target_and_error_roll(float roll_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
+    void update_att_target_and_error_roll(float euler_roll_rate_rads, Vector3f &att_error_euler_rad, float overshoot_max_rad);
 
     // Update _att_target_euler_rad.y by integrating a 321-intrinsic euler pitch angle derivative
-    void update_att_target_and_error_pitch(float pitch_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
+    void update_att_target_and_error_pitch(float euler_pitch_rate_rads, Vector3f &att_error_euler_rad, float overshoot_max_rad);
 
     // Update _att_target_euler_rad.z by integrating a 321-intrinsic euler yaw angle derivative
-    void update_att_target_and_error_yaw(float yaw_rate_ef_rads, Vector3f &angle_ef_error_rad, float overshoot_max_rad);
+    void update_att_target_and_error_yaw(float euler_yaw_rate_rads, Vector3f &att_error_euler_rad, float overshoot_max_rad);
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();
