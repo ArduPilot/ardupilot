@@ -9,7 +9,7 @@ using namespace VRBRAIN;
 
 extern const AP_HAL::HAL& hal;
 
-void VRBRAINRCInput::init(void* unused)
+void VRBRAINRCInput::init()
 {
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));

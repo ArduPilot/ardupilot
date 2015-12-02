@@ -36,7 +36,7 @@ VRBRAINScheduler::VRBRAINScheduler() :
 	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
-void VRBRAINScheduler::init(void *unused)
+void VRBRAINScheduler::init()
 {
     _main_task_pid = getpid();
 

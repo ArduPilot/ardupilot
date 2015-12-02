@@ -16,7 +16,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace VRBRAIN;
 
-void VRBRAINRCOutput::init(void* unused)
+void VRBRAINRCOutput::init()
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT_DEVICE_PATH, O_RDWR);

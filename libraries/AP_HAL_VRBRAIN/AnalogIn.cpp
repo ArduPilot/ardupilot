@@ -190,7 +190,7 @@ VRBRAINAnalogIn::VRBRAINAnalogIn() :
     _power_flags(0)
 {}
 
-void VRBRAINAnalogIn::init(void* machtnichts)
+void VRBRAINAnalogIn::init()
 {
 	_adc_fd = open(ADC_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {

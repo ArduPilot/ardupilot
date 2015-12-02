@@ -9,7 +9,7 @@
 
 class VRBRAIN::VRBRAINRCInput : public AP_HAL::RCInput {
 public:
-    void init(void* machtnichts);
+    void init();
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

@@ -159,10 +159,10 @@ static int main_loop(int argc, char **argv)
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.scheduler->init(NULL);
-    hal.rcin->init(NULL);
-    hal.rcout->init(NULL);
-    hal.analogin->init(NULL);
+    hal.scheduler->init();
+    hal.rcin->init();
+    hal.rcout->init();
+    hal.analogin->init();
     hal.gpio->init();
 
 
