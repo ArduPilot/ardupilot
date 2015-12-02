@@ -3,7 +3,6 @@
 #define AP_BATTMONITOR_ANALOG_H
 
 #include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 
