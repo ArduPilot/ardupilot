@@ -17,7 +17,7 @@ class PX4::PX4Storage : public AP_HAL::Storage {
 public:
     PX4Storage();
 
-    void init(void* machtnichts) {}
+    void init() {}
     void read_block(void *dst, uint16_t src, size_t n);
     void write_block(uint16_t dst, const void* src, size_t n);
 

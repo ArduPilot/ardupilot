@@ -198,7 +198,7 @@ PX4AnalogIn::PX4AnalogIn() :
     _power_flags(0)
 {}
 
-void PX4AnalogIn::init(void* machtnichts)
+void PX4AnalogIn::init()
 {
 	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {

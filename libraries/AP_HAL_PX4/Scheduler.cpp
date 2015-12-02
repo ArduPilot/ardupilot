@@ -37,7 +37,7 @@ PX4Scheduler::PX4Scheduler() :
 	_perf_delay(perf_alloc(PC_ELAPSED, "APM_delay"))
 {}
 
-void PX4Scheduler::init(void *unused) 
+void PX4Scheduler::init()
 {
     _main_task_pid = getpid();
 

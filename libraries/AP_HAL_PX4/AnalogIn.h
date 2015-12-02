@@ -55,7 +55,7 @@ private:
 class PX4::PX4AnalogIn : public AP_HAL::AnalogIn {
 public:
     PX4AnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
     float board_voltage(void) { return _board_voltage; }

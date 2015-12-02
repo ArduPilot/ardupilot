@@ -18,7 +18,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace PX4;
 
-void PX4RCOutput::init(void* unused) 
+void PX4RCOutput::init()
 {
     _perf_rcout = perf_alloc(PC_ELAPSED, "APM_rcout");
     _pwm_fd = open(PWM_OUTPUT0_DEVICE_PATH, O_RDWR);

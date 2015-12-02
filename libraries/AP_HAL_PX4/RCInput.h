@@ -14,7 +14,7 @@
 
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
-    void init(void* machtnichts);
+    void init();
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

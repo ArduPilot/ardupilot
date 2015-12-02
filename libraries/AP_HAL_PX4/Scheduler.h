@@ -45,7 +45,7 @@ public:
     PX4Scheduler();
     /* AP_HAL::Scheduler methods */
 
-    void     init(void *unused);
+    void     init();
     void     delay(uint16_t ms);
     void     delay_microseconds(uint16_t us);
     void     delay_microseconds_boost(uint16_t us);

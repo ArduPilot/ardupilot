@@ -12,7 +12,7 @@ using namespace PX4;
 
 extern const AP_HAL::HAL& hal;
 
-void PX4RCInput::init(void* unused)
+void PX4RCInput::init()
 {
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
