@@ -15,7 +15,7 @@
 class Linux::RCInput_ZYNQ : public Linux::RCInput
 {
 public:
-    void init(void*);
+    void init();
     void _timer_tick(void);
 
  private:

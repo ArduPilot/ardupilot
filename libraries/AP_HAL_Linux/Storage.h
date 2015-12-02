@@ -25,7 +25,7 @@ public:
         return static_cast<Storage*>(storage);
     }
 
-    void init(void* machtnichts) {}
+    void init() {}
     uint8_t  read_byte(uint16_t loc);
     uint16_t read_word(uint16_t loc);
     uint32_t read_dword(uint16_t loc);

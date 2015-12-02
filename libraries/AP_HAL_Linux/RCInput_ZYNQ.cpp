@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void RCInput_ZYNQ::init(void*)
+void RCInput_ZYNQ::init()
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {

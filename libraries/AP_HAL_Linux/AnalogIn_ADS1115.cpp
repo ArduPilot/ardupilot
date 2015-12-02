@@ -74,7 +74,7 @@ AP_HAL::AnalogSource* ADS1115AnalogIn::channel(int16_t pin)
     return NULL;
 }
 
-void ADS1115AnalogIn::init(void* implspecific)
+void ADS1115AnalogIn::init()
 {
     _adc->init();
     hal.scheduler->suspend_timer_procs();

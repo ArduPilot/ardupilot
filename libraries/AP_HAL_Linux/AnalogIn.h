@@ -22,7 +22,7 @@ private:
 class Linux::AnalogIn : public AP_HAL::AnalogIn {
 public:
     AnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 
     // we don't yet know how to get the board voltage

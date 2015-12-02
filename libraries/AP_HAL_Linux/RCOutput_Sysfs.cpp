@@ -43,7 +43,7 @@ RCOutput_Sysfs::~RCOutput_Sysfs()
     delete _pwm_channels;
 }
 
-void RCOutput_Sysfs::init(void *machtnichts)
+void RCOutput_Sysfs::init()
 {
     for (uint8_t i = 0; i < _channel_count; i++) {
         _pwm_channels[i] = new PWM_Sysfs(_chip, i);

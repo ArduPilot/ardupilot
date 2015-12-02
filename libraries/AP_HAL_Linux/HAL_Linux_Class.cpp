@@ -246,7 +246,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         }
     }
 
-    scheduler->init(NULL);
+    scheduler->init();
     gpio->init();
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     i2c->begin();
@@ -258,12 +258,12 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #else
     i2c->begin();
 #endif
-    spi->init(NULL);
-    rcout->init(NULL);
-    rcin->init(NULL);
+    spi->init();
+    rcout->init();
+    rcin->init();
     uartA->begin(115200);    
     uartE->begin(115200);    
-    analogin->init(NULL);
+    analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
     // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct

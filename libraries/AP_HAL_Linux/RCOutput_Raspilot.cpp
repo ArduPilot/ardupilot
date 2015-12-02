@@ -22,7 +22,7 @@ using namespace Linux;
 
 static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void RCOutput_Raspilot::init(void* machtnicht)
+void RCOutput_Raspilot::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
     _spi_sem = _spi->get_semaphore();

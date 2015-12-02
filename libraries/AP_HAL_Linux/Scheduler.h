@@ -23,7 +23,7 @@ public:
         return static_cast<Scheduler*>(scheduler);
     }
 
-    void     init(void* machtnichts);
+    void     init();
     void     delay(uint16_t ms);
     void     delay_microseconds(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc,

@@ -14,7 +14,7 @@ public:
         return static_cast<RCInput*>(rcinput);
     }
 
-    virtual void init(void* machtnichts);
+    virtual void init();
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

@@ -77,7 +77,7 @@ void Scheduler::_create_realtime_thread(pthread_t *ctx, int rtprio,
     }
 }
 
-void Scheduler::init(void* machtnichts)
+void Scheduler::init()
 {
     mlockall(MCL_CURRENT|MCL_FUTURE);
 

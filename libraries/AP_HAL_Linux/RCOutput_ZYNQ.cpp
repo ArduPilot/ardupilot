@@ -24,7 +24,7 @@ static void catch_sigbus(int sig)
 {
     AP_HAL::panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void RCOutput_ZYNQ::init(void* machtnicht)
+void RCOutput_ZYNQ::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);

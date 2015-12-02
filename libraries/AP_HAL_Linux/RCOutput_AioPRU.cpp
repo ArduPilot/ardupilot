@@ -31,7 +31,7 @@ static void catch_sigbus(int sig)
 {
     AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
-void RCOutput_AioPRU::init(void* machtnicht)
+void RCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
    uint32_t *iram;

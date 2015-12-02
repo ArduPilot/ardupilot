@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void RCInput_AioPRU::init(void*)
+void RCInput_AioPRU::init()
 {
     int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {

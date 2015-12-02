@@ -26,7 +26,7 @@ private:
 class RaspilotAnalogIn: public AP_HAL::AnalogIn {
 public:
     RaspilotAnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 
     /* Board voltage is not available */

@@ -238,7 +238,7 @@ uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
     return (uint16_t)rpm_fl;
 }
 
-void RCOutput_Bebop::init(void* dummy)
+void RCOutput_Bebop::init()
 {
     int ret=0;
     struct sched_param param = { .sched_priority = RCOUT_BEBOP_RTPRIO };

@@ -28,7 +28,7 @@ RCInput::RCInput() :
     ppm_state._channel_counter = -1;
 }
 
-void RCInput::init(void* machtnichts)
+void RCInput::init()
 {
 }
 

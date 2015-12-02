@@ -423,7 +423,7 @@ void RCInput_RPI::init_registers()
     clk_reg = (uint32_t*)map_peripheral(clk_base, RCIN_RPI_CLK_LEN);
 }
 
-void RCInput_RPI::init(void*)
+void RCInput_RPI::init()
 {
     
     init_registers();

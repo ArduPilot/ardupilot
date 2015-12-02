@@ -31,7 +31,7 @@ RCInput_UART::~RCInput_UART()
     close(_fd);
 }
 
-void RCInput_UART::init(void*)
+void RCInput_UART::init()
 {
     struct termios options;
 

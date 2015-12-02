@@ -146,7 +146,7 @@ void SPIDeviceDriver::transfer(const uint8_t *data, uint16_t len)
     transaction(data, NULL, len);
 }
 
-void SPIDeviceManager::init(void *)
+void SPIDeviceManager::init()
 {
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
         if (_device[i]._bus >= LINUX_SPI_MAX_BUSES) {

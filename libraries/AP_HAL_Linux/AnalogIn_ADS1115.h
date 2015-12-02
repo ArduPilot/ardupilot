@@ -26,7 +26,7 @@ private:
 class ADS1115AnalogIn: public AP_HAL::AnalogIn {
 public:
     ADS1115AnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
 
     /* Board voltage is not available */

@@ -83,7 +83,7 @@ AP_HAL::AnalogSource* RaspilotAnalogIn::channel(int16_t pin)
     return NULL;
 }
 
-void RaspilotAnalogIn::init(void* implspecific)
+void RaspilotAnalogIn::init()
 {
     _vcc_pin_analog_source = channel(4);
     
