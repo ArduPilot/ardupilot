@@ -281,27 +281,28 @@ protected:
     // Intersampling period in seconds
     float               _dt;
 
-    // This represents a 321-intrinsic rotation from NED frame to the reference
-    // attitude used in the attitude controller. Formerly _angle_ef_target.
+    // This represents a 321-intrinsic rotation from NED frame to the reference (setpoint)
+    // attitude used in the attitude controller, in radians. Formerly _angle_ef_target.
     Vector3f            _att_target_euler_rad;
 
     // This represents an euler axis-angle rotation vector from the vehicle’s
-    // estimated attitude to the reference attitude used in the attitude
-    // controller. Formerly _angle_bf_error.
+    // estimated attitude to the reference (setpoint) attitude used in the attitude
+    // controller, in radians in the vehicle body frame of reference. Formerly
+    // _angle_bf_error.
     Vector3f            _att_error_rot_vec_rad;
 
-    // This represents the angular velocity of the reference attitude used in
-    // the attitude controller as 321-intrinsic euler angle derivatives.
-    // Formerly _rate_ef_desired.
+    // This represents the angular velocity of the reference (setpoint) attitude used in
+    // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
+    // second. Formerly _rate_ef_desired.
     Vector3f            _att_target_euler_deriv_rads;
 
-    // This represents the angular velocity of the reference attitude used in
-    // the attitude controller as an angular velocity vector in the reference
-    // attitude frame. Formerly _rate_bf_desired.
+    // This represents the angular velocity of the reference (setpoint) attitude used in
+    // the attitude controller as an angular velocity vector, in radians per second in
+    // the reference attitude frame. Formerly _rate_bf_desired.
     Vector3f            _att_target_ang_vel_rads;
 
-    // This represents the reference angular velocity used in the angular
-    // velocity controller. Formerly _rate_bf_target.
+    // This represents the reference (setpoint) angular velocity used in the angular
+    // velocity controller, in radians per second. Formerly _rate_bf_target.
     Vector3f            _ang_vel_target_rads;
 
 
