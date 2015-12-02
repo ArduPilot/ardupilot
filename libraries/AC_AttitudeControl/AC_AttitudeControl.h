@@ -214,6 +214,24 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+    // Retrieve a rotation matrix from the vehicle body frame to NED earth frame
+    void get_rotation_vehicle_to_ned(Matrix3f& m);
+
+    // Retrieve a rotation matrix from NED earth frame to the vehicle body frame
+    void get_rotation_ned_to_vehicle(Matrix3f& m);
+
+    // Retrieve a rotation matrix from reference (setpoint) body frame to NED earth frame
+    void get_rotation_reference_to_ned(Matrix3f& m);
+
+    // Retrieve a rotation matrix from NED earth frame to reference (setpoint) body frame
+    void get_rotation_ned_to_reference(Matrix3f& m);
+
+    // Retrieve a rotation matrix from vehicle body frame to reference (setpoint) body frame
+    void get_rotation_vehicle_to_reference(Matrix3f& m);
+
+    // Retrieve a rotation matrix from reference (setpoint) body frame to vehicle body frame
+    void get_rotation_reference_to_vehicle(Matrix3f& m);
+
     // Update _att_target_euler_rad.x by integrating a 321-intrinsic euler roll angle derivative
     void update_att_target_and_error_roll(float euler_roll_rate_rads, Vector3f &att_error_euler_rad, float overshoot_max_rad);
 
