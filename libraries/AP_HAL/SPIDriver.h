@@ -7,7 +7,8 @@
 
 class AP_HAL::SPIDeviceManager {
 public:
-    virtual void init(void *) = 0;
+    virtual void init(void *) { }
+    virtual void init() { }
     virtual AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice, uint8_t index = 0) = 0;
 };
 
