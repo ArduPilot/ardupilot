@@ -14,7 +14,7 @@ void setup(void)
       init Storage API
      */
     hal.console->printf("Starting AP_HAL::Storage test\r\n");
-    st->init(NULL);
+    st->init();
 
     /*
       Calculate XOR of the full conent of memory
