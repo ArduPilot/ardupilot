@@ -11,7 +11,7 @@ public:
     SITLRCInput(SITL_State *sitlState) {
         _sitlState = sitlState;
     }
-    void init(void* machtnichts);
+    void init();
     bool  new_input();
     uint8_t num_channels() {
         return 8;

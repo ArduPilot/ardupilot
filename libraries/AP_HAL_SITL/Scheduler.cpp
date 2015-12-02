@@ -33,7 +33,7 @@ SITLScheduler::SITLScheduler(SITL_State *sitlState) :
 {
 }
 
-void SITLScheduler::init(void *unused)
+void SITLScheduler::init()
 {
 }
 

@@ -71,16 +71,16 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
 
     _sitl_state->init(argc, argv);
-    scheduler->init(NULL);
+    scheduler->init();
     uartA->begin(115200);
 
-    rcin->init(NULL);
-    rcout->init(NULL);
+    rcin->init();
+    rcout->init();
 
-    //spi->init(NULL);
+    //spi->init();
     //i2c->begin();
     //i2c->setTimeout(100);
-    analogin->init(NULL);
+    analogin->init();
 
     callbacks->setup();
     scheduler->system_initialized();

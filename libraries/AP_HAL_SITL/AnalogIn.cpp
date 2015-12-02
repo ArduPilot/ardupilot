@@ -55,7 +55,7 @@ void ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
 }
 
-void SITLAnalogIn::init(void *ap_hal_scheduler) {
+void SITLAnalogIn::init() {
 }
 
 AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin) {

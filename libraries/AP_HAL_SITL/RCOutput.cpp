@@ -5,7 +5,7 @@
 
 using namespace HALSITL;
 
-void SITLRCOutput::init(void* machtnichts) {}
+void SITLRCOutput::init() {}
 
 void SITLRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {
     _freq_hz = freq_hz;
