@@ -173,10 +173,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_smooth(floa
     } else {
         euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), Vector3f(0,0,_att_target_euler_rate_rads.z), _att_target_ang_vel_rads);
     }
-    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
@@ -228,10 +229,11 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     // Convert euler angle derivatives of desired attitude into a body-frame angular velocity vector for feedforward
     // NOTE: This should be done about the desired attitude instead of about the vehicle attitude
     euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_euler_rate_rads, _att_target_ang_vel_rads);
-    // NOTE: A rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
@@ -325,8 +327,10 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_euler_rate_rads, _att_target_ang_vel_rads);
     // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
@@ -390,9 +394,10 @@ void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_
     // Compute the angular velocity target from the attitude error
     update_ang_vel_target_from_att_error();
 
-    // Add the angular velocity feedforward
-    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 
