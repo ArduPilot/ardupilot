@@ -23,7 +23,7 @@ private:
 class Empty::EmptySPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
     EmptySPIDeviceManager();
-    void init(void *);
+    void init();
     AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice, uint8_t index);
 private:
     EmptySPIDeviceDriver _device;

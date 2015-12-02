@@ -52,7 +52,7 @@ void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
     /* initialize all drivers and private members here.
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
-    scheduler->init(NULL);
+    scheduler->init();
     uartA->begin(115200);
     _member->init();
 

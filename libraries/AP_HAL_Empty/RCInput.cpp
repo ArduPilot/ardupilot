@@ -5,7 +5,7 @@ using namespace Empty;
 EmptyRCInput::EmptyRCInput()
 {}
 
-void EmptyRCInput::init(void* machtnichts)
+void EmptyRCInput::init()
 {}
 
 bool EmptyRCInput::new_input() {

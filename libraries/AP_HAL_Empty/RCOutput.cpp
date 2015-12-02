@@ -3,7 +3,7 @@
 
 using namespace Empty;
 
-void EmptyRCOutput::init(void* machtnichts) {}
+void EmptyRCOutput::init() {}
 
 void EmptyRCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {}
 

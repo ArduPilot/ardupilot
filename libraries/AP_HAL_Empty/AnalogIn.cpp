@@ -34,7 +34,7 @@ void EmptyAnalogSource::set_settle_time(uint16_t settle_time_ms)
 EmptyAnalogIn::EmptyAnalogIn()
 {}
 
-void EmptyAnalogIn::init(void* machtnichts)
+void EmptyAnalogIn::init()
 {}
 
 AP_HAL::AnalogSource* EmptyAnalogIn::channel(int16_t n) {

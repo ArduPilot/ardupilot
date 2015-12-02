@@ -7,7 +7,7 @@ using namespace Empty;
 EmptyStorage::EmptyStorage()
 {}
 
-void EmptyStorage::init(void*)
+void EmptyStorage::init()
 {}
 
 void EmptyStorage::read_block(void* dst, uint16_t src, size_t n) {

@@ -7,7 +7,7 @@
 class Empty::EmptyRCInput : public AP_HAL::RCInput {
 public:
     EmptyRCInput();
-    void init(void* machtnichts);
+    void init();
     bool  new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

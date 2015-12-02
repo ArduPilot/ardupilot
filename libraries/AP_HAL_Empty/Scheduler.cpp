@@ -10,7 +10,7 @@ extern const AP_HAL::HAL& hal;
 EmptyScheduler::EmptyScheduler()
 {}
 
-void EmptyScheduler::init(void* machtnichts)
+void EmptyScheduler::init()
 {}
 
 void EmptyScheduler::delay(uint16_t ms)

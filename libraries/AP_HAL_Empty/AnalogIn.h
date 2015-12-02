@@ -22,7 +22,7 @@ private:
 class Empty::EmptyAnalogIn : public AP_HAL::AnalogIn {
 public:
     EmptyAnalogIn();
-    void init(void* implspecific);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 };

@@ -38,7 +38,7 @@ void EmptySPIDeviceDriver::transfer (const uint8_t *data, uint16_t len)
 EmptySPIDeviceManager::EmptySPIDeviceManager()
 {}
 
-void EmptySPIDeviceManager::init(void *)
+void EmptySPIDeviceManager::init()
 {}
 
 AP_HAL::SPIDeviceDriver* EmptySPIDeviceManager::device(enum AP_HAL::SPIDevice, uint8_t index)
