@@ -187,6 +187,7 @@ void ADSB::send_report(void)
                 ADSB_FLAGS_VALID_VELOCITY |
                 ADSB_FLAGS_VALID_CALLSIGN |
                 ADSB_FLAGS_SIMULATED;
+            adsb_vehicle.squawk = 0; // NOTE: ADSB_FLAGS_VALID_SQUAWK is not set
 
             mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
             uint8_t saved_seq = chan0_status->current_tx_seq;
