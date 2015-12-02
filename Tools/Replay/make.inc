@@ -5,7 +5,6 @@ LIBRARIES += StorageManager
 LIBRARIES += AP_Math
 LIBRARIES += AP_ADC
 LIBRARIES += AP_Declination
-LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += Filter
 LIBRARIES += AP_Buffer
 LIBRARIES += AP_Airspeed
