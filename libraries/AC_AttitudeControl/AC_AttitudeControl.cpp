@@ -240,7 +240,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle_rad = radians(euler_roll_angle_cd*0.01f);
     float euler_pitch_angle_rad = radians(euler_pitch_angle_cd*0.01f);
-    float yaw_angle_ef_rad = radians(euler_yaw_angle_cd*0.01f);
+    float euler_yaw_angle_rad = radians(euler_yaw_angle_cd*0.01f);
 
     Vector3f    att_error_euler_rad;
 
@@ -250,7 +250,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     // Set attitude targets from input.
     _att_target_euler_rad.x = constrain_float(euler_roll_angle_rad, -get_tilt_limit_rad(), get_tilt_limit_rad());
     _att_target_euler_rad.y = constrain_float(euler_pitch_angle_rad, -get_tilt_limit_rad(), get_tilt_limit_rad());
-    _att_target_euler_rad.z = yaw_angle_ef_rad;
+    _att_target_euler_rad.z = euler_yaw_angle_rad;
 
     // Update attitude error.
     att_error_euler_rad.x = wrap_PI(_att_target_euler_rad.x - _ahrs.roll);
@@ -374,12 +374,12 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     input_att_quat_bf_ang_vel(att_target_quat, _att_target_ang_vel_rads);
 }
 
-void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& ang_vel_target_rads)
+void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_quat, const Vector3f& att_target_ang_vel_rads)
 {
     // Update euler attitude target and angular velocity targets
     att_target_quat.to_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
-    _att_target_ang_vel_rads = ang_vel_target_rads;
-    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), ang_vel_target_rads, _att_target_euler_deriv_rads);
+    _att_target_ang_vel_rads = att_target_ang_vel_rads;
+    ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), att_target_ang_vel_rads, _att_target_euler_deriv_rads);
 
     // Retrieve quaternion vehicle attitude
     // TODO add _ahrs.get_quaternion()
