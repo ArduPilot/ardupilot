@@ -24,7 +24,7 @@
 #define FLYMAPLE_RC_OUTPUT_NUM_CHANNELS 6
 
 class AP_HAL_FLYMAPLE_NS::FLYMAPLERCOutput : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
+    void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);

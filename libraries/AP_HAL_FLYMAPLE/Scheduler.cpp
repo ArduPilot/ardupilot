@@ -53,7 +53,7 @@ FLYMAPLEScheduler::FLYMAPLEScheduler() :
     _initialized(false)
 {}
 
-void FLYMAPLEScheduler::init(void* machtnichts)
+void FLYMAPLEScheduler::init()
 {
     delay_us(2000000); // Wait for startup so we have time to connect a new USB console
     // 1kHz interrupts from systick for normal timers

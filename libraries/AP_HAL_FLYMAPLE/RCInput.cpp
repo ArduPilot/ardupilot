@@ -106,7 +106,7 @@ void FLYMAPLERCInput::_timer_capt_cb(void)
     previous_count = current_count;
 }
 
-void FLYMAPLERCInput::init(void* machtnichts)
+void FLYMAPLERCInput::init()
 {
     /* initialize overrides */
     clear_overrides();

@@ -58,7 +58,7 @@ static EEPROMClass eeprom[num_eeprom_blocks];
 FLYMAPLEStorage::FLYMAPLEStorage()
 {}
 
-void FLYMAPLEStorage::init(void*)
+void FLYMAPLEStorage::init()
 {
     for (int i = 0; i < num_eeprom_blocks; i++)
     {

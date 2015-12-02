@@ -89,7 +89,7 @@ FLYMAPLESPIDeviceManager::FLYMAPLESPIDeviceManager()
 {
 }
 
-void FLYMAPLESPIDeviceManager::init(void *)
+void FLYMAPLESPIDeviceManager::init()
 {
 }
 
