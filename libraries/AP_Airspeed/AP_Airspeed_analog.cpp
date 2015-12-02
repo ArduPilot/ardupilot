@@ -22,7 +22,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include "AP_Airspeed.h"
 
 extern const AP_HAL::HAL& hal;
