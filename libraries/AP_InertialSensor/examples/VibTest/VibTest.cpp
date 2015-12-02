@@ -23,7 +23,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Declination/AP_Declination.h>
