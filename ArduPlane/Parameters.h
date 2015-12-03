@@ -222,6 +222,7 @@ public:
         k_param_camera_mount,
         k_param_camera_mount2,      // unused
         k_param_adsb,
+        k_param_notify,
 
         //
         // Battery monitoring parameters
