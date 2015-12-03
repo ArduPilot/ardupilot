@@ -111,59 +111,6 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
     return rc_map_mask(mask);
 }
 
-void AP_MotorsMatrix::output_armed_not_stabilizing()
-{
-    uint8_t i;
-    int16_t throttle_radio_output;                                  // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
-    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];                    // final outputs sent to the motors
-    int16_t out_min_pwm = _throttle_radio_min + _min_throttle;      // minimum pwm value we can send to the motors
-    int16_t out_max_pwm = _throttle_radio_max;                      // maximum pwm value we can send to the motors
-
-    // initialize limits flags
-    limit.roll_pitch = true;
-    limit.yaw = true;
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
-    int16_t thr_in_min = rel_pwm_to_thr_range(_spin_when_armed_ramped);
-    if (_throttle_control_input <= thr_in_min) {
-        _throttle_control_input = thr_in_min;
-        limit.throttle_lower = true;
-    }
-
-    if (_throttle_control_input >= _hover_out) {
-        _throttle_control_input = _hover_out;
-        limit.throttle_upper = true;
-    }
-
-    throttle_radio_output = calc_throttle_radio_output();
-
-    // set output throttle
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            motor_out[i] = throttle_radio_output;
-        }
-    }
-
-    if(throttle_radio_output >= out_min_pwm) {
-        // apply thrust curve and voltage scaling
-        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motor_enabled[i]) {
-                motor_out[i] = apply_thrust_curve_and_volt_scaling(motor_out[i], out_min_pwm, out_max_pwm);
-            }
-        }
-    }
-
-    // send output to each motor
-    hal.rcout->cork();
-    for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
-        if( motor_enabled[i] ) {
-            rc_write(i, motor_out[i]);
-        }
-    }
-    hal.rcout->push();
-}
-
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed_stabilizing()
