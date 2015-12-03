@@ -94,7 +94,7 @@ private:
 #endif
     // write buffer
     uint8_t *_writebuf;
-    uint16_t _writebuf_size;
+    uint32_t _writebuf_size; // in bytes; may be == 65536, thus 32-bits
     const uint16_t _writebuf_chunk;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
@@ -112,11 +112,23 @@ private:
 
     uint16_t critical_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        return 1024;
+        uint16_t ret = 1024;
+        if (ret > _writebuf_size) {
+            // in this case you will only get critical messages
+            ret = _writebuf_size;
+        }
+        return ret;
     };
     uint16_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        return 1024;
+        uint16_t ret = 1024;
+        if (ret >= _writebuf_size) {
+            // need to allow messages out from the messagewriters.  In
+            // this case while you have a messagewriter you won't get
+            // any other messages.  This should be a corner case!
+            ret = 0;
+        }
+        return ret;
     };
 
     // performance counters

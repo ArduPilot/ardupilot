@@ -162,6 +162,7 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
         AP_Int8 backend_types;
+        AP_Int8 file_bufsize; // in kilobytes
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
