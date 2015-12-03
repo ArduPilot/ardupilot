@@ -3,19 +3,19 @@
 
 #include "DataFlash.h"
 
+class DFMessageWriter_DFLogStart;
+
 class DataFlash_Backend
 {
+
 public:
     FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
+    FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
-    DataFlash_Backend(DataFlash_Class &front) :
-        _front(front),
-        _writing_startup_messages(false),
-        _internal_errors(0),
-        _dropped(0),
-        _last_periodic_1Hz(0),
-        _last_periodic_10Hz(0)
-        { }
+    DataFlash_Backend(DataFlash_Class &front,
+                      class DFMessageWriter_DFLogStart *writer);
+
+    vehicle_startup_message_Log_Writer vehicle_message_writer();
 
     void internal_error();
 
@@ -58,11 +58,11 @@ public:
     // initialisation this really shouldn't take structure and
     // num_types, however the CLI LogReadProcess function requires it.
     // That function needs to be split.
-    virtual void Init(const struct LogStructure *structure, uint8_t num_types) {
+    virtual void Init() {
         _writes_enabled = true;
-        _num_types = num_types;
-        _structures = structure;
     }
+
+    void set_mission(const AP_Mission *mission);
 
     virtual uint16_t bufferspace_available() = 0;
 
@@ -76,12 +76,35 @@ public:
     virtual void flush(void) { }
 #endif
 
-    virtual void periodic_tasks();
+     // for Dataflash_MAVlink
+    virtual void remote_log_block_status_msg(mavlink_channel_t chan,
+                                             mavlink_message_t* msg) { }
+    // end for Dataflash_MAVlink
+
+   virtual void periodic_tasks();
+
+    uint8_t num_types() const;
+    const struct LogStructure *structure(uint8_t structure) const;
 
     virtual void WroteStartupFormat() { }
     virtual void WroteStartupParam() { }
 
+    void Log_Write_EntireMission(const AP_Mission &mission);
+    bool Log_Write_Format(const struct LogStructure *structure);
+    bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
+    bool Log_Write_Message(const char *message);
+    bool Log_Write_Mission_Cmd(const AP_Mission &mission,
+                               const AP_Mission::Mission_Command &cmd);
+    bool Log_Write_Mode(uint8_t mode);;
+    bool Log_Write_Parameter(const char *name, float value);
+    bool Log_Write_Parameter(const AP_Param *ap,
+                             const AP_Param::ParamToken &token,
+                             enum ap_var_type type);
+
 protected:
+    uint32_t dropped;
+    uint8_t internal_errors; // uint8_t - wishful thinking?
+
     DataFlash_Class &_front;
 
     virtual void periodic_10Hz(const uint32_t now);
@@ -95,8 +118,6 @@ protected:
                           print_mode_fn print_mode,
                           AP_HAL::BetterStream *port);
 
-    const struct LogStructure *_structures;
-    uint8_t _num_types = 0;
     bool _writes_enabled = false;
 
     /*
@@ -107,11 +128,15 @@ protected:
     virtual bool WriteBlockCheckStartupMessages();
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();
-    bool _writing_startup_messages = false;
+
+    DFMessageWriter_DFLogStart *_startup_messagewriter;
+    bool _writing_startup_messages;
 
     uint32_t _internal_errors;
     uint32_t _dropped;
+
 private:
+
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
 };

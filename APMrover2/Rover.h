@@ -420,7 +420,7 @@ private:
     void do_erase_logs(void);
     void Log_Write_Performance();
     void Log_Write_Steering();
-    bool Log_Write_Startup(uint8_t type);
+    void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_Nav_Tuning();
     void Log_Write_Sonar();

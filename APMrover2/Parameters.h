@@ -196,6 +196,8 @@ public:
         k_param_steerController,
         k_param_barometer,
 
+        k_param_DataFlash = 253, // Logging Group
+
         // 254,255: reserved
         };
 

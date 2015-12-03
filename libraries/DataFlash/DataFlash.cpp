@@ -2,113 +2,213 @@
 
 #include "DataFlash_Backend.h"
 
+const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
+    // @Param: _BACKEND_TYPES
+    // @DisplayName: DataFlash Backend Storage type
+    // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
+    // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
+    // @User: Standard
+    AP_GROUPINFO("_BACKEND_TYPE",  0, DataFlash_Class, _params.backend_types,       DATAFLASH_BACKEND_FILE),
+    AP_GROUPEND
+};
+
+const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
+{
+    return &_structures[num];
+}
+
+
+#define FOR_EACH_BACKEND(methodcall)              \
+    do {                                          \
+        for (uint8_t i=0; i<_next_backend; i++) { \
+            backends[i]->methodcall;              \
+        }                                         \
+    } while (0)
+
 void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
 {
     _vehicle_messages = writer;
 }
 
 void DataFlash_Class::set_mission(const AP_Mission *mission) {
-    _startup_messagewriter.set_mission(mission);
+    FOR_EACH_BACKEND(set_mission(mission));
 }
 
 // start functions pass straight through to backend:
-bool DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
-    return backend->WriteBlock(pBuffer, size);
+void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+    FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
-bool DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
-    return backend->WriteCriticalBlock(pBuffer, size);
+void DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+    FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 
-bool DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
-    return backend->WritePrioritisedBlock(pBuffer, size, is_critical);
-}
-
-uint16_t DataFlash_Class::start_new_log() {
-    return backend->start_new_log();
+void DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+    FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
 // change me to "DoTimeConsumingPreparations"?
 void DataFlash_Class::EraseAll() {
-    backend->EraseAll();
+    FOR_EACH_BACKEND(EraseAll());
 }
 // change me to "LoggingAvailable"?
 bool DataFlash_Class::CardInserted(void) {
-    return backend->CardInserted();
+    for (uint8_t i=0; i< _next_backend; i++) {
+        if (backends[i]->CardInserted()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool DataFlash_Class::NeedPrep() {
-    return backend->NeedPrep();
+    for (uint8_t i=0; i< _next_backend; i++) {
+        if (backends[i]->NeedPrep()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void DataFlash_Class::Prep() {
-    backend->Prep();
-}
-
-uint16_t DataFlash_Class::bufferspace_available(void) {
-    return backend->bufferspace_available();
+    FOR_EACH_BACKEND(Prep());
 }
 
 uint16_t DataFlash_Class::find_last_log() const {
-    return backend->find_last_log();
+    if (_next_backend == 0) {
+        return 0;
+    }
+    return backends[0]->find_last_log();
 }
 void DataFlash_Class::get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) {
-    backend->get_log_boundaries(log_num, start_page, end_page);
+    if (_next_backend == 0) {
+        return;
+    }
+    backends[0]->get_log_boundaries(log_num, start_page, end_page);
 }
 void DataFlash_Class::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
-    backend->get_log_info(log_num, size, time_utc);
+    if (_next_backend == 0) {
+        return;
+    }
+    backends[0]->get_log_info(log_num, size, time_utc);
 }
 int16_t DataFlash_Class::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
-    return backend->get_log_data(log_num, page, offset, len, data);
+    if (_next_backend == 0) {
+        return 0;
+    }
+    return backends[0]->get_log_data(log_num, page, offset, len, data);
 }
 uint16_t DataFlash_Class::get_num_logs(void) {
-    return backend->get_num_logs();
+    if (_next_backend == 0) {
+        return 0;
+    }
+    return backends[0]->get_num_logs();
 }
 void DataFlash_Class::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt) {
-    backend->Log_Fill_Format(s, pkt);
+    if (_next_backend == 0) {
+        // how were we called?!
+        return;
+    }
+    backends[0]->Log_Fill_Format(s, pkt);
 }
 
 void DataFlash_Class::LogReadProcess(uint16_t log_num,
                                      uint16_t start_page, uint16_t end_page,
                                      print_mode_fn printMode,
                                      AP_HAL::BetterStream *port) {
-    backend->LogReadProcess(log_num, start_page, end_page, printMode, port);
+    if (_next_backend == 0) {
+        // how were we called?!
+        return;
+    }
+    backends[0]->LogReadProcess(log_num, start_page, end_page, printMode, port);
 }
 void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port) {
-    backend->DumpPageInfo(port);
+    if (_next_backend == 0) {
+        // how were we called?!
+        return;
+    }
+    backends[0]->DumpPageInfo(port);
 }
 void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port) {
-    backend->ShowDeviceInfo(port);
+    if (_next_backend == 0) {
+        // how were we called?!
+        return;
+    }
+    backends[0]->ShowDeviceInfo(port);
 }
 void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
-    backend->ListAvailableLogs(port);
+    if (_next_backend == 0) {
+        // how were we called?!
+        return;
+    }
+    backends[0]->ListAvailableLogs(port);
 }
 
+/* we're started if any of the backends are started */
 bool DataFlash_Class::logging_started(void) {
-    return backend->log_write_started;
+    for (uint8_t i=0; i< _next_backend; i++) {
+        if (backends[i]->logging_started()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void DataFlash_Class::EnableWrites(bool enable) {
-    backend->EnableWrites(enable);
+    FOR_EACH_BACKEND(EnableWrites(enable));
 }
+
+// for DataFlash_MAVLink
+void DataFlash_Class::remote_log_block_status_msg(mavlink_channel_t chan,
+                                                  mavlink_message_t* msg) {
+    FOR_EACH_BACKEND(remote_log_block_status_msg(chan, msg));
+}
+// end for DataFlash_MAVLink
 
 void DataFlash_Class::periodic_tasks() {
-    backend->periodic_tasks();
-}
-
-void DataFlash_Class::WroteStartupFormat() {
-    backend->WroteStartupFormat();
-}
-
-void DataFlash_Class::WroteStartupParam() {
-    backend->WroteStartupParam();
+     FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
 void DataFlash_Class::flush(void) {
-    backend->flush();
+     FOR_EACH_BACKEND(flush());
 }
 #endif
 
+
+void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
+{
+    FOR_EACH_BACKEND(Log_Write_EntireMission(mission));
+}
+
+void DataFlash_Class::Log_Write_Format(const struct LogStructure *s)
+{
+    FOR_EACH_BACKEND(Log_Write_Format(s));
+}
+
+void DataFlash_Class::Log_Write_Message(const char *message)
+{
+    FOR_EACH_BACKEND(Log_Write_Message(message));
+}
+
+void DataFlash_Class::Log_Write_Mode(uint8_t mode)
+{
+    FOR_EACH_BACKEND(Log_Write_Mode(mode));
+}
+
+void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+{
+    FOR_EACH_BACKEND(Log_Write_Parameter(name, value));
+}
+
+void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
+                                            const AP_Mission::Mission_Command &cmd)
+{
+    FOR_EACH_BACKEND(Log_Write_Mission_Cmd(mission, cmd));
+}
+
+
 // end functions pass straight through to backend
+
+#undef FOR_EACH_BACKEND

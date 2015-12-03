@@ -271,12 +271,12 @@ int16_t DataFlash_Block::get_log_data(uint16_t log_num, uint16_t page, uint32_t 
     if (adding_fmt_headers) {
         // the log doesn't start with a FMT message, we need to add
         // them
-        const uint16_t fmt_header_size = _num_types * sizeof(struct log_Format);
+        const uint16_t fmt_header_size = num_types() * sizeof(struct log_Format);
         while (offset < fmt_header_size && len > 0) {
             struct log_Format pkt;
             uint8_t t = offset / sizeof(pkt);
             uint8_t ofs = offset % sizeof(pkt);
-            Log_Fill_Format(&_structures[t], pkt);
+            Log_Fill_Format(structure(t), pkt);
             uint8_t n = sizeof(pkt) - ofs;
             if (n > len) {
                 n = len;

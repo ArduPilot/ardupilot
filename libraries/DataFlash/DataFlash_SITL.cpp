@@ -28,9 +28,9 @@ static int flash_fd;
 static uint8_t buffer[2][DF_PAGE_SIZE];
 
 // Public Methods //////////////////////////////////////////////////////////////
-void DataFlash_SITL::Init(const struct LogStructure *structure, uint8_t num_types)
+void DataFlash_SITL::Init()
 {
-    DataFlash_Backend::Init(structure, num_types);
+    DataFlash_Backend::Init();
 	if (flash_fd == 0) {
 		flash_fd = open("dataflash.bin", O_RDWR, 0777);
 		if (flash_fd == -1) {

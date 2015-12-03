@@ -1,7 +1,5 @@
 #include "DFMessageWriter.h"
 
-#include "DataFlash.h"
-
 extern const AP_HAL::HAL& hal;
 
 /* LogStartup - these are simple state machines which allow us to
@@ -35,13 +33,13 @@ void DFMessageWriter_DFLogStart::process()
 
     case ls_blockwriter_stage_formats:
         // write log formats so the log is self-describing
-        while (next_format_to_send < _DataFlash._num_types) {
-            if (!_DataFlash.Log_Write_Format(&_DataFlash._structures[next_format_to_send])) {
+        while (next_format_to_send < _dataflash_backend->num_types()) {
+            if (!_dataflash_backend->Log_Write_Format(_dataflash_backend->structure(next_format_to_send))) {
                 return; // call me again!
             }
             // provide hook to avoid corrupting the APM1/APM2
             // dataflash by writing too fast:
-            _DataFlash.WroteStartupFormat();
+            _dataflash_backend->WroteStartupFormat();
             next_format_to_send++;
         }
         _fmt_done = true;
@@ -50,11 +48,11 @@ void DFMessageWriter_DFLogStart::process()
 
     case ls_blockwriter_stage_parms:
         while (ap) {
-            if (!_DataFlash.Log_Write_Parameter(ap, token, type)) {
+            if (!_dataflash_backend->Log_Write_Parameter(ap, token, type)) {
                 return;
             }
             ap = AP_Param::next_scalar(&token, &type);
-            _DataFlash.WroteStartupParam();
+            _dataflash_backend->WroteStartupParam();
         }
 
         stage = ls_blockwriter_stage_sysinfo;
@@ -80,11 +78,11 @@ void DFMessageWriter_DFLogStart::process()
         // we guarantee 200 bytes of space for the vehicle startup
         // messages.  This allows them to be simple functions rather
         // than e.g. DFMessageWriter-based state machines
-        if (_DataFlash._vehicle_messages) {
-            if (_DataFlash.bufferspace_available() < 200) {
+        if (_dataflash_backend->vehicle_message_writer()) {
+            if (_dataflash_backend->bufferspace_available() < 200) {
                 return;
             }
-            _DataFlash._vehicle_messages();
+            (_dataflash_backend->vehicle_message_writer())();
         }
         stage = ls_blockwriter_stage_done;
         // fall through
@@ -116,7 +114,7 @@ void DFMessageWriter_WriteSysInfo::process() {
         // fall through
 
     case ws_blockwriter_stage_firmware_string:
-        if (! _DataFlash.Log_Write_Message(_firmware_string)) {
+        if (! _dataflash_backend->Log_Write_Message(_firmware_string)) {
             return; // call me again
         }
         stage = ws_blockwriter_stage_git_versions;
@@ -124,7 +122,7 @@ void DFMessageWriter_WriteSysInfo::process() {
 
     case ws_blockwriter_stage_git_versions:
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        if (! _DataFlash.Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
+        if (! _dataflash_backend->Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
             return; // call me again
         }
 #endif
@@ -134,7 +132,7 @@ void DFMessageWriter_WriteSysInfo::process() {
     case ws_blockwriter_stage_system_id:
         char sysid[40];
         if (hal.util->get_system_id(sysid)) {
-            if (! _DataFlash.Log_Write_Message(sysid)) {
+            if (! _dataflash_backend->Log_Write_Message(sysid)) {
                 return; // call me again
             }
         }
@@ -163,7 +161,7 @@ void DFMessageWriter_WriteEntireMission::process() {
         // fall through
 
     case em_blockwriter_stage_write_new_mission_message:
-        if (! _DataFlash.Log_Write_Message("New mission")) {
+        if (! _dataflash_backend->Log_Write_Message("New mission")) {
             return; // call me again
         }
         stage = em_blockwriter_stage_write_mission_items;
@@ -175,7 +173,7 @@ void DFMessageWriter_WriteEntireMission::process() {
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
             if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_DataFlash.Log_Write_Mission_Cmd(*_mission, cmd)) {
+                if (!_dataflash_backend->Log_Write_Mission_Cmd(*_mission, cmd)) {
                     return; // call me again
                 }
             }
