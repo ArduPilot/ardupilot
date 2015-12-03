@@ -45,6 +45,7 @@
 #define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
 #define AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT    200
 #define AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT   700
+#define AP_MOTORS_HELI_RSC_GOV_RPM_SETPOINT     1800
 
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to full power (most people use exterrnal govenors so we can ramp up quickly)
@@ -160,6 +161,12 @@ public:
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;
 
+    // get_gov_rpm_setpoint - gets contents of _rsc_gov_rpm_setpoint parameter in RPM
+    int16_t get_gov_rpm_setpoint() const { return _rsc_gov_rpm_setpoint; }
+
+    // set_governor_enable - enables vehicle code to enable/disabled closed loop rotor speed governor, set target speed and pass in rotor speed feedback
+    virtual void set_rsc_governor_enabled(bool enabled, int16_t desired_rpm, float rpm) {};
+
     // output - sends commands to the motors
     void    output();
 
@@ -227,6 +234,7 @@ protected:
     AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
     AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
+    AP_Int16        _rsc_gov_rpm_setpoint;      // rotor speed controller governor RPM setpoint
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];

@@ -6,6 +6,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>      // RC Channel Library
+#include <AC_PID/AC_PID.h>
 
 // rotor controller states
 enum RotorControlState {
@@ -26,15 +27,18 @@ enum RotorControlMode {
 class AP_MotorsHeli_RSC {
 public:
         AP_MotorsHeli_RSC(RC_Channel&   servo_output,
-                      int8_t        servo_output_channel,
-                      uint16_t      loop_rate) :
+                          int8_t        servo_output_channel,
+                          uint16_t      loop_rate,
+                          AC_PID        *gov_pid = NULL):
         _servo_output(servo_output),
         _servo_output_channel(servo_output_channel),
         _loop_rate(loop_rate)
-    {};
+    {
+        _gov_pid = gov_pid;
+    };
 
-    // init_servo - servo initialization on start-up
-    void        init_servo();
+    // init - initialization on start-up
+    void        init();
 
     // set_control_mode - sets control mode
     void        set_control_mode(RotorControlMode mode) { _control_mode = mode; }
@@ -75,6 +79,9 @@ public:
     // set_motor_load
     void        set_motor_load(float load) { _load_feedforward = load; }
 
+    // set_gov_enable
+    void        set_gov_enable(bool enabled, int16_t rpm, float rpm_feedback);
+
     // recalc_scalers
     void        recalc_scalers();
 
@@ -87,14 +94,18 @@ private:
     RC_Channel&     _servo_output;
     int8_t          _servo_output_channel;      // output channel to rotor esc
     float           _loop_rate;                 // main loop rate
+    AC_PID         *_gov_pid;                   // optional pointer to external PID object for speed governor
 
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
+    bool            _gov_enabled = false;       // status of speed governor
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
     int16_t         _idle_output = 0;           // motor output idle speed
     int16_t         _max_speed = 1000;          // rotor maximum speed. Placeholder value until we have measured speed input (ToDo)
     int16_t         _desired_speed = 0;         // latest desired rotor speed from pilot
     int16_t         _control_output = 0;        // latest logic controlled output
+    int16_t         _governor_rpm_setpoint = 0; // governor rpm setpoint when rotor is engaged
+    float           _rpm_feedback = 0;          // latest speed feedback from external tachometer sensor
     float           _rotor_ramp_output = 0;     // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
     float           _rotor_runup_output = 0;    // scalar used to store status of rotor run-up time (0.0-1.0f)
     float           _ramp_increment = 0;        // the amount to increase/decrease the rotor ramp scalar during each iteration
@@ -115,6 +126,12 @@ private:
 
     // write_rsc - outputs pwm onto output rsc channel. servo_out parameter is of the range 0 ~ 1000
     void            write_rsc(int16_t servo_out);
+
+    // calc_open_loop_power_control_output - calculates control output for use in open loop mode, or as feedforward for closed loop mode
+    int16_t         calc_open_loop_power_control_output();
+
+    // calc_closed_loop_power_control_output - calculates control output for closed loop mode
+    int16_t         calc_closed_loop_power_control_output();
 };
 
 #endif // AP_MOTORS_HELI_RSC_H
