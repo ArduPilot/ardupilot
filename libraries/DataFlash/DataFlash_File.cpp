@@ -60,7 +60,6 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     _log_directory(log_directory),
     _cached_oldest_log(0),
     _writebuf(NULL),
-    _writebuf_size(16*1024),
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
     _writebuf_chunk(512),
@@ -130,11 +129,21 @@ void DataFlash_File::Init()
         _writebuf = NULL;
     }
 
+    // determine and limit file backend buffersize
+    uint8_t bufsize = _front._params.file_bufsize;
+    if (bufsize > 64) {
+        // we currently use uint16_t for the ringbuffer.  Also,
+        // PixHawk has DMA limitaitons.
+        bufsize = 64;
+    }
+    _writebuf_size = bufsize * 1024;
+
     /*
       if we can't allocate the full writebuf then try reducing it
       until we can allocate it
      */
     while (_writebuf == NULL && _writebuf_size >= _writebuf_chunk) {
+        hal.console->printf("DataFlash_File: buffer size=%d\n", _writebuf_size);
         _writebuf = (uint8_t *)malloc(_writebuf_size);
         if (_writebuf == NULL) {
             _writebuf_size /= 2;
@@ -463,20 +472,20 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
 
     if (_writebuf_tail < _head) {
         // perform as single memcpy
-        assert(_writebuf_tail+size <= _writebuf_size);
+        assert(((uint32_t)_writebuf_tail)+size <= _writebuf_size);
         memcpy(&_writebuf[_writebuf_tail], pBuffer, size);
         BUF_ADVANCETAIL(_writebuf, size);
     } else {
         // perform as two memcpy calls
-        uint16_t n = _writebuf_size - _writebuf_tail;
+        uint32_t n = _writebuf_size - _writebuf_tail;
         if (n > size) n = size;
-        assert(_writebuf_tail+n <= _writebuf_size);
+        assert(((uint32_t)_writebuf_tail)+n <= _writebuf_size);
         memcpy(&_writebuf[_writebuf_tail], pBuffer, n);
         BUF_ADVANCETAIL(_writebuf, n);
         pBuffer = (const void *)(((const uint8_t *)pBuffer) + n);
         n = size - n;
         if (n > 0) {
-            assert(_writebuf_tail+n <= _writebuf_size);
+            assert(((uint32_t)_writebuf_tail)+n <= _writebuf_size);
             memcpy(&_writebuf[_writebuf_tail], pBuffer, n);
             BUF_ADVANCETAIL(_writebuf, n);
         }
@@ -978,7 +987,7 @@ void DataFlash_File::_io_timer(void)
         }
     }
 
-    assert(_writebuf_head+nbytes <= _writebuf_size);
+    assert(((uint32_t)_writebuf_head)+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
         hal.util->perf_count(_perf_errors);
