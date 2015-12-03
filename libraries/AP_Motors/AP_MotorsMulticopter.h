@@ -139,6 +139,9 @@ protected:
     float               calc_yaw_pwm() { return (_yaw_control_input * _rpy_pwm_scalar); }
     int16_t             calc_throttle_radio_output() { return (_throttle_control_input * _throttle_pwm_scalar) + _throttle_radio_min;}
 
+    // convert thrust (0~1) range back to pwm range
+    int16_t             calc_thrust_to_pwm(float thrust_in) const;
+
     // flag bitmask
     struct {
         uint8_t slow_start         : 1;    // 1 if slow start is active

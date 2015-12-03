@@ -352,6 +352,12 @@ float AP_MotorsMulticopter::thr_range_to_rel_pwm(float thr) const
     return _throttle_pwm_scalar*thr;
 }
 
+int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
+{
+    return constrain_int16((_throttle_radio_min + _min_throttle + apply_thrust_curve_and_volt_scaling(thrust_in) *
+            ( _throttle_radio_max - (_throttle_radio_min + _min_throttle))), _throttle_radio_min + _min_throttle, _throttle_radio_max);
+}
+
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
 // also sets throttle channel minimum and maximum pwm
 void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t radio_min, int16_t radio_max)
