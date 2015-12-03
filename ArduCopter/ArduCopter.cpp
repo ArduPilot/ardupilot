@@ -485,7 +485,10 @@ void Copter::one_hz_loop()
 
         update_using_interlock();
 
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
+        // check if we are using governor enable on an aux switch
+        set_using_governor_switch(check_if_auxsw_mode_used(AUXSW_HELI_GOV_ENABLE));
+#else
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
 

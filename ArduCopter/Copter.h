@@ -540,6 +540,8 @@ private:
     struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
         uint8_t init_targets_on_arming  : 1;    // 1   // true if we have been disarmed, and need to reset rate controller targets when we arm
+        uint8_t using_governor_switch   : 1;    // 2   // true if there is a governor enable Aux Switch assigned
+        uint8_t governor_enable         : 1;    // 3   // true if governor enable Aux Switch is set
     } heli_flags;
 #endif
 
@@ -831,6 +833,7 @@ private:
     void notify_flight_mode(uint8_t mode);
     void heli_init();
     void check_dynamic_flight(void);
+    void set_using_governor_switch(bool b);
     void update_heli_control_dynamics(void);
     void heli_update_landing_swash();
     void heli_update_rotor_speed_targets();

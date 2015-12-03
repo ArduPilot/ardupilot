@@ -172,7 +172,6 @@ void Copter::heli_update_rotor_speed_targets()
             break;
         case ROTOR_CONTROL_MODE_SPEED_SETPOINT:
         case ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT:
-        case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
             // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
             // other than being used to create a crude estimate of rotor speed
             if (rsc_control_deglitched > 0) {
@@ -181,6 +180,20 @@ void Copter::heli_update_rotor_speed_targets()
             }else{
                 motors.set_interlock(false);
                 motors.set_desired_rotor_speed(0);
+            }
+            break;
+        case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
+            // pass setpoint through as desired rotor speed
+            if (rsc_control_deglitched > 0) {
+                motors.set_interlock(true);
+                if ((rpm_sensor.get_rpm(0) > 0) && ((heli_flags.using_governor_switch && heli_flags.governor_enable) || !heli_flags.using_governor_switch)){
+                    motors.set_rsc_governor_enabled(true, motors.get_gov_rpm_setpoint(), rpm_sensor.get_rpm(0));
+                } else {
+                    motors.set_rsc_governor_enabled(false, motors.get_gov_rpm_setpoint(), 0);
+                }
+            }else{
+                motors.set_interlock(false);
+                motors.set_rsc_governor_enabled(false, 0, 0);
             }
             break;
     }
@@ -198,6 +211,13 @@ void Copter::heli_update_rotor_speed_targets()
 void Copter::heli_radio_passthrough()
 {
     motors.set_radio_passthrough(channel_roll->control_in, channel_pitch->control_in, channel_throttle->control_in, channel_yaw->control_in);
+}
+
+void Copter::set_using_governor_switch(bool b)
+{
+    if(heli_flags.using_governor_switch != b) {
+        heli_flags.using_governor_switch = b;
+    }
 }
 
 #endif  // FRAME_CONFIG == HELI_FRAME

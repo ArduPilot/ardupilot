@@ -581,6 +581,15 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
+#if FRAME_CONFIG == HELI_FRAME
+        case AUXSW_HELI_GOV_ENABLE:
+            if (ch_flag == AUX_SWITCH_HIGH) {
+                heli_flags.governor_enable = true;
+            } else {
+                heli_flags.governor_enable = false;
+            }
+            break;
+#endif
     }
 }
 
