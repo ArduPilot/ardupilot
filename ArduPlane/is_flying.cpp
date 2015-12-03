@@ -45,6 +45,25 @@ void Plane::update_is_flying_5Hz(void)
               make is_flying() more accurate during various auto modes
              */
 
+            // Detect X-axis deceleration for probable ground impacts.
+            // Limit the max probability so it can decay faster. This
+            // will not change the is_flying state, anything above 0.1
+            // is "true", it just allows it to decay faster once we decide we
+            // aren't flying using the normal schemes
+            float accel_x = ins.get_accel().x;
+
+            if (accel_x < -20) {
+                // large deceleration detected, lets lower confidence VERY quickly
+                if (isFlyingProbability > 0.25f) {
+                    isFlyingProbability = 0.25f;
+                }
+            } else if (accel_x < -10) {
+                // medium deceleration detected, lets lower confidence
+                if (isFlyingProbability > 0.5f) {
+                    isFlyingProbability = 0.5f;
+                }
+            }
+
             switch (flight_stage)
             {
             case AP_SpdHgtControl::FLIGHT_TAKEOFF:
@@ -59,11 +78,9 @@ void Plane::update_is_flying_5Hz(void)
 
             case AP_SpdHgtControl::FLIGHT_LAND_ABORT:
             case AP_SpdHgtControl::FLIGHT_NORMAL:
-                // TODO: detect ground impacts
                 break;
 
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
-                // TODO: detect ground impacts
                 if (fabsf(auto_state.sink_rate) > 0.2f) {
                     is_flying_bool = true;
                 }
