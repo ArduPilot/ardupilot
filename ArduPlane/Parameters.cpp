@@ -1214,6 +1214,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
 
+    // @Group: DEV_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "DEV_",  AP_Notify),
+
     AP_VAREND
 };
 
