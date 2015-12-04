@@ -57,7 +57,8 @@ void DataFlashTest::setup(void)
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = dataflash.StartNewLog();
+    dataflash.StartNewLog();
+    log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
