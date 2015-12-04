@@ -16,7 +16,6 @@ UTILITY_SOURCE_EXTS = [ 'utility/' + glob for glob in SOURCE_EXTS ]
 # on the bld.env.BOARD.
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ADC',
-    'AP_ADC_AnalogSource',
     'AP_AHRS',
     'AP_Airspeed',
     'AP_Baro',
