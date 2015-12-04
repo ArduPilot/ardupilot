@@ -365,8 +365,8 @@ public:
     void write_home_to_storage();
 
     // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
-    //  return true on success, false on failure
-    static bool mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd);
+    //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
+    static MAV_MISSION_RESULT mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd);
 
     // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
