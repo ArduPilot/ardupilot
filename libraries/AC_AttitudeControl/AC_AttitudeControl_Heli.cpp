@@ -64,7 +64,7 @@ void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw(float roll_pass
 
     // convert angle error rotation vector into 321-intrinsic euler angle difference
     // NOTE: this results an an approximation linearized about the vehicle's attitude
-    if (ang_vel_to_euler_derivative(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_error_rot_vec_rad, att_error_euler_rad)) {
+    if (ang_vel_to_euler_rate(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_error_rot_vec_rad, att_error_euler_rad)) {
         _att_target_euler_rad.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
         _att_target_euler_rad.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
         _att_target_euler_rad.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);

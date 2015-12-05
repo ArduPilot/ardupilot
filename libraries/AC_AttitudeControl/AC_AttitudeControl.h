@@ -135,11 +135,11 @@ public:
     virtual void rate_controller_run();
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    void euler_derivative_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_dot_rads, Vector3f& ang_vel_rads);
+    void euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_dot_rads, Vector3f& ang_vel_rads);
 
     // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
     // Returns false if the vehicle is pitched 90 degrees up or down
-    bool ang_vel_to_euler_derivative(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_dot_rads);
+    bool ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_dot_rads);
 
     // Configures whether the attitude controller should limit the rate demand to constrain angular acceleration
     void limit_angle_to_rate_request(bool limit_request) { _att_ctrl_use_accel_limit = limit_request; }
@@ -294,7 +294,7 @@ protected:
     // This represents the angular velocity of the reference (setpoint) attitude used in
     // the attitude controller as 321-intrinsic euler angle derivatives, in radians per
     // second. Formerly _rate_ef_desired.
-    Vector3f            _att_target_euler_deriv_rads;
+    Vector3f            _att_target_euler_rate_rads;
 
     // This represents the angular velocity of the reference (setpoint) attitude used in
     // the attitude controller as an angular velocity vector, in radians per second in
