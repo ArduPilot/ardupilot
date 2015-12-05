@@ -66,6 +66,8 @@ public:
         k_epm                   = 28,            ///< epm gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
         k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters
+        k_heli_rsc              = 31,            ///< helicopter RSC output
+        k_heli_tail_rsc         = 32,            ///< helicopter tail RSC output
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -128,9 +130,14 @@ public:
     // refresh aux servo to function mapping
     static void update_aux_servo_function(void);
 
+    // set default channel for an auxillary function
+    static bool set_aux_channel_default(Aux_servo_function_t function, uint8_t channel);
+    
 private:
-    static uint32_t _function_mask;
+    static uint64_t _function_mask;
     static RC_Channel_aux *_aux_channels[RC_AUX_MAX_CHANNELS];
+
+    void aux_servo_function_setup(void);
 };
 
 #endif /* RC_CHANNEL_AUX_H_ */
