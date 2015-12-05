@@ -57,7 +57,7 @@ float detnxn(const float C[],const uint8_t n)
       }
     }
 
-    if (A[c + iy] != 0.0) {
+    if (!is_zero(A[c + iy])) {
       if (iy != 0) {
         ipiv[j] = (int8_t)((j + iy) + 1);
         ix = j;
@@ -81,7 +81,7 @@ float detnxn(const float C[],const uint8_t n)
     jy = c + n;
     for (b_j = 1; b_j <= n - 1 - j; b_j++) {
       smax = A[jy];
-      if (A[jy] != 0.0) {
+      if (!is_zero(A[jy])) {
         ix = c + 1;
         i0 = (iy - j) + (2*n);
         for (ijA = n + 1 + iy; ijA + 1 <= i0; ijA++) {
@@ -177,7 +177,7 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
             }
         }
 
-        if (A[c + pipk] != 0.0f) {
+        if (!is_zero(A[c + pipk])) {
             if (pipk != 0) {
                 ipiv[j] = (int32_t)((j + pipk) + 1);
                 ix = j;
@@ -201,7 +201,7 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
         jy = c + n;
         for (k = 1; k <= (n-1) - j; k++) {
             smax = A[jy];
-            if (A[jy] != 0.0f) {
+            if (!is_zero(A[jy])) {
                 ix = c + 1;
                 i0 = (pipk - j) + (2*n);
                 for (ijA = (n+1) + pipk; ijA + 1 <= i0; ijA++) {
@@ -230,7 +230,7 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
     for (k = 0; k < n; k++) {
         y[k + n * (p[k] - 1)] = 1.0;
         for (j = k; j + 1 < (n+1); j++) {
-            if (y[j + n * (p[k] - 1)] != 0.0f) {
+            if (!is_zero(y[j + n * (p[k] - 1)])) {
                 for (jy = j + 1; jy + 1 < (n+1); jy++) {
                     y[jy + n * (p[k] - 1)] -= y[j + n * (p[k] - 1)] * A[jy + n * j];
                 }
@@ -242,7 +242,7 @@ bool inversenxn(const float x[], float y[], const uint8_t n)
         c = n * j;
         for (k = (n-1); k > -1; k += -1) {
             pipk = n * k;
-            if (y[k + c] != 0.0f) {
+            if (!is_zero(y[k + c])) {
                 y[k + c] /= A[k + pipk];
                 for (jy = 0; jy + 1 <= k; jy++) {
                     y[jy + c] -= y[k + c] * A[jy + pipk];
