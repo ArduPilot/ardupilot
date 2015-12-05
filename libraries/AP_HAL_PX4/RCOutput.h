@@ -40,6 +40,7 @@ private:
     volatile bool _need_update;
     perf_counter_t  _perf_rcout;
     uint32_t _last_output;
+    uint32_t _last_config_us;
     unsigned _servo_count;
     unsigned _alt_servo_count;
     uint32_t _rate_mask;

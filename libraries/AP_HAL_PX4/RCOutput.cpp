@@ -346,6 +346,17 @@ void PX4RCOutput::_timer_tick(void)
         _need_update = true;
     }
 
+    // check for PWM count changing. This can happen then the user changes BRD_PWM_COUNT
+    if (now - _last_config_us > 1000000) {
+        if (_pwm_fd != -1) {
+            ioctl(_pwm_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_servo_count);
+        }
+        if (_alt_fd != -1) {
+            ioctl(_alt_fd, PWM_SERVO_GET_COUNT, (unsigned long)&_alt_servo_count);
+        }
+        _last_config_us = now;
+    }
+    
     if (_need_update && _pwm_fd != -1) {
         _need_update = false;
         perf_begin(_perf_rcout);
