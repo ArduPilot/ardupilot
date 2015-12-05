@@ -1096,6 +1096,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         case MAV_CMD_GET_HOME_POSITION:
             send_home(rover.ahrs.get_home());
+            result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
