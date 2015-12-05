@@ -103,6 +103,18 @@ uint32_t                get_distance_cm(const struct Location &loc1, const struc
 // return bearing in centi-degrees between two locations
 int32_t                 get_bearing_cd(const struct Location &loc1, const struct Location &loc2);
 
+// return determinant of square matrix
+float                   detnxn(const float C[], const uint8_t n);
+
+// Output inverted nxn matrix when returns true, otherwise matrix is Singular
+bool                    inversenxn(const float x[], float y[], const uint8_t n);
+
+// invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
+bool                    inverse3x3(float m[], float invOut[]);
+
+// invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
+bool                    inverse4x4(float m[],float invOut[]);
+
 // see if location is past a line perpendicular to
 // the line between point1 and point2. If point1 is
 // our previous waypoint and point2 is our target waypoint
