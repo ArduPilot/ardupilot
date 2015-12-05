@@ -144,10 +144,6 @@ void AP_MotorsHeli_Single::enable()
     hal.rcout->enable_ch(AP_MOTORS_MOT_4);    // yaw
     hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_AUX);                                 // output for gyro gain or direct drive variable pitch tail motor
     hal.rcout->enable_ch(AP_MOTORS_HELI_SINGLE_RSC);                                 // output for main rotor esc
-
-    // disable channels 7 and 8 from being used by RC_Channel_aux
-    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_SINGLE_AUX);
-    RC_Channel_aux::disable_aux_channel(AP_MOTORS_HELI_SINGLE_RSC);
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
