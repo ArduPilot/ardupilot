@@ -176,7 +176,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             model_str = gopt.optarg;
             break;
         case 's':
-            speedup = atof(gopt.optarg);
+            speedup = strtof(gopt.optarg, NULL);
             break;
         case 'F':
             _fdm_address = gopt.optarg;

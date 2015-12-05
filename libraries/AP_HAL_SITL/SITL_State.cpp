@@ -32,7 +32,7 @@ void SITL_State::_set_param_default(const char *parm)
         printf("Please specify parameter as NAME=VALUE");
         exit(1);
     }
-    float value = atof(p+1);
+    float value = strtof(p+1, NULL);
     *p = 0;
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(pdup, &var_type);
