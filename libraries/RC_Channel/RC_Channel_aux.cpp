@@ -95,19 +95,21 @@ void RC_Channel_aux::update_aux_servo_function(void)
 		case RC_Channel_aux::k_flap:
 		case RC_Channel_aux::k_flap_auto:
 		case RC_Channel_aux::k_egg_drop:
-			_aux_channels[i]->set_range(0,100);
+			_aux_channels[i]->set_range_out(0,100);
+			break;
+		case RC_Channel_aux::k_aileron_with_input:
+		case RC_Channel_aux::k_elevator_with_input:
+		    _aux_channels[i]->set_angle(4500);
 			break;
 		case RC_Channel_aux::k_aileron:
-		case RC_Channel_aux::k_aileron_with_input:
 		case RC_Channel_aux::k_elevator:
-		case RC_Channel_aux::k_elevator_with_input:
 		case RC_Channel_aux::k_dspoiler1:
 		case RC_Channel_aux::k_dspoiler2:
 		case RC_Channel_aux::k_rudder:
 		case RC_Channel_aux::k_steering:
 		case RC_Channel_aux::k_flaperon1:
 		case RC_Channel_aux::k_flaperon2:
-		    _aux_channels[i]->set_angle(4500);
+		    _aux_channels[i]->set_angle_out(4500);
 			break;
 		default:
 			break;
