@@ -18,9 +18,7 @@ bool Copter::heli_acro_init(bool ignore_checks)
     // set stab collective false to use full collective pitch range
     input_manager.set_use_stab_col(false);
 
-    if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
-        attitude_control.reset_angle_error_integrator();
-    }
+    attitude_control.reset_angle_error_integrator();
     
     // always successfully enter acro
     return true;

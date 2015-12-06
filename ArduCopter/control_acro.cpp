@@ -14,9 +14,7 @@ bool Copter::acro_init(bool ignore_checks)
        return false;
    }
 
-   if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
-       attitude_control.reset_angle_error_integrator();
-   }
+   attitude_control.reset_angle_error_integrator();
 
    // set target altitude to zero for reporting
    pos_control.set_alt_target(0);
@@ -34,9 +32,7 @@ void Copter::acro_run()
 
     // if motors not running reset angle targets
     if(!motors.armed() || ap.throttle_zero) {
-        if (g.acro_trainer == ACRO_TRAINER_DIRECT) {
-            attitude_control.reset_angle_error_integrator();
-        }
+        attitude_control.reset_angle_error_integrator();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         // slow start if landed
         if (ap.land_complete) {
