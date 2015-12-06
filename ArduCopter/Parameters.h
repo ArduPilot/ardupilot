@@ -217,7 +217,7 @@ public:
         //
         k_param_rtl_speed_cms = 135,
         k_param_fs_batt_curr_rtl, // 136
-
+        k_param_fs_gps_glitch_type, //137
         //
         // 140: Sensor parameters
         //
@@ -387,6 +387,7 @@ public:
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
+    AP_Int8         fs_gps_glitch_type;         // gps glitch failsafe behaviour
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         compass_enabled;

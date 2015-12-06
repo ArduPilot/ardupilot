@@ -9,6 +9,9 @@
 // loiter_init - initialise loiter controller
 bool Copter::loiter_init(bool ignore_checks)
 {
+    if (!ignore_checks && failsafe.gps_glitch) {
+        return false;
+    }
     if (position_ok() || ignore_checks) {
 
         // set target to current position

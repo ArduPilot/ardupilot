@@ -175,6 +175,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_ENABLED_ALWAYS_RTL),
 
+
+    // @Param: FS_GPS_GLITCH
+    // @DisplayName: GPS Glitch Failsafe Type
+    // @Description: Controls whether failsafe will be invoked (and what action to take) when "GPS is inaccurate" is reported by EKF. This will involve switching to ALT_HOLD mode in case of GPS glitch.
+    // @Values: 0:Disabled,1:Enabled for non autonomous gps aided modes,2:Enabled for all gps aided modes
+    // @User: Standard
+    GSCALAR(fs_gps_glitch_type, "FS_GPS_GLITCH", FS_GPS_GLITCH_ENABLED_NON_AUTO),
+
     // @Param: GPS_HDOP_GOOD
     // @DisplayName: GPS Hdop Good
     // @Description: GPS Hdop value at or below this value represent a good position.  Used for pre-arm checks
