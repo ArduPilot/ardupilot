@@ -39,10 +39,10 @@ void Copter::init_rc_in()
     channel_yaw->set_type(RC_CHANNEL_TYPE_ANGLE_RAW);
 
     //set auxiliary servo ranges
-    g.rc_5.set_range(0,1000);
-    g.rc_6.set_range(0,1000);
-    g.rc_7.set_range(0,1000);
-    g.rc_8.set_range(0,1000);
+    g.rc_5.set_range_in(0,1000);
+    g.rc_6.set_range_in(0,1000);
+    g.rc_7.set_range_in(0,1000);
+    g.rc_8.set_range_in(0,1000);
 
     // set default dead zones
     default_dead_zones();
