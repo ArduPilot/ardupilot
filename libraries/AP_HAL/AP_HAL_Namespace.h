@@ -47,7 +47,7 @@ namespace AP_HAL {
      * Global names for all of the existing SPI devices on all platforms.
      */
 
-    enum SPIDevice {
+    enum SPIDeviceType {
         SPIDevice_Dataflash         = 0,
         SPIDevice_ADS7844           = 1,
         SPIDevice_MS5611            = 2,

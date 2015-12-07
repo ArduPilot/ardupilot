@@ -82,7 +82,7 @@ SPIDeviceDriver SPIDeviceManager::_device[0];
 // have a separate semaphore per bus
 Semaphore SPIDeviceManager::_semaphore[LINUX_SPI_MAX_BUSES];
 
-SPIDeviceDriver::SPIDeviceDriver(uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDevice type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
+SPIDeviceDriver::SPIDeviceDriver(uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed):
     _bus(bus),
     _subdev(subdev),
     _type(type),
@@ -174,7 +174,7 @@ void SPIDeviceManager::init()
     }
 }
 
-void SPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
+void SPIDeviceManager::cs_assert(enum AP_HAL::SPIDeviceType type)
 {
     uint16_t bus = 0, i;
     for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
@@ -210,7 +210,7 @@ void SPIDeviceManager::cs_assert(enum AP_HAL::SPIDevice type)
     }
 }
 
-void SPIDeviceManager::cs_release(enum AP_HAL::SPIDevice type)
+void SPIDeviceManager::cs_release(enum AP_HAL::SPIDeviceType type)
 {
     uint16_t bus = 0, i;
     for (i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
@@ -277,7 +277,7 @@ bool SPIDeviceManager::transaction(SPIDeviceDriver &driver, const uint8_t *tx, u
 /*
   return a SPIDeviceDriver for a particular device
  */
-AP_HAL::SPIDeviceDriver *SPIDeviceManager::device(enum AP_HAL::SPIDevice dev, uint8_t index)
+AP_HAL::SPIDeviceDriver *SPIDeviceManager::device(enum AP_HAL::SPIDeviceType dev, uint8_t index)
 {
     uint8_t count = 0;
     for (uint8_t i=0; i<LINUX_SPI_DEVICE_NUM_DEVICES; i++) {
