@@ -5,11 +5,6 @@
 #include "AP_HAL_Linux.h"
 #include "Semaphores.h"
 
-// Most platforms won't need to declare the spidev bus offset
-#ifndef LINUX_SPIDEV_BUS_OFFSET
-#define LINUX_SPIDEV_BUS_OFFSET 0
-#endif
-
 #define LINUX_SPI_MAX_BUSES 3
 
 // Fake CS pin to indicate in-kernel handling
