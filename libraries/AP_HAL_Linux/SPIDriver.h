@@ -18,7 +18,7 @@
 class Linux::SPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
     friend class Linux::SPIDeviceManager;
-    SPIDeviceDriver(uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDevice type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
+    SPIDeviceDriver(uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
     void init();
     AP_HAL::Semaphore *get_semaphore();
     bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -39,19 +39,19 @@ private:
     uint32_t _lowspeed;
     uint32_t _highspeed;
     uint32_t _speed;
-    enum AP_HAL::SPIDevice _type;
+    enum AP_HAL::SPIDeviceType _type;
     int _fd;	// Per-device FD.
 };
 
 class Linux::SPIDeviceManager : public AP_HAL::SPIDeviceManager {
 public:
     void init();
-    AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice, uint8_t index = 0);
+    AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDeviceType, uint8_t index = 0);
 
     static AP_HAL::Semaphore *get_semaphore(uint16_t bus);
 
-    static void cs_assert(enum AP_HAL::SPIDevice type);
-    static void cs_release(enum AP_HAL::SPIDevice type);
+    static void cs_assert(enum AP_HAL::SPIDeviceType type);
+    static void cs_release(enum AP_HAL::SPIDeviceType type);
     static bool transaction(SPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len);
 
 private:
