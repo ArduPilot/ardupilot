@@ -50,7 +50,7 @@ extern const AP_HAL::HAL& hal;
 
 // SPI Device //////////////////////////////////////////////////////////////////
 
-AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDevice device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
+AP_SerialBus_SPI::AP_SerialBus_SPI(enum AP_HAL::SPIDeviceType device, enum AP_HAL::SPIDeviceDriver::bus_speed speed) :
     _device(device),
     _speed(speed),
     _spi(NULL),
