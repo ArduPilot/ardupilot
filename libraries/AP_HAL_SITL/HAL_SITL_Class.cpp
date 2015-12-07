@@ -31,10 +31,10 @@ static SITLRCOutput sitlRCOutput(&sitlState);
 static SITLAnalogIn sitlAnalogIn(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::EmptyGPIO emptyGPIO;
-static Empty::EmptySemaphore emptyI2Csemaphore;
-static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
-static Empty::EmptySPIDeviceManager emptySPI;
+static Empty::GPIO emptyGPIO;
+static Empty::Semaphore emptyI2Csemaphore;
+static Empty::I2CDriver emptyI2C(&emptyI2Csemaphore);
+static Empty::SPIDeviceManager emptySPI;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
