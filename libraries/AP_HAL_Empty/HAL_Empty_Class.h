@@ -10,5 +10,5 @@ public:
     HAL_Empty();
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 private:
-    Empty::EmptyPrivateMember *_member;
+    Empty::PrivateMember *_member;
 };

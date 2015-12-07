@@ -1,29 +1,19 @@
-
-#ifndef __AP_HAL_EMPTY_NAMESPACE_H__
-#define __AP_HAL_EMPTY_NAMESPACE_H__
-
-/* While not strictly required, names inside the Empty namespace are prefixed
- * with Empty for clarity. (Some of our users aren't familiar with all of the
- * C++ namespace rules.)
- */
+#pragma once
 
 namespace Empty {
-    class EmptyUARTDriver;
-    class EmptyI2CDriver;
-    class EmptySPIDeviceManager;
-    class EmptySPIDeviceDriver;
-    class EmptyAnalogSource;
-    class EmptyAnalogIn;
-    class EmptyStorage;
-    class EmptyGPIO;
-    class EmptyDigitalSource;
-    class EmptyRCInput;
-    class EmptyRCOutput;
-    class EmptySemaphore;
-    class EmptyScheduler;
-    class EmptyUtil;
-    class EmptyPrivateMember;
+    class UARTDriver;
+    class I2CDriver;
+    class SPIDeviceManager;
+    class SPIDeviceDriver;
+    class AnalogSource;
+    class AnalogIn;
+    class Storage;
+    class GPIO;
+    class DigitalSource;
+    class RCInput;
+    class RCOutput;
+    class Semaphore;
+    class Scheduler;
+    class Util;
+    class PrivateMember;
 }
-
-#endif // __AP_HAL_EMPTY_NAMESPACE_H__
-
