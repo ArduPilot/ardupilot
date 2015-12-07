@@ -28,8 +28,6 @@ public:
     uint8_t transfer (uint8_t data);
     void transfer (const uint8_t *data, uint16_t len);
     void set_bus_speed(enum bus_speed speed);
-    void set_state(State state) override { _state = state; }
-    State get_state() override { return _state; }
 
 private:
     uint16_t _bus;
@@ -38,7 +36,6 @@ private:
     AP_HAL::DigitalSource *_cs;
     uint8_t _mode;
     uint8_t _bitsPerWord;
-    State _state = State::UNKNOWN;
     uint32_t _lowspeed;
     uint32_t _highspeed;
     uint32_t _speed;
