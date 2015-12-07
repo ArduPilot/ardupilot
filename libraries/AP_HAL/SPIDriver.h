@@ -1,14 +1,21 @@
+#pragma once
 
-#ifndef __AP_HAL_SPI_DRIVER_H__
-#define __AP_HAL_SPI_DRIVER_H__
+#include <inttypes.h>
 
 #include "AP_HAL_Namespace.h"
+#include "SPIDevice.h"
+#include "utility/OwnPtr.h"
 
+namespace AP_HAL {
 
-class AP_HAL::SPIDeviceManager {
+class SPIDeviceManager {
 public:
     virtual void init() = 0;
-    virtual AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDeviceType, uint8_t index = 0) = 0;
+    virtual SPIDeviceDriver* device(enum SPIDeviceType, uint8_t index = 0) = 0;
+    virtual OwnPtr<SPIDevice> get_device(const char *name)
+    {
+        return nullptr;
+    }
 };
 
 /**
@@ -16,10 +23,10 @@ public:
  * transfers to be portable to other platforms.
  */
 
-class AP_HAL::SPIDeviceDriver {
+class SPIDeviceDriver {
 public:
     virtual void init() = 0;
-    virtual AP_HAL::Semaphore* get_semaphore() = 0;
+    virtual Semaphore* get_semaphore() = 0;
     virtual bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len) = 0;
 
     virtual void cs_assert() = 0;
@@ -41,5 +48,4 @@ public:
     virtual void set_bus_speed(enum bus_speed speed) {}
 };
 
-#endif // __AP_HAL_SPI_DRIVER_H__
-
+}
