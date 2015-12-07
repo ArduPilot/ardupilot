@@ -94,7 +94,7 @@ static GPIO_RPI gpioDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static GPIO_Sysfs gpioDriver;
 #else
-static Empty::EmptyGPIO gpioDriver;
+static Empty::GPIO gpioDriver;
 #endif
 
 /*
@@ -142,7 +142,7 @@ static RCOutput_Bebop rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, false, 0, MINNOW_GPIO_S5_1);
 #else
-static Empty::EmptyRCOutput rcoutDriver;
+static Empty::RCOutput rcoutDriver;
 #endif
 
 static Scheduler schedulerInstance;
