@@ -41,7 +41,7 @@ SPIDeviceManager::SPIDeviceManager()
 void SPIDeviceManager::init()
 {}
 
-AP_HAL::SPIDeviceDriver* SPIDeviceManager::device(enum AP_HAL::SPIDevice, uint8_t index)
+AP_HAL::SPIDeviceDriver* SPIDeviceManager::device(enum AP_HAL::SPIDeviceType, uint8_t index)
 {
     return &_device;
 }
