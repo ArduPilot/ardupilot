@@ -1305,7 +1305,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_GET_HOME_POSITION:
-            send_home(plane.ahrs.get_home());
+            if (plane.home_is_set != HOME_UNSET) {
+                send_home(plane.ahrs.get_home());
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
 
         case MAV_CMD_DO_SET_MODE:
