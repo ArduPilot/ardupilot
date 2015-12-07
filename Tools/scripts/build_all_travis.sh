@@ -33,8 +33,10 @@ build_concurrency=(["navio"]="-j2"
 
 build_extra_clean=(["px4-v2"]="make px4-cleandep")
 
+waf=modules/waf/waf-light
+
 # get list of boards supported by the waf build
-for board in $(./waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
+for board in $($waf list_boards | head -n1); do waf_supported_boards[$board]=1; done
 
 echo "Targets: $TRAVIS_BUILD_TARGET"
 for t in $TRAVIS_BUILD_TARGET; do
@@ -57,8 +59,8 @@ for t in $TRAVIS_BUILD_TARGET; do
 
     if [[ -n ${waf_supported_boards[$t]} ]]; then
         echo "Starting waf build for board ${t}..."
-        ./waf configure --board $t
-        ./waf clean
-        ./waf ${build_concurrency[$t]} build
+        $waf configure --board $t
+        $waf clean
+        $waf ${build_concurrency[$t]} build
     fi
 done
