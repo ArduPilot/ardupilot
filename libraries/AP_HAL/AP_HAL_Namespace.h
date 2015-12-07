@@ -17,6 +17,7 @@ namespace AP_HAL {
     class I2CDriver;
     class Device;
 
+    class SPIDevice;
     class SPIDeviceDriver;
     class SPIDeviceManager;
 
