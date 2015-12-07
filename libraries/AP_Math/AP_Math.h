@@ -255,9 +255,9 @@ inline uint32_t hz_to_nsec(uint32_t freq)
     return NSEC_PER_SEC / freq;
 }
 
-inline uint32_t nsec_to_hz(uint32_t usec)
+inline uint32_t nsec_to_hz(uint32_t nsec)
 {
-    return NSEC_PER_SEC / usec;
+    return NSEC_PER_SEC / nsec;
 }
 
 inline uint32_t usec_to_nsec(uint32_t usec)
