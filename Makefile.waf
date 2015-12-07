@@ -11,12 +11,8 @@ copter_DIR = ArduCopter
 plane_DIR = ArduPlane
 rover_DIR = APMrover2
 
-ifneq ($(BUILD_VEHICLE),)
-all: $(BUILD_VEHICLE)
-else
 all: $(WAF_BINARY)
 	@$(WAF) build
-endif
 
 $(WAF_BINARY):
 	@git submodule init && git submodule update

@@ -1,2 +1,2 @@
-BUILD_VEHICLE = plane
-include ../Makefile.waf
+all:
+	@$(MAKE) -C ../  -f Makefile.waf plane

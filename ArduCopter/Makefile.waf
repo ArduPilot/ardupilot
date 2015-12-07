@@ -1,2 +1,2 @@
-BUILD_VEHICLE = copter
-include ../Makefile.waf
+all:
+	@$(MAKE) -C ../ -f Makefile.waf copter
