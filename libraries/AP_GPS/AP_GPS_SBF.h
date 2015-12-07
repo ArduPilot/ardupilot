@@ -82,14 +82,14 @@ private:
          uint16_t MeanCorrAge;
          uint32_t SignalInfo;
          uint8_t AlertFlag;
-		 // rev1
-		 uint8_t NrBases;
-		 uint16_t PPPInfo;
-		 // rev2
-		 uint16_t Latency;
-		 uint16_t HAccuracy;
-		 uint16_t VAccuracy;
-		 uint8_t Misc;
+         // rev1
+         uint8_t NrBases;
+         uint16_t PPPInfo;
+         // rev2
+         uint16_t Latency;
+         uint16_t HAccuracy;
+         uint16_t VAccuracy;
+         uint8_t Misc;
     };
   
     struct PACKED msg4001
@@ -104,14 +104,14 @@ private:
          uint16_t VDOP;
          float HPL;
          float VPL;
-    };	
-	
-	union PACKED msgbuffer {
+    };
+
+    union PACKED msgbuffer {
         msg4007 msg4007u;
-		msg4001 msg4001u;
+        msg4001 msg4001u;
         uint8_t bytes[128];
     };
-	
+
     struct sbf_msg_parser_t
     {
         enum
@@ -133,7 +133,7 @@ private:
         msgbuffer data;
         uint16_t read;
     } sbf_msg;
-		
+
     void log_ExtEventPVTGeodetic(const msg4007 &temp);
 };
 
