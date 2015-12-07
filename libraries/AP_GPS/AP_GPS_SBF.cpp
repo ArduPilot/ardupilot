@@ -53,16 +53,21 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {
-	uint32_t now = AP_HAL::millis();
-	
-	if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
-		if (now > _init_blob_time) {
-			port->write((const uint8_t*)_initialisation_blob[_init_blob_index], strlen(_initialisation_blob[_init_blob_index]));
-			_init_blob_time = now + 70;
-			_init_blob_index++;
-		}
-	}
-	
+    uint32_t now = AP_HAL::millis();
+
+    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+        if (validcommand) {
+            _init_blob_index++;
+            validcommand = false;
+            _init_blob_time = 0;
+        }
+
+        if (now > _init_blob_time) {
+            port->write((const uint8_t*)_initialisation_blob[_init_blob_index], strlen(_initialisation_blob[_init_blob_index]));
+            _init_blob_time = now + 1000;
+        }
+    }
+
     bool ret = false;
     while (port->available() > 0) {
         uint8_t temp = port->read();
@@ -82,11 +87,17 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
+            } else if (temp == '$') {
+                // this is a command response
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:
             if (temp == SBF_PREAMBLE2) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::CRC1;
+            } else if (temp == 'R') {
+                validcommand = true;
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
             }
             else
             {

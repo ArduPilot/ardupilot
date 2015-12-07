@@ -45,18 +45,20 @@ private:
 
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
-	
-	uint8_t _init_blob_index = 0;
-	uint32_t _init_blob_time = 0;
-	const char* _initialisation_blob[4] = {
-	"sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n",
-	"srd, Moderate, UAV\n",
-	"sem, PVT, 5\n",
-	"spm, Rover, StandAlone+DGPS+RTK\n"};
+
+    uint8_t _init_blob_index = 0;
+    uint32_t _init_blob_time = 0;
+    const char* _initialisation_blob[5] = {
+    "sso, Stream1, COM1, PVTGeodetic+DOP+ExtEventPVTGeodetic, msec100\n",
+    "srd, Moderate, UAV\n",
+    "sem, PVT, 5\n",
+    "spm, Rover, StandAlone+SBAS+DGPS+RTK\n",
+    "sso, Stream2, Dsk1, Rinex+Event+RawData, msec100\n"};
    
     uint32_t last_hdop = 999;
     uint32_t crc_error_counter = 0;
-	uint32_t last_injected_data_ms = 0;
+    uint32_t last_injected_data_ms = 0;
+    bool validcommand = false;
 
     struct PACKED msg4007
     {
