@@ -14,6 +14,7 @@ namespace Empty {
     class RCOutput;
     class Scheduler;
     class Semaphore;
+    class SPIDevice;
     class SPIDeviceDriver;
     class SPIDeviceManager;
     class Storage;
