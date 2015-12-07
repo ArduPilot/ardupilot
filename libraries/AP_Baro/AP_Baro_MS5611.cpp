@@ -201,12 +201,12 @@ void AP_Baro_MS56XX::_init()
     }
 
     // Save factory calibration coefficients
-    _C1 = prom[1];
-    _C2 = prom[2];
-    _C3 = prom[3];
-    _C4 = prom[4];
-    _C5 = prom[5];
-    _C6 = prom[6];
+    _c1 = prom[1];
+    _c2 = prom[2];
+    _c3 = prom[3];
+    _c4 = prom[4];
+    _c5 = prom[5];
+    _c6 = prom[6];
 
     // Send a command to read Temp first
     _serial->write(ADDR_CMD_CONVERT_D2);
@@ -431,10 +431,10 @@ void AP_Baro_MS5611::_calculate()
     // we do the calculations using floating point allows us to take advantage
     // of the averaging of D1 and D1 over multiple samples, giving us more
     // precision
-    dT = _D2-(((uint32_t)_C5)<<8);
-    TEMP = (dT * _C6)/8388608;
-    OFF = _C2 * 65536.0f + (_C4 * dT) / 128;
-    SENS = _C1 * 32768.0f + (_C3 * dT) / 256;
+    dT = _D2-(((uint32_t)_c5)<<8);
+    TEMP = (dT * _c6)/8388608;
+    OFF = _c2 * 65536.0f + (_c4 * dT) / 128;
+    SENS = _c1 * 32768.0f + (_c3 * dT) / 256;
 
     if (TEMP < 0) {
         // second order temperature compensation when under 20 degrees C
@@ -473,10 +473,10 @@ void AP_Baro_MS5607::_calculate()
     // we do the calculations using floating point allows us to take advantage
     // of the averaging of D1 and D1 over multiple samples, giving us more
     // precision
-    dT = _D2-(((uint32_t)_C5)<<8);
-    TEMP = (dT * _C6)/8388608;
-    OFF = _C2 * 131072.0f + (_C4 * dT) / 64;
-    SENS = _C1 * 65536.0f + (_C3 * dT) / 128;
+    dT = _D2-(((uint32_t)_c5)<<8);
+    TEMP = (dT * _c6)/8388608;
+    OFF = _c2 * 131072.0f + (_c4 * dT) / 64;
+    SENS = _c1 * 65536.0f + (_c3 * dT) / 128;
 
     if (TEMP < 0) {
         // second order temperature compensation when under 20 degrees C
@@ -512,10 +512,10 @@ void AP_Baro_MS5637::_calculate()
     // Formulas from manufacturer datasheet
     // sub -15c temperature compensation is not included
 
-    dT = raw_temperature - (((uint32_t)_C5) << 8);
-    TEMP = 2000 + ((int64_t)dT * (int64_t)_C6) / 8388608;
-    OFF = (int64_t)_C2 * (int64_t)131072 + ((int64_t)_C4 * (int64_t)dT) / (int64_t)64;
-    SENS = (int64_t)_C1 * (int64_t)65536 + ((int64_t)_C3 * (int64_t)dT) / (int64_t)128;
+    dT = raw_temperature - (((uint32_t)_c5) << 8);
+    TEMP = 2000 + ((int64_t)dT * (int64_t)_c6) / 8388608;
+    OFF = (int64_t)_c2 * (int64_t)131072 + ((int64_t)_c4 * (int64_t)dT) / (int64_t)64;
+    SENS = (int64_t)_c1 * (int64_t)65536 + ((int64_t)_c3 * (int64_t)dT) / (int64_t)128;
 
     if (TEMP < 2000) {
         // second order temperature compensation when under 20 degrees C
