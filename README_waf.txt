@@ -1,10 +1,9 @@
 To keep access to waf convenient, use the following alias from the
-root ArduPilot directory
+root ardupilot directory:
 
-    alias waf="$PWD/waf"
+    alias waf="$PWD/modules/waf/waf-light"
 
-that way waf can be called from subdirectories to trigger partial
-builds.
+Waf should always be called from the ardupilot's root.
 
 Differently from the make-based build, with waf there's a configure step
 to choose the board to be used
@@ -12,9 +11,7 @@ to choose the board to be used
     # Configure the Linux board.
     waf configure --board=linux
 
-by default the board used is 'sitl'. This must be called from the root
-ardupilot directory. Other commands may be issued from anywhere in the
-tree.
+by default the board used is 'sitl'.
 
 To build, use the 'waf build' command. This is the default command, so
 calling just 'waf' is enough
@@ -25,16 +22,11 @@ calling just 'waf' is enough
     # Waf also accepts '-j' option to parallelize the build.
     waf -j8
 
-In subdirectories of vehicles, examples and tools (they contain a
-wscript file), it's possible to trigger a build of just that program
-either by calling waf in the subdirectory or by specifying it as part of
-targets
-
-    # Will build only ArduCopter
-    cd ArduCopter; waf -j9; cd -
+It's possible to build for just a vehicle or an example by specifying it as the
+target:
 
     # From the top directory, note the board name used in the target
-    waf --targets=ArduCopter.linux
+    waf --target ArduCopter.linux
 
     # List all the targets available
     waf list
@@ -53,6 +45,8 @@ To clean things up use
 
 using git to clean the files also work fine.
 
+There's also a make wrapper called "Makefile.waf". You can use
+`make -f Makefile.waf help` for instructions on how to use it.
 
 TODO: Add explanation on how the build system is organized once we
 settle down.
