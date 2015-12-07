@@ -1,19 +1,19 @@
 #pragma once
 
 namespace Empty {
-    class UARTDriver;
-    class I2CDriver;
-    class SPIDeviceManager;
-    class SPIDeviceDriver;
-    class AnalogSource;
     class AnalogIn;
-    class Storage;
-    class GPIO;
+    class AnalogSource;
     class DigitalSource;
+    class GPIO;
+    class I2CDriver;
+    class PrivateMember;
     class RCInput;
     class RCOutput;
-    class Semaphore;
     class Scheduler;
+    class Semaphore;
+    class SPIDeviceDriver;
+    class SPIDeviceManager;
+    class Storage;
+    class UARTDriver;
     class Util;
-    class PrivateMember;
 }
