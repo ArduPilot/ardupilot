@@ -634,7 +634,7 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
 
 float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim)
 {
-    if (is_zero(second_ord_lim) || is_zero(p)) {
+    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
         return error*p;
     }
 
