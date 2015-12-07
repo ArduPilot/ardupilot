@@ -90,6 +90,7 @@ def program(bld, **kw):
     target = bld.bldnode.make_node(name + '.' + bld.env.BOARD)
     bld.program(
         target=target,
+        name=name,
         **kw
     )
 

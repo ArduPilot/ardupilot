@@ -25,8 +25,8 @@ calling just 'waf' is enough
 It's possible to build for just a vehicle or an example by specifying it as the
 target:
 
-    # From the top directory, note the board name used in the target
-    waf --target ArduCopter.linux
+    # From the top directory
+    waf --target ArduCopter
 
     # List all the targets available
     waf list
