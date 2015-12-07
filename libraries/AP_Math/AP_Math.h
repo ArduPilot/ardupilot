@@ -249,6 +249,7 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
 
 #define NSEC_PER_SEC 1000000000ULL
 #define NSEC_PER_USEC 1000ULL
+#define USEC_PER_SEC 1000000ULL
 
 inline uint32_t hz_to_nsec(uint32_t freq)
 {
@@ -268,6 +269,16 @@ inline uint32_t usec_to_nsec(uint32_t usec)
 inline uint32_t nsec_to_usec(uint32_t nsec)
 {
     return nsec / NSEC_PER_USEC;
+}
+
+inline uint32_t hz_to_usec(uint32_t freq)
+{
+    return USEC_PER_SEC / freq;
+}
+
+inline uint32_t usec_to_hz(uint32_t usec)
+{
+    return USEC_PER_SEC / usec;
 }
 
 #undef INLINE
