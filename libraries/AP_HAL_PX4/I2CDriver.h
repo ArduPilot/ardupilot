@@ -44,7 +44,7 @@ public:
 
 private:
     // we use an empty semaphore as the underlying I2C class already has a semaphore
-    Empty::EmptySemaphore semaphore;
+    Empty::Semaphore semaphore;
     PX4_I2C *px4_i2c = nullptr;
 };
 

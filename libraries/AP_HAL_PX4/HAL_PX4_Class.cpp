@@ -32,8 +32,8 @@
 using namespace PX4;
 
 static PX4I2CDriver i2cDriver;
-static Empty::EmptySPIDeviceManager spiDeviceManager;
-//static Empty::EmptyGPIO gpioDriver;
+static Empty::SPIDeviceManager spiDeviceManager;
+//static Empty::GPIO gpioDriver;
 
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
