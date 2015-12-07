@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyScheduler : public AP_HAL::Scheduler {
+class Empty::Scheduler : public AP_HAL::Scheduler {
 public:
-    EmptyScheduler();
+    Scheduler();
     void     init();
     void     delay(uint16_t ms);
     void     delay_microseconds(uint16_t us);

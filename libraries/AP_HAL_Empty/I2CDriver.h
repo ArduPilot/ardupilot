@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyI2CDriver : public AP_HAL::I2CDriver {
+class Empty::I2CDriver : public AP_HAL::I2CDriver {
 public:
-    EmptyI2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
+    I2CDriver(AP_HAL::Semaphore* semaphore) : _semaphore(semaphore) {}
     void begin();
     void end();
     void setTimeout(uint16_t ms);

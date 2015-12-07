@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyRCInput : public AP_HAL::RCInput {
+class Empty::RCInput : public AP_HAL::RCInput {
 public:
-    EmptyRCInput();
+    RCInput();
     void init();
     bool  new_input();
     uint8_t num_channels();

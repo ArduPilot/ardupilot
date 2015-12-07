@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyUARTDriver : public AP_HAL::UARTDriver {
+class Empty::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    EmptyUARTDriver();
+    UARTDriver();
     /* Empty implementations of UARTDriver virtual methods */
     void begin(uint32_t b);
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);

@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyGPIO : public AP_HAL::GPIO {
+class Empty::GPIO : public AP_HAL::GPIO {
 public:
-    EmptyGPIO();
+    GPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);
@@ -25,9 +25,9 @@ public:
     bool    usb_connected(void);
 };
 
-class Empty::EmptyDigitalSource : public AP_HAL::DigitalSource {
+class Empty::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    EmptyDigitalSource(uint8_t v);
+    DigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
