@@ -126,6 +126,9 @@ public:
 
     // servo_test - move servos through full range of movement
     void servo_test();
+
+    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
+    bool parameter_check(bool display_msg) const;
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
