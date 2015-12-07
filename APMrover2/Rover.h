@@ -40,6 +40,7 @@
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor (uncalibated IMU) Library
+#include <AP_InertialNav/AP_InertialNav.h>     // ArduPilot Mega inertial navigation library
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <AP_NavEKF/AP_NavEKF.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
@@ -289,7 +290,7 @@ private:
     // Battery Sensors
     AP_BattMonitor battery;
 
-    // Battery Sensors
+    // FrSky telemetry support
 #if FRSKY_TELEM_ENABLED == ENABLED
     AP_Frsky_Telem frsky_telemetry;
 #endif
@@ -331,7 +332,10 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt;		
 
-    // Performance monitoring
+    // Inertial Navigation
+    AP_InertialNav_NavEKF inertial_nav;
+	
+	// Performance monitoring
     // Timer used to accrue data and trigger recording of the performanc monitoring log message
     int32_t	perf_mon_timer;
     // The maximum main loop execution time recorded in the current performance monitoring interval
@@ -381,6 +385,11 @@ private:
     void update_GPS_10Hz(void);
     void update_current_mode(void);
     void update_navigation();
+    void calc_home_distance_and_bearing(void);
+    Vector3f pv_location_to_vector(const Location& loc);
+    float pv_alt_above_origin(float alt_above_home_cm);
+    float pv_get_horizontal_distance_cm(const Vector3f &origin, const Vector3f &destination);
+    float pv_get_bearing_cd(const Vector3f &origin, const Vector3f &destination);
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);

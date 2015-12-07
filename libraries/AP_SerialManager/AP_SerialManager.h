@@ -45,7 +45,7 @@
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
 
-// mavlink default baud rates, use default buffer sizes
+// FrSky default baud rates, use default buffer sizes
 #define AP_SERIALMANAGER_FRSKY_DPORT_BAUD       9600
 #define AP_SERIALMANAGER_FRSKY_SPORT_BAUD       57600
 #define AP_SERIALMANAGER_FRSKY_BUFSIZE_RX       0
@@ -75,12 +75,13 @@ public:
         SerialProtocol_Console = 0,
         SerialProtocol_MAVLink = 1,
         SerialProtocol_MAVLink2 = 2,    // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FRSky_DPort = 3,
-        SerialProtocol_FRSky_SPort = 4,
+        SerialProtocol_FRSky_DPort = 3, // protocol for D-receivers
+        SerialProtocol_FRSky_SPort = 4, // former Smart.Port protocol (for X-receivers)
         SerialProtocol_GPS = 5,
         SerialProtocol_GPS2 = 6,        // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
         SerialProtocol_SToRM32 = 8,
+		SerialProtocol_FRSky_XPort = 9, // new Smart.Port protocol (for X-receivers)
     };
 
     // Constructor

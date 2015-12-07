@@ -285,6 +285,10 @@ void Rover::set_mode(enum mode mode)
         loiter_time = 0;
 
 	control_mode = mode;
+	
+    // give frsky library our current control mode
+    frsky_telemetry.set_control_mode(control_mode);
+	
     throttle_last = 0;
     throttle = 500;
     set_reverse(false);
@@ -520,12 +524,3 @@ bool Rover::should_log(uint32_t mask)
     return ret;
 }
 
-/*
-  send FrSky telemetry. Should be called at 5Hz by scheduler
- */
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Rover::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif

@@ -91,7 +91,10 @@ public:
     // Constructor
     NavEKF(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng);
 
-    // This function is used to initialise the filter whilst moving, using the AHRS DCM solution
+    // the ekf_status_report is static to allow direct class access without declaring the object
+    static mavlink_ekf_status_report_t ekf_status_report;
+	
+	// This function is used to initialise the filter whilst moving, using the AHRS DCM solution
     // It should NOT be used to re-initialise after a timeout as DCM will also be corrupted
     bool InitialiseFilterDynamic(void);
 

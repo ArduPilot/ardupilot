@@ -412,15 +412,6 @@ void Copter::check_usb_mux(void)
     ap.usb_connected = usb_check;
 }
 
-// frsky_telemetry_send - sends telemetry data using frsky telemetry
-//  should be called at 5Hz by scheduler
-#if FRSKY_TELEM_ENABLED == ENABLED
-void Copter::frsky_telemetry_send(void)
-{
-    frsky_telemetry.send_frames((uint8_t)control_mode);
-}
-#endif
-
 /*
   should we log a message type now?
  */

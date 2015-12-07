@@ -51,6 +51,8 @@ void Copter::set_simple_mode(uint8_t b)
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
         }
         ap.simple_mode = b;
+        // give frsky library our current simple mode
+        frsky_telemetry.set_simple_mode(ap.simple_mode);
     }
 }
 

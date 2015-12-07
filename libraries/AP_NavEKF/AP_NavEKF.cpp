@@ -16,6 +16,9 @@
 
 #include <stdio.h>
 
+// ekf_status_report, to allow other libraries to access the status report
+mavlink_ekf_status_report_t NavEKF::ekf_status_report;
+
 /*
   parameter defaults for different types of vehicle. The
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
@@ -4992,6 +4995,13 @@ void NavEKF::send_status_report(mavlink_channel_t chan)
     // send message
     mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), tasVar);
 
+	// store and share ekf_status report with other libraries
+    ekf_status_report.velocity_variance = velVar;
+    ekf_status_report.pos_horiz_variance = posVar;
+    ekf_status_report.pos_vert_variance = hgtVar;
+    ekf_status_report.compass_variance = magVar.length();
+    ekf_status_report.terrain_alt_variance = tasVar;
+    ekf_status_report.flags = flags;
 }
 
 // Check arm status and perform required checks and mode changes
