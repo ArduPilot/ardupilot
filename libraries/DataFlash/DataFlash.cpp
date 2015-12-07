@@ -3,7 +3,7 @@
 #include "DataFlash_Backend.h"
 
 const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
-    // @Param: _BACKEND_TYPES
+    // @Param: _BACKEND_TYPE
     // @DisplayName: DataFlash Backend Storage type
     // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
     // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
