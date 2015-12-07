@@ -161,7 +161,7 @@ void SPIDeviceManager::init()
         }
         char path[255];
         snprintf(path, sizeof(path), "/dev/spidev%u.%u",
-                 _device[i]._bus + LINUX_SPIDEV_BUS_OFFSET, _device[i]._subdev);
+                 _device[i]._bus, _device[i]._subdev);
         _device[i]._fd = open(path, O_RDWR);
         if (_device[i]._fd == -1) {
             printf("Unable to open %s - %s\n", path, strerror(errno));
