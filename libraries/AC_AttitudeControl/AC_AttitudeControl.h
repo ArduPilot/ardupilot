@@ -146,11 +146,11 @@ public:
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's reference attitude.
-    Vector3f angle_ef_targets() const { return _att_target_euler_rad*degrees(100.0f); }
+    Vector3f get_att_target_euler_cd() const { return _att_target_euler_rad*degrees(100.0f); }
 
     // Return a rotation vector in centidegrees representing the rotation from vehicle body frame to the
     // attitude controller's reference attitude.
-    Vector3f angle_bf_error() const { return _att_error_rot_vec_rad*degrees(100.0f); }
+    Vector3f get_att_error_rot_vec_cd() const { return _att_error_rot_vec_rad*degrees(100.0f); }
 
     // Set x-axis angular velocity reference in centidegrees/s
     void rate_bf_roll_target(float rate_cds) { _ang_vel_target_rads.x = radians(rate_cds*0.01f); }
