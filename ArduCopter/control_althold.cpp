@@ -96,7 +96,7 @@ void Copter::althold_run()
 #if FRAME_CONFIG == HELI_FRAME    
         // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);

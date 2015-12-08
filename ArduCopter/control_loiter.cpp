@@ -109,7 +109,7 @@ void Copter::loiter_run()
         wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
         // force descent rate and call position controller
         pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
