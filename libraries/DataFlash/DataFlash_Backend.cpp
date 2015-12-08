@@ -22,6 +22,26 @@ const struct LogStructure *DataFlash_Backend::structure(uint8_t num) const
     return _front.structure(num);
 }
 
+uint8_t DataFlash_Backend::num_units() const
+{
+    return _front._num_units;
+}
+
+const struct UnitStructure *DataFlash_Backend::unit(uint8_t num) const
+{
+    return _front.unit(num);
+}
+
+uint8_t DataFlash_Backend::num_multipliers() const
+{
+    return _front._num_multipliers;
+}
+
+const struct MultiplierStructure *DataFlash_Backend::multiplier(uint8_t num) const
+{
+    return _front.multiplier(num);
+}
+
 DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle_message_writer() {
     return _front._vehicle_messages;
 }
@@ -132,6 +152,8 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
         0,
         "IGNO",
         "",
+        "",
+        "",
         ""
     };
     if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
@@ -143,6 +165,9 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
     }
 
     if (!Log_Write_Format(&logstruct)) {
+        return false;
+    }
+    if (!Log_Write_Format_Units(&logstruct)) {
         return false;
     }
 
