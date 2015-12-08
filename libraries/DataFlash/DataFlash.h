@@ -72,6 +72,7 @@ public:
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
+
     bool CardInserted(void);
 
     // erase handling
@@ -327,6 +328,8 @@ private:
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
+    const char* unit_name(const uint8_t unit_id);
+    double multiplier_name(const uint8_t multiplier_id);
 
     void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 
