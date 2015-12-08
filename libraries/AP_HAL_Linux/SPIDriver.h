@@ -18,7 +18,9 @@
 class Linux::SPIDeviceDriver : public AP_HAL::SPIDeviceDriver {
 public:
     friend class Linux::SPIDeviceManager;
-    SPIDeviceDriver(uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
+
+    SPIDeviceDriver(const char *name, uint16_t bus, uint16_t subdev, enum AP_HAL::SPIDeviceType type, uint8_t mode, uint8_t bitsPerWord, int16_t cs_pin, uint32_t lowspeed, uint32_t highspeed);
+
     void init();
     AP_HAL::Semaphore *get_semaphore();
     bool transaction(const uint8_t *tx, uint8_t *rx, uint16_t len);
@@ -34,6 +36,7 @@ private:
     uint16_t _subdev;
     int16_t _cs_pin;
     AP_HAL::DigitalSource *_cs;
+    const char *_name;
     uint8_t _mode;
     uint8_t _bitsPerWord;
     uint32_t _lowspeed;
