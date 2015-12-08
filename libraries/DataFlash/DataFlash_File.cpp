@@ -672,13 +672,26 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
     */
     if (ofs / 4096 != (ofs+len) / 4096) {
         off_t seek_current = ::lseek(_read_fd, 0, SEEK_CUR);
+        if (seek_current == (off_t)-1) {
+            close(_read_fd);
+            _read_fd = -1;
+            return -1;
+        }
         if (seek_current != (off_t)_read_offset) {
-            ::lseek(_read_fd, _read_offset, SEEK_SET);
+            if (::lseek(_read_fd, _read_offset, SEEK_SET) == (off_t)-1) {
+                close(_read_fd);
+                _read_fd = -1;
+                return -1;
+            }
         }
     }
 
     if (ofs != _read_offset) {
-        ::lseek(_read_fd, ofs, SEEK_SET);
+        if (::lseek(_read_fd, ofs, SEEK_SET) == (off_t)-1) {
+            close(_read_fd);
+            _read_fd = -1;
+            return -1;
+        }
         _read_offset = ofs;
     }
     int16_t ret = (int16_t)::read(_read_fd, data, len);
@@ -846,7 +859,11 @@ void DataFlash_File::LogReadProcess(const uint16_t list_entry,
     _read_fd_log_num = log_num;
     _read_offset = 0;
     if (start_page != 0) {
-        ::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET);
+        if (::lseek(_read_fd, start_page * DATAFLASH_PAGE_SIZE, SEEK_SET) == (off_t)-1) {
+            close(_read_fd);
+            _read_fd = -1;
+            return;
+        }
         _read_offset = start_page * DATAFLASH_PAGE_SIZE;
     }
 
@@ -880,9 +897,14 @@ void DataFlash_File::LogReadProcess(const uint16_t list_entry,
                 log_step = 0;
                 _print_log_entry(data, print_mode, port);
                 log_counter++;
+                // work around NuttX bug (see above for explanation)
                 if (log_counter == 10) {
                     log_counter = 0;
-                    ::lseek(_read_fd, 0, SEEK_CUR);
+                    if (::lseek(_read_fd, 0, SEEK_CUR) == (off_t)-1) {
+                        close(_read_fd);
+                        _read_fd = -1;
+                        return;
+                    }
                 }
                 break;
         }
