@@ -47,6 +47,10 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
 
 void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    validate_structures(structures, num_types);
+    dump_structures(structures, num_types);
+#endif
     if (_next_backend == DATAFLASH_MAX_BACKENDS) {
         AP_HAL::panic("Too many backends");
         return;
@@ -99,6 +103,128 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         backends[i]->Init();
     }
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
+
+#define DEBUG_LOG_STRUCTURES 0
+
+extern const AP_HAL::HAL& hal;
+#define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+
+/// return the number of commas present in string
+static uint8_t count_commas(const char *string)
+{
+    uint8_t ret = 0;
+    for (uint8_t i=0; i<strlen(string); i++) {
+        if (string[i] == ',') {
+            ret++;
+        }
+    }
+    return ret;
+}
+
+/// pretty-print field information from a log structure
+void DataFlash_Class::dump_structure_field(const struct LogStructure *structure, const char *label, const uint8_t fieldnum)
+{
+    ::fprintf(stderr, "  %s\n", label);
+}
+
+/// pretty-print log structures
+/// @note structures MUST be well-formed
+void DataFlash_Class::dump_structures(const struct LogStructure *structures, const uint8_t num_types)
+{
+#if DEBUG_LOG_STRUCTURES
+    for (uint16_t i=0; i<num_types; i++) {
+        const struct LogStructure *structure = &structures[i];
+        ::fprintf(stderr, "%s\n", structure->name);
+        char label[32] = { };
+        uint8_t labeloffset = 0;
+        int8_t fieldnum = 0;
+        for (uint8_t j=0; j<strlen(structure->labels); j++) {
+            char labelchar = structure->labels[j];
+            if (labelchar == '\0') {
+                break;
+            }
+            if (labelchar == ',') {
+                dump_structure_field(structure, label, fieldnum);
+                fieldnum++;
+                labeloffset = 0;
+                memset(label, '\0', 32);
+            } else {
+                label[labeloffset++] = labelchar;
+            }
+        }
+        dump_structure_field(structure, label, fieldnum);
+        ::fprintf(stderr, "\n"); // just add a CR to the output
+    }
+#endif
+}
+
+void DataFlash_Class::validate_structures(const struct LogStructure *structures, const uint8_t num_types)
+{
+    Debug("Validating structures");
+    bool passed = true;
+
+    bool seen_ids[256] = { };
+    for (uint16_t i=0; i<num_types; i++) {
+        const struct LogStructure *logstructure = &structures[i];
+
+#if DEBUG_LOG_STRUCTURES
+        Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
+#endif
+
+        // names must be null-terminated
+        if (logstructure->name[4] != '\0') {
+            Debug("Message name not NULL-terminated");
+            passed = false;
+        }
+
+        // ensure each message ID is only used once
+        if (seen_ids[logstructure->msg_type]) {
+            Debug("ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, i);
+            passed = false;
+        }
+        seen_ids[logstructure->msg_type] = true;
+
+        // ensure we have enough labels to cover columns
+        uint8_t fieldcount = strlen(logstructure->format);
+        uint8_t labelcount = count_commas(logstructure->labels)+1;
+        if (fieldcount != labelcount) {
+            Debug("fieldcount=%u does not match labelcount=%u",
+                  fieldcount, labelcount);
+            passed = false;
+        }
+
+        // check that the structure is of an appropriate length to take fields
+        const int16_t msg_len = Log_Write_calc_msg_len(logstructure->format);
+        if (msg_len != logstructure->msg_len) {
+            Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
+            passed = false;
+        }
+    }
+    if (!passed) {
+        Debug("Log structures are invalid");
+        abort();
+    }
+}
+
+#else
+
+void DataFlash_Class::dump_structure_field(const struct LogStructure *_structure, const char *label, const uint8_t fieldnum)
+{
+}
+
+void DataFlash_Class::dump_structures(const struct LogStructure *structures, const uint8_t num_types)
+{
+}
+
+void DataFlash_Class::validate_structures(const struct LogStructure *structures, const uint8_t num_types)
+{
+    return;
+}
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
 {
