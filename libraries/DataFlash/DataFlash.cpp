@@ -144,10 +144,33 @@ static uint8_t count_commas(const char *string)
     return ret;
 }
 
+/// return a unit name given its ID
+const char* DataFlash_Class::unit_name(const uint8_t unit_id)
+{
+    for(uint8_t i=0; i<unit_id; i++) {
+        if (_units[i].ID == unit_id) {
+            return _units[i].unit;
+        }
+    }
+    return NULL;
+}
+
+/// return a multiplier value given its ID
+double DataFlash_Class::multiplier_name(const uint8_t multiplier_id)
+{
+    for(uint8_t i=0; i<multiplier_id; i++) {
+        if (_multipliers[i].ID == multiplier_id) {
+            return _multipliers[i].multiplier;
+        }
+    }
+    // Should we abort here?
+    return 1.0f;
+}
+
 /// pretty-print field information from a log structure
 void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
-    ::fprintf(stderr, "  %s\n", label);
+    ::fprintf(stderr, "  %s (%s)*(%f)\n", label, unit_name(logstructure->units[fieldnum]), multiplier_name(logstructure->multipliers[fieldnum]));
 }
 
 /// pretty-print log structures
@@ -221,6 +244,60 @@ void DataFlash_Class::validate_structures(const struct LogStructure *logstructur
         if (msg_len != logstructure->msg_len) {
             Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
             passed = false;
+        }
+
+        // ensure we have units for each field:
+        if (strlen(logstructure->units) != fieldcount) {
+            Debug("fieldcount=%u does not match unitcount=%lu",
+                  fieldcount, strlen(logstructure->units));
+            passed = false;
+        }
+
+        // ensure we have multipliers for each field
+        if (strlen(logstructure->multipliers) != fieldcount) {
+            Debug("fieldcount=%u does not match multipliercount=%lu",
+                  fieldcount, strlen(logstructure->multipliers));
+            passed = false;
+        }
+
+        // ensure the FMTU messages reference valid units
+        for (uint8_t j=0; j<strlen(logstructure->units); j++) {
+            char logunit = logstructure->units[j];
+            uint8_t k;
+            for (k=0; k<_num_units; k++) {
+                if (logunit == _units[k].ID) {
+                    // found this one
+                    break;
+                }
+            }
+            if (k == _num_units) {
+                Debug("invalid unit=%c", logunit);
+                passed = false;
+            }
+        }
+
+        // ensure the FMTU messages reference valid units
+        for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
+            char logmultiplier = logstructure->multipliers[j];
+            uint8_t k;
+            for (k=0; k<_num_multipliers; k++) {
+                if (logmultiplier == '-') {
+                    // no sensible multiplier
+                    break;
+                }
+                if (logmultiplier == '?') {
+                    // currently unknown multiplier....
+                    break;
+                }
+                if (logmultiplier == _multipliers[k].ID) {
+                    // found this one
+                    break;
+                }
+            }
+            if (k == _num_multipliers) {
+                Debug("invalid multiplier=%c", logmultiplier);
+                passed = false;
+            }
         }
     }
     if (!passed) {
