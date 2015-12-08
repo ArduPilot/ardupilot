@@ -775,6 +775,9 @@ uint16_t DataFlash_File::start_new_log(void)
         log_num = 1;
     }
     char *fname = _log_file_name(log_num);
+    if (fname == NULL) {
+        return 0xFFFF;
+    }
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
     _cached_oldest_log = 0;
 
