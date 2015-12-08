@@ -405,19 +405,19 @@ void AC_AttitudeControl::rate_controller_run()
     _motors.set_yaw(rate_bf_to_motor_yaw(_ang_vel_target_rads.z));
 }
 
-void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_dot_rads, Vector3f& ang_vel_rads)
+void AC_AttitudeControl::euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads)
 {
     float sin_theta = sinf(euler_rad.y);
     float cos_theta = cosf(euler_rad.y);
     float sin_phi = sinf(euler_rad.x);
     float cos_phi = cosf(euler_rad.x);
 
-    ang_vel_rads.x = euler_dot_rads.x - sin_theta * euler_dot_rads.z;
-    ang_vel_rads.y = cos_phi  * euler_dot_rads.y + sin_phi * cos_theta * euler_dot_rads.z;
-    ang_vel_rads.z = -sin_phi * euler_dot_rads.y + cos_theta * cos_phi * euler_dot_rads.z;
+    ang_vel_rads.x = euler_rate_rads.x - sin_theta * euler_rate_rads.z;
+    ang_vel_rads.y = cos_phi  * euler_rate_rads.y + sin_phi * cos_theta * euler_rate_rads.z;
+    ang_vel_rads.z = -sin_phi * euler_rate_rads.y + cos_theta * cos_phi * euler_rate_rads.z;
 }
 
-bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_dot_rads)
+bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads)
 {
     float sin_theta = sinf(euler_rad.y);
     float cos_theta = cosf(euler_rad.y);
@@ -429,9 +429,9 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
         return false;
     }
 
-    euler_dot_rads.x = ang_vel_rads.x + sin_phi * (sin_theta/cos_theta) * ang_vel_rads.y + cos_phi * (sin_theta/cos_theta) * ang_vel_rads.z;
-    euler_dot_rads.y = cos_phi  * ang_vel_rads.y - sin_phi * ang_vel_rads.z;
-    euler_dot_rads.z = (sin_phi / cos_theta) * ang_vel_rads.y + (cos_phi / cos_theta) * ang_vel_rads.z;
+    euler_rate_rads.x = ang_vel_rads.x + sin_phi * (sin_theta/cos_theta) * ang_vel_rads.y + cos_phi * (sin_theta/cos_theta) * ang_vel_rads.z;
+    euler_rate_rads.y = cos_phi  * ang_vel_rads.y - sin_phi * ang_vel_rads.z;
+    euler_rate_rads.z = (sin_phi / cos_theta) * ang_vel_rads.y + (cos_phi / cos_theta) * ang_vel_rads.z;
     return true;
 }
 
