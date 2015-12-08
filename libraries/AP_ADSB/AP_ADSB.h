@@ -46,7 +46,7 @@ public:
     };
 
     struct adsb_vehicle_t {
-        mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 42
+        mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
         ADSB_THREAT_LEVEL threat_level;   // basic threat level
     };
