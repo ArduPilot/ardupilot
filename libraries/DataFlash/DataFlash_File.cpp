@@ -801,6 +801,10 @@ uint16_t DataFlash_File::start_new_log(void)
     // now update lastlog.txt with the new log number
     fname = _lastlog_file_name();
     FILE *f = ::fopen(fname, "w");
+    if (f == NULL) {
+        free(fname);
+        return 0xFFFF;
+    }
     fprintf(f, "%u\r\n", (unsigned)log_num);
     fclose(f);    
     free(fname);
