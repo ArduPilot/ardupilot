@@ -5620,7 +5620,7 @@ static void mavlink_test_adsb_vehicle(uint8_t system_id, uint8_t component_id, m
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
 	mavlink_adsb_vehicle_t packet_in = {
-		963497464,963497672,963497880,101.0,129.0,157.0,18483,18587,18691,223,"FGHIJKLM",125,192
+		963497464,963497672,963497880,963498088,18067,18171,18275,18379,18483,211,"BCDEFGHI",113,180
     };
 	mavlink_adsb_vehicle_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
@@ -5628,9 +5628,9 @@ static void mavlink_test_adsb_vehicle(uint8_t system_id, uint8_t component_id, m
         	packet1.lat = packet_in.lat;
         	packet1.lon = packet_in.lon;
         	packet1.altitude = packet_in.altitude;
+        	packet1.heading = packet_in.heading;
         	packet1.hor_velocity = packet_in.hor_velocity;
         	packet1.ver_velocity = packet_in.ver_velocity;
-        	packet1.heading = packet_in.heading;
         	packet1.flags = packet_in.flags;
         	packet1.squawk = packet_in.squawk;
         	packet1.altitude_type = packet_in.altitude_type;
