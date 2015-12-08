@@ -208,12 +208,68 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
 }
 
 /*
+  Pack a LogStructure packet into a structure suitable to go to the logfile:
+ */
+void DataFlash_Backend::Log_Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt)
+{
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.head1 = HEAD_BYTE1;
+    pkt.head2 = HEAD_BYTE2;
+    pkt.msgid = LOG_FORMAT_UNITS_MSG;
+    pkt.time_us = AP_HAL::micros64();
+    pkt.format_type = s->msg_type;
+    strncpy(pkt.units, s->units, sizeof(pkt.units));
+    strncpy(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
+}
+
+/*
   write a structure format to the log
  */
 bool DataFlash_Backend::Log_Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Log_Fill_Format(s, pkt);
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  write a unit definition
+ */
+bool DataFlash_Backend::Log_Write_Unit(const struct UnitStructure *s)
+{
+    struct log_Unit pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UNIT_MSG),
+        time_us : AP_HAL::micros64(),
+        type    : s->ID,
+        unit    : { }
+    };
+    strncpy(pkt.unit, s->unit, sizeof(pkt.unit));
+
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  write a unit-multiplier definition
+ */
+bool DataFlash_Backend::Log_Write_Multiplier(const struct MultiplierStructure *s)
+{
+    struct log_Format_Multiplier pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_MULT_MSG),
+        time_us      : AP_HAL::micros64(),
+        type         : s->ID,
+        multiplier   : s->multiplier,
+    };
+
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  write the units for a format to the log
+ */
+bool DataFlash_Backend::Log_Write_Format_Units(const struct LogStructure *s)
+{
+    struct log_Format_Units pkt;
+    Log_Fill_Format_Units(s, pkt);
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
