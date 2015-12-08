@@ -65,12 +65,27 @@ public:
     }
 
     /*
+      set a launch-world name for additional world parameters, such as used by ROS/Gazebo
+     */
+    void set_ros_launch_file(const char *_ros_launch_file) {
+        ros_launch_file = _ros_launch_file;
+    }
+
+    /*
+      Finalizes the instance construction, now that every extra variable
+      (speedup, instance, autotest_dir) has been set.
+     */
+    virtual void finalize_creation() {
+    }
+
+    /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;
 
-    /* fill a sitl_fdm structure from the simulator state */
-    void fill_fdm(struct sitl_fdm &fdm) const;
+    /* fill a sitl_fdm structure from the simulator state, and an extras structure
+       for simulators that support additional sensors */
+    virtual void fill_fdm(struct sitl_fdm &fdm, struct sitl_fdm_extras &fdm_extras) const;
 
 protected:
     Location home;
@@ -98,6 +113,7 @@ protected:
     uint64_t last_wall_time_us;
     uint8_t instance;
     const char *autotest_dir;
+    const char *ros_launch_file;
     const char *frame;
 
     bool on_ground(const Vector3f &pos) const;
@@ -126,6 +142,13 @@ protected:
 
     /* return wall clock time in microseconds since 1970 */
     uint64_t get_wall_time_us(void) const;
+
+    /* fill a sitl_fdm structure from the simulator state */
+    void fill_fdm_basic(struct sitl_fdm &fdm) const;
+
+    /* fill a sitl_fdm_extras with the current extras sensors measures, for the
+       simulators that support them. */
+    virtual void fill_fdm_extras(struct sitl_fdm_extras &fdm_extras) const;
 
     /* return normal distribution random numbers */
     double rand_normal(double mean, double stddev);

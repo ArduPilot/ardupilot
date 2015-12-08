@@ -23,8 +23,30 @@ struct PACKED sitl_fdm {
     uint32_t magic; // 0x4c56414f
 };
 
+struct PACKED sitl_fdm_extras {
+    // this is the packet sent by simulators supporting extra sensors
+    // to the APM executable, to feed systems requiring additional data.
+    // To accommodate for the diversity of sensor configurations, each
+    // sensor data is accompanied by a present/absent flag to indicate
+    // whether this data is filled in by the simulator.
+    // All values are little-endian
+    uint64_t timestamp_us;
+    double sonar_down;              // m
+    bool is_sonar_down_present;
+    // Insert here any additional sensor
+    // ...
+
+    uint32_t magic; // 0x65c4616f
+};
+
 // number of rc output channels
 #define SITL_NUM_CHANNELS 14
+
+// Magic number expected when a 'sitl_fdm' is received
+#define FDM_MAGIC               0x4c56414f
+
+// Magic number expected when a 'sitl_fdm_extras' is received
+#define FDM_EXTRAS_MAGIC        0x65c4616f
 
 
 class SITL {
@@ -48,6 +70,7 @@ public:
     };
 
     struct sitl_fdm state;
+    struct sitl_fdm_extras state_extras;
 
     static const struct AP_Param::GroupInfo var_info[];
 

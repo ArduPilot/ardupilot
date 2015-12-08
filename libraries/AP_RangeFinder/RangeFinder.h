@@ -48,7 +48,8 @@ public:
         RangeFinder_TYPE_PX4_PWM= 5,
         RangeFinder_TYPE_BBB_PRU= 6,
         RangeFinder_TYPE_LWI2C  = 7,
-        RangeFinder_TYPE_LWSER  = 8
+        RangeFinder_TYPE_LWSER  = 8,
+        RangeFinder_TYPE_SITL= 9
     };
 
     enum RangeFinder_Function {
@@ -177,6 +178,9 @@ public:
       the min and 2m can be captured
      */
     bool pre_arm_check() const;
+
+    // support for HIL/SITL
+    void setHIL(uint8_t instance, const struct RangeFinder_State &state);
 
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];

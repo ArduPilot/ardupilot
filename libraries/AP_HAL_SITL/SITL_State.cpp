@@ -81,6 +81,7 @@ void SITL_State::_sitl_setup(void)
     _compass = (Compass *)AP_Param::find_object("COMPASS_");
     _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
     _optical_flow = (OpticalFlow *)AP_Param::find_object("FLOW");
+    _range_finder = (RangeFinder *)AP_Param::find_object("RNGFND");
 
     if (_sitl != NULL) {
         // setup some initial values
@@ -89,6 +90,7 @@ void SITL_State::_sitl_setup(void)
         _update_ins(0, 0, 0, 0, 0, 0, 0, 0, -9.8, 0, 100);
         _update_compass(0, 0, 0);
         _update_gps(0, 0, 0, 0, 0, 0, false);
+        _update_range_finder(0);
 #endif
         if (enable_gimbal) {
             gimbal = new Gimbal(_sitl->state);
@@ -204,6 +206,10 @@ void SITL_State::_fdm_input_step(void)
         _update_barometer(_sitl->state.altitude);
         _update_compass(_sitl->state.rollDeg, _sitl->state.pitchDeg, _sitl->state.yawDeg);
         _update_flow();
+
+        // Range finder (if simulated/present)
+       if (_sitl->state_extras.is_sonar_down_present)
+           _update_range_finder(_sitl->state_extras.sonar_down);
     }
 
     // trigger all APM timers.
@@ -231,6 +237,7 @@ void SITL_State::_fdm_input(void)
     };
     union {
         struct sitl_fdm fg_pkt;
+        struct sitl_fdm_extras fg_extras_pkt;
         struct pwm_packet pwm_pkt;
     } d;
     bool got_fg_input = false;
@@ -241,7 +248,7 @@ void SITL_State::_fdm_input(void)
         static uint32_t last_report;
         static uint32_t count;
 
-        if (d.fg_pkt.magic != 0x4c56414f) {
+        if (d.fg_pkt.magic != FDM_MAGIC) {
             fprintf(stdout, "Bad FDM packet - magic=0x%08x\n", d.fg_pkt.magic);
             return;
         }
@@ -276,6 +283,20 @@ void SITL_State::_fdm_input(void)
             last_report = hal.scheduler->millis();
         }
         break;
+
+    case sizeof(sitl_fdm_extras):
+            if (d.fg_extras_pkt.magic != FDM_EXTRAS_MAGIC) {
+                fprintf(stdout, "Bad FDM extras packet - magic=0x%08x\n", d.fg_extras_pkt.magic);
+                return;
+            }
+
+            // A null timestamp is an indication of a basic simulator with no extra sensors
+            if (d.fg_extras_pkt.timestamp_us == 0)
+                break;
+
+            _sitl->state_extras = d.fg_extras_pkt;
+            // are there additional things to do ?
+            break;
 
     case 16: {
         // a packet giving the receiver PWM inputs
@@ -314,7 +335,7 @@ void SITL_State::_fdm_input_local(void)
     sitl_model->update(input);
 
     // get FDM output from the model
-    sitl_model->fill_fdm(_sitl->state);
+    sitl_model->fill_fdm(_sitl->state, _sitl->state_extras);
 
     if (gimbal != NULL) {
         gimbal->update();

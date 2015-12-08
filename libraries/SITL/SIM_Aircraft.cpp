@@ -48,6 +48,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     accel_noise(0.3),
     rate_hz(1200),
     autotest_dir(NULL),
+    ros_launch_file(NULL),
     frame(frame_str),
 #ifdef __CYGWIN__
     min_sleep_time(20000)
@@ -232,11 +233,19 @@ double Aircraft::rand_normal(double mean, double stddev)
 
 
 
+/*
+   fill a sitl_fdm structure from the simulator state
+*/
+void Aircraft::fill_fdm(struct sitl_fdm &fdm, struct sitl_fdm_extras &fdm_extras) const
+{
+    fill_fdm_basic(fdm);
+    fill_fdm_extras(fdm_extras);
+}
 
 /*
    fill a sitl_fdm structure from the simulator state
 */
-void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
+void Aircraft::fill_fdm_basic(struct sitl_fdm &fdm) const
 {
     fdm.timestamp_us = time_now_us;
     fdm.latitude  = location.lat * 1.0e-7;
@@ -258,8 +267,24 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
     fdm.airspeed = airspeed;
-    fdm.magic = 0x4c56414f;
+    fdm.magic = FDM_MAGIC;
 }
+
+/*
+   fill a sitl_fdm_extras with the current extras sensors measures, for the simulators that support them.
+   This method must be redefined by the backend simulator class.
+*/
+void Aircraft::fill_fdm_extras(struct sitl_fdm_extras &fdm_extras) const
+{
+    // Usual simulators do not support extra sensors. So all 'is_xxx_present' fields
+    // are set to false.
+    fdm_extras.timestamp_us = 0;
+    fdm_extras.sonar_down = 0;
+    fdm_extras.is_sonar_down_present = false;
+    fdm_extras.magic = FDM_EXTRAS_MAGIC;
+}
+
+
 
 uint64_t Aircraft::get_wall_time_us() const
 {

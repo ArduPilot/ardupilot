@@ -19,6 +19,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/Compass.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
@@ -71,6 +72,7 @@ private:
     void _update_barometer(float height);
     void _update_compass(float rollDeg, float pitchDeg, float yawDeg);
     void _update_flow(void);
+    void _update_range_finder(float range);
 
     struct gps_data {
         double latitude;
@@ -139,6 +141,7 @@ private:
     SITLScheduler *_scheduler;
     Compass *_compass;
     OpticalFlow *_optical_flow;
+    RangeFinder *_range_finder;
     AP_Terrain *_terrain;
 
     int _sitl_fd;

@@ -39,6 +39,9 @@ public:
         return ranger._powersave_range > 0 && ranger.estimated_terrain_height > ranger._powersave_range;
     }
 
+    // update the frontend
+    void _update_frontend(uint8_t instance, const struct RangeFinder::RangeFinder_State &state);
+
 protected:
 
     // update status based on distance measurement

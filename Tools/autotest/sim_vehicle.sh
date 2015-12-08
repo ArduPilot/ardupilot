@@ -27,6 +27,8 @@ EXTERNAL_SIM=0
 MODEL=""
 BREAKPOINT=""
 OVERRIDE_BUILD_TARGET=""
+START_ROS_FROM_APM=0
+ROS_LAUNCH_FILE=""
 
 usage()
 {
@@ -59,6 +61,7 @@ Options:
     -H               start HIL
     -e               use external simulator
     -S SPEEDUP       set simulation speedup (1 for wall clock time)
+    -r LAUNCH_FILE   order Ardupilot to launch ROS/Gazebo, calling the ROS .launch start file
 
 mavproxy_options:
     --map            start with a map
@@ -75,7 +78,7 @@ EOF
 
 
 # parse options. Thanks to http://wiki.bash-hackers.org/howto/getopts_tutorial
-while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
+while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHer:MS:DB:b:" opt; do
   case $opt in
     v)
       VEHICLE=$OPTARG
@@ -148,6 +151,11 @@ while getopts ":I:VgGcj:TA:t:L:l:v:hwf:RNHeMS:DB:b:" opt; do
     b)
       OVERRIDE_BUILD_TARGET="$OPTARG"
       ;;
+    r)
+      ROS_LAUNCH_FILE=$OPTARG
+      START_ROS_FROM_APM=1
+      echo "ROS/Gazebo will be started by Ardupilot"
+      ;;
     h)
       usage
       exit 0
@@ -186,6 +194,8 @@ MAVLINK_PORT="tcp:127.0.0.1:"$((5760+10*$INSTANCE))
 SIMIN_PORT="127.0.0.1:"$((5502+10*$INSTANCE))
 SIMOUT_PORT="127.0.0.1:"$((5501+10*$INSTANCE))
 FG_PORT="127.0.0.1:"$((5503+10*$INSTANCE))
+# Output port from ROS' MAVROS plugin:
+MAVLINK_ROS_PORT="127.0.0.1:"$((14550+10*$INSTANCE))
 
 [ -z "$VEHICLE" ] && {
     CDIR="$PWD"
@@ -217,6 +227,9 @@ check_jsbsim_version()
     jsbsim_version=$(JSBSim --version)
     if [[ $jsbsim_version != *"ArduPilot"* ]]
     then
+        RED='\033[0;31m'
+        NC='\033[0m' # No Color
+        echo -en "$RED"
         cat <<EOF
 =========================================================
 You need the latest ArduPilot version of JSBSim installed
@@ -228,9 +241,77 @@ See
 for more details
 =========================================================
 EOF
+        echo -en "$NC"
         exit 1
     fi
 }
+
+# This function checks that the ROS is installed on the system.
+# If ROS is missing, displays an error message and aborts the script.
+check_ros_version()
+{
+    ros_version=$(rosversion -d)
+    if [[ $ros_version = *"command not found"* ]]
+    then
+        # ROS was not found: displays the error message and aborts
+        RED='\033[0;31m'
+        NC='\033[0m' # No Color
+        echo -en "$RED"
+        cat <<EOF
+=========================================================
+ROS was not found on the system !
+
+You can find instructions on how to download and set it up on:
+https://github.com/AurelienRoy/ardupilot_sitl_ros_tutorial
+
+See also
+  http://dev.ardupilot.com/wiki/using-rosgazebo-simulator-with-sitl/
+for more details
+=========================================================
+EOF
+        echo -en "$NC"
+        exit 1
+    fi
+    echo "ROS $ros_version was found"
+}
+
+# This function checks that the ROS/Gazebo plugin named "ardupilot_sitl_gazebo_plugin"
+# is present, and will save the path to its directory in the variable 'ardu_ros_pkg_path'.
+# If the plugin is missing, displays an error message and aborts the script.
+get_path_ardu_ros_plugin()
+{
+    ardu_ros_pkg_name="ardupilot_sitl_gazebo_plugin"
+    # Searches the plugin name in the list of plugins
+    ardu_ros_pkg=$(rospack list | grep -i "^$ardu_ros_pkg_name")
+    if [ -z "$ardu_ros_pkg" ]
+    then
+        # the plugin was not found: displays the error message and aborts
+        RED='\033[0;31m'
+        NC='\033[0m' # No Color
+        echo -en "$RED"
+        cat <<EOF
+=========================================================
+The ardupilot Gazebo plugin was not found !
+Expected plugin name: $ardu_ros_pkg_name
+
+You can find instructions on how to download  and set it up on:
+https://github.com/AurelienRoy/ardupilot_sitl_ros_tutorial
+
+See also
+  http://dev.ardupilot.com/wiki/using-rosgazebo-simulator-with-sitl/
+for more details
+=========================================================
+EOF
+        echo -en "$NC"
+        exit 1
+    fi
+    # The plugin was found: extracts its directory path
+    ARDU_ROS_PKG_PATH=$(echo $ardu_ros_pkg | cut -d ' ' -f2)
+    echo "Ardupilot Gazebo plugin found on path:"
+    echo "  $ARDU_ROS_PKG_PATH"
+}
+
+
 
 
 # modify build target based on copter frame type
@@ -253,15 +334,15 @@ case $FRAME in
         MODEL="$FRAME"
 	;;
     heli-dual)
-  BUILD_TARGET="sitl-heli-dual"
+    BUILD_TARGET="sitl-heli-dual"
         EXTRA_SIM="$EXTRA_SIM --frame=heli-dual"
         MODEL="heli-dual"
-  ;;
+    ;;
     heli-compound)
-  BUILD_TARGET="sitl-heli-compound"
+    BUILD_TARGET="sitl-heli-compound"
         EXTRA_SIM="$EXTRA_SIM --frame=heli-compound"
         MODEL="heli-compound"
-  ;;
+    ;;
     IrisRos)
 	BUILD_TARGET="sitl"
 	;;
@@ -269,6 +350,8 @@ case $FRAME in
 	BUILD_TARGET="sitl"
         EXTRA_SIM="$EXTRA_SIM --frame=Gazebo"
         MODEL="$FRAME"
+        check_ros_version
+        get_path_ardu_ros_plugin
 	;;
     CRRCSim-heli)
 	BUILD_TARGET="sitl-heli"
@@ -370,12 +453,44 @@ if [ $START_ANTENNA_TRACKER == 1 ]; then
     popd
 fi
 
+# For a Gazebo simulator, generates a GPS home reference .xacro file for the ROS GPS sensor
+if [[ $FRAME == "Gazebo" ]]; then
+    ROS_HOMELOC_FILE_PATH="$ARDU_ROS_PKG_PATH/urdf/gps_home_location.xacro"
+    HOME_LATITUDE=$(echo $SIMHOME | cut -d, -f1)
+    HOME_LONGITUDE=$(echo $SIMHOME | cut -d, -f2)
+    HOME_ALTITUDE=$(echo $SIMHOME | cut -d, -f3)
+    echo "Generated the file setting the GPS location of Gazebo map's center:"
+    echo "  $ROS_HOMELOC_FILE_PATH"
+    
+    cat >$ROS_HOMELOC_FILE_PATH <<EOL
+<?xml version="1.0"?>
+<!-- File auto-generated by sim_vehicle.sh -->
+<!-- Location at $LOCATION -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- The following GPS coordinates locate the center of Gazebo's map -->
+  <xacro:property name="referenceLatitude" value="$HOME_LATITUDE" />     <!-- in degrees -->
+  <xacro:property name="referenceLongitude" value="$HOME_LONGITUDE" />   <!-- in degrees -->
+  <xacro:property name="referenceAltitude" value="$HOME_ALTITUDE" />     <!-- in meters above sea level -->
+</robot>
+EOL
+fi
+
 cmd="$VEHICLEDIR/$VEHICLE.elf -S -I$INSTANCE --home $SIMHOME"
 if [ $WIPE_EEPROM == 1 ]; then
     cmd="$cmd -w"
 fi
 
 cmd="$cmd --model $MODEL --speedup=$SPEEDUP"
+
+# Always pass on to Ardupilot's executable the path to the autotest directory,
+# in case the simulator interface in Ardupilot needs it
+cmd="$cmd --autotest-dir $autotest"
+
+# For a Gazebo simulator, passes on to Ardupilot the name of the ROS .launch file to invoke
+if [[ $FRAME == "Gazebo" && "$START_ROS_FROM_APM" == 1 ]]; then
+    cmd="$cmd --ros-launch $ROS_LAUNCH_FILE"
+fi
+
 
 case $VEHICLE in
     ArduPlane)
@@ -425,15 +540,27 @@ trap kill_tasks SIGINT
 # mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 
 options=""
 if [ $START_HIL == 0 ]; then
-options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+    if [[ $FRAME != "Gazebo" ]]; then
+        options="--master $MAVLINK_PORT --sitl $SIMOUT_PORT"
+    else
+        # special input ports settings for ROS/Gazebo simulations
+        options="--master $MAVLINK_ROS_PORT"
+    fi
 fi
 
 # If running inside of a vagrant guest, then we probably want to forward our mavlink out to the containing host OS
-if [ $USER == "vagrant" ]; then
-options="$options --out 10.0.2.2:14550"
+if [[ $FRAME == "Gazebo" ]]; then
+    options="$options --out 127.0.0.1:14551"
+    # Support Vagrant on Gazebo simulation ?
+else
+    if [ $USER == "vagrant" ]; then
+        options="$options --out 10.0.2.2:14550"
+    fi
+    options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
 fi
-options="$options --out 127.0.0.1:14550 --out 127.0.0.1:14551"
-extra_cmd1=""
+
+
+extra_cmd=""
 if [ $WIPE_EEPROM == 1 ]; then
     extra_cmd="param forceload $autotest/$PARMS; $EXTRA_PARM; param fetch"
 fi
@@ -447,6 +574,56 @@ fi
 if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     options="$options --load-module=gimbal"
 fi
+
+# For a Gazebo simulator, looks for a map image of the Gazebo world, to pass it on to
+# MavProxy as an overlay image
+if [[ $FRAME == "Gazebo" ]]; then
+    # Map images should be in the directory <ros_plugin>/worlds/<launch file name>
+    MAVPROXY_MAP_OVERLAY_DIR="$ARDU_ROS_PKG_PATH/worlds/$ROS_LAUNCH_FILE"
+    
+    # List of image extensions supported by OpenCV (on which MavProxy rely to open an image file)
+    MAP_IMG_PATTERN="-iname map_*.png"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.jpg"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.jpeg"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.bmp"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.dib"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.gif"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.tif"
+    MAP_IMG_PATTERN="$MAP_IMG_PATTERN -or -iname map_*.tiff"
+    
+    # Finds the first file in the 'MAVPROXY_MAP_OVERLAY_DIR' directory that matches
+    # the name "map_*.XXX" (case insensitive):
+    MAVPROXY_MAP_IMG=$(find "$MAVPROXY_MAP_OVERLAY_DIR" -type f \( $MAP_IMG_PATTERN \) -print -quit)
+    
+    if [ -z "$MAVPROXY_MAP_IMG" ]; then
+        # Displays a warning message
+        ORANGE='\033[0;33m'
+        NC='\033[0m' # No Color
+        echo -en "$ORANGE"
+        cat <<EOF
+=========================================================
+Could not find a MavProxy overlay map image for the world '$ROS_LAUNCH_FILE'.
+
+If you wish to add one, place it in:
+  $MAVPROXY_MAP_OVERLAY_DIR
+The map image should be named: map_w<width>m_h<height>m.<png|jpg|bmp|...>
+where <width> and <height> are the map size in meters.
+  e.g.: map_w40m_h40m.jpg
+=========================================================
+EOF
+    echo -en "$NC"
+    else
+        echo "MavProxy overlay map image found for the world '$ROS_LAUNCH_FILE':"
+        echo "  $MAVPROXY_MAP_IMG"
+        echo "it will be centered on lat=$HOME_LATITUDE lon=$HOME_LONGITUDE"
+        
+        # Re-uses 'HOME_LATITUDE' and 'HOME_LONGITUDE' that have been defined a bit above
+        # in another 'Gazebo' special section
+        extra_cmd="$extra_cmd map overlay $MAVPROXY_MAP_IMG $HOME_LATITUDE $HOME_LONGITUDE;"
+    fi
+fi
+
+echo "Starting MavProxy : mavproxy.py $options --cmd=\"$extra_cmd\" $*"
 
 if [ -f /usr/bin/cygstart ]; then
     cygstart -w "/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe" $options --cmd="$extra_cmd" $*
