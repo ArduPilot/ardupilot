@@ -323,6 +323,15 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
     return true;
 }
 
+const struct UnitStructure *DataFlash_Class::unit(uint16_t num) const
+{
+    return &_units[num];
+}
+
+const struct MultiplierStructure *DataFlash_Class::multiplier(uint16_t num) const
+{
+    return &log_Multipliers[num];
+}
 
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
@@ -708,7 +717,7 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
 bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
                                      const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                                      const uint8_t sensor_instance,
-                                     const uint16_t multiplier,
+                                     const uint16_t mult,
                                      const uint16_t sample_count,
                                      const uint64_t sample_us,
                                      const float sample_rate_hz)
@@ -722,7 +731,7 @@ bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
         seqno          : seqno,
         sensor_type    : (uint8_t)sensor_type,
         instance       : sensor_instance,
-        multiplier     : multiplier,
+        multiplier     : mult,
         sample_count   : sample_count,
         sample_us      : sample_us,
         sample_rate_hz : sample_rate_hz,
