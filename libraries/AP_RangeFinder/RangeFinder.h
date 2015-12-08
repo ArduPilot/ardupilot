@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 // Maximum number of range finder instances available on this platform
 #define RANGEFINDER_MAX_INSTANCES 2
@@ -35,7 +36,7 @@ class RangeFinder
 public:
     friend class AP_RangeFinder_Backend;
 
-    RangeFinder(void);
+    RangeFinder(AP_SerialManager &_serial_manager);
 
     // RangeFinder driver types
     enum RangeFinder_Type {
@@ -45,7 +46,9 @@ public:
         RangeFinder_TYPE_PLI2C  = 3,
         RangeFinder_TYPE_PX4    = 4,
         RangeFinder_TYPE_PX4_PWM= 5,
-        RangeFinder_TYPE_BBB_PRU= 6
+        RangeFinder_TYPE_BBB_PRU= 6,
+        RangeFinder_TYPE_LWI2C  = 7,
+        RangeFinder_TYPE_LWSER  = 8
     };
 
     enum RangeFinder_Function {
@@ -87,6 +90,7 @@ public:
     AP_Int16 _min_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _max_distance_cm[RANGEFINDER_MAX_INSTANCES];
     AP_Int8  _ground_clearance_cm[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8  _address[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 _powersave_range;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -106,7 +110,7 @@ public:
 #define _RangeFinder_STATE(instance) state[instance]
 
     uint16_t distance_cm(uint8_t instance) const {
-        return _RangeFinder_STATE(instance).distance_cm;
+        return (instance<num_instances? _RangeFinder_STATE(instance).distance_cm : 0);
     }
     uint16_t distance_cm() const {
         return distance_cm(primary_instance);
@@ -177,9 +181,10 @@ public:
 private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
-    uint8_t primary_instance:2;
-    uint8_t num_instances:2;
+    uint8_t primary_instance:3;
+    uint8_t num_instances:3;
     float estimated_terrain_height;
+    AP_SerialManager &serial_manager;
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
