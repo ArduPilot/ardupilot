@@ -9,7 +9,6 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 
-    // BUG: SLEW_YAW's behavior does not match its parameter documentation
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
     // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
@@ -258,7 +257,6 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
     att_error_euler_rad.z = wrap_PI(_att_target_euler_rad.z - _ahrs.yaw);
 
     // Constrain the yaw angle error
-    // BUG: SLEW_YAW's behavior does not match its parameter documentation
     if (slew_yaw) {
         att_error_euler_rad.z = constrain_float(att_error_euler_rad.z,-get_slew_yaw_rads(),get_slew_yaw_rads());
     }
