@@ -1585,8 +1585,8 @@
               <entry value="4" name="ADSB_FLAGS_VALID_HEADING"></entry>
               <entry value="8" name="ADSB_FLAGS_VALID_VELOCITY"></entry>
               <entry value="16" name="ADSB_FLAGS_VALID_CALLSIGN"></entry>
-              <entry value="32" name="ADSB_FLAGS_SIMULATED"></entry>
-              <entry value="64" name="ADSB_FLAGS_VALID_SQUAWK"></entry>
+              <entry value="32" name="ADSB_FLAGS_VALID_SQUAWK"></entry>
+              <entry value="64" name="ADSB_FLAGS_SIMULATED"></entry>
           </enum>
      </enums>
      <messages>
@@ -2780,10 +2780,10 @@
           <field type="int32_t" name="lat">Latitude, expressed as degrees * 1E7</field>
           <field type="int32_t" name="lon">Longitude, expressed as degrees * 1E7</field>
           <field type="uint8_t" name="altitude_type" enum="ADSB_ALTITUDE_TYPE">Type from ADSB_ALTITUDE_TYPE enum</field>
-          <field type="float" name="altitude">Altitude(ASL) in meters</field>
+          <field type="int32_t" name="altitude">Altitude(ASL) in millimeters</field>
           <field type="uint16_t" name="heading">Course over ground in centidegrees</field>
-          <field type="float" name="hor_velocity">The horizontal velocity in meters/second</field>
-          <field type="float" name="ver_velocity">The vertical velocity in meters/second, positive is up</field>
+          <field type="uint16_t" name="hor_velocity">The horizontal velocity in centimeters/second</field>
+          <field type="uint16_t" name="ver_velocity">The vertical velocity in centimeters/second, positive is up</field>
           <field type="char[9]" name="callsign">The callsign, 8+null</field>
           <field type="uint8_t" name="emitter_type" enum="ADSB_EMITTER_TYPE">Type from ADSB_EMITTER_TYPE enum</field>
           <field type="uint8_t" name="tslc">Time since last communication in seconds</field>
