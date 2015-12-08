@@ -464,7 +464,7 @@ void AC_WPNav::set_wp_origin_and_destination(const Vector3f& origin, const Vecto
         _yaw = get_bearing_cd(_origin, _destination);
     } else {
         // set target yaw to current heading.  Alternatively we could pull this from the attitude controller if we had access to it
-        _yaw = _attitude_control.angle_ef_targets().z;
+        _yaw = _attitude_control.get_att_target_euler_cd().z;
     }
 
     // initialise intermediate point to the origin
@@ -859,7 +859,7 @@ void AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     }
 
     // initialise yaw heading to current heading
-    _yaw = _attitude_control.angle_ef_targets().z;
+    _yaw = _attitude_control.get_att_target_euler_cd().z;
 
     // store origin and destination locations
     _origin = origin;
