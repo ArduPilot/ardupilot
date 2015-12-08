@@ -210,6 +210,8 @@ public:
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
+    const struct UnitStructure *unit(uint16_t num) const;
+    const struct MultiplierStructure *multiplier(uint16_t num) const;
 
     // methods for mavlink SYS_STATUS message (send_extended_status1)
     // these methods cover only the first logging backend used -
@@ -231,6 +233,10 @@ protected:
 
     const struct LogStructure *_structures;
     uint8_t _num_types;
+    const struct UnitStructure *_units = log_Units;
+    const struct MultiplierStructure *_multipliers = log_Multipliers;
+    const uint8_t _num_units = (sizeof(log_Units) / sizeof(log_Units[0]));
+    const uint8_t _num_multipliers = (sizeof(log_Multipliers) / sizeof(log_Multipliers[0]));
 
     /* Write a block with specified importance */
     /* might be useful if you have a boolean indicating a message is
