@@ -21,3 +21,7 @@ LIBRARIES += DataFlash
 LIBRARIES += Filter
 LIBRARIES += GCS_MAVLink
 LIBRARIES += StorageManager
+LIBRARIES += AP_NavEKF
+LIBRARIES += AP_NavEKF2
+LIBRARIES += AP_RangeFinder
+LIBRARIES += AP_SerialManager
