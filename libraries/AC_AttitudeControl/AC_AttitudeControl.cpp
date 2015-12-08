@@ -568,7 +568,7 @@ float AC_AttitudeControl::rate_bf_to_motor_yaw(float rate_target_rads)
     float rate_error_rads = rate_target_rads - current_rate_rads;
 
     // For legacy reasons, we convert to centi-degrees before inputting to the PID
-    _pid_rate_yaw.set_input_filter_d(degrees(rate_error_rads)*100.0f);
+    _pid_rate_yaw.set_input_filter_all(degrees(rate_error_rads)*100.0f);
     _pid_rate_yaw.set_desired_rate(degrees(rate_target_rads)*100.0f);
 
     float integrator = _pid_rate_yaw.get_integrator();
