@@ -52,6 +52,10 @@ public:
                         AC_P& pi_angle_roll, AC_P& pi_angle_pitch, AC_P& pi_angle_yaw,
                         AC_PID& pid_rate_roll, AC_PID& pid_rate_pitch, AC_PID& pid_rate_yaw
                         ) :
+        _dt(AC_ATTITUDE_400HZ_DT),
+        _angle_boost(0),
+        _att_ctrl_use_accel_limit(true),
+        _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ),
         _ahrs(ahrs),
         _aparm(aparm),
         _motors(motors),
@@ -60,14 +64,9 @@ public:
         _p_angle_yaw(pi_angle_yaw),
         _pid_rate_roll(pid_rate_roll),
         _pid_rate_pitch(pid_rate_pitch),
-        _pid_rate_yaw(pid_rate_yaw),
-        _dt(AC_ATTITUDE_100HZ_DT),
-        _angle_boost(0),
-        _throttle_in_filt(AC_ATTITUDE_CONTROL_ALTHOLD_LEANANGLE_FILT_HZ)
+        _pid_rate_yaw(pid_rate_yaw)
         {
             AP_Param::setup_object_defaults(this, var_info);
-
-            _att_ctrl_use_accel_limit = true;
         }
 
     // Empty destructor to suppress compiler warning
