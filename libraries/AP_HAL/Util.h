@@ -13,8 +13,14 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b) { soft_armed = b; }
-    bool get_soft_armed() const { return soft_armed; }
+    enum soft_arm_state_t {
+        SOFT_ARM_STATE_DISARMED=0,
+        SOFT_ARM_STATE_ARMING,
+        SOFT_ARM_STATE_ARMED
+    };
+
+    void set_soft_arm_state(const soft_arm_state_t state) { _soft_arm_state = state; }
+    enum soft_arm_state_t get_soft_arm_state() const { return _soft_arm_state; }
 
     void set_capabilities(uint64_t cap) { capabilities |= cap; }
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
@@ -93,7 +99,7 @@ public:
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
-    bool soft_armed = false;
+    enum soft_arm_state_t _soft_arm_state = SOFT_ARM_STATE_DISARMED;
     uint64_t capabilities = 0;
 };
 
