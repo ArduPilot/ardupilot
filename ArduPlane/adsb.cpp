@@ -32,70 +32,95 @@
 void Plane::adsb_update(void)
 {
     adsb.update();
-    adsb_handle_vehicle_threats();
+
+    if (!adsb.get_is_evading_threat()) {
+        if (adsb.get_possible_threat()) {
+            bool evasion_start_success = adsb_evasion_start();
+            adsb.set_is_evading_threat(evasion_start_success);
+        }
+    } else if (adsb_state.is_evading) {
+        // there has been no manual override, handle an auto-evasion
+        if (!adsb.get_possible_threat()) {
+                adsb.set_is_evading_threat(false);
+                adsb_evasion_stop();
+                adsb_state.is_evading = false;
+        } else {
+            adsb_evasion_ongoing();
+        }
+    }
 }
 
 /*
- * Handle ADS-B based threats which are platform dependent
+ * This fires once at the moment we realize there is a threat
  */
-void Plane::adsb_handle_vehicle_threats(void)
+bool Plane::adsb_evasion_start(void)
 {
-    uint32_t now = millis();
-    AP_ADSB::ADSB_BEHAVIOR behavior = adsb.get_behavior();
+    if (control_mode != AUTO) {
+        // evasion is only supported while in AUTO mode
+        return false;
+    }
+    if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF ||
+        mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+        // evasion during a plane take-off or land can result in a crash. Ignore ADS-B traffic
+        return false;
+    }
 
-    switch (control_mode) {
-    case AUTO:
-        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF) {
-            // for testing purposes ignore ADS-B traffic until we get into the air so we don't screw up the sim takeoff
-            break;
-        }
-        switch(behavior) {
-        case AP_ADSB::ADSB_BEHAVIOR_NONE:
-        default:
-            break;
+    adsb_state.timestamp_ms =  millis();
+    adsb_state.prev_wp = prev_WP_loc; // must be done BEFORE set_mode()
 
-        case AP_ADSB::ADSB_BEHAVIOR_LOITER:
-        case AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND:
-            if (adsb.get_another_vehicle_within_radius() && !adsb.get_is_evading_threat()) {
-                adsb.set_is_evading_threat(true);
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, performing LOITER");
-                adsb_state.prev_wp = prev_WP_loc;
-                set_mode(LOITER);
-                if (behavior == AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND) {
-                    adsb_state.time_last_alt_change_ms = now;
-                }
-            }
-        } // switch behavior
-        break; // case auto
-
-    case LOITER:
-        switch(behavior) {
-        case AP_ADSB::ADSB_BEHAVIOR_NONE:
-            // TODO: recover from this
-        default:
-            break;
-
-        case AP_ADSB::ADSB_BEHAVIOR_LOITER:
-        case AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND:
-            if (adsb.get_is_evading_threat()) {
-                if (!adsb.get_another_vehicle_within_radius()) {
-                    adsb.set_is_evading_threat(false);
-                    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
-                    set_mode(AUTO);
-                    prev_WP_loc = adsb_state.prev_wp;
-                    auto_state.no_crosstrack = false;
-                } else if (behavior == AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND &&
-                            now - adsb_state.time_last_alt_change_ms >= 1000) {
-                   // slowly reduce altitude 1m/s while loitering. Drive into the ground if threat persists
-                    adsb_state.time_last_alt_change_ms = now;
-                    next_WP_loc.alt -= 100;
-                } // get_another_vehicle_within_radius
-            } // get_is_evading_threat
-        } // switch behavior
-        break; // case LOITER
-
+    switch(adsb.get_behavior()) {
+    case AP_ADSB::ADSB_BEHAVIOR_NONE:
     default:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, no action taken");
         break;
-    } // switch control_mode
+
+    case AP_ADSB::ADSB_BEHAVIOR_GUIDED:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, switching to GUIDED mode");
+        set_mode(GUIDED);
+        adsb_state.is_evading = true; // must be done AFTER set_mode()
+        break;
+
+    case AP_ADSB::ADSB_BEHAVIOR_LOITER:
+    case AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND:
+        gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, performing LOITER");
+        set_mode(LOITER);
+        adsb_state.is_evading = true; // must be done after set_mode()
+        break;
+    } // switch behavior
+
+    return true;
 }
 
+/*
+ * This fires once at the moment we realize there is no longer a threat
+ */
+void Plane::adsb_evasion_stop(void)
+{
+    gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone, continuing mission");
+
+    FlightMode prev_control_mode = control_mode;
+    set_mode(AUTO);
+    if (prev_control_mode == LOITER)
+    {
+        // if resuming from loiter, smoothly get back on track
+        prev_WP_loc = adsb_state.prev_wp;
+        auto_state.no_crosstrack = false;
+    }
+}
+
+/*
+ * This fires once per second while evading a threat
+ */
+void Plane::adsb_evasion_ongoing(void)
+{
+    uint32_t now = millis();
+
+    if (control_mode == LOITER &&
+        adsb.get_behavior() == AP_ADSB::ADSB_BEHAVIOR_LOITER_AND_DESCEND &&
+        now - adsb_state.timestamp_ms >= 1000)
+    {
+        // slowly reduce altitude 100 cm/s while loitering. Drive into the ground if threat persists
+         adsb_state.timestamp_ms = now;
+         next_WP_loc.alt -= 100;
+    }
+}

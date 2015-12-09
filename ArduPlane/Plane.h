@@ -562,8 +562,11 @@ private:
     AP_ADSB adsb {ahrs};
     struct {
 
-        // for Loiter_and_descend behavior, keeps track of rate changes
-        uint32_t time_last_alt_change_ms;
+        // flag to signify the current mode is set by ADSB evasion logic
+        bool is_evading:1;
+
+        // generic timestamp for evasion algorithms
+        uint32_t timestamp_ms;
 
         // previous wp to restore to when switching between modes back to AUTO
         Location prev_wp;
@@ -921,7 +924,9 @@ private:
     void update_logging2(void);
     void terrain_update(void);
     void adsb_update(void);
-    void adsb_handle_vehicle_threats(void);
+    bool adsb_evasion_start(void);
+    void adsb_evasion_stop(void);
+    void adsb_evasion_ongoing(void);
     void update_flight_mode(void);
     void stabilize();
     void set_servos_idle(void);
