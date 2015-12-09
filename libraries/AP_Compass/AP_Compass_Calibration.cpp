@@ -275,7 +275,7 @@ uint8_t Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
     switch (packet.command) {
     case MAV_CMD_DO_START_MAG_CAL: {
         result = MAV_RESULT_ACCEPTED;
-        if (hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             hal.console->println("Disarm for compass calibration");
             result = MAV_RESULT_FAILED;
             break;
