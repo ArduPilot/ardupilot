@@ -194,7 +194,7 @@ void ReplayVehicle::setup(void)
     EKF2.set_enable(true);
                         
     printf("Starting disarmed\n");
-    hal.util->set_soft_armed(false);
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 
     barometer.init();
     barometer.setHIL(0);
@@ -851,8 +851,8 @@ void Replay::loop()
         char type[5];
 
         if (arm_time_ms >= 0 && AP_HAL::millis() > (uint32_t)arm_time_ms) {
-            if (!hal.util->get_soft_armed()) {
-                hal.util->set_soft_armed(true);
+            if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
+                hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
                 ::printf("Arming at %u ms\n", (unsigned)AP_HAL::millis());
             }
         }
