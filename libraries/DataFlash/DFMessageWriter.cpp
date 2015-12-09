@@ -142,12 +142,6 @@ void DFMessageWriter_WriteSysInfo::process() {
     _finished = true;  // all done!
 }
 
-// void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
-// {
-//     DFMessageWriter_WriteSysInfo writer(firmware_string);
-//     writer->process();
-// }
-
 void DFMessageWriter_WriteEntireMission::process() {
     switch(stage) {
 

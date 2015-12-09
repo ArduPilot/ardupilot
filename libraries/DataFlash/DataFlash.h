@@ -88,7 +88,6 @@ public:
 
     void StartNewLog(void);
     void EnableWrites(bool enable);
-    void Log_Write_SysInfo(const char *firmware_string);
     void Log_Write_Format(const struct LogStructure *structure);
     void Log_Write_Parameter(const char *name, float value);
     void Log_Write_GPS(const AP_GPS &gps, uint8_t instance, int32_t relative_alt);
@@ -117,7 +116,6 @@ public:
     void Log_Write_Current(const AP_BattMonitor &battery, int16_t throttle);
     void Log_Write_Compass(const Compass &compass);
     void Log_Write_Mode(uint8_t mode);
-    void Log_Write_Parameters(void);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     void Log_Write_Mission_Cmd(const AP_Mission &mission,
