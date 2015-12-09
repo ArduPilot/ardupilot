@@ -413,4 +413,5 @@ private:
 #include "AP_Compass_PX4.h"
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_qflight.h"
+#include "AP_Compass_QURT.h"
 #endif
