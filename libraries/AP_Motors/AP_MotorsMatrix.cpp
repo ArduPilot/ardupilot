@@ -381,7 +381,7 @@ void AP_MotorsMatrix::output_disarmed()
 void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
-    if (!armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         return;
     }
 

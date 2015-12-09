@@ -43,7 +43,6 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _air_density_ratio(1.0f)
 {
     // init other flags
-    _flags.armed = false;
     _flags.stabilizing = false;
     _flags.frame_orientation = AP_MOTORS_X_FRAME;
     _flags.interlock = false;
@@ -57,10 +56,4 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     limit.yaw = true;
     limit.throttle_lower = true;
     limit.throttle_upper = true;
-};
-
-void AP_Motors::armed(bool arm)
-{
-    _flags.armed = arm;
-    AP_Notify::flags.armed = arm;
 };
