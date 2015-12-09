@@ -142,16 +142,8 @@ void Copter::arming_timer_check()
 {
     // check whether we need to arm
     if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMING && millis()-arming_commanded_ms > 2000) {
-        // disable cpu failsafe because initialising everything takes a while
-        failsafe_disable();
-
         // reset battery failsafe
         set_failsafe_battery(false);
-
-        // call update_notify a few times to ensure the message gets out
-        for (uint8_t i=0; i<=10; i++) {
-            update_notify();
-        }
 
         #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
         gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
@@ -181,13 +173,10 @@ void Copter::arming_timer_check()
         sprayer.test_pump(false);
         #endif
 
-        // short delay to allow reading of rc inputs
-        delay(30);
-
         // enable output to motors
         enable_motor_output();
 
-        // finally actually arm the motors
+        // arm the motors
         hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
 
         // log arming to dataflash
@@ -195,12 +184,6 @@ void Copter::arming_timer_check()
 
         // log flight mode in case it was changed while vehicle was disarmed
         DataFlash.Log_Write_Mode(control_mode);
-
-        // reenable failsafe
-        failsafe_enable();
-
-        // perf monitor ignores delay due to arming
-        perf_ignore_this_loop();
     }
 }
 
