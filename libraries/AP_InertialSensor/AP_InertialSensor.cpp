@@ -530,6 +530,8 @@ AP_InertialSensor::detect_backends(void)
                                                        HAL_INS_MPU9250_I2C_ADDR));
 #elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
     _add_backend(AP_InertialSensor_QFLIGHT::detect(*this));
+#elif HAL_INS_DEFAULT == HAL_INS_QURT
+    _add_backend(AP_InertialSensor_QURT::detect(*this));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
