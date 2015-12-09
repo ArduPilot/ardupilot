@@ -702,26 +702,6 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
     return Log_Write_Parameter(name, ap->cast_to_float(type));
 }
 
-/*
-  write all parameters to the log - used when starting a new log so
-  the log file has a full record of the parameters
- */
-void DataFlash_Class::Log_Write_Parameters(void)
-{
-    AP_Param::ParamToken token;
-    AP_Param *ap;
-    enum ap_var_type type;
-
-    for (ap=AP_Param::first(&token, &type);
-         ap;
-         ap=AP_Param::next_scalar(&token, &type)) {
-        Log_Write_Parameter(ap, token, type);
-        // slow down the parameter dump to prevent saturating
-        // the dataflash write bandwidth
-        hal.scheduler->delay(1);
-    }
-}
-
 // Write an GPS packet
 void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, int32_t relative_alt)
 {
@@ -1026,24 +1006,6 @@ void DataFlash_Class::Log_Write_Vibration(const AP_InertialSensor &ins)
         clipping_2  : ins.get_accel_clip_count(2)
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
-{
-    Log_Write_Message(firmware_string);
-
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-    Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION);
-#endif
-
-    // write system identifier as well if available
-    char sysid[40];
-    if (hal.util->get_system_id(sysid)) {
-        Log_Write_Message(sysid);
-    }
-
-    // Write all current parameters
-    Log_Write_Parameters();
 }
 
 // Write a mission command. Total length : 36 bytes
