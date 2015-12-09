@@ -74,7 +74,7 @@ void Plane::read_control_switch()
             // we only update the mixer if we are not armed. This is
             // important as otherwise we will need to temporarily
             // disarm to change the mixer
-            if (hal.util->get_soft_armed() || setup_failsafe_mixing()) {
+            if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED || setup_failsafe_mixing()) {
                 px4io_override_enabled = true;
                 // disable output channels to force PX4IO override
                 gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");

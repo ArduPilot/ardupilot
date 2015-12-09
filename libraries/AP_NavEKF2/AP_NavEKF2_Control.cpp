@@ -19,7 +19,7 @@ void NavEKF2_core::controlFilterModes()
 {
     // Determine motor arm status
     prevMotorsArmed = motorsArmed;
-    motorsArmed = hal.util->get_soft_armed();
+    motorsArmed = (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED);
     if (motorsArmed && !prevMotorsArmed) {
         // set the time at which we arm to assist with checks
         timeAtArming_ms =  imuSampleTime_ms;

@@ -125,7 +125,7 @@ void Plane::update_is_flying_5Hz(void)
  */
 bool Plane::is_flying(void)
 {
-    if (hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // when armed, assume we're flying unless we probably aren't
         return (isFlyingProbability >= 0.1f);
     }
