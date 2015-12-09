@@ -890,7 +890,7 @@ void Plane::set_servos(void)
                                                       min_throttle,
                                                       max_throttle);
 
-        if (!hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();                
         } else if (suppress_throttle()) {

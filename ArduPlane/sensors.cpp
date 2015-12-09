@@ -60,7 +60,7 @@ void Plane::read_rangefinder(void)
   calibrate compass
 */
 void Plane::compass_cal_update() {
-    if (!hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         compass.compass_cal_update();
     }
 }
@@ -109,7 +109,7 @@ void Plane::read_battery(void)
     compass.set_current(battery.current_amps());
 
     if (!usb_connected && 
-        hal.util->get_soft_armed() &&
+        hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED &&
         battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
         low_battery_event();
     }

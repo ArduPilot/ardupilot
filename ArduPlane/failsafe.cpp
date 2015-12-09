@@ -59,7 +59,7 @@ void Plane::failsafe_check(void)
         hal.rcin->clear_overrides();
         channel_roll->radio_out     = channel_roll->read();
         channel_pitch->radio_out    = channel_pitch->read();
-        if (hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
             channel_throttle->radio_out = channel_throttle->read();
         }
         channel_rudder->radio_out   = channel_rudder->read();

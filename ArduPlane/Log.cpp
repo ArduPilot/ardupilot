@@ -319,7 +319,7 @@ void Plane::Log_Write_Status()
         ,time_us   : AP_HAL::micros64()
         ,is_flying   : is_flying()
         ,is_flying_probability : isFlyingProbability
-        ,armed       : hal.util->get_soft_armed()
+        ,armed       : hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED
         ,safety      : hal.util->safety_switch_state()
         ,is_crashed  : crash_state.is_crashed
         ,is_still    : plane.ins.is_still()
