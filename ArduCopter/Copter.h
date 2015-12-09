@@ -737,6 +737,7 @@ private:
     void adsb_handle_vehicle_threats(void);
     bool brake_init(bool ignore_checks);
     void brake_run();
+    void brake_timeout_to_loiter_ms(uint32_t timeout_ms);
     bool circle_init(bool ignore_checks);
     void circle_run();
     bool drift_init(bool ignore_checks);

@@ -6,6 +6,9 @@
  * control_brake.pde - init and run calls for brake flight mode
  */
 
+uint32_t stop_timeout_start = 0;
+float stop_timeout_ms = 0;
+
 // brake_init - initialise brake controller
 bool Copter::brake_init(bool ignore_checks)
 {
@@ -70,4 +73,10 @@ void Copter::brake_run()
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
     pos_control.update_z_controller();
+}
+
+void Copter::brake_timeout_to_loiter_ms(uint32_t timeout_ms)
+{
+    stop_timeout_start = millis();
+    stop_timeout_ms = timeout_ms;
 }
