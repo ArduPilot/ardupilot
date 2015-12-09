@@ -176,7 +176,7 @@ void Copter::read_receiver_rssi(void)
 
 void Copter::compass_cal_update()
 {
-    if (!hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         compass.compass_cal_update();
     }
 }
