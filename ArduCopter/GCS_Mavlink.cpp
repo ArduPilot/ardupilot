@@ -69,7 +69,7 @@ NOINLINE void Copter::send_heartbeat(mavlink_channel_t chan)
 #endif
 
     // we are armed if we are not initialising
-    if (motors.armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -522,7 +522,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     // if we don't have at least 250 micros remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (copter.scheduler.time_available_usec() < 250 && copter.motors.armed()) {
+    if (copter.scheduler.time_available_usec() < 250 && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         copter.gcs_out_of_time = true;
         return false;
     }
@@ -879,7 +879,7 @@ GCS_MAVLINK::data_stream_send(void)
         return;
     }
 
-    if (!copter.in_mavlink_delay && !copter.motors.armed()) {
+    if (!copter.in_mavlink_delay && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         handle_log_send(copter.DataFlash);
     }
 
@@ -1294,7 +1294,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            if (copter.motors.armed() && copter.set_mode(AUTO)) {
+            if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && copter.set_mode(AUTO)) {
                 copter.set_auto_armed(true);
                 if (copter.mission.state() != AP_Mission::MISSION_RUNNING) {
                     copter.mission.start_or_resume();
@@ -1304,8 +1304,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
-            // exit immediately if armed
-            if (copter.motors.armed()) {
+            // exit immediately if armed or arming
+            if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
                 result = MAV_RESULT_FAILED;
                 break;
             }
@@ -1779,13 +1779,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         copter.in_log_download = true;
         /* no break */
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        if (!copter.in_mavlink_delay && !copter.motors.armed()) {
+        if (!copter.in_mavlink_delay && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             handle_log_message(msg, copter.DataFlash);
         }
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         copter.in_log_download = false;
-        if (!copter.in_mavlink_delay && !copter.motors.armed()) {
+        if (!copter.in_mavlink_delay && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             handle_log_message(msg, copter.DataFlash);
         }
         break;

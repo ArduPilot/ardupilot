@@ -111,10 +111,11 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
             ap.motor_test = true;
 
             // enable and arm motors
-            if (!motors.armed()) {
+            if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
                 init_rc_out();
                 enable_motor_output();
-                motors.armed(true);
+                hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+                AP_Notify::flags.armed = 1;
             }
 
             // disable throttle, battery and gps failsafe
@@ -152,7 +153,8 @@ void Copter::motor_test_stop()
     ap.motor_test = false;
 
     // disarm motors
-    motors.armed(false);
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+    AP_Notify::flags.armed = 0;
 
     // reset timeout
     motor_test_start_ms = 0;

@@ -89,7 +89,8 @@ void Copter::esc_calibration_passthrough()
 
     while(1) {
         // arm motors
-        motors.armed(true);
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+        AP_Notify::flags.armed = 1;
         motors.enable();
 
         // flash LEDS
@@ -118,7 +119,8 @@ void Copter::esc_calibration_auto()
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
 
     // arm and enable motors
-    motors.armed(true);
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+    AP_Notify::flags.armed = 1;
     motors.enable();
 
     // flash LEDS

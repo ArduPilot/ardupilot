@@ -54,9 +54,19 @@ void Copter::failsafe_check()
         // main loop ran. That means we're in trouble and should
         // disarm the motors.
         in_failsafe = true;
-        // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
-        if (motors.armed()) {
-            motors.output_min();
+        switch (hal.util->get_soft_arm_state()) {
+            case AP_HAL::Util::SOFT_ARM_STATE_DISARMED:
+                break;
+            case AP_HAL::Util::SOFT_ARM_STATE_ARMING:
+                // cancel arming
+                hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+                AP_Notify::flags.armed = 0;
+                motors.output();
+                break;
+            case AP_HAL::Util::SOFT_ARM_STATE_ARMED:
+                // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
+                motors.output_min();
+                break;
         }
         // log an error
         Log_Write_Error(ERROR_SUBSYSTEM_CPU,ERROR_CODE_FAILSAFE_OCCURRED);
@@ -65,8 +75,9 @@ void Copter::failsafe_check()
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
-        if(motors.armed()) {
-            motors.armed(false);
+        if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
+            hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+            AP_Notify::flags.armed = 0;
             motors.output();
         }
     }

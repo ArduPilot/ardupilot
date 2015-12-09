@@ -15,7 +15,7 @@ void Copter::crash_check()
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
     // return immediately if disarmed, or crash checking disabled
-    if (!motors.armed() || ap.land_complete || g.fs_crash_check == 0) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || ap.land_complete || g.fs_crash_check == 0) {
         crash_counter = 0;
         return;
     }
@@ -75,8 +75,8 @@ void Copter::parachute_check()
     // call update to give parachute a chance to move servo or relay back to off position
     parachute.update();
 
-    // return immediately if motors are not armed or pilot's throttle is above zero
-    if (!motors.armed()) {
+    // return immediately if motors are not armed
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         control_loss_count = 0;
         return;
     }

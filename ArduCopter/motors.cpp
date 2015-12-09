@@ -32,7 +32,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors.armed()) {
+        if (arming_counter == ARM_DELAY && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             // reset arming counter if arming fail
             if (!init_arm_motors(false)) {
                 arming_counter = 0;
@@ -40,7 +40,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
+        if (arming_counter == AUTO_TRIM_DELAY && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && control_mode == STABILIZE) {
             auto_trim_counter = 250;
             // ensure auto-disarm doesn't trigger immediately
             auto_disarm_begin = millis();
@@ -59,7 +59,7 @@ void Copter::arm_motors_check()
         }
 
         // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors.armed()) {
+        if (arming_counter == DISARM_DELAY && hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             init_disarm_motors();
         }
 
@@ -77,7 +77,7 @@ void Copter::auto_disarm_check()
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || disarm_delay_ms == 0) {
         auto_disarm_begin = tnow_ms;
         return;
     }
@@ -174,7 +174,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
-    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
 
 #if SPRAYER == ENABLED
     // turn off sprayer's test if on
@@ -188,7 +187,8 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     enable_motor_output();
 
     // finally actually arm the motors
-    motors.armed(true);
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+    AP_Notify::flags.armed = 1;
 
     // log arming to dataflash
     Log_Write_Event(DATA_ARMED);
@@ -213,8 +213,8 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 //  return true if the checks pass successfully
 bool Copter::pre_arm_checks(bool display_failure)
 {
-    // exit immediately if already armed
-    if (motors.armed()) {
+    // exit immediately if already armed or arming
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         return true;
     }
 
@@ -843,7 +843,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 void Copter::init_disarm_motors()
 {
     // return immediately if we are already disarmed
-    if (!motors.armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         return;
     }
 
@@ -870,7 +870,8 @@ void Copter::init_disarm_motors()
     Log_Write_Event(DATA_DISARMED);
 
     // send disarm command to motors
-    motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 
     // reset the mission
     mission.reset();
@@ -882,7 +883,6 @@ void Copter::init_disarm_motors()
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
-    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
@@ -914,7 +914,7 @@ void Copter::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
+    if (ap.throttle_zero && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

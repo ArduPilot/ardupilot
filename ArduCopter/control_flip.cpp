@@ -57,7 +57,7 @@ bool Copter::flip_init(bool ignore_checks)
     }
 
     // only allow flip when flying
-    if (!motors.armed() || ap.land_complete) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || ap.land_complete) {
         return false;
     }
 
@@ -100,7 +100,7 @@ void Copter::flip_run()
     float recovery_angle;
 
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors.armed() || (abs(channel_roll->control_in) >= 4000) || (abs(channel_pitch->control_in) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || (abs(channel_roll->control_in) >= 4000) || (abs(channel_pitch->control_in) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
         flip_state = Flip_Abandon;
     }
 

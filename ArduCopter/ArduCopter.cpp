@@ -479,7 +479,7 @@ void Copter::one_hz_loop()
         pre_arm_checks(false);
     }
 
-    if (!motors.armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
 

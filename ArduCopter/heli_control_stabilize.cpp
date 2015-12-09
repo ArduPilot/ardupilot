@@ -34,12 +34,12 @@ void Copter::heli_stabilize_run()
     // that the servos move in a realistic fashion while disarmed for operational checks.
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
-    if(!motors.armed()) {
+    if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         heli_flags.init_targets_on_arming=true;
         attitude_control.set_yaw_target_to_current_heading();
     }
     
-    if(motors.armed() && heli_flags.init_targets_on_arming) {
+    if(hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && heli_flags.init_targets_on_arming) {
         attitude_control.set_yaw_target_to_current_heading();
         if (motors.rotor_speed_above_critical()) {
             heli_flags.init_targets_on_arming=false;

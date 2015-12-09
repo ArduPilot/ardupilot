@@ -131,14 +131,15 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
     // enable motors and pass through throttle
     init_rc_out();
     enable_motor_output();
-    motors.armed(true);
+    AP_Notify::flags.armed = 1;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
 
     // initialise run time
     last_run_time = millis();
     last_send_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while (command_ack_start == command_ack_counter && compass.healthy(compass.get_primary()) && motors.armed()) {
+    while (command_ack_start == command_ack_counter && compass.healthy(compass.get_primary()) && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // 50hz loop
         if (millis() - last_run_time < 20) {
             // grab some compass values
@@ -235,7 +236,8 @@ uint8_t Copter::mavlink_compassmot(mavlink_channel_t chan)
 
     // stop motors
     motors.output_min();
-    motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 
     // set and save motor compensation
     if (updated) {

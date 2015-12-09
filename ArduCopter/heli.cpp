@@ -38,7 +38,7 @@ void Copter::heli_init()
 // should be called at 50hz
 void Copter::check_dynamic_flight(void)
 {
-    if (!motors.armed() || !motors.rotor_runup_complete() ||
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || !motors.rotor_runup_complete() ||
         control_mode == LAND || (control_mode==RTL && rtl_state == RTL_Land) || (control_mode == AUTO && auto_mode == Auto_Land)) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
