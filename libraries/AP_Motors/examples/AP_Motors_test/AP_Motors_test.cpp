@@ -108,7 +108,8 @@ void loop()
 void motor_order_test()
 {
     hal.console->println("testing motor order");
-    motors.armed(true);
+    AP_Notify::flags.armed = 1;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf("Motor %d\n",(int)i);
         motors.output_test(i, 1150);
@@ -116,7 +117,8 @@ void motor_order_test()
         motors.output_test(i, 1000);
         hal.scheduler->delay(2000);
     }
-    motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
     hal.console->println("finished test.");
 
 }
@@ -166,7 +168,8 @@ void stability_test()
     hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)rc3.radio_min,(int)rc3.radio_max);
 
     // arm motors
-    motors.armed(true);
+    AP_Notify::flags.armed = 1;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
 
     // run stability test
     for (int16_t i=0; i < testing_array_rows; i++) {
@@ -201,7 +204,8 @@ void stability_test()
     motors.set_roll(0);
     motors.set_yaw(0);
     motors.set_throttle(0);
-    motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 
     hal.console->println("finished test.");
 }

@@ -90,8 +90,8 @@ void loop()
 // stability_test
 void motor_order_test()
 {
-
-    motors.armed(true);
+    AP_Notify::flags.armed = 1;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
     for (int8_t i=1; i <= 4; i++) {
 		hal.console->printf("Motor %d\n",(int)i);
         int elapsed =0,stop;
@@ -104,7 +104,8 @@ void motor_order_test()
         motors.output_test(i, 1000);
         hal.scheduler->delay(2000);
     }
-    motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
    
    hal.console->printf("\n\n");
 }
