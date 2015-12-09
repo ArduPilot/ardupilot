@@ -206,10 +206,11 @@ bool DataFlash_Block::NeedPrep(void)
 
 void DataFlash_Block::Prep()
 {
-    if (hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
     }
+
     if (NeedErase()) {
         EraseAll();
     }
