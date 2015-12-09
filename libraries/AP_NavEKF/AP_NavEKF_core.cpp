@@ -4542,7 +4542,7 @@ bool NavEKF_core::optFlowDataPresent(void) const
 // return true if the vehicle is requesting the filter to be ready for flight
 bool NavEKF_core::getVehicleArmStatus(void) const
 {
-    return hal.util->get_soft_armed() || _ahrs->get_correct_centrifugal();
+    return hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED || _ahrs->get_correct_centrifugal();
 }
 
 // return true if we should use the compass
@@ -5240,7 +5240,7 @@ uint32_t NavEKF_core::getLastVelNorthEastReset(Vector2f &vel) const
 bool NavEKF_core::checkGyroHealthPreFlight(void) const
 {
     bool retVar;
-    if (hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // Always return true if we are flying (use arm status as a surrogate for flying)
         retVar = true;
     } else if
