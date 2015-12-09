@@ -512,7 +512,9 @@ void AC_AttitudeControl::update_ang_vel_target_from_att_error()
         _ang_vel_target_rads.z = _p_angle_yaw.kP() * _att_error_rot_vec_rad.z;
     }
 
-    // Account for precession of desired attitude about the body frame yaw axis
+    // Add feedforward term that attempts to ensure that the copter yaws about the reference
+    // Z axis, rather than the vehicle body Z axis.
+    // NOTE: This is a small-angle approximation.
     _ang_vel_target_rads.x += _att_error_rot_vec_rad.y * _ahrs.get_gyro().z;
     _ang_vel_target_rads.y += -_att_error_rot_vec_rad.x * _ahrs.get_gyro().z;
 }
