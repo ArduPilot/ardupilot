@@ -27,7 +27,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define VEHICLE_THREAT_RADIUS_M         200
+#define VEHICLE_THREAT_RADIUS_M         1000
 #define VEHICLE_LIST_LENGTH             25      // # of ADS-B vehicles to remember at any given time
 #define VEHICLE_TIMEOUT_MS              10000   // if no updates in this time, drop it from the list
 
@@ -37,7 +37,8 @@ public:
     enum ADSB_BEHAVIOR {
         ADSB_BEHAVIOR_NONE = 0,
         ADSB_BEHAVIOR_LOITER = 1,
-        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2
+        ADSB_BEHAVIOR_LOITER_AND_DESCEND = 2,
+        ADSB_BEHAVIOR_GUIDED = 3
     };
 
     enum ADSB_THREAT_LEVEL {
@@ -68,11 +69,12 @@ public:
     // add or update vehicle_list from inbound mavlink msg
     void update_vehicle(const mavlink_message_t* msg);
 
-    bool get_another_vehicle_within_radius()  { return _enabled && _another_vehicle_within_radius; }
+    bool get_possible_threat()  { return _enabled && _another_vehicle_within_radius; }
 
     ADSB_BEHAVIOR get_behavior()  { return (ADSB_BEHAVIOR)(_behavior.get()); }
     bool get_is_evading_threat()  { return _enabled && _is_evading_threat; }
     void set_is_evading_threat(bool is_evading) { if (_enabled) { _is_evading_threat = is_evading; } }
+    uint16_t get_vehicle_count() { return _vehicle_count; }
 
 private:
 
