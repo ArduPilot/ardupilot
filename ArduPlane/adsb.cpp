@@ -51,6 +51,7 @@ void Plane::adsb_handle_vehicle_threats(void)
         }
         switch(behavior) {
         case AP_ADSB::ADSB_BEHAVIOR_NONE:
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat found, no action taken");
         default:
             break;
 
@@ -71,7 +72,8 @@ void Plane::adsb_handle_vehicle_threats(void)
     case LOITER:
         switch(behavior) {
         case AP_ADSB::ADSB_BEHAVIOR_NONE:
-            // TODO: recover from this
+            gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat gone");
+            // TODO: recover from this when switching between modes
         default:
             break;
 
