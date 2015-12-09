@@ -361,7 +361,7 @@ void PX4AnalogIn::_timer_tick(void)
             if (system_power.hipower_5V_OC) flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
             if (_power_flags != 0 && 
                 _power_flags != flags && 
-                hal.util->get_soft_armed()) {
+                hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
                 // the power status has changed while armed
                 flags |= MAV_POWER_STATUS_CHANGED;
             }
