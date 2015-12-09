@@ -820,47 +820,55 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 // init_disarm_motors - disarm motors
 void Copter::init_disarm_motors()
 {
-    // return immediately if we are already disarmed
-    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
-        return;
+    switch(hal.util->get_soft_arm_state()) {
+        case AP_HAL::Util::SOFT_ARM_STATE_DISARMED:
+            // Do nothing
+            break;
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMING:
+            // Cancel arming
+            AP_Notify::flags.armed = 0;
+            hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+            break;
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMED:
+            // Disarm
+            #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+            #endif
+
+            // save compass offsets learned by the EKF
+            Vector3f magOffsets;
+            if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
+                compass.set_and_save_offsets(compass.get_primary(), magOffsets);
+            }
+
+            #if AUTOTUNE_ENABLED == ENABLED
+            // save auto tuned parameters
+            autotune_save_tuning_gains();
+            #endif
+
+            // we are not in the air
+            set_land_complete(true);
+            set_land_complete_maybe(true);
+
+            // log disarm to the dataflash
+            Log_Write_Event(DATA_DISARMED);
+
+            // send disarm command to motors
+            AP_Notify::flags.armed = 0;
+            hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+
+            // reset the mission
+            mission.reset();
+
+            // suspend logging
+            if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+                DataFlash.EnableWrites(false);
+            }
+
+            // disable gps velocity based centrefugal force compensation
+            ahrs.set_correct_centrifugal(false);
+            break;
     }
-
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
-#endif
-
-    // save compass offsets learned by the EKF
-    Vector3f magOffsets;
-    if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
-        compass.set_and_save_offsets(compass.get_primary(), magOffsets);
-    }
-
-#if AUTOTUNE_ENABLED == ENABLED
-    // save auto tuned parameters
-    autotune_save_tuning_gains();
-#endif
-
-    // we are not in the air
-    set_land_complete(true);
-    set_land_complete_maybe(true);
-
-    // log disarm to the dataflash
-    Log_Write_Event(DATA_DISARMED);
-
-    // send disarm command to motors
-    AP_Notify::flags.armed = 0;
-    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
-
-    // reset the mission
-    mission.reset();
-
-    // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
-        DataFlash.EnableWrites(false);
-    }
-
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
