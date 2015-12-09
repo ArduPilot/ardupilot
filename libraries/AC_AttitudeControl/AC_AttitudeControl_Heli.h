@@ -47,16 +47,17 @@ public:
         }
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf);
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
 
-	// subclass non-passthrough too, for external gyro, no flybar
-	void rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf) override;
+    // subclass non-passthrough too, for external gyro, no flybar
+    void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
 	virtual void rate_controller_run();
 
     // get lean angle max for pilot input that prioritises altitude hold over lean angle
+    // NOTE: returns centi-degrees
     float get_althold_lean_angle_max() const;
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
@@ -94,10 +95,10 @@ private:
     //
     // body-frame rate controller
     //
-	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in centi-degrees/sec) for roll, pitch and yaw
+	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
-    void rate_bf_to_motor_roll_pitch(float rate_roll_target_cds, float rate_pitch_target_cds);
-    virtual float rate_bf_to_motor_yaw(float rate_yaw_cds);
+    void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
+    virtual float rate_bf_to_motor_yaw(float rate_yaw_rads);
 
     //
     // throttle methods
@@ -114,7 +115,7 @@ private:
     int16_t _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    int16_t get_roll_trim() { return constrain_int16(_hover_roll_trim_scalar * _hover_roll_trim, -1000, 1000);}
+    float get_roll_trim_rad() { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

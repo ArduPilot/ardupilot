@@ -33,7 +33,7 @@ void Copter::crash_check()
     }
 
     // check for angle error over 30 degrees
-    const Vector3f angle_error = attitude_control.angle_bf_error();
+    const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
     if (pythagorous2(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
         crash_counter = 0;
         return;
@@ -99,7 +99,7 @@ void Copter::parachute_check()
     }
 
     // check for angle error over 30 degrees
-    const Vector3f angle_error = attitude_control.angle_bf_error();
+    const Vector3f angle_error = attitude_control.get_att_error_rot_vec_cd();
     if (pythagorous2(angle_error.x, angle_error.y) <= CRASH_CHECK_ANGLE_DEVIATION_CD) {
         control_loss_count = 0;
         return;

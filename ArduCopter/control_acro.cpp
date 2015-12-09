@@ -43,7 +43,7 @@ void Copter::acro_run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->control_in);
 
     // run attitude controller
-    attitude_control.rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
     attitude_control.set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);
@@ -125,7 +125,7 @@ void Copter::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, in
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control.frame_conversion_ef_to_bf(rate_ef_level, rate_bf_level);
+        attitude_control.euler_rate_to_ang_vel(attitude_control.get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {

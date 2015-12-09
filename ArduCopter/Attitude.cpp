@@ -2,7 +2,7 @@
 
 #include "Copter.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth
+// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth
 //      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
 float Copter::get_smoothing_gain()
 {
