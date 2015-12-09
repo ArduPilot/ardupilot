@@ -120,93 +120,88 @@ void Copter::auto_disarm_check()
     }
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
+// begin arming process. returns false if arming failed because of arming checks.
 bool Copter::init_arm_motors(bool arming_from_gcs)
 {
-    static bool in_arm_motors = false;
-
-    // exit immediately if already in this function
-    if (in_arm_motors) {
-        return false;
+    // exit if already armed
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
+        return true;
     }
-    in_arm_motors = true;
 
     // run pre-arm-checks and display failures
     if(!pre_arm_checks(true) || !arm_checks(true, arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
-        in_arm_motors = false;
         return false;
     }
-
-    // disable cpu failsafe because initialising everything takes a while
-    failsafe_disable();
-
-    // reset battery failsafe
-    set_failsafe_battery(false);
-
-    // notify that arming will occur (we do this early to give plenty of warning)
-    AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
-    for (uint8_t i=0; i<=10; i++) {
-        update_notify();
-    }
-
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
-#endif
-
-    // Remember Orientation
-    // --------------------
-    init_simple_bearing();
-
-    initial_armed_bearing = ahrs.yaw_sensor;
-
-    if (ap.home_state == HOME_UNSET) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
-        // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
-    }
-    calc_distance_and_bearing();
-
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
-
-#if SPRAYER == ENABLED
-    // turn off sprayer's test if on
-    sprayer.test_pump(false);
-#endif
-
-    // short delay to allow reading of rc inputs
-    delay(30);
-
-    // enable output to motors
-    enable_motor_output();
-
-    // finally actually arm the motors
-    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
-    AP_Notify::flags.armed = 1;
-
-    // log arming to dataflash
-    Log_Write_Event(DATA_ARMED);
-
-    // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode);
-
-    // reenable failsafe
-    failsafe_enable();
-
-    // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
-
-    // flag exiting this function
-    in_arm_motors = false;
-
-    // return success
+    arming_commanded_ms = millis();
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMING);
     return true;
+}
+
+void Copter::arming_timer_check()
+{
+    // check whether we need to arm
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMING && millis()-arming_commanded_ms > 2000) {
+        // disable cpu failsafe because initialising everything takes a while
+        failsafe_disable();
+
+        // reset battery failsafe
+        set_failsafe_battery(false);
+
+        // call update_notify a few times to ensure the message gets out
+        for (uint8_t i=0; i<=10; i++) {
+            update_notify();
+        }
+
+        #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+        #endif
+
+        // Remember Orientation
+        // --------------------
+        init_simple_bearing();
+
+        initial_armed_bearing = ahrs.yaw_sensor;
+
+        if (ap.home_state == HOME_UNSET) {
+            // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
+            ahrs.resetHeightDatum();
+            Log_Write_Event(DATA_EKF_ALT_RESET);
+        } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+            // Reset home position if it has already been set before (but not locked)
+            set_home_to_current_location();
+        }
+        calc_distance_and_bearing();
+
+        // enable gps velocity based centrefugal force compensation
+        ahrs.set_correct_centrifugal(true);
+
+        #if SPRAYER == ENABLED
+        // turn off sprayer's test if on
+        sprayer.test_pump(false);
+        #endif
+
+        // short delay to allow reading of rc inputs
+        delay(30);
+
+        // enable output to motors
+        enable_motor_output();
+
+        // finally actually arm the motors
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+
+        // log arming to dataflash
+        Log_Write_Event(DATA_ARMED);
+
+        // log flight mode in case it was changed while vehicle was disarmed
+        DataFlash.Log_Write_Mode(control_mode);
+
+        // reenable failsafe
+        failsafe_enable();
+
+        // perf monitor ignores delay due to arming
+        perf_ignore_this_loop();
+    }
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag

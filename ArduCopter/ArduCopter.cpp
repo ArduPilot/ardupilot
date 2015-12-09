@@ -308,6 +308,9 @@ void Copter::rc_loop()
 // ---------------------------
 void Copter::throttle_loop()
 {
+    // check if it is time to arm the motors
+    arming_timer_check();
+    
     // get altitude and climb rate from inertial lib
     read_inertial_altitude();
 
