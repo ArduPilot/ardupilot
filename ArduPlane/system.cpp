@@ -343,6 +343,13 @@ void Plane::set_mode(enum FlightMode mode)
     // reset crash detection
     crash_state.is_crashed = false;
 
+    // always reset this because we don't know who called set_mode. In evasion
+    // behavior you should set this flag after set_mode so you know the evasion
+    // logic is controlling the mode. This allows manual override of the mode
+    // to exit evasion behavior automatically but if the mode is manually switched
+    // then we won't resume AUTO after an evasion
+    adsb_state.is_evading = false;
+
     // set mode
     previous_mode = control_mode;
     control_mode = mode;
