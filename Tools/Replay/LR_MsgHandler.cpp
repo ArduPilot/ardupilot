@@ -55,7 +55,7 @@ void LR_MsgHandler_ARM::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
     uint8_t ArmState = require_field_uint8_t(msg, "ArmState");
-    hal.util->set_soft_armed(ArmState);
+    hal.util->set_soft_arm_state(ArmState ? AP_HAL::Util::SOFT_ARM_STATE_ARMED : AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
     printf("Armed state: %u at %lu\n", 
            (unsigned)ArmState,
            (unsigned long)AP_HAL::millis());
@@ -112,11 +112,11 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
 {
     uint8_t id = require_field_uint8_t(msg, "Id");
     if (id == DATA_ARMED) {
-        hal.util->set_soft_armed(true);
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
         printf("Armed at %lu\n", 
                (unsigned long)AP_HAL::millis());
     } else if (id == DATA_DISARMED) {
-        hal.util->set_soft_armed(false);
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
         printf("Disarmed at %lu\n", 
                (unsigned long)AP_HAL::millis());
     }
