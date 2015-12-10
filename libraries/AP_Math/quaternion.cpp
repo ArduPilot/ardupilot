@@ -291,10 +291,10 @@ Quaternion Quaternion::operator*(const Quaternion &v) const {
 }
 
 Quaternion &Quaternion::operator*=(const Quaternion &v) {
-    float &w1 = q1;
-    float &x1 = q2;
-    float &y1 = q3;
-    float &z1 = q4;
+    float w1 = q1;
+    float x1 = q2;
+    float y1 = q3;
+    float z1 = q4;
 
     float w2 = v.q1;
     float x2 = v.q2;
