@@ -889,7 +889,7 @@ void Replay::loop()
             Vector2f offset;
             uint8_t faultStatus;
 
-            const Matrix3f &dcm_matrix = _vehicle.ahrs.AP_AHRS_DCM::get_dcm_matrix();
+            const Matrix3f &dcm_matrix = _vehicle.ahrs.AP_AHRS_DCM::get_rotation_body_to_ned();
             dcm_matrix.to_euler(&DCM_attitude.x, &DCM_attitude.y, &DCM_attitude.z);
             _vehicle.EKF.getEulerAngles(ekf_euler);
             _vehicle.EKF.getVelNED(velNED);
