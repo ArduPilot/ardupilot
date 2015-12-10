@@ -9,7 +9,9 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
 import boards
-import waflib
+
+from waflib import ConfigSet, Utils
+from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
 # developer might want to do: e.g. how to configure a board, compile a
@@ -34,6 +36,18 @@ import waflib
 # contain the board extension so make it less convenient, maybe hook
 # to support automatic filling this extension?
 
+def init(ctx):
+    env = ConfigSet.ConfigSet()
+    try:
+        env.load('build/c4che/_cache.py')
+    except:
+        return
+
+    # define the variant build commands according to the board
+    for c in (BuildContext, CleanContext, InstallContext, UninstallContext, CheckContext):
+        class context(c):
+            variant = env.BOARD
+
 def options(opt):
     boards_names = boards.get_boards_names()
 
@@ -50,6 +64,10 @@ def options(opt):
                  help='Output all test programs')
 
 def configure(cfg):
+    cfg.env.BOARD = cfg.options.board
+    # use a different variant for each board
+    cfg.setenv(cfg.env.BOARD)
+
     cfg.load('compiler_cxx compiler_c')
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
@@ -96,7 +114,7 @@ def configure(cfg):
 
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
-    globs = waflib.Utils.to_list(globs)
+    globs = Utils.to_list(globs)
     for g in globs:
         for d in bld.srcnode.ant_glob(g + '/wscript', **kw):
             dirs.append(d.parent.relpath())
@@ -156,6 +174,6 @@ def build(bld):
             bld.fatal('check: gtest library is required')
         bld.add_post_fun(ardupilotwaf.test_summary)
 
-class CheckContext(waflib.Build.BuildContext):
+class CheckContext(BuildContext):
     '''executes tests after build'''
     cmd = 'check'
