@@ -431,7 +431,7 @@ int8_t Plane::test_mag(uint8_t argc, const Menu::arg *argv)
             if(counter % 5 == 0) {
                 if (compass.read()) {
                     // Calculate heading
-                    const Matrix3f &m = ahrs.get_dcm_matrix();
+                    const Matrix3f &m = ahrs.get_rotation_body_to_ned();
                     heading = compass.calculate_heading(m);
                     compass.learn_offsets();
                 }
