@@ -130,7 +130,7 @@ void AP_Mount_Servo::stabilize()
         Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
         Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
         Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-        m = _frontend._ahrs.get_dcm_matrix();
+        m = _frontend._ahrs.get_rotation_body_to_ned();
         m.transpose();
         cam.from_euler(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z);
         gimbal_target = m * cam;

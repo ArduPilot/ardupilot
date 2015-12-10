@@ -119,9 +119,9 @@ Vector3f AP_Gimbal::getGimbalRateDemVecYaw(const Quaternion &quatEst)
         float excess_rate_correction = fabsf(vehicle_rate_mag_ef) - maxRate; 
         if (vehicle_rate_mag_ef > maxRate) {
             if (vehicle_rate_ef.z>0.0f){
-                gimbalRateDemVecYaw += _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+                gimbalRateDemVecYaw += _ahrs.get_rotation_body_to_ned().transposed()*Vector3f(0,0,excess_rate_correction);
             } else {
-                gimbalRateDemVecYaw -= _ahrs.get_dcm_matrix().transposed()*Vector3f(0,0,excess_rate_correction);
+                gimbalRateDemVecYaw -= _ahrs.get_rotation_body_to_ned().transposed()*Vector3f(0,0,excess_rate_correction);
             }
         }
 
