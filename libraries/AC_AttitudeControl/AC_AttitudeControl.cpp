@@ -478,6 +478,8 @@ void AC_AttitudeControl::rate_bf_roll_pitch_yaw_integrated(float roll_rate_bf, f
     angle_target_quat *= _angle_err_quat;
     angle_target_quat.to_euler(_angle_ef_target.x,_angle_ef_target.y,_angle_ef_target.z);
     _angle_ef_target *= degrees(1.0f)*100.0f;
+
+    _rate_bf_target += _rate_bf_desired;
 }
 
 //
