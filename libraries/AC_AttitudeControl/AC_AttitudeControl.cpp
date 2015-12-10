@@ -382,7 +382,7 @@ void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_
     // Retrieve quaternion vehicle attitude
     // TODO add _ahrs.get_quaternion()
     Quaternion att_vehicle_quat;
-    att_vehicle_quat.from_rotation_matrix(_ahrs.get_dcm_matrix());
+    att_vehicle_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
 
     // Compute attitude error
     (att_vehicle_quat.inverse()*att_target_quat).to_axis_angle(_att_error_rot_vec_rad);
