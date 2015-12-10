@@ -35,13 +35,14 @@ def configure(cfg):
     if env.GBENCHMARK_CMAKE_GENERATOR:
         env.GBENCHMARK_GENERATOR_OPTION = '-G%s' % env.GBENCHMARK_CMAKE_GENERATOR
 
-    prefix_node = cfg.bldnode.make_node('gbenchmark')
-    my_build_node = cfg.bldnode.make_node('gbenchmark_build')
+    bldnode = cfg.bldnode.make_node(cfg.variant)
+    prefix_node = bldnode.make_node('gbenchmark')
+    my_build_node = bldnode.make_node('gbenchmark_build')
     my_src_node = cfg.srcnode.find_dir('modules/gbenchmark')
 
-    env.GBENCHMARK_PREFIX_REL = prefix_node.path_from(cfg.bldnode)
+    env.GBENCHMARK_PREFIX_REL = prefix_node.path_from(bldnode)
     env.GBENCHMARK_BUILD = my_build_node.abspath()
-    env.GBENCHMARK_BUILD_REL = my_build_node.path_from(cfg.bldnode)
+    env.GBENCHMARK_BUILD_REL = my_build_node.path_from(bldnode)
     env.GBENCHMARK_SRC = my_src_node.abspath()
 
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
