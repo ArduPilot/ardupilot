@@ -218,7 +218,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     int8_t new_slew_dir = slew_dir;
 
     // get earth frame z-axis rotation rate in radians
-    Vector3f earth_rotation = ahrs.get_gyro() * ahrs.get_dcm_matrix();
+    Vector3f earth_rotation = ahrs.get_gyro() * ahrs.get_rotation_body_to_ned();
 
 
     bool making_progress;
