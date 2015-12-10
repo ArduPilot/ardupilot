@@ -272,7 +272,7 @@ void AP_TECS::update_50hz(float hgt_afe)
 
     // Update and average speed rate of change
     // Get DCM
-    const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Calculate speed rate of change
     float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
     // take 5 point moving average
@@ -535,7 +535,7 @@ void AP_TECS::_update_throttle(void)
         // Calculate feed-forward throttle
         float ff_throttle = 0;
         float nomThr = aparm.throttle_cruise * 0.01f;
-        const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+        const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
         // Use the demanded rate of change of total energy as the feed-forward demand, but add
         // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
         // drag increase during turns.
@@ -619,7 +619,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     }
 
     // Calculate additional throttle for turn drag compensation including throttle nudging
-    const Matrix3f &rotMat = _ahrs.get_dcm_matrix();
+    const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Use the demanded rate of change of total energy as the feed-forward demand, but add
     // additional component which scales with (1/cos(bank angle) - 1) to compensate for induced
     // drag increase during turns.
