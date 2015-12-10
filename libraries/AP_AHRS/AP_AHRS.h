@@ -178,7 +178,7 @@ public:
 
     // get yaw rate in earth frame in radians/sec
     float get_yaw_rate_earth(void) const {
-        return get_gyro() * get_dcm_matrix().c;
+        return get_gyro() * get_rotation_body_to_ned().c;
     }
 
     // Methods
@@ -225,7 +225,7 @@ public:
 
     // return a DCM rotation matrix representing our current
     // attitude
-    virtual const Matrix3f &get_dcm_matrix(void) const = 0;
+    virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt

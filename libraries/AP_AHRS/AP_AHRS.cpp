@@ -231,7 +231,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 void AP_AHRS::update_trig(void)
 {
     Vector2f yaw_vector;
-    const Matrix3f &temp = get_dcm_matrix();
+    const Matrix3f &temp = get_rotation_body_to_ned();
 
     // sin_yaw, cos_yaw
     yaw_vector.x = temp.a.x;

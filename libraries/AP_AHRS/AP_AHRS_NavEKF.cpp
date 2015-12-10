@@ -48,10 +48,10 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro(void) const
     return _gyro_estimate;
 }
 
-const Matrix3f &AP_AHRS_NavEKF::get_dcm_matrix(void) const
+const Matrix3f &AP_AHRS_NavEKF::get_rotation_body_to_ned(void) const
 {
     if (!active_EKF_type()) {
-        return AP_AHRS_DCM::get_dcm_matrix();
+        return AP_AHRS_DCM::get_rotation_body_to_ned();
     }
     return _dcm_matrix;
 }

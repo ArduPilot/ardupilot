@@ -65,7 +65,7 @@ public:
     }
 
     // return rotation matrix representing rotaton from body to earth axes
-    const Matrix3f &get_dcm_matrix(void) const {
+    const Matrix3f &get_rotation_body_to_ned(void) const {
         return _body_dcm_matrix;
     }
 
