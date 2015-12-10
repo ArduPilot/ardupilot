@@ -7,6 +7,7 @@ gbenchmark is a Waf tool for benchmark builds in Ardupilot
 
 from waflib import Build, Context, Task
 from waflib.TaskGen import feature, before_method, after_method
+from waflib.Errors import WafError
 
 def configure(cfg):
     env = cfg.env
@@ -99,8 +100,11 @@ class gbenchmark_build(Task.Task):
                     quiet=Context.BOTH,
                 )
             return 0
-        except Exception as e:
-            print(e.stdout, e.stderr)
+        except WafError as e:
+            print(e)
+            if hasattr(e, 'stderr'):
+                print('')
+                print(e.stderr)
             return 1
 
     def __str__(self):
