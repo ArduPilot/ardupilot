@@ -73,6 +73,14 @@ def configure(cfg):
     env.GBENCHMARK_BUILD_REL = my_build_node.path_from(bldnode)
     env.GBENCHMARK_SRC = my_src_node.abspath()
 
+    cfg.start_msg('Configuring gbenchmark')
+    try:
+        _configure_cmake(cfg, bldnode)
+        cfg.end_msg('done')
+    except:
+        cfg.end_msg('failed', color='YELLOW')
+        return
+
     env.INCLUDES_GBENCHMARK = [prefix_node.make_node('include').abspath()]
     env.LIBPATH_GBENCHMARK = [prefix_node.make_node('lib').abspath()]
     env.LIB_GBENCHMARK = ['benchmark']
