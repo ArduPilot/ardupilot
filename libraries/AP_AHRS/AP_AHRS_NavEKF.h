@@ -51,7 +51,7 @@ public:
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const;
-    const Matrix3f &get_dcm_matrix(void) const;
+    const Matrix3f &get_rotation_body_to_ned(void) const;
 
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift(void) const;
