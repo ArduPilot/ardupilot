@@ -41,6 +41,14 @@ def configure(cfg):
     env = cfg.env
     env.HAS_GBENCHMARK = False
 
+    if env.TOOLCHAIN != 'native':
+        cfg.msg(
+            'Gbenchmark',
+            'cross-compilation currently not supported',
+             color='YELLOW',
+        )
+        return
+
     cfg.start_msg('Checking for gbenchmark submodule')
     cmake_lists = cfg.srcnode.find_resource('modules/gbenchmark/CMakeLists.txt')
     if not cmake_lists:
