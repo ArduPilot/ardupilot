@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: LAND_THR
     // @DisplayName: Cruise throttle during landing approach (percentage)
     // @Description: Use this parameter instead of LAND_ASPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If it is negative if TECS_LAND_ASPD is in use then this value is not used during landing.
-    // @Range: -1 to 100
+    // @Range: -1 100
     // @Increment: 0.1
     // @User: User
     AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
