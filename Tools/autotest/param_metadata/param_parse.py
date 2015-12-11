@@ -143,6 +143,41 @@ for library in libraries:
 
     debug("Processed %u documented parameters" % len(library.params))
 
+    def is_number(numberString):
+        try:
+            float(numberString)
+            return True
+        except ValueError:
+            return False
+
+    def validate(param):
+        """
+        Validates the parameter meta data.
+        """
+        # Validate values
+        if (hasattr(param, "Range")):
+            rangeValues = param.__dict__["Range"].split(" ")
+            if (len(rangeValues) != 2):
+                error("Invalid Range values for %s" % (param.name))
+                return
+            min = rangeValues[0]
+            max = rangeValues[1]
+            if not is_number(min):
+                error("Min value not number: %s %s" % (param.name, min))
+                return
+            if not is_number(max):
+                error("Max value not number: %s %s" % (param.name, max))
+                return
+
+    for vehicle in vehicles:
+        for param in vehicle.params:
+            validate(param)
+
+
+    for library in libraries:
+        for param in library.params:
+            validate(param)
+    
     def do_emit(emit):
         for vehicle in vehicles:
             emit.emit(vehicle, f)
