@@ -56,13 +56,19 @@ then
      echo "Created APM directory"
 fi
 
-if [ -f /bin/lsm303d ]
+if [ -f /bin/px4io ]
 then
+  if [ -f /bin/lsm303d ]
+  then
      echo "Detected FMUv2 board"
      set BOARD FMUv2
-else
+  else
      echo "Detected FMUv1 board"
      set BOARD FMUv1
+  fi
+else
+  echo "Detected FMUv4 board"
+  set BOARD FMUv4   
 fi
 
 if [ $BOARD == FMUv1 ]
@@ -108,16 +114,17 @@ then
     mkblctrl -mkmode x -d /dev/pwm_output
 fi
 
-
-echo "Trying PX4IO board"
-
-# try the px4io start twice. Some FMUv2 board don't
-# come up the first time
-set HAVE_PX4IO false
-if px4io start norc
+if [ -f /bin/px4io ]
 then
+  echo "Trying PX4IO board"
+
+  # try the px4io start twice. Some FMUv2 board don't
+  # come up the first time
+  set HAVE_PX4IO false
+  if px4io start norc
+  then
     set HAVE_PX4IO true
-else
+  else
     # it may be in bootloader mode
     echo Loading /etc/px4io/px4io.bin
     tone_alarm MBABGP
@@ -136,6 +143,10 @@ else
         # play happy tune again
 	tone_alarm 1
     fi
+  fi
+else
+    set HAVE_PX4IO false
+    echo "No PX4IO support"
 fi
 
 if [ $HAVE_PX4IO == true ]
@@ -247,7 +258,10 @@ then
        echo "No l3gd20"
        echo "No l3gd20" >> $logfile
     fi
-else
+fi
+
+if [ $BOARD == FMUv2 ]
+then
     echo "Starting FMUv2 sensors"
     if hmc5883 -C -T -X start
     then
@@ -341,6 +355,34 @@ else
     fi
 fi
 
+
+if [ $BOARD == FMUv4 ]
+then
+    echo "Starting FMUv4 sensors"
+    if hmc5883 -C -T -X start
+    then
+        echo "Have external hmc5883"
+    else
+        echo "No external hmc5883"
+    fi
+    if hmc5883 -C -T -S -R 2 start
+    then
+        echo "Have SPI hmc5883"
+    else
+        echo "No SPI hmc5883"
+    fi
+
+    if mpu6000 -R 2 -T 20608 start
+    then
+       echo "Found ICM-20608 internal"
+    fi
+
+    if mpu9250 -R 2 start
+    then
+       echo "Found mpu9250 internal"
+    fi
+fi
+
 # optional ETS airspeed sensor
 if ets_airspeed start
 then
@@ -379,9 +421,12 @@ then
 fi
 
 # optional PX4Flow sensor
-if px4flow start
+if [ -f /bin/px4flow ]
 then
+  if px4flow start
+  then
     echo "Found px4flow sensor"
+  fi
 fi
 
 # optional PWM input driver
@@ -389,8 +434,6 @@ if pwm_input start
 then
     echo "started pwm_input driver"
 fi
-
-echo "Trying PX4IO board"
 
 if mtd start /fs/mtd
 then
@@ -411,9 +454,12 @@ else
 fi
 
 # optional oreo leds
-if oreoled start autoupdate
+if [ -f /bin/oreoled ]
 then
+  if oreoled start autoupdate
+  then
     echo "oreoled started OK"
+  fi
 fi
 
 # optional smbus battery monitor
@@ -428,7 +474,7 @@ then
     echo "irlock started"
 fi
 
-if [ $BOARD == FMUv2 ]
+if [ $BOARD == FMUv2 -o $BOARD == FMUv4 ]
 then
   # the ramtron on FMUv2 is very fast and can handle trillions of
   # writes. This full rw test on each boot ensures it is working

@@ -2,7 +2,9 @@
 #ifndef __AP_HAL_LINUX_UTIL_H__
 #define __AP_HAL_LINUX_UTIL_H__
 
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+
 #include "AP_HAL_Linux_Namespace.h"
 #include "ToneAlarmDriver.h"
 
@@ -39,7 +41,26 @@ public:
     void set_imu_temp(float current);
 
     uint32_t available_memory(void) override;
-    
+
+    /*
+     * Write a string as specified by @fmt to the file in @path. Note this
+     * should not be used on hot path since it will open, write and close the
+     * file for each call.
+     */
+    int write_file(const char *path, const char *fmt, ...) FMT_PRINTF(3, 4);
+
+    /*
+     * Read a string as specified by @fmt from the file in @path. Note this
+     * should not be used on hot path since it will open, read and close the
+     * file for each call.
+     */
+    int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
+
+    perf_counter_t perf_alloc(perf_counter_type t, const char *name) override;
+    void perf_begin(perf_counter_t perf) override;
+    void perf_end(perf_counter_t perf) override;
+    void perf_count(perf_counter_t perf) override;
+
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;

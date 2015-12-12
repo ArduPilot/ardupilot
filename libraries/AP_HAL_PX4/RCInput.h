@@ -7,9 +7,14 @@
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
 
+
+#ifndef RC_INPUT_MAX_CHANNELS
+#define RC_INPUT_MAX_CHANNELS 18
+#endif
+
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
-    void init(void* machtnichts);
+    void init();
     bool new_input();
     uint8_t num_channels();
     uint16_t read(uint8_t ch);

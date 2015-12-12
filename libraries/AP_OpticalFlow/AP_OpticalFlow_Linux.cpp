@@ -154,7 +154,7 @@ void AP_OpticalFlow_Linux::update(void)
     }
 
     // throttle reads to no more than 10hz
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     if (now - last_read_ms < 100) {
         return;
     }

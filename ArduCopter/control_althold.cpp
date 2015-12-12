@@ -9,6 +9,13 @@
 // althold_init - initialise althold controller
 bool Copter::althold_init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
+    if (!ignore_checks && !motors.rotor_runup_complete()){
+        return false;
+    }
+#endif
+
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
     pos_control.set_accel_z(g.pilot_accel_z);
@@ -29,6 +36,10 @@ void Copter::althold_run()
 {
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
+
+    // initialize vertical speeds and acceleration
+    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_accel_z(g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -52,8 +63,10 @@ void Copter::althold_run()
 #endif
 
     // Alt Hold State Machine Determination
-    if(!ap.auto_armed || !motors.get_interlock()) {
+    if(!ap.auto_armed) {
         althold_state = AltHold_Disarmed;
+    } else if (!motors.get_interlock()){
+        althold_state = AltHold_MotorStop;
     } else if (takeoff_state.running || takeoff_triggered){
         althold_state = AltHold_Takeoff;
     } else if (ap.land_complete){
@@ -76,6 +89,22 @@ void Copter::althold_run()
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif  // HELI_FRAME
         pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+        break;
+
+    case AltHold_MotorStop:
+
+#if FRAME_CONFIG == HELI_FRAME    
+        // helicopters are capable of flying even with the motor stopped, therefore we will attempt to keep flying
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+
+        // force descent rate and call position controller
+        pos_control.set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+        pos_control.update_z_controller();
+#else   // Multicopter do not stabilize roll/pitch/yaw when motor are stopped
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        pos_control.relax_alt_hold_controllers(get_throttle_pre_takeoff(channel_throttle->control_in)-throttle_average);
+#endif  // HELI_FRAME
         break;
 
     case AltHold_Takeoff:

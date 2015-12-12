@@ -35,7 +35,7 @@ DEFINES        +=   -DSKETCH=\"$(SKETCH)\" -DAPM_BUILD_DIRECTORY=APM_BUILD_$(SKE
 DEFINES        +=   $(EXTRAFLAGS)
 DEFINES        +=   -DCONFIG_HAL_BOARD=$(HAL_BOARD)
 WARNFLAGS       =   -Wformat -Wall -Wshadow -Wpointer-arith -Wcast-align -Wno-psabi
-WARNFLAGS      +=   -Wwrite-strings -Wformat=2 
+WARNFLAGS      +=   -Wwrite-strings -Wformat=2 -Wno-unused-parameter
 WARNFLAGSCXX    =   -Wno-reorder
 DEPFLAGS        =   -MD -MT $@
 

@@ -27,7 +27,7 @@ void Copter::motor_test_output()
     }
 
     // check for test timeout
-    if ((hal.scheduler->millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
+    if ((AP_HAL::millis() - motor_test_start_ms) >= motor_test_timeout_ms) {
         // stop motor test
         motor_test_stop();
     } else {
@@ -86,7 +86,7 @@ bool Copter::mavlink_motor_test_check(mavlink_channel_t chan, bool check_rc)
 
     // check if safety switch has been pushed
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety Switch");
+        gcs[chan-MAVLINK_COMM_0].send_text(MAV_SEVERITY_CRITICAL,"Motor Test: Safety switch");
         return false;
     }
 
@@ -128,8 +128,8 @@ uint8_t Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_s
     }
 
     // set timeout
-    motor_test_start_ms = hal.scheduler->millis();
-    motor_test_timeout_ms = min(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test_start_ms = AP_HAL::millis();
+    motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
 
     // store required output
     motor_test_seq = motor_seq;

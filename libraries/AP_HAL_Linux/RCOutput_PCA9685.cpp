@@ -80,11 +80,11 @@ RCOutput_PCA9685::~RCOutput_PCA9685()
     delete [] _pulses_buffer;
 }
 
-void RCOutput_PCA9685::init(void* machtnicht)
+void RCOutput_PCA9685::init()
 {
     _i2c_sem = hal.i2c->get_semaphore();
     if (_i2c_sem == NULL) {
-        hal.scheduler->panic("PANIC: RCOutput_PCA9685 did not get "
+        AP_HAL::panic("PANIC: RCOutput_PCA9685 did not get "
                                   "valid I2C semaphore!");
         return; /* never reached */
     }

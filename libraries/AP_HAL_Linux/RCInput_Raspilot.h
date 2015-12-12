@@ -8,7 +8,7 @@
 class Linux::RCInput_Raspilot : public Linux::RCInput
 {
 public:
-    void init(void*);
+    void init();
     
 private:
     uint32_t _last_timer;

@@ -17,6 +17,9 @@
 
 #include "AP_Notify.h"
 
+#if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
+     defined(HAL_GPIO_C_LED_PIN))
+
 extern const AP_HAL::HAL& hal;
 
 bool AP_BoardLED::init(void)
@@ -169,3 +172,7 @@ void AP_BoardLED::update(void)
             break;        
     }
 }
+#else
+bool AP_BoardLED::init(void) {return true;}
+void AP_BoardLED::update(void) {return;}
+#endif

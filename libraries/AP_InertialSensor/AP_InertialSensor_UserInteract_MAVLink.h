@@ -19,7 +19,7 @@ public:
     _gcs(gcs) {}
 
     bool blocking_read();
-    void printf(const char *, ...) FORMAT(2, 3);
+    void printf(const char *, ...) FMT_PRINTF(2, 3);
 private:
     GCS_MAVLINK *_gcs;
 };

@@ -21,7 +21,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -45,8 +44,8 @@ void setup()
 void loop(void)
 {
     static uint32_t timer;
-    if((hal.scheduler->millis() - timer) > 100) {
-        timer = hal.scheduler->millis();
+    if((AP_HAL::millis() - timer) > 100) {
+        timer = AP_HAL::millis();
         airspeed.read();
         hal.console->printf("airspeed %.2f healthy=%u\n", airspeed.get_airspeed(), airspeed.healthy());
     }

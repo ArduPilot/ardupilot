@@ -19,13 +19,13 @@ static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 using namespace Linux;
 
-void RCInput_Raspilot::init(void*)
+void RCInput_Raspilot::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_RASPIO);
     _spi_sem = _spi->get_semaphore();
 
     if (_spi_sem == NULL) {
-        hal.scheduler->panic("PANIC: RCIutput_Raspilot did not get "
+        AP_HAL::panic("PANIC: RCIutput_Raspilot did not get "
                                   "valid SPI semaphore!");
         return; // never reached
     }
@@ -37,11 +37,11 @@ void RCInput_Raspilot::init(void*)
 void RCInput_Raspilot::_poll_data(void)
 {
     // Throttle read rate to 100hz maximum.
-    if (hal.scheduler->micros() - _last_timer < 10000) {
+    if (AP_HAL::micros() - _last_timer < 10000) {
         return;
     }
 
-    _last_timer = hal.scheduler->micros();
+    _last_timer = AP_HAL::micros();
 
     if (!_spi_sem->take_nonblocking()) {
         return;

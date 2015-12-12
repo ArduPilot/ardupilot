@@ -325,10 +325,7 @@ static struct gyro_state_s st = {
  *  @brief      Constructor
  */
 AP_InertialSensor_MPU9150::AP_InertialSensor_MPU9150(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _have_sample_available(false),
-    _accel_filter(800, 10),
-    _gyro_filter(800, 10)
+    AP_InertialSensor_Backend(imu)
 {
 }
 
@@ -347,22 +344,6 @@ AP_InertialSensor_Backend *AP_InertialSensor_MPU9150::detect(AP_InertialSensor &
         return NULL;
     }
     return sensor;
-}
-
-/*
-  set the accel filter frequency
- */
-void AP_InertialSensor_MPU9150::_set_accel_filter_frequency(uint8_t filter_hz)
-{
-    _accel_filter.set_cutoff_frequency(800, filter_hz);
-}
-
-/*
-  set the gyro filter frequency
- */
-void AP_InertialSensor_MPU9150::_set_gyro_filter_frequency(uint8_t filter_hz)
-{
-    _gyro_filter.set_cutoff_frequency(800, filter_hz);
 }
 
 /**
@@ -414,11 +395,11 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
     //         ;
     //     }
     //     else {
-    //         hal.scheduler->panic("AP_InertialSensor_MPU9150: Unsupported software product rev.\n");
+    //         AP_HAL::panic("AP_InertialSensor_MPU9150: Unsupported software product rev.\n");
     //         goto failed;
     //     }
     // } else {
-    //         hal.scheduler->panic("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n");
+    //         AP_HAL::panic("Product ID read as 0 indicates device is either incompatible or an MPU3050.\n");
     //         goto failed;            
     // }
 
@@ -458,15 +439,11 @@ bool AP_InertialSensor_MPU9150::_init_sensor(void)
 
     mpu_set_sensors(sensors);
 
-    // Set the filter frecuency
-    _set_accel_filter_frequency(_accel_filter_cutoff());
-    _set_gyro_filter_frequency(_gyro_filter_cutoff());
-
     // give back i2c semaphore
     i2c_sem->give();
 
-    _gyro_instance = _imu.register_gyro();
-    _accel_instance = _imu.register_accel();
+    _gyro_instance = _imu.register_gyro(800);
+    _accel_instance = _imu.register_accel(800);
 
     // start the timer process to read samples    
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_MPU9150::_accumulate, void));
@@ -606,7 +583,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_set_sample_rate(uint16_t rate)
                                data);
     
     // sample_rate = 1000 / (1 + data);
-    // mpu_set_compass_sample_rate(min(sample_rate, MAX_COMPASS_SAMPLE_RATE), rate);
+    // mpu_set_compass_sample_rate(MIN(sample_rate, MAX_COMPASS_SAMPLE_RATE), rate);
 
     return 0;
 }
@@ -984,7 +961,7 @@ int16_t AP_InertialSensor_MPU9150::mpu_read_fifo(int16_t *gyro, int16_t *accel, 
         }
     }
 
-    *timestamp = hal.scheduler->millis();    
+    *timestamp = AP_HAL::millis();
     // read the data
     hal.i2c->readRegisters(st.hw->addr, st.reg->fifo_r_w, packet_size, data);
     more[0] = fifo_count / packet_size - 1;
@@ -1093,15 +1070,11 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
         accel *= MPU9150_ACCEL_SCALE_2G;
         _rotate_and_correct_accel(_accel_instance, accel);
         _notify_new_accel_raw_sample(_accel_instance, accel);
-        _accel_filtered = _accel_filter.apply(accel);
 
         gyro = Vector3f(gyro_x, gyro_y, gyro_z);
         gyro *= MPU9150_GYRO_SCALE_2000;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-        _gyro_filtered = _gyro_filter.apply(gyro);
-
-        _have_sample_available = true;
     }
 
     // give back i2c semaphore
@@ -1110,26 +1083,8 @@ void AP_InertialSensor_MPU9150::_accumulate(void)
 
 bool AP_InertialSensor_MPU9150::update(void) 
 {
-    Vector3f accel, gyro;
-
-    hal.scheduler->suspend_timer_procs();
-    accel = _accel_filtered;
-    gyro = _gyro_filtered;
-    _have_sample_available = false;
-    hal.scheduler->resume_timer_procs();
-
-    _publish_accel(_accel_instance, accel);
-    _publish_gyro(_gyro_instance, gyro);
-
-    if (_last_accel_filter_hz != _accel_filter_cutoff()) {
-        _set_accel_filter_frequency(_accel_filter_cutoff());
-        _last_accel_filter_hz = _accel_filter_cutoff();
-    }
-
-    if (_last_gyro_filter_hz != _gyro_filter_cutoff()) {
-        _set_gyro_filter_frequency(_gyro_filter_cutoff());
-        _last_gyro_filter_hz = _gyro_filter_cutoff();
-    }
+    update_gyro(_gyro_instance);
+    update_accel(_accel_instance);
 
     return true;
 }

@@ -35,7 +35,7 @@ def arm_motors(mavproxy, mav):
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 2000\n')
-    mavproxy.expect('APM: ARMING MOTORS')
+    mavproxy.expect('APM: Arming motors')
     mavproxy.send('rc 4 1500\n')
     mav.motors_armed_wait()
     print("MOTORS ARMED OK")
@@ -48,7 +48,7 @@ def disarm_motors(mavproxy, mav):
     wait_mode(mav, 'STABILIZE')
     mavproxy.send('rc 3 1000\n')
     mavproxy.send('rc 4 1000\n')
-    mavproxy.expect('APM: DISARMING MOTORS')
+    mavproxy.expect('APM: Disarming motors')
     mavproxy.send('rc 4 1500\n')
     mav.motors_disarmed_wait()
     print("MOTORS DISARMED OK")
@@ -867,7 +867,7 @@ def fly_mission(mavproxy, mav, height_accuracy=-1, target_altitude=None):
     mavproxy.send('switch 4\n') # auto mode
     wait_mode(mav, 'AUTO')
     ret = wait_waypoint(mav, 0, num_wp-1, timeout=500, mode='AUTO')
-    expect_msg = "Reached Command #%u" % (num_wp-1)
+    expect_msg = "Reached command #%u" % (num_wp-1)
     if (ret):
         mavproxy.expect(expect_msg)
     print("test: MISSION COMPLETE: passed=%s" % ret)
@@ -880,7 +880,7 @@ def load_mission_from_file(mavproxy, mav, filename):
     '''Load a mission from a file to flight controller'''
     global num_wp
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('flight plan received')
+    mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
 

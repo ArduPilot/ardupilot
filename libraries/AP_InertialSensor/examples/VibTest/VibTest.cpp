@@ -23,7 +23,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Declination/AP_Declination.h>
@@ -73,7 +72,7 @@ void setup(void)
         gyro_fd[i] = open(gyro_path, O_RDONLY);
     }
     if (accel_fd[0] == -1 || gyro_fd[0] == -1) {
-            hal.scheduler->panic("Failed to open accel/gyro 0");
+        AP_HAL::panic("Failed to open accel/gyro 0");
     }
 
     ioctl(gyro_fd[0], SENSORIOCSPOLLRATE, 1000);
@@ -130,7 +129,7 @@ void loop(void)
 
                 struct log_ACCEL pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+i)),
-                    time_us   : hal.scheduler->micros64(),
+                    time_us   : AP_HAL::micros64(),
                     sample_us : accel_report.timestamp,
                     AccX      : accel_report.x,
                     AccY      : accel_report.y,
@@ -154,7 +153,7 @@ void loop(void)
 
                 struct log_GYRO pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+i)),
-                    time_us   : hal.scheduler->micros64(),
+                    time_us   : AP_HAL::micros64(),
                     sample_us : gyro_report.timestamp,
                     GyrX      : gyro_report.x,
                     GyrY      : gyro_report.y,
@@ -169,7 +168,7 @@ void loop(void)
             if (total_samples[0] % 2000 == 0 && last_print != total_samples[0]) {
                 last_print = total_samples[0];
                 hal.console->printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
-                                    (unsigned long)hal.scheduler->millis(), 
+                                    (unsigned long)AP_HAL::millis(), 
                                     (unsigned long)total_samples[0], 
                                     (unsigned long)total_samples[1],
                                     (unsigned long)total_samples[2],
@@ -183,7 +182,7 @@ void loop(void)
                                     gyro_deltat_min[2], gyro_deltat_max[2]);
 #if 0
                 ::printf("t=%lu total_samples=%lu/%lu/%lu adt=%u:%u/%u:%u/%u:%u gdt=%u:%u/%u:%u/%u:%u\n",
-                         hal.scheduler->millis(), 
+                         AP_HAL::millis(), 
                          total_samples[0], total_samples[1],total_samples[2],
                          accel_deltat_min[0], accel_deltat_max[0], 
                          accel_deltat_min[1], accel_deltat_max[1], 

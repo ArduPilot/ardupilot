@@ -93,14 +93,14 @@ void SPIUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
        _buffer = new uint8_t[rxS];
        if (_buffer == NULL) {
            hal.console->printf("Not enough memory\n");
-           hal.scheduler->panic("Not enough memory\n");
+           AP_HAL::panic("Not enough memory\n");
        }
    }
 
    _spi = hal.spi->device(AP_HAL::SPIDevice_Ublox);
 
    if (_spi == NULL) {
-       hal.scheduler->panic("Cannot get SPIDevice_Ublox");
+       AP_HAL::panic("Cannot get SPIDevice_Ublox");
    }
 
    _spi_sem = _spi->get_semaphore();
@@ -230,13 +230,13 @@ void SPIUARTDriver::_timer_tick(void)
         return;
     }
     /* lower the update rate */
-    if (hal.scheduler->micros() - _last_update_timestamp < 10000) {
+    if (AP_HAL::micros() - _last_update_timestamp < 10000) {
         return;
     }
 
     UARTDriver::_timer_tick();
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = AP_HAL::micros();
 }
 
 #endif

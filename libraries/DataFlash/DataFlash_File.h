@@ -18,10 +18,12 @@ class DataFlash_File : public DataFlash_Backend
 {
 public:
     // constructor
-    DataFlash_File(DataFlash_Class &front, const char *log_directory);
+    DataFlash_File(DataFlash_Class &front,
+                   DFMessageWriter_DFLogStart *,
+                   const char *log_directory);
 
     // initialisation
-    void Init(const struct LogStructure *structure, uint8_t num_types);
+    void Init() override;
     bool CardInserted(void);
 
     // erase handling
@@ -41,7 +43,7 @@ public:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs() override;
-    uint16_t start_new_log(void);
+    uint16_t start_new_log(void) override;
     void LogReadProcess(const uint16_t log_num,
                         uint16_t start_page, uint16_t end_page, 
                         print_mode_fn print_mode,
@@ -65,10 +67,12 @@ private:
     volatile bool _open_error;
     const char *_log_directory;
 
+    uint16_t _cached_oldest_log;
+
     /*
       read a block
     */
-    bool ReadBlock(void *pkt, uint16_t size);
+    bool ReadBlock(void *pkt, uint16_t size) override;
 
     uint16_t _log_num_from_list_entry(const uint16_t list_entry);
 
@@ -90,7 +94,7 @@ private:
 #endif
     // write buffer
     uint8_t *_writebuf;
-    uint16_t _writebuf_size;
+    uint32_t _writebuf_size; // in bytes; may be == 65536, thus 32-bits
     const uint16_t _writebuf_chunk;
     volatile uint16_t _writebuf_head;
     volatile uint16_t _writebuf_tail;
@@ -108,11 +112,23 @@ private:
 
     uint16_t critical_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        return 1024;
+        uint16_t ret = 1024;
+        if (ret > _writebuf_size) {
+            // in this case you will only get critical messages
+            ret = _writebuf_size;
+        }
+        return ret;
     };
     uint16_t non_messagewriter_message_reserved_space() const {
         // possibly make this a proportional to buffer size?
-        return 1024;
+        uint16_t ret = 1024;
+        if (ret >= _writebuf_size) {
+            // need to allow messages out from the messagewriters.  In
+            // this case while you have a messagewriter you won't get
+            // any other messages.  This should be a corner case!
+            ret = 0;
+        }
+        return ret;
     };
 
     // performance counters

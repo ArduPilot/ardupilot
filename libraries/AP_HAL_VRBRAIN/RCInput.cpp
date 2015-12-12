@@ -9,12 +9,12 @@ using namespace VRBRAIN;
 
 extern const AP_HAL::HAL& hal;
 
-void VRBRAINRCInput::init(void* unused)
+void VRBRAINRCInput::init()
 {
 	_perf_rcin = perf_alloc(PC_ELAPSED, "APM_rcin");
 	_rc_sub = orb_subscribe(ORB_ID(input_rc));
 	if (_rc_sub == -1) {
-		hal.scheduler->panic("Unable to subscribe to input_rc");		
+		AP_HAL::panic("Unable to subscribe to input_rc");
 	}
 	clear_overrides();
         pthread_mutex_init(&rcin_mutex, NULL);

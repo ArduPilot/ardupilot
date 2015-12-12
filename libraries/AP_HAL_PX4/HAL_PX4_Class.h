@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_CLASS_H__
-#define __AP_HAL_PX4_CLASS_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -13,13 +11,10 @@
 
 class HAL_PX4 : public AP_HAL::HAL {
 public:
-    HAL_PX4();    
+    HAL_PX4();
     void run(int argc, char* const argv[], Callbacks* callbacks) const override;
 };
 
 void hal_px4_set_priority(uint8_t priority);
 
-extern const HAL_PX4 AP_HAL_PX4;
-
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#endif // __AP_HAL_PX4_CLASS_H__

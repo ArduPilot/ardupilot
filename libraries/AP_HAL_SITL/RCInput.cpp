@@ -7,7 +7,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-void SITLRCInput::init(void* machtnichts)
+void SITLRCInput::init()
 {
     clear_overrides();
 }

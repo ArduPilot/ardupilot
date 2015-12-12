@@ -136,7 +136,7 @@ public:
     void rate_ef_roll_pitch_yaw(float roll_rate_ef, float pitch_rate_ef, float yaw_rate_ef);
 
     // rate_bf_roll_pitch_yaw - attempts to maintain a roll, pitch and yaw rate (all body frame)
-    void rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
+    virtual void rate_bf_roll_pitch_yaw(float roll_rate_bf, float pitch_rate_bf, float yaw_rate_bf);
 
     //
     // rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
@@ -270,6 +270,10 @@ protected:
 
     // calculate total body frame throttle required to produce the given earth frame throttle
     virtual float get_boosted_throttle(float throttle_in) = 0;
+
+    // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
+    // Overloaded by AC_Attitude_Heli to return angle.  Should be left to return zero for multirotors.
+    virtual int16_t get_roll_trim() { return 0;}
 
     // references to external libraries
     const AP_AHRS&      _ahrs;

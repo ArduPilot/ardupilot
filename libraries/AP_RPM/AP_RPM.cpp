@@ -16,6 +16,7 @@
 
 #include "AP_RPM.h"
 #include "RPM_PX4_PWM.h"
+#include "RPM_SITL.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -38,6 +39,18 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Description: Maximum RPM to report
     // @Increment: 1
     AP_GROUPINFO("_MAX", 2, AP_RPM, _maximum[0], 0),
+
+    // @Param: _MIN
+    // @DisplayName: Minimum RPM
+    // @Description: Minimum RPM to report
+    // @Increment: 1
+    AP_GROUPINFO("_MIN", 3, AP_RPM, _minimum[0], 0),
+
+    // @Param: _MIN_QUAL
+    // @DisplayName: Minimum Quality
+    // @Description: Minimum data quality to be used
+    // @Increment: 0.1
+    AP_GROUPINFO("_MIN_QUAL", 4, AP_RPM, _quality_min[0], 0.5),
 
 #if RPM_MAX_INSTANCES > 1
     // @Param: 2_TYPE
@@ -85,6 +98,11 @@ void AP_RPM::init(void)
             drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
         }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        uint8_t instance = num_instances;
+        state[instance].instance = instance;
+        drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
+#endif
         if (drivers[i] != NULL) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
@@ -117,8 +135,25 @@ bool AP_RPM::healthy(uint8_t instance) const
     if (instance >= num_instances) {
         return false;
     }
-    // assume we get readings at at least 1Hz
-    if (hal.scheduler->millis() - state[instance].last_reading_ms > 1000) {
+
+    // check that data quality is above minimum required
+    if (state[instance].signal_quality < _quality_min[0]) {
+        return false;
+    }
+
+    return true;
+}
+
+/*
+  check if an instance is activated
+ */
+bool AP_RPM::enabled(uint8_t instance) const
+{
+    if (instance >= num_instances) {
+        return false;
+    }
+    // if no sensor type is selected, the sensor is not activated.
+    if (_type[instance] == RPM_TYPE_NONE) {
         return false;
     }
     return true;

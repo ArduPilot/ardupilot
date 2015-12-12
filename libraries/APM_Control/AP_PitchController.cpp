@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 */
 int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	
 	if (_last_t == 0 || dt > 1000) {
@@ -142,10 +142,10 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
-				integrator_delta = max(integrator_delta , 0);
+				integrator_delta = MAX(integrator_delta , 0);
 			} else if (_last_out > 45) {
 				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-				integrator_delta = min(integrator_delta , 0);
+				integrator_delta = MIN(integrator_delta , 0);
 			}
 			_pid_info.I += integrator_delta;
 		}
@@ -162,7 +162,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	
 	// Calculate the demanded control surface deflection
@@ -244,7 +244,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / max((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;

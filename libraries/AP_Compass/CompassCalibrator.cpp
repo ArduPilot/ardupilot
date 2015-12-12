@@ -86,7 +86,7 @@ void CompassCalibrator::start(bool retry, bool autosave, float delay) {
     _attempt = 1;
     _retry = retry;
     _delay_start_sec = delay;
-    _start_time_ms = hal.scheduler->millis();
+    _start_time_ms = AP_HAL::millis();
     set_status(COMPASS_CAL_WAITING_TO_START);
 }
 
@@ -120,7 +120,7 @@ float CompassCalibrator::get_completion_percent() const {
 }
 
 bool CompassCalibrator::check_for_timeout() {
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     if(running() && tnow - _last_sample_ms > 1000) {
         _retry = false;
         set_status(COMPASS_CAL_FAILED);
@@ -130,7 +130,7 @@ bool CompassCalibrator::check_for_timeout() {
 }
 
 void CompassCalibrator::new_sample(const Vector3f& sample) {
-    _last_sample_ms = hal.scheduler->millis();
+    _last_sample_ms = AP_HAL::millis();
 
     if(_status == COMPASS_CAL_WAITING_TO_START) {
         set_status(COMPASS_CAL_RUNNING_STEP_ONE);
@@ -151,7 +151,7 @@ void CompassCalibrator::update(bool &failure) {
 
     if(_status == COMPASS_CAL_RUNNING_STEP_ONE) {
         if (_fit_step >= 10) {
-            if(_fitness == _initial_fitness || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
+            if(is_equal(_fitness,_initial_fitness) || isnan(_fitness)) {           //if true, means that fitness is diverging instead of converging
                 set_status(COMPASS_CAL_FAILED);
                 failure = true;
             }
@@ -241,7 +241,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 return false;
             }
 
-            if(_attempt == 1 && (hal.scheduler->millis()-_start_time_ms)*1.0e-3f < _delay_start_sec) {
+            if(_attempt == 1 && (AP_HAL::millis()-_start_time_ms)*1.0e-3f < _delay_start_sec) {
                 return false;
             }
 

@@ -164,7 +164,7 @@ void NavEKF2_core::setAidingMode()
 void NavEKF2_core::checkAttitudeAlignmentStatus()
 {
     // Check for tilt convergence - used during initial alignment
-    float alpha = 1.0f*dtIMUavg;
+    float alpha = 1.0f*imuDataDelayed.delAngDT;
     float temp=tiltErrVec.length();
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
@@ -211,7 +211,7 @@ bool NavEKF2_core::readyToUseGPS(void) const
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
-    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex);
+    return _ahrs->get_compass() && _ahrs->get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
 /*

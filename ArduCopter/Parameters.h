@@ -83,8 +83,8 @@ public:
         // Landing gear object
         k_param_landinggear,    // 18
 
-        // precision landing object
-        k_param_precland,   // 19
+        // Input Management object
+        k_param_input_manager,  // 19
 
         // Misc
         //
@@ -145,6 +145,12 @@ public:
         k_param_gps_glitch,             // deprecated
         k_param_baro_glitch,            // 71 - deprecated
 
+        // AP_ADSB Library
+        k_param_adsb,                   // 72
+
+        // 74: precision landing object
+        k_param_precland = 74,
+
         //
         // 75: Singlecopter, CoaxCopter
         //
@@ -163,8 +169,8 @@ public:
         k_param_heli_pitch_ff,      // remove
         k_param_heli_roll_ff,       // remove
         k_param_heli_yaw_ff,        // remove
-        k_param_heli_stab_col_min,
-        k_param_heli_stab_col_max,  // 88
+        k_param_heli_stab_col_min,  // remove
+        k_param_heli_stab_col_max,  // remove
         k_param_heli_servo_rsc,     // 89 = full!
 
         //
@@ -350,6 +356,7 @@ public:
         k_param_rpm_sensor,
         k_param_autotune_min_d, // 251
         k_param_pi_precland,    // 252
+        k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
     };
@@ -372,6 +379,7 @@ public:
     AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
+    AP_Int16        rtl_speed_cms;
     AP_Float        sonar_gain;
 
     AP_Int8         failsafe_battery_enabled;   // battery failsafe enabled
@@ -444,8 +452,6 @@ public:
     // Heli
     RC_Channel      heli_servo_1, heli_servo_2, heli_servo_3, heli_servo_4;     // servos for swash plate and tail
     RC_Channel      heli_servo_rsc;                                             // servo for rotor speed control output
-    AP_Int16        heli_stab_col_min;                                          // min collective while pilot directly controls collective in stabilize mode
-    AP_Int16        heli_stab_col_max;                                          // min collective while pilot directly controls collective in stabilize mode
 #endif
 #if FRAME_CONFIG ==     SINGLE_FRAME
     // Single

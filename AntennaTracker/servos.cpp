@@ -232,11 +232,11 @@ void Tracker::update_yaw_position_servo(float yaw)
     if (abs(channel_yaw.servo_out) == 18000 &&
         labs(angle_err) > margin &&
         making_progress &&
-        hal.scheduler->millis() - slew_start_ms > g.min_reverse_time*1000) {
+        AP_HAL::millis() - slew_start_ms > g.min_reverse_time*1000) {
         // we are at the limit of the servo and are not moving in the
         // right direction, so slew the other way
         new_slew_dir = -channel_yaw.servo_out / 18000;
-        slew_start_ms = hal.scheduler->millis();
+        slew_start_ms = AP_HAL::millis();
     }
 
     /*
@@ -248,7 +248,7 @@ void Tracker::update_yaw_position_servo(float yaw)
     }
 
     if (new_slew_dir != slew_dir) {
-        tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "SLEW: %d/%d err=%ld servo=%ld ez=%.3f",
+        tracker.gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Slew: %d/%d err=%ld servo=%ld ez=%.3f",
                                   (int)slew_dir, (int)new_slew_dir,
                                   (long)angle_err,
                                   (long)channel_yaw.servo_out,

@@ -23,6 +23,9 @@ extern const AP_HAL::HAL& hal;
 */
 bool NavEKF2_core::calcGpsGoodToAlign(void)
 {
+    // User defined multiplier to be applied to check thresholds
+    float checkScaler = 0.01f*(float)frontend->_gpsCheckScaler;
+
     // If we have good magnetometer consistency and bad innovations for longer than 5 seconds then we reset heading and field states
     // This enables us to handle large changes to the external magnetic field environment that occur before arming
     if ((magTestRatio.x <= 1.0f && magTestRatio.y <= 1.0f && yawTestRatio <= 1.0f) || !consistentMagData) {
@@ -50,16 +53,16 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     // Decay distance moved exponentially to zero
     gpsDriftNE *= (1.0f - deltaTime/posFiltTimeConst);
     // Clamp the fiter state to prevent excessive persistence of large transients
-    gpsDriftNE = min(gpsDriftNE,10.0f);
+    gpsDriftNE = MIN(gpsDriftNE,10.0f);
     // Fail if more than 3 metres drift after filtering whilst on-ground
     // This corresponds to a maximum acceptable average drift rate of 0.3 m/s or single glitch event of 3m
-    bool gpsDriftFail = (gpsDriftNE > 3.0f) && onGround && (frontend->_gpsCheck & MASK_GPS_POS_DRIFT);
+    bool gpsDriftFail = (gpsDriftNE > 3.0f*checkScaler) && onGround && (frontend->_gpsCheck & MASK_GPS_POS_DRIFT);
 
     // Report check result as a text string and bitmask
     if (gpsDriftFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS drift %.1fm (needs 3.0)", (double)gpsDriftNE);
+                           "GPS drift %.1fm (needs %.1f)", (double)gpsDriftNE, (double)(3.0f*checkScaler));
         gpsCheckStatus.bad_horiz_drift = true;
     } else {
         gpsCheckStatus.bad_horiz_drift = false;
@@ -71,7 +74,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
-        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
+        gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
     } else if ((frontend->_fusionModeGPS == 0) && !_ahrs->get_gps().have_vertical_velocity()) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
@@ -83,7 +86,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (gpsVertVelFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS vertical speed %.2fm/s (needs 0.30)", (double)fabsf(gpsVertVelFilt));
+                           "GPS vertical speed %.2fm/s (needs %.2f)", (double)fabsf(gpsVertVelFilt), (double)(0.3f*checkScaler));
         gpsCheckStatus.bad_vert_vel = true;
     } else {
         gpsCheckStatus.bad_vert_vel = false;
@@ -95,7 +98,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (onGround) {
         gpsHorizVelFilt = 0.1f * pythagorous2(gpsDataDelayed.vel.x,gpsDataDelayed.vel.y) + 0.9f * gpsHorizVelFilt;
         gpsHorizVelFilt = constrain_float(gpsHorizVelFilt,-10.0f,10.0f);
-        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
+        gpsHorizVelFail = (fabsf(gpsHorizVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_HORIZ_SPD);
     } else {
         gpsHorizVelFail = false;
     }
@@ -104,7 +107,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (gpsHorizVelFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS horizontal speed %.2fm/s (needs 0.30)", (double)gpsDriftNE);
+                           "GPS horizontal speed %.2fm/s (needs %.2f)", (double)gpsDriftNE, (double)(0.3f*checkScaler));
         gpsCheckStatus.bad_horiz_vel = true;
     } else {
         gpsCheckStatus.bad_horiz_vel = false;
@@ -114,7 +117,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     float hAcc = 0.0f;
     bool hAccFail;
     if (_ahrs->get_gps().horizontal_accuracy(hAcc)) {
-        hAccFail = (hAcc > 5.0f)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
+        hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
     }
@@ -123,20 +126,20 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     if (hAccFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS horiz error %.1f", (double)hAcc);
+                           "GPS horiz error %.1fm (needs %.1f)", (double)hAcc, (double)(5.0f*checkScaler));
         gpsCheckStatus.bad_hAcc = true;
     } else {
         gpsCheckStatus.bad_hAcc = false;
     }
 
     // fail if reported speed accuracy greater than threshold
-    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
+    bool gpsSpdAccFail = (gpsSpdAccuracy > 1.0f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_SPD_ERR);
 
     // Report check result as a text string and bitmask
     if (gpsSpdAccFail) {
         hal.util->snprintf(prearm_fail_string,
                            sizeof(prearm_fail_string),
-                           "GPS speed error %.1f", (double)gpsSpdAccuracy);
+                           "GPS speed error %.1f (needs %.1f)", (double)gpsSpdAccuracy, (double)(1.0f*checkScaler));
         gpsCheckStatus.bad_sAcc = true;
     } else {
         gpsCheckStatus.bad_sAcc = false;
@@ -230,7 +233,7 @@ void NavEKF2_core::calcGpsGoodForFlight(void)
     sAccFilterState1 = constrain_float((alpha1 * gpsSpdAccRaw + (1.0f - alpha1) * sAccFilterState1),0.0f,10.0f);
 
     // apply a peak hold filter to the LPF output
-    sAccFilterState2 = max(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
+    sAccFilterState2 = MAX(sAccFilterState1,((1.0f - alpha2) * sAccFilterState2));
 
     // Apply a threshold test with hysteresis to the filtered GPS speed accuracy data
     if (sAccFilterState2 > 1.5f ) {
@@ -295,7 +298,7 @@ void NavEKF2_core::detectFlight()
         }
 
         // trigger if more than 10m away from initial height
-        if (fabsf(baroDataDelayed.hgt) > 10.0f) {
+        if (fabsf(hgtMea) > 10.0f) {
             largeHgtChange = true;
         }
 
@@ -334,7 +337,7 @@ void NavEKF2_core::detectFlight()
         }
 
         // If rangefinder has increased since exiting on-ground, then we definitely are flying
-        if (!onGround && ((rngMea - rngAtStartOfFlight) > 0.5f)) {
+        if (!onGround && ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f)) {
             inFlight = true;
         }
 
@@ -349,7 +352,7 @@ void NavEKF2_core::detectFlight()
         // store vertical position at start of flight to use as a reference for ground relative checks
         posDownAtTakeoff = stateStruct.position.z;
         // store the range finder measurement which will be used as a reference to detect when we have taken off
-        rngAtStartOfFlight = rngMea;
+        rngAtStartOfFlight = rangeDataNew.rng;
     }
 
 }
@@ -408,7 +411,7 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
             angRateVec = ins.get_gyro() - gyroBias;
         }
 
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rngMea > (rngAtStartOfFlight + 0.1f)));
+        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
     } else if (onGround) {
         // we are confidently on the ground so set the takeoff detected status to false
         takeOffDetected = false;

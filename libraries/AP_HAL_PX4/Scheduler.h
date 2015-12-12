@@ -45,12 +45,8 @@ public:
     PX4Scheduler();
     /* AP_HAL::Scheduler methods */
 
-    void     init(void *unused);
+    void     init();
     void     delay(uint16_t ms);
-    uint32_t millis();
-    uint32_t micros();
-    uint64_t millis64();
-    uint64_t micros64();
     void     delay_microseconds(uint16_t us);
     void     delay_microseconds_boost(uint16_t us);
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
@@ -60,7 +56,6 @@ public:
     void     suspend_timer_procs();
     void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
-    void     panic(const char *errormsg, ...) FORMAT(2, 3) NORETURN;
 
     bool     in_timerprocess();
     bool     system_initializing();
@@ -93,10 +88,10 @@ private:
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
 
-    void *_timer_thread(void);
-    void *_io_thread(void);
-    void *_storage_thread(void);
-    void *_uart_thread(void);
+    static void *_timer_thread(void *arg);
+    static void *_io_thread(void *arg);
+    static void *_storage_thread(void *arg);
+    static void *_uart_thread(void *arg);
 
     void _run_timers(bool called_from_timer_thread);
     void _run_io(void);

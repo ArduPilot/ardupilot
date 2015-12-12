@@ -74,7 +74,7 @@ AP_HAL::AnalogSource* ADS1115AnalogIn::channel(int16_t pin)
     return NULL;
 }
 
-void ADS1115AnalogIn::init(void* implspecific)
+void ADS1115AnalogIn::init()
 {
     _adc->init();
     hal.scheduler->suspend_timer_procs();
@@ -84,7 +84,7 @@ void ADS1115AnalogIn::init(void* implspecific)
 
 void ADS1115AnalogIn::_update()
 {
-    if (hal.scheduler->micros() - _last_update_timestamp < 100000) {
+    if (AP_HAL::micros() - _last_update_timestamp < 100000) {
         return;
     }
 
@@ -108,7 +108,7 @@ void ADS1115AnalogIn::_update()
         }
     }
 
-    _last_update_timestamp = hal.scheduler->micros();
+    _last_update_timestamp = AP_HAL::micros();
 }
 
 #endif

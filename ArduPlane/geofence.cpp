@@ -49,7 +49,7 @@ static const StorageAccess fence_storage(StorageManager::StorageFence);
  */
 uint8_t Plane::max_fencepoints(void)
 {
-    return min(255, fence_storage.size() / sizeof(Vector2l));
+    return MIN(255U, fence_storage.size() / sizeof(Vector2l));
 }
 
 /*
@@ -137,13 +137,13 @@ void Plane::geofence_load(void)
     geofence_state->boundary_uptodate = true;
     geofence_state->fence_triggered = false;
 
-    gcs_send_text(MAV_SEVERITY_INFO,"geo-fence loaded");
+    gcs_send_text(MAV_SEVERITY_INFO,"Geofence loaded");
     gcs_send_message(MSG_FENCE_STATUS);
     return;
 
 failed:
     g.fence_action.set(FENCE_ACTION_NONE);
-    gcs_send_text(MAV_SEVERITY_WARNING,"geo-fence setup error");
+    gcs_send_text(MAV_SEVERITY_WARNING,"Geofence setup error");
 }
 
 /*
@@ -335,7 +335,7 @@ void Plane::geofence_check(bool altitude_check_only)
         if (geofence_state->fence_triggered && !altitude_check_only) {
             // we have moved back inside the fence
             geofence_state->fence_triggered = false;
-            gcs_send_text(MAV_SEVERITY_INFO,"geo-fence OK");
+            gcs_send_text(MAV_SEVERITY_INFO,"Geofence OK");
  #if FENCE_TRIGGERED_PIN > 0
             hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
             hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
@@ -365,7 +365,7 @@ void Plane::geofence_check(bool altitude_check_only)
     hal.gpio->write(FENCE_TRIGGERED_PIN, 1);
  #endif
 
-    gcs_send_text(MAV_SEVERITY_NOTICE,"geo-fence triggered");
+    gcs_send_text(MAV_SEVERITY_NOTICE,"Geofence triggered");
     gcs_send_message(MSG_FENCE_STATUS);
 
     // see what action the user wants

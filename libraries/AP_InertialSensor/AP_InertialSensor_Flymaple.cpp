@@ -64,13 +64,7 @@ const uint32_t  raw_sample_interval_us = (1000000 / raw_sample_rate_hz);
 #define FLYMAPLE_GYRO_SCALE_R_S (1.0f / 14.375f) * (3.1415926f / 180.0f)
 
 AP_InertialSensor_Flymaple::AP_InertialSensor_Flymaple(AP_InertialSensor &imu) :
-    AP_InertialSensor_Backend(imu),
-    _have_gyro_sample(false),
-    _have_accel_sample(false),
-    _accel_filter(raw_sample_rate_hz, 10),
-    _gyro_filter(raw_sample_rate_hz, 10),
-    _last_gyro_timestamp(0),
-    _last_accel_timestamp(0)
+    AP_InertialSensor_Backend(imu)
 {}
 
 /*
@@ -102,7 +96,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     uint8_t data;
     hal.i2c->readRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DEVID, &data);
     if (data != FLYMAPLE_ACCELEROMETER_XL345_DEVID)
-        hal.scheduler->panic("AP_InertialSensor_Flymaple: could not find ADXL345 accelerometer sensor");
+        AP_HAL::panic("AP_InertialSensor_Flymaple: could not find ADXL345 accelerometer sensor");
     hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0x00);
     hal.scheduler->delay(5);
     hal.i2c->writeRegister(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_POWER_CTL, 0xff);
@@ -124,7 +118,7 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     // Expect to read the same as the Gyro I2C adress:
     hal.i2c->readRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_WHO_AM_I, &data);
     if (data != FLYMAPLE_GYRO_ADDRESS)
-        hal.scheduler->panic("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor");
+        AP_HAL::panic("AP_InertialSensor_Flymaple: could not find ITG-3200 accelerometer sensor");
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_PWR_MGM, 0x00);
     hal.scheduler->delay(1);
     // Sample rate divider: with 8kHz internal clock (see FLYMAPLE_GYRO_DLPF_FS), 
@@ -139,49 +133,22 @@ bool AP_InertialSensor_Flymaple::_init_sensor(void)
     hal.i2c->writeRegister(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_INT_CFG, 0x00);
     hal.scheduler->delay(1);
 
-    // Set up the filter desired
-    _set_filter_frequency(_accel_filter_cutoff());
-
     // give back i2c semaphore
     i2c_sem->give();
 
-    _gyro_instance = _imu.register_gyro();
-    _accel_instance = _imu.register_accel();
+    _gyro_instance = _imu.register_gyro(raw_sample_rate_hz);
+    _accel_instance = _imu.register_accel(raw_sample_rate_hz);
 
     _product_id = AP_PRODUCT_ID_FLYMAPLE;
 
     return true;
 }
 
-/*
-  set the filter frequency
- */
-void AP_InertialSensor_Flymaple::_set_filter_frequency(uint8_t filter_hz)
-{
-    _accel_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-    _gyro_filter.set_cutoff_frequency(raw_sample_rate_hz, filter_hz);
-}
-
-
 // This takes about 20us to run
 bool AP_InertialSensor_Flymaple::update(void) 
 {
-    Vector3f accel, gyro;
-
-    hal.scheduler->suspend_timer_procs();
-    accel = _accel_filtered;
-    gyro = _gyro_filtered;
-    _have_gyro_sample = false;
-    _have_accel_sample = false;
-    hal.scheduler->resume_timer_procs();
-
-    _publish_accel(_accel_instance, accel);
-    _publish_gyro(_gyro_instance, gyro);
-
-    if (_last_filter_hz != _accel_filter_cutoff()) {
-        _set_filter_frequency(_accel_filter_cutoff());
-        _last_filter_hz = _accel_filter_cutoff();
-    }
+    update_accel(_accel_instance);
+    update_gyro(_gyro_instance);
 
     return true;
 }
@@ -197,7 +164,7 @@ bool AP_InertialSensor_Flymaple::update(void)
 // operations take too long
 // So we are stuck with a suboptimal solution. The results are not so
 // good in terms of timing. It may be better with the FIFOs enabled
-void AP_InertialSensor_Flymaple::_accumulate(void)
+void AP_InertialSensor_Flymaple::accumulate(void)
 {
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore* i2c_sem = hal.i2c->get_semaphore();
@@ -209,7 +176,7 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
     // Read accelerometer
     // ADXL345 is in the default FIFO bypass mode, so the FIFO is not used
     uint8_t buffer[6];
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_accel_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_ACCELEROMETER_ADDRESS, FLYMAPLE_ACCELEROMETER_ADXLREG_DATAX0, 6, buffer) == 0)
@@ -226,13 +193,11 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         accel *= FLYMAPLE_ACCELEROMETER_SCALE_M_S;
         _rotate_and_correct_accel(_accel_instance, accel);
         _notify_new_accel_raw_sample(_accel_instance, accel);
-        _accel_filtered = _accel_filter.apply(accel);
-        _have_accel_sample = true;
         _last_accel_timestamp = now;
     }
 
     // Read gyro
-    now = hal.scheduler->micros();
+    now = AP_HAL::micros();
     // This takes about 250us at 400kHz I2C speed
     if ((now - _last_gyro_timestamp) >= raw_sample_interval_us
         && hal.i2c->readRegisters(FLYMAPLE_GYRO_ADDRESS, FLYMAPLE_GYRO_GYROX_H, 6, buffer) == 0)
@@ -246,9 +211,6 @@ void AP_InertialSensor_Flymaple::_accumulate(void)
         gyro *= FLYMAPLE_GYRO_SCALE_R_S;
         _rotate_and_correct_gyro(_gyro_instance, gyro);
         _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-        _gyro_filtered = _gyro_filter.apply(gyro);
-        _have_gyro_sample = true;
-        _last_gyro_timestamp = now;
     }
 
     // give back i2c semaphore

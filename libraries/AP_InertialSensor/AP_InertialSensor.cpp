@@ -322,7 +322,7 @@ AP_InertialSensor::AP_InertialSensor() :
     _dataflash(NULL)
 {
     if (_s_instance) {
-        hal.scheduler->panic("Too many inertial sensors");
+        AP_HAL::panic("Too many inertial sensors");
     }
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);        
@@ -368,47 +368,50 @@ AP_InertialSensor *AP_InertialSensor::get_instance()
 /*
   register a new gyro instance
  */
-uint8_t AP_InertialSensor::register_gyro(void)
+uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz)
 {
     if (_gyro_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many gyros");
+        AP_HAL::panic("Too many gyros");
     }
+    _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     return _gyro_count++;
 }
 
 /*
   register a new accel instance
  */
-uint8_t AP_InertialSensor::register_accel(void)
+uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many accels");
+        AP_HAL::panic("Too many accels");
     }
+    _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
     return _accel_count++;
 }
 
 /*
  * Start all backends for gyro and accel measurements. It automatically calls
- * _detect_backends() if it has not been called already.
+ * detect_backends() if it has not been called already.
  */
 void AP_InertialSensor::_start_backends()
 
 {
-    _detect_backends();
+    detect_backends();
 
     for (uint8_t i = 0; i < _backend_count; i++) {
         _backends[i]->start();
     }
 
     if (_gyro_count == 0 || _accel_count == 0) {
-        hal.scheduler->panic("INS needs at least 1 gyro and 1 accel");
+        AP_HAL::panic("INS needs at least 1 gyro and 1 accel");
     }
 }
 
-/* Find a backend that has already been succesfully detected */
-AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
+/* Find the N instance of the backend that has already been successfully detected */
+AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, uint8_t instance)
 {
     assert(_backends_detected);
+    uint8_t found = 0;
 
     for (uint8_t i = 0; i < _backend_count; i++) {
         int16_t id = _backends[i]->get_id();
@@ -416,7 +419,11 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id)
         if (id < 0 || id != backend_id)
             continue;
 
-        return _backends[i];
+        if (instance == found) {
+            return _backends[i];
+        } else {
+            found++;
+        }
     }
 
     return nullptr;
@@ -473,15 +480,15 @@ void AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
     if (!backend)
         return;
     if (_backend_count == INS_MAX_BACKENDS)
-        hal.scheduler->panic("Too many INS backends");
+        AP_HAL::panic("Too many INS backends");
     _backends[_backend_count++] = backend;
 }
 
 /*
   detect available backends for this board
  */
-void 
-AP_InertialSensor::_detect_backends(void)
+void
+AP_InertialSensor::detect_backends(void)
 {
     if (_backends_detected)
         return;
@@ -492,7 +499,9 @@ AP_InertialSensor::_detect_backends(void)
         _add_backend(AP_InertialSensor_HIL::detect(*this));
         return;
     }
-#if HAL_INS_DEFAULT == HAL_INS_HIL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _add_backend(AP_InertialSensor_SITL::detect(*this));    
+#elif HAL_INS_DEFAULT == HAL_INS_HIL
     _add_backend(AP_InertialSensor_HIL::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU60XX_SPI
     _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
@@ -512,12 +521,16 @@ AP_InertialSensor::_detect_backends(void)
     //_add_backend(AP_InertialSensor_L3GD20::detect);
     //_add_backend(AP_InertialSensor_LSM303D::detect);
     _add_backend(AP_InertialSensor_MPU6000::detect_spi(*this));
+#elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
+    _add_backend(AP_InertialSensor_MPU9250::detect_i2c(*this,
+                                                       HAL_INS_MPU9250_I2C_POINTER,
+                                                       HAL_INS_MPU9250_I2C_ADDR));
 #else
     #error Unrecognised HAL_INS_TYPE setting
 #endif
 
     if (_backend_count == 0) {
-        hal.scheduler->panic("No INS backends available");
+        AP_HAL::panic("No INS backends available");
     }
 
     // set the product ID to the ID of the first backend
@@ -554,7 +567,7 @@ bool AP_InertialSensor::calibrate_accel(AP_InertialSensor_UserInteract* interact
                                         float &trim_roll,
                                         float &trim_pitch)
 {
-    uint8_t num_accels = min(get_accel_count(), INS_MAX_INSTANCES);
+    uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f samples[INS_MAX_INSTANCES][6];
     Vector3f new_offsets[INS_MAX_INSTANCES];
     Vector3f new_scaling[INS_MAX_INSTANCES];
@@ -901,7 +914,7 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
 void
 AP_InertialSensor::_init_gyro()
 {
-    uint8_t num_gyros = min(get_gyro_count(), INS_MAX_INSTANCES);
+    uint8_t num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
     Vector3f new_gyro_offset[INS_MAX_INSTANCES];
     float best_diff[INS_MAX_INSTANCES];
@@ -1339,7 +1352,7 @@ void AP_InertialSensor::wait_for_sample(void)
         return;
     }
 
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
 
     if (_next_sample_usec == 0 && _delta_time <= 0) {
         // this is the first call to wait_for_sample()
@@ -1353,7 +1366,7 @@ void AP_InertialSensor::wait_for_sample(void)
         // we're ahead on time, schedule next sample at expected period
         uint32_t wait_usec = _next_sample_usec - now;
         hal.scheduler->delay_microseconds_boost(wait_usec);
-        uint32_t now2 = hal.scheduler->micros();
+        uint32_t now2 = AP_HAL::micros();
         if (now2+100 < _next_sample_usec) {
             timing_printf("shortsleep %u\n", (unsigned)(_next_sample_usec-now2));
         }
@@ -1383,8 +1396,11 @@ check_sample:
         bool accel_available = false;
         while (!gyro_available || !accel_available) {
             for (uint8_t i=0; i<_backend_count; i++) {
-                gyro_available |= _backends[i]->gyro_sample_available();
-                accel_available |= _backends[i]->accel_sample_available();
+                _backends[i]->accumulate();
+            }
+            for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+                gyro_available |= _new_gyro_data[i];
+                accel_available |= _new_accel_data[i];
             }
             if (!gyro_available || !accel_available) {
                 hal.scheduler->delay_microseconds(100);
@@ -1392,7 +1408,7 @@ check_sample:
         }
     }
 
-    now = hal.scheduler->micros();
+    now = AP_HAL::micros();
     if (_hil_mode && _hil.delta_time > 0) {
         _delta_time = _hil.delta_time;
         _hil.delta_time = 0;
@@ -1539,13 +1555,13 @@ void AP_InertialSensor::set_delta_angle(uint8_t instance, const Vector3f &deltaa
 }
 
 /*
- * Get an AuxiliaryBus on the backend identified by @backend_id
+ * Get an AuxiliaryBus of N @instance of backend identified by @backend_id
  */
-AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id)
+AuxiliaryBus *AP_InertialSensor::get_auxiliary_bus(int16_t backend_id, uint8_t instance)
 {
-    _detect_backends();
+    detect_backends();
 
-    AP_InertialSensor_Backend *backend = _find_backend(backend_id);
+    AP_InertialSensor_Backend *backend = _find_backend(backend_id, instance);
     if (backend == NULL)
         return NULL;
 

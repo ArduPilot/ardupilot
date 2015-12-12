@@ -37,7 +37,7 @@ public:
     SITLAnalogIn(SITL_State *sitlState) {
         _sitlState = sitlState;
     }
-    void init(void* ap_hal_scheduler);
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void) {
         return 5.0f;

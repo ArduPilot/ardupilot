@@ -21,7 +21,7 @@ const AP_Param::GroupInfo PID::var_info[] = {
 
 float PID::get_pid(float error, float scaler)
 {
-    uint32_t tnow = hal.scheduler->millis();
+    uint32_t tnow = AP_HAL::millis();
     uint32_t dt = tnow - _last_t;
     float output            = 0;
     float delta_time;

@@ -4,8 +4,8 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyRCOutput : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
+class Empty::RCOutput : public AP_HAL::RCOutput {
+    void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);

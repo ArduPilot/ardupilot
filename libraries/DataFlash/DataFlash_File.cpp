@@ -46,8 +46,10 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory) :
-    DataFlash_Backend(front),
+DataFlash_File::DataFlash_File(DataFlash_Class &front,
+                               DFMessageWriter_DFLogStart *writer,
+                               const char *log_directory) :
+    DataFlash_Backend(front, writer),
     _write_fd(-1),
     _read_fd(-1),
     _read_fd_log_num(0),
@@ -56,8 +58,8 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
     _initialised(false),
     _open_error(false),
     _log_directory(log_directory),
+    _cached_oldest_log(0),
     _writebuf(NULL),
-    _writebuf_size(16*1024),
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
     _writebuf_chunk(512),
@@ -87,9 +89,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front, const char *log_directory
 
 
 // initialisation
-void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_types)
+void DataFlash_File::Init()
 {
-    DataFlash_Backend::Init(structure, num_types);
+    DataFlash_Backend::Init();
     // create the log directory if need be
     int ret;
     struct stat st;
@@ -127,11 +129,21 @@ void DataFlash_File::Init(const struct LogStructure *structure, uint8_t num_type
         _writebuf = NULL;
     }
 
+    // determine and limit file backend buffersize
+    uint8_t bufsize = _front._params.file_bufsize;
+    if (bufsize > 64) {
+        // we currently use uint16_t for the ringbuffer.  Also,
+        // PixHawk has DMA limitaitons.
+        bufsize = 64;
+    }
+    _writebuf_size = bufsize * 1024;
+
     /*
       if we can't allocate the full writebuf then try reducing it
       until we can allocate it
      */
     while (_writebuf == NULL && _writebuf_size >= _writebuf_chunk) {
+        hal.console->printf("DataFlash_File: buffer size=%d\n", _writebuf_size);
         _writebuf = (uint8_t *)malloc(_writebuf_size);
         if (_writebuf == NULL) {
             _writebuf_size /= 2;
@@ -229,6 +241,10 @@ float DataFlash_File::avail_space_percent()
 // returns 0 if no log was found
 uint16_t DataFlash_File::find_oldest_log()
 {
+    if (_cached_oldest_log != 0) {
+        return _cached_oldest_log;
+    }
+
     uint16_t last_log_num = find_last_log();
     if (last_log_num == 0) {
         return 0;
@@ -281,6 +297,7 @@ uint16_t DataFlash_File::find_oldest_log()
         }
     }
     closedir(d);
+    _cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
 }
@@ -292,6 +309,8 @@ void DataFlash_File::Prep_MinSpace()
         // no files to remove
         return;
     }
+
+    _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -317,7 +336,7 @@ void DataFlash_File::Prep_MinSpace()
         }
         if (file_exists(filename_to_remove)) {
             hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
-                                filename_to_remove, avail, min_avail_space_percent);
+                                filename_to_remove, (double)avail, (double)min_avail_space_percent);
             if (unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
@@ -407,6 +426,8 @@ void DataFlash_File::EraseAll()
         unlink(fname);
         free(fname);
     }
+
+    _cached_oldest_log = 0;
 }
 
 /* Write a block of data at current offset */
@@ -425,7 +446,7 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
     uint16_t space = BUF_SPACE(_writebuf);
 
     if (_writing_startup_messages &&
-        _front._startup_messagewriter.fmt_done()) {
+        _startup_messagewriter->fmt_done()) {
         // the state machine has called us, and it has finished
         // writing format messages out.  It can always get back to us
         // with more messages later, so let's leave room for other
@@ -451,20 +472,20 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
 
     if (_writebuf_tail < _head) {
         // perform as single memcpy
-        assert(_writebuf_tail+size <= _writebuf_size);
+        assert(((uint32_t)_writebuf_tail)+size <= _writebuf_size);
         memcpy(&_writebuf[_writebuf_tail], pBuffer, size);
         BUF_ADVANCETAIL(_writebuf, size);
     } else {
         // perform as two memcpy calls
-        uint16_t n = _writebuf_size - _writebuf_tail;
+        uint32_t n = _writebuf_size - _writebuf_tail;
         if (n > size) n = size;
-        assert(_writebuf_tail+n <= _writebuf_size);
+        assert(((uint32_t)_writebuf_tail)+n <= _writebuf_size);
         memcpy(&_writebuf[_writebuf_tail], pBuffer, n);
         BUF_ADVANCETAIL(_writebuf, n);
         pBuffer = (const void *)(((const uint8_t *)pBuffer) + n);
         n = size - n;
         if (n > 0) {
-            assert(_writebuf_tail+n <= _writebuf_size);
+            assert(((uint32_t)_writebuf_tail)+n <= _writebuf_size);
             memcpy(&_writebuf[_writebuf_tail], pBuffer, n);
             BUF_ADVANCETAIL(_writebuf, n);
         }
@@ -584,7 +605,7 @@ void DataFlash_File::get_log_boundaries(const uint16_t list_entry, uint16_t & st
 }
 
 /*
-  find the number of pages in a log
+  retrieve data from a log file
  */
 int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
@@ -717,6 +738,8 @@ uint16_t DataFlash_File::start_new_log(void)
 {
     stop_logging();
 
+    _startup_messagewriter->reset();
+
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
@@ -738,6 +761,8 @@ uint16_t DataFlash_File::start_new_log(void)
     }
     char *fname = _log_file_name(log_num);
     _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    _cached_oldest_log = 0;
+
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
@@ -906,7 +931,7 @@ void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
 void DataFlash_File::flush(void)
 {
     uint16_t _tail;
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
     hal.scheduler->suspend_timer_procs();
     while (_write_fd != -1 && _initialised && !_open_error &&
            BUF_AVAILABLE(_writebuf)) {
@@ -933,7 +958,7 @@ void DataFlash_File::_io_timer(void)
     if (nbytes == 0) {
         return;
     }
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
     if (nbytes < _writebuf_chunk && 
         tnow - _last_write_time < 2000000UL) {
         // write in _writebuf_chunk-sized chunks, but always write at
@@ -950,7 +975,7 @@ void DataFlash_File::_io_timer(void)
     }
     if (_writebuf_head > _tail) {
         // only write to the end of the buffer
-        nbytes = min(nbytes, _writebuf_size - _writebuf_head);
+        nbytes = MIN(nbytes, _writebuf_size - _writebuf_head);
     }
 
     // try to align writes on a 512 byte boundary to avoid filesystem
@@ -962,7 +987,7 @@ void DataFlash_File::_io_timer(void)
         }
     }
 
-    assert(_writebuf_head+nbytes <= _writebuf_size);
+    assert(((uint32_t)_writebuf_head)+nbytes <= _writebuf_size);
     ssize_t nwritten = ::write(_write_fd, &_writebuf[_writebuf_head], nbytes);
     if (nwritten <= 0) {
         hal.util->perf_count(_perf_errors);

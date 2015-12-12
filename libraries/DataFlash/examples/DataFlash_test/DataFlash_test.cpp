@@ -57,7 +57,8 @@ void DataFlashTest::setup(void)
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = dataflash.StartNewLog();
+    dataflash.StartNewLog();
+    log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
     hal.console->println("After testing perform erase before using DataFlash for logging!");
     hal.console->println("");
@@ -67,7 +68,7 @@ void DataFlashTest::setup(void)
     uint16_t i;
 
     for (i = 0; i < NUM_PACKETS; i++) {
-        uint32_t start = hal.scheduler->micros();
+        uint32_t start = AP_HAL::micros();
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
         struct log_Test pkt = {
@@ -80,7 +81,7 @@ void DataFlashTest::setup(void)
             l2    : (int32_t)(i * 16268)
         };
         dataflash.WriteBlock(&pkt, sizeof(pkt));
-        total_micros += hal.scheduler->micros() - start;
+        total_micros += AP_HAL::micros() - start;
         hal.scheduler->delay(20);
     }
 

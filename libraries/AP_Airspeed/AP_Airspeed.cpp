@@ -232,11 +232,11 @@ void AP_Airspeed::read(void)
         airspeed_pressure = fabsf(airspeed_pressure);
         break;
     }
-    airspeed_pressure       = max(airspeed_pressure, 0);
+    airspeed_pressure       = MAX(airspeed_pressure, 0);
     _last_pressure          = airspeed_pressure;
     _raw_airspeed           = sqrtf(airspeed_pressure * _ratio);
     _airspeed               = 0.7f * _airspeed  +  0.3f * _raw_airspeed;
-    _last_update_ms         = hal.scheduler->millis();
+    _last_update_ms         = AP_HAL::millis();
 }
 
 void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
@@ -244,7 +244,7 @@ void AP_Airspeed::setHIL(float airspeed, float diff_pressure, float temperature)
     _raw_airspeed = airspeed;
     _airspeed = airspeed;
     _last_pressure = diff_pressure;
-    _last_update_ms = hal.scheduler->millis();    
+    _last_update_ms = AP_HAL::millis();    
     _hil_pressure = diff_pressure;
     _hil_set = true;
     _healthy = true;

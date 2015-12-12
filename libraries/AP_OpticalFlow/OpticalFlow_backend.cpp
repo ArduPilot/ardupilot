@@ -22,5 +22,5 @@ extern const AP_HAL::HAL& hal;
 void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)
 {
     frontend._state = state;
-    frontend._last_update_ms = hal.scheduler->millis();
+    frontend._last_update_ms = AP_HAL::millis();
 }

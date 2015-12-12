@@ -86,8 +86,8 @@ LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) {
 typedef LowPassFilter<int>      LowPassFilterInt;
 typedef LowPassFilter<long>     LowPassFilterLong;
 typedef LowPassFilter<float>    LowPassFilterFloat;
-typedef LowPassFilter<double>   LowPassFilterDouble;
 typedef LowPassFilter<Vector2f> LowPassFilterVector2f;
 typedef LowPassFilter<Vector3f> LowPassFilterVector3f;
 
 #endif // __LOW_PASS_FILTER_H__
+

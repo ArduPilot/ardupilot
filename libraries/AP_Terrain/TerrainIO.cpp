@@ -97,7 +97,7 @@ void AP_Terrain::schedule_disk_io(void)
                 cache[cache_idx].grid = disk_block.block;
             }
             cache[cache_idx].state = GRID_CACHE_VALID;
-            cache[cache_idx].last_access_ms = hal.scheduler->millis();
+            cache[cache_idx].last_access_ms = AP_HAL::millis();
         }
         disk_io_state = DiskIoIdle;
         break;

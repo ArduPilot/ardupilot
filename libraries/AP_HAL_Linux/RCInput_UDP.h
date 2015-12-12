@@ -12,7 +12,7 @@ class Linux::RCInput_UDP : public Linux::RCInput
 {
 public:
     RCInput_UDP();
-    void init(void*);
+    void init();
     void _timer_tick(void);
 private:
     SocketAPM   _socket{true};

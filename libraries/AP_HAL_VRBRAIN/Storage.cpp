@@ -45,14 +45,14 @@ uint32_t VRBRAINStorage::_mtd_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
     }
     uint32_t v;
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
     if (read(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        hal.scheduler->panic("Failed to read signature from " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to read signature from " MTD_PARAMS_FILE);
     }
     close(mtd_fd);
     return v;
@@ -65,14 +65,14 @@ void VRBRAINStorage::_mtd_write_signature(void)
 {
     int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
     }
     uint32_t v = MTD_SIGNATURE;
     if (lseek(mtd_fd, MTD_SIGNATURE_OFFSET, SEEK_SET) != MTD_SIGNATURE_OFFSET) {
-        hal.scheduler->panic("Failed to seek in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to seek in " MTD_PARAMS_FILE);
     }
     if (write(mtd_fd, &v, sizeof(v)) != sizeof(v)) {
-        hal.scheduler->panic("Failed to write signature in " MTD_PARAMS_FILE);
+        AP_HAL::panic("Failed to write signature in " MTD_PARAMS_FILE);
     }
     close(mtd_fd);
 }
@@ -92,7 +92,7 @@ void VRBRAINStorage::_upgrade_to_mtd(void)
 
     int mtd_fd = open(MTD_PARAMS_FILE, O_WRONLY);
     if (mtd_fd == -1) {
-        hal.scheduler->panic("Unable to open MTD for upgrade");
+        AP_HAL::panic("Unable to open MTD for upgrade");
     }
 
     if (::read(old_fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
@@ -105,7 +105,7 @@ void VRBRAINStorage::_upgrade_to_mtd(void)
     ssize_t ret;
     if ((ret=::write(mtd_fd, _buffer, sizeof(_buffer))) != sizeof(_buffer)) {
         ::printf("mtd write of %u bytes returned %d errno=%d\n", sizeof(_buffer), ret, errno);
-        hal.scheduler->panic("Unable to write MTD for upgrade");        
+        AP_HAL::panic("Unable to write MTD for upgrade");
     }
     close(mtd_fd);
 #if STORAGE_RENAME_OLD_FILE
@@ -126,7 +126,7 @@ void VRBRAINStorage::_storage_open(void)
 
         // VRBRAIN should always have /fs/mtd_params
         if (!_have_mtd) {
-            hal.scheduler->panic("Failed to find " MTD_PARAMS_FILE);
+            AP_HAL::panic("Failed to find " MTD_PARAMS_FILE);
         }
 
         /*
@@ -152,7 +152,7 @@ void VRBRAINStorage::_storage_open(void)
 	_dirty_mask = 0;
 	int fd = open(MTD_PARAMS_FILE, O_RDONLY);
 	if (fd == -1) {
-            hal.scheduler->panic("Failed to open " MTD_PARAMS_FILE);
+            AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
 	}
         const uint16_t chunk_size = 128;
         for (uint16_t ofs=0; ofs<sizeof(_buffer); ofs += chunk_size) {
@@ -160,7 +160,7 @@ void VRBRAINStorage::_storage_open(void)
             if (ret != chunk_size) {
                 ::printf("storage read of %u bytes at %u to %p failed - got %d errno=%d\n",
                          (unsigned)sizeof(_buffer), (unsigned)ofs, &_buffer[ofs], (int)ret, (int)errno);
-                hal.scheduler->panic("Failed to read " MTD_PARAMS_FILE);
+                AP_HAL::panic("Failed to read " MTD_PARAMS_FILE);
             }
 	}
 	close(fd);

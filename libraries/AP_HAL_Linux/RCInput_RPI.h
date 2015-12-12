@@ -77,7 +77,7 @@ public:
 class Linux::RCInput_RPI : public Linux::RCInput
 { 
 public:
-    void init(void*);
+    void init();
     void _timer_tick(void);
     RCInput_RPI();
     ~RCInput_RPI();

@@ -36,7 +36,7 @@ void Copter::failsafe_disable()
 //
 void Copter::failsafe_check()
 {
-    uint32_t tnow = hal.scheduler->micros();
+    uint32_t tnow = AP_HAL::micros();
 
     if (mainLoop_count != failsafe_last_mainLoop_count) {
         // the main loop is running, all is OK

@@ -19,6 +19,8 @@
 
 #include "AP_RPM.h"
 #include "RPM_Backend.h"
+#include <Filter/Filter.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_RPM_PX4_PWM : public AP_RPM_Backend
 {
@@ -34,7 +36,10 @@ public:
 
 private:
     int _fd = -1;
+    int _logfd = -1;
     uint64_t _last_timestamp = 0;
+
+    ModeFilterFloat_Size5 signal_quality_filter {3};
 };
 
 #endif // AP_RPM_PX4_PWM_H

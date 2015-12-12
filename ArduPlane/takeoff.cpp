@@ -18,11 +18,11 @@ bool Plane::auto_takeoff_check(void)
     static bool launchTimerStarted;
     static uint32_t last_tkoff_arm_time;
     static uint32_t last_check_ms;
-    uint16_t wait_time_ms = min(uint16_t(g.takeoff_throttle_delay)*100,12700);
+    uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer Interrupted AUTO");
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Timer interrupted AUTO");
 	    launchTimerStarted = false;
 	    last_tkoff_arm_time = 0;
         last_check_ms = now;
@@ -62,14 +62,14 @@ bool Plane::auto_takeoff_check(void)
     if (ahrs.pitch_sensor <= -3000 ||
         ahrs.pitch_sensor >= 4500 ||
         labs(ahrs.roll_sensor) > 3000) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad Launch AUTO");
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Bad launch AUTO");
         goto no_launch;
     }
 
     // Check ground speed and time delay
     if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO, GPSspd = %.1f", (double)gps.ground_speed());
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
         return true;

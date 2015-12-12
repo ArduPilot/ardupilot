@@ -29,8 +29,8 @@ AP_InertialSensor_Backend *AP_InertialSensor_HIL::detect(AP_InertialSensor &_imu
 bool AP_InertialSensor_HIL::_init_sensor(void) 
 {
     // grab the used instances
-    _imu.register_gyro();
-    _imu.register_accel();
+    _imu.register_gyro(1200);
+    _imu.register_accel(1200);
 
     _product_id = AP_PRODUCT_ID_NONE;
     _imu.set_hil_mode();

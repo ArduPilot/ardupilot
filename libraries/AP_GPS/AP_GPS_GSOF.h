@@ -42,8 +42,8 @@ private:
 
     bool parse(uint8_t temp);
     bool process_message();
-    void requestBaud();
-    void requestGSOF(uint8_t messagetype);
+    void requestBaud(uint8_t portindex);
+    void requestGSOF(uint8_t messagetype, uint8_t portindex);
     double SwapDouble(uint8_t* src, uint32_t pos);
     float SwapFloat(uint8_t* src, uint32_t pos);
     uint32_t SwapUint32(uint8_t* src, uint32_t pos);

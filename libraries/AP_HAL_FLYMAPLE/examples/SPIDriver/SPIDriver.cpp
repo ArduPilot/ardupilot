@@ -19,7 +19,7 @@ void setup (void) {
 
     spidev = hal.spi->device(AP_HAL::SPIDevice_MPU6000); // Not really MPU6000, just a generic SPU driver
     if (!spidev)
-       hal.scheduler->panic("Starting AP_HAL_FLYMAPLE::SPIDriver failed to get spidev\r\n");
+        AP_HAL::panic("Starting AP_HAL_FLYMAPLE::SPIDriver failed to get spidev\r\n");
 }
 
 void loop (void) { 

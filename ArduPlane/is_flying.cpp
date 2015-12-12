@@ -14,7 +14,7 @@ void Plane::update_is_flying_5Hz(void)
 {
     float aspeed;
     bool is_flying_bool;
-    uint32_t now_ms = hal.scheduler->millis();
+    uint32_t now_ms = AP_HAL::millis();
 
     uint32_t ground_speed_thresh_cm = (g.min_gndspeed_cm > 0) ? ((uint32_t)(g.min_gndspeed_cm*0.9f)) : 500;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
@@ -146,7 +146,7 @@ void Plane::crash_detection_update(void)
         return;
     }
 
-    uint32_t now_ms = hal.scheduler->millis();
+    uint32_t now_ms = AP_HAL::millis();
     bool auto_launch_detected;
     bool crashed_near_land_waypoint = false;
     bool crashed = false;
@@ -224,9 +224,9 @@ void Plane::crash_detection_update(void)
 
         if (g.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected - no action taken");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected - no action taken");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
             }
         }
         else {
@@ -235,9 +235,9 @@ void Plane::crash_detection_update(void)
             }
             auto_state.land_complete = true;
             if (crashed_near_land_waypoint) {
-                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard Landing Detected");
+                gcs_send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
             } else {
-                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash Detected");
+                gcs_send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
             }
         }
     }

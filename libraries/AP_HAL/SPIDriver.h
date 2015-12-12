@@ -7,7 +7,7 @@
 
 class AP_HAL::SPIDeviceManager {
 public:
-    virtual void init(void *) = 0;
+    virtual void init() = 0;
     virtual AP_HAL::SPIDeviceDriver* device(enum AP_HAL::SPIDevice, uint8_t index = 0) = 0;
 };
 
@@ -38,15 +38,7 @@ public:
         SPI_SPEED_LOW, SPI_SPEED_HIGH
     };
 
-    enum class State : uint8_t {
-        UNKNOWN,
-        RUNNING,
-        FAILED,
-    };
-
     virtual void set_bus_speed(enum bus_speed speed) {}
-    virtual void set_state(State state) { };
-    virtual State get_state() { return State::UNKNOWN; }
 };
 
 #endif // __AP_HAL_SPI_DRIVER_H__

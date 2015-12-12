@@ -830,7 +830,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_HOLD_RTL
     // @DisplayName: RTL altitude
-    // @Description: Return to launch target altitude. This is the altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL. Note that when transiting to a Rally Point the altitude of the Rally Point is used instead of ALT_HOLD_RTL.
+    // @Description: Return to launch target altitude. This is the relative altitude the plane will aim for and loiter at when returning home. If this is negative (usually -1) then the plane will use the current altitude at the time of entering RTL. Note that when transiting to a Rally Point the altitude of the Rally Point is used instead of ALT_HOLD_RTL.
     // @Units: centimeters
     // @User: User
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
@@ -1022,6 +1022,10 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
 #endif
 
+    // @Group: ADSB_
+    // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
+    GOBJECT(adsb,                "ADSB_", AP_ADSB),
+
     // RC channel
     //-----------
     // @Group: RC1_
@@ -1154,6 +1158,10 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
+    // @Group: LOG
+    // @Path: ../libraries/DataFlash/DataFlash.cpp
+    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
     GOBJECT(battery,                "BATT", AP_BattMonitor),
@@ -1252,7 +1260,7 @@ void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
         cliSerial->printf("Bad parameter table\n");
-        hal.scheduler->panic("Bad parameter table");
+        AP_HAL::panic("Bad parameter table");
     }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

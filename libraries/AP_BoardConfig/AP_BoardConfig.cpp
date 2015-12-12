@@ -115,7 +115,7 @@ void AP_BoardConfig::init()
 
     int fd = open("/dev/px4fmu", 0);
     if (fd == -1) {
-        hal.scheduler->panic("Unable to open /dev/px4fmu");
+        AP_HAL::panic("Unable to open /dev/px4fmu");
     }
     if (ioctl(fd, PWM_SERVO_SET_COUNT, _pwm_count.get()) != 0) {
         hal.console->printf("RCOutput: Unable to setup alt PWM to %u channels\n", _pwm_count.get());  

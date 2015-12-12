@@ -413,7 +413,7 @@ def fly_mission(mavproxy, mav, filename, height_accuracy=-1, target_altitude=Non
     global homeloc
     print("Flying mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('flight plan received')
+    mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 1\n') # auto mode

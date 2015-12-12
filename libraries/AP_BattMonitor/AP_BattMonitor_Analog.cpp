@@ -31,7 +31,7 @@ AP_BattMonitor_Analog::read()
     // read current
     if (_mon.has_current(_state.instance)) {
         // calculate time since last current read
-        uint32_t tnow = hal.scheduler->micros();
+        uint32_t tnow = AP_HAL::micros();
         float dt = tnow - _state.last_time_micros;
 
         // this copes with changing the pin at runtime

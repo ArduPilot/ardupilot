@@ -48,7 +48,7 @@ static const struct {
     { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
     { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
     { 13, 16.8f/4096  }, // analog3, on SPI port pin 4
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     { 2,   3.3f/4096  },    // 3DR Brick voltage, usually 10.1:1
                             // scaled from battery voltage
     { 3,   3.3f/4096  },    // 3DR Brick current, usually 17:1 scaled
@@ -198,11 +198,11 @@ PX4AnalogIn::PX4AnalogIn() :
     _power_flags(0)
 {}
 
-void PX4AnalogIn::init(void* machtnichts)
+void PX4AnalogIn::init()
 {
 	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
-        hal.scheduler->panic("Unable to open " ADC0_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
@@ -223,7 +223,7 @@ void PX4AnalogIn::next_stop_pin(void)
         PX4::PX4AnalogSource *c = _channels[idx];
         if (c && c->_stop_pin != -1) {
             // found another stop pin
-            _stop_pin_change_time = hal.scheduler->millis();
+            _stop_pin_change_time = AP_HAL::millis();
             _current_stop_pin_i = idx;
 
             // set that pin high
@@ -249,7 +249,7 @@ void PX4AnalogIn::next_stop_pin(void)
 void PX4AnalogIn::_timer_tick(void)
 {
     // read adc at 100Hz
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     uint32_t delta_t = now - _last_run;
     if (delta_t < 10000) {
         return;
@@ -269,7 +269,7 @@ void PX4AnalogIn::_timer_tick(void)
     if (ret > 0) {
         // match the incoming channels to the currently active pins
         for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
             if (buf_adc[i].am_channel == 4) {
                 // record the Vcc value for later use in
                 // voltage_average_ratiometric()
@@ -288,7 +288,7 @@ void PX4AnalogIn::_timer_tick(void)
                     // the stop pin has been settling for enough time
                     if (c->_stop_pin == -1 || 
                         (_current_stop_pin_i == j &&
-                         hal.scheduler->millis() - _stop_pin_change_time > c->_settle_time_ms)) {
+                         AP_HAL::millis() - _stop_pin_change_time > c->_settle_time_ms)) {
                         c->_add_value(buf_adc[i].am_data, _board_voltage);
                         if (c->_stop_pin != -1 && _current_stop_pin_i == j) {
                             next_stop_pin();
@@ -325,7 +325,7 @@ void PX4AnalogIn::_timer_tick(void)
     }
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     // check for new servorail data on FMUv2
     if (_servorail_handle != -1) {
         struct servorail_status_s servorail;

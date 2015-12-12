@@ -54,7 +54,7 @@ void AP_Airspeed_I2C::_measure(void)
 {
     _measurement_started_ms = 0;
     if (hal.i2c->writeRegisters(I2C_ADDRESS_MS4525DO, 0, 0, NULL) == 0) {
-        _measurement_started_ms = hal.scheduler->millis();
+        _measurement_started_ms = AP_HAL::millis();
     }
 }
 
@@ -98,7 +98,7 @@ void AP_Airspeed_I2C::_collect(void)
 	_pressure = diff_press_PSI * PSI_to_Pa;
 	_temperature = ((200.0f * dT_raw) / 2047) - 50;
 
-    _last_sample_time_ms = hal.scheduler->millis();
+    _last_sample_time_ms = AP_HAL::millis();
 }
 
 // 1kHz timer
@@ -114,7 +114,7 @@ void AP_Airspeed_I2C::_timer(void)
         i2c_sem->give();
         return;
     }
-    if ((hal.scheduler->millis() - _measurement_started_ms) > 10) {
+    if ((AP_HAL::millis() - _measurement_started_ms) > 10) {
         _collect();
         // start a new measurement
         _measure();
@@ -125,7 +125,7 @@ void AP_Airspeed_I2C::_timer(void)
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
 {
-    if ((hal.scheduler->millis() - _last_sample_time_ms) > 100) {
+    if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
     pressure = _pressure;
@@ -135,7 +135,7 @@ bool AP_Airspeed_I2C::get_differential_pressure(float &pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_I2C::get_temperature(float &temperature)
 {
-    if ((hal.scheduler->millis() - _last_sample_time_ms) > 100) {
+    if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
     temperature = _temperature;

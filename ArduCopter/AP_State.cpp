@@ -43,15 +43,15 @@ void Copter::set_simple_mode(uint8_t b)
     if(ap.simple_mode != b){
         if(b == 0){
             Log_Write_Event(DATA_SET_SIMPLE_OFF);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Simple:OFF");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode off");
         }else if(b == 1){
             Log_Write_Event(DATA_SET_SIMPLE_ON);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Simple:ON");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SIMPLE mode on");
         }else{
             // initialise super simple heading
             update_super_simple_bearing(true);
             Log_Write_Event(DATA_SET_SUPERSIMPLE_ON);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SuperSimple:ON");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
         }
         ap.simple_mode = b;
     }
@@ -114,11 +114,15 @@ void Copter::set_pre_arm_rc_check(bool b)
     }
 }
 
-void Copter::set_using_interlock(bool b)
+void Copter::update_using_interlock()
 {
-    if(ap.using_interlock != b) {
-        ap.using_interlock = b;
-    }
+#if FRAME_CONFIG == HELI_FRAME
+    // helicopters are always using motor interlock
+    ap.using_interlock = true;
+#else
+    // check if we are using motor interlock control on an aux switch
+    ap.using_interlock = check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK);
+#endif
 }
 
 void Copter::set_motor_emergency_stop(bool b)

@@ -119,7 +119,7 @@ AP_Compass_Backend *AP_Compass_HMC5843::_detect(Compass &compass,
 bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 {
     if (_bus->register_read(address, value) != 0) {
-        _retry_time = hal.scheduler->millis() + 1000;
+        _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
     return true;
@@ -129,7 +129,7 @@ bool AP_Compass_HMC5843::read_register(uint8_t address, uint8_t *value)
 bool AP_Compass_HMC5843::write_register(uint8_t address, uint8_t value)
 {
     if (_bus->register_write(address, value) != 0) {
-        _retry_time = hal.scheduler->millis() + 1000;
+        _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
     return true;
@@ -142,7 +142,7 @@ bool AP_Compass_HMC5843::read_raw()
 
     if (_bus->read_raw(&rv) != 0) {
         _bus->set_high_speed(false);
-        _retry_time = hal.scheduler->millis() + 1000;
+        _retry_time = AP_HAL::millis() + 1000;
         return false;
     }
 
@@ -178,7 +178,7 @@ void AP_Compass_HMC5843::accumulate(void)
         return;
     }
 
-   uint32_t tnow = hal.scheduler->micros();
+   uint32_t tnow = AP_HAL::micros();
    if (_accum_count != 0 && (tnow - _last_accum_time) < 13333) {
 	  // the compass gets new data at 75Hz
 	  return;
@@ -439,11 +439,11 @@ void AP_Compass_HMC5843::read()
         return;
     }
     if (_retry_time != 0) {
-        if (hal.scheduler->millis() < _retry_time) {
+        if (AP_HAL::millis() < _retry_time) {
             return;
         }
         if (!re_initialise()) {
-            _retry_time = hal.scheduler->millis() + 1000;
+            _retry_time = AP_HAL::millis() + 1000;
             _bus->set_high_speed(false);
             return;
         }

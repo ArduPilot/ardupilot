@@ -28,23 +28,9 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
-    // @Param: ROL_MAX
-    // @DisplayName: Swash Roll Angle Max
-    // @Description: Maximum roll angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("ROL_MAX", 1, AP_MotorsHeli, _roll_max, AP_MOTORS_HELI_SWASH_ROLL_MAX),
+    // 1 was ROL_MAX which has been replaced by CYC_MAX
 
-    // @Param: PIT_MAX
-    // @DisplayName: Swash Pitch Angle Max
-    // @Description: Maximum pitch angle of the swash plate
-    // @Range: 0 18000
-    // @Units: Centi-Degrees
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("PIT_MAX", 2, AP_MotorsHeli, _pitch_max, AP_MOTORS_HELI_SWASH_PITCH_MAX),
+    // 2 was PIT_MAX which has been replaced by CYC_MAX
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
@@ -75,10 +61,10 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
-    // @Description: Pass radio inputs directly to servos for set-up. Do not set this manually!
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Manual servo override for swash set-up. Do not set this manually!
+    // @Values: 0:Disabled,1:Passthrough,2:Max collective,3:Mid collective,4:Min collective
     // @User: Standard
-    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_manual, 0),
+    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
     // @Param: GOV_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
@@ -153,6 +139,23 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
 
+    // @Param: CYC_MAX
+    // @DisplayName: Cyclic Pitch Angle Max
+    // @Description: Maximum pitch angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
+
+    // @Param: SV_TEST
+    // @DisplayName: Boot-up Servo Test Cycles
+    // @Description: Number of cycles to run servo test on boot-up
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
+
     AP_GROUPEND
 };
 
@@ -166,8 +169,11 @@ void AP_MotorsHeli::Init()
     // set update rate
     set_update_rate(_speed_hz);
 
+    // load boot-up servo test cycles into counter to be consumed
+    _servo_test_cycle_counter = _servo_test;
+
     // ensure inputs are not passed through to servos on start-up
-    _servo_manual = 0;
+    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
 
     // initialise Servo/PWM ranges and endpoints
     init_outputs();
@@ -198,6 +204,7 @@ void AP_MotorsHeli::output()
     update_throttle_filter();
 
     if (_flags.armed) {
+        calculate_armed_scalars();
         if (!_flags.interlock) {
             output_armed_zero_throttle();
         } else if (_flags.stabilizing) {
@@ -214,7 +221,7 @@ void AP_MotorsHeli::output()
 void AP_MotorsHeli::output_armed_stabilizing()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -226,7 +233,7 @@ void AP_MotorsHeli::output_armed_stabilizing()
 void AP_MotorsHeli::output_armed_not_stabilizing()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -240,7 +247,7 @@ void AP_MotorsHeli::output_armed_not_stabilizing()
 void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_manual == 1) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
     }
 
@@ -252,12 +259,48 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    // if manual override (i.e. when setting up swash), pass pilot commands straight through to swash
-    if (_servo_manual == 1) {
-        _roll_control_input = _roll_radio_passthrough;
-        _pitch_control_input = _pitch_radio_passthrough;
-        _throttle_control_input = _throttle_radio_passthrough;
-        _yaw_control_input = _yaw_radio_passthrough;
+    if (_servo_test_cycle_counter > 0){
+        // perform boot-up servo test cycle if enabled
+        servo_test();
+    } else {
+        // manual override (i.e. when setting up swash)
+        switch (_servo_mode) {
+            case SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH:
+                // pass pilot commands straight through to swash
+                _roll_control_input = _roll_radio_passthrough;
+                _pitch_control_input = _pitch_radio_passthrough;
+                _throttle_control_input = _throttle_radio_passthrough;
+                _yaw_control_input = _yaw_radio_passthrough;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_CENTER:
+                // fixate mid collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = _collective_mid_pwm;
+                _yaw_control_input = 0;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_MAX:
+                // fixate max collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = 1000;
+                _yaw_control_input = 4500;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_MIN:
+                // fixate min collective
+                _roll_control_input = 0;
+                _pitch_control_input = 0;
+                _throttle_control_input = 0;
+                _yaw_control_input = -4500;
+                break;
+            case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
+                // use servo_test function from child classes
+                servo_test();
+                break;
+            default:
+                // no manual override
+                break;
+        }
     }
 
     // ensure swash servo endpoints haven't been moved
@@ -352,7 +395,7 @@ void AP_MotorsHeli::reset_radio_passthrough()
 void AP_MotorsHeli::reset_flight_controls()
 {
     reset_radio_passthrough();
-    _servo_manual = 0;
+    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
     init_outputs();
     calculate_scalars();
 }

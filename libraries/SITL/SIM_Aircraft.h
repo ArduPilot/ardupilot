@@ -72,6 +72,15 @@ public:
     /* fill a sitl_fdm structure from the simulator state */
     void fill_fdm(struct sitl_fdm &fdm) const;
 
+    /* return normal distribution random numbers */
+    static double rand_normal(double mean, double stddev);
+
+    /* parse a home location string */
+    static bool parse_home(const char *home_str, Location &loc, float &yaw_degrees);
+
+    // get frame rate of model in Hz
+    float get_rate_hz(void) const { return rate_hz; }       
+    
 protected:
     Location home;
     Location location;
@@ -85,6 +94,10 @@ protected:
     float mass; // kg
     Vector3f accel_body; // m/s/s NED, body frame
     float airspeed; // m/s, apparent airspeed
+    float battery_voltage = -1;
+    float battery_current = 0;
+    float rpm1 = 0;
+    float rpm2 = 0;
 
     uint64_t time_now_us;
 
@@ -126,9 +139,6 @@ protected:
 
     /* return wall clock time in microseconds since 1970 */
     uint64_t get_wall_time_us(void) const;
-
-    /* return normal distribution random numbers */
-    double rand_normal(double mean, double stddev);
 
 private:
     uint64_t last_time_us = 0;

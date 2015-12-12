@@ -74,7 +74,7 @@ void AC_PID::filt_hz(float hz)
     _filt_hz.set(fabsf(hz));
 
     // sanity check _filt_hz
-    _filt_hz = max(_filt_hz, AC_PID_FILT_HZ_MIN);
+    _filt_hz = MAX(_filt_hz, AC_PID_FILT_HZ_MIN);
 }
 
 // set_input_filter_all - set input to PID controller

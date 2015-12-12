@@ -37,10 +37,18 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     // @Description:
     AP_GROUPINFO("FILT_HZ", 6, AC_HELI_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
+    // @Param: I_L_MIN
+    // @DisplayName: I-term Leak Minimum
+    // @Description: Point below which I-term will not leak down
+    // @Range: 0 4500
+    // @User: Advanced
+    AP_GROUPINFO("I_L_MIN", 7, AC_HELI_PID, _leak_min, AC_PID_LEAK_MIN),
+
     // @Param: AFF
     // @DisplayName: Acceleration FF FeedForward Gain
     // @Description: Acceleration FF Gain which produces an output value that is proportional to the change in demanded input
-    AP_GROUPINFO("AFF",    7, AC_HELI_PID, _aff, 0),
+    AP_GROUPINFO("AFF",    8, AC_HELI_PID, _aff, 0),
+
     AP_GROUPEND
 };
 
@@ -81,7 +89,14 @@ float AC_HELI_PID::get_aff(float requested_rate)
 float AC_HELI_PID::get_leaky_i(float leak_rate)
 {
     if(!is_zero(_ki) && !is_zero(_dt)){
-        _integrator -= (float)_integrator * leak_rate;
+
+        // integrator does not leak down below Leak Min
+        if (_integrator > _leak_min){
+            _integrator -= (float)(_integrator - _leak_min) * leak_rate;
+        } else if (_integrator < -_leak_min) {
+            _integrator -= (float)(_integrator + _leak_min) * leak_rate;
+        }
+
         _integrator += ((float)_input * _ki) * _dt;
         if (_integrator < -_imax) {
             _integrator = -_imax;

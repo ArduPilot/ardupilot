@@ -270,8 +270,8 @@ RC_Channel::zero_min_max()
 void
 RC_Channel::update_min_max()
 {
-    radio_min = min(radio_min.get(), radio_in);
-    radio_max = max(radio_max.get(), radio_in);
+    radio_min = MIN(radio_min.get(), radio_in);
+    radio_max = MAX(radio_max.get(), radio_in);
 }
 
 /*
@@ -370,8 +370,14 @@ RC_Channel::norm_input()
     float ret;
     int16_t reverse_mul = (_reverse==-1?-1:1);
     if (radio_in < radio_trim) {
+        if (radio_min >= radio_trim) {
+            return 0.0f;
+        }
         ret = reverse_mul * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
     } else {
+        if (radio_max <= radio_trim) {
+            return 0.0f;
+        }
         ret = reverse_mul * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
     }
     return constrain_float(ret, -1.0f, 1.0f);
@@ -510,4 +516,12 @@ uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
     }
     // invalid limit value, return trim
     return radio_trim;
+}
+
+/*
+  Return true if the channel is at trim and within the DZ
+*/
+bool RC_Channel::in_trim_dz()
+{
+    return is_bounded_int32(radio_in, radio_trim - _dead_zone, radio_trim + _dead_zone);
 }

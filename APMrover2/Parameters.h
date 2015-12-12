@@ -57,6 +57,9 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
+
+        // 100: Arming parameters
+        k_param_arming = 100,
                 
         // 110: Telemetry control
         //
@@ -192,6 +195,8 @@ public:
         k_param_L1_controller,
         k_param_steerController,
         k_param_barometer,
+
+        k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
         };

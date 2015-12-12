@@ -23,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_InertialSensor_UserInteract.h"
 #include <Filter/LowPassFilter.h>
+#include <Filter/LowPassFilter2p.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -73,8 +74,8 @@ public:
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
-    uint8_t register_gyro(void);
-    uint8_t register_accel(void);
+    uint8_t register_gyro(uint16_t raw_sample_rate_hz);
+    uint8_t register_accel(uint16_t raw_sample_rate_hz);
 
     // perform accelerometer calibration including providing user instructions
     // and feedback
@@ -225,15 +226,17 @@ public:
     void set_delta_velocity(uint8_t instance, float deltavt, const Vector3f &deltav);
     void set_delta_angle(uint8_t instance, const Vector3f &deltaa);
 
-    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id);
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
+    AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
+
+    void detect_backends(void);
 
 private:
 
     // load backend drivers
     void _add_backend(AP_InertialSensor_Backend *backend);
-    void _detect_backends(void);
     void _start_backends();
-    AP_InertialSensor_Backend *_find_backend(int16_t backend_id);
+    AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
     // gyro initialisation
     void _init_gyro();
@@ -281,6 +284,14 @@ private:
     // time accumulator for delta velocity accumulator
     float _delta_velocity_acc_dt[INS_MAX_INSTANCES];
 
+    // Low Pass filters for gyro and accel
+    LowPassFilter2pVector3f _accel_filter[INS_MAX_INSTANCES];
+    LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
+    Vector3f _accel_filtered[INS_MAX_INSTANCES];
+    Vector3f _gyro_filtered[INS_MAX_INSTANCES];
+    bool _new_accel_data[INS_MAX_INSTANCES];
+    bool _new_gyro_data[INS_MAX_INSTANCES];
+    
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
@@ -301,8 +312,8 @@ private:
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
 
     // accelerometer and gyro raw sample rate in units of Hz
-    uint32_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
-    uint32_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
+    uint16_t _accel_raw_sample_rates[INS_MAX_INSTANCES];
+    uint16_t _gyro_raw_sample_rates[INS_MAX_INSTANCES];
 
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
@@ -387,6 +398,7 @@ private:
 #include "AP_InertialSensor_MPU9150.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_HIL.h"
+#include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_UserInteract_Stream.h"
 #include "AP_InertialSensor_UserInteract_MAVLink.h"
 

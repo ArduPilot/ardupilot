@@ -32,14 +32,6 @@ public:
 
     bool        update();
 
-    bool        gyro_sample_available() {
-        return _gyro_sample_available;
-    };
-
-    bool        accel_sample_available() {
-        return _accel_sample_available;
-    };
-
     static AP_InertialSensor_Backend *      detect(AP_InertialSensor &imu);
 
 private:
@@ -63,9 +55,6 @@ private:
     AP_HAL::DigitalSource *         _drdy_pin_a;
     int                             _drdy_pin_num_g;
     AP_HAL::DigitalSource *         _drdy_pin_g;
-
-    bool                            _gyro_sample_available;
-    bool                            _accel_sample_available;
 
     bool                            _accel_data_ready();
     bool                            _gyro_data_ready();
@@ -96,21 +85,6 @@ private:
 
     void                            _read_data_transaction_a();
     void                            _read_data_transaction_g();
-
-    /* support for updating filter at runtime */
-    int16_t         _last_gyro_filter_hz;
-    int16_t         _last_accel_filter_hz;
-
-    /* change the filter frequency */
-    void            _set_accel_filter(uint8_t filter_hz);
-    void            _set_gyro_filter(uint8_t filter_hz);
-
-    Vector3f        _accel_filtered;
-    Vector3f        _gyro_filtered;
-
-    /* Low Pass filters for gyro and accel */
-    LowPassFilter2pVector3f         _accel_filter;
-    LowPassFilter2pVector3f         _gyro_filter;
 
 #if LSM9DS0_DEBUG
     void        _dump_registers();

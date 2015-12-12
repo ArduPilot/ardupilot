@@ -89,7 +89,7 @@ void ToneAlarm::stop()
 
 bool ToneAlarm::play()
 {
-    uint16_t cur_time = hal.scheduler->millis();
+    uint16_t cur_time = AP_HAL::millis();
     if(tune_num != prev_tune_num){
         tune_changed = true;
         return true;

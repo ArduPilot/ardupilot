@@ -45,12 +45,15 @@ public:
         uint8_t                instance;        // the instance number of this RPM
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
+        float                  signal_quality;  // synthetic quality metric 
     };
 
     // parameters for each instance
     AP_Int8  _type[RPM_MAX_INSTANCES];
     AP_Float _scaling[RPM_MAX_INSTANCES];
     AP_Float _maximum[RPM_MAX_INSTANCES];
+    AP_Float _minimum[RPM_MAX_INSTANCES];
+    AP_Float _quality_min[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
     
@@ -75,7 +78,16 @@ public:
         return state[instance].rate_rpm;
     }
 
+    /*
+      return signal quality for a sensor.
+     */
+    float get_signal_quality(uint8_t instance) const {
+        return state[instance].signal_quality;
+    }
+
     bool healthy(uint8_t instance) const;
+
+    bool enabled(uint8_t instance) const;
 
 private:
     RPM_State state[RPM_MAX_INSTANCES];

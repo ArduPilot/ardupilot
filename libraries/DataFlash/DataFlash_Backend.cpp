@@ -4,6 +4,28 @@
 
 extern const AP_HAL::HAL& hal;
 
+DataFlash_Backend::DataFlash_Backend(DataFlash_Class &front,
+                                     class DFMessageWriter_DFLogStart *writer) :
+    _front(front),
+    _startup_messagewriter(writer)
+{
+    writer->set_dataflash_backend(this);
+}
+
+uint8_t DataFlash_Backend::num_types() const
+{
+    return _front._num_types;
+}
+
+const struct LogStructure *DataFlash_Backend::structure(uint8_t num) const
+{
+    return _front.structure(num);
+}
+
+DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle_message_writer() {
+    return _front._vehicle_messages;
+}
+
 void DataFlash_Backend::periodic_10Hz(const uint32_t now)
 {
 }
@@ -16,7 +38,7 @@ void DataFlash_Backend::periodic_fullrate(const uint32_t now)
 
 void DataFlash_Backend::periodic_tasks()
 {
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
         periodic_1Hz(now);
         _last_periodic_1Hz = now;
@@ -36,6 +58,10 @@ void DataFlash_Backend::internal_error() {
 #endif
 }
 
+void DataFlash_Backend::set_mission(const AP_Mission *mission) {
+    _startup_messagewriter->set_mission(mission);
+}
+
 // this method can be overridden to do extra things with your buffer.
 // for example, in DataFlash_MAVLink we may push messages into the UART.
 void DataFlash_Backend::push_log_blocks() {
@@ -46,7 +72,7 @@ void DataFlash_Backend::push_log_blocks() {
 // for other messages to go out to the log
 bool DataFlash_Backend::WriteBlockCheckStartupMessages()
 {
-    if (_front._startup_messagewriter.fmt_done()) {
+    if (_startup_messagewriter->fmt_done()) {
         return true;
     }
 
@@ -59,7 +85,7 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
     // caller hoping to write blocks out.  Push out log blocks - we
     // might end up clearing the buffer.....
     push_log_blocks();
-    if (_front._startup_messagewriter.fmt_done()) {
+    if (_startup_messagewriter->fmt_done()) {
         return true;
     }
 
@@ -71,11 +97,11 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
 void DataFlash_Backend::WriteMoreStartupMessages()
 {
 
-    if (_front._startup_messagewriter.finished()) {
+    if (_startup_messagewriter->finished()) {
         return;
     }
 
     _writing_startup_messages = true;
-    _front._startup_messagewriter.process();
+    _startup_messagewriter->process();
     _writing_startup_messages = false;
 }

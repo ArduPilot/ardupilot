@@ -185,7 +185,7 @@ void GCS_MAVLINK::handle_log_send_listing(DataFlash_Class &dataflash)
         // no space
         return;
     }
-    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+    if (AP_HAL::millis() - last_heartbeat_time > 3000) {
         // give a heartbeat a chance
         return;
     }
@@ -215,7 +215,7 @@ bool GCS_MAVLINK::handle_log_send_data(DataFlash_Class &dataflash)
         // no space
         return false;
     }
-    if (hal.scheduler->millis() - last_heartbeat_time > 3000) {
+    if (AP_HAL::millis() - last_heartbeat_time > 3000) {
         // give a heartbeat a chance
         return false;
     }

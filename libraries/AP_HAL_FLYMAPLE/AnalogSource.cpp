@@ -134,7 +134,7 @@ void FLYMAPLEAnalogSource::setup_read() {
         hal.gpio->write(digital_pin, 1);
     }
     if (_settle_time_ms != 0) {
-        _read_start_time_ms = hal.scheduler->millis();
+        _read_start_time_ms = AP_HAL::millis();
     }
     adc_reg_map *regs = ADC1->regs;
     adc_set_reg_seqlen(ADC1, 1);
@@ -158,7 +158,7 @@ void FLYMAPLEAnalogSource::stop_read() {
 
 bool FLYMAPLEAnalogSource::reading_settled() 
 {
-    if (_settle_time_ms != 0 && (hal.scheduler->millis() - _read_start_time_ms) < _settle_time_ms) {
+    if (_settle_time_ms != 0 && (AP_HAL::millis() - _read_start_time_ms) < _settle_time_ms) {
         return false;
     }
     return true;

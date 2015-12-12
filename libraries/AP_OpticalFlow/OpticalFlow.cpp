@@ -75,7 +75,7 @@ void OpticalFlow::update(void)
         backend->update();
     }
     // only healthy if the data is less than 0.5s old
-    _flags.healthy = (hal.scheduler->millis() - _last_update_ms < 500);
+    _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
 void OpticalFlow::setHIL(const struct OpticalFlow::OpticalFlow_state &state)

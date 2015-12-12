@@ -19,7 +19,6 @@ LIBRARIES += AP_AHRS
 LIBRARIES += AP_NavEKF
 LIBRARIES += AP_Airspeed
 LIBRARIES += AP_Vehicle
-LIBRARIES += AP_ADC_AnalogSource
 LIBRARIES += AP_Rally
 LIBRARIES += AP_BattMonitor
 LIBRARIES += AP_RangeFinder

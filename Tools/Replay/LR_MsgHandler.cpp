@@ -58,7 +58,7 @@ void LR_MsgHandler_ARM::process_message(uint8_t *msg)
     hal.util->set_soft_armed(ArmState);
     printf("Armed state: %u at %lu\n", 
            (unsigned)ArmState,
-           (unsigned long)hal.scheduler->millis());
+           (unsigned long)AP_HAL::millis());
 }
 
 
@@ -86,7 +86,7 @@ void LR_MsgHandler_ATT::process_message(uint8_t *msg)
 void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
 {
     wait_timestamp_from_msg(msg);
-    check_state.time_us = hal.scheduler->micros64();
+    check_state.time_us = AP_HAL::micros64();
     attitude_from_msg(msg, check_state.euler, "Roll", "Pitch", "Yaw");
     check_state.euler *= radians(1);
     location_from_msg(msg, check_state.pos, "Lat", "Lng", "Alt");
@@ -114,11 +114,11 @@ void LR_MsgHandler_Event::process_message(uint8_t *msg)
     if (id == DATA_ARMED) {
         hal.util->set_soft_armed(true);
         printf("Armed at %lu\n", 
-               (unsigned long)hal.scheduler->millis());
+               (unsigned long)AP_HAL::millis());
     } else if (id == DATA_DISARMED) {
         hal.util->set_soft_armed(false);
         printf("Disarmed at %lu\n", 
-               (unsigned long)hal.scheduler->millis());
+               (unsigned long)AP_HAL::millis());
     }
 }
 

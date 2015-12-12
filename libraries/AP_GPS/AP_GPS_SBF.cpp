@@ -42,10 +42,10 @@ do {                                            \
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
-{	
+{
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
-	
-	port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
+
+    port->write((const uint8_t*)_initialisation_blob[0], strlen(_initialisation_blob[0]));
 }
 
 // Process all bytes available from the stream
@@ -53,16 +53,21 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_SBF::read(void)
 {
-	uint32_t now = hal.scheduler->millis();
-	
-	if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
-		if (now > _init_blob_time) {
-			port->write((const uint8_t*)_initialisation_blob[_init_blob_index], strlen(_initialisation_blob[_init_blob_index]));
-			_init_blob_time = now + 70;
-			_init_blob_index++;
-		}
-	}
-	
+    uint32_t now = AP_HAL::millis();
+
+    if (_init_blob_index < (sizeof(_initialisation_blob) / sizeof(_initialisation_blob[0]))) {
+        if (validcommand) {
+            _init_blob_index++;
+            validcommand = false;
+            _init_blob_time = 0;
+        }
+
+        if (now > _init_blob_time) {
+            port->write((const uint8_t*)_initialisation_blob[_init_blob_index], strlen(_initialisation_blob[_init_blob_index]));
+            _init_blob_time = now + 1000;
+        }
+    }
+
     bool ret = false;
     while (port->available() > 0) {
         uint8_t temp = port->read();
@@ -82,11 +87,17 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
+            } else if (temp == '$') {
+                // this is a command response
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:
             if (temp == SBF_PREAMBLE2) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::CRC1;
+            } else if (temp == 'R') {
+                validcommand = true;
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
             }
             else
             {
@@ -156,7 +167,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         return;
     }
 
-    uint64_t now = hal.scheduler->micros64();
+    uint64_t now = AP_HAL::micros64();
 
     struct log_GPS_SBF_EVENT header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_SBF_EVENT_MSG),
@@ -198,8 +209,8 @@ AP_GPS_SBF::process_message(void)
             state.time_week = temp.WNc;
             state.time_week_ms = (uint32_t)(temp.TOW);
         }
-		
-		state.last_gps_time_ms = hal.scheduler->millis();
+
+        state.last_gps_time_ms = AP_HAL::millis();
 
         state.hdop = last_hdop;
 
@@ -208,19 +219,19 @@ AP_GPS_SBF::process_message(void)
             state.velocity.x = (float)(temp.Vn);
             state.velocity.y = (float)(temp.Ve);
             state.velocity.z = (float)(-temp.Vu);
-			
-			state.have_vertical_velocity = true;
+
+            state.have_vertical_velocity = true;
 
             float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
             state.ground_speed = (float)safe_sqrt(ground_vector_sq);
 
             state.ground_course_cd = (int32_t)(100 * ToDeg(atan2f(state.velocity[1], state.velocity[0])));
             state.ground_course_cd = wrap_360_cd(state.ground_course_cd);
-			
-			state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
-			state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
-			state.have_horizontal_accuracy = true;
-			state.have_vertical_accuracy = true;
+
+            state.horizontal_accuracy = (float)temp.HAccuracy * 0.01f;
+            state.vertical_accuracy = (float)temp.VAccuracy * 0.01f;
+            state.have_horizontal_accuracy = true;
+            state.have_vertical_accuracy = true;
         }
 
         // Update position state (dont use −2·10^10)
@@ -277,8 +288,8 @@ AP_GPS_SBF::process_message(void)
         const msg4001 &temp = sbf_msg.data.msg4001u;
 
         last_hdop = temp.HDOP;
-		
-		state.hdop = last_hdop;
+
+        state.hdop = last_hdop;
     }
 
     return false;
@@ -289,7 +300,7 @@ AP_GPS_SBF::inject_data(uint8_t *data, uint8_t len)
 {
 
     if (port->txspace() > len) {
-        last_injected_data_ms = hal.scheduler->millis();
+        last_injected_data_ms = AP_HAL::millis();
         port->write(data, len);
     } else {
         Debug("SBF: Not enough TXSPACE");

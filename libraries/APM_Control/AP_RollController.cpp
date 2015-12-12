@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 */
 int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
@@ -103,7 +103,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     // No conversion is required for K_D
 	float ki_rate = gains.I * gains.tau;
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
 	
@@ -137,10 +137,10 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
-                integrator_delta = max(integrator_delta , 0);
+                integrator_delta = MAX(integrator_delta , 0);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                 integrator_delta = min(integrator_delta, 0);
+                 integrator_delta = MIN(integrator_delta, 0);
             }
 			_pid_info.I += integrator_delta;
 		}

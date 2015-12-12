@@ -13,6 +13,16 @@ testdir=os.path.dirname(os.path.realpath(__file__))
 HOME=mavutil.location(40.071374969556928,-105.22978898137808,1583.702759,246)
 homeloc = None
 
+def arm_rover(mavproxy, mav):
+    # wait for EKF to settle
+    wait_seconds(mav, 15)
+
+    mavproxy.send('arm throttle\n')
+    mavproxy.expect('ARMED')
+
+    print("ROVER ARMED")
+    return True
+
 def drive_left_circuit(mavproxy, mav):
     '''drive a left circuit, 50m on a side'''
     mavproxy.send('switch 6\n')
@@ -56,7 +66,7 @@ def drive_mission(mavproxy, mav, filename):
     global homeloc
     print("Driving mission %s" % filename)
     mavproxy.send('wp load %s\n' % filename)
-    mavproxy.expect('flight plan received')
+    mavproxy.expect('Flight plan received')
     mavproxy.send('wp list\n')
     mavproxy.expect('Requesting [0-9]+ waypoints')
     mavproxy.send('switch 4\n') # auto mode
@@ -142,6 +152,9 @@ def drive_APMrover2(viewerip=None, map=False):
         mav.wait_gps_fix()
         homeloc = mav.location()
         print("Home location: %s" % homeloc)
+        if not arm_rover(mavproxy, mav):
+            print("Failed to ARM")
+            failed = True
         if not drive_mission(mavproxy, mav, os.path.join(testdir, "rover1.txt")):
             print("Failed mission")
             failed = True

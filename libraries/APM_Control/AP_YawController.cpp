@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
 int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
@@ -99,7 +99,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 	    // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aspd_min) + float(aparm.airspeed_max));
 	}
-    rate_offset = (GRAVITY_MSS / max(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
+    rate_offset = (GRAVITY_MSS / MAX(aspeed , float(aspd_min))) * tanf(bank_angle) * cosf(bank_angle) * _K_FF;
 
     // Get body rate vector (radians/sec)
 	float omega_z = _ahrs.get_gyro().z;
@@ -131,10 +131,10 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 		{
 			// prevent the integrator from increasing if surface defln demand is above the upper limit
 			if (_last_out < -45) {
-                _integrator += max(integ_in * delta_time , 0);
+                _integrator += MAX(integ_in * delta_time , 0);
             } else if (_last_out > 45) {
                 // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                _integrator += min(integ_in * delta_time , 0);
+                _integrator += MIN(integ_in * delta_time , 0);
 			} else {
                 _integrator += integ_in * delta_time;
             }

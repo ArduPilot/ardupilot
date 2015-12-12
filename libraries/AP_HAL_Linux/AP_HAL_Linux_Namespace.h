@@ -19,6 +19,9 @@ namespace Linux {
     class Storage_FRAM;
     class DigitalSource;
     class DigitalSource_Sysfs;
+    class PWM_Sysfs;
+    class PWM_Sysfs_Bebop;
+    class PWM_Sysfs_Base;
     class RCInput;
     class RCInput_PRU;
     class RCInput_AioPRU;
@@ -33,6 +36,7 @@ namespace Linux {
     class RCOutput_Raspilot;
     class RCOutput_ZYNQ;
     class RCOutput_Bebop;
+    class RCOutput_Sysfs;
     class Semaphore;
     class Scheduler;
     class Util;

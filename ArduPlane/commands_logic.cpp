@@ -140,15 +140,15 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 #if GEOFENCE_ENABLED == ENABLED
         if (cmd.p1 != 2) {
             if (!geofence_set_enabled((bool) cmd.p1, AUTO_TOGGLED)) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to set fence enabled state to %u", cmd.p1);
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to set fence. Enabled state to %u", cmd.p1);
             } else {
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Set fence enabled state to %u", cmd.p1);
             }
         } else { //commanding to only disable floor
             if (! geofence_set_floor_enabled(false)) {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unabled to disable fence floor.\n");
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unabled to disable fence floor");
             } else {
-                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Fence floor disabled.\n");
+                gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Fence floor disabled");
             }
         }    
 #endif
@@ -294,9 +294,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     default:
         // error message
         if (AP_Mission::is_nav_cmd(cmd)) {
-            gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: Invalid or no current Nav cmd");
+            gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav. Invalid or no current nav cmd");
         }else{
-        gcs_send_text(MAV_SEVERITY_WARNING,"verify_conditon: Invalid or no current Condition cmd");
+        gcs_send_text(MAV_SEVERITY_WARNING,"Verify conditon. Invalid or no current condition cmd");
     }
         // return true so that we do not get stuck at this command
         return true;
@@ -522,7 +522,7 @@ bool Plane::verify_takeoff()
             if (! geofence_set_enabled(true, AUTO_TOGGLED)) {
                 gcs_send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
             } else {
-                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled. (autoenabled)");
+                gcs_send_text(MAV_SEVERITY_INFO, "Fence enabled (autoenabled)");
             }
         }
 #endif
@@ -567,7 +567,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
     
     if (auto_state.wp_distance <= acceptance_distance) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Waypoint #%i dist %um",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
@@ -575,7 +575,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // have we flown past the waypoint?
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed Waypoint #%i dist %um",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)get_distance(current_loc, next_WP_loc));
         return true;
@@ -599,7 +599,7 @@ bool Plane::verify_loiter_time()
             loiter.start_time_ms = millis();
         }
     } else if ((millis() - loiter.start_time_ms) > loiter.time_max_ms) {
-        gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: LOITER time complete");
+        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER time complete");
         return true;
     }
     return false;
@@ -610,7 +610,7 @@ bool Plane::verify_loiter_turns()
     update_loiter();
     if (loiter.sum_cd > loiter.total_cd) {
         loiter.total_cd = 0;
-        gcs_send_text(MAV_SEVERITY_WARNING,"verify_nav: LOITER orbits complete");
+        gcs_send_text(MAV_SEVERITY_WARNING,"Verify nav: LOITER orbits complete");
         // clear the command queue;
         return true;
     }
@@ -692,9 +692,9 @@ bool Plane::verify_loiter_to_alt()
 bool Plane::verify_RTL()
 {
     update_loiter();
-	if (auto_state.wp_distance <= (uint32_t)max(g.waypoint_radius,0) || 
+	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
         nav_controller->reached_loiter_target()) {
-			gcs_send_text(MAV_SEVERITY_INFO,"Reached home");
+			gcs_send_text(MAV_SEVERITY_INFO,"Reached HOME");
 			return true;
     } else {
         return false;
@@ -756,9 +756,9 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     if (cmd.content.altitude_wait.wiggle_time != 0) {
         static uint32_t last_wiggle_ms;
         if (auto_state.idle_wiggle_stage == 0 &&
-            hal.scheduler->millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
+            AP_HAL::millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
             auto_state.idle_wiggle_stage = 1;
-            last_wiggle_ms = hal.scheduler->millis();
+            last_wiggle_ms = AP_HAL::millis();
         }
         // idle_wiggle_stage is updated in set_servos_idle()
     }
@@ -826,7 +826,7 @@ bool Plane::verify_change_alt()
 
 bool Plane::verify_within_distance()
 {
-    if (auto_state.wp_distance < max(condition_value,0)) {
+    if (auto_state.wp_distance < MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -982,7 +982,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Returning to Home");
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Returning to HOME");
         memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
         auto_rtl_command.content.location = 
             rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());

@@ -245,7 +245,7 @@ void RCInput_RPI::stop_dma()
 void RCInput_RPI::termination_handler(int signum)
 {
     stop_dma();
-    hal.scheduler->panic("Interrupted");
+    AP_HAL::panic("Interrupted");
 }
 
 
@@ -423,7 +423,7 @@ void RCInput_RPI::init_registers()
     clk_reg = (uint32_t*)map_peripheral(clk_base, RCIN_RPI_CLK_LEN);
 }
 
-void RCInput_RPI::init(void*)
+void RCInput_RPI::init()
 {
     
     init_registers();

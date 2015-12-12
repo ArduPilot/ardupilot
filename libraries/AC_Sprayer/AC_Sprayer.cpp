@@ -116,7 +116,7 @@ AC_Sprayer::update()
     ground_speed = pythagorous2(velocity.x,velocity.y);
 
     // get the current time
-    now = hal.scheduler->millis();
+    now = AP_HAL::millis();
 
     // check our speed vs the minimum
     if (ground_speed >= _speed_min) {
@@ -160,7 +160,7 @@ AC_Sprayer::update()
 
     // if spraying or testing update the pump servo position
     if (_flags.spraying || _flags.testing) {        
-        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, min(max(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
+        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, MIN(MAX(ground_speed * _pump_pct_1ms, 100 *_pump_min_pct),10000),0,10000);
         RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
     }else{
         // ensure sprayer and spinner are off

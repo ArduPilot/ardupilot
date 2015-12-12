@@ -20,7 +20,7 @@
 #define PWM_CHAN_COUNT 12
 
 class Linux::RCOutput_AioPRU : public AP_HAL::RCOutput {
-    void     init(void* machtnichts);
+    void     init();
     void     set_freq(uint32_t chmask, uint16_t freq_hz);
     uint16_t get_freq(uint8_t ch);
     void     enable_ch(uint8_t ch);

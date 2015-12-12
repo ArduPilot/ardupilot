@@ -293,23 +293,24 @@ private:
     AP_Int16 _gpsDelay_ms;          // effective average delay of GPS measurements relative to inertial measurement (msec)
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
     AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity
-    AP_Int8  _gpsVelInnovGate;      // Number of standard deviations applied to GPS velocity innovation consistency check
-    AP_Int8  _gpsPosInnovGate;      // Number of standard deviations applied to GPS position innovation consistency check
-    AP_Int8  _hgtInnovGate;         // Number of standard deviations applied to height innovation consistency check
-    AP_Int8  _magInnovGate;         // Number of standard deviations applied to magnetometer innovation consistency check
-    AP_Int8  _tasInnovGate;         // Number of standard deviations applied to true airspeed innovation consistency check
+    AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
+    AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
+    AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
+    AP_Int16  _magInnovGate;        // Percentage number of standard deviations applied to magnetometer innovation consistency check
+    AP_Int16  _tasInnovGate;        // Percentage number of standard deviations applied to true airspeed innovation consistency check
     AP_Int8  _magCal;               // Sets activation condition for in-flight magnetometer calibration
     AP_Int8 _gpsGlitchRadiusMax;    // Maximum allowed discrepancy between inertial and GPS Horizontal position before GPS glitch is declared : m
     AP_Float _flowNoise;            // optical flow rate measurement noise
-    AP_Int8  _flowInnovGate;        // Number of standard deviations applied to optical flow innovation consistency check
+    AP_Int16  _flowInnovGate;       // Percentage number of standard deviations applied to optical flow innovation consistency check
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
-    AP_Int8  _rngInnovGate;         // Number of standard deviations applied to range finder innovation consistency check
+    AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
     AP_Int8 _altSource;             // Primary alt source during optical flow navigation. 0 = use Baro, 1 = use range finder.
     AP_Float _gyroScaleProcessNoise;// gyro scale factor state process noise : 1/s
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
+    AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
@@ -337,7 +338,7 @@ private:
     const uint16_t gndEffectTimeout_ms; // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler;    // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma;     // RMS terrain gradient percentage assumed by the terrain height estimation
-    const uint8_t fusionTimeStep_ms;    // The nominal time interval between covariance predictions and measurement fusions in msec
+    const uint8_t fusionTimeStep_ms;    // The minimum time interval between covariance predictions and measurement fusions in msec
 };
 
 #endif //AP_NavEKF2

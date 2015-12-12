@@ -214,10 +214,10 @@ void Rover::startup_ground(void)
 {
     set_mode(INITIALISING);
     
-	gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> GROUND START");
+	gcs_send_text(MAV_SEVERITY_INFO,"<startup_ground> Ground start");
 
 	#if(GROUND_START_DELAY > 0)
-		gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With Delay");
+		gcs_send_text(MAV_SEVERITY_NOTICE,"<startup_ground> With delay");
 		delay(GROUND_START_DELAY * 1000);
 	#endif
 
@@ -241,7 +241,7 @@ void Rover::startup_ground(void)
     ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
     ins.set_dataflash(&DataFlash);
 
-	gcs_send_text(MAV_SEVERITY_INFO,"\n\n Ready to drive.");
+	gcs_send_text(MAV_SEVERITY_INFO,"Ready to drive");
 }
 
 /*
@@ -285,18 +285,22 @@ void Rover::set_mode(enum mode mode)
 		case HOLD:
 		case LEARNING:
 		case STEERING:
+            auto_throttle_mode = false;
 			break;
 
 		case AUTO:
+            auto_throttle_mode = true;
             rtl_complete = false;
             restart_nav();
 			break;
 
 		case RTL:
+            auto_throttle_mode = true;
 			do_RTL();
 			break;
 
         case GUIDED:
+            auto_throttle_mode = true;
             rtl_complete = false;
             /*
               when entering guided mode we set the target as the current
@@ -307,6 +311,7 @@ void Rover::set_mode(enum mode mode)
             break;
 
 		default:
+            auto_throttle_mode = true;
 			do_RTL();
 			break;
 	}
@@ -379,12 +384,12 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 
 void Rover::startup_INS_ground(void)
 {
-    gcs_send_text(MAV_SEVERITY_INFO, "Warming up ADC...");
+    gcs_send_text(MAV_SEVERITY_INFO, "Warming up ADC");
  	mavlink_delay(500);
 
 	// Makes the servos wiggle twice - about to begin INS calibration - HOLD LEVEL AND STILL!!
 	// -----------------------
-    gcs_send_text(MAV_SEVERITY_INFO, "Beginning INS calibration; do not move vehicle");
+    gcs_send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
 	mavlink_delay(1000);
 
     ahrs.init();
@@ -491,3 +496,51 @@ void Rover::frsky_telemetry_send(void)
     frsky_telemetry.send_frames((uint8_t)control_mode);
 }
 #endif
+
+/*
+  update AHRS soft arm state and log as needed
+ */
+void Rover::change_arm_state(void)
+{
+    Log_Arm_Disarm();
+    hal.util->set_soft_armed(arming.is_armed() &&
+                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+}
+
+/*
+  arm motors
+ */
+bool Rover::arm_motors(AP_Arming::ArmingMethod method)
+{
+    if (!arming.arm(method)) {
+        return false;
+    }
+
+    // only log if arming was successful
+    channel_throttle->enable_out();
+
+    change_arm_state();
+    return true;
+}
+
+/*
+  disarm motors
+ */
+bool Rover::disarm_motors(void)
+{
+    if (!arming.disarm()) {
+        return false;
+    }
+    if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+        channel_throttle->disable_out();
+    }
+    if (control_mode != AUTO) {
+        // reset the mission on disarm if we are not in auto
+        mission.reset();
+    }
+
+    //only log if disarming was successful
+    change_arm_state();
+
+    return true;
+}

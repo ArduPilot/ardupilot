@@ -18,11 +18,16 @@
  *       APM_Baro.cpp - barometer driver
  *
  */
-
-#include <AP_Math/AP_Math.h>
-#include <AP_Common/AP_Common.h>
 #include "AP_Baro.h"
+
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+
+#include "AP_Baro_BMP085.h"
+#include "AP_Baro_HIL.h"
+#include "AP_Baro_MS5611.h"
+#include "AP_Baro_PX4.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -100,11 +105,11 @@ void AP_Baro::calibrate()
     // the MS5611 reads quite a long way off for the first second,
     // leading to about 1m of error if we don't wait
     for (uint8_t i = 0; i < 10; i++) {
-        uint32_t tstart = hal.scheduler->millis();
+        uint32_t tstart = AP_HAL::millis();
         do {
             update();
-            if (hal.scheduler->millis() - tstart > 500) {
-                hal.scheduler->panic("PANIC: AP_Baro::read unsuccessful "
+            if (AP_HAL::millis() - tstart > 500) {
+                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [2]\r\n");
             }
             hal.scheduler->delay(10);
@@ -120,11 +125,11 @@ void AP_Baro::calibrate()
     const uint8_t num_samples = 5;
 
     for (uint8_t c = 0; c < num_samples; c++) {
-        uint32_t tstart = hal.scheduler->millis();
+        uint32_t tstart = AP_HAL::millis();
         do {
             update();
-            if (hal.scheduler->millis() - tstart > 500) {
-                hal.scheduler->panic("PANIC: AP_Baro::read unsuccessful "
+            if (AP_HAL::millis() - tstart > 500) {
+                AP_HAL::panic("PANIC: AP_Baro::read unsuccessful "
                         "for more than 500ms in AP_Baro::calibrate [3]\r\n");
             }
         } while (!healthy());
@@ -152,7 +157,7 @@ void AP_Baro::calibrate()
             return;
         }
     }
-    hal.scheduler->panic("AP_Baro: all sensors uncalibrated");
+    AP_HAL::panic("AP_Baro: all sensors uncalibrated");
 }
 
 /*
@@ -170,7 +175,7 @@ void AP_Baro::update_calibration()
         sensors[i].ground_temperature.set(get_calibration_temperature(i));
 
         // don't notify the GCS too rapidly or we flood the link
-        uint32_t now = hal.scheduler->millis();
+        uint32_t now = AP_HAL::millis();
         if (now - _last_notify_ms > 10000) {
             sensors[i].ground_pressure.notify();
             sensors[i].ground_temperature.notify();
@@ -245,7 +250,7 @@ float AP_Baro::get_climb_rate(void)
 void AP_Baro::set_external_temperature(float temperature)
 {
     _external_temperature = temperature;
-    _last_external_temperature_ms = hal.scheduler->millis();
+    _last_external_temperature_ms = AP_HAL::millis();
 }
 
 /*
@@ -254,7 +259,7 @@ void AP_Baro::set_external_temperature(float temperature)
 float AP_Baro::get_calibration_temperature(uint8_t instance) const
 {
     // if we have a recent external temperature then use it
-    if (_last_external_temperature_ms != 0 && hal.scheduler->millis() - _last_external_temperature_ms < 10000) {
+    if (_last_external_temperature_ms != 0 && AP_HAL::millis() - _last_external_temperature_ms < 10000) {
         return _external_temperature;
     }
     // if we don't have an external temperature then use the minimum
@@ -324,7 +329,7 @@ void AP_Baro::init(void)
     }
 #endif
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == NULL) {
-        hal.scheduler->panic("Baro: unable to initialise driver");
+        AP_HAL::panic("Baro: unable to initialise driver");
     }
 }
 
@@ -342,7 +347,7 @@ void AP_Baro::update(void)
 
     // consider a sensor as healthy if it has had an update in the
     // last 0.5 seconds
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
         sensors[i].healthy = (now - sensors[i].last_update_ms < 500) && !is_zero(sensors[i].pressure);
     }
@@ -398,7 +403,7 @@ void AP_Baro::accumulate(void)
 uint8_t AP_Baro::register_sensor(void)
 {
     if (_num_sensors >= BARO_MAX_INSTANCES) {
-        hal.scheduler->panic("Too many barometers");
+        AP_HAL::panic("Too many barometers");
     }
     return _num_sensors++;
 }

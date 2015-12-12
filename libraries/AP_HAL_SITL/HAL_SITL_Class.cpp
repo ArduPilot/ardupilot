@@ -31,10 +31,10 @@ static SITLRCOutput sitlRCOutput(&sitlState);
 static SITLAnalogIn sitlAnalogIn(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::EmptyGPIO emptyGPIO;
-static Empty::EmptySemaphore emptyI2Csemaphore;
-static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
-static Empty::EmptySPIDeviceManager emptySPI;
+static Empty::GPIO emptyGPIO;
+static Empty::Semaphore emptyI2Csemaphore;
+static Empty::I2CDriver emptyI2C(&emptyI2Csemaphore);
+static Empty::SPIDeviceManager emptySPI;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
@@ -71,16 +71,16 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
 
     _sitl_state->init(argc, argv);
-    scheduler->init(NULL);
+    scheduler->init();
     uartA->begin(115200);
 
-    rcin->init(NULL);
-    rcout->init(NULL);
+    rcin->init();
+    rcout->init();
 
-    //spi->init(NULL);
+    //spi->init();
     //i2c->begin();
     //i2c->setTimeout(100);
-    analogin->init(NULL);
+    analogin->init();
 
     callbacks->setup();
     scheduler->system_initialized();

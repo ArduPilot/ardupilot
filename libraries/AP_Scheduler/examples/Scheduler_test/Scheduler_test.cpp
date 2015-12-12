@@ -84,7 +84,7 @@ void SchedTest::ins_update(void)
  */
 void SchedTest::one_hz_print(void)
 {
-    hal.console->printf("one_hz: t=%lu\n", (unsigned long)hal.scheduler->millis());
+    hal.console->printf("one_hz: t=%lu\n", (unsigned long)AP_HAL::millis());
 }
 
 /*
@@ -92,7 +92,7 @@ void SchedTest::one_hz_print(void)
  */
 void SchedTest::five_second_call(void)
 {
-    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)hal.scheduler->millis(), ins_counter);
+    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), ins_counter);
 }
 
 /*

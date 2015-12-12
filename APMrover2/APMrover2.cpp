@@ -96,10 +96,6 @@ void Rover::setup()
 
     notify.init(false);
 
-    // rover does not use arming nor pre-arm checks
-    AP_Notify::flags.armed = true;
-    AP_Notify::flags.pre_arm_check = true;
-    AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.failsafe_battery = false;
     
     rssi.init();
@@ -118,7 +114,7 @@ void Rover::loop()
     // wait for an INS sample
     ins.wait_for_sample();
 
-    uint32_t timer = hal.scheduler->micros();
+    uint32_t timer = AP_HAL::micros();
 
     delta_us_fast_loop  = timer - fast_loopTimer_us;
     G_Dt                = delta_us_fast_loop * 1.0e-6f;
@@ -147,7 +143,8 @@ void Rover::loop()
 // update AHRS system
 void Rover::ahrs_update()
 {
-    hal.util->set_soft_armed(hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(arming.is_armed() &&
+                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
@@ -292,6 +289,11 @@ void Rover::one_second_loop(void)
     // cope with changes to aux functions
     update_aux();
 
+    // update notify flags
+    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    AP_Notify::flags.pre_arm_gps_check = true;
+    AP_Notify::flags.armed = arming.is_armed() || arming.arming_required() == AP_Arming::NO;
+
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -346,7 +348,8 @@ void Rover::update_GPS_10Hz(void)
 {
     have_position = ahrs.get_position(current_loc);
 
-    if (have_position && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1){
             ground_start_count--;
@@ -382,6 +385,10 @@ void Rover::update_GPS_10Hz(void)
             do_take_picture();
         }
 #endif
+
+        if (!hal.util->get_soft_armed()) {
+            update_home();
+        }
     }
 }
 

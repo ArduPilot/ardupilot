@@ -1,5 +1,6 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
@@ -90,9 +91,9 @@ void setup(void)
     {
         for(int16_t j = -180; j <= 180; j+=5)
         {
-            uint32_t t1 = hal.scheduler->micros();
+            uint32_t t1 = AP_HAL::micros();
             declination = AP_Declination::get_declination(i, j);
-            total_time += hal.scheduler->micros() - t1;
+            total_time += AP_HAL::micros() - t1;
             declination_test = get_declination(i, j);
             if(declination == declination_test)
             {

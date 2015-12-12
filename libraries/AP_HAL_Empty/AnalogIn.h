@@ -4,9 +4,9 @@
 
 #include "AP_HAL_Empty.h"
 
-class Empty::EmptyAnalogSource : public AP_HAL::AnalogSource {
+class Empty::AnalogSource : public AP_HAL::AnalogSource {
 public:
-    EmptyAnalogSource(float v);
+    AnalogSource(float v);
     float read_average();
     float read_latest();
     void set_pin(uint8_t p);
@@ -19,10 +19,10 @@ private:
     float _v;
 };
 
-class Empty::EmptyAnalogIn : public AP_HAL::AnalogIn {
+class Empty::AnalogIn : public AP_HAL::AnalogIn {
 public:
-    EmptyAnalogIn();
-    void init(void* implspecific);
+    AnalogIn();
+    void init();
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void);
 };

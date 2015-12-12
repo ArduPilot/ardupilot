@@ -86,6 +86,11 @@ T LowPassFilter2p<T>::apply(const T &sample) {
     return _filter.apply(sample, _params);
 }
 
+template <class T>
+void LowPassFilter2p<T>::reset(void) {
+    return _filter.reset();
+}
+
 /* 
  * Make an instances
  * Otherwise we have to move the constructor implementations to the header file :P
@@ -93,6 +98,5 @@ T LowPassFilter2p<T>::apply(const T &sample) {
 template class LowPassFilter2p<int>;
 template class LowPassFilter2p<long>;
 template class LowPassFilter2p<float>;
-template class LowPassFilter2p<double>;
 template class LowPassFilter2p<Vector2f>;
 template class LowPassFilter2p<Vector3f>;

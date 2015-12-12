@@ -3,6 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
+#include <DataFlash/DataFlash.h>
+
+const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _imu(imu),
@@ -55,7 +58,8 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
-                                                            const Vector3f &gyro)
+                                                            const Vector3f &gyro,
+                                                            uint64_t sample_us)
 {
     float dt;
 
@@ -87,6 +91,27 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     // save previous delta angle for coning correction
     _imu._last_delta_angle[instance] = delta_angle;
     _imu._last_raw_gyro[instance] = gyro;
+
+    _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
+    if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
+        _imu._gyro_filter[instance].reset();
+    }
+
+    _imu._new_gyro_data[instance] = true;
+
+    DataFlash_Class *dataflash = get_dataflash();
+    if (dataflash != NULL) {
+        uint64_t now = AP_HAL::micros64();
+        struct log_GYRO pkt = {
+            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GYR1_MSG+instance)),
+            time_us   : now,
+            sample_us : sample_us?sample_us:now,
+            GyrX      : gyro.x,
+            GyrY      : gyro.y,
+            GyrZ      : gyro.z
+        };
+        dataflash->WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 /*
@@ -108,7 +133,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
 }
 
 void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
-                                                             const Vector3f &accel)
+                                                             const Vector3f &accel,
+                                                             uint64_t sample_us)
 {
     float dt;
 
@@ -123,6 +149,27 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     // delta velocity
     _imu._delta_velocity_acc[instance] += accel * dt;
     _imu._delta_velocity_acc_dt[instance] += dt;
+
+    _imu._accel_filtered[instance] = _imu._accel_filter[instance].apply(accel);
+    if (_imu._accel_filtered[instance].is_nan() || _imu._accel_filtered[instance].is_inf()) {
+        _imu._accel_filter[instance].reset();
+    }
+
+    _imu._new_accel_data[instance] = true;
+
+    DataFlash_Class *dataflash = get_dataflash();
+    if (dataflash != NULL) {
+        uint64_t now = AP_HAL::micros64();
+        struct log_ACCEL pkt = {
+            LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ACC1_MSG+instance)),
+            time_us   : now,
+            sample_us : sample_us?sample_us:now,
+            AccX      : accel.x,
+            AccY      : accel.y,
+            AccZ      : accel.z
+        };
+        dataflash->WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
@@ -131,22 +178,10 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
     _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
-void AP_InertialSensor_Backend::_set_accel_raw_sample_rate(uint8_t instance,
-                                                           uint32_t rate)
-{
-    _imu._accel_raw_sample_rates[instance] = rate;
-}
-
 // set accelerometer error_count
 void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_t error_count)
 {
     _imu._accel_error_count[instance] = error_count;
-}
-
-void AP_InertialSensor_Backend::_set_gyro_raw_sample_rate(uint8_t instance,
-                                                          uint32_t rate)
-{
-    _imu._gyro_raw_sample_rates[instance] = rate;
 }
 
 // set gyro error_count
@@ -168,4 +203,46 @@ uint16_t AP_InertialSensor_Backend::get_sample_rate_hz(void) const
 void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature)
 {
     _imu._temperature[instance] = temperature;
+}
+
+/*
+  common gyro update function for all backends
+ */
+void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
+{    
+    hal.scheduler->suspend_timer_procs();
+
+    if (_imu._new_gyro_data[instance]) {
+        _publish_gyro(instance, _imu._gyro_filtered[instance]);
+        _imu._new_gyro_data[instance] = false;
+    }
+
+    // possibly update filter frequency
+    if (_last_gyro_filter_hz[instance] != _gyro_filter_cutoff()) {
+        _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
+        _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
+    }
+
+    hal.scheduler->resume_timer_procs();
+}
+
+/*
+  common accel update function for all backends
+ */
+void AP_InertialSensor_Backend::update_accel(uint8_t instance)
+{    
+    hal.scheduler->suspend_timer_procs();
+
+    if (_imu._new_accel_data[instance]) {
+        _publish_accel(instance, _imu._accel_filtered[instance]);
+        _imu._new_accel_data[instance] = false;
+    }
+    
+    // possibly update filter frequency
+    if (_last_accel_filter_hz[instance] != _accel_filter_cutoff()) {
+        _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());
+        _last_accel_filter_hz[instance] = _accel_filter_cutoff();
+    }
+
+    hal.scheduler->resume_timer_procs();
 }

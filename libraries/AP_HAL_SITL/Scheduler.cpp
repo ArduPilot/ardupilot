@@ -27,66 +27,22 @@ AP_HAL::MemberProc SITLScheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {NU
 uint8_t SITLScheduler::_num_io_procs = 0;
 bool SITLScheduler::_in_io_proc = false;
 
-struct timeval SITLScheduler::_sketch_start_time;
-
 SITLScheduler::SITLScheduler(SITL_State *sitlState) :
     _sitlState(sitlState),
-    stopped_clock_usec(0)
+    _stopped_clock_usec(0)
 {
 }
 
-void SITLScheduler::init(void *unused)
+void SITLScheduler::init()
 {
-    gettimeofday(&_sketch_start_time,NULL);
-}
-
-uint64_t SITLScheduler::_micros64()
-{
-    struct timeval tp;
-    gettimeofday(&tp,NULL);
-    uint64_t ret = 1.0e6*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
-                          (_sketch_start_time.tv_sec +
-                           (_sketch_start_time.tv_usec*1.0e-6)));
-    return ret;
-}
-
-uint64_t SITLScheduler::micros64()
-{
-    if (stopped_clock_usec) {
-        return stopped_clock_usec;
-    }
-    return _micros64();
-}
-
-uint32_t SITLScheduler::micros()
-{
-    return micros64() & 0xFFFFFFFF;
-}
-
-uint64_t SITLScheduler::millis64()
-{
-    if (stopped_clock_usec) {
-        return stopped_clock_usec/1000;
-    }
-    struct timeval tp;
-    gettimeofday(&tp,NULL);
-    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
-                          (_sketch_start_time.tv_sec +
-                           (_sketch_start_time.tv_usec*1.0e-6)));
-    return ret;
-}
-
-uint32_t SITLScheduler::millis()
-{
-    return millis64() & 0xFFFFFFFF;
 }
 
 void SITLScheduler::delay_microseconds(uint16_t usec)
 {
-    uint64_t start = micros64();
+    uint64_t start = AP_HAL::micros64();
     uint64_t dtime;
-    while ((dtime=(micros64() - start) < usec)) {
-        if (stopped_clock_usec) {
+    while ((dtime=(AP_HAL::micros64() - start) < usec)) {
+        if (_stopped_clock_usec) {
             _sitlState->wait_clock(start+usec);
         } else {
             usleep(usec - dtime);
@@ -171,7 +127,7 @@ bool SITLScheduler::system_initializing() {
 
 void SITLScheduler::system_initialized() {
     if (_initialized) {
-        panic(
+        AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");
     }
     int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
@@ -259,24 +215,12 @@ void SITLScheduler::_run_io_procs(bool called_from_isr)
     _in_io_proc = false;
 }
 
-void SITLScheduler::panic(const char *errormsg, ...)
-{
-    va_list ap;
-
-    va_start(ap, errormsg);
-    hal.console->vprintf(errormsg, ap);
-    va_end(ap);
-    hal.console->printf("\n");
-
-    for(;;);
-}
-
 /*
   set simulation timestamp
  */
 void SITLScheduler::stop_clock(uint64_t time_usec)
 {
-    stopped_clock_usec = time_usec;
+    _stopped_clock_usec = time_usec;
     _run_io_procs(false);
 }
 

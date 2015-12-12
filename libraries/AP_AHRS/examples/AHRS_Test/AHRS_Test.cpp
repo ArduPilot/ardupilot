@@ -5,7 +5,6 @@
 //
 
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -47,7 +46,7 @@ void loop(void)
 {
     static uint16_t counter;
     static uint32_t last_t, last_print, last_compass;
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     float heading = 0;
 
     if (last_t == 0) {

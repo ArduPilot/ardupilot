@@ -11,6 +11,7 @@
 #include "SPIDriver.h"
 #include "Storage.h"
 #include "UARTDriver.h"
+#include "system.h"
 
 class AP_HAL::HAL {
 public:
@@ -49,7 +50,9 @@ public:
         rcout(_rcout),
         scheduler(_scheduler),
         util(_util)
-    {}
+    {
+        AP_HAL::init();
+    }
 
     struct Callbacks {
         virtual void setup() = 0;

@@ -89,6 +89,6 @@ void LowPassFilter<T>::reset(T value) {
 template class LowPassFilter<int>;
 template class LowPassFilter<long>;
 template class LowPassFilter<float>;
-template class LowPassFilter<double>;
 template class LowPassFilter<Vector2f>;
 template class LowPassFilter<Vector3f>;
+

@@ -4,3 +4,4 @@ LIBRARIES += AP_Param
 LIBRARIES += AP_Progmem
 LIBRARIES += Filter
 LIBRARIES += StorageManager
+LIBRARIES += AP_ADC

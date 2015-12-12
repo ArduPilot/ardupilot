@@ -13,12 +13,8 @@
 class AP_HAL::Scheduler {
 public:
     Scheduler() {}
-    virtual void     init(void* implspecific) = 0;
+    virtual void     init() = 0;
     virtual void     delay(uint16_t ms) = 0;
-    virtual uint32_t millis() = 0;
-    virtual uint32_t micros() = 0;
-    virtual uint64_t millis64() = 0;
-    virtual uint64_t micros64() = 0;
 
     /*
       delay for the given number of microseconds. This needs to be as
@@ -56,13 +52,7 @@ public:
     virtual bool     system_initializing() = 0;
     virtual void     system_initialized() = 0;
 
-    virtual void     panic(const char *errormsg, ...) FORMAT(2, 3) NORETURN = 0;
     virtual void     reboot(bool hold_in_bootloader) = 0;
-
-    /**
-       optional function to set timer speed in Hz
-     */
-    virtual void     set_timer_speed(uint16_t speed_hz) {}
 
     /**
        optional function to stop clock at a given time, used by log replay

@@ -285,9 +285,9 @@ void AP_MotorsTri::output_armed_stabilizing()
         motor_out[AP_MOTORS_MOT_4] = apply_thrust_curve_and_volt_scaling(motor_out[AP_MOTORS_MOT_4], out_min, out_max);
 
         // ensure motors don't drop below a minimum value and stop
-        motor_out[AP_MOTORS_MOT_1] = max(motor_out[AP_MOTORS_MOT_1],    out_min);
-        motor_out[AP_MOTORS_MOT_2] = max(motor_out[AP_MOTORS_MOT_2],    out_min);
-        motor_out[AP_MOTORS_MOT_4] = max(motor_out[AP_MOTORS_MOT_4],    out_min);
+        motor_out[AP_MOTORS_MOT_1] = MAX(motor_out[AP_MOTORS_MOT_1],    out_min);
+        motor_out[AP_MOTORS_MOT_2] = MAX(motor_out[AP_MOTORS_MOT_2],    out_min);
+        motor_out[AP_MOTORS_MOT_4] = MAX(motor_out[AP_MOTORS_MOT_4],    out_min);
     }
 
     hal.rcout->cork();

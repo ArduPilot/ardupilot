@@ -23,8 +23,7 @@
 #define AP_MOTORS_HELI_SPEED_ANALOG_SERVOS      125     // update rate for analog servos
 
 // default swash min and max angles and positions
-#define AP_MOTORS_HELI_SWASH_ROLL_MAX           2500
-#define AP_MOTORS_HELI_SWASH_PITCH_MAX          2500
+#define AP_MOTORS_HELI_SWASH_CYCLIC_MAX         2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
@@ -99,7 +98,7 @@ public:
     //
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const;
+    virtual bool parameter_check(bool display_msg) const;
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
@@ -137,6 +136,9 @@ public:
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 
+    // calculate_armed_scalars - must be implemented by child classes
+    virtual void calculate_armed_scalars() = 0;
+    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -154,8 +156,22 @@ public:
     // reset_radio_passthrough used to reset all radio inputs to center
     void reset_radio_passthrough();
 
+    // servo_test - move servos through full range of movement
+    // to be overloaded by child classes, different vehicle types would have different movement patterns
+    virtual void servo_test() = 0;
+
     // output - sends commands to the motors
     void    output();
+
+    // manual servo modes (used for setup)
+    enum ServoControlModes {
+        SERVO_CONTROL_MODE_AUTOMATED,
+        SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH,
+        SERVO_CONTROL_MODE_MANUAL_MAX,
+        SERVO_CONTROL_MODE_MANUAL_CENTER,
+        SERVO_CONTROL_MODE_MANUAL_MIN,
+        SERVO_CONTROL_MODE_MANUAL_OSCILLATE,
+    };
 
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
@@ -196,12 +212,11 @@ protected:
     } _heliflags;
 
     // parameters
-    AP_Int16        _roll_max;                  // Maximum roll angle of the swash plate in centi-degrees
-    AP_Int16        _pitch_max;                 // Maximum pitch angle of the swash plate in centi-degrees
+    AP_Int16        _cyclic_max;                // Maximum cyclic angle of the swash plate in centi-degrees
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
-    AP_Int8         _servo_manual;              // Pass radio inputs directly to servos during set-up through mission planner
+    AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach full speed
@@ -211,6 +226,7 @@ protected:
     AP_Int16        _rsc_idle_output;           // Rotor control output while at idle
     AP_Int16        _rsc_power_low;             // throttle value sent to throttle servo at zero collective pitch
     AP_Int16        _rsc_power_high;            // throttle value sent to throttle servo at maximum collective pitch
+    AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
 
     // internal variables
     float           _rollFactor[AP_MOTORS_HELI_NUM_SWASHPLATE_SERVOS];
@@ -228,6 +244,7 @@ protected:
     int16_t         _throttle_radio_passthrough = 0; // throttle control PWM direct from radio, used for manual control
     int16_t         _yaw_radio_passthrough = 0;      // yaw control PWM direct from radio, used for manual control
     int16_t         _collective_range = 0;           // maximum absolute collective pitch range (500 - 1000)
+    uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
 };
 
 #endif  // AP_MOTORSHELI

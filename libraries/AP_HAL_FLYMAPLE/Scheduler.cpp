@@ -17,11 +17,7 @@
 
 #include <stdarg.h>
 
-#define millis libmaple_millis
-#define micros libmaple_micros
 #include "FlymapleWirish.h"
-#undef millis
-#undef micros
 
 // Flymaple: Force init to be called *first*, i.e. before static object allocation.
 // Otherwise, statically allocated objects (eg SerialUSB) that need libmaple may fail.
@@ -57,7 +53,7 @@ FLYMAPLEScheduler::FLYMAPLEScheduler() :
     _initialized(false)
 {}
 
-void FLYMAPLEScheduler::init(void* machtnichts)
+void FLYMAPLEScheduler::init()
 {
     delay_us(2000000); // Wait for startup so we have time to connect a new USB console
     // 1kHz interrupts from systick for normal timers
@@ -81,10 +77,10 @@ void FLYMAPLEScheduler::init(void* machtnichts)
 // This function may calls the _delay_cb to use up time
 void FLYMAPLEScheduler::delay(uint16_t ms)
 {    
-    uint32_t start = libmaple_micros();
+    uint32_t start = AP_HAL::micros();
     
     while (ms > 0) {
-        while ((libmaple_micros() - start) >= 1000) {
+        while ((AP_HAL::micros() - start) >= 1000) {
             ms--;
             if (ms == 0) break;
             start += 1000;
@@ -95,26 +91,6 @@ void FLYMAPLEScheduler::delay(uint16_t ms)
             }
         }
     }
-}
-
-uint32_t FLYMAPLEScheduler::millis() {
-    return libmaple_millis();
-}
-
-uint32_t FLYMAPLEScheduler::micros() {
-    return libmaple_micros();
-}
-
-uint64_t FLYMAPLEScheduler::millis64() {
-    return millis();
-}
-
-uint64_t FLYMAPLEScheduler::micros64() {
-    // this is slow, but solves the problem with logging uint64_t timestamps
-    uint64_t ret = millis();
-    ret *= 1000ULL;
-    ret += micros() % 1000;
-    return ret;
 }
 
 void FLYMAPLEScheduler::delay_microseconds(uint16_t us)
@@ -224,26 +200,10 @@ bool FLYMAPLEScheduler::system_initializing() {
 void FLYMAPLEScheduler::system_initialized()
 {
     if (_initialized) {
-        panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::system_initialized called"
                    "more than once");
     }
     _initialized = true;
-}
-
-void FLYMAPLEScheduler::panic(const char *errormsg, ...) {
-    /* Suspend timer processes. We still want the timer event to go off
-     * to run the _failsafe code, however. */
-    // REVISIT: not tested on FLYMAPLE
-    va_list ap;
-
-    _timer_suspended = true;
-
-    va_start(ap, errormsg);
-    hal.console->vprintf(errormsg, ap);
-    va_end(ap);
-    hal.console->printf("\n");
-
-    for(;;);
 }
 
 void FLYMAPLEScheduler::reboot(bool hold_in_bootloader) {

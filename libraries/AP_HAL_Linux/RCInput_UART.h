@@ -13,7 +13,7 @@ public:
     RCInput_UART(const char *path);
     ~RCInput_UART();
 
-    void init(void*) override;
+    void init() override;
     void _timer_tick(void) override;
 
 private:

@@ -57,7 +57,7 @@ float NavEKF2_core::faultScore(void) const
         score += hgtTestRatio-1.0f;
     }
     // If the tilt error is excessive this adds to the score
-    const float tiltErrThreshold = 0.1f;
+    const float tiltErrThreshold = 0.05f;
     if (tiltAlignComplete && yawAlignComplete && tiltErrFilt > tiltErrThreshold) {
         score += tiltErrFilt / tiltErrThreshold;
     }
@@ -67,14 +67,14 @@ float NavEKF2_core::faultScore(void) const
 // return data for debugging optical flow fusion
 void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
-    varFlow = max(flowTestRatio[0],flowTestRatio[1]);
+    varFlow = MAX(flowTestRatio[0],flowTestRatio[1]);
     gndOffset = terrainState;
     flowInnovX = innovOptFlow[0];
     flowInnovY = innovOptFlow[1];
     auxInnov = auxFlowObsInnov;
     HAGL = terrainState - stateStruct.position.z;
     rngInnov = innovRng;
-    range = rngMea;
+    range = rangeDataDelayed.rng;
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
@@ -86,7 +86,11 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->_fusionModeGPS == 3) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        height = max(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(frontend->_rng.max_distance_cm()) * 0.007f - 1.0f, 1.0f);
+        // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
+        if (frontend->_altSource != 1) {
+            height -= terrainState;
+        }
         return true;
     } else {
         return false;
@@ -104,11 +108,11 @@ void NavEKF2_core::getEulerAngles(Vector3f &euler) const
 // return body axis gyro bias estimates in rad/sec
 void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
 {
-    if (dtIMUavg < 1e-6f) {
+    if (dtEkfAvg < 1e-6f) {
         gyroBias.zero();
         return;
     }
-    gyroBias = stateStruct.gyro_bias / dtIMUavg;
+    gyroBias = stateStruct.gyro_bias / dtEkfAvg;
 }
 
 // return body axis gyro scale factor error as a percentage
@@ -198,8 +202,8 @@ void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
 
 // return the Z-accel bias estimate in m/s^2
 void NavEKF2_core::getAccelZBias(float &zbias) const {
-    if (dtIMUavg > 0) {
-        zbias = stateStruct.accel_zbias / dtIMUavg;
+    if (dtEkfAvg > 0) {
+        zbias = stateStruct.accel_zbias / dtEkfAvg;
     } else {
         zbias = 0;
     }
@@ -310,9 +314,9 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 {
     if (PV_AidingMode == AID_RELATIVE) {
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = max((frontend->_maxFlowRate - 1.0f), 0.0f) * max((terrainState - stateStruct.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
         // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / max((terrainState - stateStruct.position[2]),4.0f);
+        ekfNavVelGainScaler = 4.0f / MAX((terrainState - stateStruct.position[2]),4.0f);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
@@ -372,9 +376,9 @@ void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Ve
     posVar   = sqrtf(posTestRatio);
     hgtVar   = sqrtf(hgtTestRatio);
     // If we are using simple compass yaw fusion, populate all three components with the yaw test ratio to provide an equivalent output
-    magVar.x = sqrtf(max(magTestRatio.x,yawTestRatio));
-    magVar.y = sqrtf(max(magTestRatio.y,yawTestRatio));
-    magVar.z = sqrtf(max(magTestRatio.z,yawTestRatio));
+    magVar.x = sqrtf(MAX(magTestRatio.x,yawTestRatio));
+    magVar.y = sqrtf(MAX(magTestRatio.y,yawTestRatio));
+    magVar.z = sqrtf(MAX(magTestRatio.z,yawTestRatio));
     tasVar   = sqrtf(tasTestRatio);
     offset   = posResetNE;
 }
@@ -443,6 +447,8 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     bool optFlowNavPossible = flowDataValid && (frontend->_fusionModeGPS == 3);
     bool gpsNavPossible = !gpsNotAvailable && (PV_AidingMode == AID_ABSOLUTE) && gpsGoodToAlign;
     bool filterHealthy = healthy() && tiltAlignComplete && yawAlignComplete;
+    // If GPS height useage is specified, height is considered to be inaccurate until the GPS passes all checks
+    bool hgtNotAccurate = (frontend->_altSource == 2) && !validOrigin;
 
     // set individual flags
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -450,7 +456,7 @@ void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
     status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav) && filterHealthy;   // relative horizontal position estimate valid
     status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
-    status.flags.vert_pos = !hgtTimeout && filterHealthy;            // vertical position estimate valid
+    status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
     status.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
     status.flags.pred_horiz_pos_rel = (optFlowNavPossible || gpsNavPossible) && filterHealthy; // we should be able to estimate a relative position when we enter flight mode
@@ -543,5 +549,12 @@ const char *NavEKF2_core::prearm_failure_reason(void) const
     return prearm_fail_string;
 }
 
+
+// report the number of frames lapsed since the last state prediction
+// this is used by other instances to level load
+uint8_t NavEKF2_core::getFramesSincePredict(void) const
+{
+    return framesSincePredict;
+}
 
 #endif // HAL_CPU_CLASS

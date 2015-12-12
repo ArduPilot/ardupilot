@@ -22,10 +22,10 @@ static float noise(void)
 void loop()
 {
     hal.scheduler->delay(50);
-    float t = hal.scheduler->millis()*1.0e-3f;
+    float t = AP_HAL::millis()*1.0e-3f;
     float s = sinf(t);
     //s += noise();
-    uint32_t t1 = hal.scheduler->micros();
+    uint32_t t1 = AP_HAL::micros();
     derivative.update(s, t1);
     float output = derivative.slope() * 1.0e6f;
     hal.console->printf("%f %f %f %f\n", t, output, s, cosf(t));

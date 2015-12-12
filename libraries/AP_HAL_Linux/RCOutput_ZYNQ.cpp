@@ -20,12 +20,11 @@ using namespace Linux;
 
 #define PWM_CHAN_COUNT 8	// FIXME
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void RCOutput_ZYNQ::init(void* machtnicht)
+void RCOutput_ZYNQ::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);

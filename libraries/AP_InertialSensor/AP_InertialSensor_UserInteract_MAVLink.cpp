@@ -23,11 +23,11 @@ static void _snoop(const mavlink_message_t* msg)
 
 bool AP_InertialSensor_UserInteract_MAVLink::blocking_read(void) 
 {
-    uint32_t start_ms = hal.scheduler->millis();
+    uint32_t start_ms = AP_HAL::millis();
     // setup snooping of packets so we can see the COMMAND_ACK
     _gcs->set_snoop(_snoop);
     _got_ack = false;
-    while (hal.scheduler->millis() - start_ms < 30000U) {
+    while (AP_HAL::millis() - start_ms < 30000U) {
         hal.scheduler->delay(10);
         if (_got_ack) {
             _gcs->set_snoop(NULL);

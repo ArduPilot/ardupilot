@@ -159,7 +159,7 @@ restart:
                                         (unsigned)_mtk_revision);                                        
 #endif
                     make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
-                    state.last_gps_time_ms = hal.scheduler->millis();
+                    state.last_gps_time_ms = AP_HAL::millis();
                 }
                 // the _fix_counter is to reduce the cost of the GPS
                 // BCD time conversion by only doing it every 10s

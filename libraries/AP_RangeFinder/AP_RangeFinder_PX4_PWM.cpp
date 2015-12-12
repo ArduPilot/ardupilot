@@ -100,7 +100,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     float sum_cm = 0;
     uint16_t count = 0;
     const float scaling = ranger._scaling[state.instance];
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
         // report the voltage as the pulse width, so we get the raw
@@ -147,7 +147,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
     }
 
     // if we have not taken a reading in the last 0.2s set status to No Data
-    if (hal.scheduler->micros64() - _last_timestamp >= 200000) {
+    if (AP_HAL::micros64() - _last_timestamp >= 200000) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 

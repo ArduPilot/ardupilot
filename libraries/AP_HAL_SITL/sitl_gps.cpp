@@ -75,7 +75,7 @@ int SITL_State::gps_pipe(void)
     pipe(fd);
     gps_state.gps_fd    = fd[1];
     gps_state.client_fd = fd[0];
-    gps_state.last_update = _scheduler->millis();
+    gps_state.last_update = AP_HAL::millis();
     HALSITL::SITLUARTDriver::_set_nonblocking(gps_state.gps_fd);
     HALSITL::SITLUARTDriver::_set_nonblocking(fd[0]);
     return gps_state.client_fd;
@@ -93,7 +93,7 @@ int SITL_State::gps2_pipe(void)
     pipe(fd);
     gps2_state.gps_fd    = fd[1];
     gps2_state.client_fd = fd[0];
-    gps2_state.last_update = _scheduler->millis();
+    gps2_state.last_update = AP_HAL::millis();
     HALSITL::SITLUARTDriver::_set_nonblocking(gps2_state.gps_fd);
     HALSITL::SITLUARTDriver::_set_nonblocking(fd[0]);
     return gps2_state.client_fd;
@@ -248,7 +248,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d)
     status.differential_status = 0;
     status.res = 0;
     status.time_to_first_fix = 0;
-    status.uptime = hal.scheduler->millis();
+    status.uptime = AP_HAL::millis();
 
     velned.time = time_week_ms;
     velned.ned_north = 100.0f * d->speedN;
@@ -752,7 +752,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     }
 
     // run at configured GPS rate (default 5Hz)
-    if ((hal.scheduler->millis() - gps_state.last_update) < (uint32_t)(1000/_sitl->gps_hertz)) {
+    if ((AP_HAL::millis() - gps_state.last_update) < (uint32_t)(1000/_sitl->gps_hertz)) {
         return;
     }
 
@@ -764,8 +764,8 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         read(gps2_state.gps_fd, &c, 1);
     }
 
-    gps_state.last_update = hal.scheduler->millis();
-    gps2_state.last_update = hal.scheduler->millis();
+    gps_state.last_update = AP_HAL::millis();
+    gps2_state.last_update = AP_HAL::millis();
 
     d.latitude = latitude + glitch_offsets.x;
     d.longitude = longitude + glitch_offsets.y;
@@ -773,7 +773,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
 
     if (_sitl->gps_drift_alt > 0) {
         // slow altitude drift
-        d.altitude += _sitl->gps_drift_alt*sinf(hal.scheduler->millis()*0.001f*0.02f);
+        d.altitude += _sitl->gps_drift_alt*sinf(AP_HAL::millis()*0.001f*0.02f);
     }
 
     d.speedN = speedN;

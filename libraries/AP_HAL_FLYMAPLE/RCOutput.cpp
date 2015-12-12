@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 
 #define MAX_OVERFLOW    ((1 << 16) - 1)
 
-void FLYMAPLERCOutput::init(void* machtnichts) {}
+void FLYMAPLERCOutput::init() {}
 
 void FLYMAPLERCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) 
 {

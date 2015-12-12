@@ -123,7 +123,7 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
         
     ch_inf = (float)channel->radio_in - (float)channel->radio_trim;
     ch_inf = fabsf(ch_inf);
-    ch_inf = min(ch_inf, 400.0f);
+    ch_inf = MIN(ch_inf, 400.0f);
     ch_inf = ((400.0f - ch_inf) / 400.0f);
     servo_out *= ch_inf;
     servo_out += channel->pwm_to_angle();
@@ -586,7 +586,7 @@ bool Plane::suppress_throttle(void)
 
         uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
         if (is_flying() &&
-            millis() - started_flying_ms > max(launch_duration_ms,5000) && // been flying >5s in any mode
+            millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
             labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
             gps_movement) { // definate gps movement
@@ -609,7 +609,7 @@ bool Plane::suppress_throttle(void)
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled - altitude %.2f",
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled. Altitude %.2f",
                           (double)(relative_altitude_abs_cm()*0.01f));
         return false;
     }
@@ -620,7 +620,7 @@ bool Plane::suppress_throttle(void)
         // groundspeed with bad GPS reception
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
-            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled - speed %.2f airspeed %.2f",
+            gcs_send_text_fmt(MAV_SEVERITY_INFO, "Throttle enabled. Speed %.2f airspeed %.2f",
                               (double)gps.ground_speed(),
                               (double)airspeed.get_airspeed());
             throttle_suppressed = false;
@@ -1061,7 +1061,7 @@ void Plane::set_servos(void)
 void Plane::demo_servos(uint8_t i) 
 {
     while(i > 0) {
-        gcs_send_text(MAV_SEVERITY_INFO,"Demo Servos!");
+        gcs_send_text(MAV_SEVERITY_INFO,"Demo servos");
         demoing_servos = true;
         servo_write(1, 1400);
         hal.scheduler->delay(400);

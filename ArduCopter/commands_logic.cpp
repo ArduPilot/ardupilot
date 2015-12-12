@@ -285,8 +285,8 @@ void Copter::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // Set wp navigation target to safe altitude above current position
     float takeoff_alt = cmd.content.location.alt;
-    takeoff_alt = max(takeoff_alt,current_loc.alt);
-    takeoff_alt = max(takeoff_alt,100.0f);
+    takeoff_alt = MAX(takeoff_alt,current_loc.alt);
+    takeoff_alt = MAX(takeoff_alt,100.0f);
     auto_takeoff_start(takeoff_alt);
 }
 
@@ -610,7 +610,7 @@ bool Copter::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Command #%i",cmd.index);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -692,7 +692,7 @@ bool Copter::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached Command #%i",cmd.index);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
         return false;
@@ -750,7 +750,7 @@ void Copter::do_yaw(const AP_Mission::Mission_Command& cmd)
 
 bool Copter::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)max(condition_value,0)) {
+    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -767,7 +767,7 @@ bool Copter::verify_within_distance()
 {
     // update distance calculation
     calc_wp_distance();
-    if (wp_distance < max(condition_value,0)) {
+    if (wp_distance < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }

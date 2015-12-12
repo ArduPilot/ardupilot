@@ -140,6 +140,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(read_receiver_rssi,    40,     75),
     SCHED_TASK(rpm_update,            40,    200),
     SCHED_TASK(compass_cal_update,    4,    100),
+#if ADSB_ENABLED == ENABLED
+    SCHED_TASK(adsb_update,          400,    100),
+#endif
 #if FRSKY_TELEM_ENABLED == ENABLED
     SCHED_TASK(frsky_telemetry_send,  80,     75),
 #endif
@@ -181,7 +184,7 @@ void Copter::setup()
 
     // setup initial performance counters
     perf_info_reset();
-    fast_loopTimer = hal.scheduler->micros();
+    fast_loopTimer = AP_HAL::micros();
 }
 
 /*
@@ -480,10 +483,12 @@ void Copter::one_hz_loop()
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.set_orientation();
 
+        update_using_interlock();
+
+#if FRAME_CONFIG != HELI_FRAME
         // check the user hasn't updated the frame orientation
         motors.set_frame_orientation(g.frame_orientation);
 
-#if FRAME_CONFIG != HELI_FRAME
         // set all throttle channel settings
         motors.set_throttle_range(g.throttle_min, channel_throttle->radio_min, channel_throttle->radio_max);
         // set hover throttle
@@ -496,7 +501,7 @@ void Copter::one_hz_loop()
 
     check_usb_mux();
 
-#if AP_TERRAIN_AVAILABLE
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     terrain.update();
 
     // tell the rangefinder our height, so it can go into power saving

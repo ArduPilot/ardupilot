@@ -14,7 +14,7 @@ RCInput_UDP::RCInput_UDP() :
     _last_buf_seq(0)
 {}
 
-void RCInput_UDP::init(void *)
+void RCInput_UDP::init()
 {
     _port = RCINPUT_UDP_DEF_PORT;
     if(!_socket.bind("0.0.0.0", _port)) {

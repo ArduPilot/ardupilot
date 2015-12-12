@@ -80,7 +80,7 @@ bool JSBSim::create_templates(void)
 
     FILE *f = fopen(jsbsim_script, "w");
     if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim script %s", jsbsim_script);
+        AP_HAL::panic("Unable to create jsbsim script %s", jsbsim_script);
     }
     fprintf(f,
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -125,7 +125,7 @@ bool JSBSim::create_templates(void)
 
     f = fopen(jsbsim_fgout, "w");
     if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
+        AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
             "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
@@ -136,7 +136,7 @@ bool JSBSim::create_templates(void)
     asprintf(&jsbsim_reset, "%s/aircraft/%s/reset.xml", autotest_dir, jsbsim_model);
     f = fopen(jsbsim_reset, "w");
     if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim reset script %s", jsbsim_reset);
+        AP_HAL::panic("Unable to create jsbsim reset script %s", jsbsim_reset);
     }
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
@@ -177,7 +177,7 @@ bool JSBSim::start_JSBSim(void)
     int p[2];
     int devnull = open("/dev/null", O_RDWR);
     if (pipe(p) != 0) {
-        hal.scheduler->panic("Unable to create pipe");
+        AP_HAL::panic("Unable to create pipe");
     }
     pid_t child_pid = fork();
     if (child_pid == 0) {
@@ -219,14 +219,14 @@ bool JSBSim::start_JSBSim(void)
     // read startup to be sure it is running
     char c;
     if (read(jsbsim_stdout, &c, 1) != 1) {
-        hal.scheduler->panic("Unable to start JSBSim");
+        AP_HAL::panic("Unable to start JSBSim");
     }
 
     if (!expect("JSBSim Execution beginning")) {
-        hal.scheduler->panic("Failed to start JSBSim");
+        AP_HAL::panic("Failed to start JSBSim");
     }
     if (!open_control_socket()) {
-        hal.scheduler->panic("Failed to open JSBSim control socket");
+        AP_HAL::panic("Failed to open JSBSim control socket");
     }
 
     fcntl(jsbsim_stdout, F_SETFL, fcntl(jsbsim_stdout, F_GETFL, 0) | O_NONBLOCK);
@@ -421,6 +421,9 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * FEET_TO_METERS;
 
+    rpm1 = fdm.rpm[0];
+    rpm2 = fdm.rpm[1];
+    
     // assume 1kHz for now
     time_now_us += 1000;
 }

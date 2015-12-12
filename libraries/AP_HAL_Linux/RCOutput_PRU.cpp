@@ -24,12 +24,11 @@ using namespace Linux;
 static const uint8_t chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};                //chan_pru_map[CHANNEL_NUM] = PRU_REG_R30/31_NUM;
 static const uint8_t pru_chan_map[]= {11,10,9,8,7,6,5,4,1,3,0,2};                //pru_chan_map[PRU_REG_R30/31_NUM] = CHANNEL_NUM;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutput.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error gernerated\n");
 }
-void RCOutput_PRU::init(void* machtnicht)
+void RCOutput_PRU::init()
 {
     uint32_t mem_fd;
     signal(SIGBUS,catch_sigbus);

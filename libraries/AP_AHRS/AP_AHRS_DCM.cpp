@@ -53,7 +53,7 @@ AP_AHRS_DCM::update(void)
     float delta_t;
 
     if (_last_startup_ms == 0) {
-        _last_startup_ms = hal.scheduler->millis();
+        _last_startup_ms = AP_HAL::millis();
     }
 
     // tell the IMU to grab some data
@@ -177,7 +177,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
 
     }
 
-    _last_startup_ms = hal.scheduler->millis();
+    _last_startup_ms = AP_HAL::millis();
 }
 
 // reset the current attitude, used by HIL
@@ -292,7 +292,7 @@ AP_AHRS_DCM::normalize(void)
             !renorm(t2, _dcm_matrix.c)) {
         // Our solution is blowing up and we will force back
         // to last euler angles
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         AP_AHRS_DCM::reset(true);
     }
 }
@@ -382,7 +382,7 @@ bool AP_AHRS_DCM::have_gps(void) const
  */
 bool AP_AHRS_DCM::use_fast_gains(void) const
 {
-    return !hal.util->get_soft_armed() && (hal.scheduler->millis() - _last_startup_ms) < 20000U;
+    return !hal.util->get_soft_armed() && (AP_HAL::millis() - _last_startup_ms) < 20000U;
 }
 
 
@@ -408,13 +408,13 @@ bool AP_AHRS_DCM::use_compass(void)
     // prevent flyaways with very bad compass offsets
     int32_t error = abs(wrap_180_cd(yaw_sensor - _gps.ground_course_cd()));
     if (error > 4500 && _wind.length() < _gps.ground_speed()*0.8f) {
-        if (hal.scheduler->millis() - _last_consistent_heading > 2000) {
+        if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
             return false;
         }
     } else {
-        _last_consistent_heading = hal.scheduler->millis();
+        _last_consistent_heading = AP_HAL::millis();
     }
 
     // use the compass
@@ -637,7 +637,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // add in wind estimate
         velocity += _wind;
 
-        last_correction_time = hal.scheduler->millis();
+        last_correction_time = AP_HAL::millis();
         _have_gps_lock = false;
     } else {
         if (_gps.last_fix_time_ms() == _ra_sum_start) {
@@ -703,7 +703,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
-            _last_failure_ms = hal.scheduler->millis();
+            _last_failure_ms = AP_HAL::millis();
             return;
         }
         using_gps_corrections = true;
@@ -762,7 +762,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (besti == -1) {
         // no healthy accelerometers!
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         return;
     }
 
@@ -812,7 +812,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (error[besti].is_nan() || error[besti].is_inf()) {
         // don't allow bad values
         check_matrix();
-        _last_failure_ms = hal.scheduler->millis();
+        _last_failure_ms = AP_HAL::millis();
         return;
     }
 
@@ -887,7 +887,7 @@ void AP_AHRS_DCM::estimate_wind(void)
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     Vector3f fuselageDirection = _dcm_matrix.colx();
     Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    uint32_t now = hal.scheduler->millis();
+    uint32_t now = AP_HAL::millis();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {
@@ -1011,7 +1011,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || hal.scheduler->millis() - _last_failure_ms > 5000);
+    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
 }
 
 /*
@@ -1022,5 +1022,5 @@ uint32_t AP_AHRS_DCM::uptime_ms(void) const
     if (_last_startup_ms == 0) {
         return 0;
     }
-    return hal.scheduler->millis() - _last_startup_ms;
+    return AP_HAL::millis() - _last_startup_ms;
 }

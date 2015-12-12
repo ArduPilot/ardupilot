@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_CLASS_H__
-#define __AP_HAL_EMPTY_CLASS_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -12,10 +10,5 @@ public:
     HAL_Empty();
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 private:
-    Empty::EmptyPrivateMember *_member;
+    Empty::PrivateMember *_member;
 };
-
-extern const HAL_Empty AP_HAL_Empty;
-
-#endif // __AP_HAL_EMPTY_CLASS_H__
-

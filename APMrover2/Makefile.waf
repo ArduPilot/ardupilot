@@ -1,0 +1,2 @@
+BUILD_VEHICLE = rover
+include ../Makefile.waf
