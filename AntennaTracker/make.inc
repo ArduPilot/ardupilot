@@ -30,3 +30,7 @@ LIBRARIES += RC_Channel
 LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_RangeFinder
+LIBRARIES += AP_Mount
+LIBRARIES += AP_RSSI
+LIBRARIES += AP_RPM
+
