@@ -17,17 +17,28 @@
 #include "AP_HAL_Linux.h"
 #include "CameraSensor.h"
 
+namespace Linux {
+
 enum mt9v117_res {
     MT9V117_QVGA,
 };
 
-class Linux::CameraSensor_Mt9v117 : public Linux::CameraSensor {
+struct mt9v117_patch {
+    uint8_t *data;
+    uint8_t size;
+};
+
+#define MT9V117_PATCH_LINE_NUM 13
+
+class CameraSensor_Mt9v117 : public CameraSensor {
 public:
     CameraSensor_Mt9v117(const char *device_path, AP_HAL::I2CDriver *i2c,
                          uint8_t addr, enum mt9v117_res res,
                          uint16_t nrst_gpio, uint32_t clock_freq);
 
 private:
+    static const struct mt9v117_patch _patch_lines[MT9V117_PATCH_LINE_NUM];
+
     uint8_t _read_reg8(uint16_t reg);
     void _write_reg8(uint16_t reg, uint8_t val);
     uint16_t _read_reg16(uint16_t reg);
@@ -52,3 +63,5 @@ private:
     uint16_t _nrst_gpio = 0xFFFF;
     uint8_t _addr;
 };
+
+}
