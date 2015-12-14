@@ -33,7 +33,7 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
-        AP_HAL::OpticalFlow* _opticalflow)
+        AP_HAL::OpticalFlow *_opticalflow)
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -91,8 +91,8 @@ public:
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
-    AP_HAL::Util*       util;
-    AP_HAL::OpticalFlow* opticalflow;
+    AP_HAL::Util        *util;
+    AP_HAL::OpticalFlow *opticalflow;
 };
 
 #endif // __AP_HAL_HAL_H__
