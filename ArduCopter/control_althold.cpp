@@ -10,8 +10,9 @@
 bool Copter::althold_init(bool ignore_checks)
 {
 #if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors.rotor_runup_complete()){
+    // do not allow helis to enter Alt Hold if the Rotor Runup is not complete and current control mode has manual throttle control,
+    // as this will force the helicopter to descend.
+    if (!ignore_checks && mode_has_manual_throttle(control_mode) && !motors.rotor_runup_complete()){
         return false;
     }
 #endif
