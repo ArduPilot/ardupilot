@@ -63,7 +63,7 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
 	&rcoutDriver,
         &schedulerInstance,
 	&utilInstance,
-    NULL /* no optical flow */
+        NULL /* no optical flow */
 	)
 {}
 
