@@ -431,8 +431,11 @@ void Compass::_detect_backends(void)
     // detect_mpu9250() failed will cause panic if no actual mpu9250 backend,
     // in BH, only one compass should be detected
     AP_Compass_Backend *backend = AP_Compass_HMC5843::detect_i2c(*this, hal.i2c);
-    backend ? _add_backend(backend)
-            : _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+    if (backend) {
+        _add_backend(backend);
+    } else {
+        _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+    }
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&                            \
       CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE &&       \
       CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP &&      \
