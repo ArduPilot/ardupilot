@@ -103,8 +103,8 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
 
     memset(&rb, 0, sizeof rb);
     rb.count = nbufs;
-    rb.type = V4L2_CAP_VIDEO_CAPTURE;
-    rb.memory = _memtype;
+    rb.type = (v4l2_buf_type) V4L2_CAP_VIDEO_CAPTURE;
+    rb.memory = (v4l2_memory) _memtype;
 
     ret = ioctl(_fd, VIDIOC_REQBUFS, &rb);
     if (ret < 0) {
@@ -166,7 +166,7 @@ bool VideoIn::set_format(uint32_t *width, uint32_t *height, uint32_t *format,
     int ret;
 
     memset(&fmt, 0, sizeof fmt);
-    fmt.type = V4L2_CAP_VIDEO_CAPTURE;
+    fmt.type = (v4l2_buf_type) V4L2_CAP_VIDEO_CAPTURE;
     fmt.fmt.pix.width = *width;
     fmt.fmt.pix.height = *height;
     fmt.fmt.pix.pixelformat = *format;
@@ -247,8 +247,8 @@ void VideoIn::_queue_buffer(int index)
 
     memset(&buf, 0, sizeof buf);
     buf.index = index;
-    buf.type = V4L2_CAP_VIDEO_CAPTURE;
-    buf.memory = _memtype;
+    buf.type = (v4l2_buf_type) V4L2_CAP_VIDEO_CAPTURE;
+    buf.memory = (v4l2_memory) _memtype;
     buf.length = _buffers[index].size;
     if (_memtype == V4L2_MEMORY_USERPTR) {
         buf.m.userptr = (unsigned long) _buffers[index].mem;
@@ -283,8 +283,8 @@ bool VideoIn::_dequeue_frame(Frame &frame)
 
     /* Dequeue a buffer. */
     memset(&buf, 0, sizeof buf);
-    buf.type = V4L2_CAP_VIDEO_CAPTURE;
-    buf.memory = _memtype;
+    buf.type = (v4l2_buf_type) V4L2_CAP_VIDEO_CAPTURE;
+    buf.memory = (v4l2_memory) _memtype;
     ret = ioctl(_fd, VIDIOC_DQBUF, &buf);
     if (ret < 0) {
         if (errno != EIO) {
@@ -292,8 +292,8 @@ bool VideoIn::_dequeue_frame(Frame &frame)
                                 strerror(errno), errno);
             return false;
         }
-        buf.type = V4L2_CAP_VIDEO_CAPTURE;
-        buf.memory = _memtype;
+        buf.type = (v4l2_buf_type) V4L2_CAP_VIDEO_CAPTURE;
+        buf.memory = (v4l2_memory) _memtype;
         if (_memtype == V4L2_MEMORY_USERPTR) {
             buf.m.userptr = (unsigned long)_buffers[buf.index].mem;
         }
