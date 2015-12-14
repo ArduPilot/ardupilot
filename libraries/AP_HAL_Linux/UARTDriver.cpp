@@ -496,6 +496,25 @@ bool UARTDriver::_write_pending_bytes(void)
     uint16_t _tail;
     uint16_t available_bytes = BUF_AVAILABLE(_writebuf);
     n = available_bytes;
+    if (_packetise && n > 0 && _writebuf[_writebuf_head] != 254) {
+        /*
+          we have a non-mavlink packet at the start of the
+          buffer. Look ahead for a MAVLink start byte, up to 256 bytes
+          ahead
+         */
+        uint16_t limit = n>256?256:n;
+        uint16_t i;
+        for (i=0; i<limit; i++) {
+            if (_writebuf[(_writebuf_head + i) % _writebuf_size] == 254) {
+                n = i;
+                break;
+            }
+        }
+        // if we didn't find a MAVLink marker then limit the send size to 256
+        if (i == limit) {
+            n = limit;
+        }
+    }
     if (_packetise && n > 0 && _writebuf[_writebuf_head] == 254) {
         // this looks like a MAVLink packet - try to write on
         // packet boundaries when possible
