@@ -21,22 +21,21 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "VideoIn.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <sched.h>
-#include <time.h>
+#include <fcntl.h>
+#include <linux/videodev2.h>
 #include <pthread.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-
-#include <linux/videodev2.h>
+#include <time.h>
+#include <unistd.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,11 +51,7 @@ bool VideoIn::get_frame(Frame &frame)
         _streaming = true;
     }
 
-    if (_dequeue_frame(frame)) {
-        return true;
-    } else {
-        return false;
-    }
+    return _dequeue_frame(frame);
 }
 
 void VideoIn::put_frame(Frame &frame)
@@ -88,9 +83,10 @@ bool VideoIn::open_device(const char *device_path, uint32_t memtype)
     }
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-        hal.console->printf("Error opening device %s: is not a video capture"
-                            "device\n", device_path);
+        hal.console->printf("Error opening device %s: is not a video capture device\n",
+                            device_path);
         close(_fd);
+        _fd = -1;
         return false;
     }
 
@@ -112,8 +108,7 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
 
     ret = ioctl(_fd, VIDIOC_REQBUFS, &rb);
     if (ret < 0) {
-        printf("Unable to request buffers: %s (%d).\n", strerror(errno),
-        errno);
+        printf("Unable to request buffers: %s (%d).\n", strerror(errno), errno);
         return ret;
     }
 
@@ -138,7 +133,7 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
         switch (_memtype) {
         case V4L2_MEMORY_MMAP:
             buffers[i].mem = mmap(0, buf.length, PROT_READ | PROT_WRITE,
-                    MAP_SHARED, _fd, buf.m.offset);
+                                  MAP_SHARED, _fd, buf.m.offset);
             if (buffers[i].mem == MAP_FAILED) {
                 hal.console->printf("Unable to map buffer %u: %s (%d)\n", i,
                                     strerror(errno), errno);
@@ -249,6 +244,7 @@ void VideoIn::_queue_buffer(int index)
 {
     int ret;
     struct v4l2_buffer buf;
+
     memset(&buf, 0, sizeof buf);
     buf.index = index;
     buf.type = V4L2_CAP_VIDEO_CAPTURE;
@@ -257,6 +253,7 @@ void VideoIn::_queue_buffer(int index)
     if (_memtype == V4L2_MEMORY_USERPTR) {
         buf.m.userptr = (unsigned long) _buffers[index].mem;
     }
+
     ret = ioctl(_fd, VIDIOC_QBUF, &buf);
     if (ret < 0) {
         hal.console->printf("Unable to queue buffer : %s (%d).\n",

@@ -12,8 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __VIDEOIN_H__
-#define __VIDEOIN_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 #include <linux/videodev2.h>
@@ -25,15 +24,15 @@ struct buffer {
 
 class Linux::VideoIn {
 public:
-    /* This structure implements the fields of the v4l2_pix_format struct 
+    /* This structure implements the fields of the v4l2_pix_format struct
      * that are considered useful for an optical flow application along
      * with the v4l2_buffer fields timestamp and sequence*/
     class Frame {
     friend class VideoIn;
     public:
-        uint32_t timestamp = 0;
-        uint32_t sequence = 0;
-        void *data = NULL;
+        uint32_t timestamp;
+        uint32_t sequence;
+        void *data;
     private:
         uint32_t buf_index;
     };
@@ -56,14 +55,13 @@ private:
     bool _dequeue_frame(Frame &frame);
     uint32_t _timeval_to_us(struct timeval& tv);
     int _fd = -1;
-    struct buffer *_buffers = NULL;
-    unsigned int _nbufs = 0;
-    bool _streaming = false;
-    uint32_t _width = 0;
-    uint32_t _height = 0;
-    uint32_t _format = 0;
-    uint32_t _bytesperline = 0;
-    uint32_t _sizeimage = 0;
+    struct buffer *_buffers;
+    unsigned int _nbufs;
+    bool _streaming;
+    uint32_t _width;
+    uint32_t _height;
+    uint32_t _format;
+    uint32_t _bytesperline;
+    uint32_t _sizeimage;
     uint32_t _memtype = V4L2_MEMORY_MMAP;
 };
-#endif
