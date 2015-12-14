@@ -12,15 +12,17 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __OPTICALFLOW_ONBOARD_H__
-#define __OPTICALFLOW_ONBOARD_H__
+#pragma once
+
+#include <linux/videodev2.h>
+
+#include <AP_HAL/OpticalFlow.h>
+#include <AP_Math/AP_Math.h>
 
 #include "AP_HAL_Linux.h"
 #include "CameraSensor.h"
 #include "Flow_PX4.h"
 #include "VideoIn.h"
-#include <AP_Math/AP_Math.h>
-#include <linux/videodev2.h>
 
 class Linux::OpticalFlow_Onboard : public AP_HAL::OpticalFlow {
 public:
@@ -37,19 +39,18 @@ private:
     Flow_PX4* _flow;
     pthread_t _thread;
     pthread_mutex_t _mutex;
-    bool _initialized = false;
-    bool _data_available = false;
-    uint32_t _width = 0;
-    uint32_t _height = 0;
-    uint32_t _format = 0;
-    uint32_t _bytesperline = 0;
-    uint32_t _sizeimage = 0;
-    float _pixel_flow_x_integral = 0;
-    float _pixel_flow_y_integral = 0;
-    float _gyro_x_integral = 0;
-    float _gyro_y_integral = 0;
-    uint32_t _integration_timespan = 0;
-    uint8_t _surface_quality = 0;
+    bool _initialized;
+    bool _data_available;
+    uint32_t _width;
+    uint32_t _height;
+    uint32_t _format;
+    uint32_t _bytesperline;
+    uint32_t _sizeimage;
+    float _pixel_flow_x_integral;
+    float _pixel_flow_y_integral;
+    float _gyro_x_integral;
+    float _gyro_y_integral;
+    uint32_t _integration_timespan;
+    uint8_t _surface_quality;
     AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
 };
-#endif
