@@ -436,9 +436,10 @@ void Compass::_detect_backends(void)
     } else {
         _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
     }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&                            \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE &&       \
-      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP &&      \
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
+      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && \
+      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_BEBOP && \
+      CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_QFLIGHT && \
       CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MINLURE
     _add_backend(AP_Compass_HMC5843::detect_i2c(*this, hal.i2c));
     _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
@@ -458,6 +459,8 @@ void Compass::_detect_backends(void)
     _add_backend(AP_Compass_PX4::detect(*this));
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_AK8963_MPU9250
     _add_backend(AP_Compass_AK8963::detect_mpu9250(*this, 0));
+#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QFLIGHT
+    _add_backend(AP_Compass_QFLIGHT::detect(*this));
 #else
     #error Unrecognised HAL_COMPASS_TYPE setting
 #endif
