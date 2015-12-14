@@ -18,11 +18,9 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include "GPIO.h"
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "OpticalFlow_Onboard.h"
-#include "CameraSensor_Mt9v117.h"
-#include "PWM_Sysfs.h"
+
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -31,9 +29,10 @@
 #include <unistd.h>
 #include <linux/v4l2-mediabus.h>
 
-//#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
-//#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.bin"
-//#define OPTICALFLOW_ONBOARD_RECORD_METADATAS 1
+#include "CameraSensor_Mt9v117.h"
+#include "GPIO.h"
+#include "PWM_Sysfs.h"
+
 #define OPTICAL_FLOW_ONBOARD_RTPRIO 11
 
 extern const AP_HAL::HAL& hal;
@@ -58,7 +57,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
     _get_gyro = get_gyro;
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _videoin = new VideoIn;
     _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
     _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
@@ -85,37 +83,29 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     left = (HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH -
             HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT) / 2;
     _format = V4L2_PIX_FMT_NV12;
-#else
-    AP_HAL::panic("OpticalFlow_Onboard: unsupported board\n");
-#endif
 
     if (device_path == NULL ||
         !_videoin->open_device(device_path, memtype)) {
         AP_HAL::panic("OpticalFlow_Onboard: couldn't open "
-                             "video device\n");
-        return;
+                      "video device");
     }
 
     if (!_videoin->set_format(&_width, &_height, &_format, &_bytesperline,
                               &_sizeimage)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video format\n");
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video format");
         return;
     }
 
     if (_format != V4L2_PIX_FMT_NV12 && _format != V4L2_PIX_FMT_GREY) {
-        AP_HAL::panic("OpticalFlow_Onboard: planar or monochrome format"
-                      "needed\n");
+        AP_HAL::panic("OpticalFlow_Onboard: planar or monochrome format needed");
     }
 
     if (!_videoin->set_crop(left, top, crop_width, crop_height)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video crop\n");
-        return;
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video crop");
     }
 
     if (!_videoin->allocate_buffers(nbufs)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate "
-                             "video buffers\n");
-        return;
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate video buffers");
     }
 
     _videoin->prepare_capture();
@@ -130,23 +120,21 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
      * Initialize thread and mutex */
     ret = pthread_mutex_init(&_mutex, NULL);
     if (ret != 0) {
-        perror("OpticalFlow_Onboard: failed to init mutex\n");
-        return;
+        AP_HAL::panic("OpticalFlow_Onboard: failed to init mutex");
     }
 
     ret = pthread_attr_init(&attr);
     if (ret != 0) {
-        perror("OpticalFlow_Onboard: failed to init attr\n");
-        return;
+        AP_HAL::panic("OpticalFlow_Onboard: failed to init attr");
     }
     pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
     pthread_attr_setschedparam(&attr, &param);
     ret = pthread_create(&_thread, &attr, _read_thread, this);
     if (ret != 0) {
-        perror("OpticalFlow_Onboard: failed to create thread\n");
-        return;
+        AP_HAL::panic("OpticalFlow_Onboard: failed to create thread");
     }
+
     _initialized = true;
 }
 
@@ -177,9 +165,9 @@ end:
     return ret;
 }
 
-void* OpticalFlow_Onboard::_read_thread(void *arg)
+void *OpticalFlow_Onboard::_read_thread(void *arg)
 {
-    OpticalFlow_Onboard* optflow_onboard = (OpticalFlow_Onboard *) arg;
+    OpticalFlow_Onboard *optflow_onboard = (OpticalFlow_Onboard *) arg;
 
     optflow_onboard->_run_optflow();
     return NULL;
