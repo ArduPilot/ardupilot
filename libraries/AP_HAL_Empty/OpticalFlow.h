@@ -12,13 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __AP_HAL_EMPTY_OPTICALFLOW_H__
-#define __AP_HAL_EMPTY_OPTICALFLOW_H__
+#pragma once
 
 class Empty::OpticalFlow : public AP_HAL::OpticalFlow {
 public:
-    void init(AP_HAL::OpticalFlow::Gyro_Cb) {return;};
-    bool read(Data_Frame& frame) {return false;};
+    void init(AP_HAL::OpticalFlow::Gyro_Cb) { }
+    bool read(Data_Frame& frame) { return false; }
 };
-
-#endif
