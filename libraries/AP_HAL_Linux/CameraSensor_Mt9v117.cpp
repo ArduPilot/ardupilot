@@ -18,7 +18,6 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #include "CameraSensor_Mt9v117.h"
-#include "CameraSensor_Mt9v117_Patches.h"
 
 /* Cam sensor register definitions */
 #define CHIP_ID                 0x0
@@ -318,7 +317,7 @@ void CameraSensor_Mt9v117::_apply_patch()
     /* write patch */
     for (unsigned int i = 0; i < MT9V117_PATCH_LINE_NUM; i++) {
         _i2c->do_transfer(_addr,
-                          patch_lines[i].data, patch_lines[i].size, NULL, 0);
+                          _patch_lines[i].data, _patch_lines[i].size, NULL, 0);
     }
 
     _write_reg16(LOGICAL_ADDRESS_ACCESS, 0x0000);
