@@ -12,13 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __AP_HAL_OPTICALFLOW_H__
-#define __AP_HAL_OPTICALFLOW_H__
+#pragma once
 
 class AP_HAL::OpticalFlow {
 public:
-    FUNCTOR_TYPEDEF(Gyro_Cb, void, float&, float&, float&);
-    virtual void init(Gyro_Cb) = 0;
     class Data_Frame {
     public:
         float pixel_flow_x_integral;
@@ -28,7 +25,9 @@ public:
         uint32_t delta_time;
         uint8_t quality;
     };
+
+    FUNCTOR_TYPEDEF(Gyro_Cb, void, float&, float&, float&);
+
+    virtual void init(Gyro_Cb) = 0;
     virtual bool read(Data_Frame& frame) = 0;
 };
-
-#endif
