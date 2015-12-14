@@ -34,6 +34,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_MINLURE  1008
 #define HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 1009
 #define HAL_BOARD_SUBTYPE_LINUX_BH       1010
+#define HAL_BOARD_SUBTYPE_LINUX_QFLIGHT  1011
 
 /**
    HAL PX4 sub-types, starting at 2000
@@ -64,6 +65,7 @@
 #define HAL_INS_RASPILOT 12
 #define HAL_INS_MPU9250_I2C 13
 #define HAL_INS_BH          14
+#define HAL_INS_QFLIGHT  15
 
 // barometer driver types
 #define HAL_BARO_BMP085     1
@@ -74,6 +76,7 @@
 #define HAL_BARO_HIL        6
 #define HAL_BARO_VRBRAIN    7
 #define HAL_BARO_MS5637_I2C 8
+#define HAL_BARO_QFLIGHT    9
 
 // compass driver types
 #define HAL_COMPASS_HMC5843   1
@@ -86,6 +89,7 @@
 #define HAL_COMPASS_RASPILOT  8
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
 #define HAL_COMPASS_BH                  10
+#define HAL_COMPASS_QFLIGHT   11
 
 // Heat Types
 #define HAL_LINUX_HEAT_PWM 1
@@ -306,6 +310,12 @@
 #define HAL_RCOUT_RGBLED_RED      13
 #define HAL_RCOUT_RGBLED_GREEN    14
 #define HAL_RCOUT_RGBLED_BLUE     15
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+#define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
+#define HAL_INS_DEFAULT HAL_INS_QFLIGHT
+#define HAL_BARO_DEFAULT HAL_BARO_QFLIGHT
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_QFLIGHT
 #else
 #error "no Linux board subtype set"
 #endif
