@@ -12,8 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __FLOW_PX4_H__
-#define __FLOW_PX4_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
@@ -36,4 +35,3 @@ private:
     uint16_t _pixstep;
     uint8_t  _num_blocks;
 };
-#endif
