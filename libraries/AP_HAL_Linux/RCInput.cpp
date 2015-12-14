@@ -16,7 +16,7 @@
 
 #include "RCInput.h"
 #include "sbus.h"
-#include "dsm.h"
+#include <AP_HAL/utility/dsm.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -372,6 +372,66 @@ void RCInput::_update_periods(uint16_t *periods, uint8_t len)
     }
     _num_channels = len;
     new_rc_input = true;
+}
+
+
+/*
+  add some bytes of input in DSM serial stream format, coping with partial packets
+ */
+void RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
+{
+    if (nbytes == 0) {
+        return;
+    }
+    const uint8_t dsm_frame_size = sizeof(dsm.frame);
+
+    uint32_t now = AP_HAL::millis();    
+    if (now - dsm.last_input_ms > 5) {
+        // resync based on time
+        dsm.partial_frame_count = 0;
+    }
+    dsm.last_input_ms = now;
+    
+    while (nbytes > 0) {
+        size_t n = nbytes;
+        if (dsm.partial_frame_count + n > dsm_frame_size) {
+            n = dsm_frame_size - dsm.partial_frame_count;
+        }
+        if (n > 0) {
+            memcpy(&dsm.frame[dsm.partial_frame_count], bytes, n);
+            dsm.partial_frame_count += n;
+            nbytes -= n;
+            bytes += n;
+        }
+
+	if (dsm.partial_frame_count == dsm_frame_size) {
+            dsm.partial_frame_count = 0;
+            uint16_t values[16] {};
+            uint16_t num_values=0;
+            if (dsm_decode(AP_HAL::micros64(), dsm.frame, values, &num_values, 16) &&
+                num_values >= 5) {
+                for (uint8_t i=0; i<num_values; i++) {
+                    if (values[i] != 0) {
+                        _pwm_values[i] = values[i];
+                    }
+                }
+                /*
+                  the apparent number of channels can change on DSM,
+                  as they are spread across multiple frames. We just
+                  use the max num_values we get
+                 */
+                if (num_values > _num_channels) {
+                    _num_channels = num_values;
+                }
+                new_rc_input = true;
+#if 0
+                printf("Decoded DSM %u channels %u %u %u %u %u %u %u %u\n",
+                       (unsigned)num_values,
+                       values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7]);
+#endif
+            }
+        }
+    }
 }
 
 #endif // CONFIG_HAL_BOARD

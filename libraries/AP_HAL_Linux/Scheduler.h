@@ -82,6 +82,7 @@ private:
     static void *_io_thread(void* arg);
     static void *_rcin_thread(void* arg);
     static void *_uart_thread(void* arg);
+    static void _run_uarts(void);
     static void *_tonealarm_thread(void* arg);
 
     void _run_timers(bool called_from_timer_thread);

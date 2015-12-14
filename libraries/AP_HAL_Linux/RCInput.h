@@ -31,6 +31,10 @@ public:
     // specific implementations
     virtual void _timer_tick() {}
 
+    // add some DSM input bytes, for RCInput over a serial port
+    void add_dsm_input(const uint8_t *bytes, size_t nbytes);
+    
+    
  protected:
     void _process_rc_pulse(uint16_t width_s0, uint16_t width_s1,
                            uint16_t channel = LINUX_RC_INPUT_CHANNEL_INVALID);
@@ -67,6 +71,13 @@ public:
         uint16_t bytes[16]; // including start bit and stop bit
         uint16_t bit_ofs;
     } dsm_state;
+
+    // state of add_dsm_input
+    struct {
+        uint8_t frame[16];
+        uint8_t partial_frame_count;
+        uint32_t last_input_ms;
+    } dsm;
 };
 
 #include "RCInput_PRU.h"

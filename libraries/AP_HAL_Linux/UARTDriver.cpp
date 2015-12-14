@@ -28,6 +28,7 @@
 #include "UDPDevice.h"
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
+#include "UARTQFlight.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -87,6 +88,15 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             break;
         }
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+        case DEVICE_QFLIGHT:
+        {
+            _qflight_start_connection();
+            _flow_control = FLOW_CONTROL_DISABLE;
+            break;
+        }
+#endif
+        
         case DEVICE_SERIAL:
         {
             if (!_serial_start_connection()) {
@@ -192,6 +202,10 @@ UARTDriver::device_type UARTDriver::_parseDevicePath(const char *arg)
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
         return DEVICE_SERIAL;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+    } else if (strncmp(arg, "qflight:", 8) == 0) {
+        return DEVICE_QFLIGHT;
+#endif
     } else if (strncmp(arg, "tcp:", 4) != 0 && 
                strncmp(arg, "udp:", 4) != 0) {
         return DEVICE_UNKNOWN;
@@ -258,6 +272,17 @@ bool UARTDriver::_serial_start_connection()
 
     return true;
 }
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
+bool UARTDriver::_qflight_start_connection()
+{
+    _device = new QFLIGHTDevice(device_path);
+    _connected = _device->open();
+    _flow_control = FLOW_CONTROL_DISABLE;
+
+    return true;
+}
+#endif
 
 /*
   start a UDP connection for the serial port

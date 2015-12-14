@@ -30,6 +30,7 @@ namespace Linux {
     class RCInput_ZYNQ;
     class RCInput_UART;
     class RCInput_UDP;
+    class RCInput_DSM;
     class RCOutput_PRU;
     class RCOutput_AioPRU;
     class RCOutput_PCA9685;
@@ -37,6 +38,7 @@ namespace Linux {
     class RCOutput_ZYNQ;
     class RCOutput_Bebop;
     class RCOutput_Sysfs;
+    class RCOutput_QFLIGHT;
     class Semaphore;
     class Scheduler;
     class Util;
