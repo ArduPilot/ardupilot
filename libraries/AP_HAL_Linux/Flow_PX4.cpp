@@ -2,8 +2,8 @@
  *
  *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
  *   Author: Petri Tanskanen <tpetri@inf.ethz.ch>
- *   		 Lorenz Meier <lm@inf.ethz.ch>
- *   		 Samuel Zihlmann <samuezih@ee.ethz.ch>
+ *            Lorenz Meier <lm@inf.ethz.ch>
+ *            Samuel Zihlmann <samuezih@ee.ethz.ch>
  *
  *   Modified to fit the APM framework by:
  *          Julien BERAUD <julien.beraud@parrot.com>
@@ -38,11 +38,12 @@
  ****************************************************************************/
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <math.h>
 #include "Flow_PX4.h"
+
+#include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -171,8 +172,7 @@ static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2,
 
     memset(acc, 0, window_size * sizeof(uint32_t));
 
-    for (i = 0; i < window_size; i++)
-    {
+    for (i = 0; i < window_size; i++) {
         for (j = 0; j < window_size; j++) {
             /* the 8 s values are from following positions for each pixel (X):
              *  + - + - + - +
@@ -251,15 +251,12 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
 
     /* iterate over all patterns
      */
-    for (j = _pixlo; j < _pixhi; j += _pixstep)
-    {
-        for (i = _pixlo; i < _pixhi; i += _pixstep)
-        {
+    for (j = _pixlo; j < _pixhi; j += _pixstep) {
+        for (i = _pixlo; i < _pixhi; i += _pixstep) {
             /* test pixel if it is suitable for flow tracking */
             uint32_t diff = compute_diff(image1, i, j, (uint16_t) _bytesperline,
                                          _search_size);
-            if (diff < _bottom_flow_feature_threshold)
-            {
+            if (diff < _bottom_flow_feature_threshold) {
                 continue;
             }
 
@@ -268,16 +265,13 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
             int8_t sumy = 0;
             int8_t ii, jj;
 
-            for (jj = winmin; jj <= winmax; jj++)
-            {
-                for (ii = winmin; ii <= winmax; ii++)
-                {
+            for (jj = winmin; jj <= winmax; jj++) {
+                for (ii = winmin; ii <= winmax; ii++) {
                     uint32_t temp_dist = compute_sad(image1, image2, i, j,
                                                      i + ii, j + jj,
-                                                     (uint16_t) _bytesperline,
+                                                     (uint16_t)_bytesperline,
                                                      2 * _search_size);
-                    if (temp_dist < dist)
-                    {
+                    if (temp_dist < dist) {
                         sumx = ii;
                         sumy = jj;
                         dist = temp_dist;
@@ -286,9 +280,8 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
             }
 
             /* acceptance SAD distance threshhold */
-            if (dist < _bottom_flow_value_threshold)
-            {
-                meanflowx += (float) sumx;
+            if (dist < _bottom_flow_value_threshold) {
+                meanflowx += (float)sumx;
                 meanflowy += (float) sumy;
 
                 compute_subpixel(image1, image2, i, j, i + sumx, j + sumy,
@@ -296,10 +289,8 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
                                  2 * _search_size);
                 uint32_t mindist = dist; // best SAD until now
                 uint8_t mindir = 8; // direction 8 for no direction
-                for(uint8_t k = 0; k < 2 * _search_size; k++)
-                {
-                    if (acc[k] < mindist)
-                    {
+                for (uint8_t k = 0; k < 2 * _search_size; k++) {
+                    if (acc[k] < mindist) {
                         // SAD becomes better in direction k
                         mindist = acc[k];
                         mindir = k;
@@ -314,8 +305,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
     }
 
     /* evaluate flow calculation */
-    if (meancount > _num_blocks*_num_blocks/2)
-    {
+    if (meancount > _num_blocks * _num_blocks / 2) {
         meanflowx /= meancount;
         meanflowy /= meancount;
 
@@ -323,8 +313,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
         uint32_t meancount_x = 0;
         uint32_t meancount_y = 0;
 
-        for (uint16_t h = 0; h < meancount; h++)
-        {
+        for (uint16_t h = 0; h < meancount; h++) {
             float subdirx = 0.0f;
             if (subdirs[h] == 0 || subdirs[h] == 1 || subdirs[h] == 7) {
                 subdirx = 0.5f;
@@ -351,9 +340,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
 
         *pixel_flow_x = histflowx;
         *pixel_flow_y = histflowy;
-    }
-    else
-    {
+    } else {
         *pixel_flow_x = 0.0f;
         *pixel_flow_y = 0.0f;
         return 0;
