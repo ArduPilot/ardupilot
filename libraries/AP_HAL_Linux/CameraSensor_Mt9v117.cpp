@@ -111,12 +111,12 @@ CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
                                            uint8_t addr,
                                            enum mt9v117_res res,
                                            uint16_t nrst_gpio,
-                                           uint32_t clock_freq)    :
-    CameraSensor(device_path),
-    _i2c(i2c),
-    _addr(addr),
-    _nrst_gpio(nrst_gpio),
-    _clock_freq(clock_freq)
+                                           uint32_t clock_freq)
+    : CameraSensor(device_path)
+    , _i2c(i2c)
+    , _addr(addr)
+    , _nrst_gpio(nrst_gpio)
+    , _clock_freq(clock_freq)
 {
     switch (res) {
     case MT9V117_QVGA:
@@ -138,12 +138,12 @@ uint8_t CameraSensor_Mt9v117::_read_reg8(uint16_t reg)
     buf[0] = (uint8_t) (reg >> 8);
     buf[1] = (uint8_t) (reg & 0xFF);
 
-    if (_i2c->do_transfer(_addr, buf, 2, buf, 1)) {
-        return buf[0];
-    } else {
+    if (!_i2c->do_transfer(_addr, buf, 2, buf, 1)) {
         hal.console->printf("mt9v117: error reading 0x%2x\n", reg);
         return 0;
     }
+
+    return buf[0];
 }
 
 void CameraSensor_Mt9v117::_write_reg8(uint16_t reg, uint8_t val)
@@ -164,12 +164,12 @@ uint16_t CameraSensor_Mt9v117::_read_reg16(uint16_t reg)
     buf[0] = (uint8_t) (reg >> 8);
     buf[1] = (uint8_t) (reg & 0xFF);
 
-    if (_i2c->do_transfer(_addr, buf, 2, buf, 2)) {
-        return (buf[0] << 8 | buf[1]);
-    } else {
+    if (!_i2c->do_transfer(_addr, buf, 2, buf, 2)) {
         hal.console->printf("mt9v117: error reading 0x%4x\n", reg);
         return 0;
     }
+
+    return (buf[0] << 8 | buf[1]);
 }
 
 void CameraSensor_Mt9v117::_write_reg16(uint16_t reg, uint16_t val)
@@ -316,7 +316,7 @@ void CameraSensor_Mt9v117::_apply_patch()
     _write_reg16(PHYSICAL_ADDRESS_ACCESS, 0x7000);
 
     /* write patch */
-    for (unsigned int i=0; i < MT9V117_PATCH_LINE_NUM; i++) {
+    for (unsigned int i = 0; i < MT9V117_PATCH_LINE_NUM; i++) {
         _i2c->do_transfer(_addr,
                           patch_lines[i].data, patch_lines[i].size, NULL, 0);
     }

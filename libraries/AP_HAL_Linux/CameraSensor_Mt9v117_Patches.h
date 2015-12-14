@@ -12,12 +12,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __CAMERASENSOR_MT9V117_PATCHES_H__
-#define __CAMERASENSOR_MT9V117_PATCHES_H__
+#pragma once
 
 /* It seems to be mandatory to write these patches by unit of 48 bytes, the
  * 2 first ones seem to be an address since it increments of 48 at each line
- * Possibly easier to read if written under the form : 
+ * Possibly easier to read if written under the form :
  * writeRegisters(addr, 0xf000, 48, line1);
  * ...
  */
@@ -157,5 +156,3 @@ struct mt9v117_patch_line patch_lines[MT9V117_PATCH_LINE_NUM] = {
     {patch_line12, sizeof(patch_line12)},
     {patch_line13, sizeof(patch_line13)}
 };
-
-#endif

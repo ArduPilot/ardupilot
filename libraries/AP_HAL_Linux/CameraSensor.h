@@ -12,18 +12,17 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __CAMERASENSOR_H__
-#define __CAMERASENSOR_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
 
 class Linux::CameraSensor {
 public:
-    CameraSensor(const char *device_path) {_device_path = device_path;}
+    CameraSensor(const char *device_path) { _device_path = device_path; }
+
     bool set_format(uint32_t width, uint32_t height, uint32_t format);
     bool set_crop(uint32_t left, uint32_t top);
+
 private:
     const char *_device_path;
 };
-
-#endif

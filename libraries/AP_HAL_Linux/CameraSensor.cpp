@@ -12,43 +12,40 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "CameraSensor.h"
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
+
 #include <errno.h>
-#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <linux/v4l2-subdev.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 using namespace Linux;
 
 bool CameraSensor::set_format(uint32_t width, uint32_t height, uint32_t format)
 {
     struct v4l2_subdev_format fmt;
-	int ret, fd;
+    int ret, fd;
 
-	fd = open(_device_path, O_RDWR);
-	if (fd < 0) {
-		return false;
+    fd = open(_device_path, O_RDWR);
+    if (fd < 0) {
+        return false;
     }
 
-	memset(&fmt, 0, sizeof(fmt));
-	fmt.pad = 0;
-	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-	fmt.format.width = width;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.pad = 0;
+    fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+    fmt.format.width = width;
     fmt.format.height = height;
     fmt.format.code = format;
 
-	ret = ioctl(fd, VIDIOC_SUBDEV_S_FMT, &fmt);
-	if (ret < 0) {
-		return false;
+    ret = ioctl(fd, VIDIOC_SUBDEV_S_FMT, &fmt);
+    if (ret < 0) {
+        return false;
     }
 
-	return true;
+    return true;
 }
-#endif
