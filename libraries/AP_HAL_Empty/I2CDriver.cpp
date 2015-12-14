@@ -35,4 +35,14 @@ uint8_t I2CDriver::readRegisters(uint8_t addr, uint8_t reg,
     return 1;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+uint8_t I2CDriver::readRegistersMultiple(uint8_t addr, uint8_t reg,
+                                         uint8_t len, uint8_t count, 
+                                         uint8_t* data)
+{
+    memset(data, 0, len*count);
+    return 1;
+}
+#endif
+
 uint8_t I2CDriver::lockup_count() {return 0;}
