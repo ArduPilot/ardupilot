@@ -34,5 +34,6 @@ help:
 	@echo "  raspilot - the RaspberryPi + pilot cape combination"
 	@echo "  erleboard - the ErleBoard legacy design"
 	@echo "  minlure - the drone lure for MinnowBoard and others"
+	@echo "  qflight - qualcomm flight board"
 	@echo "  erlebrain2 - the Erle-Brain 2 board"
 	@echo "  bhat - the RaspberryPi + BH HAT combination"
