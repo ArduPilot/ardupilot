@@ -12,13 +12,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __AP_OPTICALFLOW_ONBOARD_H__
-#define __AP_OPTICALFLOW_ONBOARD_H__
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_NavEKF/AP_NavEKF.h>
-#include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF/AP_NavEKF.h>
+
+#include "OpticalFlow.h"
 
 class AP_OpticalFlow_Onboard : public OpticalFlow_backend
 {
@@ -31,5 +32,3 @@ private:
     void _get_gyro(float&, float&, float&);
     uint32_t _last_read_ms;
 };
-
-#endif

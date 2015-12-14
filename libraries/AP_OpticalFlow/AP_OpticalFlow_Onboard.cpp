@@ -12,9 +12,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_HAL/AP_HAL.h>
-#include "OpticalFlow.h"
 #include "AP_OpticalFlow_Onboard.h"
+
+#include <AP_HAL/AP_HAL.h>
+
+#include "OpticalFlow.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
