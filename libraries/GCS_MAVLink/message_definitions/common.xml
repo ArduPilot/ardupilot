@@ -2783,7 +2783,7 @@
           <field type="int32_t" name="altitude">Altitude(ASL) in millimeters</field>
           <field type="uint16_t" name="heading">Course over ground in centidegrees</field>
           <field type="uint16_t" name="hor_velocity">The horizontal velocity in centimeters/second</field>
-          <field type="uint16_t" name="ver_velocity">The vertical velocity in centimeters/second, positive is up</field>
+          <field type="int16_t" name="ver_velocity">The vertical velocity in centimeters/second, positive is up</field>
           <field type="char[9]" name="callsign">The callsign, 8+null</field>
           <field type="uint8_t" name="emitter_type" enum="ADSB_EMITTER_TYPE">Type from ADSB_EMITTER_TYPE enum</field>
           <field type="uint8_t" name="tslc">Time since last communication in seconds</field>
