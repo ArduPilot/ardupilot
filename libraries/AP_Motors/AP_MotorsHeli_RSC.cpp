@@ -195,16 +195,31 @@ int16_t AP_MotorsHeli_RSC::calc_open_loop_power_control_output()
 // calc_closed_loop_power_control_output - calculates control output for use in closed loop mode
 int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
 {
+    static float smoothing_factor;  // used to smooth out transition from gov_enabled to disabled over 1 second
     int16_t pid_output;             // pid closed-loop output contribution
     int16_t target_rpm;             // target rpm is ramped
 
     target_rpm = _rotor_ramp_output * _governor_rpm_setpoint;
 
-    if (_gov_enabled){
+    if(_gov_enabled){
+        smoothing_factor += 1.0/_loop_rate;
+    } else if (!_gov_enabled){
+        smoothing_factor -= 1.0/_loop_rate;
+    }
+    smoothing_factor = constrain_float(smoothing_factor, 0.0, 1.0);
+
+    if (smoothing_factor >= 1.0f){
+        // Governor is in full control, run full PID
         _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
         pid_output = _gov_pid->get_pid();
+    } else if ((smoothing_factor > 0.0f) && (smoothing_factor < 1.0f)){
+        // governor is in transition, use P-term, but frozen I-term
+        _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
+        pid_output = _gov_pid->get_p() + _gov_pid->get_integrator();
     } else {
+        // governor is fully disabled
         _gov_pid->set_input_filter_all(0);
+        _gov_pid->reset_I();
         pid_output = 0;
     }
 
