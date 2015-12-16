@@ -160,4 +160,37 @@ int Util::read_file(const char *path, const char *fmt, ...)
     return ret;
 }
 
+const char *Linux::Util::_hw_names[NUM_HARDWARES] = {
+    [HARDWARE_TYPE_BEBOP]  = "Mykonos3 board",
+    [HARDWARE_TYPE_BEBOP2] = "Milos board",
+};
+
+int Util::get_hw()
+{
+    char buf[255];
+    FILE *f = ::fopen("/proc/cpuinfo", "r");
+
+    if (f == NULL) {
+        return -errno;
+    }
+
+    /* truncate lines to 255 */
+    while (::fgets(buf, 255, f) != NULL) {
+        char *cur;
+        if ((cur = ::strstr(buf, "Hardware")) != NULL) {
+            cur += strlen("Hardware");
+            while (*cur == ' ' || *cur == ':' || *cur == '\t') {
+                cur++;
+            }
+            /* beginning of HW name */
+            for (uint8_t i = 0; i < NUM_HARDWARES; i++) {
+                if (strncmp(cur, _hw_names[i], strlen(_hw_names[i])) == 0) {
+                    return i;
+                }
+            }
+        }
+    }
+    return -ENOENT;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
