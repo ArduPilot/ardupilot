@@ -16,6 +16,13 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_BUFSIZE",  1, DataFlash_Class, _params.file_bufsize,       16),
 
+    // @Param: _BEHAVIOUR
+    // @DisplayName: Log behaviour
+    // @Description: Control when to start and stop logging regarding to the state of the vehicle. LogWhenDisarmed: Always logging, a single log file is created on startup. LogArmedSingleFile: Log only while vehicle is armed, a single log file is created first time we arm. LogArmedReopenFile: Log while armed but new log files are	generated after each arm.
+    // @Values: 0:LogWhenDisarmed,1:LogArmedSingleFile ,2:LogArmedReopenFile
+    // @User: Advanced
+    AP_GROUPINFO("_BEHAVIOUR", 2, DataFlash_Class, _params.behaviour, LOG_ARMED_SINGLE_FILE),
+
     AP_GROUPEND
 };
 
@@ -52,6 +59,10 @@ void DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
 
 void DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
     FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
+}
+
+void DataFlash_Class::stop_logging() {
+    FOR_EACH_BACKEND(stop_logging());
 }
 
 // change me to "DoTimeConsumingPreparations"?
@@ -215,6 +226,9 @@ void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Log_Write_Mission_Cmd(mission, cmd));
 }
 
+uint8_t DataFlash_Class::get_log_behaviour(void) {
+    return _params.behaviour;
+}
 
 // end functions pass straight through to backend
 

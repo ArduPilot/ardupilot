@@ -67,6 +67,7 @@ public:
     virtual uint16_t bufferspace_available() = 0;
 
     virtual uint16_t start_new_log(void) = 0;
+    virtual void stop_logging(void) {}
     bool log_write_started;
 
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);

@@ -38,6 +38,12 @@ enum DataFlash_Backend_Type {
     DATAFLASH_BACKEND_BOTH = 3,
 };
 
+enum Log_Behaviour {
+    LOG_WHEN_DISARMED = 0,
+    LOG_ARMED_SINGLE_FILE = 1,
+    LOG_ARMED_REOPEN_FILE =2,
+};
+
 class DataFlash_Class
 {
     friend class DataFlash_Backend; // for _num_types
@@ -137,6 +143,8 @@ public:
 
     bool logging_started(void);
 
+    void stop_logging(void);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
     void flush(void);
@@ -154,6 +162,8 @@ public:
     bool Log_Write_Parameter(const AP_Param *ap, const AP_Param::ParamToken &token, 
                              enum ap_var_type type);
 
+    uint8_t get_log_behaviour(void);
+
     vehicle_startup_message_Log_Writer _vehicle_messages;
 
     // parameter support
@@ -161,6 +171,7 @@ public:
     struct {
         AP_Int8 backend_types;
         AP_Int8 file_bufsize; // in kilobytes
+        AP_Int8 behaviour;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
