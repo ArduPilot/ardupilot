@@ -96,6 +96,12 @@ void DataFlash_File::Init()
     int ret;
     struct stat st;
 
+    semaphore = hal.util->new_semaphore();
+    if (semaphore == nullptr) {
+        hal.console->printf("Failed to create DataFlash_File semaphore\n");
+        return;
+    }
+    
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
@@ -437,8 +443,13 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
         return false;
     }
 
+    if (!semaphore->take(1)) {
+        return false;
+    }
+    
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
+        semaphore->give();
         return false;
     }
 
@@ -453,12 +464,14 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
         // things:
         if (space < non_messagewriter_message_reserved_space()) {
             // this message isn't dropped, it will be sent again...
+            semaphore->give();
             return false;
         }
     } else {
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space()) {
             _dropped++;
+            semaphore->give();
             return false;
         }
     }
@@ -467,6 +480,7 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
     if (space < size) {
         hal.util->perf_count(_perf_overruns);
         _dropped++;
+        semaphore->give();
         return false;
     }
 
@@ -490,6 +504,7 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
             BUF_ADVANCETAIL(_writebuf, n);
         }
     }
+    semaphore->give();
     return true;
 }
 

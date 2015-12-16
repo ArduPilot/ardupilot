@@ -131,6 +131,8 @@ private:
         return ret;
     };
 
+    AP_HAL::Semaphore *semaphore;
+    
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_write;
     AP_HAL::Util::perf_counter_t  _perf_fsync;
