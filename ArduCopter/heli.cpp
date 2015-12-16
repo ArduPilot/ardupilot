@@ -189,7 +189,7 @@ void Copter::heli_update_rotor_speed_targets()
                 if ((rpm_sensor.get_rpm(0) > 0) && ((heli_flags.using_governor_switch && heli_flags.governor_enable) || !heli_flags.using_governor_switch)){
                     motors.set_rsc_governor_enabled(true, motors.get_gov_rpm_setpoint(), rpm_sensor.get_rpm(0));
                 } else {
-                    motors.set_rsc_governor_enabled(false, motors.get_gov_rpm_setpoint(), 0);
+                    motors.set_rsc_governor_enabled(false, motors.get_gov_rpm_setpoint(), rpm_sensor.get_rpm(0));
                 }
             }else{
                 motors.set_interlock(false);
