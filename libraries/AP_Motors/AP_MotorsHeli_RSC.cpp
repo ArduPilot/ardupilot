@@ -196,7 +196,7 @@ int16_t AP_MotorsHeli_RSC::calc_open_loop_power_control_output()
 int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
 {
     static float smoothing_factor;  // used to smooth out transition from gov_enabled to disabled over 1 second
-    int16_t pid_output;             // pid closed-loop output contribution
+    static int16_t pid_output;      // pid closed-loop output contribution
     int16_t target_rpm;             // target rpm is ramped
 
     target_rpm = _rotor_ramp_output * _governor_rpm_setpoint;
@@ -213,18 +213,23 @@ int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
         _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
         pid_output = _gov_pid->get_pid();
     } else if ((smoothing_factor > 0.0f) && (smoothing_factor < 1.0f)){
-        // governor is in transition, use P-term, but frozen I-term
-        _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
-        pid_output = _gov_pid->get_p() + _gov_pid->get_integrator();
+        // if governor is in transition but with a good RPM signal, use P-term, but frozen I-term
+        // otherwise, RPM signal must be unhealthy, in which case we use the last known pid_output
+        // until the smoothing_factor ramps to zero. This will prevent a jump from brief periods of
+        // unhealthy sensor data.
+        if (_rpm_feedback >= 0){
+            _gov_pid->set_input_filter_all(target_rpm - _rpm_feedback);
+            pid_output = (_gov_pid->get_p() + _gov_pid->get_integrator());
+        }
     } else {
-        // governor is fully disabled
+        // governor is fully disabled, reset all terms.
         _gov_pid->set_input_filter_all(0);
         _gov_pid->reset_I();
         pid_output = 0;
     }
 
     // total control output is sum of basic open loop control output plus PID contribution
-    return calc_open_loop_power_control_output() + pid_output;
+    return calc_open_loop_power_control_output() + (smoothing_factor * pid_output);
 }
 
 // set_gov_enable
