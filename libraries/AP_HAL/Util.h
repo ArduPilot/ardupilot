@@ -89,6 +89,9 @@ public:
     virtual void perf_begin(perf_counter_t h) {}
     virtual void perf_end(perf_counter_t h) {}
     virtual void perf_count(perf_counter_t h) {}
+
+    // create a new semaphore
+    virtual Semaphore *new_semaphore(void) { return nullptr; }
     
 protected:
     // we start soft_armed false, so that actuators don't send any
