@@ -7,6 +7,7 @@
 
 #include "AP_HAL_Linux_Namespace.h"
 #include "ToneAlarmDriver.h"
+#include "Semaphores.h"
 
 class Linux::Util : public AP_HAL::Util {
 public:
@@ -61,6 +62,9 @@ public:
     void perf_end(perf_counter_t perf) override;
     void perf_count(perf_counter_t perf) override;
 
+    // create a new semaphore
+    AP_HAL::Semaphore *new_semaphore(void) override { return new Linux::Semaphore; }
+    
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;
