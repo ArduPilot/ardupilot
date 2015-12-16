@@ -245,11 +245,6 @@ void Copter::init_disarm_motors()
     // reset the mission
     mission.reset();
 
-    // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
-        DataFlash.EnableWrites(false);
-    }
-
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);

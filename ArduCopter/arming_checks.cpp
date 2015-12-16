@@ -491,11 +491,6 @@ bool Copter::pre_arm_ekf_attitude_check()
 //  has side-effect that logging is started
 bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 {
-    #if LOGGING_ENABLED == ENABLED
-    // start dataflash
-    start_logging();
-    #endif
-
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         //check if accelerometers have calibrated and require reboot
