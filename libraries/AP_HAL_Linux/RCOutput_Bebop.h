@@ -89,6 +89,7 @@ private:
     uint16_t _max_pwm;
     uint8_t  _state;
     bool     _corking = false;
+    uint16_t _max_rpm;
 
     uint8_t _checksum(uint8_t *data, unsigned int len);
     void _start_prop();

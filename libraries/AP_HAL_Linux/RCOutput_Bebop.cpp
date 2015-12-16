@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include "RCOutput_Bebop.h"
+#include "Util.h"
 
 /* BEBOP BLDC motor controller address and registers description */
 #define BEBOP_BLDC_I2C_ADDR 0x08
@@ -51,7 +52,9 @@ struct bldc_obs_data {
 #define BEBOP_BLDC_MIN_PERIOD_US 1100
 #define BEBOP_BLDC_MAX_PERIOD_US 1900
 #define BEBOP_BLDC_MIN_RPM 3000
-#define BEBOP_BLDC_MAX_RPM 11000
+/* the max rpm speed is different on Bebop 2 */
+#define BEBOP_BLDC_MAX_RPM_1 11000
+#define BEBOP_BLDC_MAX_RPM_2 12200
 
 /* Priority of the thread controlling the BLDC via i2c
  * set to 14, which is the same as the UART 
@@ -226,7 +229,7 @@ uint16_t RCOutput_Bebop::_period_us_to_rpm(uint16_t period_us)
     float period_us_fl = period_us;
 
     float rpm_fl = (period_us_fl - _min_pwm)/(_max_pwm - _min_pwm) *
-                    (BEBOP_BLDC_MAX_RPM - BEBOP_BLDC_MIN_RPM) + BEBOP_BLDC_MIN_RPM;
+                    (_max_rpm - BEBOP_BLDC_MIN_RPM) + BEBOP_BLDC_MIN_RPM;
 
     return (uint16_t)rpm_fl;
 }
@@ -397,6 +400,12 @@ void RCOutput_Bebop::_run_rcout()
     bebop_bldc_channels[1] = bebop_bldc_left_back;
     bebop_bldc_channels[2] = bebop_bldc_left_front;
     bebop_bldc_channels[3] = bebop_bldc_right_back;
+
+    if (Util::from(hal.util)->get_hw() == HARDWARE_TYPE_BEBOP) {
+        _max_rpm = BEBOP_BLDC_MAX_RPM_1;
+    } else {
+        _max_rpm = BEBOP_BLDC_MAX_RPM_2;
+    }
 
     while (true) {
         pthread_mutex_lock(&_mutex);

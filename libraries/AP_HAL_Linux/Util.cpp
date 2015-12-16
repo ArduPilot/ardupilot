@@ -168,10 +168,12 @@ const char *Linux::Util::_hw_names[NUM_HARDWARES] = {
 int Util::get_hw()
 {
     char buf[255];
+    int ret = -ENOENT;
     FILE *f = ::fopen("/proc/cpuinfo", "r");
 
     if (f == NULL) {
-        return -errno;
+        ret = -errno;
+        goto end;
     }
 
     /* truncate lines to 255 */
@@ -185,12 +187,16 @@ int Util::get_hw()
             /* beginning of HW name */
             for (uint8_t i = 0; i < NUM_HARDWARES; i++) {
                 if (strncmp(cur, _hw_names[i], strlen(_hw_names[i])) == 0) {
-                    return i;
+                    ret = i;
+                    goto close_end;
                 }
             }
         }
     }
-    return -ENOENT;
+close_end:
+    fclose(f);
+end:
+    return ret;
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
