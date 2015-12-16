@@ -374,7 +374,7 @@ void RCOutput_Bebop::_run_rcout()
     memset(current_period_us, 0, sizeof(current_period_us));
 
     if (!_get_info(&info)) {
-        AP_HAL::panic("failed to get BLDC info\n");
+        AP_HAL::panic("failed to get BLDC info");
     }
 
     /* Set motor order depending on BLDC version.On bebop 1 with version 1
