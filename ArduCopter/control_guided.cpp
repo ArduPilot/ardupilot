@@ -155,6 +155,19 @@ void Copter::guided_angle_control_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
+void Copter::guided_optical_track_control_start()
+{
+    // set guided_mode to optical track controller
+    guided_mode = Guided_Optical_Track;
+
+    pos_control.init_xy_controller();
+
+    // set target position current position and velocity to zero
+    const Vector3f& curr_pos = inertial_nav.get_position();
+    pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+    pos_control.set_desired_velocity_xy(0, 0);
+}
+
 // guided_set_destination - sets guided mode's target destination
 void Copter::guided_set_destination(const Vector3f& destination)
 {
@@ -242,6 +255,11 @@ void Copter::guided_run()
     case Guided_Angle:
         // run angle controller
         guided_angle_control_run();
+        break;
+
+    case Guided_Optical_Track:
+        //run optical tracking controller
+        guided_optical_track_control_run();
         break;
     }
  }
@@ -488,6 +506,30 @@ void Copter::guided_angle_control_run()
     pos_control.update_z_controller();
 }
 
+void Copter::guided_optical_track_control_run()
+{
+    // if not auto armed or motors not enabled set throttle to zero and exit immediately
+    if (!ap.auto_armed || !motors.get_interlock() || ap.land_complete) {
+        // initialise velocity controller
+        pos_control.init_vel_controller_xyz();
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        return;
+    }
+
+    pos_control.update_xy_controller(AC_PosControl::XY_MODE_POS_ONLY, 1.0f, false);
+
+#if PRECISION_LANDING == ENABLED
+    // shift the target position
+    const Vector3f &pos_adjustment = precland.get_target_shift(inertial_nav.get_position());
+    pos_control.shift_pos_xy_target(pos_adjustment.x, pos_adjustment.y);
+#endif
+}
 // Guided Limit code
 
 // guided_limit_clear - clear/turn off guided limits

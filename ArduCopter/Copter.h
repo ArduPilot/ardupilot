@@ -757,6 +757,7 @@ private:
     void guided_vel_control_start();
     void guided_posvel_control_start();
     void guided_angle_control_start();
+    void guided_optical_track_control_start();
     void guided_set_destination(const Vector3f& destination);
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
@@ -767,6 +768,7 @@ private:
     void guided_vel_control_run();
     void guided_posvel_control_run();
     void guided_angle_control_run();
+    void guided_optical_track_control_run();
     void guided_limit_clear();
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     void guided_limit_init_time_and_pos();
