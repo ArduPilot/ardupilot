@@ -375,6 +375,10 @@ private:
     // Flip
     Vector3f flip_orig_attitude;         // original copter attitude before flip
 
+    // Throw
+    bool throw_early_exit_interlock = true; // value of the throttle interlock that must be restored when exiting throw mode early
+    bool throw_flight_commenced = false;    // true when the throw has been detected and the motors and control loops are running
+
     // Battery Sensors
     AP_BattMonitor battery;
 
@@ -801,6 +805,13 @@ private:
     void poshold_get_wind_comp_lean_angles(int16_t &roll_angle, int16_t &pitch_angle);
     void poshold_roll_controller_to_pilot_override();
     void poshold_pitch_controller_to_pilot_override();
+
+    // Throw to launch functionality
+    bool throw_init(bool ignore_checks);
+    void throw_run();
+    bool throw_detected();
+    bool throw_attitude_good();
+    bool throw_height_good();
 
     bool rtl_init(bool ignore_checks);
     void rtl_run();
