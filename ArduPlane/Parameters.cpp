@@ -221,45 +221,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: User
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
-    // @Param: LAND_PITCH_CD
-    // @DisplayName: Landing Pitch
-    // @Description: Used in autoland to give the minimum pitch in the final stage of landing (after the flare). This parameter can be used to ensure that the final landing attitude is appropriate for the type of undercarriage on the aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate.
-    // @Units: centi-Degrees
-    // @User: Advanced
-    ASCALAR(land_pitch_cd,          "LAND_PITCH_CD",  0),
-
-    // @Param: LAND_FLARE_ALT
-    // @DisplayName: Landing flare altitude
-    // @Description: Altitude in autoland at which to lock heading and flare to the LAND_PITCH_CD pitch. Note that this option is secondary to LAND_FLARE_SEC. For a good landing it preferable that the flare is triggered by LAND_FLARE_SEC. 
-    // @Units: meters
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(land_flare_alt,          "LAND_FLARE_ALT",  3.0),
-
-    // @Param: LAND_FLARE_SEC
-    // @DisplayName: Landing flare time
-    // @Description: Vertical time before landing point at which to lock heading and flare with the motor stopped. This is vertical time, and is calculated based solely on the current height above the ground and the current descent rate.  Set to 0 if you only wish to flare based on altitude (see LAND_FLARE_ALT).
-    // @Units: seconds
-    // @Increment: 0.1
-    // @User: Advanced
-    ASCALAR(land_flare_sec,          "LAND_FLARE_SEC",  2.0),
-
-    // @Param: LAND_DISARMDELAY
-    // @DisplayName: Landing disarm delay
-    // @Description: After a landing has completed using a LAND waypoint, automatically disarm after this many seconds have passed. Use 0 to not disarm.
-    // @Units: seconds
-    // @Increment: 1
-    // @Range: 0 127
-    // @User: Advanced
-    GSCALAR(land_disarm_delay,       "LAND_DISARMDELAY",  20),
-
-    // @Param: LAND_ABORT_THR
-    // @DisplayName: Landing abort using throttle
-    // @Description: Allow a landing abort to trigger with a throttle > 95%
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    GSCALAR(land_abort_throttle_enable,       "LAND_ABORT_THR",  0),
-
 	// @Param: NAV_CONTROLLER
 	// @DisplayName: Navigation controller selection
 	// @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
@@ -896,14 +857,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-    // @Param: LAND_FLAP_PERCNT
-    // @DisplayName: Landing flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in the landing approach and flare of an automatic landing
-    // @Range: 0 100
-    // @Units: Percent
-    // @User: Advanced
-    GSCALAR(land_flap_percent,     "LAND_FLAP_PERCNT", 0),
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
@@ -1214,6 +1167,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
 
+    // @Group: LAND_
+    // @Path: ../libraries/AP_Land/AP_Land.cpp
+    GOBJECT(land, "LAND_", AP_Land),
+
     AP_VAREND
 };
 
@@ -1254,6 +1211,14 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
+
+    { Parameters::k_param_land_pitch_cd,      0,      AP_PARAM_INT16, "LAND_PITCH_CD" },
+    { Parameters::k_param_land_flare_alt,     0,      AP_PARAM_FLOAT, "LAND_FLARE_ALT" },
+    { Parameters::k_param_land_flare_sec,     0,      AP_PARAM_FLOAT, "LAND_FLARE_SEC" },
+    { Parameters::k_param_land_disarm_delay,  0,      AP_PARAM_INT8, "LAND_DISARMDELAY" },
+    { Parameters::k_param_land_abort_throttle_enable,0,AP_PARAM_INT8, "LAND_ABORT_THR" },
+    { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8, "LAND_FLAP_PERCNT" },
+
 };
 
 void Plane::load_parameters(void)

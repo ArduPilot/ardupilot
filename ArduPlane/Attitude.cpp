@@ -203,7 +203,7 @@ void Plane::stabilize_stick_mixing_fbw()
  */
 void Plane::stabilize_yaw(float speed_scaler)
 {
-    if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (control_mode == AUTO && (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP)) {
         // in land final setup for ground steering
         steering_control.ground_steering = true;
     } else {
@@ -225,7 +225,7 @@ void Plane::stabilize_yaw(float speed_scaler)
       final stage of landing (when the wings are help level) or when
       in course hold in FBWA mode (when we are below GROUND_STEER_ALT)
      */
-    if ((control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) ||
+    if ((control_mode == AUTO && (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP)) ||
         (steer_state.hold_course_cd != -1 && steering_control.ground_steering)) {
         calc_nav_yaw_course();
     } else if (steering_control.ground_steering) {
@@ -489,7 +489,19 @@ void Plane::calc_nav_pitch()
     // Calculate the Pitch of the plane
     // --------------------------------
     nav_pitch_cd = SpdHgt_Controller->get_pitch_demand();
-    nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    
+    if(flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+       flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+       flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP ||
+       flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP) //constrain differently if in landing approach/landing final
+    {
+       //we shouldn't need to constrain pitch here because nav_pitch_cd  will be constrained already before this in AP_TECS
+       nav_pitch_cd = nav_pitch_cd;
+    }
+    else //constrain like normal
+    {
+       nav_pitch_cd = constrain_int32(nav_pitch_cd, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
+    }   
 }
 
 
@@ -752,6 +764,95 @@ uint16_t Plane::throttle_min(void) const
     return channel_throttle->get_reverse() ? channel_throttle->radio_max : channel_throttle->radio_min;
 };
 
+/*****************************************
+* Offset PWM values to account for a more charged battery than usual
+*****************************************/
+int16_t Plane::bat_level_pwm_offset(void)
+{
+    int16_t pwm_offset;
+    uint8_t cell_count = battery.estiamted_LiPo_cell_count();
+    
+    //determine amount of offset based on cell count
+    if (cell_count != 0) {
+        if (battery.voltage() < (cell_count * 3.7f)) { //3.7 volts is a dead cell
+            pwm_offset = 0;
+        } else if (battery.voltage() > (cell_count * 4.2f)) { //4.2 volts is a charged cell
+            pwm_offset = land.bat_offset;
+        } else {
+            float batteryLevel = (battery.voltage() - (cell_count * 3.7f)) / ((cell_count * 4.2f) - (cell_count * 3.7f));
+            pwm_offset = (land.bat_offset * batteryLevel);
+        }
+    } else {
+        pwm_offset = 0;
+    }
+    
+    return pwm_offset;
+}
+
+/*****************************************
+* This is a very basic function to try and adjust the amount of reverse throttle so that we can hit a specific ground speed during approach 
+*****************************************/
+int16_t Plane::approach_target_speed_pwm_offset(void)
+{
+    int16_t pwmOffset;
+    
+    float speedError = gps.ground_speed() - land.app_tar_spd;
+    
+    pwmOffset = (int16_t)(land.app_spd_const * speedError) ;
+    
+    return pwmOffset;
+}
+
+/*****************************************
+* Calculate the amount of reverse throttle to apply on approach
+*****************************************/
+int16_t Plane::calculate_approach_throttle(void)
+{
+    int16_t throttle_out_pwm = 0; //value we will return
+    int16_t alt_error = calc_altitude_error_cm(); //determine altitude error in centimeters (target - actual)
+    int16_t adjustedMaxReversePWM = 0;
+    int16_t adjustedMinReversePWM = 0;
+    
+    //change the maximum amount of reverse throttle based on battery level
+    //this is necessary because a full battery leads to a much harsher reverse throttle at the same PWM levels
+    adjustedMaxReversePWM = land.thr_min_rev_pwm + bat_level_pwm_offset();
+    
+    //set the pwm value associated with minimum amount of reverse throttle to be 50% of forward throttle
+    adjustedMinReversePWM = (channel_throttle->radio_max + channel_throttle->radio_min) / 2;
+    
+    int16_t reverse_pwm_range = adjustedMinReversePWM - adjustedMaxReversePWM;
+    float error_proportion = 0;
+    
+    //pre-flare stuff
+    //this will be used to set a specific throttle percent just before the flare point
+    if(((relative_altitude() + rangefinder_correction()) <= land.pre_flare_alt) && ((relative_altitude() + rangefinder_correction()) > land.flare_alt))
+    {
+		if(land.pre_flare_thr >= 0) {
+			throttle_out_pwm = ((land.pre_flare_thr/100) * (channel_throttle->radio_max - channel_throttle->radio_min)) + channel_throttle->radio_min;
+		} else {
+			throttle_out_pwm = channel_throttle->radio_min - ((-1)*(land.pre_flare_thr/100) * (channel_throttle->radio_min - land.thr_min_rev_pwm));
+		}      
+        return throttle_out_pwm;
+    }   
+    
+    if(alt_error <= 0) //we are above our target altitude
+    {
+        error_proportion = alt_error / land.rev_pt_up; //land.rev_pt_up is the altitude error from glide slope that we use the most amount of reverse throttle (this happens when we are above our land slope)
+        throttle_out_pwm = adjustedMinReversePWM + (reverse_pwm_range * error_proportion); //error proportion will be negative here
+    }
+    else //we are below our target altitude
+    {
+        error_proportion = alt_error / land.rev_pt_dn; //land.rev_pt_dn is the altitude error from glide slope that we use the least amount of reverse throttle (this happens when we are below our land slope)
+        throttle_out_pwm = adjustedMaxReversePWM + (reverse_pwm_range * error_proportion); //we will scale how much reverse throttle to use based on how far below the glide slope we are
+    }
+    
+    //adjust reverse output based on groundspeed
+    throttle_out_pwm = throttle_out_pwm - approach_target_speed_pwm_offset();
+    
+    throttle_out_pwm = constrain_int16(throttle_out_pwm, adjustedMaxReversePWM, adjustedMinReversePWM); //stay within min and max reverse values (min is higher than max)
+    
+    return throttle_out_pwm;
+}
 
 /*****************************************
 * Set the flight control servos based on the current calculated values
@@ -875,7 +976,7 @@ void Plane::set_servos(void)
         // convert 0 to 100% into PWM
         uint8_t min_throttle = aparm.throttle_min.get();
         uint8_t max_throttle = aparm.throttle_max.get();
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        if (control_mode == AUTO && (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP)) {
             min_throttle = 0;
         }
         if (control_mode == AUTO &&
@@ -890,7 +991,41 @@ void Plane::set_servos(void)
                                                       min_throttle,
                                                       max_throttle);
 
-        if (!hal.util->get_soft_armed()) {
+        
+
+        //Add conditionals that will allow us to force the throttle PWM below the normal minimum
+        //so that we can use a reverse throttle during approach and landing
+        if((flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) && control_mode == AUTO && !throttle_suppressed) {
+            channel_throttle->radio_out = calculate_approach_throttle();  //calculate based on altitude error
+        } else if((flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP) && control_mode == AUTO && !throttle_suppressed) {     
+                
+				//calculate flare throttle PWM from flare throttle percentage
+				int16_t flare_thr_pwm = 0;
+				if(land.flare_thr >= 0) {
+					flare_thr_pwm = ((land.flare_thr/100) * (channel_throttle->radio_max - channel_throttle->radio_min)) + channel_throttle->radio_min;
+				} else {
+					flare_thr_pwm = channel_throttle->radio_min - ((-1)*(land.flare_thr/100) * (channel_throttle->radio_min - land.thr_min_rev_pwm));
+				}      
+				
+				//offset based on battery level
+                int16_t adjustedLandPWM = flare_thr_pwm + bat_level_pwm_offset();
+                
+                //if we are past the land point, add more reverse throttle to kill our speed, but only if enabled in parameters
+                if(!is_zero(land.rev_on_gnd)) { //handles throttle calculation for props not touching the ground
+                    if(location_passed_point(current_loc, prev_WP_loc, next_WP_loc) && get_distance(current_loc, prev_WP_loc) > abs(20)) { //20 meters past landing point
+                        channel_throttle->radio_out = adjustedLandPWM - 200; //add a lot of reverse throttle
+                    } else if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc) && get_distance(current_loc, prev_WP_loc) > abs(10)) { //10 meters past
+                        channel_throttle->radio_out = adjustedLandPWM - 150;  //add a good amount of reverse throttle    
+                    } else if(location_passed_point(current_loc, prev_WP_loc, next_WP_loc) && get_distance(current_loc, prev_WP_loc) > abs(0)) { //0 meters past
+                        channel_throttle->radio_out = adjustedLandPWM - 100;  //add a small amount of reverse throttle    
+                    } else {
+                        channel_throttle->radio_out = adjustedLandPWM; 
+                    }
+                } else { //handles frame where prop touches the ground, just turns off throttle
+					channel_throttle->radio_out = channel_throttle->radio_min;
+            }
+        } 
+        else if (!hal.util->get_soft_armed()) {
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();                
         } else if (suppress_throttle()) {
@@ -963,8 +1098,9 @@ void Plane::set_servos(void)
                 break;
             case AP_SpdHgtControl::FLIGHT_LAND_APPROACH:
             case AP_SpdHgtControl::FLIGHT_LAND_FINAL:
-                if (g.land_flap_percent != 0) {
-                    auto_flap_percent = g.land_flap_percent;
+            case AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP:
+                if (land.flap_percent != 0) {
+                    auto_flap_percent = land.flap_percent;
                 }
                 break;
             default:

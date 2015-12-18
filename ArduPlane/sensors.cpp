@@ -36,7 +36,9 @@ void Plane::read_rangefinder(void)
     {
         // use the best available alt estimate via baro above home
         if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP ||
+            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP) {
             // ensure the rangefinder is powered-on when land alt is higher than home altitude.
             // This is done using the target alt which we know is below us and we are sinking to it
             height = height_above_target();

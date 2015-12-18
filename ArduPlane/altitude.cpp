@@ -30,11 +30,11 @@ void Plane::adjust_altitude_target()
         control_mode == CRUISE) {
         return;
     }
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP) {
         // in land final TECS uses TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
-    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+    } else if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
         setup_landing_glide_slope();
     } else if (nav_controller->reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
@@ -357,7 +357,9 @@ void Plane::set_offset_altitude_location(const Location &loc)
 #endif
 
     if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP &&
+        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP) {
         // if we are within GLIDE_SLOPE_MIN meters of the target altitude
         // then reset the offset to not use a glide slope. This allows for
         // more accurate flight of missions where the aircraft may lose or
@@ -535,7 +537,9 @@ float Plane::rangefinder_correction(void)
     bool using_rangefinder = (g.rangefinder_landing &&
                               control_mode == AUTO && 
                               (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL));
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP ||
+                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP));
     if (!using_rangefinder) {
         return 0;
     }
@@ -575,12 +579,22 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.in_range = true;
             if (!rangefinder_state.in_use &&
-                flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
+                (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)height_estimate);
             }
         }
+        
+        //this needs to be a parameter
+        //we also are only going to be considered in range if we are under 30 meters according to barometer
+        //hopefully this avoids false low value readings with SF02 rangefinder, and 30 meters should give us enough room even with baro drift
+        if(relative_altitude() <= 30 && rangefinder_state.in_range == true) {
+            rangefinder_state.in_range = true;
+        } else {
+            rangefinder_state.in_range = false;
+        }
+        
     } else {
         rangefinder_state.in_range_count = 0;
         rangefinder_state.in_range = false;

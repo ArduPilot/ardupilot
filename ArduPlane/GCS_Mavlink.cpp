@@ -1382,7 +1382,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             //Not allowing go around at FLIGHT_LAND_FINAL stage on purpose --
             //if plane is close to the ground a go around coudld be dangerous.
-            if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH) {
+            if (plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH || plane.flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
                 //Just tell the autopilot we're done landing so it will 
                 //proceed to the next mission item.  If there is no next mission
                 //item the plane will head to home point and loiter.
