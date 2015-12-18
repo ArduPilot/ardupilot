@@ -72,7 +72,7 @@ const Vector3f &AP_InertialNav_NavEKF::get_position(void) const
 }
 
 /**
- * get_location - updates the provided location with the latest calculated locatoin
+ * get_location - updates the provided location with the latest calculated location
  *  returns true on success (i.e. the EKF knows it's latest position), false on failure
  */
 bool AP_InertialNav_NavEKF::get_location(struct Location &loc) const
