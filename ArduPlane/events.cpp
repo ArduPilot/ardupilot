@@ -115,10 +115,7 @@ void Plane::low_battery_event(void)
     }
     gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Low battery %.2fV used %.0f mAh",
                       (double)battery.voltage(), (double)battery.current_total_mah());
-    if (flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP &&
-        flight_stage != AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
+    if (!AP_Land::flightstage_is_land(flight_stage) && flight_stage != AP_SpdHgtControl::FLIGHT_LAND_ABORT) {
     	set_mode(RTL);
     	aparm.throttle_cruise.load();
     }

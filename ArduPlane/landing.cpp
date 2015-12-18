@@ -327,10 +327,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP ||
-        flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP) {
+    if (AP_Land::flightstage_is_land(flight_stage)) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {

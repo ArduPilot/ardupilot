@@ -536,10 +536,7 @@ float Plane::rangefinder_correction(void)
     // for now we only support the rangefinder for landing 
     bool using_rangefinder = (g.rangefinder_landing &&
                               control_mode == AUTO && 
-                              (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP ||
-                               flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP));
+                              AP_Land::flightstage_is_land(flight_stage));
     if (!using_rangefinder) {
         return 0;
     }
