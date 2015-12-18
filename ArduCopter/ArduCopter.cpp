@@ -551,7 +551,7 @@ void Copter::update_GPS(void)
         if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
 
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc) == true) {
+            if (camera.update_location(current_loc, copter.ahrs) == true) {
                 do_take_picture();
             }
 #endif
