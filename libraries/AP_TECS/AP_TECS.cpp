@@ -183,6 +183,24 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("LAND_PMAX", 20, AP_TECS, _land_pitch_max, 10),
+    
+    // @Param: APPR_PMIN
+    // @DisplayName: Minimum Approach Pitch Angle
+    // @Description: The minimum pitch down angle during landing approach
+    // @Units: centi-Degrees
+    // @Range: -9000 9000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("APPR_PMIN",  21,  AP_TECS, _lib_pitch_limit_min_approach_cd, -4100),
+    
+    // @Param: APPR_PMAX
+    // @DisplayName: Maximum Approach Pitch Angle
+    // @Description: The maximum pitch up angle during landing approach
+    // @Units: centi-Degrees
+    // @Range: -9000 9000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("APPR_PMAX",  22,  AP_TECS, _lib_pitch_limit_max_approach_cd, -500),
 
     AP_GROUPEND
 };
@@ -304,7 +322,7 @@ void AP_TECS::_update_speed(float load_factor)
         _TASmax = _TASmin;
     }
     if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() &&
-            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL)) {
+            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP)) {
         _TAS_dem = _landAirspeed * EAS2TAS;
         if (_TASmin > _TAS_dem) {
             _TASmin = _TAS_dem;
@@ -419,7 +437,7 @@ void AP_TECS::_update_height_demand(void)
     // in final landing stage force height rate demand to the
     // configured sink rate and adjust the demanded height to
     // be kinematically consistent with the height rate.
-    if (_flight_stage == FLIGHT_LAND_FINAL) {
+    if (_flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_FINAL_STEEP) {
         _integ7_state = 0;
         if (_flare_counter == 0) {
             _hgt_rate_dem = _climb_rate;
@@ -445,7 +463,7 @@ void AP_TECS::_update_height_demand(void)
     // us to consistently be above the desired glide slope. This will
     // be replaced with a better zero-lag filter in the future.
     float new_hgt_dem = _hgt_dem_adj;
-    if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL) {
+    if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP) {
         new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
     }
     _hgt_dem_adj_last = _hgt_dem_adj;
@@ -456,7 +474,7 @@ void AP_TECS::_detect_underspeed(void)
 {
     if (((_integ5_state < _TASmin * 0.9f) &&
             (_throttle_dem >= _THRmaxf * 0.95f) &&
-            _flight_stage != AP_TECS::FLIGHT_LAND_FINAL) ||
+            (_flight_stage != AP_TECS::FLIGHT_LAND_FINAL && _flight_stage != AP_TECS::FLIGHT_LAND_FINAL_STEEP)) ||
             ((_height < _hgt_dem_adj) && _underspeed))
     {
         _underspeed = true;
@@ -493,7 +511,9 @@ void AP_TECS::_update_energies(void)
 float AP_TECS::timeConstant(void) const
 {
     if (_flight_stage==FLIGHT_LAND_FINAL ||
-            _flight_stage==FLIGHT_LAND_APPROACH) {
+            _flight_stage==FLIGHT_LAND_APPROACH ||
+            _flight_stage == FLIGHT_LAND_APPROACH_STEEP ||
+            _flight_stage== FLIGHT_LAND_FINAL_STEEP) {
         if (_landTimeConst < 0.1f) {
             return 0.1f;
         }
@@ -598,7 +618,8 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
     //TECS_LAND_THR param then use it
-    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL) &&
+    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL ||
+         _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP) &&
             _landThrottle >= 0) {
         nomThr = (_landThrottle + throttle_nudge) * 0.01f;
     } else { //not landing or not using TECS_LAND_THR parameter
@@ -666,7 +687,8 @@ void AP_TECS::_update_pitch(void)
         SKE_weighting = 0.0f;
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
-    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL ||
+               _flight_stage == AP_TECS::FLIGHT_LAND_APPROACH_STEEP || _flight_stage== AP_TECS::FLIGHT_LAND_FINAL_STEEP) {
         SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
     }
 
@@ -691,7 +713,7 @@ void AP_TECS::_update_pitch(void)
     _integ7_state = _integ7_state + integ7_input * _DT;
 
 #if 0
-    if (_flight_stage == FLIGHT_LAND_FINAL && fabsf(_climb_rate) > 0.2f) {
+    if ((_flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_FINAL_STEEP) && fabsf(_climb_rate) > 0.2f) {
         ::printf("_hgt_rate_dem=%.1f _hgt_dem_adj=%.1f climb=%.1f _flare_counter=%u _pitch_dem=%.1f SEB_dem=%.2f SEBdot_dem=%.2f SEB_error=%.2f SEBdot_error=%.2f\n",
                  _hgt_rate_dem, _hgt_dem_adj, _climb_rate, _flare_counter, degrees(_pitch_dem),
                  SEB_dem, SEBdot_dem, SEB_error, SEBdot_error);
@@ -708,7 +730,7 @@ void AP_TECS::_update_pitch(void)
     // During flare a different damping gain is used
     float gainInv = (_integ5_state * timeConstant() * GRAVITY_MSS);
     float temp = SEB_error + SEBdot_dem * timeConstant();
-    if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL) {
+    if (_flight_stage == AP_TECS::FLIGHT_LAND_FINAL || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL_STEEP) {
         temp += SEBdot_error * _landDamp;
     } else {
         temp += SEBdot_error * _ptchDamp;
@@ -825,35 +847,40 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else {
         _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
     }
-    if (flight_stage == FLIGHT_LAND_FINAL) {
+    if (flight_stage == FLIGHT_LAND_FINAL || flight_stage == FLIGHT_LAND_FINAL_STEEP) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
 
         // and use max pitch from TECS_LAND_PMAX
-        if (_land_pitch_max > 0) {
-            _PITCHmaxf = MIN(_PITCHmaxf, _land_pitch_max);
-        }
 
+        _PITCHmaxf = _land_pitch_max;
+        
         // and allow zero throttle
         _THRminf = 0;
-    } else if (flight_stage == FLIGHT_LAND_APPROACH && (-_climb_rate) > _land_sink) {
-        // constrain the pitch in landing as we get close to the flare
-        // point. Use a simple linear limit from 15 meters after the
-        // landing point
-        float time_to_flare = (- hgt_afe / _climb_rate) - aparm.land_flare_sec;
-        if (time_to_flare < 0) {
-            // we should be flaring already
-            _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
-        } else if (time_to_flare < timeConstant()*2) {
-            // smoothly move the min pitch to the flare min pitch over
-            // twice the time constant
-            float p = time_to_flare/(2*timeConstant());
-            float pitch_limit_cd = p*aparm.pitch_limit_min_cd + (1-p)*aparm.land_pitch_cd;
+    }     
+    else if (flight_stage == FLIGHT_LAND_APPROACH || flight_stage == FLIGHT_LAND_APPROACH_STEEP) {
+        _PITCHminf = _lib_pitch_limit_min_approach_cd * 0.01f;
+        _PITCHmaxf = _lib_pitch_limit_max_approach_cd * 0.01f;
+        if((-_climb_rate) > _land_sink)
+        {
+            // constrain the pitch in landing as we get close to the flare
+            // point. Use a simple linear limit from 15 meters after the
+            // landing point
+            float time_to_flare = (- hgt_afe / _climb_rate) - aparm.land_flare_sec;
+            if (time_to_flare < 0) {
+                // we should be flaring already
+                _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
+            } else if (time_to_flare < timeConstant()*2) {
+                // smoothly move the min pitch to the flare min pitch over
+                // twice the time constant
+                float p = time_to_flare/(2*timeConstant());
+                float pitch_limit_cd = p*(_lib_pitch_limit_min_approach_cd * 0.01f) + (1-p)*aparm.land_pitch_cd; //p*aparm.pitch_limit_min_cd + (1-p)*aparm.land_pitch_cd;
 #if 0
             ::printf("ttf=%.1f hgt_afe=%.1f _PITCHminf=%.1f pitch_limit=%.1f climb=%.1f\n",
                      time_to_flare, hgt_afe, _PITCHminf, pitch_limit_cd*0.01f, _climb_rate);
 #endif
             _PITCHminf = MAX(_PITCHminf, pitch_limit_cd*0.01f);
+            }
         }
     }
 
