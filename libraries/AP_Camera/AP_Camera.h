@@ -60,7 +60,7 @@ public:
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
 
     // Update location of vehicle and return true if a picture should be taken
-    bool update_location(const struct Location &loc);
+    bool update_location(const struct Location &loc, const AP_AHRS &ahrs);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -77,6 +77,9 @@ private:
     void            relay_pic();        // basic relay activation
 
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
+    AP_Int16        _min_interval;      // Minimum time between shots required by camera
+    AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
+    uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
