@@ -22,6 +22,11 @@ bool Copter::set_mode(uint8_t mode)
         return true;
     }
 
+    // If exiting throw mode before commencing flight, restore the throttle interlock to the value last set by the switch
+    if ((mode == THROW) && (control_mode != THROW) && !throw_flight_commenced) {
+        motors.set_interlock(throw_early_exit_interlock);
+    }
+
     switch(mode) {
         case ACRO:
             #if FRAME_CONFIG == HELI_FRAME
@@ -93,6 +98,10 @@ bool Copter::set_mode(uint8_t mode)
 
         case BRAKE:
             success = brake_init(ignore_checks);
+            break;
+
+        case THROW:
+            success = throw_init(ignore_checks);
             break;
 
         default:
@@ -206,6 +215,10 @@ void Copter::update_flight_mode()
         case BRAKE:
             brake_run();
             break;
+
+        case THROW:
+            throw_run();
+            break;
     }
 }
 
@@ -271,6 +284,7 @@ bool Copter::mode_requires_GPS(uint8_t mode) {
         case DRIFT:
         case POSHOLD:
         case BRAKE:
+        case THROW:
             return true;
         default:
             return false;
@@ -295,7 +309,7 @@ bool Copter::mode_has_manual_throttle(uint8_t mode) {
 // mode_allows_arming - returns true if vehicle can be armed in the specified mode
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Copter::mode_allows_arming(uint8_t mode, bool arming_from_gcs) {
-    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || (arming_from_gcs && mode == GUIDED)) {
+    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && mode == GUIDED)) {
         return true;
     }
     return false;
@@ -369,6 +383,9 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case BRAKE:
         port->print("BRAKE");
+        break;
+    case THROW:
+        port->print("THROW");
         break;
     default:
         port->printf("Mode(%u)", (unsigned)mode);

@@ -1105,6 +1105,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
+    // @Param: THROW_MOT_START
+    // @DisplayName: Start motors before throwing is detected
+    // @Description: Used by THROW mode. Controls whether motors will run at the speed set by THR_MIN or will be stopped when armed and waiting for the throw.
+    // @Values: 0:Stopped,1:Running
+    // @User: Standard
+    GSCALAR(throw_motor_start, "THROW_MOT_START", 0),
+
     AP_VAREND
 };
 

@@ -77,7 +77,7 @@ void Copter::auto_disarm_check()
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0) {
+    if (!motors.armed() || disarm_delay_ms == 0 || control_mode == THROW) {
         auto_disarm_begin = tnow_ms;
         return;
     }
