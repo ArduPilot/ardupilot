@@ -2,6 +2,7 @@
 
 #include "AP_TECS.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Land/AP_Land.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -321,8 +322,7 @@ void AP_TECS::_update_speed(float load_factor)
     if (_TASmax < _TASmin) {
         _TASmax = _TASmin;
     }
-    if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() &&
-            (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP)) {
+    if (_landAirspeed >= 0 && _ahrs.airspeed_sensor_enabled() && AP_Land::flightstage_is_land(_flight_stage)) {
         _TAS_dem = _landAirspeed * EAS2TAS;
         if (_TASmin > _TAS_dem) {
             _TASmin = _TAS_dem;
@@ -463,7 +463,7 @@ void AP_TECS::_update_height_demand(void)
     // us to consistently be above the desired glide slope. This will
     // be replaced with a better zero-lag filter in the future.
     float new_hgt_dem = _hgt_dem_adj;
-    if (_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage == FLIGHT_LAND_FINAL || _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP) {
+    if (AP_Land::flightstage_is_land(_flight_stage)) {
         new_hgt_dem += (_hgt_dem_adj - _hgt_dem_adj_last)*10.0f*(timeConstant()+1);
     }
     _hgt_dem_adj_last = _hgt_dem_adj;
@@ -510,10 +510,7 @@ void AP_TECS::_update_energies(void)
  */
 float AP_TECS::timeConstant(void) const
 {
-    if (_flight_stage==FLIGHT_LAND_FINAL ||
-            _flight_stage==FLIGHT_LAND_APPROACH ||
-            _flight_stage == FLIGHT_LAND_APPROACH_STEEP ||
-            _flight_stage== FLIGHT_LAND_FINAL_STEEP) {
+    if (AP_Land::flightstage_is_land(_flight_stage)) {
         if (_landTimeConst < 0.1f) {
             return 0.1f;
         }
@@ -618,9 +615,7 @@ void AP_TECS::_update_throttle_option(int16_t throttle_nudge)
     float nomThr;
     //If landing and we don't have an airspeed sensor and we have a non-zero
     //TECS_LAND_THR param then use it
-    if ((_flight_stage == FLIGHT_LAND_APPROACH || _flight_stage== FLIGHT_LAND_FINAL ||
-         _flight_stage == FLIGHT_LAND_APPROACH_STEEP || _flight_stage== FLIGHT_LAND_FINAL_STEEP) &&
-            _landThrottle >= 0) {
+    if (AP_Land::flightstage_is_land(_flight_stage) && _landThrottle >= 0) {
         nomThr = (_landThrottle + throttle_nudge) * 0.01f;
     } else { //not landing or not using TECS_LAND_THR parameter
         nomThr = (aparm.throttle_cruise + throttle_nudge)* 0.01f;
@@ -687,8 +682,7 @@ void AP_TECS::_update_pitch(void)
         SKE_weighting = 0.0f;
     } else if ( _underspeed || _flight_stage == AP_TECS::FLIGHT_TAKEOFF || _flight_stage == AP_TECS::FLIGHT_LAND_ABORT) {
         SKE_weighting = 2.0f;
-    } else if (_flight_stage == AP_TECS::FLIGHT_LAND_APPROACH || _flight_stage == AP_TECS::FLIGHT_LAND_FINAL ||
-               _flight_stage == AP_TECS::FLIGHT_LAND_APPROACH_STEEP || _flight_stage== AP_TECS::FLIGHT_LAND_FINAL_STEEP) {
+    } else if (AP_Land::flightstage_is_land(_flight_stage)) {
         SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
     }
 
