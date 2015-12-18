@@ -143,9 +143,11 @@ const AP_Param::GroupInfo AP_Land::var_info[] = {
 
     AP_GROUPEND
 };
- 
-AP_Land::AP_Land()
-{
-    
-}
 
+bool AP_Land::flightstage_is_land(AP_SpdHgtControl::FlightStage fs)
+{
+    return (fs == AP_SpdHgtControl::FLIGHT_LAND_FINAL ||
+            fs == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
+            fs == AP_SpdHgtControl::FLIGHT_LAND_FINAL_STEEP ||
+            fs == AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP);
+}

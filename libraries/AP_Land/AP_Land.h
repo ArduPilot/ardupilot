@@ -8,6 +8,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+
 
 /// @class    AP_Land
 /// @brief    Class managing the control of landing
@@ -16,11 +18,13 @@ class AP_Land {
 public:
 
     /// Constructor
-    AP_Land();
-//    {
-//        // setup parameter defaults
-//        AP_Param::setup_object_defaults(this, var_info);
-//    };
+    AP_Land()
+    {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    };
+
+    static bool flightstage_is_land(AP_SpdHgtControl::FlightStage fs);
 
     static const struct AP_Param::GroupInfo        var_info[];
     
