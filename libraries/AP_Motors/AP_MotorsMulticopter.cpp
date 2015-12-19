@@ -333,10 +333,9 @@ void AP_MotorsMulticopter::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, 1.0f);
 }
 
-// get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
-int16_t AP_MotorsMulticopter::get_hover_throttle_as_pwm() const
+float AP_MotorsMulticopter::get_hover_throttle_as_high_end_pct() const
 {
-    return (_throttle_radio_min + (float)(_throttle_radio_max - _throttle_radio_min) * _hover_out / 1000.0f);
+    return ((float)_hover_out / (1000.0f - _min_throttle));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const

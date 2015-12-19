@@ -122,8 +122,8 @@ protected:
     // return gain scheduling gain based on voltage and air density
     float               get_compensation_gain() const;
 
-    // get_hover_throttle_as_pwm - converts hover throttle to pwm (i.e. range 1000 ~ 2000)
-    int16_t             get_hover_throttle_as_pwm() const;
+    // get_hover_throttle_as_high_end_pct - return hover throttle in the 0 to 1 range
+    float               get_hover_throttle_as_high_end_pct() const;
 
     float               rel_pwm_to_thr_range(float pwm) const;
     float               thr_range_to_rel_pwm(float thr) const;
