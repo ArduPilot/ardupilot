@@ -986,7 +986,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void run_cli(AP_HAL::UARTDriver *port);
-    bool restart_landing_sequence();
     void log_init();
     void init_capabilities(void);
     void dataflash_periodic(void);

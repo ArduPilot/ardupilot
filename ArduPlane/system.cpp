@@ -485,7 +485,7 @@ void Plane::exit_mode(enum FlightMode mode)
 
             if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND)
             {
-                restart_landing_sequence();
+                mission.restart_landing_sequence();
             }
         }
         auto_state.started_flying_in_auto_ms = 0;

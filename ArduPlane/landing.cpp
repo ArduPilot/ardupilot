@@ -37,7 +37,7 @@ bool Plane::verify_land()
         if (adjusted_relative_altitude_cm() > auto_state.takeoff_altitude_rel_cm) {
             next_WP_loc = current_loc;
             mission.stop();
-            bool success = restart_landing_sequence();
+            bool success = mission.restart_landing_sequence();
             mission.resume();
             if (!success) {
                 // on a restart failure lets RTL or else the plane may fly away with nowhere to go!
@@ -242,52 +242,6 @@ void Plane::setup_landing_glide_slope(void)
         constrain_target_altitude_location(loc, prev_WP_loc);
 }
 
-/*
-     Restart a landing by first checking for a DO_LAND_START and
-     jump there. Otherwise decrement waypoint so we would re-start
-     from the top with same glide slope. Return true if successful.
- */
-bool Plane::restart_landing_sequence()
-{
-    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
-        return false;
-    }
-
-    uint16_t do_land_start_index = mission.get_landing_sequence_start();
-    uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
-    bool success = false;
-    uint16_t current_index = mission.get_current_nav_index();
-    AP_Mission::Mission_Command cmd;
-
-    if (mission.read_cmd_from_storage(current_index+1,cmd) &&
-            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
-            (cmd.p1 == 0 || cmd.p1 == 1) &&
-            mission.set_current_cmd(current_index+1))
-    {
-        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
-        success =  true;
-    }
-    else if (do_land_start_index != 0 &&
-            mission.set_current_cmd(do_land_start_index))
-    {
-        // look for a DO_LAND_START and use that index
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
-        success =  true;
-    }
-    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
-               mission.set_current_cmd(prev_cmd_with_wp_index))
-    {
-        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
-        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
-        gcs_send_text_fmt(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
-        success =  true;
-    } else {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "Unable to restart landing sequence");
-        success =  false;
-    }
-    return success;
-}
 
 /* 
    find the nearest landing sequence starting point (DO_LAND_START) and
