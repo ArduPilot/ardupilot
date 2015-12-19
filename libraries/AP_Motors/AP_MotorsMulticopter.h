@@ -22,6 +22,7 @@
 #define AP_MOTORS_THST_BAT_MAX_DEFAULT  0.0f
 #define AP_MOTORS_THST_BAT_MIN_DEFAULT  0.0f
 #define AP_MOTORS_CURR_MAX_DEFAULT      0.0f    // current limiting max default
+#define AP_MOTORS_CURRENT_LIMIT_P       0.2f    // replace with parameter - Sets the current limit P term
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 #define AP_MOTORS_THR_MIX_MIN_DEFAULT   0.1f    // minimum throttle mix
 #define AP_MOTORS_THR_MIX_MID_DEFAULT   0.5f    // manual throttle mix
@@ -105,6 +106,9 @@ protected:
 
     // current_limit_max_throttle - current limit maximum throttle (called from update_max_throttle)
     void                current_limit_max_throttle();
+
+    // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    float               get_current_limit_max_throttle();
 
     // apply_thrust_curve_and_volt_scaling - thrust curve and voltage adjusted pwm value (i.e. 1000 ~ 2000)
     int16_t             apply_thrust_curve_and_volt_scaling_pwm(int16_t pwm_out, int16_t pwm_min, int16_t pwm_max) const;

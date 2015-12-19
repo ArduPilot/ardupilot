@@ -216,7 +216,7 @@ void AP_MotorsMulticopter::current_limit_max_throttle()
     }
 
     // remove throttle limit if throttle is at zero or disarmed
-    if(_throttle_control_input <= 0 || !_flags.armed) {
+    if(_throttle_in <= 0.0f || !_flags.armed) {
         _throttle_limit = 1.0f;
     }
 
@@ -237,6 +237,36 @@ void AP_MotorsMulticopter::current_limit_max_throttle()
 
     // limit max throttle
     _max_throttle = _hover_out + ((1000-_hover_out)*_throttle_limit);
+}
+
+// return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+//todo: replace this with a variable P term
+float AP_MotorsMulticopter::get_current_limit_max_throttle()
+{
+    // return maximum if current limiting is disabled
+    if (_batt_current_max <= 0) {
+        _throttle_limit = 1.0f;
+        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
+        return 1.0f;
+    }
+
+    // remove throttle limit if throttle is at zero or disarmed
+    if(_throttle_in <= 0.0f || !_flags.armed) {
+        _throttle_limit = 1.0f;
+        _max_throttle = AP_MOTORS_DEFAULT_MAX_THROTTLE;
+        return 1.0f;
+    }
+
+    float batt_current_ratio = _batt_current/_batt_current_max;
+
+    _throttle_limit += AP_MOTORS_CURRENT_LIMIT_P*(1.0f - batt_current_ratio)/_loop_rate;
+
+    // throttle limit drops to 20% between hover and full throttle
+    _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
+
+    // limit max throttle
+    float throttle_thrust_hover = get_hover_throttle_as_high_end_pct();
+    return throttle_thrust_hover + ((1.0-throttle_thrust_hover)*_throttle_limit);
 }
 
 // apply_thrust_curve_and_volt_scaling - returns throttle curve adjusted pwm value (i.e. 1000 ~ 2000)
