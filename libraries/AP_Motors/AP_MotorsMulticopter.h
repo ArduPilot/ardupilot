@@ -61,9 +61,6 @@ public:
     // get_throttle_rpy_mix - get low throttle compensation value
     bool                is_throttle_mix_min() const { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
-    // returns warning throttle
-    float               get_throttle_warn() const { return rel_pwm_to_thr_range(_spin_when_armed); }
-
     int16_t             throttle_max() const { return _max_throttle; }
     int16_t             throttle_min() const { return rel_pwm_to_thr_range(_min_throttle); }
 
