@@ -9,6 +9,12 @@ float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
 {
     // calc maximum tilt angle based on throttle
     float thr_max = _motors_multi.throttle_max();
+
+    // divide by zero check
+    if (is_zero(thr_max)) {
+        return 0.0f;
+    }
+
     return ToDeg(acos(constrain_float(_throttle_in_filt.get()/(0.9f * thr_max / 1000.0f), 0.0f, 1000.0f) / 1000.0f)) * 100.0f;
 }
 
