@@ -920,7 +920,7 @@ void NavEKF_core::UpdateStrapdownEquationsNED()
 }
 
 // calculate the predicted state covariance matrix
-void NavEKF_core::CovariancePrediction()
+void NavEKF_core::CovariancePrediction() OPT_MATHS
 {
     hal.util->perf_begin(_perf_CovariancePrediction);
     float windVelSigma; // wind velocity 1-sigma process noise - m/s
@@ -1881,8 +1881,8 @@ void NavEKF_core::FuseVelPosNED()
                 } else {
                     innovVelPos[obsIndex] = statesAtHgtTime.position[obsIndex-3] - observation[obsIndex];
                     if (obsIndex == 5) {
-                        static const float gndMaxBaroErr = 4.0f;
-                        static const float gndBaroInnovFloor = -0.5f;
+                        const float gndMaxBaroErr = 4.0f;
+                        const float gndBaroInnovFloor = -0.5f;
 
                         if(getTouchdownExpected()) {
                             // when a touchdown is expected, floor the barometer innovation at gndBaroInnovFloor
