@@ -5,6 +5,7 @@
 
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -1438,5 +1439,52 @@ uint16_t AP_Mission::get_landing_sequence_start()
     }
 
     return landing_start_index;
+}
+
+/*
+     Restart a landing by first checking for a DO_LAND_START and
+     jump there. Otherwise decrement waypoint so we would re-start
+     from the top with same glide slope. Return true if successful.
+ */
+bool AP_Mission::restart_landing_sequence()
+{
+    if (get_current_nav_cmd().id != MAV_CMD_NAV_LAND) {
+        return false;
+    }
+
+    uint16_t do_land_start_index = get_landing_sequence_start();
+    uint16_t prev_cmd_with_wp_index = get_prev_nav_cmd_with_wp_index();
+    bool success = false;
+    uint16_t current_index = get_current_nav_index();
+    Mission_Command cmd;
+
+    if (read_cmd_from_storage(current_index+1,cmd) &&
+            cmd.id == MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT &&
+            (cmd.p1 == 0 || cmd.p1 == 1) &&
+            set_current_cmd(current_index+1))
+    {
+        // if the next immediate command is MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT to climb, do it
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence. Climbing to %dm", cmd.content.location.alt/100);
+        success =  true;
+    }
+    else if (do_land_start_index != 0 &&
+            set_current_cmd(do_land_start_index))
+    {
+        // look for a DO_LAND_START and use that index
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing via DO_LAND_START: %d",do_land_start_index);
+        success =  true;
+    }
+    else if (prev_cmd_with_wp_index != AP_MISSION_CMD_INDEX_NONE &&
+               set_current_cmd(prev_cmd_with_wp_index))
+    {
+        // if a suitable navigation waypoint was just executed, one that contains lat/lng/alt, then
+        // repeat that cmd to restart the landing from the top of approach to repeat intended glide slope
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Restarted landing sequence at waypoint %d", prev_cmd_with_wp_index);
+        success =  true;
+    } else {
+        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_NOTICE, "Unable to restart landing sequence");
+        success =  false;
+    }
+    return success;
 }
 
