@@ -29,9 +29,6 @@
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <DataFlash/DataFlash.h>
 
-#define APPR_PMIN       -4100
-#define APPR_PMAX       -500
-
 class AP_TECS : public AP_SpdHgtControl {
 public:
     AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms) :
@@ -147,6 +144,8 @@ private:
     AP_Int8  _pitch_max;
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
+    AP_Int8  _pitch_limit_min_approach;
+    AP_Int8  _pitch_limit_max_approach;
 
     // current height estimate (above field elevation)
     float _height;
@@ -307,12 +306,6 @@ private:
 
     // current time constant
     float timeConstant(void) const;
-    
-    //variable for different min pitch during land approach
-    AP_Float _lib_pitch_limit_min_approach_cd;
-    
-    //variable for different max pitch during land approach
-    AP_Float _lib_pitch_limit_max_approach_cd;
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\

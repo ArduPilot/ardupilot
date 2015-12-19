@@ -188,20 +188,20 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: APPR_PMIN
     // @DisplayName: Minimum Approach Pitch Angle
     // @Description: The minimum pitch down angle during landing approach
-    // @Units: centi-Degrees
-    // @Range: -9000 9000
+    // @Units: Degrees
+    // @Range: -90 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("APPR_PMIN",  21,  AP_TECS, _lib_pitch_limit_min_approach_cd, -4100),
+    AP_GROUPINFO("APPR_PMIN",  21,  AP_TECS, _pitch_limit_min_approach, -41),
     
     // @Param: APPR_PMAX
     // @DisplayName: Maximum Approach Pitch Angle
     // @Description: The maximum pitch up angle during landing approach
-    // @Units: centi-Degrees
-    // @Range: -9000 9000
+    // @Units: Degrees
+    // @Range: -90 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("APPR_PMAX",  22,  AP_TECS, _lib_pitch_limit_max_approach_cd, -500),
+    AP_GROUPINFO("APPR_PMAX",  22,  AP_TECS, _pitch_limit_max_approach, -5),
 
     AP_GROUPEND
 };
@@ -836,11 +836,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else {
         _PITCHmaxf = MIN(_pitch_max, aparm.pitch_limit_max_cd * 0.01f);
     }
+
     if (_pitch_min >= 0) {
         _PITCHminf = aparm.pitch_limit_min_cd * 0.01f;
     } else {
         _PITCHminf = MAX(_pitch_min, aparm.pitch_limit_min_cd * 0.01f);
     }
+
     if (flight_stage == FLIGHT_LAND_FINAL || flight_stage == FLIGHT_LAND_FINAL_STEEP) {
         // in flare use min pitch from LAND_PITCH_CD
         _PITCHminf = MAX(_PITCHminf, aparm.land_pitch_cd * 0.01f);
@@ -851,12 +853,10 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         
         // and allow zero throttle
         _THRminf = 0;
-    }     
-    else if (flight_stage == FLIGHT_LAND_APPROACH || flight_stage == FLIGHT_LAND_APPROACH_STEEP) {
-        _PITCHminf = _lib_pitch_limit_min_approach_cd * 0.01f;
-        _PITCHmaxf = _lib_pitch_limit_max_approach_cd * 0.01f;
-        if((-_climb_rate) > _land_sink)
-        {
+    } else if (flight_stage == FLIGHT_LAND_APPROACH || flight_stage == FLIGHT_LAND_APPROACH_STEEP) {
+        _PITCHminf = _pitch_limit_min_approach;
+        _PITCHmaxf = _pitch_limit_max_approach;
+        if ((-_climb_rate) > _land_sink) {
             // constrain the pitch in landing as we get close to the flare
             // point. Use a simple linear limit from 15 meters after the
             // landing point
@@ -868,12 +868,16 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                 // smoothly move the min pitch to the flare min pitch over
                 // twice the time constant
                 float p = time_to_flare/(2*timeConstant());
-                float pitch_limit_cd = p*(_lib_pitch_limit_min_approach_cd * 0.01f) + (1-p)*aparm.land_pitch_cd; //p*aparm.pitch_limit_min_cd + (1-p)*aparm.land_pitch_cd;
+                float pitch_limit = p*(_pitch_limit_min_approach) + (1-p)*(aparm.land_pitch_cd*0.01f);
 #if 0
             ::printf("ttf=%.1f hgt_afe=%.1f _PITCHminf=%.1f pitch_limit=%.1f climb=%.1f\n",
-                     time_to_flare, hgt_afe, _PITCHminf, pitch_limit_cd*0.01f, _climb_rate);
+                     (double)time_to_flare,
+                     (double)hgt_afe,
+                     (double)_PITCHminf,
+                     (double)pitch_limit,
+                     (double)_climb_rate);
 #endif
-            _PITCHminf = MAX(_PITCHminf, pitch_limit_cd*0.01f);
+                _PITCHminf = MAX(_PITCHminf, pitch_limit);
             }
         }
     }
