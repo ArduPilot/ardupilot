@@ -315,25 +315,3 @@ bool Plane::jump_to_landing_sequence(void)
     return false;
 }
 
-/*
-  the height above field elevation that we pass to TECS
- */
-float Plane::tecs_hgt_afe(void)
-{
-    /*
-      pass the height above field elevation as the height above
-      the ground when in landing, which means that TECS gets the
-      rangefinder information and thus can know when the flare is
-      coming.
-    */
-    float hgt_afe;
-    if (AP_Land::flightstage_is_land(flight_stage)) {
-        hgt_afe = height_above_target();
-        hgt_afe -= rangefinder_correction();
-    } else {
-        // when in normal flight we pass the hgt_afe as relative
-        // altitude to home
-        hgt_afe = relative_altitude();
-    }
-    return hgt_afe;
-}
