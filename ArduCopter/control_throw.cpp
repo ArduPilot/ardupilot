@@ -10,6 +10,12 @@ bool Copter::throw_init(bool ignore_checks)
     // do not allow helis to use throw to start
     return false;
 #endif
+
+    // do not enter the mode when already armed
+    if (motors.armed()) {
+        return false;
+    }
+
     // this mode needs a position reference
     if (position_ok()) {
         return true;
