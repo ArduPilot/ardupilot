@@ -118,8 +118,8 @@ const AP_Param::GroupInfo AP_Land::var_info[] = {
     
     // @Param: REV_ON_GND
     // @DisplayName: Reverse on ground
-    // @Description: Enables the motor to spin while on the ground. Useful for slowing planes down during touchdown, but disable if your prop cannot spin while on the ground
-    // @Range: 
+    // @Description: Enables the motor to spin while on the ground. Useful for slowing planes down during touchdown, but disable if your prop cannot spin while on the ground. This value dictates how much additional throttle braking you want after you pass the Land point during flare. 1 means give an extra 1us PWM of throttle per 1 meter. A value of 10 works well here.
+    // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("REV_ON_GND", 14, AP_Land, rev_on_gnd, 0),
