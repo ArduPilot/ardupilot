@@ -582,16 +582,6 @@ void Plane::rangefinder_height_update(void)
                 gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)height_estimate);
             }
         }
-        
-        //this needs to be a parameter
-        //we also are only going to be considered in range if we are under 30 meters according to barometer
-        //hopefully this avoids false low value readings with SF02 rangefinder, and 30 meters should give us enough room even with baro drift
-        if(relative_altitude() <= 30 && rangefinder_state.in_range == true) {
-            rangefinder_state.in_range = true;
-        } else {
-            rangefinder_state.in_range = false;
-        }
-        
     } else {
         rangefinder_state.in_range_count = 0;
         rangefinder_state.in_range = false;
