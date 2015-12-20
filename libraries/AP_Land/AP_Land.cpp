@@ -132,14 +132,14 @@ const AP_Param::GroupInfo AP_Land::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIN_REV", 15, AP_Land, thr_min_rev_pwm, 0),
 	
-	// @Param: BAT_OFFSET
+	// @Param: BATT_OFFSET
     // @DisplayName: Land battery offset
     // @Description: Determines the maximum amount of battery offset to add to reverse throttle during landings to account for full batteries
-    // @Range: 0 10000
+    // @Range: 0 1000
 	// @Units: PWM
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("bat_offset", 16, AP_Land, bat_offset, 100),
+    AP_GROUPINFO("BATT_OFFSET", 16, AP_Land, bat_offset, 100),
 
     AP_GROUPEND
 };
