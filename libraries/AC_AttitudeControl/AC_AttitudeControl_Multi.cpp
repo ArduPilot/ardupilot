@@ -19,7 +19,7 @@ float AC_AttitudeControl_Multi::get_althold_lean_angle_max() const
 }
 
 // returns a throttle including compensation for roll/pitch angle
-// throttle value should be 0 ~ 1000
+// throttle value should be 0 ~ 1
 float AC_AttitudeControl_Multi::get_boosted_throttle(float throttle_in)
 {
     if (!_angle_boost_enabled) {
@@ -27,14 +27,13 @@ float AC_AttitudeControl_Multi::get_boosted_throttle(float throttle_in)
         return throttle_in;
     }
     // inverted_factor is 1 for tilt angles below 60 degrees
-    // reduces as a function of angle beyond 60 degrees
-    // becomes zero at 90 degrees
-    float min_throttle = _motors_multi.throttle_min();
+    // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
+
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
     float inverted_factor = constrain_float(2.0f*cos_tilt, 0.0f, 1.0f);
     float boost_factor = 1.0f/constrain_float(cos_tilt, 0.5f, 1.0f);
 
-    float throttle_out = (throttle_in-min_throttle)*inverted_factor*boost_factor + min_throttle;
-    _angle_boost = constrain_float(throttle_out - throttle_in,-32000,32000);
+    float throttle_out = throttle_in*inverted_factor*boost_factor;
+    _angle_boost = constrain_float(throttle_out - throttle_in,-1.0f,1.0f);
     return throttle_out;
 }
