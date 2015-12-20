@@ -853,7 +853,8 @@ void Plane::update_flight_stage(void)
                     if ((path_progress > 0.15f && lined_up && below_prev_WP) || path_progress > 0.5f) {
                         float distance = get_distance(prev_WP_loc, next_WP_loc);
                         float height = (prev_WP_loc.alt - next_WP_loc.alt)*0.01f;
-                        if(atan2f(height,distance) > 0.262f) { //steeper than 0.262 radians (15 degrees)
+                        if (atan2f(height,distance) >= radians(20) && land.pre_flare_alt > 0 && land.pre_flare_alt > land.flare_alt ) {
+                            // steep approach slope detected with pre-flare configured
                             set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH_STEEP);
                         } else {
                             set_flight_stage(AP_SpdHgtControl::FLIGHT_LAND_APPROACH);
