@@ -149,7 +149,7 @@ void DataFlash_File::Init()
       until we can allocate it
      */
     while (_writebuf == NULL && _writebuf_size >= _writebuf_chunk) {
-        hal.console->printf("DataFlash_File: buffer size=%d\n", _writebuf_size);
+        hal.console->printf("DataFlash_File: buffer size=%u\n", (unsigned)_writebuf_size);
         _writebuf = (uint8_t *)malloc(_writebuf_size);
         if (_writebuf == NULL) {
             _writebuf_size /= 2;
