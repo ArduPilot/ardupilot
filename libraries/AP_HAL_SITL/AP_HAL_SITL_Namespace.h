@@ -13,6 +13,7 @@ class SITLRCOutput;
 class ADCSource;
 class RCInput;
 class SITLUtil;
+class Semaphore;
 }
 
 #endif // __AP_HAL_SITL_NAMESPACE_H__
