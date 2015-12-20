@@ -196,6 +196,14 @@ AP_GPS::detect_instance(uint8_t instance)
     }
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+    if (_type[instance] == GPS_TYPE_QURT) {
+        hal.console->print(" QURTGPS ");
+        new_gps = new AP_GPS_QURT(*this, state[instance], _port[instance]);
+        goto found_gps;
+    }
+#endif
+    
     if (_port[instance] == NULL) {
         // UART not available
         return;
@@ -288,7 +296,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		}
 	}
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 found_gps:
 #endif
 	if (new_gps != NULL) {
