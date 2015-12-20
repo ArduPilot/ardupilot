@@ -370,8 +370,8 @@ void AP_MotorsMulticopter::set_throttle_range(uint16_t min_throttle, int16_t rad
     _throttle_radio_min = radio_min;
     _throttle_radio_max = radio_max;
     _throttle_pwm_scalar = (_throttle_radio_max - _throttle_radio_min) / 1000.0f;
+    _min_throttle = (float)min_throttle * _throttle_pwm_scalar;
     _rpy_pwm_scalar = (_throttle_radio_max - (_throttle_radio_min + _min_throttle)) / 9000.0f;
-    _min_throttle = (float)min_throttle * _throttle_pwm_scalar;   
 }
 
 void AP_MotorsMulticopter::output_logic()
