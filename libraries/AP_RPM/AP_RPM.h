@@ -54,6 +54,7 @@ public:
     AP_Float _maximum[RPM_MAX_INSTANCES];
     AP_Float _minimum[RPM_MAX_INSTANCES];
     AP_Float _quality_min[RPM_MAX_INSTANCES];
+    AP_Float _filter_alpha[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
     
