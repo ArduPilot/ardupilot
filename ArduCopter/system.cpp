@@ -96,7 +96,7 @@ void Copter::init_ardupilot()
 
     cliSerial->printf("\n\nInit " FIRMWARE_STRING
                          "\n\nFree RAM: %u\n",
-                        hal.util->available_memory());
+                      (unsigned)hal.util->available_memory());
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)

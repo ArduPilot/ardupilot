@@ -1172,6 +1172,6 @@ void Copter::load_parameters(void)
         // Load all auto-loaded EEPROM variables
         AP_Param::load_all();
         AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-        cliSerial->printf("load_all took %uus\n", micros() - before);
+        cliSerial->printf("load_all took %uus\n", (unsigned)(micros() - before));
     }
 }
