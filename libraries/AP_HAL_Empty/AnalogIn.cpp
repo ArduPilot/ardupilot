@@ -43,5 +43,5 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t n) {
 
 float AnalogIn::board_voltage(void)
 {
-    return 0;
+    return 5.0f;
 }
