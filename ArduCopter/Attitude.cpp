@@ -133,27 +133,29 @@ void Copter::set_throttle_takeoff()
 
 // get_pilot_desired_throttle - transform pilot's throttle input to make cruise throttle mid stick
 // used only for manual throttle modes
-// returns throttle output 0 to 1000
-int16_t Copter::get_pilot_desired_throttle(int16_t throttle_control)
+// returns throttle output 0 to 1
+float Copter::get_pilot_desired_throttle(int16_t throttle_control)
 {
-    int16_t throttle_out;
+    float throttle_out;
 
     int16_t mid_stick = channel_throttle->get_control_mid();
 
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
+    // ensure mid throttle is set within a reasonable range
     g.throttle_mid = constrain_int16(g.throttle_mid,g.throttle_min+50,700);
+    float thr_mid = MAX(0,g.throttle_mid-g.throttle_min) / (float)(1000-g.throttle_min);
 
     // check throttle is above, below or in the deadband
     if (throttle_control < mid_stick) {
         // below the deadband
-        throttle_out = g.throttle_min + ((float)(throttle_control-g.throttle_min))*((float)(g.throttle_mid - g.throttle_min))/((float)(mid_stick-g.throttle_min));
+        throttle_out = ((float)throttle_control)*thr_mid/(float)mid_stick;
     }else if(throttle_control > mid_stick) {
         // above the deadband
-        throttle_out = g.throttle_mid + ((float)(throttle_control-mid_stick)) * (float)(1000-g.throttle_mid) / (float)(1000-mid_stick);
+        throttle_out = (thr_mid) + ((float)(throttle_control-mid_stick)) * (1.0f - thr_mid) / (float)(1000-mid_stick);
     }else{
         // must be in the deadband
-        throttle_out = g.throttle_mid;
+        throttle_out = thr_mid;
     }
 
     return throttle_out;
