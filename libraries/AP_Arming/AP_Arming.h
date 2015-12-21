@@ -23,6 +23,7 @@ public:
         ARMING_CHECK_BATTERY    = 0x0100,
         ARMING_CHECK_AIRSPEED   = 0x0200,
         ARMING_CHECK_LOGGING    = 0x0400,
+        ARMING_CHECK_SWITCH     = 0x0800,
     };
 
     enum ArmingMethod {
