@@ -18,7 +18,6 @@ def build(bld):
             'AC_Sprayer',
             'AC_WPNav',
             'AP_Camera',
-            'AP_Curve',
             'AP_EPM',
             'AP_Frsky_Telem',
             'AP_IRLock',
