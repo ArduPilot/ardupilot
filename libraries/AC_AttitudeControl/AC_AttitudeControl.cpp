@@ -654,7 +654,7 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
 
 void AC_AttitudeControl::get_rotation_vehicle_to_ned(Matrix3f& m)
 {
-    m = _ahrs.get_dcm_matrix();
+    m = _ahrs.get_rotation_body_to_ned();
 }
 
 void AC_AttitudeControl::get_rotation_ned_to_vehicle(Matrix3f& m)
