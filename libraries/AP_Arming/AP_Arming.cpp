@@ -23,6 +23,7 @@
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
 #define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
+#define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,6 +42,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS,4:INS,5:Parameters,6:RC,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch
     // @User: Standard
     AP_GROUPINFO("CHECK",        2,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
+
+    // @Param: ACCTHRESH
+    // @DisplayName: Accelerometer error threshold
+    // @Description: Accelerometer error threshold used to determine inconsistent accelerometers. Compares this error range to other accelerometers to detect a hardware or calibration error. Lower value means tighter check and harder to pass arming check. Not all accelerometers are created equal.
+    // @Units: m/s/s
+    // @Range: 0.25 3.0
+    // @User: Advanced
+    AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),
 
     AP_GROUPEND
 };
@@ -171,9 +180,8 @@ bool AP_Arming::ins_checks(bool report)
                 // get next accel vector
                 const Vector3f &accel_vec = ins.get_accel(i);
                 Vector3f vec_diff = accel_vec - prime_accel_vec;
-                // allow for up to 0.75 m/s/s difference. Has to pass
-                // in last 10 seconds
-                float threshold = 0.75f;
+                // allow for user-defined difference, typically 0.75 m/s/s. Has to pass in last 10 seconds
+                float threshold = accel_error_threshold;
                 if (i >= 2) {
                     /*
                       we allow for a higher threshold for IMU3 as it
