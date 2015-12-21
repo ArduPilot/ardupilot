@@ -5,7 +5,6 @@ LIBRARIES += AP_Baro
 LIBRARIES += AP_BattMonitor
 LIBRARIES += AP_Common
 LIBRARIES += AP_Compass
-LIBRARIES += AP_Curve
 LIBRARIES += AP_Declination
 LIBRARIES += AP_GPS
 LIBRARIES += AP_InertialSensor
