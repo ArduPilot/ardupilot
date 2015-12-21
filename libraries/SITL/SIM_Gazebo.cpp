@@ -35,8 +35,8 @@ using namespace std;
 namespace SITL {
 
 // Ports for input/output sockets to Gazebo (with IP 127.0.0.1)
-#define PORT_DATA_TO_GAZEBO_PLUGIN       5002           // WARNING: previous port was 9002 !
-#define PORT_DATA_FROM_GAZEBO_PLUGIN     5003           // WARNING: previous port was 9003 !
+#define PORT_DATA_TO_GAZEBO_PLUGIN       9002           // WARNING: previous port was 5002 !
+#define PORT_DATA_FROM_GAZEBO_PLUGIN     9003           // WARNING: previous port was 5003 !
 
 #define ROS_PLUGIN_NAME                 "ardupilot_sitl_gazebo_plugin"
 
