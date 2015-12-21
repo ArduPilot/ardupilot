@@ -471,8 +471,8 @@ void AP_Mission::write_home_to_storage()
 }
 
 // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
-//  return true on success, false on failure
-bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd)
+//  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
+MAV_MISSION_RESULT AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd)
 {
     bool copy_location = false;
     bool copy_alt = false;
@@ -711,7 +711,7 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
     default:
         // unrecognised command
-        return false;
+        return MAV_MISSION_UNSUPPORTED;
     }
 
     // copy location from mavlink to command
@@ -719,12 +719,15 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 
         // sanity check location
         if (copy_location) {
-            if (fabsf(packet.x) > 90.0f || fabsf(packet.y) > 180.0f) {
-                return false;
+            if (fabsf(packet.x) > 90.0f) {
+                return MAV_MISSION_INVALID_PARAM5_X;
+            }
+            if (fabsf(packet.y) > 180.0f) {
+                return MAV_MISSION_INVALID_PARAM6_Y;
             }
         }
         if (fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
-            return false;
+            return MAV_MISSION_INVALID_PARAM7;
         }
 
         switch (packet.frame) {
@@ -788,12 +791,12 @@ bool AP_Mission::mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP
 #endif
 
         default:
-            return false;
+            return MAV_MISSION_UNSUPPORTED_FRAME;
         }
     }
 
     // if we got this far then it must have been succesful
-    return true;
+    return MAV_MISSION_ACCEPTED;
 }
 
 // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
