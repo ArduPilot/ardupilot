@@ -132,7 +132,7 @@ public:
     bool parameter_check(bool display_msg) const;
 
     // set_governor_enable - enables vehicle code to enable/disabled closed loop rotor speed governor and pass in rotor speed feedback
-    void set_rsc_governor_enabled(bool enabled, int16_t desired_rpm, float rpm) {_main_rotor.set_gov_enable(enabled, desired_rpm, rpm);}
+    void set_rsc_governor_enabled(bool enabled, int16_t desired_rpm, float rpm) {_main_rotor.set_governor_enable(enabled, desired_rpm, rpm);}
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];

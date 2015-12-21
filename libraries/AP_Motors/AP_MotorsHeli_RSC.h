@@ -79,8 +79,8 @@ public:
     // set_motor_load
     void        set_motor_load(float load) { _load_feedforward = load; }
 
-    // set_gov_enable
-    void        set_gov_enable(bool enabled, int16_t rpm, float rpm_feedback);
+    // set_governor_enable
+    void        set_governor_enable(bool enabled, int16_t rpm, float rpm_feedback);
 
     // recalc_scalers
     void        recalc_scalers();
@@ -98,7 +98,7 @@ private:
 
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
-    bool            _gov_enabled = false;       // status of speed governor
+    bool            _governor_enabled = false;       // status of speed governor
     int16_t         _critical_speed = 0;        // rotor speed below which flight is not possible
     int16_t         _idle_output = 0;           // motor output idle speed
     int16_t         _max_speed = 1000;          // rotor maximum speed. Placeholder value until we have measured speed input (ToDo)

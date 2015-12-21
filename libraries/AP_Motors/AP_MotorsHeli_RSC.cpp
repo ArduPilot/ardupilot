@@ -201,9 +201,9 @@ int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
 
     target_rpm = _rotor_ramp_output * _governor_rpm_setpoint;
 
-    if(_gov_enabled){
+    if(_governor_enabled){
         smoothing_factor += 1.0/_loop_rate;
-    } else if (!_gov_enabled){
+    } else {
         smoothing_factor -= 1.0/_loop_rate;
     }
     smoothing_factor = constrain_float(smoothing_factor, 0.0, 1.0);
@@ -232,10 +232,10 @@ int16_t AP_MotorsHeli_RSC::calc_closed_loop_power_control_output()
     return calc_open_loop_power_control_output() + (smoothing_factor * pid_output);
 }
 
-// set_gov_enable
-void AP_MotorsHeli_RSC::set_gov_enable(bool enabled, int16_t rpm, float rpm_feedback)
+// set_governor_enable
+void AP_MotorsHeli_RSC::set_governor_enable(bool enabled, int16_t rpm, float rpm_feedback)
 {
-    _gov_enabled = enabled;
+    _governor_enabled = enabled;
     _governor_rpm_setpoint = rpm;
     _rpm_feedback = rpm_feedback;
 }
