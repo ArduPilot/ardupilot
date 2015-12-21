@@ -32,7 +32,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == ARM_DELAY && !motors.armed()) {
+        if (arming_counter == ARM_DELAY && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             // reset arming counter if arming fail
             if (!init_arm_motors(false)) {
                 arming_counter = 0;
@@ -40,7 +40,7 @@ void Copter::arm_motors_check()
         }
 
         // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors.armed() && control_mode == STABILIZE) {
+        if (arming_counter == AUTO_TRIM_DELAY && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && control_mode == STABILIZE) {
             auto_trim_counter = 250;
             // ensure auto-disarm doesn't trigger immediately
             auto_disarm_begin = millis();
@@ -59,7 +59,7 @@ void Copter::arm_motors_check()
         }
 
         // disarm the motors
-        if (arming_counter == DISARM_DELAY && motors.armed()) {
+        if (arming_counter == DISARM_DELAY && hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
             init_disarm_motors();
         }
 
@@ -77,7 +77,7 @@ void Copter::auto_disarm_check()
 
     // exit immediately if we are already disarmed, or if auto
     // disarming is disabled
-    if (!motors.armed() || disarm_delay_ms == 0) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || disarm_delay_ms == 0) {
         auto_disarm_begin = tnow_ms;
         return;
     }
@@ -120,101 +120,79 @@ void Copter::auto_disarm_check()
     }
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
+// begin arming process. returns false if arming failed because of arming checks.
 bool Copter::init_arm_motors(bool arming_from_gcs)
 {
-    static bool in_arm_motors = false;
-
-    // exit immediately if already in this function
-    if (in_arm_motors) {
-        return false;
+    // exit if already armed
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
+        return true;
     }
-    in_arm_motors = true;
 
     // run pre-arm-checks and display failures
     if(!pre_arm_checks(true) || !arm_checks(true, arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
-        in_arm_motors = false;
         return false;
     }
-
-    // disable cpu failsafe because initialising everything takes a while
-    failsafe_disable();
-
-    // reset battery failsafe
-    set_failsafe_battery(false);
-
-    // notify that arming will occur (we do this early to give plenty of warning)
-    AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
-    for (uint8_t i=0; i<=10; i++) {
-        update_notify();
-    }
-
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
-#endif
-
-    // Remember Orientation
-    // --------------------
-    init_simple_bearing();
-
-    initial_armed_bearing = ahrs.yaw_sensor;
-
-    if (ap.home_state == HOME_UNSET) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
-        // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
-    }
-    calc_distance_and_bearing();
-
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
-    hal.util->set_soft_armed(true);
-
-#if SPRAYER == ENABLED
-    // turn off sprayer's test if on
-    sprayer.test_pump(false);
-#endif
-
-    // short delay to allow reading of rc inputs
-    delay(30);
-
-    // enable output to motors
-    enable_motor_output();
-
-    // finally actually arm the motors
-    motors.armed(true);
-
-    // log arming to dataflash
-    Log_Write_Event(DATA_ARMED);
-
-    // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode);
-
-    // reenable failsafe
-    failsafe_enable();
-
-    // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
-
-    // flag exiting this function
-    in_arm_motors = false;
-
-    // return success
+    arming_commanded_ms = millis();
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMING);
     return true;
+}
+
+void Copter::arming_timer_check()
+{
+    // check whether we need to arm
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMING && millis()-arming_commanded_ms > 2000) {
+        // reset battery failsafe
+        set_failsafe_battery(false);
+
+        #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+        #endif
+
+        // Remember Orientation
+        // --------------------
+        init_simple_bearing();
+
+        initial_armed_bearing = ahrs.yaw_sensor;
+
+        if (ap.home_state == HOME_UNSET) {
+            // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
+            ahrs.resetHeightDatum();
+            Log_Write_Event(DATA_EKF_ALT_RESET);
+        } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+            // Reset home position if it has already been set before (but not locked)
+            set_home_to_current_location();
+        }
+        calc_distance_and_bearing();
+
+        // enable gps velocity based centrefugal force compensation
+        ahrs.set_correct_centrifugal(true);
+
+        #if SPRAYER == ENABLED
+        // turn off sprayer's test if on
+        sprayer.test_pump(false);
+        #endif
+
+        // enable output to motors
+        enable_motor_output();
+
+        // arm the motors
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+
+        // log arming to dataflash
+        Log_Write_Event(DATA_ARMED);
+
+        // log flight mode in case it was changed while vehicle was disarmed
+        DataFlash.Log_Write_Mode(control_mode);
+    }
 }
 
 // perform pre-arm checks and set ap.pre_arm_check flag
 //  return true if the checks pass successfully
 bool Copter::pre_arm_checks(bool display_failure)
 {
-    // exit immediately if already armed
-    if (motors.armed()) {
+    // exit immediately if already armed or arming
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         return true;
     }
 
@@ -842,47 +820,55 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 // init_disarm_motors - disarm motors
 void Copter::init_disarm_motors()
 {
-    // return immediately if we are already disarmed
-    if (!motors.armed()) {
-        return;
+    switch(hal.util->get_soft_arm_state()) {
+        case AP_HAL::Util::SOFT_ARM_STATE_DISARMED:
+            // Do nothing
+            break;
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMING:
+            // Cancel arming
+            AP_Notify::flags.armed = 0;
+            hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+            break;
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMED:
+            // Disarm
+            #if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+            #endif
+
+            // save compass offsets learned by the EKF
+            Vector3f magOffsets;
+            if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
+                compass.set_and_save_offsets(compass.get_primary(), magOffsets);
+            }
+
+            #if AUTOTUNE_ENABLED == ENABLED
+            // save auto tuned parameters
+            autotune_save_tuning_gains();
+            #endif
+
+            // we are not in the air
+            set_land_complete(true);
+            set_land_complete_maybe(true);
+
+            // log disarm to the dataflash
+            Log_Write_Event(DATA_DISARMED);
+
+            // send disarm command to motors
+            AP_Notify::flags.armed = 0;
+            hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+
+            // reset the mission
+            mission.reset();
+
+            // suspend logging
+            if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
+                DataFlash.EnableWrites(false);
+            }
+
+            // disable gps velocity based centrefugal force compensation
+            ahrs.set_correct_centrifugal(false);
+            break;
     }
-
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
-#endif
-
-    // save compass offsets learned by the EKF
-    Vector3f magOffsets;
-    if (ahrs.use_compass() && ahrs.getMagOffsets(magOffsets)) {
-        compass.set_and_save_offsets(compass.get_primary(), magOffsets);
-    }
-
-#if AUTOTUNE_ENABLED == ENABLED
-    // save auto tuned parameters
-    autotune_save_tuning_gains();
-#endif
-
-    // we are not in the air
-    set_land_complete(true);
-    set_land_complete_maybe(true);
-
-    // log disarm to the dataflash
-    Log_Write_Event(DATA_DISARMED);
-
-    // send disarm command to motors
-    motors.armed(false);
-
-    // reset the mission
-    mission.reset();
-
-    // suspend logging
-    if (!(g.log_bitmask & MASK_LOG_WHEN_DISARMED)) {
-        DataFlash.EnableWrites(false);
-    }
-
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
-    hal.util->set_soft_armed(false);
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
@@ -914,7 +900,7 @@ void Copter::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
+    if (ap.throttle_zero && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED && (channel_roll->control_in > 4000) && (channel_pitch->control_in > 4000)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

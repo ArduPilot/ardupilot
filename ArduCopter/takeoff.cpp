@@ -27,7 +27,7 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
-    if (motors.armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
 
 #if FRAME_CONFIG == HELI_FRAME
         // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning

@@ -106,7 +106,7 @@ void Copter::update_thr_average()
     }
 
     // if not armed or landed exit
-    if (!motors.armed() || ap.land_complete) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || ap.land_complete) {
         return;
     }
 

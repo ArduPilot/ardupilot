@@ -1155,7 +1155,7 @@ void Copter::load_parameters(void)
 
     // disable centrifugal force correction, it will be enabled as part of the arming process
     ahrs.set_correct_centrifugal(false);
-    hal.util->set_soft_armed(false);
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
 
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {

@@ -149,7 +149,7 @@ void AP_MotorsMulticopter::output()
     // move throttle_low_comp towards desired throttle low comp
     update_throttle_thr_mix();
 
-    if (_flags.armed) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         if (!_flags.interlock) {
             output_armed_zero_throttle();
         } else if (_flags.stabilizing) {
@@ -166,7 +166,7 @@ void AP_MotorsMulticopter::output()
 // update the throttle input filter
 void AP_MotorsMulticopter::update_throttle_filter()
 {
-    if (armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
     } else {
         _throttle_filter.reset(0.0f);
@@ -216,7 +216,7 @@ void AP_MotorsMulticopter::current_limit_max_throttle()
     }
 
     // remove throttle limit if throttle is at zero or disarmed
-    if(_throttle_control_input <= 0 || !_flags.armed) {
+    if(_throttle_control_input <= 0 || hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         _throttle_limit = 1.0f;
     }
 
@@ -285,7 +285,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 void AP_MotorsMulticopter::update_battery_resistance()
 {
     // if motors are stopped, reset resting voltage and current
-    if (_throttle_control_input <= 0 || !_flags.armed) {
+    if (_throttle_control_input <= 0 || hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         _batt_voltage_resting = _batt_voltage;
         _batt_current_resting = _batt_current;
         _batt_timer = 0;
@@ -376,7 +376,7 @@ void AP_MotorsMulticopter::slow_start(bool true_false)
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsMulticopter::throttle_pass_through(int16_t pwm)
 {
-    if (armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // send the pilot's input directly to each enabled motor
         hal.rcout->cork();
         for (uint16_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {

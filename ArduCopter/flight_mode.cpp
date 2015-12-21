@@ -15,7 +15,7 @@ bool Copter::set_mode(uint8_t mode)
 {
     // boolean to record if flight mode could be set
     bool success = false;
-    bool ignore_checks = !motors.armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    bool ignore_checks = hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED;   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
@@ -229,7 +229,7 @@ void Copter::exit_mode(uint8_t old_control_mode, uint8_t new_control_mode)
     }
 
     // smooth throttle transition when switching from manual to automatic flight modes
-    if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && motors.armed() && !ap.land_complete) {
+    if (mode_has_manual_throttle(old_control_mode) && !mode_has_manual_throttle(new_control_mode) && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && !ap.land_complete) {
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
         set_accel_throttle_I_from_pilot_throttle(get_pilot_desired_throttle(channel_throttle->control_in));
     }

@@ -308,7 +308,7 @@ void PX4RCOutput::_publish_actuators(void)
     if (actuators.nvalues > 8) {
         actuators.nvalues = 8;
     }
-    bool armed = hal.util->get_soft_armed();
+    bool armed = hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED;
 	actuators.timestamp = hrt_absolute_time();
     for (uint8_t i=0; i<actuators.nvalues; i++) {
         if (!armed) {

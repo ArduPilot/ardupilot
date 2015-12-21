@@ -49,7 +49,7 @@ void Copter::drift_run()
     int16_t pilot_throttle_scaled;
 
     // if not armed or motor interlock not enabled or landed and throttle at zero, set throttle to zero and exit immediately
-    if(!motors.armed() || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
+    if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || !motors.get_interlock() || (ap.land_complete && ap.throttle_zero)) {
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }

@@ -49,7 +49,7 @@ void NSHShellStream::start_shell(void)
         }
         return;
     }
-    if (hal.util->get_soft_armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         if (!showed_armed_warning) {
             showed_armed_warning = true;
             hal.console->printf("Disarm to start nsh shell\n");

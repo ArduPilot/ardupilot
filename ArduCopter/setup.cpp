@@ -221,7 +221,8 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	max_channels = AP_MOTORS_MAX_NUM_MOTORS;
 
 	/* tell IO/FMU that the system is armed (it will output values if safety is off) */
-	motors.armed(true);
+    AP_Notify::flags.armed = 1;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
 
 
 	cliSerial->printf("Outputs armed\n");
@@ -284,7 +285,8 @@ int8_t Copter::esc_calib(uint8_t argc,const Menu::arg *argv)
 	}
 
 	/* disarm */
-	motors.armed(false);
+    AP_Notify::flags.armed = 0;
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
     
 	cliSerial->printf("Outputs disarmed\n");
 

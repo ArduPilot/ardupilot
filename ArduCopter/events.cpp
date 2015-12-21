@@ -8,86 +8,92 @@
  */
 void Copter::failsafe_radio_on_event()
 {
-    // if motors are not armed there is nothing to do
-    if( !motors.armed() ) {
-        return;
-    }
 
-    // This is how to handle a failsafe.
-    switch(control_mode) {
-        case STABILIZE:
-        case ACRO:
-            // if throttle is zero OR vehicle is landed disarm motors
-            if (ap.throttle_zero || ap.land_complete) {
-                init_disarm_motors();
-
-            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
-            }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
-
-            // if far from home then RTL
-            } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-
-            // We have no GPS or are very close to home so we will land
-            }else{
-                set_mode_land_with_pause();
-            }
+    switch (hal.util->get_soft_arm_state()) {
+        case AP_HAL::Util::SOFT_ARM_STATE_DISARMED:
+            // do nothing
             break;
-
-        case AUTO:
-            // if mission has not started AND vehicle is landed, disarm motors
-            if (!ap.auto_armed && ap.land_complete) {
-                init_disarm_motors();
-
-            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
-            } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
-
-            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
-            } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
-                if (home_distance > FS_CLOSE_TO_HOME_CM) {
-                    // switch to RTL or if that fails, LAND
-                    set_mode_RTL_or_land_with_pause();
-                }else{
-                    // We are very close to home so we will land
-                    set_mode_land_with_pause();
-                }
-            }
-            // failsafe_throttle must be FS_THR_ENABLED_CONTINUE_MISSION so no need to do anything
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMING:
+            // cancel arming motors
+            init_disarm_motors();
             break;
+        case AP_HAL::Util::SOFT_ARM_STATE_ARMED:
+            // action depends on control mode
+            switch(control_mode) {
+                case STABILIZE:
+                case ACRO:
+                    // if throttle is zero OR vehicle is landed disarm motors
+                    if (ap.throttle_zero || ap.land_complete) {
+                        init_disarm_motors();
 
-        case LAND:
-            // continue to land if battery failsafe is also active otherwise fall through to default handling
-            if (g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-                break;
-            }
-            // no break
-        default:
-            // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
-            // if landed disarm
-            if (ap.land_complete) {
-                init_disarm_motors();
+                        // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
+                    }else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+                        set_mode_land_with_pause();
 
-            // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
-            } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
-                set_mode_land_with_pause();
+                        // if far from home then RTL
+                    } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
+                        // switch to RTL or if that fails, LAND
+                        set_mode_RTL_or_land_with_pause();
 
-            // if far from home then RTL
-            } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
-                // switch to RTL or if that fails, LAND
-                set_mode_RTL_or_land_with_pause();
-            }else{
-                // We have no GPS or are very close to home so we will land
-                set_mode_land_with_pause();
+                        // We have no GPS or are very close to home so we will land
+                    }else{
+                        set_mode_land_with_pause();
+                    }
+                    break;
+
+                case AUTO:
+                    // if mission has not started AND vehicle is landed, disarm motors
+                    if (!ap.auto_armed && ap.land_complete) {
+                        init_disarm_motors();
+
+                        // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
+                    } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+                        set_mode_land_with_pause();
+
+                        // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_RTL do RTL
+                    } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
+                        if (home_distance > FS_CLOSE_TO_HOME_CM) {
+                            // switch to RTL or if that fails, LAND
+                            set_mode_RTL_or_land_with_pause();
+                        }else{
+                            // We are very close to home so we will land
+                            set_mode_land_with_pause();
+                        }
+                    }
+                    // failsafe_throttle must be FS_THR_ENABLED_CONTINUE_MISSION so no need to do anything
+                    break;
+
+                case LAND:
+                    // continue to land if battery failsafe is also active otherwise fall through to default handling
+                    if (g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
+                        break;
+                    }
+                    // no break
+                default:
+                    // used for AltHold, Guided, Loiter, RTL, Circle, Drift, Sport, Flip, Autotune, PosHold
+                    // if landed disarm
+                    if (ap.land_complete) {
+                        init_disarm_motors();
+
+                        // if failsafe_throttle is FS_THR_ENABLED_ALWAYS_LAND then land immediately
+                    } else if(g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_LAND) {
+                        set_mode_land_with_pause();
+
+                        // if far from home then RTL
+                    } else if(home_distance > FS_CLOSE_TO_HOME_CM) {
+                        // switch to RTL or if that fails, LAND
+                        set_mode_RTL_or_land_with_pause();
+                    }else{
+                        // We have no GPS or are very close to home so we will land
+                        set_mode_land_with_pause();
+                    }
+                    break;
             }
             break;
     }
 
     // log the error to the dataflash
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_OCCURRED);
-
 }
 
 // failsafe_off_event - respond to radio contact being regained
@@ -108,7 +114,7 @@ void Copter::failsafe_battery_event(void)
     }
 
     // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors.armed()) {
+    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         switch(control_mode) {
             case STABILIZE:
             case ACRO:
@@ -190,7 +196,7 @@ void Copter::failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
-    if (failsafe.gcs || !motors.armed()) {
+    if (failsafe.gcs || hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
         return;
     }
 
@@ -202,6 +208,12 @@ void Copter::failsafe_gcs_check()
     // clear overrides so that RC control can be regained with radio.
     hal.rcin->clear_overrides();
     failsafe.rc_override_active = false;
+
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMING) {
+        // cancel arming motors
+        init_disarm_motors();
+        return;
+    }
 
     // This is how to handle a failsafe.
     // use the throttle failsafe setting to decide what to do

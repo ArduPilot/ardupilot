@@ -87,14 +87,17 @@ void Copter::esc_calibration_passthrough()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Passing pilot throttle to ESCs");
 
+    // enable motors
+    enable_motor_output();
+
+    // arm motors
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+    AP_Notify::flags.armed = 1;
+
+    // flash LEDS
+    AP_Notify::flags.esc_calibration = true;
+
     while(1) {
-        // arm motors
-        motors.armed(true);
-        motors.enable();
-
-        // flash LEDS
-        AP_Notify::flags.esc_calibration = true;
-
         // read pilot input
         read_radio();
         delay(10);
@@ -117,9 +120,12 @@ void Copter::esc_calibration_auto()
     // send message to GCS
     gcs_send_text(MAV_SEVERITY_INFO,"ESC calibration: Auto calibration");
 
-    // arm and enable motors
-    motors.armed(true);
-    motors.enable();
+    // enable motors
+    enable_motor_output();
+
+    // arm motors
+    hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+    AP_Notify::flags.armed = 1;
 
     // flash LEDS
     AP_Notify::flags.esc_calibration = true;

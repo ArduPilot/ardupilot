@@ -57,8 +57,9 @@ void Copter::run_cli(AP_HAL::UARTDriver *port)
     failsafe_disable();
 
     // cut the engines
-    if(motors.armed()) {
-        motors.armed(false);
+    if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_DISARMED) {
+        AP_Notify::flags.armed = 0;
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
         motors.output();
     }
 
@@ -343,7 +344,7 @@ bool Copter::ekf_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
-    if (!motors.armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
     } else {
         // once armed we require a good absolute position and EKF must not be in const_pos_mode
@@ -366,7 +367,7 @@ bool Copter::optflow_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal relative position
-    if (!motors.armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         return (filt_status.flags.pred_horiz_pos_rel);
     } else {
         return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
@@ -380,7 +381,7 @@ void Copter::update_auto_armed()
     // disarm checks
     if(ap.auto_armed){
         // if motors are disarmed, auto_armed should also be false
-        if(!motors.armed()) {
+        if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
             set_auto_armed(false);
             return;
         }
@@ -400,12 +401,12 @@ void Copter::update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero && motors.rotor_runup_complete()) {
+        if(hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && !ap.throttle_zero && motors.rotor_runup_complete()) {
             set_auto_armed(true);
         }
 #else
         // if motors are armed and throttle is above zero auto_armed should be true
-        if(motors.armed() && !ap.throttle_zero) {
+        if(hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && !ap.throttle_zero) {
             set_auto_armed(true);
         }
 #endif // HELI_FRAME
@@ -441,7 +442,7 @@ bool Copter::should_log(uint32_t mask)
     if (!(mask & g.log_bitmask) || in_mavlink_delay) {
         return false;
     }
-    bool ret = motors.armed() || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
+    bool ret = hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED || (g.log_bitmask & MASK_LOG_WHEN_DISARMED) != 0;
     if (ret && !DataFlash.logging_started() && !in_log_download) {
         start_logging();
     }

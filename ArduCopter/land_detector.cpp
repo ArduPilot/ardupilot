@@ -37,7 +37,7 @@ void Copter::update_land_detector()
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
 
-    if (!motors.armed()) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         // if disarmed, always landed.
         set_land_complete(true);
     } else if (ap.land_complete) {
@@ -115,7 +115,7 @@ void Copter::update_throttle_thr_mix()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
-    if(!motors.armed() || ap.land_complete) {
+    if(hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || ap.land_complete) {
         motors.set_throttle_mix_min();
         return;
     }

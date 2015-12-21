@@ -382,7 +382,7 @@ bool AP_AHRS_DCM::have_gps(void) const
  */
 bool AP_AHRS_DCM::use_fast_gains(void) const
 {
-    return !hal.util->get_soft_armed() && (AP_HAL::millis() - _last_startup_ms) < 20000U;
+    return hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_DISARMED && (AP_HAL::millis() - _last_startup_ms) < 20000U;
 }
 
 

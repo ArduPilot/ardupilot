@@ -203,7 +203,7 @@ void AP_MotorsHeli::output()
     // update throttle filter
     update_throttle_filter();
 
-    if (_flags.armed) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         calculate_armed_scalars();
         if (!_flags.interlock) {
             output_armed_zero_throttle();

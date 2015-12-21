@@ -18,7 +18,7 @@ void Copter::update_home_from_EKF()
     }
 
     // special logic if home is set in-flight
-    if (motors.armed()) {
+    if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)

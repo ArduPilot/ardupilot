@@ -239,7 +239,7 @@ bool Copter::autotune_start(bool ignore_checks)
     }
 
     // ensure we are flying
-    if (!motors.armed() || !ap.auto_armed || ap.land_complete) {
+    if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED || !ap.auto_armed || ap.land_complete) {
         return false;
     }
 

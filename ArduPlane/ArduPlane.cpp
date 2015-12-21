@@ -145,8 +145,12 @@ void Plane::loop()
 // update AHRS system
 void Plane::ahrs_update()
 {
-    hal.util->set_soft_armed(arming.is_armed() &&
-                   hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    if (arming.is_armed() && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_ARMED);
+    } else {
+        hal.util->set_soft_arm_state(AP_HAL::Util::SOFT_ARM_STATE_DISARMED);
+    }
+
 
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
@@ -461,7 +465,7 @@ void Plane::update_GPS_10Hz(void)
         }
 #endif        
 
-        if (!hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_arm_state() != AP_HAL::Util::SOFT_ARM_STATE_ARMED) {
             update_home();
         }
 

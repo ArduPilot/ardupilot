@@ -679,14 +679,14 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
         } else {
             EKF2.getFilterStatus(-1,filt_state);
         }
-        if (hal.util->get_soft_armed() && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && !filt_state.flags.using_gps && _gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS and we have a 3D lock, then
             // plane and rover would prefer to use the GPS position from
             // DCM. This is a safety net while some issues with the EKF
             // get sorted out
             return EKF_TYPE_NONE;
         }
-        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+        if (hal.util->get_soft_arm_state() == AP_HAL::Util::SOFT_ARM_STATE_ARMED && filt_state.flags.const_pos_mode) {
             return EKF_TYPE_NONE;
         }
         if (!filt_state.flags.attitude ||

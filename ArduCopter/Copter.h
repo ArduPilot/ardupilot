@@ -250,6 +250,9 @@ private:
         uint32_t value;
     } ap;
 
+    // This is the arming delay timer
+    uint32_t arming_commanded_ms;
+
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     int8_t control_mode;
@@ -853,6 +856,7 @@ private:
     void motor_test_stop();
     void arm_motors_check();
     void auto_disarm_check();
+    void arming_timer_check();
     bool init_arm_motors(bool arming_from_gcs);
     bool pre_arm_checks(bool display_failure);
     void pre_arm_rc_checks();
