@@ -9,6 +9,14 @@
 #include "ToneAlarmDriver.h"
 #include "Semaphores.h"
 
+enum hw_type {
+    UTIL_HARDWARE_RPI1 = 0,
+    UTIL_HARDWARE_RPI2,
+    UTIL_HARDWARE_BEBOP,
+    UTIL_HARDWARE_BEBOP2,
+    UTIL_NUM_HARDWARES,
+};
+
 class Linux::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
@@ -25,7 +33,7 @@ public:
 
     bool toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tune);
-    
+
     void _toneAlarm_timer_tick();
 
     /*
@@ -64,14 +72,17 @@ public:
 
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new Linux::Semaphore; }
-    
+
+    int get_hw_arm32();
+
 private:
     static Linux::ToneAlarm _toneAlarm;
     Linux::Heat *_heat;
     int saved_argc;
     char* const *saved_argv;
     const char* custom_log_directory = NULL;
-    const char* custom_terrain_directory = NULL;	
+    const char* custom_terrain_directory = NULL;
+    static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 
 
