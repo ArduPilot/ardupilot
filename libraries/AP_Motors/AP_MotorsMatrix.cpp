@@ -358,6 +358,28 @@ void AP_MotorsMatrix::output_armed_stabilizing()
         }
     }
 
+    // apply slew rate limiter
+    static const int16_t slew_per_step = 6;
+    static const int16_t slew_minimum = 1330;
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            _max_motor_out[i] = MAX(_max_motor_out[i], slew_minimum-slew_per_step);
+            int16_t max_increment = motor_out[i] - _max_motor_out[i];
+
+            if (max_increment > slew_per_step) {
+                max_increment = slew_per_step;
+            } else if (max_increment < -slew_per_step) {
+                max_increment = -slew_per_step;
+            }
+
+            _max_motor_out[i] += max_increment;
+
+            _max_motor_out[i] = MAX(_max_motor_out[i], slew_minimum-slew_per_step);
+
+            motor_out[i] = MIN(motor_out[i], _max_motor_out[i]);
+        }
+    }
+
     // send output to each motor
     hal.rcout->cork();
     for( i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++ ) {
