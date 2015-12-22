@@ -43,7 +43,7 @@ void Copter::adsb_update(void)
 void Copter::adsb_handle_vehicle_threats(void)
 {
     // handle clearing of threat
-    if (adsb.get_is_evading_threat() && !adsb.get_another_vehicle_within_radius()) {
+    if (adsb.get_is_evading_threat() && !adsb.get_possible_threat()) {
         adsb.set_is_evading_threat(false);
         Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_FAILSAFE_RESOLVED);
         gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat cleared");
@@ -51,7 +51,7 @@ void Copter::adsb_handle_vehicle_threats(void)
     }
 
     // handle new threat
-    if (!adsb.get_is_evading_threat() && adsb.get_another_vehicle_within_radius()) {
+    if (!adsb.get_is_evading_threat() && adsb.get_possible_threat()) {
         adsb.set_is_evading_threat(true);
         Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_ADSB, ERROR_CODE_FAILSAFE_OCCURRED);
         gcs_send_text(MAV_SEVERITY_CRITICAL, "ADS-B threat!");
