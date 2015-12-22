@@ -78,6 +78,7 @@ SPIDeviceDriver SPIDeviceManager::_device[0];
 #endif
 
 #define LINUX_SPI_DEVICE_NUM_DEVICES ARRAY_SIZE(SPIDeviceManager::_device)
+const uint8_t SPIDeviceManager::_n_device_desc = LINUX_SPI_DEVICE_NUM_DEVICES;
 
 // have a separate semaphore per bus
 Semaphore SPIDeviceManager::_semaphore[LINUX_SPI_MAX_BUSES];
