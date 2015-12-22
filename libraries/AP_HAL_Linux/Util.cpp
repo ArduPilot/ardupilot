@@ -160,4 +160,45 @@ int Util::read_file(const char *path, const char *fmt, ...)
     return ret;
 }
 
+const char *Linux::Util::_hw_names[UTIL_NUM_HARDWARES] = {
+    [UTIL_HARDWARE_RPI1]   = "BCM2708",
+    [UTIL_HARDWARE_RPI2]   = "BCM2709",
+    [UTIL_HARDWARE_BEBOP]  = "Mykonos3 board",
+    [UTIL_HARDWARE_BEBOP2] = "Milos board",
+};
+
+#define MAX_SIZE_LINE 50
+int Util::get_hw_arm32()
+{
+    int ret = -ENOENT;
+    char buffer[MAX_SIZE_LINE];
+    const char* hardware_description_entry = "Hardware";
+    char* flag;
+    FILE* f;
+
+    f = fopen("/proc/cpuinfo", "r");
+
+    if (f == NULL) {
+        ret = -errno;
+        goto end;
+    }
+
+    while (fgets(buffer, MAX_SIZE_LINE, f) != NULL) {
+        flag = strstr(buffer, hardware_description_entry);
+        if (flag != NULL) {
+            for (uint8_t i = 0; i < UTIL_NUM_HARDWARES; i++) {
+                if (strstr(buffer, _hw_names[i]) != 0) {
+                     ret = i;
+                     goto close_end;
+                }
+            }
+        }
+    }
+
+close_end:
+    fclose(f);
+end:
+    return ret;
+}
+
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
