@@ -169,7 +169,9 @@ private:
     // Mission library
     AP_Mission mission;
 
+#if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow{ahrs};
+#endif
     
     // RSSI 
     AP_RSSI rssi;          
