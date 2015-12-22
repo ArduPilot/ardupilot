@@ -26,10 +26,7 @@ def configure(cfg):
 
     env.GBENCHMARK_CMAKE_GENERATOR = None
 
-    cfg.find_program('ninja', mandatory=False)
-    if not env.NINJA:
-        cfg.find_program('ninja-build', var='NINJA', mandatory=False)
-
+    cfg.find_program(['ninja', 'ninja-build'], var='NINJA', mandatory=False)
     if env.NINJA:
         env.GBENCHMARK_CMAKE_GENERATOR = 'Ninja'
 
