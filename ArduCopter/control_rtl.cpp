@@ -25,6 +25,10 @@ bool Copter::rtl_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::rtl_run()
 {
+    // reset wpnav speed to rtl speed
+    // this works around shots using an interface prone to race conditions for cable cam
+    wp_nav.set_speed_xy(g.rtl_speed_cms);
+
     // check if we need to move to next state
     if (rtl_state_complete) {
         switch (rtl_state) {
