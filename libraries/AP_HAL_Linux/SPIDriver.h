@@ -52,7 +52,8 @@ public:
     static void cs_release(enum AP_HAL::SPIDeviceType type);
     static bool transaction(SPIDeviceDriver &driver, const uint8_t *tx, uint8_t *rx, uint16_t len);
 
-private:
+protected:
+    static const uint8_t _n_device_desc;
     static SPIDeviceDriver _device[];
     static Semaphore _semaphore[LINUX_SPI_MAX_BUSES];
 };
