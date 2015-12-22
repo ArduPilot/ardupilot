@@ -169,14 +169,15 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_smooth(floa
 
     // Convert euler angle derivative of desired attitude into a body-frame angular velocity vector for feedforward
     if (_rate_bf_ff_enabled) {
-        euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_euler_rate_rads, _att_target_ang_vel_rads);
+        euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
     } else {
-        euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), Vector3f(0,0,_att_target_euler_rate_rads.z), _att_target_ang_vel_rads);
+        euler_rate_to_ang_vel(_att_target_euler_rad, Vector3f(0,0,_att_target_euler_rate_rads.z), _att_target_ang_vel_rads);
     }
-    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
@@ -226,12 +227,12 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     update_ang_vel_target_from_att_error();
 
     // Convert euler angle derivatives of desired attitude into a body-frame angular velocity vector for feedforward
-    // NOTE: This should be done about the desired attitude instead of about the vehicle attitude
-    euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_euler_rate_rads, _att_target_ang_vel_rads);
-    // NOTE: A rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
+    euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
@@ -322,11 +323,12 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     update_ang_vel_target_from_att_error();
 
     // Convert euler angle derivatives of desired attitude into a body-frame angular velocity vector for feedforward
-    euler_rate_to_ang_vel(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), _att_target_euler_rate_rads, _att_target_ang_vel_rads);
-    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
+    euler_rate_to_ang_vel(_att_target_euler_rad, _att_target_euler_rate_rads, _att_target_ang_vel_rads);
 
-    // Add the angular velocity feedforward
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
@@ -377,7 +379,7 @@ void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_
     // Update euler attitude target and angular velocity targets
     att_target_quat.to_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
     _att_target_ang_vel_rads = att_target_ang_vel_rads;
-    ang_vel_to_euler_rate(Vector3f(_ahrs.roll,_ahrs.pitch,_ahrs.yaw), att_target_ang_vel_rads, _att_target_euler_rate_rads);
+    ang_vel_to_euler_rate(_att_target_euler_rad, att_target_ang_vel_rads, _att_target_euler_rate_rads);
 
     // Retrieve quaternion vehicle attitude
     // TODO add _ahrs.get_quaternion()
@@ -390,9 +392,10 @@ void AC_AttitudeControl::input_att_quat_bf_ang_vel(const Quaternion& att_target_
     // Compute the angular velocity target from the attitude error
     update_ang_vel_target_from_att_error();
 
-    // Add the angular velocity feedforward
-    // NOTE: Rotation of _att_target_ang_vel_rads from desired body frame to estimated body frame is possibly omitted here
-    _ang_vel_target_rads += _att_target_ang_vel_rads;
+    // Add the angular velocity feedforward, rotated into vehicle frame
+    Matrix3f Trv;
+    get_rotation_reference_to_vehicle(Trv);
+    _ang_vel_target_rads += Trv * _att_target_ang_vel_rads;
 }
 
 
@@ -509,7 +512,9 @@ void AC_AttitudeControl::update_ang_vel_target_from_att_error()
         _ang_vel_target_rads.z = _p_angle_yaw.kP() * _att_error_rot_vec_rad.z;
     }
 
-    // Account for precession of desired attitude about the body frame yaw axis
+    // Add feedforward term that attempts to ensure that the copter yaws about the reference
+    // Z axis, rather than the vehicle body Z axis.
+    // NOTE: This is a small-angle approximation.
     _ang_vel_target_rads.x += _att_error_rot_vec_rad.y * _ahrs.get_gyro().z;
     _ang_vel_target_rads.y += -_att_error_rot_vec_rad.x * _ahrs.get_gyro().z;
 }
@@ -645,6 +650,43 @@ float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord
     } else {
         return error*p;
     }
+}
+
+void AC_AttitudeControl::get_rotation_vehicle_to_ned(Matrix3f& m)
+{
+    m = _ahrs.get_dcm_matrix();
+}
+
+void AC_AttitudeControl::get_rotation_ned_to_vehicle(Matrix3f& m)
+{
+    get_rotation_vehicle_to_ned(m);
+    m = m.transposed();
+}
+
+void AC_AttitudeControl::get_rotation_reference_to_ned(Matrix3f& m)
+{
+    m.from_euler(_att_target_euler_rad.x,_att_target_euler_rad.y,_att_target_euler_rad.z);
+}
+
+void AC_AttitudeControl::get_rotation_ned_to_reference(Matrix3f& m)
+{
+    get_rotation_reference_to_ned(m);
+    m = m.transposed();
+}
+
+void AC_AttitudeControl::get_rotation_vehicle_to_reference(Matrix3f& m)
+{
+    Matrix3f Tvn;
+    Matrix3f Tnr;
+    get_rotation_vehicle_to_ned(Tvn);
+    get_rotation_ned_to_reference(Tnr);
+    m = Tnr * Tvn;
+}
+
+void AC_AttitudeControl::get_rotation_reference_to_vehicle(Matrix3f& m)
+{
+    get_rotation_vehicle_to_reference(m);
+    m = m.transposed();
 }
 
 float AC_AttitudeControl::max_rate_step_bf_roll()
