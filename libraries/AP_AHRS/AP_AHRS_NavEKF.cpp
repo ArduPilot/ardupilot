@@ -1098,6 +1098,38 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     }
 }
 
+void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1:
+            EKF1.setTakeoffExpected(val);
+            break;
+        case EKF_TYPE2:
+            EKF2.setTakeoffExpected(val);
+            break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            break;
+#endif
+    }
+}
+
+void AP_AHRS_NavEKF::setTouchdownExpected(bool val)
+{
+    switch (ekf_type()) {
+        case EKF_TYPE1:
+            EKF1.setTouchdownExpected(val);
+            break;
+        case EKF_TYPE2:
+            EKF2.setTouchdownExpected(val);
+            break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKF_TYPE_SITL:
+            break;
+#endif
+    }
+}
+
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
 
