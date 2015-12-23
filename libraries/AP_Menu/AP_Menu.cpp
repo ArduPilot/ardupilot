@@ -2,17 +2,14 @@
 
 //
 // Simple commandline menu system.
-//
+#include "AP_Menu.h"
 
-#include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
-#include <AP_HAL/AP_HAL.h>
-
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "AP_Menu.h"
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -239,10 +236,7 @@ Menu::_help(void)
 int8_t
 Menu::_call(uint8_t n, uint8_t argc)
 {
-    func fn;
-
-    pgm_read_block(&_commands[n].func, &fn, sizeof(fn));
-    return(fn(argc, &_argv[0]));
+    return _commands[n].func(argc, &_argv[0]);
 }
 
 /**
