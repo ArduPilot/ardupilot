@@ -9,10 +9,9 @@
  * EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR PURPOSE.
  */
-
 #include "edc.h"
 
-#include <AP_Progmem/AP_Progmem.h>
+#include <inttypes.h>
 
 /* CRC16 implementation acording to CCITT standards */
 static const uint16_t crc16tab[256] = {
@@ -52,7 +51,7 @@ static const uint16_t crc16tab[256] = {
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
 {
-  for (uint32_t i = 0; i < len; i++)
-    crc = (crc << 8) ^ (uint16_t) pgm_read_word(&crc16tab[((crc >> 8) ^ *buf++) & 0x00FF]);
-  return crc;
+    for (uint32_t i = 0; i < len; i++)
+        crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    return crc;
 }
