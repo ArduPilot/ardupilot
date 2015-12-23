@@ -90,6 +90,10 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
                       "video device");
     }
 
+    if (!_videoin->set_crop(left, top, crop_width, crop_height)) {
+        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video crop");
+    }
+
     if (!_videoin->set_format(&_width, &_height, &_format, &_bytesperline,
                               &_sizeimage)) {
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set video format");
@@ -98,10 +102,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
     if (_format != V4L2_PIX_FMT_NV12 && _format != V4L2_PIX_FMT_GREY) {
         AP_HAL::panic("OpticalFlow_Onboard: planar or monochrome format needed");
-    }
-
-    if (!_videoin->set_crop(left, top, crop_width, crop_height)) {
-        AP_HAL::panic("OpticalFlow_Onboard: couldn't set video crop");
     }
 
     if (!_videoin->allocate_buffers(nbufs)) {
