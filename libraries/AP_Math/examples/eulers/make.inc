@@ -13,7 +13,6 @@ LIBRARIES += AP_Mission
 LIBRARIES += AP_NavEKF
 LIBRARIES += AP_Notify
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Rally
 LIBRARIES += AP_RangeFinder
 LIBRARIES += AP_Terrain

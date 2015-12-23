@@ -15,7 +15,6 @@ LIBRARIES += AP_Motors
 LIBRARIES += AP_NavEKF
 LIBRARIES += AP_Notify
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_RangeFinder
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_Vehicle
