@@ -36,7 +36,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Notify',
     'AP_OpticalFlow',
     'AP_Param',
-    'AP_Progmem',
     'AP_Rally',
     'AP_RangeFinder',
     'AP_Scheduler',

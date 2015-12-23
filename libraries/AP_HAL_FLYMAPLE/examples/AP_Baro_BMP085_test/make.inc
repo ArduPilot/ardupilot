@@ -7,7 +7,6 @@ LIBRARIES += AP_Math
 LIBRARIES += AP_Mission
 LIBRARIES += AP_Notify
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Terrain
 LIBRARIES += DataFlash
 LIBRARIES += Filter
