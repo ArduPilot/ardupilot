@@ -18,18 +18,17 @@
 /// @file	AP_Param.h
 /// @brief	A system for managing and storing variables that are of
 ///			general interest to the system.
+#pragma once
 
-#ifndef AP_PARAM_H
-#define AP_PARAM_H
-#include <AP_HAL/AP_HAL.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
-#include "float.h"
 
-#include <AP_Progmem/AP_Progmem.h>
+#include <AP_HAL/AP_HAL.h>
 #include <StorageManager/StorageManager.h>
+
+#include "float.h"
 
 #define AP_MAX_NAME_SIZE 16
 #define AP_NESTED_GROUPS_ENABLED
@@ -112,7 +111,7 @@ public:
     {
         _var_info = info;
         uint16_t i;
-        for (i=0; pgm_read_byte(&info[i].type) != AP_PARAM_NONE; i++) ;
+        for (i = 0; info[i].type != AP_PARAM_NONE; i++) ;
         _num_vars = i;
     }
 
@@ -658,5 +657,3 @@ AP_PARAMDEFA(float, Vector6f, 6, AP_PARAM_VECTOR6F);
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_ ## _suffix;
-
-#endif // AP_PARAM_H
