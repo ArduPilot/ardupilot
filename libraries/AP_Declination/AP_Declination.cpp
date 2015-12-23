@@ -23,13 +23,12 @@
  *	scottfromscott@gmail.com
  *
  */
+#include "AP_Declination.h"
+
+#include <math.h>
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_Declination.h"
-#include <AP_Progmem/AP_Progmem.h>
-#include <math.h>
 
 // 1 byte - 4 bits for value + 1 bit for sign + 3 bits for repeats => 8 bits
 struct row_value {
@@ -115,8 +114,6 @@ static const row_value declination_values[] = \
     {0,0,0},{3,0,5},{2,0,1},{1,0,0},{0,0,0},{1,1,0},{2,1,0},{5,1,0},{8,1,0},{12,1,0},{14,1,0},{13,1,0},{9,1,0},{6,1,0},{3,1,0},{1,1,0},{0,0,0},{2,0,0},{1,0,0},{3,0,0},{2,0,0},{3,0,0},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{4,0,1},{3,0,0},{4,0,0},{3,0,2},{4,0,0},{3,0,1},{4,0,0},{3,0,0},{2,0,0},{3,0,0},{2,0,2},{0,0,1},{1,1,0},{2,1,0},{4,1,0},{5,1,0},{7,1,0},{8,1,0},{6,1,1},{5,1,0},{3,1,0},{1,1,1},{1,0,1},{2,0,0},{3,0,0},{2,0,0},{3,0,1},{2,0,0},{3,0,0}, \
 };
 
-#define PGM_UINT8(p) pgm_read_byte_far(p)
-
 float
 AP_Declination::get_declination(float lat, float lon)
 {
@@ -159,10 +156,10 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
         if(x >= 34) x -= 27;
 
         // Read the unsigned value from the array
-        val = PGM_UINT8(&exceptions[x][y]);
+        val = exceptions[x][y];
 
         // Read the 8 bit compressed sign values
-        uint8_t sign = PGM_UINT8(&exception_signs[x][y/8]);
+        uint8_t sign = exception_signs[x][y/8];
 
         // Check the sign bit for this index
         if(sign & (0x80 >> y%8))
@@ -179,7 +176,9 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
 
     // If we are looking for the first value we can just use the
     // row start value from declination_keys
-    if(y == 0) return PGM_UINT8(&declination_keys[0][x]);
+    if (y == 0) {
+        return declination_keys[0][x];
+    }
 
     // Init vars
     row_value stval;
@@ -192,16 +191,16 @@ AP_Declination::get_lookup_value(uint8_t x, uint8_t y)
     uint16_t start_index = 0, i;
 
     // Init value to row start
-    val = PGM_UINT8(&declination_keys[0][x]);
+    val = declination_keys[0][x];
 
     // Find the first element in the 1D array
     // that corresponds with the target row
     for(i = 0; i < x; i++) {
-        start_index += PGM_UINT8(&declination_keys[1][i]);
+        start_index += declination_keys[1][i];
     }
 
     // Traverse the row until we find our value
-    for(i = start_index; i < (start_index + PGM_UINT8(&declination_keys[1][x])) && current_virtual_index <= y; i++) {
+    for(i = start_index; i < (start_index + declination_keys[1][x]) && current_virtual_index <= y; i++) {
 
         // Pull out the row_value struct
         memcpy((void*) &stval, (const char *)&declination_values[i], sizeof(struct row_value));
