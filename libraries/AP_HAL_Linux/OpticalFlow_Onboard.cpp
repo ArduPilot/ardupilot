@@ -79,9 +79,9 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     crop_width = HAL_OPTFLOW_ONBOARD_CROP_WIDTH;
     crop_height = HAL_OPTFLOW_ONBOARD_CROP_HEIGHT;
     top = 0;
-    /* make the image square by cropping in the center */
-    left = (HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH -
-            HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT) / 2;
+    /* make the image square by cropping to YxY, removing the lateral edges */
+    left = (HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH -
+            HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT) / 2;
     _format = V4L2_PIX_FMT_NV12;
 
     if (device_path == NULL ||
