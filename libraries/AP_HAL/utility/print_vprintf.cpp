@@ -39,17 +39,14 @@
 
 #include "print_vprintf.h"
 
+#include <math.h>
 #include <stdarg.h>
 #include <string.h>
-#include <math.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include "ftoa_engine.h"
 #include "xtoa_fast.h"
-
-#define GETBYTE(flag, mask, pnt) ((flag)&(mask)?pgm_read_byte(pnt++):*pnt++)
 
 #define FL_ZFILL	0x01
 #define FL_PLUS		0x02
@@ -61,7 +58,6 @@
 #define FL_LONG		0x80
 #define FL_LONGLONG	0x100
 
-#define FL_PGMSTRING	FL_LONG
 #define FL_NEGATIVE	FL_LONG
 
 #define FL_ALTUPP	FL_PLUS
@@ -85,10 +81,10 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                  * Process non-format characters
                  */
                 for (;;) {
-                        c = GETBYTE (in_progmem, 1, fmt);
+                        c = *fmt++;
                         if (!c) return;
                         if (c == '%') {
-                                c = GETBYTE (in_progmem, 1, fmt);
+                                c = *fmt++;
                                 if (c != '%') break;
                         }
                         /* emit cr before lf to make most terminals happy */
@@ -152,9 +148,9 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 flags |= FL_LONGLONG;
                                 continue;
                         }
-            
+
                         break;
-                } while ( (c = GETBYTE (in_progmem, 1, fmt)) != 0);
+                } while ((c = *fmt++) != 0);
 
                 /*
                  * Handle floating-point formats E, F, G, e, f, g.
@@ -226,7 +222,7 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                                 const char *p = "inf";
                                 if (vtype & FTOA_NAN)
                                         p = "nan";
-                                while ( (ndigs = pgm_read_byte((const char *)p)) != 0) {
+                                while ((ndigs = *p) != 0) {
                                         if (flags & FL_FLTUPP)
                                                 ndigs += 'I' - 'i';
                                         s->write(ndigs);
@@ -340,40 +336,30 @@ void print_vprintf (AP_HAL::Print *s, unsigned char in_progmem, const char *fmt,
                         size_t size;
 
                         switch (c) {
-
                         case 'c':
                                 buf[0] = va_arg (ap, int);
                                 pnt = (char *)buf;
                                 size = 1;
-                                goto no_pgmstring;
-
+                                break;
                         case 's':
                                 pnt = va_arg (ap, char *);
                                 size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
-                        no_pgmstring:
-                                flags &= ~FL_PGMSTRING;
-                                goto str_lpad;
-
-                        case 'S':
-                        // pgmstring: // not yet used
-                                pnt = va_arg (ap, char *);
-                                size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
-                                flags |= FL_PGMSTRING;
-
-                        str_lpad:
-                                if (!(flags & FL_LPAD)) {
-                                        while (size < width) {
-                                                s->write(' ');
-                                                width--;
-                                        }
-                                }
-                                while (size) {
-                                        s->write(GETBYTE (flags, FL_PGMSTRING, pnt));
-                                        if (width) width -= 1;
-                                        size -= 1;
-                                }
-                                goto tail;
+                                break;
                         }
+
+                        if (!(flags & FL_LPAD)) {
+                                while (size < width) {
+                                        s->write(' ');
+                                        width--;
+                                }
+                        }
+
+                        while (size) {
+                                s->write(*pnt++);
+                                if (width) width -= 1;
+                                size -= 1;
+                        }
+                        goto tail;
                 }
 
                 /*
