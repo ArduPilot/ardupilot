@@ -9,7 +9,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 #include "DataFlash.h"
 #include "DataFlash_SITL.h"
@@ -329,8 +328,6 @@ uint16_t DataFlash_Block::find_last_page_of_log(uint16_t log_number)
     return -1;
 }
 
-#define PGM_UINT8(addr) pgm_read_byte((const char *)addr)
-
 /*
   read and print a log entry using the format strings from the given structure
  */
@@ -512,10 +509,8 @@ void DataFlash_Block::_print_log_formats(AP_HAL::BetterStream *port)
 {
     for (uint8_t i=0; i<num_types(); i++) {
         const struct LogStructure *s = structure(i);
-        port->printf("FMT, %u, %u, %s, %s, %s\n",
-                       (unsigned)PGM_UINT8(&s->msg_type),
-                       (unsigned)PGM_UINT8(&s->msg_len),
-                       s->name, s->format, s->labels);
+        port->printf("FMT, %u, %u, %s, %s, %s\n", s->msg_type,  s->msg_len,
+                     s->name, s->format, s->labels);
     }
 }
 
@@ -660,8 +655,8 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
     pkt.head1 = HEAD_BYTE1;
     pkt.head2 = HEAD_BYTE2;
     pkt.msgid = LOG_FORMAT_MSG;
-    pkt.type = PGM_UINT8(&s->msg_type);
-    pkt.length = PGM_UINT8(&s->msg_len);
+    pkt.type = s->msg_type;
+    pkt.length = s->msg_len;
     strncpy(pkt.name, s->name, sizeof(pkt.name));
     strncpy(pkt.format, s->format, sizeof(pkt.format));
     strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
