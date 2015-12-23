@@ -13,16 +13,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Progmem/AP_Progmem.h>
 
-#include "AP_GPS.h"
-
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_GPS::var_info[] = {
@@ -166,7 +164,7 @@ void AP_GPS::send_blob_update(uint8_t instance)
             space = initblob_state[instance].remaining;
         }
         while (space > 0) {
-            _port[instance]->write(pgm_read_byte(initblob_state[instance].blob));
+            _port[instance]->write(*initblob_state[instance].blob);
             initblob_state[instance].blob++;
             space--;
             initblob_state[instance].remaining--;
@@ -234,7 +232,7 @@ AP_GPS::detect_instance(uint8_t instance)
 		if (dstate->last_baud == ARRAY_SIZE(_baudrates)) {
 			dstate->last_baud = 0;
 		}
-		uint32_t baudrate = pgm_read_dword(&_baudrates[dstate->last_baud]);
+		uint32_t baudrate = _baudrates[dstate->last_baud];
 		_port[instance]->begin(baudrate);
 		_port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 		dstate->last_baud_change_ms = now;
@@ -259,7 +257,7 @@ AP_GPS::detect_instance(uint8_t instance)
           for.
         */
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_UBLOX) &&
-            pgm_read_dword(&_baudrates[dstate->last_baud]) >= 38400 && 
+            _baudrates[dstate->last_baud] >= 38400 &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             hal.console->print(" ublox ");
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
