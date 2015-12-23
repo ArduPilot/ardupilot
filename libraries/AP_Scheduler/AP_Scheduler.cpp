@@ -23,7 +23,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -111,7 +110,7 @@ void AP_Scheduler::run(uint16_t time_available)
         }
         if (dt >= interval_ticks) {
             // this task is due to run. Do we have enough time to run it?
-            _task_time_allowed = pgm_read_word(&_tasks[i].max_time_micros);
+            _task_time_allowed = _tasks[i].max_time_micros;
 
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
@@ -128,10 +127,8 @@ void AP_Scheduler::run(uint16_t time_available)
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = now;
-                task_fn_t func;
-                pgm_read_block(&_tasks[i].function, &func, sizeof(func));
                 current_task = i;
-                func();
+                _tasks[i].function();
                 current_task = -1;
                 
                 // record the tick counter when we ran. This drives
