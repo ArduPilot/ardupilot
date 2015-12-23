@@ -78,7 +78,7 @@ AP_Scheduler::AP_Scheduler(void)
 }
 
 // initialise the scheduler
-void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks) 
+void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
 {
     _tasks = tasks;
     _num_tasks = num_tasks;
@@ -123,22 +123,22 @@ void AP_Scheduler::run(uint16_t time_available)
                                           (unsigned)_task_time_allowed);
                 }
             }
-            
+
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = now;
                 current_task = i;
                 _tasks[i].function();
                 current_task = -1;
-                
+
                 // record the tick counter when we ran. This drives
                 // when we next run the event
                 _last_run[i] = _tick_counter;
-                
+
                 // work out how long the event actually took
                 now = AP_HAL::micros();
                 uint32_t time_taken = now - _task_time_started;
-                
+
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
                     if (_debug > 2) {
