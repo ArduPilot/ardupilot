@@ -40,7 +40,7 @@ int AP_HAL::Util::snprintf(char* str, size_t size, const char *format, ...)
 int AP_HAL::Util::vsnprintf(char* str, size_t size, const char *format, va_list ap)
 {
     BufferPrinter buf(str, size);
-    print_vprintf(&buf, 0, format, ap);
+    print_vprintf(&buf, format, ap);
     // null terminate if possible
     int ret = buf._offs;
     buf.write(0);
