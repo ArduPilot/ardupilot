@@ -34,10 +34,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Progmem/AP_Progmem.h>
-
-#define PGM_INT8(addr) (int8_t)pgm_read_byte((const char *)addr)
-#define PGM_UINT32(addr) pgm_read_dword((const uint32_t *)addr)
 
 /*
  * 2^b ~= f * r * 10^e
@@ -127,12 +123,12 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
 	if (exp != 0) frac |= (1UL<<23);
 
 	uint8_t idx = exp>>3;
-	int8_t exp10 = PGM_INT8(&exponentTable[idx]);
+	int8_t exp10 = exponentTable[idx];
 
 	// We COULD try making the multiplication in situ, where we make
 	// frac and a 64 bit int overlap in memory and select/weigh the
 	// upper 32 bits that way. For starters, this is less risky:
-	int64_t prod = (int64_t)frac * (int64_t)PGM_UINT32(&factorTable[idx]);
+	int64_t prod = (int64_t)frac * (int64_t)factorTable[idx];
 
 	// The expConvFactorTable are factor are correct iff the lower 3 exponent
 	// bits are 1 (=7). Else we need to compensate by divding frac.
