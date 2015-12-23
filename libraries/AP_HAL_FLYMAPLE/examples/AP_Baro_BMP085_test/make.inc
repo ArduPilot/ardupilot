@@ -3,6 +3,7 @@ LIBRARIES += AP_Baro
 LIBRARIES += AP_Buffer
 LIBRARIES += AP_Common
 LIBRARIES += AP_InertialSensor
+LIBRARIES += AP_AccelCal
 LIBRARIES += AP_Math
 LIBRARIES += AP_Mission
 LIBRARIES += AP_Notify
