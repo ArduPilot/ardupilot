@@ -93,6 +93,7 @@ public:
     void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
         msg_snoop = _msg_snoop;
     }
+    void		send_airspeed_calibration(const Vector3f &vg);
 
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
