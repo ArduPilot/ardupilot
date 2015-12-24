@@ -14,11 +14,10 @@ void Copter::update_arming_checks(void)
         pre_arm_display_counter = 0;
     }
 
-    if(pre_arm_checks(display_fail)) {
+    if (pre_arm_checks(display_fail)) {
         set_pre_arm_check(true);
     }
 }
-
 
 // performs pre-arm checks and arming checks
 bool Copter::all_arming_checks_passing(bool arming_from_gcs)
@@ -68,7 +67,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     }
 
     // succeed if pre arm checks are disabled
-    if(g.arming_check == ARMING_CHECK_NONE) {
+    if (g.arming_check == ARMING_CHECK_NONE) {
         set_pre_arm_check(true);
         set_pre_arm_rc_check(true);
         return true;
@@ -76,7 +75,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
     // pre-arm rc checks a prerequisite
     pre_arm_rc_checks();
-    if(!ap.pre_arm_rc_check) {
+    if (!ap.pre_arm_rc_check) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: RC not calibrated");
         }
@@ -85,7 +84,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // check Baro
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_BARO)) {
         // barometer health check
-        if(!barometer.all_healthy()) {
+        if (!barometer.all_healthy()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Barometer not healthy");
             }
@@ -109,7 +108,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // check Compass
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_COMPASS)) {
         // check the primary compass is healthy
-        if(!compass.healthy()) {
+        if (!compass.healthy()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass not healthy");
             }
@@ -117,7 +116,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check compass learning is on or offsets have been set
-        if(!compass.configured()) {
+        if (!compass.configured()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass not calibrated");
             }
@@ -126,7 +125,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
         // check for unreasonable compass offsets
         Vector3f offsets = compass.get_offsets();
-        if(offsets.length() > COMPASS_OFFSETS_MAX) {
+        if (offsets.length() > COMPASS_OFFSETS_MAX) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Compass offsets too high");
             }
@@ -159,7 +158,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 
     #if AC_FENCE == ENABLED
     // check fence is initialised
-    if(!fence.pre_arm_check()) {
+    if (!fence.pre_arm_check()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: check fence");
         }
@@ -170,7 +169,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     // check INS
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
         // check accelerometers have been calibrated
-        if(!ins.accel_calibrated_ok_all()) {
+        if (!ins.accel_calibrated_ok_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accels not calibrated");
             }
@@ -178,7 +177,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check accels are healthy
-        if(!ins.get_accel_health_all()) {
+        if (!ins.get_accel_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Accelerometers not healthy");
             }
@@ -195,9 +194,9 @@ bool Copter::pre_arm_checks(bool display_failure)
                 float threshold = PREARM_MAX_ACCEL_VECTOR_DIFF;
                 if (i >= 2) {
                     /*
-                     *                     for boards with 3 IMUs we only use the first two
-                     *                     in the EKF. Allow for larger accel discrepancy
-                     *                     for IMU3 as it may be running at a different temperature
+                     * for boards with 3 IMUs we only use the first two
+                     * in the EKF. Allow for larger accel discrepancy
+                     * for IMU3 as it may be running at a different temperature
                      */
                     threshold *= 2;
                 }
@@ -211,7 +210,7 @@ bool Copter::pre_arm_checks(bool display_failure)
         }
 
         // check gyros are healthy
-        if(!ins.get_gyro_health_all()) {
+        if (!ins.get_gyro_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Gyros not healthy");
             }
@@ -244,7 +243,7 @@ bool Copter::pre_arm_checks(bool display_failure)
     #ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
     // check board voltage
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_VOLTAGE)) {
-        if(hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
+        if (hal.analogin->board_voltage() < BOARD_VOLTAGE_MIN || hal.analogin->board_voltage() > BOARD_VOLTAGE_MAX) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Board Voltage");
             }
@@ -341,7 +340,7 @@ bool Copter::pre_arm_checks(bool display_failure)
 void Copter::pre_arm_rc_checks()
 {
     // exit immediately if we've already successfully performed the pre-arm rc check
-    if( ap.pre_arm_rc_check ) {
+    if (ap.pre_arm_rc_check) {
         return;
     }
 
@@ -352,7 +351,7 @@ void Copter::pre_arm_rc_checks()
     }
 
     // check if radio has been calibrated
-    if(!channel_throttle->radio_min.configured() && !channel_throttle->radio_max.configured()) {
+    if (!channel_throttle->radio_min.configured() && !channel_throttle->radio_max.configured()) {
         return;
     }
 
@@ -384,7 +383,7 @@ void Copter::pre_arm_rc_checks()
 bool Copter::pre_arm_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
-    if(!ahrs.healthy()) {
+    if (!ahrs.healthy()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"PreArm: Waiting for Nav Checks");
         }
@@ -483,13 +482,13 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // check accels and gyro are healthy
     if ((g.arming_check == ARMING_CHECK_ALL) || (g.arming_check & ARMING_CHECK_INS)) {
-        if(!ins.get_accel_health_all()) {
+        if (!ins.get_accel_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Accelerometers not healthy");
             }
             return false;
         }
-        if(!ins.get_gyro_health_all()) {
+        if (!ins.get_gyro_health_all()) {
             if (display_failure) {
                 gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Gyros not healthy");
             }
@@ -505,14 +504,14 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     }
 
     // always check if inertial nav has started and is ready
-    if(!ahrs.healthy()) {
+    if (!ahrs.healthy()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Waiting for Nav Checks");
         }
         return false;
     }
 
-    if(compass.is_calibrating()) {
+    if (compass.is_calibrating()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: Compass calibration running");
         }
@@ -577,7 +576,7 @@ bool Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     #if AC_FENCE == ENABLED
     // check vehicle is within fence
-    if(!fence.pre_arm_check()) {
+    if (!fence.pre_arm_check()) {
         if (display_failure) {
             gcs_send_text(MAV_SEVERITY_CRITICAL,"Arm: check fence");
         }

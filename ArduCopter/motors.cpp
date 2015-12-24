@@ -133,7 +133,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     in_arm_motors = true;
 
     // run pre-arm-checks and display failures
-    if(!all_arming_checks_passing(arming_from_gcs)) {
+    if (!all_arming_checks_passing(arming_from_gcs)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
