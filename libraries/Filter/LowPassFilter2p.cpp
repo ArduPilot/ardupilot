@@ -100,3 +100,8 @@ template class LowPassFilter2p<long>;
 template class LowPassFilter2p<float>;
 template class LowPassFilter2p<Vector2f>;
 template class LowPassFilter2p<Vector3f>;
+
+#include <AP_Eigen/AP_Eigen.h>
+template class LowPassFilter2p<Eigen::Vector2f>;
+template class LowPassFilter2p<Eigen::Vector3f>;
+

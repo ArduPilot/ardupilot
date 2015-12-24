@@ -13,3 +13,6 @@
 [submodule "modules/gbenchmark"]
 	path = modules/gbenchmark
 	url = git://github.com/google/benchmark.git
+[submodule "modules/eigen"]
+	path = modules/eigen
+	url = https://github.com/PX4/eigen
