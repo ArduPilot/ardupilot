@@ -995,6 +995,9 @@ void GCS_MAVLINK::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 {
     uint8_t result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
+    #if SOLO_BUTTONS == ENABLED
+        bool send_heartbeat_immediately = false;
+    #endif
 
     switch (msg->msgid) {
 
@@ -1537,6 +1540,79 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
             break;
         }
+
+#if SOLO_FEATURES == ENABLED
+        case MAV_CMD_SOLO_BTN_FLY_CLICK: {
+            result = MAV_RESULT_ACCEPTED;
+
+            // don't do anything if there is a radio failsafe
+            if (copter.failsafe.radio) {
+                break;
+            }
+
+            if (copter.set_mode(LOITER)) {
+                send_heartbeat_immediately = true;
+            } else if (copter.set_mode(ALT_HOLD)) {
+                send_heartbeat_immediately = true;
+            }
+            break;
+        }
+
+        case MAV_CMD_SOLO_BTN_FLY_HOLD: {
+            result = MAV_RESULT_ACCEPTED;
+
+            // don't do anything if there is a radio failsafe
+            if (copter.failsafe.radio) {
+                break;
+            }
+
+            if (!copter.motors.armed()) {
+                copter.init_arm_motors(true);
+            } else if (copter.ap.land_complete) {
+                if (copter.set_mode(LOITER)) {
+                    send_heartbeat_immediately = true;
+                    copter.do_user_takeoff(packet.param1*100, true);
+                }
+            } else if (!copter.ap.land_complete) {
+                if (copter.set_mode(LAND)) {
+                    send_heartbeat_immediately = true;
+                }
+            }
+            break;
+        }
+
+        case MAV_CMD_SOLO_BTN_PAUSE_CLICK: {
+            result = MAV_RESULT_ACCEPTED;
+
+            // don't do anything if there is a radio failsafe
+            if (copter.failsafe.radio) {
+                break;
+            }
+
+            if (copter.motors.armed()) {
+                if (copter.ap.land_complete) {
+                    // if landed, disarm motors
+                    copter.init_disarm_motors();
+                } else {
+                    // assume that shots modes are all done in guided.
+                    // NOTE: this may need to change if we add a non-guided shot mode
+                    bool shot_mode = (packet.param1 != 0.0f && copter.control_mode == GUIDED);
+
+                    if (!shot_mode) {
+                        if (copter.set_mode(BRAKE)) {
+                            send_heartbeat_immediately = true;
+                            copter.brake_timeout_to_loiter_ms(2500);
+                        } else if(copter.set_mode(ALT_HOLD)) {
+                            send_heartbeat_immediately = true;
+                        }
+                    } else {
+                        // SoloLink is expected to handle pause in shots
+                    }
+                }
+            }
+            break;
+        }
+#endif
 
         default:
             result = MAV_RESULT_UNSUPPORTED;
