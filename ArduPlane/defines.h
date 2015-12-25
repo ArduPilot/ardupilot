@@ -94,6 +94,31 @@ typedef enum GeofenceEnableReason {
     GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
 } GeofenceEnableReason;
 
+/*
+ * Values for GPS_FAIL_ACTION
+ */
+enum GPSFailActions {
+    GPSFAIL_NO_ACTION = 0,          //No action on GPS failure
+    GPSFAIL_CIRCLE = 1,             //Change flight mode to CIRCLE
+    GPSFAIL_CIRCLE_5SECDISARM = 2,  //CIRCLE, disarm after 5 seconds
+    GPSFAIL_CIRCLE_10SECDISARM = 3, //CIRCLE, disarm after 10 seconds
+    GPSFAIL_CIRCLE_30SECDISARM = 4, //CIRCLE, disarm after 30 seconds
+    GPSFAIL_CIRCLE_1MINDISARM = 5,  //CIRCLE, disarm after 1 minute
+    GPSFAIL_CIRCLE_2MINDISARM = 6,  //CIRCLE, disarm after 2 minutes
+    GPSFAIL_CIRCLE_5MINDISARM = 7,  //CIRCLE, disarm after 5 minutes
+    GPSFAIL_DISARM_MOTOR = 8        //Disarm motor immediately
+};
+
+/*
+ * State values for 'handle_gps_xtrk_failure()'
+ */
+typedef enum GPSFailCurrentState {
+    GPS_FAIL_NONE = 0,       //no GPS failure action
+    GPS_FAIL_INITWAIT,       //initial wait after failure
+    GPS_FAIL_CIRCLING,       //flight mode changed to CIRCLE
+    GPS_FAIL_DISARMED        //motor disarmed
+} GPSFailCurrentState;
+
 //repeating events
 #define NO_REPEAT 0
 #define CH_5_TOGGLE 1

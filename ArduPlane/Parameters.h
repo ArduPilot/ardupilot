@@ -344,6 +344,9 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
+        k_param_gps_fail_action,
+        k_param_xtrack_fail_lim,
+
         k_param_DataFlash = 253, // Logging Group
 
         // 254,255: reserved
@@ -526,6 +529,8 @@ public:
 #endif
     AP_Int16 gcs_pid_mask;
     AP_Int8 parachute_channel;
+    AP_Int8 gps_fail_action;
+    AP_Int16 xtrack_fail_lim;
 
     // RC channels
     RC_Channel rc_1;

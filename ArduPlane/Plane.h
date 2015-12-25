@@ -352,6 +352,13 @@ private:
     // before recording our home position (and executing a ground start if we booted with an air start)
     uint8_t ground_start_count = 5;
 
+    // Variables used by 'handle_gps_xtrk_failure()'
+    GPSFailCurrentState gps_fail_state = GPS_FAIL_NONE;    //state tracker
+    uint32_t last_handler_timems = 0;       //last GPS-fail time
+    uint32_t fail_start_timems = 0;         //saved fail start time
+    FlightMode prev_cntrl_mode = MANUAL;    //previous flight mode
+    int16_t circle_disarm_secs = 0;         //delay before disarm
+
     // true if we have a position estimate from AHRS
     bool have_position;
 
@@ -876,6 +883,7 @@ private:
     void autotune_restore(void);
     void autotune_enable(bool enable);
     bool fly_inverted(void);
+    bool current_control_mode_uses_GPS(void);
     void failsafe_short_on_event(enum failsafe_state fstype);
     void failsafe_long_on_event(enum failsafe_state fstype);
     void failsafe_short_off_event();
@@ -1009,6 +1017,8 @@ private:
     void calc_nav_roll();
     void calc_nav_pitch();
     void update_flight_stage();
+    GPSFailCurrentState handle_gps_xtrk_failure(bool gps_ok_flag,
+                    bool xtrk_ok_flag, GPSFailCurrentState hdlr_fail_state);
     void update_navigation();
     void set_flight_stage(AP_SpdHgtControl::FlightStage fs);
     bool is_flying(void);

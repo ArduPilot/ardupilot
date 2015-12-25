@@ -674,6 +674,22 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
 
+    // @Param: GPS_FAIL_ACTION
+    // @DisplayName: Action on GPS Fail
+    // @Description: Action to be taken when a GPS failure is detected while in the AUTO, GUIDED, RTL or LOITER flight mode. A GPS failure is when its fix is lost for more than five seconds. If 0 then no action. If 1 then change to CIRCLE flight mode (and restore the previous flight mode if a GPS fix is regained). If 2 through 7 then change to CIRCLE flight mode for the given time, and then, if a GPS fix has not been regained, disarm the motor. If a GPS fix is regained then the previous flight mode is restored. If 8 then change to STABILIZED flight mode and disarm the motor immediately (glide to ground).
+    // @Values: 0:NoAction,1:Circle,2:Circle5SecDisarm,3:Circle10SecDisarm,4:Circle30SecDisarm,5:Circle1MinDisarm,6:Circle2MinDisarm,7:Circle5MinDisarm,8:DisarmMotor
+    // @User: Standard
+    GSCALAR(gps_fail_action,        "GPS_FAIL_ACTION", GPSFAIL_NO_ACTION),
+
+    // @Param: XTRACK_FAIL_LIM
+    // @DisplayName: Crosstrack Failure Limit
+    // @Description: When this setting is greater than zero, the fight mode is AUTO, GUIDED, RTL or LOITER, and the navigation crosstrack error (xtrack_error) is larger than this setting for more than five seconds, the action configured by GPS_FAIL_ACTION will be taken. The setting is specified in meters. A large crosstrack error can indicate sensor or mechanical failure. A value of 200 (meters) is effective for detecting failures.
+    // @Units: Meters
+    // @Range: 0 32767
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(xtrack_fail_lim,        "XTRACK_FAIL_LIM", 0),
+
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
     // @Description: RC Channel to use for flight mode control

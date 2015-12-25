@@ -162,3 +162,22 @@ bool Plane::fly_inverted(void)
     }
     return false;
 }
+
+/*
+  Returns true if current flight mode depends on GPS.
+ */
+bool Plane::current_control_mode_uses_GPS(void)
+{
+    switch (control_mode) {
+    case AUTO:
+        return true;
+    case RTL:
+        return true;
+    case GUIDED:
+        return true;
+    case LOITER:
+        return true;
+    default:
+        return false;
+    }
+}
