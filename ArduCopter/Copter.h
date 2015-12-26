@@ -166,9 +166,6 @@ private:
     // Dataflash
     DataFlash_Class DataFlash{FIRMWARE_STRING};
 
-    // the rate we run the main loop at
-    const AP_InertialSensor::Sample_rate ins_sample_rate;
-
     AP_GPS gps;
 
     // flight modes convenience array

@@ -22,7 +22,6 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Copter::Copter(void) :
-    ins_sample_rate(AP_InertialSensor::RATE_400HZ),
     flight_modes(&g.flight_mode1),
     sonar_enabled(true),
     mission(ahrs, 

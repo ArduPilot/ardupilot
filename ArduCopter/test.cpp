@@ -84,7 +84,7 @@ int8_t Copter::test_compass(uint8_t argc, const Menu::arg *argv)
     report_compass();
 
     // we need the AHRS initialised for this test
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
     int16_t counter = 0;
     float heading = 0;
@@ -152,7 +152,7 @@ int8_t Copter::test_ins(uint8_t argc, const Menu::arg *argv)
     delay(1000);
 
     ahrs.init();
-    ins.init(ins_sample_rate);
+    ins.init(scheduler.get_loop_rate_hz());
     cliSerial->printf("...done\n");
 
     delay(50);
