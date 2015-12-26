@@ -1523,6 +1523,10 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+        case MAV_CMD_DO_VTOL_TRANSITION:
+            result = plane.quadplane.handle_do_vtol_transition(packet);
+            break;
+            
         default:
             break;
         }

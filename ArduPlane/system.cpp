@@ -419,6 +419,7 @@ void Plane::set_mode(enum FlightMode mode)
 
     case AUTO:
         auto_throttle_mode = true;
+        auto_state.vtol_mode = false;
         next_WP_loc = prev_WP_loc = current_loc;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
@@ -447,18 +448,13 @@ void Plane::set_mode(enum FlightMode mode)
         break;
 
     case QSTABILIZE:
-        auto_throttle_mode = false;
-        quadplane.init_stabilize();
-        break;
-
     case QHOVER:
-        auto_throttle_mode = false;
-        quadplane.init_hover();
-        break;
-
     case QLOITER:
-        auto_throttle_mode = false;
-        quadplane.init_loiter();
+        if (!quadplane.init_mode()) {
+            control_mode = previous_mode;
+        } else {
+            auto_throttle_mode = false;
+        }
         break;
     }
 

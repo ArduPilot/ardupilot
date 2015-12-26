@@ -494,6 +494,9 @@ private:
 
         // barometric altitude at start of takeoff
         float baro_takeoff_alt;
+
+        // are we in VTOL mode?
+        bool vtol_mode:1;
     } auto_state;
 
     struct {

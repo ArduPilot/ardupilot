@@ -19,39 +19,33 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    // setup quadplane
+    void control_run(void);
+    void control_auto(const Location &loc);
+    bool init_mode(void);
     void setup(void);
-    
-    // main entry points for VTOL flight modes
-    void init_stabilize(void);
-    void control_stabilize(void);
-
-    void init_hover(void);
-    void control_hover(void);
-
-    void init_loiter(void);
-    void control_loiter(void);
     
     // update transition handling
     void update(void);
 
     // set motor arming
     void set_armed(bool armed);
-    
+
+    // is VTOL available?
+    bool available(void) const {
+        return initialised;
+    }
+
+    bool handle_do_vtol_transition(const mavlink_command_long_t &packet);
+
 private:
     AP_AHRS_NavEKF &ahrs;
     AP_Vehicle::MultiCopter aparm;
-    AP_MotorsQuad motors{50};
     AC_PID        pid_rate_roll {0.15, 0.1, 0.004,  2000, 20, 0.02};
     AC_PID        pid_rate_pitch{0.15, 0.1, 0.004,  2000, 20, 0.02};
     AC_PID        pid_rate_yaw  {0.15, 0.1, 0.004,  2000, 20, 0.02};
     AC_P          p_stabilize_roll{4.5};
     AC_P          p_stabilize_pitch{4.5};
     AC_P          p_stabilize_yaw{4.5};
-
-    AC_AttitudeControl_Multi attitude_control{ahrs, aparm, motors,
-            p_stabilize_roll, p_stabilize_pitch, p_stabilize_yaw,
-            pid_rate_roll, pid_rate_pitch, pid_rate_yaw};
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
@@ -61,11 +55,10 @@ private:
     AC_PID                  pid_accel_z{0.5, 1, 0, 800, 20, 0.02};
     AC_PI_2D                pi_vel_xy{1.0, 0.5, 1000, 5, 0.02};
     
-    AC_PosControl pos_control{ahrs, inertial_nav, motors, attitude_control,
-            p_alt_hold, p_vel_z, pid_accel_z,
-            p_pos_xy, pi_vel_xy};
-
-    AC_WPNav wp_nav{inertial_nav, ahrs, pos_control, attitude_control};
+    AP_MotorsQuad *motors;
+    AC_AttitudeControl_Multi *attitude_control;
+    AC_PosControl *pos_control;
+    AC_WPNav *wp_nav;
     
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
@@ -90,11 +83,42 @@ private:
 
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
+
+    // main entry points for VTOL flight modes
+    void init_stabilize(void);
+    void control_stabilize(void);
+
+    void init_hover(void);
+    void control_hover(void);
+
+    void init_loiter(void);
+    void control_loiter(void);
+
+    float assist_climb_rate_cms(void);
+
+    // calculate desired yaw rate for assistance
+    float desired_yaw_rate_cds(void);
+
+    bool should_relax(void);
     
     AP_Int16 transition_time_ms;
+
+    AP_Int16 rc_speed;
+
+    // min and max PWM for throttle
+    AP_Int16 thr_min_pwm;
+    AP_Int16 thr_max_pwm;
+
+    // speed below which quad assistance is given
+    AP_Float assist_speed;
+    
+    AP_Int8 enable;
+    bool initialised;
     
     // timer start for transition
     uint32_t transition_start_ms;
+
+    Location last_auto_target;
 
     // last throttle value when active
     float last_throttle;
@@ -110,4 +134,10 @@ private:
 
     // true when waiting for pilot throttle
     bool throttle_wait;
+
+    // true when quad is assisting a fixed wing mode
+    bool assisted_flight;
+
+    // time when motors reached lower limit
+    uint32_t motors_lower_limit_start_ms;
 };

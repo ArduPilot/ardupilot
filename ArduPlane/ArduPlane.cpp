@@ -486,7 +486,9 @@ void Plane::handle_auto_mode(void)
         nav_cmd_id = auto_rtl_command.id;
     }
 
-    if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
+    if (auto_state.vtol_mode) {
+        quadplane.control_auto(next_WP_loc);
+    } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_ABORT)) {
         takeoff_calc_roll();
         takeoff_calc_pitch();
@@ -533,6 +535,16 @@ void Plane::update_flight_mode(void)
     if (effective_mode != AUTO) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
+    }
+
+    // ensure we are fly-forward
+    if (effective_mode == QSTABILIZE ||
+        effective_mode == QHOVER ||
+        effective_mode == QLOITER ||
+        (effective_mode == AUTO && auto_state.vtol_mode)) {
+        ahrs.set_fly_forward(false);
+    } else {
+        ahrs.set_fly_forward(true);
     }
 
     switch (effective_mode) 

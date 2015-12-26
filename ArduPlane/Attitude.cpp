@@ -360,12 +360,10 @@ void Plane::stabilize()
         stabilize_training(speed_scaler);
     } else if (control_mode == ACRO) {
         stabilize_acro(speed_scaler);
-    } else if (control_mode == QSTABILIZE) {
-        quadplane.control_stabilize();
-    } else if (control_mode == QHOVER) {
-        quadplane.control_hover();
-    } else if (control_mode == QLOITER) {
-        quadplane.control_loiter();
+    } else if (control_mode == QSTABILIZE ||
+               control_mode == QHOVER ||
+               control_mode == QLOITER) {
+        quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
             stabilize_stick_mixing_fbw();
@@ -932,7 +930,8 @@ void Plane::set_servos(void)
             channel_throttle->radio_out = channel_throttle->radio_in;
         } else if (control_mode == QSTABILIZE ||
                    control_mode == QHOVER ||
-                   control_mode == QLOITER) {
+                   control_mode == QLOITER ||
+                   (control_mode == AUTO && auto_state.vtol_mode)) {
             // no forward throttle for now
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();
