@@ -68,6 +68,12 @@ private:
     
     // update transition handling
     void update_transition(void);
+
+    // hold hover (for transition)
+    void hold_hover(float target_climb_rate);    
+
+    // hold stabilize (for transition)
+    void hold_stabilize(float throttle_in);    
     
     AP_Int16 transition_time_ms;
     
@@ -75,7 +81,14 @@ private:
     uint32_t last_run_ms;
 
     // last throttle value when active
-    int16_t  last_throttle;
+    float last_throttle;
 
     const float smoothing_gain = 6;
+
+    // true if we have reached the airspeed threshold for transition
+    enum {
+        TRANSITION_AIRSPEED_WAIT,
+        TRANSITION_TIMER,
+        TRANSITION_DONE
+    } transition_state;
 };
