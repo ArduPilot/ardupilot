@@ -49,14 +49,6 @@ public:
     AP_InertialSensor();
     static AP_InertialSensor *get_instance();
 
-    // the rate that updates will be available to the application
-    enum Sample_rate {
-        RATE_50HZ  = 50,
-        RATE_100HZ = 100,
-        RATE_200HZ = 200,
-        RATE_400HZ = 400
-    };
-
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
         GYRO_CAL_STARTUP_ONLY = 1
@@ -70,7 +62,7 @@ public:
     ///
     /// @param style	The initialisation startup style.
     ///
-    void init(Sample_rate sample_rate);
+    void init(uint16_t sample_rate_hz);
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
@@ -179,7 +171,7 @@ public:
     }
 
     // return the selected sample rate
-    Sample_rate get_sample_rate(void) const { return _sample_rate; }
+    uint16_t get_sample_rate(void) const { return _sample_rate; }
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
@@ -275,7 +267,7 @@ private:
     uint8_t _backend_count;
 
     // the selected sample rate
-    Sample_rate _sample_rate;
+    uint16_t _sample_rate;
     float _loop_delta_t;
     
     // Most recent accelerometer reading
