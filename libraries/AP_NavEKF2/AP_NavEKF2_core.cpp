@@ -68,16 +68,11 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
       than 100Hz is downsampled. For 50Hz main loop rate we need a
       shorter buffer.
      */
-    switch (_ahrs->get_ins().get_sample_rate()) {
-    case AP_InertialSensor::RATE_50HZ:
+    if (_ahrs->get_ins().get_sample_rate() < 100) {
         imu_buffer_length = 13;
-        break;
-    case AP_InertialSensor::RATE_100HZ:
-    case AP_InertialSensor::RATE_200HZ:
-    case AP_InertialSensor::RATE_400HZ:
+    } else {
         // maximum 260 msec delay at 100 Hz fusion rate
         imu_buffer_length = 26;
-        break;
     }
     if(!storedGPS.init(OBS_BUFFER_LENGTH)) {
         return false;
@@ -117,7 +112,7 @@ void NavEKF2_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
     const AP_InertialSensor &ins = _ahrs->get_ins();
-    localFilterTimeStep_ms = (uint8_t)(1000.0f/(float)ins.get_sample_rate());
+    localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
     localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
 
     // initialise time stamps
@@ -279,7 +274,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
     InitialiseVariables();
 
     // Initialise IMU data
-    dtIMUavg = 1.0f/_ahrs->get_ins().get_sample_rate();
+    dtIMUavg = _ahrs->get_ins().get_loop_delta_t();
     dtEkfAvg = MIN(0.01f,dtIMUavg);
     readIMUData();
     storedIMU.reset_history(imuDataNew);
