@@ -29,7 +29,7 @@ AP_AHRS_DCM  ahrs(ins, baro, gps);
 
 void setup(void)
 {
-    ins.init(AP_InertialSensor::RATE_100HZ);
+    ins.init(100);
     ahrs.init();
     serial_manager.init();
 
