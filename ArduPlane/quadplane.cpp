@@ -272,7 +272,7 @@ void QuadPlane::setup(void)
 // init quadplane stabilize mode 
 void QuadPlane::init_stabilize(void)
 {
-    // nothing to do
+    throttle_wait = false;
 }
 
 // hold in stabilize with given throttle
@@ -285,9 +285,6 @@ void QuadPlane::hold_stabilize(float throttle_in)
                                                                         smoothing_gain);
 
     attitude_control.set_throttle_out(throttle_in, true, 0);
-
-    // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
 }
 
 // quadplane stabilize mode
@@ -296,8 +293,6 @@ void QuadPlane::control_stabilize(void)
     int16_t pilot_throttle_scaled = plane.channel_throttle->control_in * 10;
     hold_stabilize(pilot_throttle_scaled);
 
-    transition_state = TRANSITION_AIRSPEED_WAIT;
-    last_throttle = motors.get_throttle();
 }
 
 // init quadplane hover mode 
@@ -310,6 +305,8 @@ void QuadPlane::init_hover(void)
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+
+    init_throttle_wait();
 }
 
 /*
@@ -331,10 +328,6 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, plane.G_Dt, false);
     pos_control.update_z_controller();
 
-    // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
-
-    last_throttle = motors.get_throttle();
 }
 
 /*
@@ -342,9 +335,12 @@ void QuadPlane::hold_hover(float target_climb_rate)
  */
 void QuadPlane::control_hover(void)
 {
-    hold_hover(get_pilot_desired_climb_rate_cms());
-
-    transition_state = TRANSITION_AIRSPEED_WAIT;
+    if (throttle_wait) {
+        attitude_control.set_throttle_out_unstabilized(0, true, 0);
+        pos_control.relax_alt_hold_controllers(0);
+    } else {
+        hold_hover(get_pilot_desired_climb_rate_cms());
+    }
 }
 
 void QuadPlane::init_loiter(void)
@@ -359,12 +355,21 @@ void QuadPlane::init_loiter(void)
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
     pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+
+    init_throttle_wait();
 }
 
 
 // run quadplane loiter controller
 void QuadPlane::control_loiter()
 {
+    if (throttle_wait) {
+        attitude_control.set_throttle_out_unstabilized(0, true, 0);
+        pos_control.relax_alt_hold_controllers(0);
+        wp_nav.init_loiter_target();
+        return;
+    }
+    
     // initialize vertical speed and acceleration
     pos_control.set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control.set_accel_z(pilot_accel_z);
@@ -392,11 +397,6 @@ void QuadPlane::control_loiter()
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
     pos_control.update_z_controller();
-
-    // run low level rate controllers that only require IMU data
-    attitude_control.rate_controller_run();
-
-    last_throttle = motors.get_throttle();
 }
 
 /*
@@ -415,6 +415,19 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void)
 }
 
 
+/*
+  initialise throttle_wait based on throttle and is_flying()
+ */
+void QuadPlane::init_throttle_wait(void)
+{
+    if (plane.channel_throttle->control_in >= 10 ||
+        plane.is_flying()) {
+        throttle_wait = false;
+    } else {
+        throttle_wait = true;        
+    }
+}
+    
 // set motor arming
 void QuadPlane::set_armed(bool armed)
 {
@@ -440,10 +453,16 @@ void QuadPlane::update_transition(void)
     switch (transition_state) {
     case TRANSITION_AIRSPEED_WAIT: {
         // we hold in hover until the required airspeed is reached
+        if (transition_start_ms == 0) {
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Transition airspeed wait");
+            transition_start_ms = millis();
+        }
+
         float aspeed;
         if (ahrs.airspeed_estimate(&aspeed) && aspeed > plane.aparm.airspeed_min) {
             transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Transition airspeed reached %.1f", aspeed);
         }
         hold_hover(0);
         break;
@@ -454,6 +473,7 @@ void QuadPlane::update_transition(void)
         // transition time, but continue to stabilize
         if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
             transition_state = TRANSITION_DONE;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "Transition done");
         }
         float throttle_scaled = last_throttle * (transition_time_ms - (millis() - transition_start_ms)) / (float)transition_time_ms;
         if (throttle_scaled < 0) {
@@ -480,6 +500,18 @@ void QuadPlane::update(void)
         plane.control_mode != QLOITER) {
         update_transition();
     } else {
+        // run low level rate controllers
+        attitude_control.rate_controller_run();
+
+        // output to motors
         motors.output();
+        transition_start_ms = 0;
+        transition_state = TRANSITION_AIRSPEED_WAIT;
+        last_throttle = motors.get_throttle();
+    }
+
+    // disable throttle_wait when throttle rises above 10%
+    if (throttle_wait && plane.channel_throttle->control_in > 10) {
+        throttle_wait = false;
     }
 }

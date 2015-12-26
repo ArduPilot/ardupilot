@@ -87,6 +87,9 @@ private:
 
     // get desired climb rate in cm/s
     float get_pilot_desired_climb_rate_cms(void);
+
+    // initialise throttle_wait when entering mode
+    void init_throttle_wait();
     
     AP_Int16 transition_time_ms;
     
@@ -104,4 +107,7 @@ private:
         TRANSITION_TIMER,
         TRANSITION_DONE
     } transition_state;
+
+    // true when waiting for pilot throttle
+    bool throttle_wait;
 };
