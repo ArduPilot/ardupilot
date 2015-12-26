@@ -196,6 +196,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
