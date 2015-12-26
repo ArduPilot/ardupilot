@@ -1914,6 +1914,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 } // end handle mavlink
 
 /*
+ * Send an airspeed calibration message
+ */
+void GCS_MAVLINK::send_airspeed_calibration(const Vector3f &vg){
+    plane.airspeed.log_mavlink_send(chan, vg);
+}
+
+/*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
  *  MAVLink to process packets while waiting for the initialisation to
@@ -2046,7 +2053,7 @@ void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
         if (gcs[i].initialised) {
             if (comm_get_txspace((mavlink_channel_t)i) - MAVLINK_NUM_NON_PAYLOAD_BYTES >= 
                 MAVLINK_MSG_ID_AIRSPEED_AUTOCAL_LEN) {
-                airspeed.log_mavlink_send((mavlink_channel_t)i, vg);
+            	gcs[i].send_airspeed_calibration(vg);
             }
         }
     }
