@@ -5,6 +5,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
+#include <AC_WPNav/AC_WPNav.h>
 
 /*
   QuadPlane specific functionality
@@ -24,9 +25,13 @@ public:
     // main entry points for VTOL flight modes
     void init_stabilize(void);
     void control_stabilize(void);
+
     void init_hover(void);
     void control_hover(void);
 
+    void init_loiter(void);
+    void control_loiter(void);
+    
     // update transition handling
     void update(void);
 
@@ -60,6 +65,8 @@ private:
             p_alt_hold, p_vel_z, pid_accel_z,
             p_pos_xy, pi_vel_xy};
 
+    AC_WPNav wp_nav{inertial_nav, ahrs, pos_control, attitude_control};
+    
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
 
@@ -74,11 +81,17 @@ private:
 
     // hold stabilize (for transition)
     void hold_stabilize(float throttle_in);    
+
+    // get desired yaw rate in cd/s
+    float get_pilot_desired_yaw_rate_cds(void);
+
+    // get desired climb rate in cm/s
+    float get_pilot_desired_climb_rate_cms(void);
     
     AP_Int16 transition_time_ms;
     
-    // last time quadplane was active, used for transition
-    uint32_t last_run_ms;
+    // timer start for transition
+    uint32_t transition_start_ms;
 
     // last throttle value when active
     float last_throttle;

@@ -455,6 +455,11 @@ void Plane::set_mode(enum FlightMode mode)
         auto_throttle_mode = false;
         quadplane.init_hover();
         break;
+
+    case QLOITER:
+        auto_throttle_mode = false;
+        quadplane.init_loiter();
+        break;
     }
 
     // start with throttle suppressed in auto_throttle modes
@@ -491,6 +496,7 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case LOITER:
     case QSTABILIZE:
     case QHOVER:
+    case QLOITER:
         set_mode((enum FlightMode)mode);
         return true;
     }

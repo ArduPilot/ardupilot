@@ -690,7 +690,8 @@ void Plane::update_flight_mode(void)
 
 
     case QSTABILIZE:
-    case QHOVER: {
+    case QHOVER:
+    case QLOITER: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -770,6 +771,7 @@ void Plane::update_navigation()
     case CIRCLE:
     case QSTABILIZE:
     case QHOVER:
+    case QLOITER:
         // nothing to do
         break;
     }

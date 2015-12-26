@@ -142,6 +142,7 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == CRUISE ||
         control_mode == QSTABILIZE ||
         control_mode == QHOVER ||
+        control_mode == QLOITER ||
         control_mode == TRAINING) {
         return;
     }
@@ -163,6 +164,7 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == CRUISE ||
         control_mode == QSTABILIZE ||
         control_mode == QHOVER ||
+        control_mode == QLOITER ||
         control_mode == TRAINING ||
         (control_mode == AUTO && g.auto_fbw_steer)) {
         return;
@@ -362,6 +364,8 @@ void Plane::stabilize()
         quadplane.control_stabilize();
     } else if (control_mode == QHOVER) {
         quadplane.control_hover();
+    } else if (control_mode == QLOITER) {
+        quadplane.control_loiter();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != STABILIZE) {
             stabilize_stick_mixing_fbw();
@@ -926,7 +930,9 @@ void Plane::set_servos(void)
                    guided_throttle_passthru) {
             // manual pass through of throttle while in GUIDED
             channel_throttle->radio_out = channel_throttle->radio_in;
-        } else if (control_mode == QSTABILIZE || control_mode == QHOVER) {
+        } else if (control_mode == QSTABILIZE ||
+                   control_mode == QHOVER ||
+                   control_mode == QLOITER) {
             // no forward throttle for now
             channel_throttle->servo_out = 0;
             channel_throttle->calc_pwm();

@@ -135,11 +135,11 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: TRANSITION_MS
     // @DisplayName: Transition time
-    // @Description: Transition time in milliseconds
+    // @Description: Transition time in milliseconds after minimum airspeed is reached
     // @Units: milli-seconds
     // @Range: 0 30000
     // @User: Advanced
-    AP_GROUPINFO("TRANSITION_MS", 10, QuadPlane, transition_time_ms, 3000),
+    AP_GROUPINFO("TRANSITION_MS", 10, QuadPlane, transition_time_ms, 5000),
 
     // @Param: PZ_P
     // @DisplayName: Position (vertical) controller P gain
@@ -240,6 +240,10 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ACCEL_Z",  18, QuadPlane, pilot_accel_z,  250),
 
+    // @Group: WP_
+    // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
+    AP_SUBGROUPINFO(wp_nav, "WP_",  19, QuadPlane, AC_WPNav),
+    
     AP_GROUPEND
 };
 
@@ -273,23 +277,17 @@ void QuadPlane::init_stabilize(void)
 
 // hold in stabilize with given throttle
 void QuadPlane::hold_stabilize(float throttle_in)
-{
-    // max 100 degrees/sec for now
-    const float yaw_rate_max_dps = 100;
-    float yaw_rate_ef_cds = plane.channel_rudder->norm_input() * 100 * yaw_rate_max_dps;
-    
+{    
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                         plane.nav_pitch_cd,
-                                                                        yaw_rate_ef_cds,
+                                                                        get_pilot_desired_yaw_rate_cds(),
                                                                         smoothing_gain);
 
     attitude_control.set_throttle_out(throttle_in, true, 0);
 
     // run low level rate controllers that only require IMU data
     attitude_control.rate_controller_run();
-
-    last_throttle = motors.get_throttle();
 }
 
 // quadplane stabilize mode
@@ -298,8 +296,8 @@ void QuadPlane::control_stabilize(void)
     int16_t pilot_throttle_scaled = plane.channel_throttle->control_in * 10;
     hold_stabilize(pilot_throttle_scaled);
 
-    last_run_ms = millis();
     transition_state = TRANSITION_AIRSPEED_WAIT;
+    last_throttle = motors.get_throttle();
 }
 
 // init quadplane hover mode 
@@ -323,13 +321,10 @@ void QuadPlane::hold_hover(float target_climb_rate)
     pos_control.set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
     pos_control.set_accel_z(pilot_accel_z);
 
-    const float yaw_rate_max_dps = 100;
-    float yaw_rate_ef_cds = plane.channel_rudder->norm_input() * 100 * yaw_rate_max_dps;
-    
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw_smooth(plane.nav_roll_cd,
                                                                         plane.nav_pitch_cd,
-                                                                        yaw_rate_ef_cds,
+                                                                        get_pilot_desired_yaw_rate_cds(),
                                                                         smoothing_gain);
 
     // call position controller
@@ -347,14 +342,78 @@ void QuadPlane::hold_hover(float target_climb_rate)
  */
 void QuadPlane::control_hover(void)
 {
-    // get pilot desired climb rate
-    float target_climb_rate = pilot_velocity_z_max * (plane.channel_throttle->control_in - 50) / 50.0;
+    hold_hover(get_pilot_desired_climb_rate_cms());
 
-    hold_hover(target_climb_rate);
-
-    last_run_ms = millis();
     transition_state = TRANSITION_AIRSPEED_WAIT;
 }
+
+void QuadPlane::init_loiter(void)
+{
+    // set target to current position
+    wp_nav.init_loiter_target();
+
+    // initialize vertical speed and acceleration
+    pos_control.set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control.set_accel_z(pilot_accel_z);
+
+    // initialise position and desired velocity
+    pos_control.set_alt_target(inertial_nav.get_altitude());
+    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+}
+
+
+// run quadplane loiter controller
+void QuadPlane::control_loiter()
+{
+    // initialize vertical speed and acceleration
+    pos_control.set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control.set_accel_z(pilot_accel_z);
+
+    // process pilot's roll and pitch input
+    wp_nav.set_pilot_desired_acceleration(plane.channel_roll->control_in,
+                                          plane.channel_pitch->control_in);
+
+    // Update EKF speed limit - used to limit speed when we are using optical flow
+    float ekfGndSpdLimit, ekfNavVelGainScaler;    
+    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    
+    // run loiter controller
+    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+
+    // call attitude controller
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav.get_roll(),
+                                                                 wp_nav.get_pitch(),
+                                                                 get_pilot_desired_yaw_rate_cds());
+
+    // nav roll and pitch are controller by loiter controller
+    plane.nav_roll_cd = wp_nav.get_roll();
+    plane.nav_pitch_cd = wp_nav.get_pitch();
+
+    // update altitude target and call position controller
+    pos_control.set_alt_target_from_climb_rate_ff(get_pilot_desired_climb_rate_cms(), plane.G_Dt, false);
+    pos_control.update_z_controller();
+
+    // run low level rate controllers that only require IMU data
+    attitude_control.rate_controller_run();
+
+    last_throttle = motors.get_throttle();
+}
+
+/*
+  get desired yaw rate in cd/s
+ */
+float QuadPlane::get_pilot_desired_yaw_rate_cds(void)
+{
+    const float yaw_rate_max_dps = 100;
+    return plane.channel_rudder->norm_input() * 100 * yaw_rate_max_dps;
+}
+
+// get pilot desired climb rate in cm/s
+float QuadPlane::get_pilot_desired_climb_rate_cms(void)
+{
+    return pilot_velocity_z_max * (plane.channel_throttle->control_in - 50) / 50.0;
+}
+
 
 // set motor arming
 void QuadPlane::set_armed(bool armed)
@@ -383,7 +442,7 @@ void QuadPlane::update_transition(void)
         // we hold in hover until the required airspeed is reached
         float aspeed;
         if (ahrs.airspeed_estimate(&aspeed) && aspeed > plane.aparm.airspeed_min) {
-            last_run_ms = millis();
+            transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
         }
         hold_hover(0);
@@ -393,10 +452,10 @@ void QuadPlane::update_transition(void)
     case TRANSITION_TIMER: {
         // after airspeed is reached we degrade throttle over the
         // transition time, but continue to stabilize
-        if (millis() - last_run_ms > (unsigned)transition_time_ms) {
+        if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
             transition_state = TRANSITION_DONE;
         }
-        float throttle_scaled = last_throttle * (transition_time_ms - (millis() - last_run_ms)) / (float)transition_time_ms;
+        float throttle_scaled = last_throttle * (transition_time_ms - (millis() - transition_start_ms)) / (float)transition_time_ms;
         if (throttle_scaled < 0) {
             throttle_scaled = 0;
         }
@@ -417,7 +476,8 @@ void QuadPlane::update_transition(void)
 void QuadPlane::update(void)
 {
     if (plane.control_mode != QSTABILIZE &&
-        plane.control_mode != QHOVER) {
+        plane.control_mode != QHOVER &&
+        plane.control_mode != QLOITER) {
         update_transition();
     } else {
         motors.output();
