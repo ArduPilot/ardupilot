@@ -181,6 +181,9 @@ public:
     // return the selected sample rate
     Sample_rate get_sample_rate(void) const { return _sample_rate; }
 
+    // return the main loop delta_t in seconds
+    float get_loop_delta_t(void) const { return _loop_delta_t; }
+    
     uint16_t error_count(void) const { return 0; }
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
@@ -273,6 +276,7 @@ private:
 
     // the selected sample rate
     Sample_rate _sample_rate;
+    float _loop_delta_t;
     
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
