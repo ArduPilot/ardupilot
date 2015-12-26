@@ -14,7 +14,6 @@ LIBRARIES += AP_Mission
 LIBRARIES += AP_Mount
 LIBRARIES += AP_Notify
 LIBRARIES += AP_Param
-LIBRARIES += AP_Progmem
 LIBRARIES += AP_Terrain
 LIBRARIES += AP_Vehicle
 LIBRARIES += DataFlash

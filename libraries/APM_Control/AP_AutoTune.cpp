@@ -38,7 +38,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -134,10 +133,10 @@ void AP_AutoTune::start(void)
         level = 1;
     }
 
-    current.rmax.set(pgm_read_float(&tuning_table[level-1].rmax));
+    current.rmax.set(tuning_table[level-1].rmax);
     // D gain is scaled to a fixed ratio of P gain
-    current.D.set(   pgm_read_float(&tuning_table[level-1].Dratio) * current.P);
-    current.tau.set( pgm_read_float(&tuning_table[level-1].tau));
+    current.D.set(tuning_table[level-1].Dratio * current.P);
+    current.tau.set(tuning_table[level-1].tau);
 
     current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
@@ -221,7 +220,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("UNDER P -> %.3f\n", current.P.get());
         }
-        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
+        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
         break;
     case DEMAND_OVER_POS:
     case DEMAND_OVER_NEG:
@@ -232,7 +231,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("OVER P -> %.3f\n", current.P.get());
         }
-        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
+        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
         break;
     }
 }

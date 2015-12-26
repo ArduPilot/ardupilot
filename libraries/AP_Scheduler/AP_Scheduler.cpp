@@ -23,7 +23,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,7 +39,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 };
 
 // initialise the scheduler
-void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks) 
+void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks)
 {
     _tasks = tasks;
     _num_tasks = num_tasks;
@@ -66,10 +65,10 @@ void AP_Scheduler::run(uint16_t time_available)
 
     for (uint8_t i=0; i<_num_tasks; i++) {
         uint16_t dt = _tick_counter - _last_run[i];
-        uint16_t interval_ticks = pgm_read_word(&_tasks[i].interval_ticks);
+        uint16_t interval_ticks = _tasks[i].interval_ticks;
         if (dt >= interval_ticks) {
             // this task is due to run. Do we have enough time to run it?
-            _task_time_allowed = pgm_read_word(&_tasks[i].max_time_micros);
+            _task_time_allowed = _tasks[i].max_time_micros;
 
             if (dt >= interval_ticks*2) {
                 // we've slipped a whole run of this task!
@@ -82,24 +81,22 @@ void AP_Scheduler::run(uint16_t time_available)
                                           (unsigned)_task_time_allowed);
                 }
             }
-            
+
             if (_task_time_allowed <= time_available) {
                 // run it
                 _task_time_started = now;
-                task_fn_t func;
-                pgm_read_block(&_tasks[i].function, &func, sizeof(func));
                 current_task = i;
-                func();
+                _tasks[i].function();
                 current_task = -1;
-                
+
                 // record the tick counter when we ran. This drives
                 // when we next run the event
                 _last_run[i] = _tick_counter;
-                
+
                 // work out how long the event actually took
                 now = AP_HAL::micros();
                 uint32_t time_taken = now - _task_time_started;
-                
+
                 if (time_taken > _task_time_allowed) {
                     // the event overran!
                     if (_debug > 2) {

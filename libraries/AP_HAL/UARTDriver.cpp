@@ -35,5 +35,5 @@ void AP_HAL::UARTDriver::printf(const char *fmt, ...)
 
 void AP_HAL::UARTDriver::vprintf(const char *fmt, va_list ap) 
 {
-    print_vprintf((AP_HAL::Print*)this, 0, fmt, ap);
+    print_vprintf(this, fmt, ap);
 }
