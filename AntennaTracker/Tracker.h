@@ -88,8 +88,6 @@ public:
     void loop() override;
 
 private:
-    const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor::RATE_50HZ;
-
     Parameters g;
 
     // main loop scheduler
