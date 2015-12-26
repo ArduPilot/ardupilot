@@ -13,7 +13,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
     case MANUAL:
     case STABILIZE:
     case ACRO:
-    case HOVER:
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
@@ -28,6 +27,12 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
         }
         break;
 
+    case QSTABILIZE:
+        failsafe.saved_mode = control_mode;
+        failsafe.saved_mode_set = 1;
+        set_mode(QHOVER);
+        break;
+        
     case AUTO:
     case GUIDED:
     case LOITER:
@@ -44,6 +49,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype)
 
     case CIRCLE:
     case RTL:
+    case QHOVER:
     default:
         break;
     }
@@ -62,7 +68,6 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
     case MANUAL:
     case STABILIZE:
     case ACRO:
-    case HOVER:
     case FLY_BY_WIRE_A:
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
@@ -76,6 +81,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         }
         break;
 
+    case QSTABILIZE:
+        set_mode(QHOVER);
+        break;
+        
     case AUTO:
     case GUIDED:
     case LOITER:
@@ -87,6 +96,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype)
         break;
 
     case RTL:
+    case QHOVER:
     default:
         break;
     }

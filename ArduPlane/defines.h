@@ -64,7 +64,8 @@ enum FlightMode {
     LOITER        = 12,
     GUIDED        = 15,
     INITIALISING  = 16,
-    HOVER         = 17
+    QSTABILIZE    = 17,
+    QHOVER        = 18
 };
 
 // type of stick mixing enabled

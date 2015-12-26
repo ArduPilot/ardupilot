@@ -35,11 +35,11 @@
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_radio,             50,    700),
     SCHED_TASK(check_short_failsafe,   50,   1000),
-    SCHED_TASK(ahrs_update,            50,   6400),
+    SCHED_TASK(ahrs_update,           400,   6400),
     SCHED_TASK(update_speed_height,    50,   1600),
-    SCHED_TASK(update_flight_mode,     50,   1400),
-    SCHED_TASK(stabilize,              50,   3500),
-    SCHED_TASK(set_servos,             50,   1600),
+    SCHED_TASK(update_flight_mode,    400,   1400),
+    SCHED_TASK(stabilize,             400,   3500),
+    SCHED_TASK(set_servos,            400,   1600),
     SCHED_TASK(read_control_switch,     7,   1000),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
     SCHED_TASK(update_GPS_50Hz,        50,   2500),
@@ -172,6 +172,9 @@ void Plane::ahrs_update()
     // frame yaw rate
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
+
+    // update inertial_nav for quadplane
+    quadplane.inertial_nav.update(G_Dt);
 }
 
 /*
@@ -686,7 +689,8 @@ void Plane::update_flight_mode(void)
         //roll: -13788.000,  pitch: -13698.000,   thr: 0.000, rud: -13742.000
 
 
-    case HOVER: {
+    case QSTABILIZE:
+    case QHOVER: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -764,7 +768,8 @@ void Plane::update_navigation()
     case AUTOTUNE:
     case FLY_BY_WIRE_B:
     case CIRCLE:
-    case HOVER:
+    case QSTABILIZE:
+    case QHOVER:
         // nothing to do
         break;
     }

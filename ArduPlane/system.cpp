@@ -446,8 +446,14 @@ void Plane::set_mode(enum FlightMode mode)
         set_guided_WP();
         break;
 
-    case HOVER:
+    case QSTABILIZE:
         auto_throttle_mode = false;
+        quadplane.init_stabilize();
+        break;
+
+    case QHOVER:
+        auto_throttle_mode = false;
+        quadplane.init_hover();
         break;
     }
 
@@ -483,7 +489,8 @@ bool Plane::mavlink_set_mode(uint8_t mode)
     case AUTO:
     case RTL:
     case LOITER:
-    case HOVER:
+    case QSTABILIZE:
+    case QHOVER:
         set_mode((enum FlightMode)mode);
         return true;
     }

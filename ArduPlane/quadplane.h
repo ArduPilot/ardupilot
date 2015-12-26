@@ -21,8 +21,11 @@ public:
     // setup quadplane
     void setup(void);
     
-    // stabilize in hover mode
-    void stabilize_hover(void);
+    // main entry points for VTOL flight modes
+    void init_stabilize(void);
+    void control_stabilize(void);
+    void init_hover(void);
+    void control_hover(void);
 
     // update transition handling
     void update(void);
@@ -57,6 +60,12 @@ private:
             p_alt_hold, p_vel_z, pid_accel_z,
             p_pos_xy, pi_vel_xy};
 
+    // maximum vertical velocity the pilot may request
+    AP_Int16 pilot_velocity_z_max;
+
+    // vertical acceleration the pilot may request
+    AP_Int16 pilot_accel_z;
+    
     // update transition handling
     void update_transition(void);
     
