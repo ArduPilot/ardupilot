@@ -233,7 +233,7 @@ void NavEKF2_core::readIMUData()
     const AP_InertialSensor &ins = _ahrs->get_ins();
 
     // average IMU sampling rate
-    dtIMUavg = 1.0f/ins.get_sample_rate();
+    dtIMUavg = ins.get_loop_delta_t();
 
     // the imu sample time is used as a common time reference throughout the filter
     imuSampleTime_ms = AP_HAL::millis();
