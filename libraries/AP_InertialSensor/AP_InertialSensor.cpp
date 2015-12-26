@@ -434,6 +434,7 @@ AP_InertialSensor::init(Sample_rate sample_rate)
 {
     // remember the sample rate
     _sample_rate = sample_rate;
+    _loop_delta_t = 1.0f / sample_rate;
 
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
