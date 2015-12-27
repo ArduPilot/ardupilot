@@ -57,4 +57,30 @@
  # define DISTANCE_MIN_DEFAULT              5.0f    // do not track targets within 5 meters
 #endif
 
+//
+// Dataflash logging control
+//
+#ifndef LOGGING_ENABLED
+# define LOGGING_ENABLED        ENABLED
+#endif
 
+// Default logging bitmask
+#ifndef DEFAULT_LOG_BITMASK
+ # define DEFAULT_LOG_BITMASK \
+    MASK_LOG_ATTITUDE | \
+    MASK_LOG_GPS | \
+    MASK_LOG_RCIN | \
+    MASK_LOG_IMU | \
+    MASK_LOG_RCOUT | \
+    MASK_LOG_COMPASS
+#endif
+
+/*
+  build a firmware version string.
+  GIT_VERSION comes from Makefile builds
+*/
+#ifndef GIT_VERSION
+#define FIRMWARE_STRING THISFIRMWARE
+#else
+#define FIRMWARE_STRING THISFIRMWARE " (" GIT_VERSION ")"
+#endif

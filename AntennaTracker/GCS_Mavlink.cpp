@@ -5,9 +5,6 @@
 // default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
 
-// use this to prevent recursion during sensor init
-static bool in_mavlink_delay;
-
 /*
  *  !!NOTE!!
  *
@@ -429,7 +426,7 @@ GCS_MAVLINK::data_stream_send(void)
         }
     }
 
-    if (in_mavlink_delay) {
+    if (tracker.in_mavlink_delay) {
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -886,6 +883,26 @@ mission_failed:
         break;
     }
 
+    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
+    case MAVLINK_MSG_ID_LOG_ERASE:
+        tracker.in_log_download = true;
+        /* no break */
+    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
+        if (!tracker.in_mavlink_delay) {
+            handle_log_message(msg, tracker.DataFlash);
+        }
+        break;
+    case MAVLINK_MSG_ID_LOG_REQUEST_END:
+        tracker.in_log_download = false;
+        if (!tracker.in_mavlink_delay) {
+            handle_log_message(msg, tracker.DataFlash);
+        }
+        break;
+
+    case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+        tracker.DataFlash.remote_log_block_status_msg(chan, msg);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg, tracker.gps);
         break;
@@ -913,7 +930,7 @@ void Tracker::mavlink_delay_cb()
     static uint32_t last_1hz, last_50hz, last_5s;
     if (!gcs[0].initialised) return;
 
-    in_mavlink_delay = true;
+    tracker.in_mavlink_delay = true;
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -931,7 +948,7 @@ void Tracker::mavlink_delay_cb()
         last_5s = tnow;
         gcs_send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    in_mavlink_delay = false;
+    tracker.in_mavlink_delay = false;
 }
 
 /*

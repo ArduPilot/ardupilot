@@ -226,6 +226,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(gcs[3],  gcs3,       "SR3_",     GCS_MAVLINK),
 
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: 4 byte bitmap of log types to enable
+    // @Values: 63:Default,0:Disabled
+    // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS
+    // @User: Standard
+    GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
+
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                    "INS_", AP_InertialSensor),

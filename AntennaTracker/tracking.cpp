@@ -121,6 +121,11 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.ground_speed = pythagorous2(msg.vx, msg.vy) * 0.01f;
     vehicle.last_update_us = AP_HAL::micros();    
     vehicle.last_update_ms = AP_HAL::millis();
+
+    // log vehicle as GPS2
+    if (should_log(MASK_LOG_GPS)) {
+        DataFlash.Log_Write_GPS(gps, 1, vehicle.location.alt);
+    }
 }
 
 

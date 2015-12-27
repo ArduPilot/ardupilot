@@ -100,6 +100,11 @@ private:
 
     bool usb_connected = false;
 
+    // has a log download started?
+    bool in_log_download = false;
+    bool logging_started = false;
+    DataFlash_Class DataFlash{FIRMWARE_STRING};
+
     AP_GPS gps;
 
     AP_Baro barometer;
@@ -180,10 +185,16 @@ private:
     int8_t slew_dir = 0;
     uint32_t slew_start_ms = 0;
 
+    // use this to prevent recursion during sensor init
+    bool in_mavlink_delay = false;
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
+    static const struct LogStructure log_structure[];
 
+    void dataflash_periodic(void);
     void one_second_loop();
+    void ten_hz_logging_loop();
     void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
@@ -243,6 +254,12 @@ private:
     void gcs_send_text_fmt(MAV_SEVERITY severity, const char *fmt, ...);
     void init_capabilities(void);
     void compass_cal_update();
+    void Log_Write_Attitude();
+    void Log_Write_Baro(void);
+    void Log_Write_Vehicle_Startup_Messages();
+    void start_logging();
+    void log_init(void);
+    bool should_log(uint32_t mask);
 
 public:
     void mavlink_snoop(const mavlink_message_t* msg);
