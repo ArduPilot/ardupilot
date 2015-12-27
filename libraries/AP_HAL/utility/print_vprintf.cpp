@@ -364,10 +364,14 @@ flt_oper:
                     pnt = (char *)buf;
                     size = 1;
                     break;
+
                 case 's':
                     pnt = va_arg (ap, char *);
                     size = strnlen (pnt, (flags & FL_PREC) ? prec : ~0);
                     break;
+
+                default:
+                        goto non_string;
                 }
 
                 if (!(flags & FL_LPAD)) {
@@ -385,6 +389,8 @@ flt_oper:
                 goto tail;
             }
 
+        non_string:
+            
             /*
              * Handle integer formats variations for d/i, u, o, p, x, X.
              */
