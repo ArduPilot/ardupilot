@@ -286,7 +286,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 - 1000
+    // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("RNG_GATE", 19, NavEKF2, _rngInnovGate, 500),
@@ -296,7 +296,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: MAX_FLOW
     // @DisplayName: Maximum valid optical flow rate
     // @Description: This sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
-    // @Range: 1.0 - 4.0
+    // @Range: 1.0 4.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: rad/s
@@ -305,7 +305,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_NOISE
     // @DisplayName: Optical flow measurement noise (rad/s)
     // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.05 - 1.0
+    // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: rad/s
@@ -314,7 +314,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
     // @Description: This sets the percentage number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 100 - 1000
+    // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
     AP_GROUPINFO("FLOW_GATE", 22, NavEKF2, _flowInnovGate, FLOW_GATE_DEFAULT),
@@ -322,7 +322,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 - 250
+    // @Range: 0 250
     // @Increment: 10
     // @User: Advanced
     // @Units: msec
