@@ -57,12 +57,4 @@
  # define DISTANCE_MIN_DEFAULT              5.0f    // do not track targets within 5 meters
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Developer Items
-//
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
- # define CLI_ENABLED ENABLED
-#endif
 
