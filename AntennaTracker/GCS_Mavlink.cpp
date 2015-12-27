@@ -178,6 +178,7 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
     switch (id) {
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        tracker.gcs[chan-MAVLINK_COMM_0].last_heartbeat_time = AP_HAL::millis();
         tracker.send_heartbeat(chan);
         return true;
 
