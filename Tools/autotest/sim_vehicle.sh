@@ -342,7 +342,7 @@ popd
 
 # get the location information
 if [ -z $CUSTOM_LOCATION ]; then
-    SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | cut -d= -f2)
+    SIMHOME=$(cat $autotest/locations.txt | grep -i "^$LOCATION=" | head -1 | cut -d= -f2)
 else
     SIMHOME=$CUSTOM_LOCATION
     LOCATION="Custom_Location"
