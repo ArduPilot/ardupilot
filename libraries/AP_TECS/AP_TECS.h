@@ -87,6 +87,11 @@ public:
         return _land_sink;
     }
 
+    // return height rate demand, in m/s
+    float get_height_rate_demand(void) const {
+        return _hgt_rate_dem;
+    }
+    
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
