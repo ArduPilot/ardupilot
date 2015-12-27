@@ -20,9 +20,7 @@
 
 class QURT::Util : public AP_HAL::Util {
 public:
-    Util(void) {
-        HAP_PRINTF("%s constructor", __FUNCTION__);
-    }
+    Util(void) {}
     bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
 
     uint32_t available_memory(void) override;

@@ -13,11 +13,6 @@
 #define APM_TIMER_PRIORITY      181
 #define APM_UART_PRIORITY        60
 #define APM_IO_PRIORITY          58
-#define APM_SHELL_PRIORITY       57
-#define APM_OVERTIME_PRIORITY    10
-#define APM_STARTUP_PRIORITY     10
-
-#define APM_MAIN_THREAD_STACK_SIZE 16384
 
 /* Scheduler implementation: */
 class QURT::Scheduler : public AP_HAL::Scheduler {
