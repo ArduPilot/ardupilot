@@ -328,7 +328,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: GND_GRADIENT
     // @DisplayName: Terrain Gradient % RMS
     // @Description: This parameter sets the RMS terrain gradient percentage assumed by the terrain height estimation. Terrain height can be estimated using optical flow and/or range finder sensor data if fitted. Smaller values cause the terrain height estimate to be slower to respond to changes in measurement. Larger values casue the terrain height estimate to be faster to respond, but also more noisy. Generally this value can be reduced if operating over very flat terrain and increased if operating over uneven terrain.
-    // @Range: 1 - 50
+    // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("GND_GRADIENT",    25, NavEKF, _gndGradientSigma, 2),
@@ -336,7 +336,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: FLOW_NOISE
     // @DisplayName: Optical flow measurement noise (rad/s)
     // @Description: This is the RMS value of noise and errors in optical flow measurements. Increasing it reduces the weighting on these measurements.
-    // @Range: 0.05 - 1.0
+    // @Range: 0.05 1.0
     // @Increment: 0.05
     // @User: Advanced
     // @Units: rad/s
@@ -345,7 +345,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: FLOW_GATE
     // @DisplayName: Optical Flow measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the optical flow innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 - 100
+    // @Range: 1 100
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("FLOW_GATE",    27, NavEKF, _flowInnovGate, FLOW_GATE_DEFAULT),
@@ -353,7 +353,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: FLOW_DELAY
     // @DisplayName: Optical Flow measurement delay (msec)
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
-    // @Range: 0 - 500
+    // @Range: 0 500
     // @Increment: 10
     // @User: Advanced
     // @Units: milliseconds
@@ -362,7 +362,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: RNG_GATE
     // @DisplayName: Range finder measurement gate size
     // @Description: This parameter sets the number of standard deviations applied to the range finder innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
-    // @Range: 1 - 100
+    // @Range: 1 100
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("RNG_GATE",    29, NavEKF, _rngInnovGate, 5),
@@ -370,7 +370,7 @@ const AP_Param::GroupInfo NavEKF::var_info[] = {
     // @Param: MAX_FLOW
     // @DisplayName: Maximum valid optical flow rate
     // @Description: This parameter sets the magnitude maximum optical flow rate in rad/sec that will be accepted by the filter
-    // @Range: 1.0 - 4.0
+    // @Range: 1.0 4.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("MAX_FLOW",    30, NavEKF, _maxFlowRate, 2.5f),
