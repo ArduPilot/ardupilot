@@ -497,6 +497,10 @@ void Copter::one_hz_loop()
 
     // log terrain data
     terrain_logging();
+
+    if (!motors.armed()) {
+        gcs_send_message(MSG_ARMMASK);
+    }
 }
 
 // called at 50hz

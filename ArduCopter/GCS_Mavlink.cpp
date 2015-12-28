@@ -740,6 +740,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_MAG_CAL_REPORT:
         copter.compass.send_mag_cal_report(chan);
         break;
+
+    case MSG_ARMMASK:
+        mavlink_msg_named_value_int_send(chan, AP_HAL::millis(), "ARMMASK", copter.get_ready_to_arm_mode_mask());
+        break;
     }
 
     return true;
