@@ -23,6 +23,8 @@
 #include <stdio.h>
 extern const AP_HAL::HAL& hal;
 
+//TODO: use higher precision datatypes to achieve more accuracy for matrix algebra operations
+
 /*
  *    Does matrix multiplication of two regular/square matrices
  *

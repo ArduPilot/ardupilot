@@ -115,6 +115,9 @@ bool                    inverse3x3(float m[], float invOut[]);
 // invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
 bool                    inverse4x4(float m[],float invOut[]);
 
+// matrix multiplication of two NxN matrices
+float* mat_mul(float *A, float *B, uint8_t n);
+
 // see if location is past a line perpendicular to
 // the line between point1 and point2. If point1 is
 // our previous waypoint and point2 is our target waypoint
