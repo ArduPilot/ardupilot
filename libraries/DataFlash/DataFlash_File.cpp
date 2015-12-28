@@ -474,16 +474,15 @@ bool DataFlash_File::WritePrioritisedBlock(const void *pBuffer, uint16_t size, b
         return false;
     }
 
-    if (!semaphore->take(1)) {
-        return false;
-    }
-    
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
-        semaphore->give();
         return false;
     }
 
+    if (!semaphore->take(1)) {
+        return false;
+    }
+        
     uint16_t _head;
     uint16_t space = BUF_SPACE(_writebuf);
 
