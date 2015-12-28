@@ -91,8 +91,21 @@ typedef enum GeofenceEnableReason {
     NOT_ENABLED = 0,     //The fence is not enabled
     PWM_TOGGLED,         //Fence enabled/disabled by PWM signal
     AUTO_TOGGLED,        //Fence auto enabled/disabled at takeoff.
-    GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
+    GCS_TOGGLED,         //Fence enabled/disabled by the GCS via Mavlink
+    ARM_ENABLED          //Fence enabled via motor arming
 } GeofenceEnableReason;
+
+/*
+ * Values for FENCE_AUTOENABLE
+ */
+enum GeofenceAutoEnableOption {
+    NO_AUTO_GFENABLE = 0,          //No auto enable
+    TAKEOFF_GFENABLE = 1,          //Enabled on auto-mode takeoff
+    TAKEOFF_NOFLOOR_GFENABLE = 2,  //Enabled on auto-mode takeoff, disable floor only
+    AUTOMODE_GFENABLE = 3,         //Enabled by auto-mode
+    AUTOMODE_NOFLOOR_GFENABLE = 4, //Enabled by auto-mode, disable floor only
+    ARM_GFENABLE = 5               //Enabled by arming
+};
 
 //repeating events
 #define NO_REPEAT 0
